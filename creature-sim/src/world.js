@@ -56,7 +56,7 @@ export class World {
     this.lineageTracker = null;
     this.seasonPhase = 0;
     this.seasonSpeed = 0.015;
-    this.maxFood = Math.floor((width * height) / 320);
+    this.maxFood = Math.floor((width * height) / 180); // BALANCED: 2x more food for larger world!
     
     // Disaster system
     this.disasterCooldown = 0;

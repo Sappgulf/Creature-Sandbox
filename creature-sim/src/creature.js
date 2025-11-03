@@ -11,7 +11,7 @@ export class Creature {
     this.x = x; this.y = y;
     this.vx = 0; this.vy = 0;
     this.dir = rand(0, TAU);
-    this.energy = isChild ? 18 : 24;
+    this.energy = isChild ? 28 : 40; // BALANCED: More starting energy!
     this.age = 0;
     this.alive = true;
     this.genes = genes;
@@ -358,7 +358,7 @@ export class Creature {
       const attackResult = this.personality.attackCooldown <= 0 ? world.tryPredation(this) : null;
       if (attackResult?.victim) {
         if (attackResult.killed) {
-          this.energy += 18;
+          this.energy += 14; // BALANCED: Less OP, need more strategic hunting
           this.stats.kills += 1;
           this.logEvent(attackResult.victim?.id != null ? `Claimed prey #${attackResult.victim.id}` : 'Claimed prey', world.t);
           const victim = attackResult.victim;
@@ -377,7 +377,7 @@ export class Creature {
     } else {
       const eaten = world.tryEatFoodAt(this.x, this.y, 8);
       if (eaten) {
-        this.energy += 6;
+        this.energy += 9; // BALANCED: 50% more energy from food!
         this.health = Math.min(this.maxHealth, this.health + 1.5);
         this.stats.food += 1;
         this.logEvent('Foraged food', world.t);
