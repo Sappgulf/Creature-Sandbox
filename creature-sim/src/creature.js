@@ -15,7 +15,10 @@ export class Creature {
     this.age = 0;
     this.alive = true;
     this.genes = genes;
-    this.size = 3.5 + (genes.predator ? 1.5 : 0);
+    // NEW: Size based on diet (omnivores are medium-sized)
+    const diet = genes.diet ?? (genes.predator ? 1.0 : 0.0);
+    const isOmnivore = diet > 0.3 && diet < 0.7;
+    this.size = isOmnivore ? 4.0 : (3.5 + (genes.predator ? 1.5 : 0));
     this.target = null;
     this.id = null;       // set by World.addCreature
     this.parentId = null; // set by World.addCreature
@@ -295,7 +298,12 @@ export class Creature {
     }
 
     let wanderScale = 0.05 * BehaviorConfig.wanderWeight;
-    if (this.genes.predator) {
+    const diet = this.genes.diet ?? (this.genes.predator ? 1.0 : 0.0);
+    const isOmnivore = diet > 0.3 && diet < 0.7;
+    const canScavenge = diet >= 0.3; // Omnivores and carnivores can scavenge
+    
+    if (this.genes.predator || diet > 0.7) {
+      // Carnivores: hunt or scavenge
       this.hunt(world, dt);
       if (this.personality.currentTargetId) {
         const tracked = world.getAnyCreatureById(this.personality.currentTargetId);
@@ -303,8 +311,34 @@ export class Creature {
           this.target = { x: tracked.x, y: tracked.y, creatureId: tracked.id };
         }
       }
+      
+      // NEW: If no prey found and can scavenge, look for corpses
+      if (!this.target && canScavenge && this.energy < 30) {
+        const corpse = world.findNearbyCorpse(this.x, this.y, this.genes.sense * 0.8);
+        if (corpse) {
+          this.target = { x: corpse.x, y: corpse.y, isCorpse: true, corpse };
+        }
+      }
+      
       wanderScale *= clamp(1 - this.personality.aggression * 0.25, 0.25, 1);
+    } else if (isOmnivore) {
+      // NEW: Omnivores: eat plants, scavenge corpses
+      const foodList = world.nearbyFood(this.x, this.y, this.genes.sense);
+      const corpse = world.findNearbyCorpse(this.x, this.y, this.genes.sense * 0.9);
+      
+      // Prefer corpses when hungry, plants otherwise
+      if (corpse && this.energy < 25) {
+        this.target = { x: corpse.x, y: corpse.y, isCorpse: true, corpse };
+      } else {
+        this.seek(foodList, world.pheromone);
+      }
+      
+      // If no food found but corpse available, go for it
+      if (!this.target && corpse) {
+        this.target = { x: corpse.x, y: corpse.y, isCorpse: true, corpse };
+      }
     } else {
+      // Herbivores: only eat plants
       this.seek(world.nearbyFood(this.x,this.y,this.genes.sense), world.pheromone);
     }
 
@@ -353,7 +387,8 @@ export class Creature {
 
     this.updateTrail(dt);
 
-    if (this.genes.predator) {
+    if (this.genes.predator || diet > 0.7) {
+      // Carnivores: attack prey
       this.personality.attackCooldown = Math.max(0, this.personality.attackCooldown - dt);
       const attackResult = this.personality.attackCooldown <= 0 ? world.tryPredation(this) : null;
       if (attackResult?.victim) {
@@ -374,7 +409,40 @@ export class Creature {
         }
       }
       if (!this.alive) return;
+      
+      // NEW: Try to scavenge corpse if nearby
+      if (canScavenge && this.target?.isCorpse && this.target.corpse) {
+        if (world.tryEatCorpse(this, this.target.corpse)) {
+          this.target = null;
+        }
+      }
+    } else if (isOmnivore) {
+      // NEW: Omnivores: eat plants or scavenge
+      if (this.target?.isCorpse && this.target.corpse) {
+        if (world.tryEatCorpse(this, this.target.corpse)) {
+          this.target = null;
+        }
+      } else {
+        const eaten = world.tryEatFoodAt(this.x, this.y, 8);
+        if (eaten) {
+          this.energy += 9; // BALANCED: 50% more energy from food!
+          this.health = Math.min(this.maxHealth, this.health + 1.5);
+          this.stats.food += 1;
+          this.logEvent('Foraged food', world.t);
+          world.dropPheromone(this.x, this.y, 0.5);
+          
+          // FEATURE 2: Remember successful food location
+          if (this.rememberLocation) {
+            this.rememberLocation(this.x, this.y, 'food', 0.8, world.t);
+          }
+          
+          if (this.stats.food === 20) {
+            world.lineageTracker?.noteMilestone(world, this, 'foraged 20 meals');
+          }
+        }
+      }
     } else {
+      // Herbivores: only eat plants
       const eaten = world.tryEatFoodAt(this.x, this.y, 8);
       if (eaten) {
         this.energy += 9; // BALANCED: 50% more energy from food!
@@ -576,12 +644,18 @@ export class Creature {
     const flash = effects ? effects.hitFlash : 0;
     const lightness = Math.min(85, baseLight + flash * 90);
     ctx.fillStyle = `hsl(${displayHue},85%,${lightness}%)`;
+    
+    // NEW: Trait visualization - body shape based on metabolism
+    const bodyScale = 0.8 + (2 - g.metabolism) * 0.3; // Low metabolism = chunkier
+    ctx.save();
+    ctx.scale(1, bodyScale);
     ctx.beginPath();
     ctx.moveTo(6,0);
-    ctx.lineTo(-4,3.5);
-    ctx.lineTo(-4,-3.5);
+    ctx.lineTo(-4,3.5 / bodyScale);
+    ctx.lineTo(-4,-3.5 / bodyScale);
     ctx.closePath();
     ctx.fill();
+    ctx.restore();
 
     ctx.strokeStyle = `hsla(${displayHue},90%,80%,${0.65 + flash * 0.4})`;
     ctx.lineWidth = 1;
@@ -589,6 +663,11 @@ export class Creature {
     ctx.beginPath();
     ctx.arc(0,0,r,0,TAU);
     ctx.stroke();
+    
+    // NEW: Trait visualization - visual features
+    if (opts.showTraitVisualization !== false) {
+      this._drawTraits(ctx, g, displayHue, r);
+    }
 
     if (isPinned) {
       ctx.strokeStyle = 'rgba(140,200,255,0.9)';
@@ -620,6 +699,71 @@ export class Creature {
       ctx.fillRect(x, y, barWidth, barHeight);
       ctx.fillStyle = this.genes.predator ? 'rgba(255,120,120,0.85)' : 'rgba(120,255,160,0.85)';
       ctx.fillRect(x, y, barWidth * hpRatio, barHeight);
+    }
+  }
+  
+  _drawTraits(ctx, g, hue, r) {
+    // Draw visual traits based on genes
+    
+    // 1. EYES - Size based on sense radius (bigger sense = bigger eyes)
+    const eyeSize = clamp(g.sense / 100, 0.6, 1.5);
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(2, -1.5, eyeSize, 0, TAU);
+    ctx.fill();
+    // Pupil
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(2, -1.5, eyeSize * 0.5, 0, TAU);
+    ctx.fill();
+    
+    // 2. SPIKES - Defensive herbivores have spikes
+    const spineStrength = g.spines ?? 0;
+    if (spineStrength > 0.2) {
+      ctx.strokeStyle = `hsl(${hue}, 70%, 40%)`;
+      ctx.lineWidth = 1.5;
+      const spikeCount = Math.floor(spineStrength * 6) + 2;
+      for (let i = 0; i < spikeCount; i++) {
+        const angle = (i / spikeCount) * TAU;
+        const spikeLength = 2 + spineStrength * 3;
+        const x1 = Math.cos(angle + Math.PI * 0.5) * r;
+        const y1 = Math.sin(angle + Math.PI * 0.5) * r;
+        const x2 = Math.cos(angle + Math.PI * 0.5) * (r + spikeLength);
+        const y2 = Math.sin(angle + Math.PI * 0.5) * (r + spikeLength);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+    }
+    
+    // 3. SPEED INDICATOR - Fast creatures have elongated tail/fins
+    if (g.speed > 1.2) {
+      ctx.fillStyle = `hsla(${hue}, 70%, 50%, 0.6)`;
+      ctx.beginPath();
+      const tailLength = (g.speed - 1) * 4;
+      ctx.moveTo(-4, 0);
+      ctx.lineTo(-4 - tailLength, 2);
+      ctx.lineTo(-4 - tailLength, -2);
+      ctx.closePath();
+      ctx.fill();
+    }
+    
+    // 4. PREDATOR TEETH
+    if (g.predator || (g.diet && g.diet > 0.7)) {
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#888888';
+      ctx.lineWidth = 0.5;
+      // Upper teeth
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(4 - i * 1.5, 0.5);
+        ctx.lineTo(5 - i * 1.5, 2);
+        ctx.lineTo(3 - i * 1.5, 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
     }
   }
 }

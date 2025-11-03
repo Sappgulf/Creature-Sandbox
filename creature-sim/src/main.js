@@ -95,12 +95,35 @@ bindUI({
   onPred: () => {
     const g = makeGenes({ predator:1, speed:1.2, metabolism:1.2, hue:0 });
     world.addCreature(new Creature(Math.random()*world.width, Math.random()*world.height, g), null);
+  },
+  onOmnivore: () => {
+    // NEW: Spawn omnivore/scavenger
+    const g = makeGenes({ 
+      predator: 0,
+      diet: 0.5, // Middle diet = omnivore/scavenger
+      speed: 1.0,
+      sense: 110, // Good sense to find corpses
+      metabolism: 0.9, // Efficient
+      hue: 30 // Distinct orange/tan color
+    });
+    world.addCreature(new Creature(Math.random()*world.width, Math.random()*world.height, g), null);
   }
 });
 
 exportBtn?.addEventListener('click', exportSnapshot);
 showInspectorBtn?.addEventListener('click', ()=>setInspectorVisible(true));
 closeInspectorBtn?.addEventListener('click', ()=>setInspectorVisible(false));
+
+// GOD MODE TOOLS
+const btnGodHeal = document.getElementById('btn-god-heal');
+const btnGodBoost = document.getElementById('btn-god-boost');
+const btnGodKill = document.getElementById('btn-god-kill');
+const btnGodClone = document.getElementById('btn-god-clone');
+
+btnGodHeal?.addEventListener('click', () => godModeHeal());
+btnGodBoost?.addEventListener('click', () => godModeBoost());
+btnGodKill?.addEventListener('click', () => godModeKill());
+btnGodClone?.addEventListener('click', () => godModeClone());
 
 const handleBehaviorChange = () => {
   setBehaviorWeights({
@@ -398,6 +421,78 @@ function stepOnce() {
   accumulator += fixedDt;
 }
 
+// GOD MODE FUNCTIONS
+function godModeHeal() {
+  const creature = selectedId ? world.getAnyCreatureById(selectedId) : null;
+  if (!creature || !creature.alive) {
+    console.log('⚠️ Select a creature first to heal it!');
+    return;
+  }
+  creature.health = creature.maxHealth;
+  creature.logEvent('Healed by divine intervention', world.t);
+  showGodModeEffect(creature, '💚', '#4ade80');
+  console.log(`✨ Healed creature #${creature.id} to full health!`);
+}
+
+function godModeBoost() {
+  const creature = selectedId ? world.getAnyCreatureById(selectedId) : null;
+  if (!creature || !creature.alive) {
+    console.log('⚠️ Select a creature first to boost it!');
+    return;
+  }
+  creature.energy += 30;
+  creature.logEvent('Received energy boost', world.t);
+  showGodModeEffect(creature, '⚡', '#fbbf24');
+  console.log(`⚡ Boosted creature #${creature.id} energy by 30!`);
+}
+
+function godModeKill() {
+  const creature = selectedId ? world.getAnyCreatureById(selectedId) : null;
+  if (!creature || !creature.alive) {
+    console.log('⚠️ Select a creature first to kill it!');
+    return;
+  }
+  creature.alive = false;
+  creature.health = 0;
+  creature.logEvent('Struck down by god', world.t);
+  showGodModeEffect(creature, '💀', '#ef4444');
+  console.log(`💀 Killed creature #${creature.id}`);
+  selectedId = null;
+}
+
+function godModeClone() {
+  const creature = selectedId ? world.getAnyCreatureById(selectedId) : null;
+  if (!creature || !creature.alive) {
+    console.log('⚠️ Select a creature first to clone it!');
+    return;
+  }
+  // Clone with exact same genes nearby
+  const offsetX = (Math.random() - 0.5) * 50;
+  const offsetY = (Math.random() - 0.5) * 50;
+  const clone = new Creature(
+    creature.x + offsetX,
+    creature.y + offsetY,
+    { ...creature.genes }, // Exact copy of genes
+    false
+  );
+  world.addCreature(clone, creature);
+  showGodModeEffect(creature, '👯', '#a78bfa');
+  console.log(`👯 Cloned creature #${creature.id} → #${clone.id}`);
+}
+
+function showGodModeEffect(creature, emoji, color) {
+  // Visual feedback: draw effect on canvas
+  if (!godModeEffects) window.godModeEffects = [];
+  window.godModeEffects.push({
+    x: creature.x,
+    y: creature.y,
+    emoji,
+    color,
+    life: 1.0,
+    createdAt: performance.now()
+  });
+}
+
 function setInspectorVisible(visible) {
   inspectorVisible = visible;
   inspectorEl?.classList.toggle('hidden', !visible);
@@ -431,7 +526,9 @@ function loop(now) {
     lineageRootId,
     viewportWidth: canvas.width,
     viewportHeight: canvas.height,
-    worldTime: world.t
+    worldTime: world.t,
+    lineageTracker,
+    world
   });
 
   fps = 0.9 * fps + 0.1 * (1 / Math.max(dt, 0.0001));
@@ -537,6 +634,7 @@ function selectCreature(id) {
 }
 
 function updateAnalyticsCharts() {
+  if (!inspectorVisible) return; // Don't update charts when inspector is closed
   const data = analytics.getData();
   if (data.version === analyticsVersion) return;
   analyticsVersion = data.version;

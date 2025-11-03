@@ -1,32 +1,41 @@
-export function bindUI({ onPause, onStep, onFood, onHerb, onPred }) {
+export function bindUI({ onPause, onStep, onFood, onHerb, onPred, onOmnivore }) {
   document.getElementById('btn-pause').onclick = onPause;
   document.getElementById('btn-step').onclick  = onStep;
   document.getElementById('btn-spawn-food').onclick = onFood;
   document.getElementById('btn-spawn-herb').onclick = onHerb;
   document.getElementById('btn-spawn-pred').onclick = onPred;
+  if (onOmnivore) {
+    const omniBtn = document.getElementById('btn-spawn-omni');
+    if (omniBtn) omniBtn.onclick = onOmnivore;
+  }
 }
 
 export function renderStats(el, world, fps, extra={}) {
   const n = world.creatures.length;
   // Optimize: avoid filter() which creates new array, use simple loop
   let preds = 0;
+  let omnis = 0;
   let sumHealth = 0;
   let sumMaxHealth = 0;
   for (let i = 0; i < n; i++) {
     const creature = world.creatures[i];
-    if (creature.genes.predator) preds++;
+    const diet = creature.genes.diet ?? (creature.genes.predator ? 1.0 : 0.0);
+    if (diet > 0.7) preds++;
+    else if (diet > 0.3 && diet <= 0.7) omnis++;
     sumHealth += creature.health ?? 0;
     sumMaxHealth += creature.maxHealth ?? 1;
   }
-  const herbs = n - preds;
+  const herbs = n - preds - omnis;
   const avgHealth = sumMaxHealth ? sumHealth / sumMaxHealth : 0;
   
   // Build stats with HTML for better formatting
   const statParts = [
     `<span>🌍 Pop: ${n}</span>`,
     `<span>🌿 ${herbs}</span>`,
+    `<span>🦡 ${omnis}</span>`,
     `<span>🦁 ${preds}</span>`,
     `<span>🍎 ${world.food.length}</span>`,
+    `<span>💀 ${world.corpses?.length ?? 0}</span>`,
     `<span>⏱️ ${world.t.toFixed(1)}s</span>`,
     `<span>💚 ${(avgHealth * 100).toFixed(0)}%</span>`,
     `<span>📊 ${fps.toFixed(0)} FPS</span>`
@@ -366,6 +375,8 @@ function drawChart(ctx, lines, { min=null, max=null } = {}) {
   }
   const w = ctx.canvas.width;
   const h = ctx.canvas.height;
+  // Guard against hidden canvases (0x0 dimensions)
+  if (w <= 0 || h <= 0) return;
   const pad = 6;
   ctx.clearRect(0,0,w,h);
   ctx.fillStyle = '#11131d';

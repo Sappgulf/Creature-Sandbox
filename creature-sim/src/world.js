@@ -42,6 +42,8 @@ export class World {
     this.width = width; this.height = height;
     this.creatures = [];
     this.food = [];
+    this.corpses = []; // NEW: Dead creatures that scavengers can eat
+    this.corpseGrid = new SpatialGrid(40); // NEW: Spatial grid for corpse lookup
     this.pheromone = new ScalarField(width, height, 20, 0.992, 0.18);
     this.temperature = new ScalarField(width, height, 40, 1.0, 0.0);
     this.t = 0;
@@ -578,12 +580,18 @@ export class World {
           this.creatures[writeIndex] = c;
         }
         writeIndex++;
+      } else {
+        // NEW: Create corpse when creature dies
+        this._createCorpse(c);
       }
     }
     // Trim array to new length (avoids filter allocation)
     if (writeIndex < this.creatures.length) {
       this.creatures.length = writeIndex;
     }
+    
+    // NEW: Update corpses (decay over time)
+    this._updateCorpses(dt);
     
     this.updateLineagePulse(dt);
     this.updateEcoStats();
@@ -852,6 +860,8 @@ export class World {
     }
     this.foodGrid.clear();
     for (const f of this.food) this.foodGrid.insert(f, f.x, f.y);
+    this.corpseGrid.clear();
+    for (const corpse of this.corpses) this.corpseGrid.insert(corpse, corpse.x, corpse.y);
     this.gridDirty = false;
   }
 
@@ -1501,5 +1511,83 @@ export class World {
     territories.forEach((territory, index) => {
       territory.dominanceRank = index + 1;
     });
+  }
+
+  // NEW: Corpse system for scavengers
+  _createCorpse(creature) {
+    const energyValue = Math.max(6, creature.size * 2.5); // Energy a scavenger can get
+    const corpse = {
+      x: creature.x,
+      y: creature.y,
+      energy: energyValue,
+      maxEnergy: energyValue,
+      decay: 0, // 0-1, 1 = fully decayed
+      decayRate: 0.02, // decay per second
+      size: creature.size * 0.8,
+      fromPredator: creature.genes.predator,
+      genes: creature.genes // preserve diet info
+    };
+    this.corpses.push(corpse);
+    this.gridDirty = true;
+  }
+
+  _updateCorpses(dt) {
+    // Update decay and remove fully decayed corpses
+    let writeIndex = 0;
+    for (let i = 0; i < this.corpses.length; i++) {
+      const corpse = this.corpses[i];
+      corpse.decay += corpse.decayRate * dt;
+      
+      if (corpse.decay < 1.0 && corpse.energy > 0.1) {
+        if (writeIndex !== i) {
+          this.corpses[writeIndex] = corpse;
+        }
+        writeIndex++;
+      }
+    }
+    if (writeIndex < this.corpses.length) {
+      this.corpses.length = writeIndex;
+      this.gridDirty = true;
+    }
+  }
+
+  findNearbyCorpse(x, y, radius) {
+    this.ensureSpatial();
+    const candidates = this.corpseGrid.nearby(x, y, radius);
+    let best = null;
+    let bestD2 = radius * radius;
+    for (const corpse of candidates) {
+      if (corpse.energy < 0.5) continue; // not enough left
+      const d2 = dist2(corpse.x, corpse.y, x, y);
+      if (d2 < bestD2) {
+        bestD2 = d2;
+        best = corpse;
+      }
+    }
+    return best;
+  }
+
+  tryEatCorpse(scavenger, corpse) {
+    if (!corpse || corpse.energy < 0.5) return false;
+    
+    const eatAmount = Math.min(corpse.energy, 8); // How much the scavenger can eat
+    corpse.energy -= eatAmount;
+    scavenger.energy += eatAmount;
+    
+    // Scavenging is rewarding!
+    if (scavenger.stats) scavenger.stats.food++;
+    scavenger.logEvent?.('Scavenged corpse', this.t);
+    scavenger.rememberLocation?.(corpse.x, corpse.y, 'food', 0.7, this.t);
+    
+    if (corpse.energy < 0.5) {
+      // Corpse fully consumed
+      const index = this.corpses.indexOf(corpse);
+      if (index >= 0) {
+        this.corpses.splice(index, 1);
+        this.gridDirty = true;
+      }
+    }
+    
+    return true;
   }
 }

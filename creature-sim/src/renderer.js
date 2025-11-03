@@ -27,6 +27,11 @@ export class Renderer {
     this.weatherIntensity = 0;
     this.weatherType = null;
     
+    // NEW: Name labels & trait visualization
+    this.enableNameLabels = true;
+    this.enableTraitVisualization = true;
+    this.hoveredCreatureId = null;
+    
     // Cache lineage computation
     this._lineageCache = { rootId: null, set: null, frame: 0 };
     this._clusterCache = { clusters: null, frame: -1 };
@@ -73,6 +78,7 @@ export class Renderer {
     }
     
     this.drawFood(world.food);
+    this.drawCorpses(world.corpses); // NEW: Draw corpses for scavengers
     
     // Feature 2: Draw memory for selected creature
     if (this.enableMemory && selectedId) {
@@ -122,9 +128,47 @@ export class Renderer {
 
     ctx.restore();
     
+    // Draw god mode effects
+    this._drawGodModeEffects();
+    
     // Draw mini-map overlay (top-right corner)
     if (this.enableMiniMap) {
       this.drawMiniMap(world, opts);
+    }
+  }
+  
+  _drawGodModeEffects() {
+    if (!window.godModeEffects || window.godModeEffects.length === 0) return;
+    
+    const ctx = this.ctx;
+    const now = performance.now();
+    
+    // Update and draw effects
+    for (let i = window.godModeEffects.length - 1; i >= 0; i--) {
+      const effect = window.godModeEffects[i];
+      const age = (now - effect.createdAt) / 1000; // seconds
+      effect.life = 1 - (age / 1.5); // 1.5 second duration
+      
+      if (effect.life <= 0) {
+        window.godModeEffects.splice(i, 1);
+        continue;
+      }
+      
+      ctx.save();
+      ctx.globalAlpha = effect.life;
+      ctx.font = `${32 * (1 + (1 - effect.life) * 0.5)}px Arial`; // Grow as it fades
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      // Float upward
+      const floatOffset = (1 - effect.life) * 30;
+      
+      // Draw emoji with glow
+      ctx.shadowColor = effect.color;
+      ctx.shadowBlur = 20;
+      ctx.fillText(effect.emoji, effect.x, effect.y - floatOffset);
+      
+      ctx.restore();
     }
   }
 
@@ -299,6 +343,49 @@ export class Renderer {
     ctx.fill();
   }
 
+  // NEW: Draw corpses for scavengers to find
+  drawCorpses(corpses) {
+    if (!corpses || corpses.length === 0) return;
+    const ctx = this.ctx;
+    const bounds = this._viewBounds;
+
+    for (const corpse of corpses) {
+      // Frustum culling: skip corpses outside view
+      const margin = corpse.size * 3;
+      if (corpse.x + margin < bounds.x1 || corpse.x - margin > bounds.x2 ||
+          corpse.y + margin < bounds.y1 || corpse.y - margin > bounds.y2) {
+        continue;
+      }
+      
+      const decayAlpha = 1 - corpse.decay;
+      const energyRatio = corpse.energy / corpse.maxEnergy;
+      
+      // Draw corpse as a dark brown/gray decaying mass
+      ctx.save();
+      ctx.globalAlpha = decayAlpha * 0.7;
+      ctx.fillStyle = corpse.fromPredator ? '#5D4E37' : '#6B8E23'; // Brown for predators, olive for herbivores
+      ctx.beginPath();
+      ctx.arc(corpse.x, corpse.y, corpse.size * energyRatio, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Draw small X to indicate it's dead
+      ctx.strokeStyle = '#000000';
+      ctx.globalAlpha = decayAlpha * 0.5;
+      ctx.lineWidth = 1;
+      const x = corpse.x;
+      const y = corpse.y;
+      const s = corpse.size * 0.5;
+      ctx.beginPath();
+      ctx.moveTo(x - s, y - s);
+      ctx.lineTo(x + s, y + s);
+      ctx.moveTo(x + s, y - s);
+      ctx.lineTo(x - s, y + s);
+      ctx.stroke();
+      
+      ctx.restore();
+    }
+  }
+
   drawCreatures(creatures, opts) {
     const ctx = this.ctx;
     const { worldTime = 0 } = opts;
@@ -364,6 +451,11 @@ export class Renderer {
         this._drawCreatureOutline(c, isSelected);
       }
       
+      // NEW: Draw name label above creature
+      if (this.enableNameLabels && this.camera.zoom > 0.3) {
+        this._drawCreatureName(c, isSelected, isPinned, opts);
+      }
+      
       if (alpha < 0.99) {
         ctx.restore();
       }
@@ -408,6 +500,59 @@ export class Renderer {
     ctx.beginPath();
     ctx.arc(creature.x, creature.y, r + 1, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.restore();
+  }
+  
+  _drawCreatureName(creature, isSelected, isPinned, opts) {
+    // Draw creature name/ID above it
+    const ctx = this.ctx;
+    const zoom = this.camera.zoom;
+    
+    // Only show names when zoomed in enough or for selected creatures
+    if (zoom < 0.4 && !isSelected && !isPinned) return;
+    
+    // Get creature name (from lineage tracker if available)
+    let name = `#${creature.id}`;
+    if (opts.lineageTracker) {
+      const rootId = opts.lineageTracker.getRoot(opts.world, creature.id);
+      const familyName = opts.lineageTracker.names.get(rootId);
+      if (familyName) {
+        name = `${familyName} #${creature.id}`;
+      }
+    }
+    
+    // Position above creature
+    const offsetY = -creature.size - 8;
+    
+    ctx.save();
+    ctx.font = `${Math.max(10, 12 * zoom)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    
+    // Background for readability
+    const metrics = ctx.measureText(name);
+    const padding = 4;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(
+      creature.x - metrics.width / 2 - padding,
+      creature.y + offsetY - 14 - padding,
+      metrics.width + padding * 2,
+      14 + padding * 2
+    );
+    
+    // Color-code by family (use hue from root creature)
+    let nameColor = '#ffffff';
+    if (opts.lineageTracker) {
+      const rootId = opts.lineageTracker.getRoot(opts.world, creature.id);
+      const rootCreature = opts.world.getAnyCreatureById(rootId);
+      if (rootCreature) {
+        nameColor = `hsl(${rootCreature.genes.hue}, 70%, 70%)`;
+      }
+    }
+    
+    // Draw name
+    ctx.fillStyle = isSelected || isPinned ? '#7bb7ff' : nameColor;
+    ctx.fillText(name, creature.x, creature.y + offsetY);
     ctx.restore();
   }
 
