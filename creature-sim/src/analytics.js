@@ -5,6 +5,7 @@ export class AnalyticsTracker {
     this.sampleInterval = sampleInterval;
     this._accum = 0;
     this.version = 0;
+    this._cachedData = null; // Cache getData() results
   }
 
   update(world, dt) {
@@ -52,11 +53,17 @@ export class AnalyticsTracker {
     this.samples.push(sample);
     if (this.samples.length > this.maxSamples) this.samples.shift();
     this.version += 1;
+    this._cachedData = null; // Invalidate cache
   }
 
   getData() {
+    // Cache the result to avoid recreating arrays when version hasn't changed
+    if (this._cachedData && this._cachedData.version === this.version) {
+      return this._cachedData;
+    }
+    
     const times = this.samples.map(s => s.t);
-    return {
+    this._cachedData = {
       version: this.version,
       time: times,
       population: this.samples.map(s => s.pop),
@@ -71,6 +78,7 @@ export class AnalyticsTracker {
       food: this.samples.map(s => s.food),
       predatorRatio: this.samples.map(s => s.pop ? s.pred / s.pop : 0)
     };
+    return this._cachedData;
   }
 
   snapshot(extra={}) {

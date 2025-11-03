@@ -6,6 +6,8 @@ export class Renderer {
     this.camera = camera;
     this.enableTrails = true;
     this.background = '#0b0c10';
+    // Cache lineage computation
+    this._lineageCache = { rootId: null, set: null, frame: 0 };
   }
 
   clear(width, height) {
@@ -27,7 +29,19 @@ export class Renderer {
     ctx.translate(-camera.x, -camera.y);
 
     this.drawFood(world.food);
-    this.drawCreatures(world.creatures, { selectedId, pinnedId, lineageSet: lineageRootId ? world.descendantsOf(lineageRootId) : null });
+    
+    // Cache lineage descendants to avoid expensive BFS every frame
+    let lineageSet = null;
+    if (lineageRootId) {
+      if (this._lineageCache.rootId === lineageRootId && this._lineageCache.frame === world.t) {
+        lineageSet = this._lineageCache.set;
+      } else {
+        lineageSet = world.descendantsOf(lineageRootId);
+        this._lineageCache = { rootId: lineageRootId, set: lineageSet, frame: world.t };
+      }
+    }
+    
+    this.drawCreatures(world.creatures, { selectedId, pinnedId, lineageSet });
 
     ctx.restore();
   }

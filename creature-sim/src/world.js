@@ -11,21 +11,28 @@ class ScalarField {
     this.decay = decay;
     this.diffuse = diffuse;
     this.grid = new Float32Array(this.w*this.h);
+    this.nextGrid = new Float32Array(this.w*this.h); // Double buffer to avoid allocation
   }
   idx(x,y) { return (y*this.w + x); }
   inb(x,y){ return x>=0 && y>=0 && x<this.w && y<this.h; }
   get(x,y){ return this.inb(x,y) ? this.grid[this.idx(x,y)] : 0; }
   add(x,y,val){ if (this.inb(x,y)) this.grid[this.idx(x,y)] += val; }
   step() {
-    const next = new Float32Array(this.grid.length);
+    // Use double buffering - swap instead of allocate
+    const diffuse025 = this.diffuse * 0.25;
+    const oneMinusDiffuse = 1 - this.diffuse;
+    
     for (let y=0;y<this.h;y++){
       for (let x=0;x<this.w;x++){
-        let s = this.get(x,y)*(1-this.diffuse);
-        s += this.diffuse*0.25*(this.get(x+1,y)+this.get(x-1,y)+this.get(x,y+1)+this.get(x,y-1));
-        next[this.idx(x,y)] = s * this.decay;
+        let s = this.get(x,y) * oneMinusDiffuse;
+        s += diffuse025 * (this.get(x+1,y)+this.get(x-1,y)+this.get(x,y+1)+this.get(x,y-1));
+        this.nextGrid[this.idx(x,y)] = s * this.decay;
       }
     }
-    this.grid = next;
+    // Swap buffers instead of creating new array
+    const temp = this.grid;
+    this.grid = this.nextGrid;
+    this.nextGrid = temp;
   }
 }
 
@@ -116,12 +123,17 @@ export class World {
   tryEatFoodAt(x,y,reach=8) {
     this.ensureSpatial();
     const reach2 = (reach*1.1)*(reach*1.1);
-    for (let i=this.food.length-1; i>=0; i--) {
-      const f = this.food[i];
+    // Use spatial grid for faster lookup instead of iterating all food
+    const candidates = this.foodGrid.nearby(x, y, reach*1.1);
+    for (const f of candidates) {
       if (dist2(f.x, f.y, x, y) <= reach2) {
-        this.food.splice(i,1);
-        this.gridDirty = true;
-        return true;
+        // Remove from main array
+        const idx = this.food.indexOf(f);
+        if (idx !== -1) {
+          this.food.splice(idx, 1);
+          this.gridDirty = true;
+          return true;
+        }
       }
     }
     return false;
@@ -202,8 +214,9 @@ export class World {
   descendantsOf(rootId){
     const out=new Set([rootId]);
     const q=[rootId];
-    while(q.length){
-      const id=q.shift();
+    let qIndex = 0; // Use index instead of shift() for O(1) dequeue
+    while(qIndex < q.length){
+      const id = q[qIndex++];
       const kids=this.childrenOf.get(id);
       if (!kids) continue;
       for (const k of kids){ if (!out.has(k)){ out.add(k); q.push(k); } }
@@ -233,11 +246,12 @@ export class World {
     if (!rootId) return null;
     const visited = new Set([rootId]);
     const queue = [{ id: rootId, depth: 0 }];
+    let qIndex = 0; // Use index instead of shift() for O(1) dequeue
     const levels = [];
     let aliveDesc = 0;
 
-    while (queue.length) {
-      const { id, depth } = queue.shift();
+    while (qIndex < queue.length) {
+      const { id, depth } = queue[qIndex++];
       if (depth > maxDepth) continue;
       if (!levels[depth]) levels[depth] = [];
       const node = this.getAnyCreatureById(id);

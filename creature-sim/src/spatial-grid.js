@@ -32,11 +32,16 @@ export class SpatialGrid {
     const [gx, gy] = this._coords(x,y);
     const r = Math.ceil(radius / this.cellSize);
     const results = [];
+    // Optimize: avoid spread operator, push items directly
     for (let oy=-r; oy<=r; oy++) {
       for (let ox=-r; ox<=r; ox++) {
         const key = SpatialGrid._key(gx+ox, gy+oy);
         const cell = this.cells.get(key);
-        if (cell) results.push(...cell);
+        if (cell) {
+          for (let i = 0; i < cell.length; i++) {
+            results.push(cell[i]);
+          }
+        }
       }
     }
     return results;

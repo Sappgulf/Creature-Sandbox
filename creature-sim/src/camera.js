@@ -1,3 +1,5 @@
+import { clamp } from './utils.js';
+
 /**
  * Simple 2D camera with smooth pan/zoom controls.
  */
@@ -120,8 +122,4 @@ export class Camera {
       maxY: Math.max(halfH, this.worldHeight - halfH)
     };
   }
-}
-
-function clamp(v, lo, hi) {
-  return Math.max(lo, Math.min(hi, v));
 }

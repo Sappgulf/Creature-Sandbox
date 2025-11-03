@@ -25,37 +25,62 @@ export class Creature {
     this.trailTimer = 0;
     this.log = [];
     this.logVersion = 0;
+    
+    // Cache expensive calculations
+    this._cachedBaseBurn = null;
+    this._senseRadius2Cache = null;
+    this._halfFovRad = (genes.fov * 0.5) * Math.PI / 180; // Cache FOV in radians
   }
 
   baseBurn() {
-    const g = this.genes;
-    const moveCost = 0.35 * g.speed * g.speed;
-    const senseCost = 0.08 * (g.fov/90) + 0.06 * (g.sense/100);
-    return (0.4 * g.metabolism) + moveCost + senseCost;
+    // Cache this expensive calculation since genes don't change
+    if (this._cachedBaseBurn === null) {
+      const g = this.genes;
+      const moveCost = 0.35 * g.speed * g.speed;
+      const senseCost = 0.08 * (g.fov/90) + 0.06 * (g.sense/100);
+      this._cachedBaseBurn = (0.4 * g.metabolism) + moveCost + senseCost;
+    }
+    return this._cachedBaseBurn;
   }
 
   seek(foodList, pheromone) {
     let best = null, bestD2 = Infinity;
     const senseRadius = this.genes.sense * (0.7 + BehaviorConfig.forageWeight * 0.6);
     const senseRadius2 = senseRadius * senseRadius;
-    for (let f of foodList) {
-      const d2 = dist2(this.x,this.y,f.x,f.y);
+    
+    // Optimize: pre-compute values outside loop
+    const myX = this.x, myY = this.y, myDir = this.dir;
+    const halfFov = this._halfFovRad; // Use cached FOV
+    const forageWeight = BehaviorConfig.forageWeight;
+    
+    for (let i = 0; i < foodList.length; i++) {
+      const f = foodList[i];
+      const dx = f.x - myX, dy = f.y - myY;
+      const d2 = dx*dx + dy*dy; // Inline dist2 to avoid function call
       if (d2 > senseRadius2) continue;
-      const ang = Math.atan2(f.y - this.y, f.x - this.x);
-      let delta = Math.atan2(Math.sin(ang - this.dir), Math.cos(ang - this.dir));
-      if (Math.abs(delta) * 180/Math.PI > this.genes.fov*0.5) continue;
-      const bias = BehaviorConfig.forageWeight > 0 ? d2 / BehaviorConfig.forageWeight : d2;
+      
+      const ang = Math.atan2(dy, dx);
+      const delta = Math.atan2(Math.sin(ang - myDir), Math.cos(ang - myDir));
+      if (Math.abs(delta) > halfFov) continue;
+      
+      const bias = forageWeight > 0 ? d2 / forageWeight : d2;
       if (bias < bestD2) { bestD2 = bias; best = f; }
     }
+    
     if (!best && pheromone) {
-      const gx = Math.floor(this.x/pheromone.cell);
-      const gy = Math.floor(this.y/pheromone.cell);
+      const gx = Math.floor(myX/pheromone.cell);
+      const gy = Math.floor(myY/pheromone.cell);
       const here = pheromone.get(gx,gy);
       let maxVal = here, target = null;
-      for (let oy=-1; oy<=1; oy++) for (let ox=-1; ox<=1; ox++) {
-        if (!ox && !oy) continue;
-        const v = pheromone.get(gx+ox, gy+oy);
-        if (v > maxVal) { maxVal = v; target = {x:(gx+ox+0.5)*pheromone.cell, y:(gy+oy+0.5)*pheromone.cell}; }
+      for (let oy=-1; oy<=1; oy++) {
+        for (let ox=-1; ox<=1; ox++) {
+          if (!ox && !oy) continue;
+          const v = pheromone.get(gx+ox, gy+oy);
+          if (v > maxVal) { 
+            maxVal = v; 
+            target = {x:(gx+ox+0.5)*pheromone.cell, y:(gy+oy+0.5)*pheromone.cell}; 
+          }
+        }
       }
       best = target || null;
     }

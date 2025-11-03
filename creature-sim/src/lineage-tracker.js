@@ -8,6 +8,8 @@ export class LineageTracker {
     this.names = new Map();
     this.events = [];
     this.heroGenerations = new Map();
+    this.rootCache = new Map(); // Cache root lookups
+    this.generationCache = new Map(); // Cache generation depths
   }
 
   ensureName(rootId) {
@@ -40,25 +42,76 @@ export class LineageTracker {
   }
 
   getRoot(world, id) {
+    // Check cache first
+    if (this.rootCache.has(id)) {
+      return this.rootCache.get(id);
+    }
+    
     let current = world.getAnyCreatureById(id);
     let last = current;
+    const path = [id]; // Track path to cache all intermediate nodes
+    
     while (current && current.parentId) {
+      // Check if we've already cached the parent's root
+      if (this.rootCache.has(current.parentId)) {
+        const rootId = this.rootCache.get(current.parentId);
+        // Cache all nodes in path
+        for (const nodeId of path) {
+          this.rootCache.set(nodeId, rootId);
+        }
+        return rootId;
+      }
+      
+      path.push(current.parentId);
       last = world.getAnyCreatureById(current.parentId) || last;
       current = last;
       if (!current) break;
-      if (!current.parentId) return current.id;
+      if (!current.parentId) {
+        const rootId = current.id;
+        // Cache all nodes in path
+        for (const nodeId of path) {
+          this.rootCache.set(nodeId, rootId);
+        }
+        return rootId;
+      }
     }
-    return last?.id ?? id;
+    
+    const rootId = last?.id ?? id;
+    // Cache all nodes in path
+    for (const nodeId of path) {
+      this.rootCache.set(nodeId, rootId);
+    }
+    return rootId;
   }
 
   generation(world, id) {
+    // Check cache first
+    if (this.generationCache.has(id)) {
+      return this.generationCache.get(id);
+    }
+    
     let depth = 0;
     let node = world.getAnyCreatureById(id);
+    const path = [id];
+    
     while (node && node.parentId) {
+      // Check if parent's generation is cached
+      if (this.generationCache.has(node.parentId)) {
+        depth = this.generationCache.get(node.parentId) + 1;
+        break;
+      }
+      path.push(node.parentId);
       node = world.getAnyCreatureById(node.parentId);
-      depth++;
+      if (node && node.parentId) depth++;
+      else { depth++; break; }
     }
-    return depth;
+    
+    // Cache generation for all nodes in path (backfill)
+    for (let i = path.length - 1; i >= 0; i--) {
+      this.generationCache.set(path[i], depth - i);
+    }
+    
+    return this.generationCache.get(id) || depth;
   }
 
   trim(limit=12) {

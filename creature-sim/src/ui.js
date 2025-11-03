@@ -8,7 +8,11 @@ export function bindUI({ onPause, onStep, onFood, onHerb, onPred }) {
 
 export function renderStats(el, world, fps, extra={}) {
   const n = world.creatures.length;
-  const preds = world.creatures.filter(c=>c.genes.predator).length;
+  // Optimize: avoid filter() which creates new array, use simple loop
+  let preds = 0;
+  for (let i = 0; i < n; i++) {
+    if (world.creatures[i].genes.predator) preds++;
+  }
   const herbs = n - preds;
   const parts = [
     `Pop: ${n} (H:${herbs} P:${preds})`,
@@ -219,9 +223,19 @@ function drawChart(ctx, lines, { min=null, max=null } = {}) {
   ctx.fillStyle = '#11131d';
   ctx.fillRect(0,0,w,h);
 
-  const allValues = lines.flatMap(l => l.series);
-  const minVal = min != null ? min : Math.min(...allValues);
-  const maxVal = max != null ? max : Math.max(...allValues);
+  // Optimize: avoid flatMap and spread operator for better performance
+  let minVal = min != null ? min : Infinity;
+  let maxVal = max != null ? max : -Infinity;
+  if (min == null || max == null) {
+    for (let i = 0; i < lines.length; i++) {
+      const series = lines[i].series;
+      for (let j = 0; j < series.length; j++) {
+        const val = series[j];
+        if (min == null && val < minVal) minVal = val;
+        if (max == null && val > maxVal) maxVal = val;
+      }
+    }
+  }
   const range = (maxVal - minVal) || 1;
 
   ctx.strokeStyle = 'rgba(255,255,255,0.08)';
