@@ -136,6 +136,10 @@ export class Renderer {
     const ctx = this.ctx;
     const { worldTime = 0 } = opts;
     
+    // Reset performance metrics
+    this.renderedCount = 0;
+    this.culledCount = 0;
+    
     // Compute clusters if clustering is enabled
     let clusterMap = null;
     if (this.enableClustering) {
@@ -157,9 +161,12 @@ export class Renderer {
       const isPinned = opts.pinnedId === c.id;
       if (!isSelected && !isPinned) {
         if (c.x < bounds.x1 || c.x > bounds.x2 || c.y < bounds.y1 || c.y > bounds.y2) {
+          this.culledCount++;
           continue; // Culled!
         }
       }
+      
+      this.renderedCount++;
       
       const inLineage = opts.lineageSet ? opts.lineageSet.has(c.id) : false;
       const alpha = clamp(c.energy / 40, 0.25, 1);

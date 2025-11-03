@@ -27,7 +27,82 @@
     <button id="btn-spawn-food">+ Food</button>
     <button id="btn-spawn-herb">+ Herbivore</button>
     <button id="btn-spawn-pred">+ Predator</button>
-    <span id="stats"></span>
+    <div id="stats"></div>
+  </div>
+
+  <!-- Feature Toggle Panel -->
+  <div id="features-panel">
+    <div class="panel-header">
+      <span class="panel-title">🎨 Features</span>
+      <button id="btn-toggle-features" class="chip ghost" title="Toggle panel">▼</button>
+    </div>
+    <div id="features-content" class="features-grid">
+      <!-- Basic Features -->
+      <div class="feature-group">
+        <div class="group-label">Basic</div>
+        <button class="feature-toggle" data-feature="vision" title="V key">
+          <span class="feature-icon">👁️</span>
+          <span class="feature-name">Vision</span>
+        </button>
+        <button class="feature-toggle" data-feature="clustering" title="C key">
+          <span class="feature-icon">🧬</span>
+          <span class="feature-name">Genes</span>
+        </button>
+        <button class="feature-toggle" data-feature="territories" title="T key">
+          <span class="feature-icon">🏛️</span>
+          <span class="feature-name">Territory</span>
+        </button>
+        <button class="feature-toggle" data-feature="memory" title="M key">
+          <span class="feature-icon">🧠</span>
+          <span class="feature-name">Memory</span>
+        </button>
+        <button class="feature-toggle" data-feature="social" title="B key">
+          <span class="feature-icon">👥</span>
+          <span class="feature-name">Social</span>
+        </button>
+        <button class="feature-toggle" data-feature="migration" title="G key">
+          <span class="feature-icon">🦋</span>
+          <span class="feature-name">Migrate</span>
+        </button>
+      </div>
+      
+      <!-- Advanced Features -->
+      <div class="feature-group">
+        <div class="group-label">Advanced</div>
+        <button class="feature-toggle" data-feature="emotions" title="1 key">
+          <span class="feature-icon">😨</span>
+          <span class="feature-name">Emotions</span>
+        </button>
+        <button class="feature-toggle" data-feature="sensory" title="2 key">
+          <span class="feature-icon">👂</span>
+          <span class="feature-name">Senses</span>
+        </button>
+        <button class="feature-toggle" data-feature="intelligence" title="3 key">
+          <span class="feature-icon">💡</span>
+          <span class="feature-name">Smart</span>
+        </button>
+        <button class="feature-toggle" data-feature="mating" title="4 key">
+          <span class="feature-icon">💗</span>
+          <span class="feature-name">Mating</span>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Performance Metrics -->
+    <div id="perf-metrics">
+      <div class="metric">
+        <span class="metric-label">Rendered</span>
+        <span id="metric-rendered" class="metric-value">0</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Culled</span>
+        <span id="metric-culled" class="metric-value">0</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Draw Calls</span>
+        <span id="metric-draws" class="metric-value">0</span>
+      </div>
+    </div>
   </div>
 
   <div id="inspector">

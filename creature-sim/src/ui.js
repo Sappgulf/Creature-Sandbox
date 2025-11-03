@@ -20,29 +20,31 @@ export function renderStats(el, world, fps, extra={}) {
   }
   const herbs = n - preds;
   const avgHealth = sumMaxHealth ? sumHealth / sumMaxHealth : 0;
-  const parts = [
-    `Pop: ${n} (H:${herbs} P:${preds})`,
-    `Food: ${world.food.length}`,
-    `t=${world.t.toFixed(1)}s`,
-    `${fps.toFixed(0)} FPS`
+  
+  // Build stats with HTML for better formatting
+  const statParts = [
+    `<span>🌍 Pop: ${n}</span>`,
+    `<span>🌿 ${herbs}</span>`,
+    `<span>🦁 ${preds}</span>`,
+    `<span>🍎 ${world.food.length}</span>`,
+    `<span>⏱️ ${world.t.toFixed(1)}s</span>`,
+    `<span>💚 ${(avgHealth * 100).toFixed(0)}%</span>`,
+    `<span>📊 ${fps.toFixed(0)} FPS</span>`
   ];
+  
   const events = typeof world.getActiveEvents === 'function' ? world.getActiveEvents() : [];
   if (events.length) {
     const eventSummary = events
       .map(evt => `${evt.name} ${Math.ceil(evt.remaining)}s`)
       .join(' · ');
-    parts.push(`Env: ${eventSummary}`);
+    statParts.push(`<span>🌪️ ${eventSummary}</span>`);
   }
-  parts.push(`HP:${(avgHealth * 100).toFixed(0)}%`);
   
-  // Show active visualization modes
-  if (extra.visionEnabled) parts.push('👁️');
-  if (extra.clusteringEnabled) parts.push('🧬');
+  if (extra.tool) statParts.push(`<span>🛠️ ${String(extra.tool).toUpperCase()}</span>`);
+  if (extra.fastForward && extra.fastForward !== 1) statParts.push(`<span>⚡ ×${extra.fastForward}</span>`);
+  if (extra.paused) statParts.push(`<span style="color:#f48b8b;">⏸ PAUSED</span>`);
   
-  if (extra.tool) parts.push(`Tool: ${String(extra.tool).toUpperCase()}`);
-  if (extra.fastForward && extra.fastForward !== 1) parts.push(`×${extra.fastForward}`);
-  if (extra.paused) parts.push('PAUSED');
-  el.textContent = parts.join('  ');
+  el.innerHTML = statParts.join('');
 }
 
 export function renderInspector(model={}, handlers={}) {

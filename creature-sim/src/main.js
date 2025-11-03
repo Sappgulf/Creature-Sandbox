@@ -66,6 +66,17 @@ const restSlider = document.getElementById('slider-rest');
 const fixedDt = 1/60;
 const MAX_STEPS = 6;
 
+// Feature toggle UI
+const featureToggles = document.querySelectorAll('.feature-toggle');
+const btnToggleFeatures = document.getElementById('btn-toggle-features');
+const featuresPanel = document.getElementById('features-panel');
+const metricRendered = document.getElementById('metric-rendered');
+const metricCulled = document.getElementById('metric-culled');
+const metricDraws = document.getElementById('metric-draws');
+
+let renderedCount = 0;
+let culledCount = 0;
+
 bindUI({
   onPause: togglePause,
   onStep: stepOnce,
@@ -98,6 +109,70 @@ forageSlider?.addEventListener('input', handleBehaviorChange);
 wanderSlider?.addEventListener('input', handleBehaviorChange);
 restSlider?.addEventListener('input', handleBehaviorChange);
 handleBehaviorChange();
+
+// Setup feature toggle buttons
+featureToggles.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const feature = btn.dataset.feature;
+    toggleFeature(feature, btn);
+  });
+});
+
+// Setup panel collapse
+btnToggleFeatures?.addEventListener('click', () => {
+  featuresPanel?.classList.toggle('collapsed');
+});
+
+function toggleFeature(feature, btn) {
+  const isActive = btn.classList.toggle('active');
+  
+  switch(feature) {
+    case 'vision':
+      renderer.enableVision = isActive;
+      break;
+    case 'clustering':
+      renderer.enableClustering = isActive;
+      break;
+    case 'territories':
+      renderer.enableTerritories = isActive;
+      break;
+    case 'memory':
+      renderer.enableMemory = isActive;
+      break;
+    case 'social':
+      renderer.enableSocialBonds = isActive;
+      break;
+    case 'migration':
+      renderer.enableMigration = isActive;
+      break;
+    case 'emotions':
+      renderer.enableEmotions = isActive;
+      break;
+    case 'sensory':
+      renderer.enableSensoryViz = isActive;
+      break;
+    case 'intelligence':
+      renderer.enableIntelligence = isActive;
+      break;
+    case 'mating':
+      renderer.enableMating = isActive;
+      break;
+  }
+  
+  console.log(`%c[${feature.toUpperCase()}] ${isActive ? 'ENABLED ✓' : 'DISABLED'}`, 
+    `color: ${isActive ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
+}
+
+function syncFeatureButton(feature, isActive) {
+  const btn = document.querySelector(`.feature-toggle[data-feature="${feature}"]`);
+  if (btn) {
+    if (isActive) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  }
+}
 
 canvas.addEventListener('wheel', (e)=>{
   e.preventDefault();
@@ -353,6 +428,12 @@ function loop(now) {
     visionEnabled: renderer.enableVision,
     clusteringEnabled: renderer.enableClustering
   });
+  
+  // Update performance metrics
+  if (metricRendered) metricRendered.textContent = renderer.renderedCount || 0;
+  if (metricCulled) metricCulled.textContent = renderer.culledCount || 0;
+  if (metricDraws) metricDraws.textContent = ((renderer.renderedCount || 0) + world.food.length);
+  
   updateInspector(false);
   updateAnalyticsCharts();
 
