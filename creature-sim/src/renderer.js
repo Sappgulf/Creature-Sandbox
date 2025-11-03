@@ -19,6 +19,9 @@ export class Renderer {
     // Cache lineage computation
     this._lineageCache = { rootId: null, set: null, frame: 0 };
     this._clusterCache = { clusters: null, frame: -1 };
+    
+    // OPTIMIZATION: Add frustum culling bounds
+    this._viewBounds = { x1: 0, y1: 0, x2: 0, y2: 0 };
   }
 
   clear(width, height) {
@@ -38,6 +41,13 @@ export class Renderer {
     ctx.translate(opts.viewportWidth/2, opts.viewportHeight/2);
     ctx.scale(camera.zoom, camera.zoom);
     ctx.translate(-camera.x, -camera.y);
+    
+    // OPTIMIZATION: Calculate view frustum for culling
+    const margin = 100; // Extra margin for smooth culling
+    this._viewBounds.x1 = camera.x - opts.viewportWidth / (2 * camera.zoom) - margin;
+    this._viewBounds.y1 = camera.y - opts.viewportHeight / (2 * camera.zoom) - margin;
+    this._viewBounds.x2 = camera.x + opts.viewportWidth / (2 * camera.zoom) + margin;
+    this._viewBounds.y2 = camera.y + opts.viewportHeight / (2 * camera.zoom) + margin;
 
     // Draw biomes
     this.drawBiomes(world);
@@ -108,13 +118,18 @@ export class Renderer {
   }
 
   drawFood(food) {
+    if (food.length === 0) return;
     const ctx = this.ctx;
+    
+    // OPTIMIZATION: Batch all food into single path
     ctx.fillStyle = 'rgba(126,210,120,0.85)';
-    for (let f of food) {
-      ctx.beginPath();
+    ctx.beginPath();
+    for (let i = 0; i < food.length; i++) {
+      const f = food[i];
+      ctx.moveTo(f.x + f.r, f.y);
       ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
-      ctx.fill();
     }
+    ctx.fill();
   }
 
   drawCreatures(creatures, opts) {
@@ -132,19 +147,31 @@ export class Renderer {
       clusterMap = this._clusterCache.clusters;
     }
     
-    for (let c of creatures) {
-      const inLineage = opts.lineageSet ? opts.lineageSet.has(c.id) : false;
+    // OPTIMIZATION: Frustum cull creatures outside view
+    const bounds = this._viewBounds;
+    for (let i = 0; i < creatures.length; i++) {
+      const c = creatures[i];
+      
+      // Skip creatures outside view (unless selected/pinned)
       const isSelected = opts.selectedId === c.id;
       const isPinned = opts.pinnedId === c.id;
+      if (!isSelected && !isPinned) {
+        if (c.x < bounds.x1 || c.x > bounds.x2 || c.y < bounds.y1 || c.y > bounds.y2) {
+          continue; // Culled!
+        }
+      }
+      
+      const inLineage = opts.lineageSet ? opts.lineageSet.has(c.id) : false;
       const alpha = clamp(c.energy / 40, 0.25, 1);
-      ctx.save();
-      ctx.globalAlpha = alpha;
+      
+      // OPTIMIZATION: Only save/restore when alpha changes
+      if (alpha < 0.99) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+      }
       
       // Override hue if clustering is enabled
       const clusterHue = clusterMap ? clusterMap.get(c.id) : null;
-      
-      // Apply clustering colors to ALL creatures (not just #1)
-      const debugClusterHue = clusterHue;
       
       c.draw(ctx, {
         isSelected,
@@ -152,9 +179,12 @@ export class Renderer {
         inLineage,
         showTrail: this.enableTrails,
         showVision: this.enableVision,
-        clusterHue: debugClusterHue
+        clusterHue
       });
-      ctx.restore();
+      
+      if (alpha < 0.99) {
+        ctx.restore();
+      }
     }
   }
 

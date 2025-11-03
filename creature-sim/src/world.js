@@ -559,8 +559,24 @@ export class World {
       this.addFood(spot.x, spot.y, 1.2);
     }
     this.pheromone.step();
-    for (let c of this.creatures) c.update(dt, this);
-    this.creatures = this.creatures.filter(c=>c.alive);
+    
+    // OPTIMIZATION: Update creatures and remove dead ones in single pass
+    let writeIndex = 0;
+    for (let i = 0; i < this.creatures.length; i++) {
+      const c = this.creatures[i];
+      c.update(dt, this);
+      if (c.alive) {
+        if (writeIndex !== i) {
+          this.creatures[writeIndex] = c;
+        }
+        writeIndex++;
+      }
+    }
+    // Trim array to new length (avoids filter allocation)
+    if (writeIndex < this.creatures.length) {
+      this.creatures.length = writeIndex;
+    }
+    
     this.updateLineagePulse(dt);
     this.updateEcoStats();
     this.gridDirty = true;
