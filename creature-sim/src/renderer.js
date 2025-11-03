@@ -34,6 +34,22 @@ export class Renderer {
     // Draw biomes
     this.drawBiomes(world);
     
+    // DEBUG: Draw obvious visual indicators
+    if (this.enableClustering) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(255, 0, 255, 0.8)';
+      ctx.font = 'bold 48px sans-serif';
+      ctx.fillText('CLUSTERING ON', 50, 100);
+      ctx.restore();
+    }
+    if (this.enableVision) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 255, 255, 0.8)';
+      ctx.font = 'bold 48px sans-serif';
+      ctx.fillText('VISION ON', 50, this.enableClustering ? 160 : 100);
+      ctx.restore();
+    }
+    
     this.drawFood(world.food);
     
     // Cache lineage descendants to avoid expensive BFS every frame
