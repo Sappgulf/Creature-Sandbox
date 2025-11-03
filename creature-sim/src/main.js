@@ -24,6 +24,9 @@ let paintingFood = false;
 let didPaint = false;
 
 const statsEl = document.getElementById('stats');
+const inspectorEl = document.getElementById('inspector');
+const showInspectorBtn = document.getElementById('btn-show-inspector');
+const closeInspectorBtn = document.getElementById('btn-close-inspector');
 const chartCtx = {
   pop: document.getElementById('chart-pop')?.getContext('2d') ?? null,
   speed: document.getElementById('chart-speed')?.getContext('2d') ?? null,
@@ -39,6 +42,7 @@ const inspectorState = {
   badgesKey: ''
 };
 let analyticsVersion = -1;
+let inspectorVisible = true;
 
 bindUI({
   onPause: () => { paused = !paused; },
@@ -52,6 +56,8 @@ bindUI({
 
 const exportBtn = document.getElementById('btn-export');
 if (exportBtn) exportBtn.addEventListener('click', exportSnapshot);
+
+showInspectorBtn?.addEventListener('click', ()=> setInspectorVisible(true));
 
 function loop(now) {
   const dt = Math.min(0.05, (now - last)/1000);
@@ -118,6 +124,10 @@ canvas.addEventListener('click', (e)=>{
 
 window.addEventListener('keydown', (e)=>{
   if (e.key === 'Escape') {
+    if (!inspectorVisible) {
+      setInspectorVisible(true);
+      return;
+    }
     if (lineageRootId != null) {
       lineageRootId = null;
     } else if (pinnedId != null) {
@@ -126,6 +136,11 @@ window.addEventListener('keydown', (e)=>{
       selectedId = null;
     }
     updateInspector(true);
+    return;
+  }
+  if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 'i' || e.key === 'I')) {
+    setInspectorVisible(!inspectorVisible);
+    return;
   }
 });
 
@@ -165,7 +180,8 @@ function updateInspector(force) {
     onTogglePin: () => togglePin(creature),
     onSetRoot: () => toggleRoot(creature),
     onFocusParent: (id) => selectCreature(id),
-    onInspectId: (id) => selectCreature(id)
+    onInspectId: (id) => selectCreature(id),
+    onClose: () => setInspectorVisible(false)
   });
 
   inspectorState.creatureId = creature ? creature.id : null;
@@ -200,6 +216,15 @@ function selectCreature(id) {
   if (id == null) return;
   selectedId = id;
   updateInspector(true);
+}
+
+function setInspectorVisible(visible) {
+  inspectorVisible = visible;
+  if (inspectorEl) inspectorEl.classList.toggle('hidden', !visible);
+  if (showInspectorBtn) showInspectorBtn.classList.toggle('hidden', visible);
+  if (visible) {
+    updateInspector(true);
+  }
 }
 
 function scatterFood(x, y, count=10) {

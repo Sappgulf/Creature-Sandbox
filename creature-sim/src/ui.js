@@ -19,6 +19,7 @@ export function renderInspector(model={}, handlers={}) {
   const activityFeedEl = document.getElementById('activity-feed');
   const pinBtn = document.getElementById('btn-pin');
   const rootBtn = document.getElementById('btn-root');
+  const closeBtn = document.getElementById('btn-close-inspector');
 
   if (!body || !lineageSummaryEl || !activityFeedEl) return;
 
@@ -59,7 +60,7 @@ export function renderInspector(model={}, handlers={}) {
     } else {
       pinBtn.disabled = false;
       pinBtn.classList.toggle('active', !!model.pinned);
-      pinBtn.textContent = model.pinned ? 'Pinned' : 'Pin';
+      pinBtn.textContent = model.pinned ? 'Unpin' : 'Pin';
       pinBtn.onclick = handlers.onTogglePin ?? null;
     }
   }
@@ -73,9 +74,13 @@ export function renderInspector(model={}, handlers={}) {
     } else {
       rootBtn.disabled = false;
       rootBtn.classList.toggle('active', !!model.isRoot);
-      rootBtn.textContent = model.isRoot ? 'Root' : 'Set Root';
+      rootBtn.textContent = model.isRoot ? 'Clear Root' : 'Set Root';
       rootBtn.onclick = handlers.onSetRoot ?? null;
     }
+  }
+
+  if (closeBtn) {
+    closeBtn.onclick = handlers.onClose ?? null;
   }
 
   if (creature && creature.parentId) {
