@@ -16,13 +16,27 @@ export class Renderer {
     this.enableIntelligence = false; // Advanced Feature 3
     this.enableMating = false; // Advanced Feature 4
     this.enableMiniMap = true; // Mini-map overview
+    this.enableAtmosphere = true; // Atmospheric rendering (fog, lighting)
+    this.enableWeather = true; // Weather effects
+    this.enableDayNight = true; // Day/night cycle
     this.background = '#0b0c10';
+    
+    // Visual enhancement settings
+    this.timeOfDay = 0; // 0-1 (0=midnight, 0.5=noon)
+    this.dayNightSpeed = 0.0002; // Slow cycle
+    this.weatherIntensity = 0;
+    this.weatherType = null;
+    
     // Cache lineage computation
     this._lineageCache = { rootId: null, set: null, frame: 0 };
     this._clusterCache = { clusters: null, frame: -1 };
     
     // OPTIMIZATION: Add frustum culling bounds
     this._viewBounds = { x1: 0, y1: 0, x2: 0, y2: 0 };
+    
+    // Particle system for atmospheric effects
+    this.particles = [];
+    this.maxParticles = 200;
   }
 
   clear(width, height) {
@@ -172,31 +186,51 @@ export class Renderer {
   }
 
   drawBiomes(world) {
-    // NEW: Draw organic Perlin-noise based biomes
+    // REDESIGNED: Subtle atmospheric biome rendering (player-focused!)
     const ctx = this.ctx;
     const bounds = this._viewBounds;
-    const sampleSize = Math.max(20, 100 / this.camera.zoom); // Adaptive resolution
+    const sampleSize = Math.max(30, 120 / this.camera.zoom); // Larger samples = less blocky
     
-    // Only render biomes in view
+    // Base background (subtle gradient)
+    const bgGradient = ctx.createLinearGradient(0, 0, 0, world.height);
+    bgGradient.addColorStop(0, '#0d1117');
+    bgGradient.addColorStop(0.5, '#0e1419');
+    bgGradient.addColorStop(1, '#0b0d11');
+    ctx.fillStyle = bgGradient;
+    ctx.fillRect(0, 0, world.width, world.height);
+    
+    // SUBTLE biome tinting (like atmospheric fog, not solid colors!)
+    ctx.globalCompositeOperation = 'overlay'; // Blend mode for subtle effect
+    
     for (let y = Math.max(0, bounds.y1); y < Math.min(world.height, bounds.y2); y += sampleSize) {
       for (let x = Math.max(0, bounds.x1); x < Math.min(world.width, bounds.x2); x += sampleSize) {
         const biome = world.getBiomeAt(x, y);
         
-        // Base color with slight variation
-        const moistureVariation = (biome.moisture - 0.5) * 0.15;
-        const tempVariation = (biome.temperature - 0.5) * 0.1;
+        // Very subtle color tint based on biome (like ambient lighting)
+        const tintColor = this._getBiomeTint(biome.type);
+        ctx.fillStyle = tintColor;
         
-        // Draw biome tile with gradient
-        ctx.fillStyle = biome.color;
-        ctx.globalAlpha = 0.6 + moistureVariation;
+        // Low opacity - just a hint of color
+        const baseAlpha = 0.08;
+        const moistureInfluence = biome.moisture * 0.03;
+        ctx.globalAlpha = baseAlpha + moistureInfluence;
+        
+        // Draw with soft edges (larger tiles, subtle effect)
         ctx.fillRect(x, y, sampleSize + 1, sampleSize + 1);
-        ctx.globalAlpha = 1;
       }
     }
     
-    // Draw decorations (trees, rocks, etc)
-    if (world.decorations && this.camera.zoom > 0.3) {
-      for (const dec of world.decorations) {
+    ctx.globalCompositeOperation = 'source-over'; // Reset blend mode
+    ctx.globalAlpha = 1;
+    
+    // Draw decorations with better visibility (less dense)
+    if (world.decorations && this.camera.zoom > 0.4) {
+      // Only draw subset of decorations based on zoom (avoid clutter)
+      const skipFactor = Math.max(1, Math.floor(5 / this.camera.zoom));
+      
+      for (let i = 0; i < world.decorations.length; i += skipFactor) {
+        const dec = world.decorations[i];
+        
         // Frustum cull decorations
         if (dec.x < bounds.x1 || dec.x > bounds.x2 || dec.y < bounds.y1 || dec.y > bounds.y2) {
           continue;
@@ -205,6 +239,49 @@ export class Renderer {
         this._drawDecoration(dec);
       }
     }
+    
+    // Day/night lighting overlay
+    if (this.enableDayNight) {
+      this._drawDayNightOverlay(world);
+    }
+    
+    // Weather effects
+    if (this.enableWeather && this.weatherType) {
+      this._drawWeatherEffects(world);
+    }
+  }
+  
+  _getBiomeTint(biomeType) {
+    // Subtle color tints (not overpowering!)
+    switch(biomeType) {
+      case 'forest': return 'rgba(34, 139, 34, 0.6)'; // Gentle green
+      case 'desert': return 'rgba(218, 165, 32, 0.5)'; // Warm gold
+      case 'mountain': return 'rgba(105, 105, 105, 0.4)'; // Cool gray
+      case 'wetland': return 'rgba(64, 224, 208, 0.5)'; // Cyan tint
+      case 'meadow': return 'rgba(154, 205, 50, 0.6)'; // Yellow-green
+      case 'grassland':
+      default: return 'rgba(107, 142, 35, 0.5)'; // Olive
+    }
+  }
+  
+  _drawDayNightOverlay(world) {
+    const ctx = this.ctx;
+    
+    // Update time of day
+    this.timeOfDay = (this.timeOfDay + this.dayNightSpeed) % 1.0;
+    
+    // Calculate darkness (0=bright day, 1=dark night)
+    const darkness = (Math.cos(this.timeOfDay * Math.PI * 2) * -0.5 + 0.5) * 0.5;
+    
+    if (darkness > 0.05) {
+      ctx.fillStyle = `rgba(0, 10, 30, ${darkness})`;
+      ctx.fillRect(0, 0, world.width, world.height);
+    }
+  }
+  
+  _drawWeatherEffects(world) {
+    // Placeholder for weather particles (rain, snow, dust)
+    // Will be enhanced with particle system
   }
 
   drawFood(food) {
@@ -267,6 +344,9 @@ export class Renderer {
         ctx.globalAlpha = alpha;
       }
       
+      // IMPROVED VISIBILITY: Draw shadow first (depth & contrast)
+      this._drawCreatureShadow(c);
+      
       // Override hue if clustering is enabled
       const clusterHue = clusterMap ? clusterMap.get(c.id) : null;
       
@@ -279,10 +359,56 @@ export class Renderer {
         clusterHue
       });
       
+      // IMPROVED VISIBILITY: Subtle outline/glow for better contrast
+      if (this.camera.zoom > 0.5) {
+        this._drawCreatureOutline(c, isSelected);
+      }
+      
       if (alpha < 0.99) {
         ctx.restore();
       }
     }
+  }
+  
+  _drawCreatureShadow(creature) {
+    // Soft drop shadow for depth (makes creatures pop!)
+    const ctx = this.ctx;
+    const r = creature.genes.size;
+    
+    ctx.save();
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    
+    // Shadow offset (slightly down and right)
+    const offsetX = 2;
+    const offsetY = 3;
+    
+    ctx.beginPath();
+    ctx.ellipse(
+      creature.x + offsetX,
+      creature.y + offsetY,
+      r * 1.1,
+      r * 0.6,
+      0,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+    ctx.restore();
+  }
+  
+  _drawCreatureOutline(creature, isSelected) {
+    // Subtle outline for contrast (not too thick!)
+    const ctx = this.ctx;
+    const r = creature.genes.size;
+    
+    ctx.save();
+    ctx.strokeStyle = isSelected ? 'rgba(123, 183, 255, 0.6)' : 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = isSelected ? 2 : 1;
+    ctx.beginPath();
+    ctx.arc(creature.x, creature.y, r + 1, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   _computeClusters(creatures, k=5) {
@@ -678,22 +804,23 @@ export class Renderer {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     
-    // Mini-map dimensions (bottom-left corner)
-    const mapSize = 200;
-    const mapX = opts.viewportWidth - mapSize - 16;
-    const mapY = opts.viewportHeight - mapSize - 16;
+    // REDESIGNED: Clearer, more readable mini-map
+    const mapSize = 180;
+    const mapX = opts.viewportWidth - mapSize - 20;
+    const mapY = opts.viewportHeight - mapSize - 20;
     const scale = mapSize / Math.max(world.width, world.height);
     
-    // Background
-    ctx.fillStyle = 'rgba(10, 12, 16, 0.9)';
+    // Background (darker, less distracting)
+    ctx.fillStyle = 'rgba(8, 10, 14, 0.95)';
     ctx.fillRect(mapX, mapY, mapSize, mapSize);
     
-    // Draw biomes (simplified)
-    const sampleSize = 50;
+    // Draw biomes (MUCH more subtle - just hints of color)
+    const sampleSize = 100; // Larger samples = less detail, easier to read
+    ctx.globalAlpha = 0.2; // Very faint biome colors
     for (let y = 0; y < world.height; y += sampleSize) {
       for (let x = 0; x < world.width; x += sampleSize) {
         const biome = world.getBiomeAt(x, y);
-        ctx.fillStyle = biome.color;
+        ctx.fillStyle = this._getBiomeTint(biome.type);
         ctx.fillRect(
           mapX + x * scale,
           mapY + y * scale,
@@ -702,22 +829,42 @@ export class Renderer {
         );
       }
     }
+    ctx.globalAlpha = 1;
     
-    // Draw creatures as tiny dots
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    // Draw creature population as HEAT MAP (more readable!)
+    const heatmapSize = 200;
+    const heatmap = new Uint8Array(heatmapSize * heatmapSize);
+    
     for (const c of world.creatures) {
-      const mx = mapX + c.x * scale;
-      const my = mapY + c.y * scale;
-      ctx.fillRect(mx, my, 2, 2);
+      const hx = Math.floor((c.x / world.width) * heatmapSize);
+      const hy = Math.floor((c.y / world.height) * heatmapSize);
+      if (hx >= 0 && hx < heatmapSize && hy >= 0 && hy < heatmapSize) {
+        heatmap[hy * heatmapSize + hx]++;
+      }
     }
     
-    // Draw camera view rectangle
+    // Render heatmap (bright spots = high population)
+    for (let hy = 0; hy < heatmapSize; hy++) {
+      for (let hx = 0; hx < heatmapSize; hx++) {
+        const count = heatmap[hy * heatmapSize + hx];
+        if (count > 0) {
+          const intensity = Math.min(count / 3, 1); // Cap intensity
+          ctx.fillStyle = `rgba(123, 183, 255, ${intensity * 0.8})`;
+          const px = mapX + (hx / heatmapSize) * mapSize;
+          const py = mapY + (hy / heatmapSize) * mapSize;
+          const size = (mapSize / heatmapSize) * 1.5;
+          ctx.fillRect(px, py, size, size);
+        }
+      }
+    }
+    
+    // Draw camera view rectangle (YOUR LOCATION)
     const viewW = opts.viewportWidth / camera.zoom;
     const viewH = opts.viewportHeight / camera.zoom;
     const viewX = camera.x - viewW / 2;
     const viewY = camera.y - viewH / 2;
     
-    ctx.strokeStyle = 'rgba(123, 183, 255, 0.8)';
+    ctx.strokeStyle = 'rgba(255, 255, 100, 0.9)'; // Yellow = more visible
     ctx.lineWidth = 2;
     ctx.strokeRect(
       mapX + viewX * scale,
@@ -726,10 +873,18 @@ export class Renderer {
       viewH * scale
     );
     
-    // Border
-    ctx.strokeStyle = 'rgba(43, 46, 65, 0.8)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(mapX, mapY, mapSize, mapSize);
+    // Border with slight glow
+    ctx.shadowColor = 'rgba(123, 183, 255, 0.3)';
+    ctx.shadowBlur = 4;
+    ctx.strokeStyle = 'rgba(123, 183, 255, 0.6)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(mapX - 1, mapY - 1, mapSize + 2, mapSize + 2);
+    ctx.shadowBlur = 0;
+    
+    // Label
+    ctx.fillStyle = 'rgba(200, 200, 220, 0.8)';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.fillText('WORLD MAP', mapX + 5, mapY - 5);
     
     ctx.restore();
   }
