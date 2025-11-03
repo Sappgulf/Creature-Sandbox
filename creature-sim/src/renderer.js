@@ -34,22 +34,6 @@ export class Renderer {
     // Draw biomes
     this.drawBiomes(world);
     
-    // DEBUG: Draw obvious visual indicators
-    if (this.enableClustering) {
-      ctx.save();
-      ctx.fillStyle = 'rgba(255, 0, 255, 0.8)';
-      ctx.font = 'bold 48px sans-serif';
-      ctx.fillText('CLUSTERING ON', 50, 100);
-      ctx.restore();
-    }
-    if (this.enableVision) {
-      ctx.save();
-      ctx.fillStyle = 'rgba(0, 255, 255, 0.8)';
-      ctx.font = 'bold 48px sans-serif';
-      ctx.fillText('VISION ON', 50, this.enableClustering ? 160 : 100);
-      ctx.restore();
-    }
-    
     this.drawFood(world.food);
     
     // Cache lineage descendants to avoid expensive BFS every frame
@@ -91,28 +75,15 @@ export class Renderer {
     const ctx = this.ctx;
     const { worldTime = 0 } = opts;
     
-    // Debug: Log state once per second
-    if (!this._lastDebugLog || worldTime - this._lastDebugLog > 60) {
-      console.log(`%c[RENDERER STATE]`, 'color: #8b5cf6; font-weight: bold;', {
-        enableVision: this.enableVision,
-        enableClustering: this.enableClustering,
-        enableTrails: this.enableTrails,
-        selectedId: opts.selectedId,
-        pinnedId: opts.pinnedId
-      });
-      this._lastDebugLog = worldTime;
-    }
-    
     // Compute clusters if clustering is enabled
     let clusterMap = null;
     if (this.enableClustering) {
       const currentFrame = Math.floor(worldTime);
-      // Always recompute for now to test
-      this._clusterCache.clusters = this._computeClusters(creatures);
-      this._clusterCache.frame = currentFrame;
+      if (this._clusterCache.frame !== currentFrame) {
+        this._clusterCache.clusters = this._computeClusters(creatures);
+        this._clusterCache.frame = currentFrame;
+      }
       clusterMap = this._clusterCache.clusters;
-      
-      console.log(`%c[CLUSTERING] Frame ${currentFrame}: ${clusterMap.size} creatures clustered from ${creatures.length} total`, 'color: #f59e0b; font-weight: bold;');
     }
     
     for (let c of creatures) {
@@ -126,8 +97,8 @@ export class Renderer {
       // Override hue if clustering is enabled
       const clusterHue = clusterMap ? clusterMap.get(c.id) : null;
       
-      // DEBUG: Force first creature to bright red if clustering enabled
-      const debugClusterHue = this.enableClustering && c.id === 1 ? 0 : clusterHue;
+      // Apply clustering colors to ALL creatures (not just #1)
+      const debugClusterHue = clusterHue;
       
       c.draw(ctx, {
         isSelected,
@@ -142,11 +113,7 @@ export class Renderer {
   }
 
   _computeClusters(creatures, k=5) {
-    console.log(`%c[_computeClusters] Called with ${creatures.length} creatures, k=${k}`, 'color: #fbbf24; font-weight: bold;');
-    if (creatures.length < k) {
-      console.warn(`Not enough creatures for clustering: ${creatures.length} < ${k}`);
-      return new Map();
-    }
+    if (creatures.length < k) return new Map();
     
     // Simple k-means clustering on [speed, metabolism, sense, aggression]
     const features = creatures.map(c => [
@@ -203,9 +170,6 @@ export class Renderer {
       const hue = clusterColors[cluster];
       clusterMap.set(creatures[idx].id, hue);
     });
-    
-    console.log(`%c[_computeClusters] Created map with ${clusterMap.size} entries`, 'color: #fbbf24; font-weight: bold;');
-    console.log('First 5 assignments:', Array.from(clusterMap.entries()).slice(0, 5));
     
     return clusterMap;
   }
