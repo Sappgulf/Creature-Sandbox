@@ -34,6 +34,11 @@ export function renderStats(el, world, fps, extra={}) {
     parts.push(`Env: ${eventSummary}`);
   }
   parts.push(`HP:${(avgHealth * 100).toFixed(0)}%`);
+  
+  // Show active visualization modes
+  if (extra.visionEnabled) parts.push('👁️');
+  if (extra.clusteringEnabled) parts.push('🧬');
+  
   if (extra.tool) parts.push(`Tool: ${String(extra.tool).toUpperCase()}`);
   if (extra.fastForward && extra.fastForward !== 1) parts.push(`×${extra.fastForward}`);
   if (extra.paused) parts.push('PAUSED');

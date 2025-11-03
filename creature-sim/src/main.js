@@ -161,10 +161,12 @@ window.addEventListener('keydown', (e)=>{
     }
     if (e.key.toLowerCase() === 'v') {
       renderer.enableVision = !renderer.enableVision;
+      console.log(`Vision cones: ${renderer.enableVision ? 'ON' : 'OFF'}${renderer.enableVision ? ' (click a creature to see)' : ''}`);
       return;
     }
     if (e.key.toLowerCase() === 'c') {
       renderer.enableClustering = !renderer.enableClustering;
+      console.log(`Genetic clustering: ${renderer.enableClustering ? 'ON' : 'OFF'}`);
       return;
     }
     if (e.key.toLowerCase() === 'f') {
@@ -279,7 +281,13 @@ function loop(now) {
   });
 
   fps = 0.9 * fps + 0.1 * (1 / Math.max(dt, 0.0001));
-  renderStats(statsEl, world, fps, { fastForward, paused, tool: tools.mode });
+  renderStats(statsEl, world, fps, { 
+    fastForward, 
+    paused, 
+    tool: tools.mode,
+    visionEnabled: renderer.enableVision,
+    clusteringEnabled: renderer.enableClustering
+  });
   updateInspector(false);
   updateAnalyticsCharts();
 
