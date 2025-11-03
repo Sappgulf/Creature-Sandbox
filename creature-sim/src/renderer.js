@@ -107,14 +107,12 @@ export class Renderer {
     let clusterMap = null;
     if (this.enableClustering) {
       const currentFrame = Math.floor(worldTime);
-      if (this._clusterCache.frame !== currentFrame) {
-        this._clusterCache.clusters = this._computeClusters(creatures);
-        this._clusterCache.frame = currentFrame;
-        const sample = this._clusterCache.clusters.size > 0 ? 
-          Array.from(this._clusterCache.clusters.entries()).slice(0, 3) : [];
-        console.log(`%c[CLUSTERING DEBUG] Frame ${currentFrame}: Computed ${this._clusterCache.clusters.size} clusters from ${creatures.length} creatures. Sample:`, 'color: #f59e0b; font-weight: bold;', sample);
-      }
+      // Always recompute for now to test
+      this._clusterCache.clusters = this._computeClusters(creatures);
+      this._clusterCache.frame = currentFrame;
       clusterMap = this._clusterCache.clusters;
+      
+      console.log(`%c[CLUSTERING] Frame ${currentFrame}: ${clusterMap.size} creatures clustered from ${creatures.length} total`, 'color: #f59e0b; font-weight: bold;');
     }
     
     for (let c of creatures) {
@@ -144,7 +142,11 @@ export class Renderer {
   }
 
   _computeClusters(creatures, k=5) {
-    if (creatures.length < k) return new Map();
+    console.log(`%c[_computeClusters] Called with ${creatures.length} creatures, k=${k}`, 'color: #fbbf24; font-weight: bold;');
+    if (creatures.length < k) {
+      console.warn(`Not enough creatures for clustering: ${creatures.length} < ${k}`);
+      return new Map();
+    }
     
     // Simple k-means clustering on [speed, metabolism, sense, aggression]
     const features = creatures.map(c => [
@@ -198,8 +200,12 @@ export class Renderer {
           cluster = i;
         }
       }
-      clusterMap.set(creatures[idx].id, clusterColors[cluster]);
+      const hue = clusterColors[cluster];
+      clusterMap.set(creatures[idx].id, hue);
     });
+    
+    console.log(`%c[_computeClusters] Created map with ${clusterMap.size} entries`, 'color: #fbbf24; font-weight: bold;');
+    console.log('First 5 assignments:', Array.from(clusterMap.entries()).slice(0, 5));
     
     return clusterMap;
   }
