@@ -319,6 +319,223 @@ body { display:flex; justify-content:center; align-items:center; min-height:100v
   line-height: 1;
 }
 
+/* ============================================================================
+   Scenario Lab Panel
+   ============================================================================ */
+
+#scenario-panel {
+  position: fixed;
+  left: 16px;
+  top: 120px;
+  width: 260px;
+  background: rgba(16,18,28,0.92);
+  border: 1px solid #23253a;
+  border-radius: 12px;
+  padding: 14px 16px;
+  z-index: 11;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#scenario-panel .panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.scenario-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: #d7d9ef;
+}
+
+.scenario-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 0.2px;
+}
+
+.scenario-value {
+  font-variant-numeric: tabular-nums;
+  color: #7bb7ff;
+}
+
+#scenario-panel select,
+#scenario-panel input[type="range"] {
+  background: #131522;
+  border: 1px solid #2b2e41;
+  border-radius: 8px;
+  color: #e7e7ea;
+  padding: 6px 8px;
+}
+
+#scenario-panel input[type="range"] {
+  appearance: none;
+  height: 4px;
+  padding: 0;
+}
+
+.scenario-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #c3c6e4;
+}
+
+.scenario-checkbox input[type="checkbox"] {
+  accent-color: #4ade80;
+}
+
+.scenario-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.scenario-btn {
+  flex: 1;
+  border: 1px solid #2b2e41;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+  background: #1e2130;
+  color: #e7e7ea;
+}
+
+.scenario-btn.primary {
+  background: linear-gradient(135deg, #3a5dff 0%, #2738b6 100%);
+  border-color: #405dff;
+}
+
+.scenario-btn.ghost {
+  background: rgba(30,33,48,0.6);
+  color: #aeb4d6;
+}
+
+.scenario-btn:hover {
+  transform: translateY(-1px);
+  background: #272a3d;
+}
+
+.scenario-btn.primary:hover {
+  background: linear-gradient(135deg, #4a6aff 0%, #2d42d2 100%);
+}
+
+.scenario-btn.ghost:hover {
+  background: rgba(42,46,66,0.8);
+}
+
+.scenario-btn.small {
+  padding: 6px 10px;
+  font-size: 11px;
+  flex: 0;
+}
+
+.scenario-status {
+  font-size: 12px;
+  color: #9aa0c6;
+  background: rgba(19,21,34,0.6);
+  border: 1px solid rgba(43,46,65,0.6);
+  border-radius: 8px;
+  padding: 8px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+}
+
+.scenario-queue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #c3c6e4;
+  margin-top: 6px;
+}
+
+.scenario-queue-title {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.scenario-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 160px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.scenario-queue-item {
+  position: relative;
+  background: rgba(24, 27, 40, 0.75);
+  border: 1px solid rgba(45, 48, 68, 0.9);
+  border-radius: 10px;
+  padding: 8px 32px 8px 10px;
+}
+
+.scenario-queue-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #e7e7ea;
+}
+
+.scenario-queue-name {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.scenario-queue-start {
+  font-variant-numeric: tabular-nums;
+  color: #9aa0c6;
+}
+
+.scenario-queue-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #8d93be;
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.scenario-queue-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  border: none;
+  background: none;
+  color: #f87171;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.scenario-queue-remove:hover {
+  background: rgba(248, 113, 113, 0.16);
+}
+
+.scenario-queue-empty {
+  font-size: 12px;
+  padding: 6px 4px;
+}
+
 .feature-name {
   font-size: 10px;
   font-weight: 500;

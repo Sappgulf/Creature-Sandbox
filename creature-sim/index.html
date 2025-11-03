@@ -33,6 +33,7 @@
     <button id="btn-god-boost" title="Boost energy of selected creature">⚡ Boost</button>
     <button id="btn-god-kill" title="Kill selected creature">💀 Kill</button>
     <button id="btn-god-clone" title="Clone selected creature">👯 Clone</button>
+    <button id="btn-scenario" title="Open Scenario Lab">Scenario Lab</button>
     <div id="stats"></div>
   </div>
 
@@ -92,6 +93,22 @@
           <span class="feature-name">Mating</span>
         </button>
       </div>
+
+      <div class="feature-group">
+        <div class="group-label">Mini Map</div>
+        <button class="feature-toggle active" data-mini="heatmap" title="Toggle population heat map">
+          <span class="feature-icon">🔥</span>
+          <span class="feature-name">Heat</span>
+        </button>
+        <button class="feature-toggle active" data-mini="disaster" title="Toggle disaster overlay">
+          <span class="feature-icon">⚠️</span>
+          <span class="feature-name">Disaster</span>
+        </button>
+        <button class="feature-toggle active" data-mini="territories" title="Toggle predator territories">
+          <span class="feature-icon">🛡️</span>
+          <span class="feature-name">Territory</span>
+        </button>
+      </div>
     </div>
     
     <!-- Performance Metrics -->
@@ -107,6 +124,67 @@
       <div class="metric">
         <span class="metric-label">Draw Calls</span>
         <span id="metric-draws" class="metric-value">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scenario Lab Panel -->
+  <div id="scenario-panel" class="hidden">
+    <div class="panel-header">
+      <span class="panel-title">🧪 Scenario Lab</span>
+      <button id="btn-scenario-close" class="chip ghost" title="Hide scenario lab">Hide</button>
+    </div>
+    <div class="panel-body">
+      <label class="scenario-field">
+        <span class="scenario-label">Disaster Preset</span>
+        <select id="scenario-type">
+          <option value="meteorStorm">Meteor Storm</option>
+          <option value="iceAge">Ice Age</option>
+          <option value="plague">Plague</option>
+          <option value="drought">Drought</option>
+        </select>
+      </label>
+      <label class="scenario-field">
+        <span class="scenario-label">
+          Duration
+          <span id="scenario-duration-value" class="scenario-value">30s</span>
+        </span>
+        <input type="range" id="scenario-duration" min="5" max="120" step="5" value="30" />
+      </label>
+      <label class="scenario-field">
+        <span class="scenario-label">
+          Intensity
+          <span id="scenario-intensity-value" class="scenario-value">1.0×</span>
+        </span>
+        <input type="range" id="scenario-intensity" min="0.5" max="3" step="0.1" value="1" />
+      </label>
+      <label class="scenario-field">
+        <span class="scenario-label">
+          Start In
+          <span id="scenario-delay-value" class="scenario-value">0s</span>
+        </span>
+        <input type="range" id="scenario-delay" min="0" max="240" step="5" value="0" />
+      </label>
+      <label class="scenario-checkbox">
+        <input type="checkbox" id="scenario-cooldown" checked />
+        <span>Apply cooldown after scenario</span>
+      </label>
+      <label class="scenario-checkbox">
+        <input type="checkbox" id="scenario-autobalance" checked />
+        <span>Auto balance ecosystem</span>
+      </label>
+      <div class="scenario-actions">
+        <button id="btn-scenario-trigger" class="scenario-btn primary">Run Now</button>
+        <button id="btn-scenario-queue" class="scenario-btn">Queue</button>
+        <button id="btn-scenario-end" class="scenario-btn ghost">End Active</button>
+      </div>
+      <div id="scenario-status" class="scenario-status">No active disaster.</div>
+      <div class="scenario-queue-header">
+        <span class="scenario-queue-title">Queued Scenarios</span>
+        <button id="btn-scenario-clear" class="scenario-btn ghost small" title="Clear pending scenarios">Clear All</button>
+      </div>
+      <div id="scenario-queue" class="scenario-queue">
+        <div class="scenario-queue-empty muted">No queued scenarios.</div>
       </div>
     </div>
   </div>

@@ -34,6 +34,13 @@ const analytics = new AnalyticsTracker();
 const lineageTracker = new LineageTracker();
 world.attachLineageTracker(lineageTracker);
 world.creatures.forEach(c => lineageTracker.ensureName(lineageTracker.getRoot(world, c.id)));
+window.godModeEffects = window.godModeEffects || [];
+
+if (typeof camera.startTravel !== 'function') {
+  camera.startTravel = function(x, y) {
+    this.focusOn(x, y);
+  };
+}
 
 let paused = false;
 let fastForward = 1;
@@ -49,6 +56,8 @@ let panning = false;
 let lastPointer = { x: 0, y: 0 };
 let inspectorVisible = true;
 let analyticsVersion = -1;
+let travelDrag = null;
+let travelPreview = null;
 
 const statsEl = document.getElementById('stats');
 const exportBtn = document.getElementById('btn-export');
@@ -71,15 +80,37 @@ const fixedDt = 1/60;
 const MAX_STEPS = 6;
 
 // Feature toggle UI
-const featureToggles = document.querySelectorAll('.feature-toggle');
+const featureToggles = document.querySelectorAll('.feature-toggle[data-feature]');
+const miniMapToggles = document.querySelectorAll('.feature-toggle[data-mini]');
 const btnToggleFeatures = document.getElementById('btn-toggle-features');
 const featuresPanel = document.getElementById('features-panel');
 const metricRendered = document.getElementById('metric-rendered');
 const metricCulled = document.getElementById('metric-culled');
 const metricDraws = document.getElementById('metric-draws');
+const scenarioBtn = document.getElementById('btn-scenario');
+const scenarioPanel = document.getElementById('scenario-panel');
+const scenarioCloseBtn = document.getElementById('btn-scenario-close');
+const scenarioTypeSelect = document.getElementById('scenario-type');
+const scenarioDurationInput = document.getElementById('scenario-duration');
+const scenarioDurationValue = document.getElementById('scenario-duration-value');
+const scenarioIntensityInput = document.getElementById('scenario-intensity');
+const scenarioIntensityValue = document.getElementById('scenario-intensity-value');
+const scenarioCooldownToggle = document.getElementById('scenario-cooldown');
+const scenarioDelayInput = document.getElementById('scenario-delay');
+const scenarioDelayValue = document.getElementById('scenario-delay-value');
+const scenarioTriggerBtn = document.getElementById('btn-scenario-trigger');
+const scenarioQueueBtn = document.getElementById('btn-scenario-queue');
+const scenarioEndBtn = document.getElementById('btn-scenario-end');
+const scenarioClearQueueBtn = document.getElementById('btn-scenario-clear');
+const scenarioStatus = document.getElementById('scenario-status');
+const scenarioQueueList = document.getElementById('scenario-queue');
+const scenarioBalanceToggle = document.getElementById('scenario-autobalance');
 
 let renderedCount = 0;
 let culledCount = 0;
+let scenarioPanelVisible = false;
+let scenarioQueueVersion = -1;
+let lastScenarioQueueRender = 0;
 
 bindUI({
   onPause: togglePause,
@@ -145,9 +176,125 @@ featureToggles.forEach(btn => {
   });
 });
 
+miniMapToggles.forEach(btn => {
+  const key = btn.dataset.mini;
+  btn.addEventListener('click', () => {
+    const isActive = btn.classList.toggle('active');
+    renderer.setMiniMapOption(key, isActive);
+  });
+  const initial = renderer.miniMapSettings[key] !== false;
+  btn.classList.toggle('active', initial);
+  renderer.setMiniMapOption(key, initial);
+});
+if (scenarioBalanceToggle) {
+  scenarioBalanceToggle.checked = !!world.autoBalanceSettings?.enabled;
+}
+
 // Setup panel collapse
 btnToggleFeatures?.addEventListener('click', () => {
   featuresPanel?.classList.toggle('collapsed');
+});
+
+scenarioBtn?.addEventListener('click', () => setScenarioPanelVisible(!scenarioPanelVisible));
+scenarioCloseBtn?.addEventListener('click', () => setScenarioPanelVisible(false));
+scenarioDurationInput?.addEventListener('input', () => {
+  if (scenarioDurationValue) {
+    scenarioDurationValue.textContent = `${Number(scenarioDurationInput.value).toFixed(0)}s`;
+  }
+});
+scenarioIntensityInput?.addEventListener('input', () => {
+  if (scenarioIntensityValue) {
+    scenarioIntensityValue.textContent = `${Number(scenarioIntensityInput.value).toFixed(1)}×`;
+  }
+});
+scenarioDelayInput?.addEventListener('input', () => {
+  if (scenarioDelayValue) {
+    scenarioDelayValue.textContent = `${Number(scenarioDelayInput.value).toFixed(0)}s`;
+  }
+});
+scenarioBalanceToggle?.addEventListener('change', () => {
+  const enabled = !!scenarioBalanceToggle.checked;
+  if (world.autoBalanceSettings) {
+    world.autoBalanceSettings.enabled = enabled;
+  }
+  if (scenarioStatus) {
+    scenarioStatus.textContent = enabled ? 'Auto balance enabled.' : 'Auto balance disabled.';
+  }
+});
+scenarioTriggerBtn?.addEventListener('click', () => {
+  if (!scenarioTypeSelect) return;
+  const type = scenarioTypeSelect.value;
+  const duration = Number(scenarioDurationInput?.value ?? 30);
+  const intensity = Number(scenarioIntensityInput?.value ?? 1);
+  const applyCooldown = !!scenarioCooldownToggle?.checked;
+  const delay = Number(scenarioDelayInput?.value ?? 0);
+  const result = world.triggerDisaster(type, {
+    duration,
+    intensity,
+    applyCooldown,
+    delay,
+    waitForClear: true
+  });
+  if ((!result || (!result.started && !result.queuedId)) && scenarioStatus) {
+    scenarioStatus.textContent = 'Unable to schedule scenario – check preset.';
+  } else if (scenarioStatus) {
+    const label = world.disasters?.[type]?.name ?? type;
+    if (result?.started) {
+      scenarioStatus.textContent = `${label} triggered.`;
+    } else if (result?.queuedId) {
+      scenarioStatus.textContent = `${label} queued for ${Math.max(0, delay).toFixed(0)}s.`;
+    }
+  }
+  updateScenarioStatus();
+});
+scenarioQueueBtn?.addEventListener('click', () => {
+  if (!scenarioTypeSelect) return;
+  const type = scenarioTypeSelect.value;
+  const duration = Number(scenarioDurationInput?.value ?? 30);
+  const intensity = Number(scenarioIntensityInput?.value ?? 1);
+  const applyCooldown = !!scenarioCooldownToggle?.checked;
+  let delay = Number(scenarioDelayInput?.value ?? 0);
+  if (delay < 1) delay = 1;
+  const result = world.triggerDisaster(type, {
+    duration,
+    intensity,
+    applyCooldown,
+    delay,
+    waitForClear: true
+  });
+  if (scenarioStatus) {
+    const label = world.disasters?.[type]?.name ?? type;
+    if (result?.queuedId) {
+      scenarioStatus.textContent = `${label} queued for ${Math.round(delay)}s.`;
+    } else {
+      scenarioStatus.textContent = 'Unable to queue scenario.';
+    }
+  }
+  updateScenarioStatus();
+});
+scenarioEndBtn?.addEventListener('click', () => {
+  if (world.cancelDisaster()) {
+    if (scenarioStatus) scenarioStatus.textContent = 'Active disaster cancelled.';
+    updateScenarioStatus();
+  } else if (scenarioStatus) {
+    scenarioStatus.textContent = 'No active disaster to end.';
+  }
+});
+scenarioClearQueueBtn?.addEventListener('click', () => {
+  if (typeof world.clearPendingDisasters === 'function' && world.clearPendingDisasters()) {
+    if (scenarioStatus) scenarioStatus.textContent = 'Scenario queue cleared.';
+    updateScenarioStatus();
+  }
+});
+scenarioQueueList?.addEventListener('click', (event) => {
+  const target = event.target.closest('[data-queue-id]');
+  if (!target) return;
+  const queueId = Number(target.dataset.queueId);
+  if (Number.isNaN(queueId)) return;
+  if (typeof world.cancelPendingDisaster === 'function' && world.cancelPendingDisaster(queueId)) {
+    if (scenarioStatus) scenarioStatus.textContent = 'Scenario removed from queue.';
+    updateScenarioStatus();
+  }
 });
 
 function toggleFeature(feature, btn) {
@@ -207,6 +354,13 @@ canvas.addEventListener('wheel', (e)=>{
 });
 
 canvas.addEventListener('pointerdown', (e)=>{
+  const rect = canvas.getBoundingClientRect();
+  const canvasX = e.clientX - rect.left;
+  const canvasY = e.clientY - rect.top;
+  if (maybeHandleMiniMapClick(canvasX, canvasY, e)) {
+    return;
+  }
+
   canvas.setPointerCapture(e.pointerId);
   lastPointer = { x: e.clientX, y: e.clientY };
   if (e.button === 1 || e.button === 2 || e.altKey || e.metaKey) {
@@ -215,6 +369,18 @@ canvas.addEventListener('pointerdown', (e)=>{
   }
   if (e.button !== 0) return;
   painting = true;
+  if (tools.mode === ToolModes.INSPECT && !e.shiftKey) {
+    travelDrag = {
+      startX: camera.targetX,
+      startY: camera.targetY,
+      active: false,
+      latest: null
+    };
+    travelPreview = null;
+  } else {
+    travelDrag = null;
+    travelPreview = null;
+  }
   handlePointerAction(e, false);
 });
 
@@ -232,9 +398,53 @@ canvas.addEventListener('pointermove', (e)=>{
 
 canvas.addEventListener('pointerup', (e)=>{
   canvas.releasePointerCapture?.(e.pointerId);
+  const rect = canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left - canvas.width/2;
+  const sy = e.clientY - rect.top - canvas.height/2;
+  const { x, y } = camera.screenToWorld(sx, sy);
+  if (travelDrag && travelDrag.active && travelDrag.latest) {
+    const dx = travelDrag.latest.x - travelDrag.startX;
+    const dy = travelDrag.latest.y - travelDrag.startY;
+    const distance = Math.hypot(dx, dy);
+    const duration = Math.min(3.5, Math.max(0.45, distance / 600));
+    if (typeof camera.startTravel === 'function') {
+      camera.startTravel(travelDrag.latest.x, travelDrag.latest.y, duration);
+    } else {
+      camera.focusOn(travelDrag.latest.x, travelDrag.latest.y);
+    }
+  } else if (tools.mode === ToolModes.INSPECT && e.button === 0 && !e.shiftKey) {
+    camera.focusOn(x, y);
+  }
+  travelDrag = null;
+  travelPreview = null;
   painting = false;
   panning = false;
 });
+
+function maybeHandleMiniMapClick(canvasX, canvasY, event) {
+  if (!renderer.enableMiniMap) return false;
+  const bounds = renderer.lastMiniMap;
+  if (!bounds) return false;
+  if (
+    canvasX < bounds.x ||
+    canvasX > bounds.x + bounds.width ||
+    canvasY < bounds.y ||
+    canvasY > bounds.y + bounds.height
+  ) {
+    return false;
+  }
+  if (event.button !== 0) return false;
+  travelDrag = null;
+  travelPreview = null;
+  const normalizedX = Math.min(1, Math.max(0, (canvasX - bounds.x) / bounds.width));
+  const normalizedY = Math.min(1, Math.max(0, (canvasY - bounds.y) / bounds.height));
+  const targetX = normalizedX * bounds.worldWidth;
+  const targetY = normalizedY * bounds.worldHeight;
+  camera.focusOn(targetX, targetY);
+  painting = false;
+  panning = false;
+  return true;
+}
 
 window.addEventListener('keydown', (e)=>{
   if (e.key === 'Escape') {
@@ -382,8 +592,29 @@ function handlePointerAction(e, isDrag) {
   const { x, y } = camera.screenToWorld(sx, sy);
 
   if (tools.mode !== ToolModes.INSPECT) {
+    travelDrag = null;
+    travelPreview = null;
     tools.apply(sx, sy, { shiftKey: e.shiftKey });
     updateInspector(true);
+    return;
+  }
+
+  if (isDrag) {
+    if (travelDrag && !e.shiftKey) {
+      const dx = x - travelDrag.startX;
+      const dy = y - travelDrag.startY;
+      const dist2 = dx * dx + dy * dy;
+      if (!travelDrag.active && dist2 > 400) {
+        travelDrag.active = true;
+      }
+      if (travelDrag.active) {
+        travelDrag.latest = { x, y };
+        travelPreview = {
+          from: { x: travelDrag.startX, y: travelDrag.startY },
+          to: { x, y }
+        };
+      }
+    }
     return;
   }
 
@@ -466,23 +697,54 @@ function godModeClone() {
     console.log('⚠️ Select a creature first to clone it!');
     return;
   }
-  // Clone with exact same genes nearby
-  const offsetX = (Math.random() - 0.5) * 50;
-  const offsetY = (Math.random() - 0.5) * 50;
-  const clone = new Creature(
-    creature.x + offsetX,
-    creature.y + offsetY,
-    { ...creature.genes }, // Exact copy of genes
-    false
-  );
-  world.addCreature(clone, creature);
-  showGodModeEffect(creature, '👯', '#a78bfa');
-  console.log(`👯 Cloned creature #${creature.id} → #${clone.id}`);
+  
+  try {
+    // Clone with exact same genes nearby (with bounds checking)
+    const offsetX = (Math.random() - 0.5) * 50;
+    const offsetY = (Math.random() - 0.5) * 50;
+    
+    // Ensure clone position is within world bounds
+    let cloneX = creature.x + offsetX;
+    let cloneY = creature.y + offsetY;
+    cloneX = Math.max(10, Math.min(world.width - 10, cloneX));
+    cloneY = Math.max(10, Math.min(world.height - 10, cloneY));
+    
+    // Create clone with exact copy of genes
+    const clone = new Creature(
+      cloneX,
+      cloneY,
+      { ...creature.genes },
+      false
+    );
+    
+    // Add to world with original creature's parent (not the creature itself as parent)
+    // This makes them siblings rather than parent-child
+    const cloneId = world.addCreature(clone, creature.parentId);
+    
+    // Ensure lineage tracking
+    if (world.lineageTracker) {
+      try {
+        const rootId = world.lineageTracker.getRoot(world, cloneId);
+        world.lineageTracker.ensureName(rootId);
+      } catch (err) {
+        console.warn('⚠️ Lineage tracking failed for clone:', err);
+      }
+    }
+    
+    // Force spatial grid update immediately to avoid any issues
+    world.gridDirty = true;
+    world.ensureSpatial();
+    
+    showGodModeEffect(creature, '👯', '#a78bfa');
+    console.log(`👯 Cloned creature #${creature.id} → #${cloneId} at (${Math.round(cloneX)}, ${Math.round(cloneY)})`);
+  } catch (err) {
+    console.error('❌ Clone failed:', err);
+    alert('Clone failed! Check console for details.');
+  }
 }
 
 function showGodModeEffect(creature, emoji, color) {
-  // Visual feedback: draw effect on canvas
-  if (!godModeEffects) window.godModeEffects = [];
+  if (!window.godModeEffects) window.godModeEffects = [];
   window.godModeEffects.push({
     x: creature.x,
     y: creature.y,
@@ -520,6 +782,7 @@ function loop(now) {
   camera.update(dt);
 
   renderer.clear(canvas.width, canvas.height);
+  const cameraTravelState = typeof camera.getTravelState === 'function' ? camera.getTravelState() : null;
   renderer.drawWorld(world, {
     selectedId,
     pinnedId,
@@ -528,7 +791,9 @@ function loop(now) {
     viewportHeight: canvas.height,
     worldTime: world.t,
     lineageTracker,
-    world
+    world,
+    travelPreview,
+    cameraTravel: cameraTravelState
   });
 
   fps = 0.9 * fps + 0.1 * (1 / Math.max(dt, 0.0001));
@@ -547,6 +812,7 @@ function loop(now) {
   
   updateInspector(false);
   updateAnalyticsCharts();
+  updateScenarioStatus();
 
   requestAnimationFrame(loop);
 }
@@ -639,6 +905,87 @@ function updateAnalyticsCharts() {
   if (data.version === analyticsVersion) return;
   analyticsVersion = data.version;
   renderAnalyticsCharts(chartCtx, data);
+}
+
+function setScenarioPanelVisible(visible) {
+  scenarioPanelVisible = visible;
+  if (!scenarioPanel) return;
+  if (visible) {
+    scenarioPanel.classList.remove('hidden');
+    scenarioDurationInput?.dispatchEvent(new Event('input'));
+    scenarioIntensityInput?.dispatchEvent(new Event('input'));
+    scenarioDelayInput?.dispatchEvent(new Event('input'));
+    renderScenarioQueue();
+    const version = typeof world.getPendingDisastersVersion === 'function'
+      ? world.getPendingDisastersVersion()
+      : scenarioQueueVersion;
+    scenarioQueueVersion = version;
+    lastScenarioQueueRender = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    updateScenarioStatus();
+  } else {
+    scenarioPanel.classList.add('hidden');
+  }
+}
+
+function updateScenarioStatus() {
+  const pending = typeof world.getPendingDisasters === 'function' ? world.getPendingDisasters() : [];
+  const active = world.getActiveDisaster();
+  if (scenarioStatus) {
+    if (active) {
+      const remaining = Math.max(0, active.timeRemaining ?? 0);
+      const mode = active.manual ? 'scenario' : 'random';
+      const intensity = (active.intensity ?? 1).toFixed(1);
+      scenarioStatus.textContent = `${active.name} (${mode}) · ${remaining.toFixed(1)}s left · ${intensity}× intensity`;
+      scenarioEndBtn?.removeAttribute('disabled');
+    } else {
+      scenarioEndBtn?.setAttribute('disabled', 'disabled');
+      if (pending.length) {
+        const next = pending[0];
+        scenarioStatus.textContent = `Next: ${next.name} in ${next.startsIn.toFixed(1)}s`;
+      } else {
+        scenarioStatus.textContent = 'No active disaster.';
+      }
+    }
+  }
+  const version = typeof world.getPendingDisastersVersion === 'function'
+    ? world.getPendingDisastersVersion()
+    : 0;
+  const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  const shouldRefresh = scenarioPanelVisible && (now - lastScenarioQueueRender > 250);
+  if (version !== scenarioQueueVersion || shouldRefresh) {
+    renderScenarioQueue(pending);
+    scenarioQueueVersion = version;
+    lastScenarioQueueRender = now;
+  }
+}
+
+function renderScenarioQueue(pending=null) {
+  if (!scenarioQueueList) return;
+  const items = pending ?? (typeof world.getPendingDisasters === 'function' ? world.getPendingDisasters() : []);
+  if (!items.length) {
+    scenarioQueueList.innerHTML = '<div class="scenario-queue-empty muted">No queued scenarios.</div>';
+    return;
+  }
+  const html = items.map(item => {
+    const durationLabel = item.duration ? `${Math.round(item.duration)}s` : '—';
+    const intensityLabel = (item.intensity ?? 1).toFixed(1);
+    const waitLabel = item.waitForClear ? 'wait' : 'overlap';
+    return `
+      <div class="scenario-queue-item">
+        <div class="scenario-queue-item-header">
+          <span class="scenario-queue-name">${item.name}</span>
+          <span class="scenario-queue-start">${item.startsIn.toFixed(1)}s</span>
+        </div>
+        <div class="scenario-queue-meta">
+          <span>dur ${durationLabel}</span>
+          <span>int ${intensityLabel}×</span>
+          <span>${waitLabel}</span>
+        </div>
+        <button class="scenario-queue-remove" data-queue-id="${item.id}" title="Remove">✕</button>
+      </div>
+    `;
+  }).join('');
+  scenarioQueueList.innerHTML = html;
 }
 
 function exportSnapshot() {

@@ -28,6 +28,7 @@ export class Camera {
     this.worldHeight = worldHeight;
     this.viewportWidth = viewportWidth;
     this.viewportHeight = viewportHeight;
+    this.travel = null;
     this._refreshMinZoom();
     this._clampTargets();
   }
@@ -36,6 +37,9 @@ export class Camera {
   update(dt) {
     const lerp = (a,b,t)=>a+(b-a)*t;
     const t = 1 - Math.pow(1 - this.smooth, Math.min(dt*60, 1));
+    if (this.travel) {
+      this._updateTravel(dt);
+    }
     this.zoom = lerp(this.zoom, this.targetZoom, t);
     this._clampZoom();
     this.x = lerp(this.x, this.targetX, t);
@@ -59,9 +63,35 @@ export class Camera {
   }
 
   focusOn(x, y) {
-    this.targetX = x;
-    this.targetY = y;
+    const clamped = this._clampPoint(x, y, this.targetZoom);
+    this.targetX = clamped.x;
+    this.targetY = clamped.y;
     this._clampTargets();
+    this.travel = null;
+  }
+
+  startTravel(x, y, duration=1.5) {
+    const clamped = this._clampPoint(x, y, this.targetZoom);
+    const safeDuration = Math.max(0.2, duration);
+    this.travel = {
+      fromX: this.targetX,
+      fromY: this.targetY,
+      toX: clamped.x,
+      toY: clamped.y,
+      duration: safeDuration,
+      elapsed: 0,
+      easing: 'easeOutCubic'
+    };
+  }
+
+  getTravelState() {
+    if (!this.travel) return null;
+    const t = Math.min(1, this.travel.elapsed / this.travel.duration);
+    return {
+      from: { x: this.travel.fromX, y: this.travel.fromY },
+      to: { x: this.travel.toX, y: this.travel.toY },
+      progress: t
+    };
   }
 
   worldToScreen(x, y) {
@@ -121,5 +151,37 @@ export class Camera {
       minY: halfH,
       maxY: Math.max(halfH, this.worldHeight - halfH)
     };
+  }
+
+  _clampPoint(x, y, zoom=this.targetZoom) {
+    const { minX, maxX, minY, maxY } = this._limits(zoom);
+    return {
+      x: clamp(x, minX, maxX),
+      y: clamp(y, minY, maxY)
+    };
+  }
+
+  _updateTravel(dt) {
+    const travel = this.travel;
+    if (!travel) return;
+    travel.elapsed += dt;
+    const t = Math.min(1, travel.elapsed / travel.duration);
+    const eased = this._ease(travel.easing, t);
+    this.targetX = travel.fromX + (travel.toX - travel.fromX) * eased;
+    this.targetY = travel.fromY + (travel.toY - travel.fromY) * eased;
+    this._clampTargets();
+    if (t >= 1) {
+      this.targetX = travel.toX;
+      this.targetY = travel.toY;
+      this.travel = null;
+    }
+  }
+
+  _ease(type, t) {
+    switch (type) {
+      case 'easeOutCubic':
+      default:
+        return 1 - Math.pow(1 - t, 3);
+    }
   }
 }

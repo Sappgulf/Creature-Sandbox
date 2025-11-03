@@ -64,12 +64,31 @@ export class World {
     this.disasterCooldown = 0;
     this.activeDisaster = null;
     this.disasterDuration = 0;
+    this.disasterIntensity = 1;
+    this.disasterManual = false;
+    this.disasterQueue = [];
+    this.disasterQueueVersion = 0;
+    this._nextDisasterId = 1;
     this.disasters = {
       meteorStorm: { name: 'Meteor Storm', duration: 5, cooldown: 180 },
       iceAge: { name: 'Ice Age', duration: 60, cooldown: 240 },
       plague: { name: 'Plague', duration: 30, cooldown: 200 },
       drought: { name: 'Drought', duration: 30, cooldown: 150 }
     };
+    this.autoBalanceSettings = {
+      enabled: true,
+      interval: 4,
+      minPopulation: 36,
+      minHerbivores: 20,
+      minOmnivores: 6,
+      minPredators: 4,
+      maxPredators: 16,
+      targetPredatorRatio: 0.24,
+      targetFoodFraction: 0.5,
+      minFoodAbsolute: 140,
+      batchSpawn: 4
+    };
+    this.autoBalanceAccumulator = 0;
 
     // UPGRADED: Perlin noise organic biome system (6 types)
     this.biomeGenerator = new BiomeGenerator(Math.random());
@@ -152,6 +171,14 @@ export class World {
     this.predatorSignals = [];
     this.lineagePulse = this._createLineagePulse();
     this.ecoStats = { meanHealth: 0.6, predatorRatio: 0.2, biomass: 0, lastUpdate: 0 };
+    this.activeDisaster = null;
+    this.disasterDuration = 0;
+    this.disasterIntensity = 1;
+    this.disasterManual = false;
+    this.disasterQueue = [];
+    this.disasterQueueVersion = 0;
+    this._nextDisasterId = 1;
+    this.autoBalanceAccumulator = 0;
   }
 
   addFood(x,y,r=1.5){
@@ -471,6 +498,20 @@ export class World {
     this.lineageTracker?.ensureName(this.lineageTracker.getRoot(this, creature.id));
   }
 
+  spawnOmnivore(x, y) {
+    const g = makeGenes({
+      predator: 0,
+      diet: 0.5,
+      speed: 1.05,
+      sense: 120,
+      metabolism: 0.95,
+      hue: 35
+    });
+    const creature = new Creature(x, y, g, false);
+    this.addCreature(creature, null);
+    this.lineageTracker?.ensureName(this.lineageTracker.getRoot(this, creature.id));
+  }
+
   /** Compute all descendants of rootId (BFS over childrenOf). */
   descendantsOf(rootId){
     const out=new Set([rootId]);
@@ -561,8 +602,14 @@ export class World {
     
     // Modify food growth based on active disasters
     let foodRateModifier = 1.0;
-    if (this.activeDisaster === 'iceAge') foodRateModifier = 0.2;
-    if (this.activeDisaster === 'drought') foodRateModifier = 0;
+    if (this.activeDisaster === 'iceAge') {
+      const intensity = clamp(this.disasterIntensity ?? 1, 0, 5);
+      foodRateModifier = Math.max(0, 1 - 0.8 * intensity);
+    }
+    if (this.activeDisaster === 'drought') {
+      const intensity = clamp(this.disasterIntensity ?? 1, 0, 5);
+      foodRateModifier = Math.max(0, 1 - 1.0 * intensity);
+    }
     
     if (this.food.length < this.maxFood && Math.random()<(this.foodGrowthRate() * foodRateModifier)) {
       const spot = this.pickHabitatSpot();
@@ -595,6 +642,7 @@ export class World {
     
     this.updateLineagePulse(dt);
     this.updateEcoStats();
+    this.autoBalanceEcosystem(dt);
     this.gridDirty = true;
   }
 
@@ -609,6 +657,8 @@ export class World {
     if (this.disasterCooldown > 0) {
       this.disasterCooldown -= dt;
     }
+
+    this._processScheduledDisasters();
 
     // Handle active disaster
     if (this.activeDisaster) {
@@ -630,20 +680,209 @@ export class World {
   triggerRandomDisaster() {
     const types = ['meteorStorm', 'iceAge', 'plague', 'drought'];
     const type = types[Math.floor(Math.random() * types.length)];
-    const config = this.disasters[type];
-    
-    this.activeDisaster = type;
-    this.disasterDuration = config.duration;
-    this.disasterCooldown = config.cooldown;
+    this._beginDisaster(type, { manual: false });
+  }
 
-    // Log event
+  triggerDisaster(type, options={}) {
+    const config = this.disasters[type];
+    if (!config) return { started: false, queuedId: null };
+    const {
+      delay = 0,
+      startAt = null,
+      waitForClear = true
+    } = options;
+    const queueOptions = { ...options };
+    delete queueOptions.delay;
+    delete queueOptions.startAt;
+    delete queueOptions.waitForClear;
+
+    const shouldQueue = (startAt != null && startAt > this.t) || delay > 0;
+    if (shouldQueue) {
+      const startTime = startAt != null ? startAt : (this.t + Math.max(0, delay));
+      const id = this._nextDisasterId++;
+      this.disasterQueue.push({
+        id,
+        type,
+        startTime,
+        waitForClear: waitForClear !== false,
+        options: queueOptions
+      });
+      this.disasterQueue.sort((a, b) => a.startTime - b.startTime);
+      this.disasterQueueVersion++;
+      return { started: false, queuedId: id };
+    }
+
+    const started = this._beginDisaster(type, { manual: true, ...queueOptions });
+    return { started: !!started, queuedId: null };
+  }
+
+  _beginDisaster(type, { duration, intensity=1, manual=false, applyCooldown=true }={}) {
+    const config = this.disasters[type];
+    if (!config) return false;
+
+    // Cancel any active disaster before starting a new one.
+    if (this.activeDisaster) {
+      this.endDisaster({ cancelled: true });
+    }
+
+    this.activeDisaster = type;
+    const baseDuration = duration ?? config.duration;
+    this.disasterDuration = Math.max(1, baseDuration);
+    this.disasterCooldown = applyCooldown ? config.cooldown : 0;
+    this.disasterIntensity = clamp(intensity ?? 1, 0.1, 5);
+    this.disasterManual = manual;
+
     if (this.lineageTracker) {
+      const icon = manual ? '🧪' : '⚠️';
       this.lineageTracker.events.unshift({
         time: this.t,
         rootId: null,
-        title: `⚠️ ${config.name} begins!`
+        title: `${icon} ${config.name} begins!`
       });
-      this.lineageTracker.trim();
+    this.lineageTracker.trim();
+  }
+  return true;
+}
+
+  _processScheduledDisasters() {
+    if (!this.disasterQueue.length) return;
+    let changed = false;
+    this.disasterQueue.sort((a, b) => a.startTime - b.startTime);
+    for (let i = 0; i < this.disasterQueue.length; i++) {
+      const item = this.disasterQueue[i];
+      if (this.t < item.startTime) break;
+      if (item.waitForClear && this.activeDisaster) {
+        continue;
+      }
+      const started = this._beginDisaster(item.type, { manual: true, ...item.options });
+      this.disasterQueue.splice(i, 1);
+      changed = true;
+      if (started) {
+        break;
+      }
+      i--;
+    }
+    if (changed) {
+      this.disasterQueueVersion++;
+    }
+  }
+
+  getPendingDisasters() {
+    if (!this.disasterQueue.length) return [];
+    return this.disasterQueue
+      .slice()
+      .sort((a, b) => a.startTime - b.startTime)
+      .map(item => {
+        const config = this.disasters[item.type] ?? {};
+        return {
+          id: item.id,
+          type: item.type,
+          name: config.name ?? item.type,
+          startsIn: Math.max(0, item.startTime - this.t),
+          intensity: item.options?.intensity ?? 1,
+          duration: item.options?.duration ?? config.duration ?? 0,
+          waitForClear: item.waitForClear !== false
+        };
+      });
+  }
+
+  getPendingDisastersVersion() {
+    return this.disasterQueueVersion;
+  }
+
+  cancelPendingDisaster(id) {
+    const index = this.disasterQueue.findIndex(item => item.id === id);
+    if (index === -1) return false;
+    this.disasterQueue.splice(index, 1);
+    this.disasterQueueVersion++;
+    return true;
+  }
+
+  clearPendingDisasters() {
+    if (!this.disasterQueue.length) return false;
+    this.disasterQueue = [];
+    this.disasterQueueVersion++;
+    return true;
+  }
+
+  autoBalanceEcosystem(dt) {
+    const cfg = this.autoBalanceSettings;
+    if (!cfg?.enabled) return;
+    this.autoBalanceAccumulator += dt;
+    if (this.autoBalanceAccumulator < cfg.interval) return;
+    this.autoBalanceAccumulator = 0;
+
+    let herb = 0, pred = 0, omni = 0;
+    for (const c of this.creatures) {
+      if (!c.alive) continue;
+      if (c.genes.predator) {
+        pred++;
+        continue;
+      }
+      const diet = c.genes.diet ?? 0;
+      if (diet > 0.3 && diet < 0.7) {
+        omni++;
+      } else {
+        herb++;
+      }
+    }
+    const pop = herb + pred + omni;
+    const predatorRatio = pop > 0 ? pred / pop : 0;
+
+    const spawnHerbivores = (count) => {
+      const amount = Math.min(cfg.batchSpawn, Math.max(1, count));
+      for (let i = 0; i < amount; i++) {
+        this.spawnManual(rand(0, this.width), rand(0, this.height), false);
+      }
+    };
+    const spawnOmnivores = (count) => {
+      const amount = Math.min(cfg.batchSpawn, Math.max(1, count));
+      for (let i = 0; i < amount; i++) {
+        this.spawnOmnivore(rand(0, this.width), rand(0, this.height));
+      }
+    };
+    const spawnPredators = (count) => {
+      const amount = Math.min(Math.max(1, count), cfg.batchSpawn);
+      for (let i = 0; i < amount; i++) {
+        this.spawnManual(rand(0, this.width), rand(0, this.height), true);
+      }
+    };
+
+    if (pop < cfg.minPopulation) {
+      spawnHerbivores(cfg.minPopulation - pop);
+    }
+    if (herb < cfg.minHerbivores) {
+      spawnHerbivores(cfg.minHerbivores - herb);
+    }
+    if (omni < cfg.minOmnivores) {
+      spawnOmnivores(cfg.minOmnivores - omni);
+    }
+    if (pred < cfg.minPredators && herb > cfg.minHerbivores * 1.1) {
+      spawnPredators(cfg.minPredators - pred);
+    }
+    if (predatorRatio < cfg.targetPredatorRatio - 0.1 && pred < cfg.maxPredators && herb > cfg.minHerbivores * 1.3) {
+      spawnPredators(1);
+    }
+
+    if (pred && predatorRatio > cfg.targetPredatorRatio + 0.08) {
+      const penalty = clamp((predatorRatio - cfg.targetPredatorRatio) * 10, 0.2, 2.2);
+      for (const c of this.creatures) {
+        if (!c.alive || !c.genes.predator) continue;
+        c.energy = Math.max(0, c.energy - penalty);
+        c.personality && (c.personality.huntCooldown = Math.max(c.personality.huntCooldown, 1.5));
+      }
+    }
+
+    const desiredFood = Math.max(cfg.minFoodAbsolute, Math.floor(this.maxFood * cfg.targetFoodFraction));
+    if (this.food.length < desiredFood) {
+      const deficit = desiredFood - this.food.length;
+      const spawnCount = Math.min(24, Math.max(4, Math.round(deficit * 0.4)));
+      for (let i = 0; i < spawnCount; i++) {
+        this.addFood(rand(0, this.width), rand(0, this.height), 1.1);
+      }
+      this.environment.foodRateMultiplier = clamp(this.environment.foodRateMultiplier + 0.05, 0.6, 2.5);
+    } else if (this.food.length > desiredFood * 1.6) {
+      this.environment.foodRateMultiplier = clamp(this.environment.foodRateMultiplier - 0.04, 0.45, 1.4);
     }
   }
 
@@ -651,11 +890,14 @@ export class World {
     switch (this.activeDisaster) {
       case 'meteorStorm':
         // Random creatures die
-        if (Math.random() < 0.02) {
-          const victim = this.creatures[Math.floor(Math.random() * this.creatures.length)];
-          if (victim) {
-            victim.alive = false;
-            victim.logEvent('Killed by meteor', this.t);
+        {
+          const chance = clamp(0.02 * this.disasterIntensity, 0.002, 0.5);
+          if (Math.random() < chance) {
+            const victim = this.creatures[Math.floor(Math.random() * this.creatures.length)];
+            if (victim) {
+              victim.alive = false;
+              victim.logEvent('Killed by meteor', this.t);
+            }
           }
         }
         break;
@@ -663,7 +905,7 @@ export class World {
       case 'iceAge':
         // Increased temperature penalty, food scarce (handled in foodGrowthRate)
         for (const c of this.creatures) {
-          const extraCold = 0.5 * dt;
+          const extraCold = 0.5 * this.disasterIntensity * dt;
           c.energy -= extraCold;
         }
         break;
@@ -671,11 +913,14 @@ export class World {
       case 'plague':
         // Disease spreads between nearby creatures with low grit
         for (const c of this.creatures) {
-          if (c.genes.grit < 0.3 && Math.random() < 0.001) {
+          const outbreakChance = clamp(0.001 * this.disasterIntensity, 0.0002, 0.05);
+          if (c.genes.grit < 0.3 && Math.random() < outbreakChance) {
             const nearby = this.queryCreatures(c.x, c.y, 50);
             for (const n of nearby) {
-              if (n !== c && n.genes.grit < 0.4 && Math.random() < 0.1) {
-                n.health = Math.max(0, n.health - 0.5);
+              const spreadChance = clamp(0.1 * this.disasterIntensity, 0.02, 0.9);
+              if (n !== c && n.genes.grit < 0.4 && Math.random() < spreadChance) {
+                const damage = 0.5 * this.disasterIntensity;
+                n.health = Math.max(0, n.health - damage);
                 n.logEvent('Infected by plague', this.t);
               }
             }
@@ -685,27 +930,39 @@ export class World {
 
       case 'drought':
         // No food spawns (handled in step), existing food decays faster
-        if (Math.random() < 0.01 && this.food.length > 0) {
-          const idx = Math.floor(Math.random() * this.food.length);
-          this.food.splice(idx, 1);
-          this.gridDirty = true;
+        {
+          const decayChance = clamp(0.01 * this.disasterIntensity, 0.002, 0.3);
+          if (Math.random() < decayChance && this.food.length > 0) {
+            const idx = Math.floor(Math.random() * this.food.length);
+            this.food.splice(idx, 1);
+            this.gridDirty = true;
+          }
         }
         break;
     }
   }
 
-  endDisaster() {
+  endDisaster({ cancelled=false }={}) {
     if (this.lineageTracker && this.activeDisaster) {
       const config = this.disasters[this.activeDisaster];
+      const icon = cancelled ? '⏹️' : '✓';
       this.lineageTracker.events.unshift({
         time: this.t,
         rootId: null,
-        title: `✓ ${config.name} ends`
+        title: `${icon} ${config.name} ${cancelled ? 'cancelled' : 'ends'}`
       });
       this.lineageTracker.trim();
     }
     this.activeDisaster = null;
     this.disasterDuration = 0;
+    this.disasterIntensity = 1;
+    this.disasterManual = false;
+  }
+
+  cancelDisaster() {
+    if (!this.activeDisaster) return false;
+    this.endDisaster({ cancelled: true });
+    return true;
   }
 
   getActiveDisaster() {
@@ -713,7 +970,9 @@ export class World {
     return {
       type: this.activeDisaster,
       name: this.disasters[this.activeDisaster].name,
-      timeRemaining: this.disasterDuration
+      timeRemaining: this.disasterDuration,
+      intensity: this.disasterIntensity,
+      manual: this.disasterManual
     };
   }
 
@@ -723,7 +982,8 @@ export class World {
     if (this.activeDisaster) {
       events.push({
         name: `⚠️ ${this.disasters[this.activeDisaster].name}`,
-        remaining: this.disasterDuration
+        remaining: this.disasterDuration,
+        intensity: this.disasterIntensity
       });
     }
     return events;

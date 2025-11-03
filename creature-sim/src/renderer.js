@@ -20,6 +20,12 @@ export class Renderer {
     this.enableWeather = true; // Weather effects
     this.enableDayNight = true; // Day/night cycle
     this.background = '#0b0c10';
+    this.lastMiniMap = null; // Cache latest mini-map bounds for interaction
+    this.miniMapSettings = {
+      heatmap: true,
+      disaster: true,
+      territories: true
+    };
     
     // Visual enhancement settings
     this.timeOfDay = 0; // 0-1 (0=midnight, 0.5=noon)
@@ -52,8 +58,21 @@ export class Renderer {
     this.ctx.restore();
   }
 
+  setMiniMapOption(option, value) {
+    if (Object.prototype.hasOwnProperty.call(this.miniMapSettings, option)) {
+      this.miniMapSettings[option] = !!value;
+    }
+  }
+
   drawWorld(world, opts={}) {
-    const { selectedId=null, pinnedId=null, lineageRootId=null, worldTime=0 } = opts;
+    const {
+      selectedId=null,
+      pinnedId=null,
+      lineageRootId=null,
+      worldTime=0,
+      travelPreview=null,
+      cameraTravel=null
+    } = opts;
     const camera = this.camera;
     const ctx = this.ctx;
 
@@ -126,6 +145,13 @@ export class Renderer {
       this.drawIntelligenceIndicators(world);
     }
 
+    if (cameraTravel) {
+      this.drawTravelIndicator(cameraTravel, { preview: false });
+    }
+    if (travelPreview) {
+      this.drawTravelIndicator(travelPreview, { preview: true });
+    }
+
     ctx.restore();
     
     // Draw god mode effects
@@ -134,6 +160,8 @@ export class Renderer {
     // Draw mini-map overlay (top-right corner)
     if (this.enableMiniMap) {
       this.drawMiniMap(world, opts);
+    } else {
+      this.lastMiniMap = null;
     }
   }
   
@@ -170,6 +198,59 @@ export class Renderer {
       
       ctx.restore();
     }
+  }
+
+  drawTravelIndicator(segment, { preview=false }={}) {
+    if (!segment?.from || !segment?.to) return;
+    const ctx = this.ctx;
+    const from = segment.from;
+    const to = segment.to;
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const dist = Math.max(1, Math.hypot(dx, dy));
+    const ringRadius = Math.max(10, Math.min(36, dist * 0.08));
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalAlpha = preview ? 0.85 : 1;
+    if (preview) {
+      ctx.setLineDash([14, 10]);
+      ctx.strokeStyle = 'rgba(123, 183, 255, 0.7)';
+      ctx.lineWidth = 2.5;
+    } else {
+      const gradient = ctx.createLinearGradient(from.x, from.y, to.x, to.y);
+      gradient.addColorStop(0, 'rgba(250, 250, 200, 0.85)');
+      gradient.addColorStop(1, 'rgba(250, 204, 21, 0.85)');
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 4;
+    }
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.beginPath();
+    ctx.lineWidth = preview ? 2 : 3;
+    ctx.strokeStyle = preview ? 'rgba(123, 183, 255, 0.9)' : 'rgba(250, 204, 21, 0.95)';
+    ctx.fillStyle = preview ? 'rgba(123, 183, 255, 0.2)' : 'rgba(250, 204, 21, 0.25)';
+    ctx.arc(to.x, to.y, ringRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    if (!preview) {
+      const progress = clamp(segment.progress ?? 0, 0, 1);
+      const markerX = from.x + dx * progress;
+      const markerY = from.y + dy * progress;
+      ctx.fillStyle = 'rgba(255, 253, 130, 0.95)';
+      ctx.beginPath();
+      ctx.arc(markerX, markerY, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   _drawDecoration(dec) {
@@ -970,10 +1051,31 @@ export class Renderer {
     const mapY = opts.viewportHeight - mapH - 16;
     const scaleX = mapW / world.width;
     const scaleY = mapH / world.height;
+    this.lastMiniMap = {
+      x: mapX,
+      y: mapY,
+      width: mapW,
+      height: mapH,
+      scaleX,
+      scaleY,
+      worldWidth: world.width,
+      worldHeight: world.height
+    };
     
     // Background (darker, less distracting)
     ctx.fillStyle = 'rgba(8, 10, 14, 0.95)';
     ctx.fillRect(mapX, mapY, mapW, mapH);
+
+    const activeDisaster = (this.miniMapSettings.disaster && typeof world.getActiveDisaster === 'function')
+      ? world.getActiveDisaster()
+      : null;
+    if (activeDisaster) {
+      const tint = this._getDisasterTint(activeDisaster.type);
+      if (tint) {
+        ctx.fillStyle = tint;
+        ctx.fillRect(mapX, mapY, mapW, mapH);
+      }
+    }
     
     // Draw biomes (MUCH more subtle - just hints of color)
     const sampleSize = 100; // Larger samples = less detail, easier to read
@@ -992,34 +1094,62 @@ export class Renderer {
     }
     ctx.globalAlpha = 1;
     
-    // Draw creature population as HEAT MAP (more readable!)
-    const heatmapSize = 100; // Match world aspect ratio
-    const heatmapW = Math.floor(heatmapSize * aspectRatio);
-    const heatmapH = heatmapSize;
-    const heatmap = new Uint8Array(heatmapW * heatmapH);
-    
-    for (const c of world.creatures) {
-      const hx = Math.floor((c.x / world.width) * heatmapW);
-      const hy = Math.floor((c.y / world.height) * heatmapH);
-      if (hx >= 0 && hx < heatmapW && hy >= 0 && hy < heatmapH) {
-        heatmap[hy * heatmapW + hx]++;
-      }
-    }
-    
-    // Render heatmap (bright spots = high population)
-    for (let hy = 0; hy < heatmapH; hy++) {
-      for (let hx = 0; hx < heatmapW; hx++) {
-        const count = heatmap[hy * heatmapW + hx];
-        if (count > 0) {
-          const intensity = Math.min(count / 3, 1); // Cap intensity
-          ctx.fillStyle = `rgba(123, 183, 255, ${intensity * 0.8})`;
-          const px = mapX + (hx / heatmapW) * mapW;
-          const py = mapY + (hy / heatmapH) * mapH;
-          const cellW = (mapW / heatmapW) * 1.5;
-          const cellH = (mapH / heatmapH) * 1.5;
-          ctx.fillRect(px, py, cellW, cellH);
+    if (this.miniMapSettings.heatmap) {
+      // Draw creature population as HEAT MAP (more readable!)
+      const heatmapSize = 100; // Match world aspect ratio
+      const heatmapW = Math.floor(heatmapSize * aspectRatio);
+      const heatmapH = heatmapSize;
+      const heatmap = new Uint8Array(heatmapW * heatmapH);
+      
+      for (const c of world.creatures) {
+        const hx = Math.floor((c.x / world.width) * heatmapW);
+        const hy = Math.floor((c.y / world.height) * heatmapH);
+        if (hx >= 0 && hx < heatmapW && hy >= 0 && hy < heatmapH) {
+          heatmap[hy * heatmapW + hx]++;
         }
       }
+      
+      // Render heatmap (bright spots = high population)
+      for (let hy = 0; hy < heatmapH; hy++) {
+        for (let hx = 0; hx < heatmapW; hx++) {
+          const count = heatmap[hy * heatmapW + hx];
+          if (count > 0) {
+            const intensity = Math.min(count / 3, 1); // Cap intensity
+            ctx.fillStyle = `rgba(123, 183, 255, ${intensity * 0.8})`;
+            const px = mapX + (hx / heatmapW) * mapW;
+            const py = mapY + (hy / heatmapH) * mapH;
+            const cellW = (mapW / heatmapW) * 1.5;
+            const cellH = (mapH / heatmapH) * 1.5;
+            ctx.fillRect(px, py, cellW, cellH);
+          }
+        }
+      }
+    }
+
+    if (this.miniMapSettings.territories && world.territories && world.territories.size) {
+      ctx.save();
+      const scaleAvg = (scaleX + scaleY) * 0.5;
+      ctx.strokeStyle = 'rgba(248, 113, 113, 0.6)';
+      ctx.lineWidth = 1.6;
+      for (const territory of world.territories.values()) {
+        const cx = mapX + territory.x * scaleX;
+        const cy = mapY + territory.y * scaleY;
+        const radius = territory.radius * scaleAvg;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      if (world.territoryConflicts && world.territoryConflicts.length) {
+        ctx.fillStyle = 'rgba(248, 113, 113, 0.7)';
+        for (const conflict of world.territoryConflicts) {
+          const cx = mapX + conflict.x * scaleX;
+          const cy = mapY + conflict.y * scaleY;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
     }
     
     // Draw camera view rectangle (YOUR LOCATION)
@@ -1036,6 +1166,45 @@ export class Renderer {
       viewW * scaleX,
       viewH * scaleY
     );
+
+    const drawCreatureMarker = (id, fillStyle, strokeStyle, icon=null) => {
+      if (!id) return;
+      const creature = typeof world.getAnyCreatureById === 'function' ? world.getAnyCreatureById(id) : null;
+      if (!creature) return;
+      const mx = mapX + creature.x * scaleX;
+      const my = mapY + creature.y * scaleY;
+      ctx.save();
+      ctx.translate(mx, my);
+      ctx.fillStyle = fillStyle;
+      ctx.strokeStyle = strokeStyle;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      if (icon) {
+        ctx.fillStyle = strokeStyle;
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(icon, 0, 0);
+      }
+      ctx.restore();
+    };
+
+    drawCreatureMarker(opts.selectedId, 'rgba(250, 204, 21, 0.9)', 'rgba(251, 191, 36, 1)', '●');
+    if (opts.pinnedId && opts.pinnedId !== opts.selectedId) {
+      drawCreatureMarker(opts.pinnedId, 'rgba(167, 139, 250, 0.9)', 'rgba(129, 140, 248, 1)', '★');
+    }
+    if (activeDisaster && this.miniMapSettings.disaster) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillText(
+        `${activeDisaster.name} · ${Math.ceil(activeDisaster.timeRemaining ?? 0)}s`,
+        mapX + 6,
+        mapY + 14
+      );
+    }
     
     // Border with slight glow
     ctx.shadowColor = 'rgba(123, 183, 255, 0.3)';
@@ -1051,5 +1220,15 @@ export class Renderer {
     ctx.fillText('WORLD MAP', mapX + 5, mapY - 5);
     
     ctx.restore();
+  }
+
+  _getDisasterTint(type) {
+    switch (type) {
+      case 'meteorStorm': return 'rgba(248, 113, 113, 0.18)';
+      case 'iceAge': return 'rgba(96, 165, 250, 0.18)';
+      case 'plague': return 'rgba(192, 132, 252, 0.18)';
+      case 'drought': return 'rgba(250, 204, 21, 0.16)';
+      default: return null;
+    }
   }
 }
