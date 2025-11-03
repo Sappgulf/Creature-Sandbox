@@ -51,7 +51,7 @@ open http://localhost:8000
 ### Camera Controls
 - **Mouse Wheel**: Zoom in/out (0.1x to 3.0x)
 - **Middle Click Drag** or **Alt+Drag**: Pan camera
-- **Click Mini-Map**: Teleport camera to location *(feature)*
+- **Click Mini-Map**: Teleport camera to location
 
 ### Simulation Controls
 | Key | Action |
@@ -59,6 +59,15 @@ open http://localhost:8000
 | `Space` | Pause/Resume simulation |
 | `I` | Toggle inspector panel |
 | `+` / `-` | Adjust simulation speed (1x to 5x) |
+
+### HUD Buttons
+| Button | Function |
+|--------|----------|
+| **+ Food** | Spawn 10 food pellets at random location |
+| **+ Herbivore** | Spawn a random herbivore at random location |
+| **+ Predator** | Spawn a predator with optimized hunting genes |
+| **+ Omnivore** | Spawn a scavenger with balanced omnivore genes |
+| **Scenario Lab** | Open disaster/event system panel |
 
 ### Tool Modes
 | Key | Mode | Description |
@@ -122,15 +131,28 @@ Creatures reproduce when:
 **Offspring:** Inherits genes with small mutations
 
 ### Genetic Traits
+
+**Core Genes:**
 | Gene | Range | Effect |
 |------|-------|--------|
 | **Speed** | 0.2-2.0 | Movement velocity |
 | **FOV** | 20°-160° | Visual field angle |
 | **Sense** | 20-200px | Detection radius |
 | **Metabolism** | 0.4-2.0 | Energy consumption rate |
-| **Predator** | 0 or 1 | Herbivore vs Carnivore |
+| **Predator** | 0 or 1 | Herbivore vs Carnivore (legacy) |
 | **Diet** | 0.0-1.0 | Herbivore → Omnivore → Carnivore |
 | **Hue** | 0-360° | Body color (also affects sense type) |
+
+**Behavioral Genes:**
+| Gene | Range | Effect |
+|------|-------|--------|
+| **Pack Instinct** | 0-1 | Predators: pack hunting coordination |
+| **Herd Instinct** | 0-1 | Herbivores: group safety bonus |
+| **Aggression** | 0.4-2.2 | Chase intensity, attack frequency |
+| **Ambush Delay** | 0-5s | Seconds to wait before sprint attack |
+| **Spines** | 0-1 | Defensive retaliation damage |
+| **Panic Pheromone** | 0-1 | Danger signal strength to others |
+| **Grit** | 0-1 | Bleed resistance, toughness |
 
 ### Mutation
 Each generation has a **~5% mutation chance** per gene:
@@ -172,6 +194,15 @@ Each generation has a **~5% mutation chance** per gene:
 - **Color**: Green → Orange/Tan → Red/Orange
 - **Features**: Omnivores have orange hue (30°), carnivores have teeth
 - **Diet Gene**: 0.0-0.3 (herb), 0.3-0.7 (omni), 0.7-1.0 (carn)
+
+### 💀 **Corpse System**
+When creatures die, they leave behind corpses:
+- **Visual**: Brown (predators) or olive (herbivores) with X marker
+- **Energy Value**: Based on creature size (starts with remaining energy)
+- **Decay**: Loses 2% energy per second
+- **Consumption**: Scavengers eat up to 8 energy per feeding
+- **Removal**: Disappears when energy drops below 0.5
+- **Purpose**: Recycles biomass, prevents ecosystem collapse
 
 ---
 
@@ -221,6 +252,13 @@ The world uses **Perlin noise** to generate 6 organic biome types:
 - **Strategy**: Hotspot for all, HIGH competition
 
 **World Size:** 4000×2800 pixels (11.2 million px²)
+
+### 🍎 **Food Spawn System**
+- **Max Food**: ~62,000 pellets (world size / 180)
+- **Growth Rate**: Base 0.18 × biome modifier × disaster modifier
+- **Biome-Specific**: Food spawns more in fertile biomes (Meadow, Forest)
+- **Visual**: Green dots, size indicates energy value
+- **Spatial Grid**: O(1) lookup for efficient creature foraging
 
 ---
 
@@ -375,10 +413,11 @@ Intervene directly in the simulation!
 - **Note**: Creates a corpse for scavengers
 
 #### 👯 **CLONE**
-- Creates exact genetic copy nearby (50px)
+- Creates exact genetic copy nearby (within 50px)
 - **Visual**: Twin emoji floats up
 - **Use**: Spread successful genes, create super-lineages
-- **Note**: Clone shares parent lineage
+- **Note**: Clone becomes a sibling (shares same parent), not a child
+- **Safety**: Position bounds-checked, fully error-handled
 
 ---
 
@@ -531,6 +570,40 @@ This simulator is perfect for teaching:
 - Click outside panel to close
 - If frozen, refresh page
 - Use `I` key to toggle
+
+### Clone Button Crashes Game
+- **Fixed!** Clone tool was incompatible with new biome system
+- Migration system referenced old `world.biomes` array
+- Now fully safe with bounds checking and error handling
+- **Solution**: Already patched in current version
+
+---
+
+## 🐛 **RECENT BUG FIXES**
+
+### November 3, 2025 - Clone System Fixed
+**Issue**: Cloning creatures caused game freeze/crash
+**Root Cause**: 
+- Migration feature referenced old `world.biomes` array (removed in Perlin noise upgrade)
+- Cloned creatures with migration properties triggered undefined array access
+- No error handling in clone position calculation
+
+**Fixes Applied**:
+1. Updated migration system to use new biome structure
+2. Added position bounds checking (keeps clones within world)
+3. Changed clone relationship (siblings instead of parent-child)
+4. Added comprehensive try-catch error handling
+5. Force immediate spatial grid rebuild after cloning
+
+**Result**: Clone tool now 100% crash-free! ✅
+
+### October 2025 - Inspector Panel Freeze
+**Issue**: Game stopped updating when closing inspector
+**Fix**: Added visibility checks to prevent chart updates when panel hidden
+
+### October 2025 - Corpse Spatial Grid
+**Issue**: Corpse insertion had wrong parameter order
+**Fix**: Corrected to `corpseGrid.insert(corpse, corpse.x, corpse.y)`
 
 ---
 
