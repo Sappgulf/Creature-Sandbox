@@ -77,6 +77,63 @@ export class Creature {
       lastMigration: -Infinity,
       settled: false
     };
+    
+    // FEATURE 5: Emotional States
+    this.emotions = {
+      fear: 0,          // 0-1, increases when attacked/near predators
+      hunger: 0,        // 0-1, increases when low energy
+      confidence: 0.5,  // 0-1, increases with kills/successful actions
+      curiosity: clamp(genes.sense / 150, 0, 1), // exploration drive
+      stress: 0,        // 0-1, accumulates from negative events
+      contentment: 0.5  // 0-1, decreases stress, increases with food/safety
+    };
+    
+    // FEATURE 6: Sensory Specialization
+    this.senseType = this._determineSenseType(genes);
+    
+    // FEATURE 7: Problem Solving & Intelligence
+    this.intelligence = {
+      level: clamp((genes.sense / 100) * (genes.metabolism ?? 1), 0, 2), // 0-2
+      patterns: [], // learned successful strategies
+      experiencePoints: 0,
+      learningRate: 0.05
+    };
+    
+    // FEATURE 8: Sexual Selection
+    this.sexuality = {
+      attractiveness: this._calculateAttractiveness(genes),
+      lastMated: -Infinity,
+      choosiness: clamp(genes.sense / 120, 0.3, 1), // how picky
+      courtshipStyle: Math.random(), // display type
+      desiredTraits: this._pickDesiredTraits(genes)
+    };
+  }
+  
+  _determineSenseType(genes) {
+    // Determine sense type based on genes
+    const r = genes.hue / 360; // use hue as determinant
+    if (r < 0.25) return 'normal';
+    if (r < 0.5) return 'chemical'; // better pheromone tracking
+    if (r < 0.75) return 'thermal'; // see through obstacles
+    return 'echolocation'; // wider detection
+  }
+  
+  _calculateAttractiveness(genes) {
+    // Multi-factor attractiveness
+    return (genes.speed * 0.3 + 
+            genes.sense * 0.002 + 
+            (2 - genes.metabolism) * 0.2 + 
+            (genes.predator ? genes.aggression * 0.2 : 1 - genes.metabolism * 0.3));
+  }
+  
+  _pickDesiredTraits(genes) {
+    // What this creature finds attractive
+    return {
+      speed: genes.speed > 1.2,
+      sense: genes.sense > 100,
+      health: true,
+      predator: genes.predator
+    };
   }
 
   baseBurn() {
@@ -176,6 +233,8 @@ export class Creature {
     if (this._updateMemory) this._updateMemory(dt, world);
     if (this._updateSocialBehavior) this._updateSocialBehavior(world);
     if (this._updateMigration) this._updateMigration(world, dt);
+    if (this._updateEmotions) this._updateEmotions(dt, world);
+    if (this._updateIntelligence) this._updateIntelligence(dt, world);
     
     const eff = this.effects;
 
@@ -353,9 +412,35 @@ export class Creature {
       return;
     }
 
+    // FEATURE 8: Sexual selection for reproduction
     if (!this.genes.predator && this.energy > 36) {
-      this.energy *= 0.55;
-      world.spawnChild(this);
+      // Look for suitable mate
+      const potentialMates = world.queryCreatures(this.x, this.y, this.genes.sense * 2)
+        .filter(c => !c.genes.predator && c.alive && c.id !== this.id && c.energy > 30);
+      
+      let selectedMate = null;
+      let bestScore = this.sexuality.choosiness;
+      
+      for (const mate of potentialMates) {
+        if (this.shouldAcceptMate && this.shouldAcceptMate(mate, world.t)) {
+          const score = this.evaluateMate(mate);
+          if (score > bestScore) {
+            bestScore = score;
+            selectedMate = mate;
+          }
+        }
+      }
+      
+      if (selectedMate || potentialMates.length === 0) {
+        this.energy *= 0.55;
+        if (selectedMate) {
+          this.sexuality.lastMated = world.t;
+          selectedMate.sexuality.lastMated = world.t;
+          // Log successful mating
+          this.emotions.confidence = Math.min(1, this.emotions.confidence + 0.1);
+        }
+        world.spawnChild(this, selectedMate);
+      }
     }
 
     if (this.energy <= 0 || this.age > 300) {
