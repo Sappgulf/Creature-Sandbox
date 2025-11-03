@@ -446,6 +446,11 @@ export class Creature {
 
     const displayHue = clusterHue !== null ? clusterHue : g.hue;
     
+    // DEBUG: Log when using cluster hue
+    if (clusterHue !== null && this.id <= 5) {
+      console.log(`%c[COLOR DEBUG] Creature #${this.id}: Using clusterHue=${clusterHue} instead of genes.hue=${g.hue}`, 'color: #ec4899; font-weight: bold;');
+    }
+    
     if (inLineage) {
       ctx.beginPath();
       ctx.arc(0, 0, 10, 0, TAU);

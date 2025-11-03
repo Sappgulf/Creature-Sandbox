@@ -128,13 +128,16 @@ export class Renderer {
       // Override hue if clustering is enabled
       const clusterHue = clusterMap ? clusterMap.get(c.id) : null;
       
+      // DEBUG: Force first creature to bright red if clustering enabled
+      const debugClusterHue = this.enableClustering && c.id === 1 ? 0 : clusterHue;
+      
       c.draw(ctx, {
         isSelected,
         isPinned,
         inLineage,
         showTrail: this.enableTrails,
         showVision: this.enableVision,
-        clusterHue
+        clusterHue: debugClusterHue
       });
       ctx.restore();
     }
