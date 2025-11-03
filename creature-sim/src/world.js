@@ -75,6 +75,18 @@ export class World {
     this.eventSystem = this._createEventSystem();
     this.lineagePulse = this._createLineagePulse();
     this.ecoStats = { meanHealth: 0.6, predatorRatio: 0.2, biomass: 0, lastUpdate: 0 };
+    
+    // Territory system for predators
+    this.territories = new Map(); // predatorId -> territory object
+    this.territoryConflicts = []; // active conflicts for visualization
+    
+    // Social behavior tracking
+    this.socialBonds = new Map(); // creatureId -> array of bondedIds
+    this.offspring = new Map(); // parentId -> array of childIds (recent)
+    
+    // Migration tracking
+    this.migrationTargets = new Map(); // creatureId -> target biome
+    this.biomePopulations = [0, 0, 0]; // creatures in each biome
 
     // init temperature bands
     for (let y=0;y<this.temperature.h;y++){
@@ -529,6 +541,7 @@ export class World {
 
   step(dt){
     this.updateEcoStats();
+    this.updateTerritories(dt);
     this.t += dt;
     this.seasonPhase += dt * this.seasonSpeed;
     this.updateSeasonalEvents(dt);
@@ -1295,5 +1308,113 @@ export class World {
       peak: entry.peak,
       series: entry.series.map(pt => ({ time: pt.time, alive: pt.alive }))
     }));
+  }
+
+  // ============================================================================
+  // FEATURE 1: TERRITORY & DOMINANCE SYSTEM
+  // ============================================================================
+  
+  updateTerritories(dt) {
+    // Clean up dead territories
+    for (const [id] of this.territories.entries()) {
+      const owner = this.registry.get(id);
+      if (!owner || !owner.alive || !owner.genes.predator) {
+        this.territories.delete(id);
+      }
+    }
+    
+    // Update/establish territories
+    const predators = this.creatures.filter(c => c.genes.predator && c.alive);
+    for (const predator of predators) {
+      if (this.territories.has(predator.id)) {
+        const territory = this.territories.get(predator.id);
+        territory.strength = this._calculateTerritorialStrength(predator);
+        territory.radius = 60 + (territory.strength * 40);
+        territory.x = predator.x;
+        territory.y = predator.y;
+      } else if (predator.age > 10 && predator.stats.kills >= 1) {
+        const strength = this._calculateTerritorialStrength(predator);
+        this.territories.set(predator.id, {
+          owner: predator.id,
+          x: predator.x,
+          y: predator.y,
+          radius: 60 + (strength * 40),
+          strength,
+          establishedAt: this.t,
+          dominanceRank: 0
+        });
+      }
+    }
+    
+    // Resolve conflicts
+    this._resolveTeritorialConflicts(dt);
+    this._updateDominanceRanks();
+  }
+  
+  _calculateTerritorialStrength(predator) {
+    const geneScore = (predator.genes.aggression || 1) * 0.3 + 
+                      (predator.genes.speed || 1) * 0.2 +
+                      (predator.genes.metabolism || 1) * 0.1;
+    const healthScore = (predator.health / predator.maxHealth) * 0.2;
+    const killScore = Math.min(predator.stats.kills / 10, 1) * 0.2;
+    const ageScore = Math.min(predator.age / 60, 1) * 0.1;
+    return clamp(geneScore + healthScore + killScore + ageScore, 0.3, 2.5);
+  }
+  
+  _resolveTeritorialConflicts(dt) {
+    this.territoryConflicts = [];
+    const territories = Array.from(this.territories.values());
+    
+    for (let i = 0; i < territories.length; i++) {
+      for (let j = i + 1; j < territories.length; j++) {
+        const t1 = territories[i];
+        const t2 = territories[j];
+        const dx = t2.x - t1.x;
+        const dy = t2.y - t1.y;
+        const distSq = dx * dx + dy * dy;
+        const minDist = t1.radius + t2.radius;
+        
+        if (distSq < minDist * minDist) {
+          const owner1 = this.registry.get(t1.owner);
+          const owner2 = this.registry.get(t2.owner);
+          
+          if (owner1 && owner2 && owner1.alive && owner2.alive) {
+            this.territoryConflicts.push({
+              x: (t1.x + t2.x) / 2,
+              y: (t1.y + t2.y) / 2,
+              predator1: t1.owner,
+              predator2: t2.owner,
+              intensity: 1 - Math.sqrt(distSq) / minDist
+            });
+            
+            if (t1.strength > t2.strength * 1.2) {
+              this._applyDominanceEffect(owner2, owner1, dt);
+            } else if (t2.strength > t1.strength * 1.2) {
+              this._applyDominanceEffect(owner1, owner2, dt);
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  _applyDominanceEffect(subordinate, dominant, dt) {
+    subordinate.energy -= 0.3 * dt;
+    const dx = subordinate.x - dominant.x;
+    const dy = subordinate.y - dominant.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > 0.1) {
+      subordinate.dir = Math.atan2(dy, dx);
+      subordinate.personality.huntCooldown = Math.max(subordinate.personality.huntCooldown, 3);
+    }
+    dominant.energy += 0.1 * dt;
+  }
+  
+  _updateDominanceRanks() {
+    const territories = Array.from(this.territories.values())
+      .sort((a, b) => b.strength - a.strength);
+    territories.forEach((territory, index) => {
+      territory.dominanceRank = index + 1;
+    });
   }
 }

@@ -53,6 +53,30 @@ export class Creature {
     this._cachedBaseBurn = null;
     this._senseRadius2Cache = null;
     this._halfFovRad = (genes.fov * 0.5) * Math.PI / 180; // Cache FOV in radians
+    
+    // FEATURE 2: Learning & Memory
+    const memoryCapacity = Math.floor(10 + (genes.sense / 50)); // 10-14 memories
+    this.memory = {
+      capacity: memoryCapacity,
+      locations: [], // { x, y, type, strength, timestamp }
+      decayRate: 0.05 // strength decays per second
+    };
+    
+    // FEATURE 4: Social Behaviors
+    this.social = {
+      herdMates: [], // nearby same-species creatures
+      packTarget: null, // shared target for pack hunting
+      offspring: [], // child IDs (recent)
+      lastReproduction: -Infinity
+    };
+    
+    // FEATURE 9: Migration
+    this.migration = {
+      instinct: clamp(genes.herdInstinct ?? 0.5, 0, 1), // how likely to migrate
+      targetBiome: null, // which biome to migrate to
+      lastMigration: -Infinity,
+      settled: false
+    };
   }
 
   baseBurn() {
