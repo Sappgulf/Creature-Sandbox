@@ -22,7 +22,7 @@ export class Renderer {
   }
 
   drawWorld(world, opts={}) {
-    const { selectedId=null, pinnedId=null, lineageRootId=null } = opts;
+    const { selectedId=null, pinnedId=null, lineageRootId=null, worldTime=0 } = opts;
     const camera = this.camera;
     const ctx = this.ctx;
 
@@ -47,7 +47,7 @@ export class Renderer {
       }
     }
     
-    this.drawCreatures(world.creatures, { selectedId, pinnedId, lineageSet });
+    this.drawCreatures(world.creatures, { selectedId, pinnedId, lineageSet, worldTime });
 
     ctx.restore();
   }
@@ -73,13 +73,15 @@ export class Renderer {
 
   drawCreatures(creatures, opts) {
     const ctx = this.ctx;
+    const { worldTime = 0 } = opts;
     
     // Compute clusters if clustering is enabled
     let clusterMap = null;
     if (this.enableClustering) {
-      if (this._clusterCache.frame !== Math.floor(opts.worldTime || 0)) {
+      const currentFrame = Math.floor(worldTime);
+      if (this._clusterCache.frame !== currentFrame) {
         this._clusterCache.clusters = this._computeClusters(creatures);
-        this._clusterCache.frame = Math.floor(opts.worldTime || 0);
+        this._clusterCache.frame = currentFrame;
       }
       clusterMap = this._clusterCache.clusters;
     }

@@ -161,12 +161,20 @@ window.addEventListener('keydown', (e)=>{
     }
     if (e.key.toLowerCase() === 'v') {
       renderer.enableVision = !renderer.enableVision;
-      console.log(`Vision cones: ${renderer.enableVision ? 'ON' : 'OFF'}${renderer.enableVision ? ' (click a creature to see)' : ''}`);
+      console.log(`%c[VISION CONES] ${renderer.enableVision ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${renderer.enableVision ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
+      if (renderer.enableVision) {
+        console.log('%cℹ️ Click on a creature to see its vision cone and sense radius', 'color: #60a5fa;');
+      }
       return;
     }
     if (e.key.toLowerCase() === 'c') {
       renderer.enableClustering = !renderer.enableClustering;
-      console.log(`Genetic clustering: ${renderer.enableClustering ? 'ON' : 'OFF'}`);
+      console.log(`%c[GENETIC CLUSTERING] ${renderer.enableClustering ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${renderer.enableClustering ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
+      if (renderer.enableClustering) {
+        console.log('%cℹ️ Creatures are now colored by genetic similarity (updates every second)', 'color: #60a5fa;');
+      }
       return;
     }
     if (e.key.toLowerCase() === 'f') {
