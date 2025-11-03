@@ -14,7 +14,15 @@ const ctx = canvas.getContext('2d');
 const world = new World(canvas.width, canvas.height);
 world.seed(70, 6, 200);
 
-const camera = new Camera({ x: canvas.width * 0.5, y: canvas.height * 0.5, zoom: 0.95 });
+const camera = new Camera({
+  x: world.width * 0.5,
+  y: world.height * 0.5,
+  zoom: 1,
+  worldWidth: world.width,
+  worldHeight: world.height,
+  viewportWidth: canvas.width,
+  viewportHeight: canvas.height
+});
 const renderer = new Renderer(ctx, camera);
 const tools = new ToolController(world, camera);
 const analytics = new AnalyticsTracker();
