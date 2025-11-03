@@ -75,6 +75,18 @@ export class Renderer {
     const ctx = this.ctx;
     const { worldTime = 0 } = opts;
     
+    // Debug: Log state once per second
+    if (!this._lastDebugLog || worldTime - this._lastDebugLog > 60) {
+      console.log(`%c[RENDERER STATE]`, 'color: #8b5cf6; font-weight: bold;', {
+        enableVision: this.enableVision,
+        enableClustering: this.enableClustering,
+        enableTrails: this.enableTrails,
+        selectedId: opts.selectedId,
+        pinnedId: opts.pinnedId
+      });
+      this._lastDebugLog = worldTime;
+    }
+    
     // Compute clusters if clustering is enabled
     let clusterMap = null;
     if (this.enableClustering) {
