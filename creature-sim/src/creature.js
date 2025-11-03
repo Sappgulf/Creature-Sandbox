@@ -1,4 +1,5 @@
 import { clamp, rand, randn, dist2, wrap } from './utils.js';
+import { BehaviorConfig } from './behavior.js';
 
 const TAU = Math.PI * 2;
 const TRAIL_INTERVAL = 0.12;
@@ -35,13 +36,16 @@ export class Creature {
 
   seek(foodList, pheromone) {
     let best = null, bestD2 = Infinity;
+    const senseRadius = this.genes.sense * (0.7 + BehaviorConfig.forageWeight * 0.6);
+    const senseRadius2 = senseRadius * senseRadius;
     for (let f of foodList) {
       const d2 = dist2(this.x,this.y,f.x,f.y);
-      if (d2 > this.genes.sense*this.genes.sense) continue;
+      if (d2 > senseRadius2) continue;
       const ang = Math.atan2(f.y - this.y, f.x - this.x);
       let delta = Math.atan2(Math.sin(ang - this.dir), Math.cos(ang - this.dir));
       if (Math.abs(delta) * 180/Math.PI > this.genes.fov*0.5) continue;
-      if (d2 < bestD2) { bestD2 = d2; best = f; }
+      const bias = BehaviorConfig.forageWeight > 0 ? d2 / BehaviorConfig.forageWeight : d2;
+      if (bias < bestD2) { bestD2 = bias; best = f; }
     }
     if (!best && pheromone) {
       const gx = Math.floor(this.x/pheromone.cell);
@@ -65,12 +69,14 @@ export class Creature {
     // Sense & steer
     this.seek(world.nearbyFood(this.x,this.y,this.genes.sense), world.pheromone);
 
-    let desiredAngle = this.dir + randn(0, 0.05);
+    const wanderScale = 0.05 * BehaviorConfig.wanderWeight;
+    let desiredAngle = this.dir + randn(0, wanderScale);
     if (this.target) desiredAngle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
     let delta = Math.atan2(Math.sin(desiredAngle - this.dir), Math.cos(desiredAngle - this.dir));
     this.dir += clamp(delta, -0.15, 0.15);
 
-    const spd = this.genes.speed * 40;
+    const restFactor = BehaviorConfig.restWeight * clamp(1 - this.energy / 36, 0, 1);
+    const spd = this.genes.speed * 40 * clamp(1 - restFactor * 0.6, 0.15, 1);
     this.vx = Math.cos(this.dir) * spd;
     this.vy = Math.sin(this.dir) * spd;
     this.x = wrap(this.x + this.vx*dt, world.width);
@@ -87,6 +93,9 @@ export class Creature {
         if (victim && typeof victim.logEvent === 'function') {
           victim.logEvent(this.id != null ? `Killed by predator #${this.id}` : 'Killed by predator', world.t);
         }
+        if (this.stats.kills === 5) {
+          world.lineageTracker?.noteMilestone(world, this, 'claimed 5 hunts');
+        }
       }
     } else {
       const eaten = world.tryEatFoodAt(this.x, this.y, 8);
@@ -95,6 +104,9 @@ export class Creature {
         this.stats.food += 1;
         this.logEvent('Foraged food', world.t);
         world.dropPheromone(this.x, this.y, 0.5);
+        if (this.stats.food === 20) {
+          world.lineageTracker?.noteMilestone(world, this, 'foraged 20 meals');
+        }
       }
     }
 

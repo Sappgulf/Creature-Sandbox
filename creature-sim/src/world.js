@@ -45,6 +45,10 @@ export class World {
     this.creatureGrid = new SpatialGrid(48);
     this.foodGrid = new SpatialGrid(36);
     this.gridDirty = true;
+    this.lineageTracker = null;
+    this.seasonPhase = 0;
+    this.seasonSpeed = 0.015;
+    this.maxFood = Math.floor((width * height) / 320);
 
     // init temperature bands
     for (let y=0;y<this.temperature.h;y++){
@@ -69,6 +73,10 @@ export class World {
     return creature.id;
   }
 
+  attachLineageTracker(tracker) {
+    this.lineageTracker = tracker;
+  }
+
   seed(nHerb=60, nPred=6, nFood=180) {
     for (let i=0;i<nHerb;i++) {
       this.addCreature(new Creature(rand(0,this.width), rand(0,this.height), makeGenes()), null);
@@ -89,6 +97,8 @@ export class World {
     this._nextId = 1;
     this.gridDirty = true;
     this.t = 0;
+    this.seasonPhase = 0;
+    this.maxFood = Math.floor((this.width * this.height) / 320);
   }
 
   addFood(x,y,r=1.5){
@@ -135,6 +145,7 @@ export class World {
     if (best) {
       best.alive = false;
       this.gridDirty = true;
+      this.lineageTracker?.noteMilestone(this, pred, `hunted #${best.id}`);
     }
     return best;
   }
@@ -144,9 +155,10 @@ export class World {
   }
 
   tempPenaltyAt(x,y){
-    const v=this.temperature.get(Math.floor(x/this.temperature.cell), Math.floor(y/this.temperature.cell));
-    const season=0.2*Math.sin(this.t*0.05);
-    const comfort=clamp(v+season,0,0.8);
+    const base=this.temperature.get(Math.floor(x/this.temperature.cell), Math.floor(y/this.temperature.cell));
+    const wave = 0.15 * Math.sin(this.seasonPhase + x / this.width * Math.PI * 2);
+    const ridge = 0.1 * Math.cos(this.seasonPhase*0.7 + y / this.height * Math.PI * 3);
+    const comfort=clamp(base + wave + ridge,0,0.85);
     return (0.5-comfort)*0.5;
   }
 
@@ -157,6 +169,7 @@ export class World {
     if (typeof parent.noteBirth === 'function') {
       parent.noteBirth(childId, this.t);
     }
+    this.lineageTracker?.noteBirth(this, parent, child);
   }
 
   nearestCreature(x,y,maxDistPx=30){
@@ -182,6 +195,7 @@ export class World {
     const genes = predator ? makeGenes({ predator:1, speed:1.2, metabolism:1.2, hue:0 }) : makeGenes();
     const creature = new Creature(x, y, genes, false);
     this.addCreature(creature, null);
+    this.lineageTracker?.ensureName(this.lineageTracker.getRoot(this, creature.id));
   }
 
   /** Compute all descendants of rootId (BFS over childrenOf). */
@@ -262,12 +276,29 @@ export class World {
 
   step(dt){
     this.t += dt;
+    this.seasonPhase += dt * this.seasonSpeed;
     this.ensureSpatial();
-    if (Math.random()<0.3) this.addFood(rand(0,this.width), rand(0,this.height), 1.4);
+    if (this.food.length < this.maxFood && Math.random()<this.foodGrowthRate()) {
+      const spot = this.pickHabitatSpot();
+      this.addFood(spot.x, spot.y, 1.2);
+    }
     this.pheromone.step();
     for (let c of this.creatures) c.update(dt, this);
     this.creatures = this.creatures.filter(c=>c.alive);
     this.gridDirty = true;
+  }
+
+  foodGrowthRate() {
+    const base = 0.18;
+    const scarcity = clamp(1 - this.food.length / Math.max(1, this.maxFood), 0, 1);
+    return (base + 0.4 * scarcity) * 0.016;
+  }
+
+  pickHabitatSpot() {
+    const band = (Math.sin(this.seasonPhase) + 1) * 0.5;
+    const x = (band * this.width) + rand(-this.width*0.25, this.width*0.25);
+    const y = rand(0, this.height);
+    return { x: (x + this.width) % this.width, y };
   }
 
   ensureSpatial(){

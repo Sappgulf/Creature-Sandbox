@@ -6,6 +6,8 @@ import { AnalyticsTracker } from './analytics.js';
 import { Camera } from './camera.js';
 import { Renderer } from './renderer.js';
 import { ToolController, ToolModes } from './tools.js';
+import { LineageTracker } from './lineage-tracker.js';
+import { BehaviorConfig, setBehaviorWeights } from './behavior.js';
 
 const canvas = document.getElementById('view');
 const ctx = canvas.getContext('2d');
@@ -16,6 +18,9 @@ const camera = new Camera({ x: canvas.width * 0.5, y: canvas.height * 0.5, zoom:
 const renderer = new Renderer(ctx, camera);
 const tools = new ToolController(world, camera);
 const analytics = new AnalyticsTracker();
+const lineageTracker = new LineageTracker();
+world.attachLineageTracker(lineageTracker);
+world.creatures.forEach(c => lineageTracker.ensureName(lineageTracker.getRoot(world, c.id)));
 
 let paused = false;
 let fastForward = 1;
@@ -40,8 +45,13 @@ const inspectorEl = document.getElementById('inspector');
 const chartCtx = {
   pop: document.getElementById('chart-pop')?.getContext('2d') ?? null,
   speed: document.getElementById('chart-speed')?.getContext('2d') ?? null,
-  metabolism: document.getElementById('chart-metabolism')?.getContext('2d') ?? null
+  metabolism: document.getElementById('chart-metabolism')?.getContext('2d') ?? null,
+  variance: document.getElementById('chart-variance')?.getContext('2d') ?? null,
+  ratio: document.getElementById('chart-ratio')?.getContext('2d') ?? null
 };
+const forageSlider = document.getElementById('slider-forage');
+const wanderSlider = document.getElementById('slider-wander');
+const restSlider = document.getElementById('slider-rest');
 const fixedDt = 1/60;
 const MAX_STEPS = 6;
 
@@ -65,6 +75,18 @@ bindUI({
 exportBtn?.addEventListener('click', exportSnapshot);
 showInspectorBtn?.addEventListener('click', ()=>setInspectorVisible(true));
 closeInspectorBtn?.addEventListener('click', ()=>setInspectorVisible(false));
+
+const handleBehaviorChange = () => {
+  setBehaviorWeights({
+    forage: Number(forageSlider?.value ?? BehaviorConfig.forageWeight),
+    wander: Number(wanderSlider?.value ?? BehaviorConfig.wanderWeight),
+    rest: Number(restSlider?.value ?? BehaviorConfig.restWeight)
+  });
+};
+forageSlider?.addEventListener('input', handleBehaviorChange);
+wanderSlider?.addEventListener('input', handleBehaviorChange);
+restSlider?.addEventListener('input', handleBehaviorChange);
+handleBehaviorChange();
 
 canvas.addEventListener('wheel', (e)=>{
   e.preventDefault();
@@ -270,7 +292,8 @@ function updateInspector(force) {
     isRoot: creature ? lineageRootId === creature.id : false,
     lineageRootId,
     lineage: lineageOverview,
-    ancestors
+    ancestors,
+    lineageStories: lineageTracker.getStories()
   }, {
     onTogglePin: () => togglePin(creature),
     onSetRoot: () => toggleRoot(creature),

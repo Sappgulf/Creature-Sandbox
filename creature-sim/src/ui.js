@@ -16,7 +16,7 @@ export function renderStats(el, world, fps, extra={}) {
     `t=${world.t.toFixed(1)}s`,
     `${fps.toFixed(0)} FPS`
   ];
-  if (extra.tool) parts.push(`Tool: ${extra.tool}`);
+  if (extra.tool) parts.push(`Tool: ${String(extra.tool).toUpperCase()}`);
   if (extra.fastForward && extra.fastForward !== 1) parts.push(`×${extra.fastForward}`);
   if (extra.paused) parts.push('PAUSED');
   el.textContent = parts.join('  ');
@@ -26,6 +26,8 @@ export function renderInspector(model={}, handlers={}) {
   const body = document.getElementById('inspector-body');
   const badgesPanel = document.getElementById('badges-panel');
   const lineageSummaryEl = document.getElementById('lineage-summary');
+  const lineageStoriesEl = document.getElementById('lineage-stories');
+  const lineageStoryPanel = document.getElementById('lineage-story');
   const activityFeedEl = document.getElementById('activity-feed');
   const pinBtn = document.getElementById('btn-pin');
   const rootBtn = document.getElementById('btn-root');
@@ -143,6 +145,22 @@ export function renderInspector(model={}, handlers={}) {
     });
   }
 
+  if (lineageStoriesEl && lineageStoryPanel) {
+    const stories = model.lineageStories ?? [];
+    if (!stories.length) {
+      lineageStoryPanel.classList.add('hidden');
+      lineageStoriesEl.innerHTML = 'No milestones yet.';
+    } else {
+      lineageStoryPanel.classList.remove('hidden');
+      lineageStoriesEl.innerHTML = stories.map(evt => {
+        return `<button class="story" data-root="${evt.rootId}"><strong>${evt.title}</strong><br><span class="muted">t=${evt.time.toFixed(1)}s</span></button>`;
+      }).join('');
+      lineageStoriesEl.querySelectorAll('.story').forEach(btn => {
+        btn.onclick = () => handlers.onInspectId?.(Number(btn.dataset.root));
+      });
+    }
+  }
+
   if (activityFeedEl) {
     if (!creature) {
       activityFeedEl.innerHTML = 'No activity yet.';
@@ -176,6 +194,15 @@ export function renderAnalyticsCharts(ctxMap, data) {
   drawChart(ctxMap.metabolism, [
     { series: data.meanMetabolism, color:'#ffbd7a', label:'Metab', decimals:2 }
   ]);
+
+  drawChart(ctxMap.variance, [
+    { series: data.speedVar, color:'#8df0ff', label:'Speed σ²', decimals:3 },
+    { series: data.senseVar, color:'#d496ff', label:'Sense σ²', decimals:3 }
+  ], { min:0 });
+
+  drawChart(ctxMap.ratio, [
+    { series: data.predatorRatio, color:'#ff8888', label:'Pred %', decimals:2 }
+  ], { min:0, max:1 });
 }
 
 function drawChart(ctx, lines, { min=null, max=null } = {}) {

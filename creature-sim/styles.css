@@ -126,3 +126,36 @@ body { display:flex; justify-content:center; align-items:center; min-height:100v
   z-index:12;
   box-shadow:0 14px 30px rgba(0,0,0,0.4);
 }
+
+.slider-row {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  font-size:12px;
+  margin:4px 0;
+}
+.slider-row input[type="range"] {
+  flex:1;
+}
+
+#lineage-stories {
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-size:12px;
+}
+#lineage-stories .story {
+  background:#171a28;
+  border:1px solid #262a40;
+  border-radius:8px;
+  padding:5px 6px;
+  line-height:1.4;
+  text-align:left;
+  color:#dfe1ff;
+  cursor:pointer;
+}
+#lineage-stories .story:hover {
+  border-color:#3a3f5a;
+  background:#202334;
+}
