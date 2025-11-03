@@ -82,6 +82,9 @@ export class Renderer {
       if (this._clusterCache.frame !== currentFrame) {
         this._clusterCache.clusters = this._computeClusters(creatures);
         this._clusterCache.frame = currentFrame;
+        const sample = this._clusterCache.clusters.size > 0 ? 
+          Array.from(this._clusterCache.clusters.entries()).slice(0, 3) : [];
+        console.log(`%c[CLUSTERING DEBUG] Frame ${currentFrame}: Computed ${this._clusterCache.clusters.size} clusters from ${creatures.length} creatures. Sample:`, 'color: #f59e0b; font-weight: bold;', sample);
       }
       clusterMap = this._clusterCache.clusters;
     }

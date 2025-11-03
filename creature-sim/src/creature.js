@@ -390,6 +390,8 @@ export class Creature {
 
     // Draw vision cone if enabled
     if (showVision && (isSelected || isPinned)) {
+      console.log(`%c[VISION DEBUG] Drawing cone for creature #${this.id}`, 'color: #3b82f6; font-weight: bold;', 
+        { sense: this.genes.sense, fov: this.genes.fov, x: this.x, y: this.y });
       ctx.save();
       
       // Sense radius (full circle)
