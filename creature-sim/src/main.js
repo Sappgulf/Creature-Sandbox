@@ -12,13 +12,17 @@ import { BehaviorConfig, setBehaviorWeights } from './behavior.js';
 
 const canvas = document.getElementById('view');
 const ctx = canvas.getContext('2d');
-const world = new World(canvas.width, canvas.height);
+
+// UPGRADED: 4x larger world for organic biome system
+const world = new World(4000, 2800);
 world.seed(70, 6, 200);
 
 const camera = new Camera({
   x: world.width * 0.5,
   y: world.height * 0.5,
-  zoom: 1,
+  zoom: 0.25, // Start zoomed out to see more
+  minZoom: 0.1, // Can zoom out 10x more
+  maxZoom: 3,
   worldWidth: world.width,
   worldHeight: world.height,
   viewportWidth: canvas.width,

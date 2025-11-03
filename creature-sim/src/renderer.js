@@ -15,6 +15,7 @@ export class Renderer {
     this.enableSensoryViz = false; // Advanced Feature 2
     this.enableIntelligence = false; // Advanced Feature 3
     this.enableMating = false; // Advanced Feature 4
+    this.enableMiniMap = true; // Mini-map overview
     this.background = '#0b0c10';
     // Cache lineage computation
     this._lineageCache = { rootId: null, set: null, frame: 0 };
@@ -106,14 +107,103 @@ export class Renderer {
     }
 
     ctx.restore();
+    
+    // Draw mini-map overlay (top-right corner)
+    if (this.enableMiniMap) {
+      this.drawMiniMap(world, opts);
+    }
+  }
+
+  _drawDecoration(dec) {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.translate(dec.x, dec.y);
+    ctx.globalAlpha = 0.4;
+    
+    switch(dec.type) {
+      case 'tree':
+        // Simple tree silhouette
+        ctx.fillStyle = `hsl(${dec.hue}, 45%, 25%)`;
+        ctx.beginPath();
+        ctx.arc(0, -dec.size * 0.4, dec.size * 0.6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(-dec.size * 0.15, -dec.size * 0.2, dec.size * 0.3, dec.size);
+        break;
+      
+      case 'rock':
+        // Jagged rock
+        ctx.fillStyle = `hsl(${dec.hue}, 20%, 40%)`;
+        ctx.beginPath();
+        ctx.moveTo(-dec.size * 0.4, dec.size * 0.3);
+        ctx.lineTo(0, -dec.size * 0.5);
+        ctx.lineTo(dec.size * 0.5, 0);
+        ctx.lineTo(dec.size * 0.2, dec.size * 0.3);
+        ctx.closePath();
+        ctx.fill();
+        break;
+      
+      case 'cactus':
+        // Simple cactus
+        ctx.fillStyle = `hsl(${dec.hue}, 50%, 35%)`;
+        ctx.fillRect(-dec.size * 0.2, -dec.size * 0.8, dec.size * 0.4, dec.size);
+        ctx.fillRect(-dec.size * 0.5, -dec.size * 0.4, dec.size * 0.3, dec.size * 0.3);
+        break;
+      
+      case 'reed':
+        // Tall grass/reed
+        ctx.strokeStyle = `hsl(${dec.hue}, 40%, 40%)`;
+        ctx.lineWidth = dec.size * 0.1;
+        ctx.beginPath();
+        ctx.moveTo(0, dec.size * 0.3);
+        ctx.lineTo(dec.size * 0.1, -dec.size * 0.5);
+        ctx.stroke();
+        break;
+      
+      case 'flower':
+        // Small flower
+        ctx.fillStyle = `hsl(${dec.hue}, 70%, 55%)`;
+        ctx.beginPath();
+        ctx.arc(0, -dec.size * 0.3, dec.size * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+    }
+    
+    ctx.restore();
   }
 
   drawBiomes(world) {
-    if (!world.biomes) return;
+    // NEW: Draw organic Perlin-noise based biomes
     const ctx = this.ctx;
-    for (const biome of world.biomes) {
-      ctx.fillStyle = biome.color;
-      ctx.fillRect(0, biome.y1, world.width, biome.y2 - biome.y1);
+    const bounds = this._viewBounds;
+    const sampleSize = Math.max(20, 100 / this.camera.zoom); // Adaptive resolution
+    
+    // Only render biomes in view
+    for (let y = Math.max(0, bounds.y1); y < Math.min(world.height, bounds.y2); y += sampleSize) {
+      for (let x = Math.max(0, bounds.x1); x < Math.min(world.width, bounds.x2); x += sampleSize) {
+        const biome = world.getBiomeAt(x, y);
+        
+        // Base color with slight variation
+        const moistureVariation = (biome.moisture - 0.5) * 0.15;
+        const tempVariation = (biome.temperature - 0.5) * 0.1;
+        
+        // Draw biome tile with gradient
+        ctx.fillStyle = biome.color;
+        ctx.globalAlpha = 0.6 + moistureVariation;
+        ctx.fillRect(x, y, sampleSize + 1, sampleSize + 1);
+        ctx.globalAlpha = 1;
+      }
+    }
+    
+    // Draw decorations (trees, rocks, etc)
+    if (world.decorations && this.camera.zoom > 0.3) {
+      for (const dec of world.decorations) {
+        // Frustum cull decorations
+        if (dec.x < bounds.x1 || dec.x > bounds.x2 || dec.y < bounds.y1 || dec.y > bounds.y2) {
+          continue;
+        }
+        
+        this._drawDecoration(dec);
+      }
     }
   }
 
@@ -578,5 +668,69 @@ export class Renderer {
       ctx.fillText('💗', creature.x - 8, creature.y - 20);
       ctx.restore();
     }
+  }
+
+  drawMiniMap(world, opts) {
+    const ctx = this.ctx;
+    const camera = this.camera;
+    
+    // Reset transform for overlay
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    
+    // Mini-map dimensions (bottom-left corner)
+    const mapSize = 200;
+    const mapX = opts.viewportWidth - mapSize - 16;
+    const mapY = opts.viewportHeight - mapSize - 16;
+    const scale = mapSize / Math.max(world.width, world.height);
+    
+    // Background
+    ctx.fillStyle = 'rgba(10, 12, 16, 0.9)';
+    ctx.fillRect(mapX, mapY, mapSize, mapSize);
+    
+    // Draw biomes (simplified)
+    const sampleSize = 50;
+    for (let y = 0; y < world.height; y += sampleSize) {
+      for (let x = 0; x < world.width; x += sampleSize) {
+        const biome = world.getBiomeAt(x, y);
+        ctx.fillStyle = biome.color;
+        ctx.fillRect(
+          mapX + x * scale,
+          mapY + y * scale,
+          sampleSize * scale + 1,
+          sampleSize * scale + 1
+        );
+      }
+    }
+    
+    // Draw creatures as tiny dots
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    for (const c of world.creatures) {
+      const mx = mapX + c.x * scale;
+      const my = mapY + c.y * scale;
+      ctx.fillRect(mx, my, 2, 2);
+    }
+    
+    // Draw camera view rectangle
+    const viewW = opts.viewportWidth / camera.zoom;
+    const viewH = opts.viewportHeight / camera.zoom;
+    const viewX = camera.x - viewW / 2;
+    const viewY = camera.y - viewH / 2;
+    
+    ctx.strokeStyle = 'rgba(123, 183, 255, 0.8)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(
+      mapX + viewX * scale,
+      mapY + viewY * scale,
+      viewW * scale,
+      viewH * scale
+    );
+    
+    // Border
+    ctx.strokeStyle = 'rgba(43, 46, 65, 0.8)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(mapX, mapY, mapSize, mapSize);
+    
+    ctx.restore();
   }
 }

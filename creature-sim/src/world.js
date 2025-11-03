@@ -2,6 +2,7 @@ import { rand, clamp, dist2 } from './utils.js';
 import { makeGenes, mutateGenes } from './genetics.js';
 import { Creature } from './creature.js';
 import { SpatialGrid } from './spatial-grid.js';
+import { BiomeGenerator } from './perlin-noise.js';
 
 class ScalarField {
   constructor(w, h, cell, decay=0.985, diffuse=0.15) {
@@ -68,8 +69,12 @@ export class World {
       drought: { name: 'Drought', duration: 30, cooldown: 150 }
     };
 
-    // Biome system
-    this.biomes = this._createBiomes();
+    // UPGRADED: Perlin noise organic biome system (6 types)
+    this.biomeGenerator = new BiomeGenerator(Math.random());
+    this.biomeMap = this.biomeGenerator.generateBiomeMap(width, height, 50);
+    this.biomeCache = new Map(); // Cache biome lookups for performance
+    this.biomes = this._createBiomes(); // Keep legacy for gradual migration
+    
     this.predatorSignals = [];
     this.environment = this._defaultEnvironment();
     this.eventSystem = this._createEventSystem();
@@ -86,7 +91,10 @@ export class World {
     
     // Migration tracking
     this.migrationTargets = new Map(); // creatureId -> target biome
-    this.biomePopulations = [0, 0, 0]; // creatures in each biome
+    this.biomePopulations = new Map(); // track population per biome type
+    
+    // Environmental decorations (for visual polish)
+    this.decorations = this._generateDecorations();
 
     // init temperature bands
     for (let y=0;y<this.temperature.h;y++){
@@ -747,42 +755,93 @@ export class World {
     ];
   }
 
-  getBiomeAt(x, y) {
-    for (const biome of this.biomes) {
-      if (y >= biome.y1 && y < biome.y2) {
-        return biome;
+  _generateDecorations() {
+    // Generate environmental decorations for visual polish
+    // Sample the world and place decorations based on biome type
+    const decorations = [];
+    const sampleDensity = 80; // Distance between samples
+    
+    for (let y = 0; y < this.height; y += sampleDensity) {
+      for (let x = 0; x < this.width; x += sampleDensity) {
+        const biome = this.getBiomeAt(x, y);
+        const jitterX = (Math.random() - 0.5) * sampleDensity * 0.8;
+        const jitterY = (Math.random() - 0.5) * sampleDensity * 0.8;
+        
+        // Place decoration based on biome type
+        let decoration = null;
+        const roll = Math.random();
+        
+        switch(biome.type) {
+          case 'forest':
+            if (roll < 0.6) decoration = { type: 'tree', size: 8 + Math.random() * 12, hue: 120 };
+            break;
+          case 'mountain':
+            if (roll < 0.4) decoration = { type: 'rock', size: 6 + Math.random() * 10, hue: 30 };
+            break;
+          case 'desert':
+            if (roll < 0.2) decoration = { type: 'cactus', size: 6 + Math.random() * 8, hue: 90 };
+            break;
+          case 'wetland':
+            if (roll < 0.3) decoration = { type: 'reed', size: 4 + Math.random() * 6, hue: 150 };
+            break;
+          case 'meadow':
+            if (roll < 0.5) decoration = { type: 'flower', size: 3 + Math.random() * 5, hue: 330 };
+            break;
+        }
+        
+        if (decoration) {
+          decorations.push({
+            x: x + jitterX,
+            y: y + jitterY,
+            ...decoration
+          });
+        }
       }
     }
-    return this.biomes[1]; // Default to middle biome
+    
+    return decorations;
+  }
+
+  getBiomeAt(x, y) {
+    // NEW: Use Perlin noise biome system
+    const cacheKey = `${Math.floor(x/50)},${Math.floor(y/50)}`;
+    if (this.biomeCache.has(cacheKey)) {
+      return this.biomeCache.get(cacheKey);
+    }
+    
+    const biome = this.biomeGenerator.getBiomeAt(x, y, this.width, this.height);
+    this.biomeCache.set(cacheKey, biome);
+    return biome;
   }
   
   getBiomeIndexAt(x, y) {
-    for (let i = 0; i < this.biomes.length; i++) {
-      const biome = this.biomes[i];
-      if (y >= biome.y1 && y < biome.y2) {
-        return i;
-      }
-    }
-    return 1; // Default to middle biome
+    // NEW: Return biome type instead of index
+    const biome = this.getBiomeAt(x, y);
+    // Map to indices for backwards compatibility
+    const typeMap = { forest: 0, grassland: 1, desert: 2, mountain: 3, wetland: 4, meadow: 5 };
+    return typeMap[biome.type] ?? 1;
   }
 
   pickHabitatSpot() {
-    // Pick biome weighted by food rate
-    const totalWeight = this.biomes.reduce((sum, b) => sum + b.foodRate, 0);
-    let r = Math.random() * totalWeight;
-    let selectedBiome = this.biomes[1];
+    // NEW: Pick random location, weighted by biome food rate
+    // Sample several points and pick best
+    let bestSpot = null;
+    let bestScore = -1;
     
-    for (const biome of this.biomes) {
-      r -= biome.foodRate;
-      if (r <= 0) {
-        selectedBiome = biome;
-        break;
+    for (let i = 0; i < 5; i++) {
+      const x = rand(this.width);
+      const y = rand(this.height);
+      const biome = this.getBiomeAt(x, y);
+      const score = biome.foodRate * (0.8 + Math.random() * 0.4);
+      
+      if (score > bestScore) {
+        bestScore = score;
+        bestSpot = { x, y, biome };
       }
     }
     
-    const x = rand(0, this.width);
-    const y = rand(selectedBiome.y1, selectedBiome.y2);
-    return { x, y };
+    // Return the best spot found
+    return { x: bestSpot.x, y: bestSpot.y };
   }
 
   ensureSpatial(){
