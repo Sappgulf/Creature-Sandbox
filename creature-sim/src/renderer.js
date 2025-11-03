@@ -7,6 +7,10 @@ export class Renderer {
     this.enableTrails = true;
     this.enableVision = false;
     this.enableClustering = false;
+    this.enableTerritories = false; // Feature 1
+    this.enableMemory = false; // Feature 2
+    this.enableSocialBonds = false; // Feature 4
+    this.enableMigration = false; // Feature 9
     this.background = '#0b0c10';
     // Cache lineage computation
     this._lineageCache = { rootId: null, set: null, frame: 0 };
@@ -34,7 +38,30 @@ export class Renderer {
     // Draw biomes
     this.drawBiomes(world);
     
+    // Feature 1: Draw territories
+    if (this.enableTerritories) {
+      this.drawTerritories(world);
+    }
+    
     this.drawFood(world.food);
+    
+    // Feature 2: Draw memory for selected creature
+    if (this.enableMemory && selectedId) {
+      const creature = world.getAnyCreatureById(selectedId);
+      if (creature && creature.memory) {
+        this.drawMemory(creature);
+      }
+    }
+    
+    // Feature 4: Draw social bonds
+    if (this.enableSocialBonds) {
+      this.drawSocialBonds(world);
+    }
+    
+    // Feature 9: Draw migration arrows
+    if (this.enableMigration) {
+      this.drawMigration(world);
+    }
     
     // Cache lineage descendants to avoid expensive BFS every frame
     let lineageSet = null;
@@ -187,5 +214,163 @@ export class Renderer {
       }
     }
     return mean.map(v => v / points.length);
+  }
+
+  // ============================================================================
+  // FEATURE VISUALIZATIONS
+  // ============================================================================
+  
+  drawTerritories(world) {
+    const ctx = this.ctx;
+    
+    // Draw territory circles
+    for (const [id, territory] of world.territories.entries()) {
+      const owner = world.registry.get(id);
+      if (!owner || !owner.alive) continue;
+      
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(territory.x, territory.y, territory.radius, 0, Math.PI * 2);
+      
+      // Color based on rank
+      const hue = territory.dominanceRank === 1 ? 0 : (territory.dominanceRank <= 3 ? 30 : 50);
+      const alpha = territory.dominanceRank === 1 ? 0.15 : 0.08;
+      ctx.fillStyle = `hsla(${hue}, 80%, 50%, ${alpha})`;
+      ctx.fill();
+      ctx.strokeStyle = `hsla(${hue}, 80%, 60%, 0.4)`;
+      ctx.lineWidth = territory.dominanceRank === 1 ? 2 : 1;
+      ctx.setLineDash([5, 5]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+      
+      // Draw rank indicator
+      if (territory.dominanceRank <= 3) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(255, 220, 100, 0.9)';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.fillText(`#${territory.dominanceRank}`, territory.x - 8, territory.y + 6);
+        ctx.restore();
+      }
+    }
+    
+    // Draw conflict zones
+    for (const conflict of world.territoryConflicts) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(conflict.x, conflict.y, 20 * conflict.intensity, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 80, 80, ${conflict.intensity * 0.3})`;
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+  
+  drawMemory(creature) {
+    const ctx = this.ctx;
+    
+    for (const mem of creature.memory.locations) {
+      ctx.save();
+      const alpha = mem.strength * 0.6;
+      let color;
+      
+      switch(mem.type) {
+        case 'food':
+          color = `rgba(100, 255, 100, ${alpha})`;
+          break;
+        case 'danger':
+          color = `rgba(255, 100, 100, ${alpha})`;
+          break;
+        case 'safe':
+          color = `rgba(100, 200, 255, ${alpha})`;
+          break;
+        default:
+          color = `rgba(200, 200, 200, ${alpha})`;
+      }
+      
+      ctx.beginPath();
+      ctx.arc(mem.x, mem.y, 12, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = color.replace(String(alpha), String(alpha * 1.5));
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+  
+  drawSocialBonds(world) {
+    const ctx = this.ctx;
+    
+    for (const creature of world.creatures) {
+      if (!creature.social || !creature.alive) continue;
+      
+      // Draw herding connections for herbivores
+      if (!creature.genes.predator && creature.social.herdMates.length > 0) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(150, 255, 150, 0.15)';
+        ctx.lineWidth = 1;
+        
+        for (const mate of creature.social.herdMates.slice(0, 3)) {
+          ctx.beginPath();
+          ctx.moveTo(creature.x, creature.y);
+          ctx.lineTo(mate.x, mate.y);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+      
+      // Draw pack connections for predators
+      if (creature.genes.predator && creature.social.packTarget) {
+        const target = world.getAnyCreatureById(creature.social.packTarget);
+        if (target && target.alive) {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(255, 150, 150, 0.25)';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.moveTo(creature.x, creature.y);
+          ctx.lineTo(target.x, target.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+        }
+      }
+    }
+  }
+  
+  drawMigration(world) {
+    const ctx = this.ctx;
+    
+    for (const creature of world.creatures) {
+      if (!creature.migration || !creature.alive) continue;
+      if (creature.migration.targetBiome === null || creature.migration.settled) continue;
+      
+      const targetBiome = world.biomes[creature.migration.targetBiome];
+      const targetY = (targetBiome.y1 + targetBiome.y2) / 2;
+      
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 200, 100, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([5, 10]);
+      
+      ctx.beginPath();
+      ctx.moveTo(creature.x, creature.y);
+      ctx.lineTo(creature.x, targetY);
+      ctx.stroke();
+      
+      // Draw arrow
+      const dy = targetY - creature.y;
+      const arrowDir = dy > 0 ? 1 : -1;
+      ctx.fillStyle = 'rgba(255, 200, 100, 0.6)';
+      ctx.beginPath();
+      ctx.moveTo(creature.x, creature.y + arrowDir * 15);
+      ctx.lineTo(creature.x - 5, creature.y + arrowDir * 10);
+      ctx.lineTo(creature.x + 5, creature.y + arrowDir * 10);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
   }
 }

@@ -178,6 +178,34 @@ window.addEventListener('keydown', (e)=>{
       }
       return;
     }
+    // Feature toggle keys
+    if (e.key.toLowerCase() === 't') {
+      renderer.enableTerritories = !renderer.enableTerritories;
+      console.log(`%c[TERRITORIES] ${renderer.enableTerritories ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${renderer.enableTerritories ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
+      return;
+    }
+    if (e.key.toLowerCase() === 'm') {
+      renderer.enableMemory = !renderer.enableMemory;
+      console.log(`%c[MEMORY] ${renderer.enableMemory ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${renderer.enableMemory ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
+      if (renderer.enableMemory) {
+        console.log('%cℹ️ Select a creature to see its memories', 'color: #60a5fa;');
+      }
+      return;
+    }
+    if (e.key.toLowerCase() === 'b') {
+      renderer.enableSocialBonds = !renderer.enableSocialBonds;
+      console.log(`%c[SOCIAL BONDS] ${renderer.enableSocialBonds ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${renderer.enableSocialBonds ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
+      return;
+    }
+    if (e.key.toLowerCase() === 'g') {
+      renderer.enableMigration = !renderer.enableMigration;
+      console.log(`%c[MIGRATION] ${renderer.enableMigration ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${renderer.enableMigration ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
+      return;
+    }
     if (e.key.toLowerCase() === 'f') {
       tools.setMode(ToolModes.FOOD);
       return;
