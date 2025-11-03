@@ -2,7 +2,7 @@
 // These extend the Creature class functionality
 
 import { Creature } from './creature.js';
-import { clamp } from './utils.js';
+import { clamp, rand } from './utils.js';
 
 // ============================================================================
 // FEATURE 2: LEARNING & MEMORY

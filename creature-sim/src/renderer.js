@@ -11,6 +11,10 @@ export class Renderer {
     this.enableMemory = false; // Feature 2
     this.enableSocialBonds = false; // Feature 4
     this.enableMigration = false; // Feature 9
+    this.enableEmotions = false; // Advanced Feature 1
+    this.enableSensoryViz = false; // Advanced Feature 2
+    this.enableIntelligence = false; // Advanced Feature 3
+    this.enableMating = false; // Advanced Feature 4
     this.background = '#0b0c10';
     // Cache lineage computation
     this._lineageCache = { rootId: null, set: null, frame: 0 };
@@ -74,7 +78,22 @@ export class Renderer {
       }
     }
     
+    // Advanced visualizations (after food, before creatures)
+    if (this.enableMating) {
+      this.drawMatingDisplays(world);
+    }
+    
     this.drawCreatures(world.creatures, { selectedId, pinnedId, lineageSet, worldTime });
+    
+    // Advanced visualizations (after creatures)
+    if (this.enableEmotions && selectedId) {
+      const creature = world.getAnyCreatureById(selectedId);
+      if (creature) this.drawEmotions(creature);
+    }
+    
+    if (this.enableIntelligence) {
+      this.drawIntelligenceIndicators(world);
+    }
 
     ctx.restore();
   }
@@ -370,6 +389,156 @@ export class Renderer {
       ctx.fill();
       
       ctx.setLineDash([]);
+      ctx.restore();
+    }
+  }
+
+  // ============================================================================
+  // ADVANCED FEATURE VISUALIZATIONS
+  // ============================================================================
+  
+  drawEmotions(creature) {
+    if (!creature.emotions) return;
+    const ctx = this.ctx;
+    const em = creature.emotions;
+    
+    // Draw emotional aura
+    const dominantEmotion = this._getDominantEmotion(em);
+    if (dominantEmotion.strength > 0.3) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(creature.x, creature.y, 25 + dominantEmotion.strength * 10, 0, Math.PI * 2);
+      ctx.fillStyle = `${dominantEmotion.color.replace('1)', dominantEmotion.strength * 0.15 + ')')}`;
+      ctx.fill();
+      ctx.restore();
+    }
+    
+    // Draw emotion bar chart next to creature
+    const emotions = [
+      { name: 'Fear', value: em.fear, color: 'rgba(255, 100, 100, 0.8)' },
+      { name: 'Hunger', value: em.hunger, color: 'rgba(255, 200, 100, 0.8)' },
+      { name: 'Confidence', value: em.confidence, color: 'rgba(100, 255, 100, 0.8)' },
+      { name: 'Curiosity', value: em.curiosity, color: 'rgba(100, 200, 255, 0.8)' }
+    ];
+    
+    ctx.save();
+    const barX = creature.x + 40;
+    const barY = creature.y - 30;
+    const barWidth = 4;
+    const barHeight = 30;
+    
+    emotions.forEach((e, i) => {
+      const x = barX + i * 6;
+      const h = e.value * barHeight;
+      ctx.fillStyle = e.color;
+      ctx.fillRect(x, barY + barHeight - h, barWidth, h);
+      
+      // Label
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.font = '8px monospace';
+      ctx.fillText(e.name[0], x, barY + barHeight + 10);
+    });
+    ctx.restore();
+  }
+  
+  _getDominantEmotion(em) {
+    const emotions = [
+      { name: 'fear', strength: em.fear, color: 'rgba(255, 80, 80, 1)' },
+      { name: 'stress', strength: em.stress, color: 'rgba(180, 80, 180, 1)' },
+      { name: 'contentment', strength: em.contentment, color: 'rgba(100, 255, 150, 1)' },
+      { name: 'curiosity', strength: em.curiosity, color: 'rgba(100, 200, 255, 1)' }
+    ];
+    
+    return emotions.reduce((max, e) => e.strength > max.strength ? e : max, emotions[0]);
+  }
+  
+  drawSensoryViz(world) {
+    const ctx = this.ctx;
+    
+    for (const creature of world.creatures) {
+      if (!creature.senseType || creature.senseType === 'normal') continue;
+      
+      const radius = creature.getEnhancedSenseRadius ? creature.getEnhancedSenseRadius() : creature.genes.sense;
+      
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(creature.x, creature.y, radius, 0, Math.PI * 2);
+      
+      let color;
+      switch(creature.senseType) {
+        case 'echolocation':
+          color = 'rgba(200, 100, 255, 0.1)';
+          break;
+        case 'chemical':
+          color = 'rgba(100, 255, 200, 0.1)';
+          break;
+        case 'thermal':
+          color = 'rgba(255, 150, 100, 0.1)';
+          break;
+        default:
+          color = 'rgba(200, 200, 200, 0.05)';
+      }
+      
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = color.replace('0.1', '0.3');
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+  }
+  
+  drawIntelligenceIndicators(world) {
+    const ctx = this.ctx;
+    
+    for (const creature of world.creatures) {
+      if (!creature.intelligence || creature.intelligence.level < 0.8) continue;
+      
+      // Show light bulb for intelligent creatures
+      ctx.save();
+      ctx.fillStyle = `rgba(255, 255, 100, ${creature.intelligence.level * 0.5})`;
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('💡', creature.x - 6, creature.y - 15);
+      
+      // Show innovation count
+      if (creature.intelligence.innovations > 0) {
+        ctx.fillStyle = 'rgba(255, 220, 100, 0.9)';
+        ctx.font = '10px sans-serif';
+        ctx.fillText(`×${creature.intelligence.innovations}`, creature.x + 8, creature.y - 12);
+      }
+      ctx.restore();
+    }
+  }
+  
+  drawMatingDisplays(world) {
+    const ctx = this.ctx;
+    
+    for (const creature of world.creatures) {
+      if (!creature.sexuality || !creature.sexuality.isDisplaying) continue;
+      
+      // Draw sparkle/display animation
+      const time = Date.now() * 0.005;
+      const phase = Math.sin(time + creature.id) * 0.5 + 0.5;
+      
+      ctx.save();
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2 + time;
+        const dist = 20 + phase * 10;
+        const x = creature.x + Math.cos(angle) * dist;
+        const y = creature.y + Math.sin(angle) * dist;
+        
+        ctx.fillStyle = `hsla(${(creature.genes.hue + i * 45) % 360}, 100%, 70%, ${phase * 0.8})`;
+        ctx.beginPath();
+        ctx.arc(x, y, 2 + phase * 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // Heart/display indicator
+      ctx.fillStyle = 'rgba(255, 100, 150, 0.8)';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText('💗', creature.x - 8, creature.y - 20);
       ctx.restore();
     }
   }

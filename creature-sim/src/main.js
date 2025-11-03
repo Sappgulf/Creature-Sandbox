@@ -206,6 +206,34 @@ window.addEventListener('keydown', (e)=>{
         `color: ${renderer.enableMigration ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       return;
     }
+    // Advanced feature toggles
+    if (e.key.toLowerCase() === '1') {
+      renderer.enableEmotions = !renderer.enableEmotions;
+      console.log(`%c[EMOTIONS] ${renderer.enableEmotions ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${renderer.enableEmotions ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
+      if (renderer.enableEmotions) {
+        console.log('%cℹ️ Select a creature to see its emotional state', 'color: #60a5fa;');
+      }
+      return;
+    }
+    if (e.key.toLowerCase() === '2') {
+      renderer.enableSensoryViz = !renderer.enableSensoryViz;
+      console.log(`%c[SENSORY TYPES] ${renderer.enableSensoryViz ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${renderer.enableSensoryViz ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
+      return;
+    }
+    if (e.key.toLowerCase() === '3') {
+      renderer.enableIntelligence = !renderer.enableIntelligence;
+      console.log(`%c[INTELLIGENCE] ${renderer.enableIntelligence ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${renderer.enableIntelligence ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
+      return;
+    }
+    if (e.key.toLowerCase() === '4') {
+      renderer.enableMating = !renderer.enableMating;
+      console.log(`%c[MATING DISPLAYS] ${renderer.enableMating ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${renderer.enableMating ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
+      return;
+    }
     if (e.key.toLowerCase() === 'f') {
       tools.setMode(ToolModes.FOOD);
       return;
