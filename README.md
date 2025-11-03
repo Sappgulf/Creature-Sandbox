@@ -1,6 +1,6 @@
-# 🧬 AI Creature Sandbox
+# 🧬 Creature Sandbox
 
-An advanced evolutionary simulation featuring AI-driven creatures with genetic inheritance, predator-prey dynamics, spatial optimization, and real-time analytics.
+An advanced evolutionary simulation featuring autonomous creatures with genetic inheritance, predator-prey dynamics, spatial optimization, and real-time analytics.
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Sappgulf/Creature-Sandbox)
 
