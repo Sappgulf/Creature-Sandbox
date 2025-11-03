@@ -1,6 +1,7 @@
-import { rand, clamp } from './utils.js';
+import { rand, clamp, dist2 } from './utils.js';
 import { makeGenes, mutateGenes } from './genetics.js';
 import { Creature } from './creature.js';
+import { SpatialGrid } from './spatial-grid.js';
 
 class ScalarField {
   constructor(w, h, cell, decay=0.985, diffuse=0.15) {
@@ -41,6 +42,9 @@ export class World {
     this._nextId = 1;
     this.childrenOf = new Map(); // id -> Set(childIds)
     this.registry = new Map();
+    this.creatureGrid = new SpatialGrid(48);
+    this.foodGrid = new SpatialGrid(36);
+    this.gridDirty = true;
 
     // init temperature bands
     for (let y=0;y<this.temperature.h;y++){
@@ -61,6 +65,7 @@ export class World {
       if (!this.childrenOf.has(parentId)) this.childrenOf.set(parentId, new Set());
       this.childrenOf.get(parentId).add(creature.id);
     }
+    this.gridDirty = true;
     return creature.id;
   }
 
@@ -73,31 +78,65 @@ export class World {
       this.addCreature(new Creature(rand(0,this.width), rand(0,this.height), g), null);
     }
     for (let i=0;i<nFood;i++) this.addFood(rand(0,this.width), rand(0,this.height), rand(1,2));
+    this.gridDirty = true;
   }
 
-  addFood(x,y,r=1.5){ this.food.push({x,y,r}); }
+  reset() {
+    this.creatures = [];
+    this.food = [];
+    this.childrenOf.clear();
+    this.registry.clear();
+    this._nextId = 1;
+    this.gridDirty = true;
+    this.t = 0;
+  }
 
-  nearbyFood(x,y,radius){ return this.food; }
+  addFood(x,y,r=1.5){
+    const food = {x,y,r};
+    this.food.push(food);
+    this.gridDirty = true;
+  }
+
+  nearbyFood(x,y,radius){
+    this.ensureSpatial();
+    const candidates = this.foodGrid.nearby(x,y,radius);
+    return candidates;
+  }
 
   tryEatFoodAt(x,y,reach=8) {
-    for (let i=0;i<this.food.length;i++){
-      const f=this.food[i]; const dx=f.x-x, dy=f.y-y;
-      if (dx*dx+dy*dy <= (reach+f.r)*(reach+f.r)) { this.food.splice(i,1); return true; }
+    this.ensureSpatial();
+    const reach2 = (reach*1.1)*(reach*1.1);
+    for (let i=this.food.length-1; i>=0; i--) {
+      const f = this.food[i];
+      if (dist2(f.x, f.y, x, y) <= reach2) {
+        this.food.splice(i,1);
+        this.gridDirty = true;
+        return true;
+      }
     }
     return false;
   }
 
   tryPredation(pred) {
-    let best=-1, bestD2=80*80;
-    for (let i=0;i<this.creatures.length;i++){
-      const c=this.creatures[i];
-      if (!c.alive || c===pred) continue;
+    this.ensureSpatial();
+    const range = 85;
+    const candidates = this.creatureGrid.nearby(pred.x, pred.y, range);
+    let best = null;
+    let bestD2 = range*range;
+    for (const c of candidates) {
+      if (!c.alive || c === pred) continue;
       if (c.genes.predator) continue;
-      const dx=c.x-pred.x, dy=c.y-pred.y, d2=dx*dx+dy*dy;
-      if (d2<bestD2) { bestD2=d2; best=i; }
+      const d2 = dist2(c.x, c.y, pred.x, pred.y);
+      if (d2 < bestD2) {
+        bestD2 = d2;
+        best = c;
+      }
     }
-    if (best>=0){ const vic=this.creatures[best]; vic.alive=false; return vic; }
-    return null;
+    if (best) {
+      best.alive = false;
+      this.gridDirty = true;
+    }
+    return best;
   }
 
   dropPheromone(x,y,val=1.0){
@@ -120,15 +159,29 @@ export class World {
     }
   }
 
-  /** Fast nearest creature search (linear; good enough for hundreds). */
   nearestCreature(x,y,maxDistPx=30){
-    let best=null, bestD2=maxDistPx*maxDistPx;
-    for (const c of this.creatures){
+    this.ensureSpatial();
+    const candidates = this.creatureGrid.nearby(x,y,maxDistPx);
+    let best = null;
+    let bestD2 = maxDistPx*maxDistPx;
+    for (const c of candidates) {
       if (!c.alive) continue;
-      const dx=c.x-x, dy=c.y-y, d2=dx*dx+dy*dy;
-      if (d2<bestD2){ bestD2=d2; best=c; }
+      const d2 = dist2(c.x, c.y, x, y);
+      if (d2 < bestD2) { bestD2 = d2; best = c; }
     }
     return best;
+  }
+
+  queryCreatures(x,y,radius){
+    this.ensureSpatial();
+    const rad2 = radius*radius;
+    return this.creatureGrid.nearby(x,y,radius).filter(c=>c.alive && dist2(c.x,c.y,x,y)<=rad2);
+  }
+
+  spawnManual(x, y, predator=false) {
+    const genes = predator ? makeGenes({ predator:1, speed:1.2, metabolism:1.2, hue:0 }) : makeGenes();
+    const creature = new Creature(x, y, genes, false);
+    this.addCreature(creature, null);
   }
 
   /** Compute all descendants of rootId (BFS over childrenOf). */
@@ -209,10 +262,68 @@ export class World {
 
   step(dt){
     this.t += dt;
+    this.ensureSpatial();
     if (Math.random()<0.3) this.addFood(rand(0,this.width), rand(0,this.height), 1.4);
     this.pheromone.step();
     for (let c of this.creatures) c.update(dt, this);
     this.creatures = this.creatures.filter(c=>c.alive);
+    this.gridDirty = true;
+  }
+
+  ensureSpatial(){
+    if (!this.gridDirty) return;
+    this.creatureGrid.clear();
+    for (const c of this.creatures) {
+      if (c.alive) this.creatureGrid.insert(c, c.x, c.y);
+    }
+    this.foodGrid.clear();
+    for (const f of this.food) this.foodGrid.insert(f, f.x, f.y);
+    this.gridDirty = false;
+  }
+
+  exportState() {
+    return {
+      width: this.width,
+      height: this.height,
+      time: this.t,
+      creatures: this.creatures.map(c => ({
+        id: c.id,
+        parentId: c.parentId,
+        genes: { ...c.genes },
+        x: c.x,
+        y: c.y,
+        dir: c.dir,
+        energy: c.energy,
+        age: c.age,
+        stats: { ...c.stats }
+      })),
+      food: this.food.map(f => ({ ...f }))
+    };
+  }
+
+  importState(snapshot) {
+    this.reset();
+    this.width = snapshot.width ?? this.width;
+    this.height = snapshot.height ?? this.height;
+    this.t = snapshot.time ?? 0;
+    for (const data of snapshot.creatures ?? []) {
+      const c = new Creature(data.x, data.y, data.genes ?? makeGenes(), false);
+      c.id = data.id;
+      c.parentId = data.parentId ?? null;
+      c.dir = data.dir ?? 0;
+      c.energy = data.energy ?? 24;
+      c.age = data.age ?? 0;
+      c.stats = { food:0, kills:0, births:0, ...(data.stats ?? {}) };
+      this.creatures.push(c);
+      this.registry.set(c.id, c);
+      if (c.parentId) {
+        if (!this.childrenOf.has(c.parentId)) this.childrenOf.set(c.parentId, new Set());
+        this.childrenOf.get(c.parentId).add(c.id);
+      }
+      this._nextId = Math.max(this._nextId, (c.id ?? 0) + 1);
+    }
+    this.food = (snapshot.food ?? []).map(f => ({ ...f }));
+    this.gridDirty = true;
   }
 
   draw(ctx, opts={}){
