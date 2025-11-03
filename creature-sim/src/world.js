@@ -739,6 +739,16 @@ export class World {
     }
     return this.biomes[1]; // Default to middle biome
   }
+  
+  getBiomeIndexAt(x, y) {
+    for (let i = 0; i < this.biomes.length; i++) {
+      const biome = this.biomes[i];
+      if (y >= biome.y1 && y < biome.y2) {
+        return i;
+      }
+    }
+    return 1; // Default to middle biome
+  }
 
   pickHabitatSpot() {
     // Pick biome weighted by food rate

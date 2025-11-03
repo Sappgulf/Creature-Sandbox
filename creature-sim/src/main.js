@@ -2,6 +2,7 @@ import { World } from './world.js';
 import { bindUI, renderStats, renderInspector, renderAnalyticsCharts } from './ui.js';
 import { makeGenes } from './genetics.js';
 import { Creature } from './creature.js';
+import './creature-features.js'; // Load feature extensions
 import { AnalyticsTracker } from './analytics.js';
 import { Camera } from './camera.js';
 import { Renderer } from './renderer.js';

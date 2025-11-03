@@ -171,6 +171,12 @@ export class Creature {
   update(dt, world) {
     if (!this.alive) return;
     this.age += dt;
+    
+    // Call feature update methods
+    if (this._updateMemory) this._updateMemory(dt, world);
+    if (this._updateSocialBehavior) this._updateSocialBehavior(world);
+    if (this._updateMigration) this._updateMigration(world, dt);
+    
     const eff = this.effects;
 
     if (eff) {
@@ -317,6 +323,12 @@ export class Creature {
         this.stats.food += 1;
         this.logEvent('Foraged food', world.t);
         world.dropPheromone(this.x, this.y, 0.5);
+        
+        // FEATURE 2: Remember successful food location
+        if (this.rememberLocation) {
+          this.rememberLocation(this.x, this.y, 'food', 0.8, world.t);
+        }
+        
         if (this.stats.food === 20) {
           world.lineageTracker?.noteMilestone(world, this, 'foraged 20 meals');
         }
