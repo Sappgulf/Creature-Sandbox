@@ -1,4 +1,4 @@
-import { rand, clamp } from './utils.js';
+import { rand, clamp, remap } from './utils.js';
 import { makeGenes, mutateGenes } from './genetics.js';
 import { Creature } from './creature.js';
 
@@ -37,6 +37,7 @@ export class World {
     this.pheromone = new ScalarField(width, height, 20, 0.992, 0.18);
     this.temperature = new ScalarField(width, height, 40, 1.0, 0.0);
     this.t = 0;
+    this.nextId = 1;
 
     // init temperature bands (cool edges, warm center)
     for (let y=0;y<this.temperature.h;y++){
@@ -51,15 +52,26 @@ export class World {
 
   seed(nHerb=60, nPred=6, nFood=180) {
     for (let i=0;i<nHerb;i++) {
-      const c = new Creature(rand(0,this.width), rand(0,this.height), makeGenes(), false);
-      this.creatures.push(c);
+      this.createCreature(rand(0,this.width), rand(0,this.height), makeGenes());
     }
     for (let i=0;i<nPred;i++) {
       const g = makeGenes({ predator:1, speed:1.1, metabolism:1.2, hue:0 });
-      const c = new Creature(rand(0,this.width), rand(0,this.height), g, false);
-      this.creatures.push(c);
+      this.createCreature(rand(0,this.width), rand(0,this.height), g);
     }
     for (let i=0;i<nFood;i++) this.addFood(rand(0,this.width), rand(0,this.height), rand(1,2));
+  }
+
+  createCreature(x, y, genes, opts={}) {
+    const id = this.nextId++;
+    const lineageId = opts.lineageId ?? id;
+    const creature = new Creature(x, y, genes, { ...opts, id, lineageId });
+    this.creatures.push(creature);
+    return creature;
+  }
+
+  spawnPredator(x, y, genes=null) {
+    const g = genes ?? makeGenes({ predator:1, speed:1.2, metabolism:1.2, hue:0 });
+    return this.createCreature(x, y, g);
   }
 
   addFood(x,y,r=1.5){ this.food.push({x,y,r}); }
@@ -116,8 +128,37 @@ export class World {
 
   spawnChild(parent) {
     const childGenes = mutateGenes(parent.genes, 0.05);
-    const c = new Creature(parent.x, parent.y, childGenes, true);
-    this.creatures.push(c);
+    const child = this.createCreature(parent.x, parent.y, childGenes, {
+      isChild:true,
+      parentId: parent.id,
+      lineageId: parent.lineageId
+    });
+    return child;
+  }
+
+  findNearestCreature(x, y, radius=18) {
+    const radius2 = radius*radius;
+    let best = null;
+    let bestD2 = radius2;
+    for (let c of this.creatures) {
+      if (!c.alive) continue;
+      const dx = c.x - x;
+      const dy = c.y - y;
+      const d2 = dx*dx + dy*dy;
+      if (d2 <= bestD2) {
+        bestD2 = d2;
+        best = c;
+      }
+    }
+    return best;
+  }
+
+  getCreatureById(id) {
+    if (id == null) return null;
+    for (let c of this.creatures) {
+      if (c.id === id) return c;
+    }
+    return null;
   }
 
   step(dt) {
@@ -134,7 +175,12 @@ export class World {
     this.creatures = this.creatures.filter(c=>c.alive);
   }
 
-  draw(ctx) {
+  draw(ctx, opts={}) {
+    const {
+      overlay='none',
+      selectedId=null,
+      highlightLineageId=null
+    } = opts;
     // food
     ctx.fillStyle = '#7fd36a';
     for (let f of this.food) {
@@ -153,6 +199,59 @@ export class World {
     }
 
     // creatures
-    for (let c of this.creatures) c.draw(ctx);
+    for (let c of this.creatures) {
+      const colorInfo = this.overlayColor(c, overlay);
+      c.draw(ctx, {
+        fillStyle: colorInfo.fill,
+        energyRing: colorInfo.ring,
+        isSelected: selectedId === c.id,
+        isLineageMate: highlightLineageId && c.lineageId === highlightLineageId
+      });
+    }
+  }
+
+  overlayColor(creature, mode) {
+    if (mode === 'none') {
+      const g = creature.genes;
+      return {
+        fill: `hsl(${g.hue},85%,${g.predator?45:60}%)`,
+        ring: `hsla(${g.hue},90%,80%,0.65)`
+      };
+    }
+
+    const g = creature.genes;
+    const heat = (value, min, max) => {
+      const t = remap(min, max, 0, 1, value);
+      const hue = remap(0, 1, 210, 10, t);
+      const sat = remap(0, 1, 70, 92, t);
+      const lum = remap(0, 1, 45, 60, t);
+      return `hsl(${hue},${sat}%,${lum}%)`;
+    };
+
+    switch (mode) {
+      case 'speed': {
+        const fill = heat(g.speed, 0.2, 2.0);
+        return { fill, ring: 'rgba(255,255,255,0.45)' };
+      }
+      case 'fov': {
+        const fill = heat(g.fov, 20, 160);
+        return { fill, ring: 'rgba(255,255,255,0.4)' };
+      }
+      case 'sense': {
+        const fill = heat(g.sense, 20, 200);
+        return { fill, ring: 'rgba(255,255,255,0.35)' };
+      }
+      case 'metabolism': {
+        const fill = heat(g.metabolism, 0.4, 2.0);
+        return { fill, ring: 'rgba(255,255,255,0.5)' };
+      }
+      case 'predator': {
+        const fill = g.predator ? 'hsl(5,85%,55%)' : 'hsl(140,70%,55%)';
+        const ring = g.predator ? 'rgba(255,205,180,0.5)' : 'rgba(180,240,200,0.45)';
+        return { fill, ring };
+      }
+      default:
+        return this.overlayColor(creature, 'none');
+    }
   }
 }

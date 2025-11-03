@@ -1,10 +1,15 @@
 import { clamp, rand, randn, dist2, wrap } from './utils.js';
-import { mutateGenes } from './genetics.js';
 
 const TAU = Math.PI*2;
 
 export class Creature {
-  constructor(x, y, genes, isChild=false) {
+  constructor(x, y, genes, opts={}) {
+    const {
+      isChild=false,
+      id=0,
+      lineageId=id,
+      parentId=null
+    } = opts;
     this.x = x; this.y = y;
     this.vx = 0; this.vy = 0;
     this.dir = rand(0, TAU);
@@ -14,6 +19,16 @@ export class Creature {
     this.genes = genes;
     this.size = 3.5 + (genes.predator?1.5:0); // preds slightly bigger
     this.target = null;
+    this.id = id;
+    this.parentId = parentId;
+    this.lineageId = lineageId;
+    this.energyHistory = [this.energy];
+    this.energyVersion = 0;
+    this.stats = {
+      food: 0,
+      kills: 0,
+      births: 0
+    };
   }
 
   // Energy model (per second, dt in seconds):
@@ -78,11 +93,15 @@ export class Creature {
     // Eat (herbivores eat food; predators eat herbivores)
     if (this.genes.predator) {
       const victim = world.tryPredation(this);
-      if (victim) this.energy += 18;
+      if (victim) {
+        this.energy += 18;
+        this.stats.kills += 1;
+      }
     } else {
       const eaten = world.tryEatFoodAt(this.x, this.y, 8);
       if (eaten) {
         this.energy += 6;
+        this.stats.food += 1;
         world.dropPheromone(this.x, this.y, 0.5);
       }
     }
@@ -94,6 +113,7 @@ export class Creature {
     // Reproduce
     if (!this.genes.predator && this.energy > 36) {
       this.energy *= 0.55; // cost to parent
+      this.stats.births += 1;
       world.spawnChild(this);
     }
 
@@ -102,14 +122,29 @@ export class Creature {
       this.alive = false;
       if (!this.genes.predator) world.addFood(this.x, this.y, 1.5); // recycle
     }
+
+    this.recordEnergy();
   }
 
-  draw(ctx) {
+  recordEnergy(maxSamples=240) {
+    const history = this.energyHistory;
+    history.push(this.energy);
+    if (history.length > maxSamples) history.shift();
+    this.energyVersion += 1;
+  }
+
+  draw(ctx, opts={}) {
+    const {
+      fillStyle,
+      energyRing,
+      isSelected=false,
+      isLineageMate=false
+    } = opts;
     const g = this.genes;
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.dir);
-    ctx.fillStyle = `hsl(${g.hue},85%,${g.predator?45:60}%)`;
+    ctx.fillStyle = fillStyle ?? `hsl(${g.hue},85%,${g.predator?45:60}%)`;
     ctx.beginPath();
     // simple triangle body
     ctx.moveTo(6,0);
@@ -117,13 +152,38 @@ export class Creature {
     ctx.lineTo(-4,-3.5);
     ctx.closePath();
     ctx.fill();
+
+    const ringColor = energyRing ?? `hsla(${g.hue},90%,80%,0.65)`;
     // energy ring
-    ctx.strokeStyle = `hsla(${g.hue},90%,80%,0.65)`;
+    ctx.strokeStyle = ringColor;
     ctx.lineWidth = 1;
     const r = clamp(this.energy/40, 0.2, 1.0) * (3+this.size);
     ctx.beginPath();
     ctx.arc(0,0,r,0,Math.PI*2);
     ctx.stroke();
+
+    if (isLineageMate && !isSelected) {
+      ctx.strokeStyle = 'rgba(153,215,255,0.55)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(0,0,r+2.5,0,TAU);
+      ctx.stroke();
+    }
+
+    if (isSelected) {
+      ctx.strokeStyle = 'rgba(255,252,200,0.9)';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(0,0,r+3.2,0,TAU);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,178,102,0.75)';
+      ctx.setLineDash([2.5,2.5]);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(0,0,r+6,0,TAU);
+      ctx.stroke();
+    }
+
     ctx.restore();
   }
 }
