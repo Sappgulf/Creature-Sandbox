@@ -842,9 +842,11 @@ export class Renderer {
     for (const creature of world.creatures) {
       if (!creature.migration || !creature.alive) continue;
       if (creature.migration.targetBiome === null || creature.migration.settled) continue;
+      if (!creature.target || !creature.target.migration) continue;
       
-      const targetBiome = world.biomes[creature.migration.targetBiome];
-      const targetY = (targetBiome.y1 + targetBiome.y2) / 2;
+      // Draw line to migration target
+      const targetX = creature.target.x;
+      const targetY = creature.target.y;
       
       ctx.save();
       ctx.strokeStyle = 'rgba(255, 200, 100, 0.4)';
@@ -853,17 +855,20 @@ export class Renderer {
       
       ctx.beginPath();
       ctx.moveTo(creature.x, creature.y);
-      ctx.lineTo(creature.x, targetY);
+      ctx.lineTo(targetX, targetY);
       ctx.stroke();
       
-      // Draw arrow
+      // Draw arrow at target
+      const dx = targetX - creature.x;
       const dy = targetY - creature.y;
-      const arrowDir = dy > 0 ? 1 : -1;
+      const angle = Math.atan2(dy, dx);
       ctx.fillStyle = 'rgba(255, 200, 100, 0.6)';
+      ctx.translate(targetX, targetY);
+      ctx.rotate(angle);
       ctx.beginPath();
-      ctx.moveTo(creature.x, creature.y + arrowDir * 15);
-      ctx.lineTo(creature.x - 5, creature.y + arrowDir * 10);
-      ctx.lineTo(creature.x + 5, creature.y + arrowDir * 10);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-10, -5);
+      ctx.lineTo(-10, 5);
       ctx.closePath();
       ctx.fill();
       

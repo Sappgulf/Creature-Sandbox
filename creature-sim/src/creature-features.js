@@ -122,28 +122,27 @@ Creature.prototype._updateMigration = function(world, dt) {
   const migrationChance = foodScarcity ? this.migration.instinct * 0.01 : this.migration.instinct * 0.001;
   
   if (Math.random() < migrationChance) {
-    // Pick target biome (prefer different from current)
-    const targetIdx = (currentBiomeIdx + 1 + Math.floor(Math.random() * 2)) % world.biomes.length;
-    const targetBiome = world.biomes[targetIdx];
+    // Pick target biome (prefer different from current, 0-5 = 6 biome types)
+    const targetIdx = (currentBiomeIdx + 1 + Math.floor(Math.random() * 2)) % 6;
     
-    // Set migration target to center of target biome
+    // Set migration target to a random location in the world
+    // Since Perlin noise biomes are organic, we pick a random spot and hope it's the target biome type
     this.migration.targetBiome = targetIdx;
     this.migration.lastMigration = world.t;
     this.migration.settled = false;
     
-    // Override current target with migration destination
-    const targetY = (targetBiome.y1 + targetBiome.y2) / 2;
+    // Override current target with migration destination (random location)
     this.target = { 
-      x: this.x + (Math.random() - 0.5) * world.width * 0.3, 
-      y: targetY,
+      x: rand(world.width * 0.2, world.width * 0.8), 
+      y: rand(world.height * 0.2, world.height * 0.8),
       migration: true
     };
   }
   
-  // Check if reached migration target
+  // Check if reached migration target (moved to target biome type)
   if (this.migration.targetBiome !== null && !this.migration.settled) {
-    const targetBiome = world.biomes[this.migration.targetBiome];
-    if (this.y >= targetBiome.y1 && this.y <= targetBiome.y2) {
+    const currentBiome = world.getBiomeIndexAt(this.x, this.y);
+    if (currentBiome === this.migration.targetBiome) {
       this.migration.settled = true;
       if (this.target && this.target.migration) {
         this.target = null; // Clear migration target
