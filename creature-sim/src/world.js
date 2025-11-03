@@ -37,9 +37,10 @@ export class World {
     this.temperature = new ScalarField(width, height, 40, 1.0, 0.0);
     this.t = 0;
 
-    // lineage
+    // lineage + registry
     this._nextId = 1;
     this.childrenOf = new Map(); // id -> Set(childIds)
+    this.registry = new Map();
 
     // init temperature bands
     for (let y=0;y<this.temperature.h;y++){
@@ -55,6 +56,7 @@ export class World {
     creature.id = this._nextId++;
     creature.parentId = parentId;
     this.creatures.push(creature);
+    this.registry.set(creature.id, creature);
     if (parentId) {
       if (!this.childrenOf.has(parentId)) this.childrenOf.set(parentId, new Set());
       this.childrenOf.get(parentId).add(creature.id);
@@ -112,7 +114,10 @@ export class World {
   spawnChild(parent){
     const childGenes = mutateGenes(parent.genes, 0.05);
     const child = new Creature(parent.x, parent.y, childGenes, true);
-    this.addCreature(child, parent.id);
+    const childId = this.addCreature(child, parent.id);
+    if (typeof parent.noteBirth === 'function') {
+      parent.noteBirth(childId, this.t);
+    }
   }
 
   /** Fast nearest creature search (linear; good enough for hundreds). */
@@ -141,6 +146,67 @@ export class World {
 
   getCreatureById(id){ return this.creatures.find(c=>c.id===id); }
 
+  getAnyCreatureById(id){ return this.registry.get(id) ?? null; }
+
+  getAncestors(id, maxDepth=12) {
+    const chain = [];
+    let current = this.getAnyCreatureById(id);
+    let depth = 0;
+    while (current && current.parentId && depth < maxDepth) {
+      const parent = this.getAnyCreatureById(current.parentId);
+      if (!parent) break;
+      chain.push(parent);
+      current = parent;
+      depth++;
+    }
+    return chain;
+  }
+
+  buildLineageOverview(rootId, maxDepth=6) {
+    if (!rootId) return null;
+    const visited = new Set([rootId]);
+    const queue = [{ id: rootId, depth: 0 }];
+    const levels = [];
+    let aliveDesc = 0;
+
+    while (queue.length) {
+      const { id, depth } = queue.shift();
+      if (depth > maxDepth) continue;
+      if (!levels[depth]) levels[depth] = [];
+      const node = this.getAnyCreatureById(id);
+      if (node) {
+        levels[depth].push(node);
+        if (depth > 0 && node.alive) aliveDesc++;
+      }
+      const kids = this.childrenOf.get(id);
+      if (!kids) continue;
+      for (const childId of kids) {
+        if (visited.has(childId)) continue;
+        visited.add(childId);
+        queue.push({ id: childId, depth: depth + 1 });
+      }
+    }
+
+    const totalDesc = Math.max(0, visited.size - 1);
+    const levelSummaries = levels.slice(1).map((nodes, idx) => {
+      const alive = nodes.filter(c => c && c.alive).length;
+      const sample = nodes.slice(0, 3).map(c => c ? c.id : null);
+      return {
+        depth: idx + 1,
+        total: nodes.length,
+        alive,
+        sample
+      };
+    });
+
+    return {
+      root: this.getAnyCreatureById(rootId) ?? null,
+      totalDesc,
+      aliveDesc,
+      levels: levelSummaries
+    };
+  }
+
   step(dt){
     this.t += dt;
     if (Math.random()<0.3) this.addFood(rand(0,this.width), rand(0,this.height), 1.4);
@@ -150,7 +216,11 @@ export class World {
   }
 
   draw(ctx, opts={}){
-    const { selectedId=null, lineageRootId=null } = opts;
+    const {
+      selectedId=null,
+      pinnedId=null,
+      lineageRootId=null
+    } = opts;
 
     // food
     ctx.fillStyle = '#7fd36a';
@@ -173,8 +243,10 @@ export class World {
     // creatures
     for (let c of this.creatures){
       const isSelected = (c.id===selectedId);
+      const isPinned = (pinnedId != null && c.id === pinnedId);
       const inLineage = lineageSet ? lineageSet.has(c.id) : false;
-      c.draw(ctx, { isSelected, inLineage });
+      const showTrail = isSelected || isPinned || inLineage;
+      c.draw(ctx, { isSelected, isPinned, inLineage, showTrail });
     }
   }
 }

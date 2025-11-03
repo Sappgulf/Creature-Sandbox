@@ -16,9 +16,42 @@
   </div>
 
   <div id="inspector">
-    <div class="title">Inspector</div>
+    <div class="title-row">
+      <div class="title">Inspector</div>
+      <div class="title-actions">
+        <button id="btn-pin" class="chip">Pin</button>
+        <button id="btn-root" class="chip">Set Root</button>
+      </div>
+    </div>
     <div id="inspector-body">
       <div class="muted">Click a creature to inspect.<br/>Shift-click to set lineage root.</div>
+    </div>
+    <div id="badges-panel" class="section hidden"></div>
+    <div id="lineage-panel" class="section">
+      <div class="section-title">Lineage</div>
+      <div id="lineage-summary" class="muted">Shift-click a creature to pick a lineage root.</div>
+    </div>
+    <div id="activity-panel" class="section">
+      <div class="section-title">Recent Activity</div>
+      <div id="activity-feed" class="muted">No activity yet.</div>
+    </div>
+    <div id="analytics-panel" class="section">
+      <div class="section-title">
+        <span>Evolution Analytics</span>
+        <button id="btn-export" class="chip">Export</button>
+      </div>
+      <div class="chart-block">
+        <canvas id="chart-pop" width="240" height="80"></canvas>
+        <label>Population / Predators</label>
+      </div>
+      <div class="chart-block">
+        <canvas id="chart-speed" width="240" height="80"></canvas>
+        <label>Mean Speed</label>
+      </div>
+      <div class="chart-block">
+        <canvas id="chart-metabolism" width="240" height="80"></canvas>
+        <label>Mean Metabolism</label>
+      </div>
     </div>
   </div>
 
