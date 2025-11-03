@@ -55,7 +55,9 @@ const chartCtx = {
   speed: document.getElementById('chart-speed')?.getContext('2d') ?? null,
   metabolism: document.getElementById('chart-metabolism')?.getContext('2d') ?? null,
   variance: document.getElementById('chart-variance')?.getContext('2d') ?? null,
-  ratio: document.getElementById('chart-ratio')?.getContext('2d') ?? null
+  ratio: document.getElementById('chart-ratio')?.getContext('2d') ?? null,
+  predators: document.getElementById('chart-predators')?.getContext('2d') ?? null,
+  health: document.getElementById('chart-health')?.getContext('2d') ?? null
 };
 const forageSlider = document.getElementById('slider-forage');
 const wanderSlider = document.getElementById('slider-wander');
@@ -155,6 +157,14 @@ window.addEventListener('keydown', (e)=>{
     }
     if (e.key.toLowerCase() === 'i') {
       setInspectorVisible(!inspectorVisible);
+      return;
+    }
+    if (e.key.toLowerCase() === 'v') {
+      renderer.enableVision = !renderer.enableVision;
+      return;
+    }
+    if (e.key.toLowerCase() === 'c') {
+      renderer.enableClustering = !renderer.enableClustering;
       return;
     }
     if (e.key.toLowerCase() === 'f') {
@@ -264,7 +274,8 @@ function loop(now) {
     pinnedId,
     lineageRootId,
     viewportWidth: canvas.width,
-    viewportHeight: canvas.height
+    viewportHeight: canvas.height,
+    worldTime: world.t
   });
 
   fps = 0.9 * fps + 0.1 * (1 / Math.max(dt, 0.0001));
@@ -290,6 +301,8 @@ function updateInspector(force) {
   const lineageOverview = lineageRootId ? world.buildLineageOverview(lineageRootId) : null;
   const ancestors = creature ? world.getAncestors(creature.id, 6) : [];
   const activity = creature ? [...creature.log].slice(-8).reverse() : [];
+  const lineagePulseData = lineageRootId ? world.getLineagePulse(lineageRootId) : null;
+  const lineageLeaders = world.getLineageLeaders(4);
 
   renderInspector({
     creature,
@@ -301,13 +314,16 @@ function updateInspector(force) {
     lineageRootId,
     lineage: lineageOverview,
     ancestors,
+    lineagePulse: lineagePulseData,
+    lineageLeaders,
     lineageStories: lineageTracker.getStories()
   }, {
     onTogglePin: () => togglePin(creature),
     onSetRoot: () => toggleRoot(creature),
     onFocusParent: (id) => selectCreature(id),
     onInspectId: (id) => selectCreature(id),
-    onClose: () => setInspectorVisible(false)
+    onClose: () => setInspectorVisible(false),
+    onSetRootId: (id) => setLineageRootId(id)
   });
 
   updateInspector._cache = {
@@ -328,6 +344,18 @@ function togglePin(creature) {
 function toggleRoot(creature) {
   if (!creature) return;
   lineageRootId = (lineageRootId === creature.id) ? null : creature.id;
+  updateInspector(true);
+}
+
+function setLineageRootId(id) {
+  if (id == null) return;
+  if (lineageRootId === id) return;
+  lineageRootId = id;
+  const root = world.getAnyCreatureById(id);
+  if (root) {
+    selectedId = id;
+    camera.focusOn(root.x, root.y);
+  }
   updateInspector(true);
 }
 
@@ -372,7 +400,9 @@ function exportSnapshot() {
       predator: !!c.genes.predator,
       genes: c.genes,
       energy: Number(c.energy.toFixed(2)),
-      age: Number(c.age.toFixed(1))
+      age: Number(c.age.toFixed(1)),
+      health: Number(c.health.toFixed(1)),
+      maxHealth: Number(c.maxHealth.toFixed(1))
     }))
   });
 

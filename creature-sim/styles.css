@@ -114,6 +114,7 @@ body { display:flex; justify-content:center; align-items:center; min-height:100v
 .chart-block { margin-bottom:12px; display:flex; flex-direction:column; gap:4px; }
 .chart-block canvas { width:100%; border:1px solid #24283b; border-radius:6px; background:#11131d; }
 .chart-block label { font-size:11px; opacity:0.6; }
+.tiny { font-size:11px; }
 
 .hidden { display:none !important; }
 
@@ -159,3 +160,36 @@ body { display:flex; justify-content:center; align-items:center; min-height:100v
   border-color:#3a3f5a;
   background:#202334;
 }
+
+#lineage-top-families {
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  margin-top:6px;
+  font-size:12px;
+}
+#lineage-top-families .family {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+#lineage-top-families .family button {
+  border:none;
+  background:none;
+  color:#7bb7ff;
+  cursor:pointer;
+  font-size:12px;
+  padding:0;
+}
+#lineage-top-families .family button:hover {
+  text-decoration:underline;
+}
+#lineage-top-families .metrics {
+  display:flex;
+  gap:10px;
+  font-variant-numeric:tabular-nums;
+}
+#lineage-top-families .direction.up { color:#74d99f; }
+#lineage-top-families .direction.down { color:#f48b8b; }
+#lineage-top-families .direction.flat { color:#a7adcf; }

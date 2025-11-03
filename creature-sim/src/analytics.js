@@ -23,9 +23,20 @@ export class AnalyticsTracker {
     let sumMetabolism = 0, sumMetabolism2 = 0;
     let sumSense = 0, sumSense2 = 0;
     let sumEnergy = 0;
+    let sumHealth = 0, sumMaxHealth = 0;
+    let sumPackInstinct = 0;
+    let sumAggression = 0;
+    let sumAmbushDelay = 0;
 
     for (const c of world.creatures) {
-      if (c.genes.predator) pred++; else herb++;
+      if (c.genes.predator) {
+        pred++;
+        sumPackInstinct += c.genes.packInstinct ?? 0;
+        sumAggression += c.genes.aggression ?? 0;
+        sumAmbushDelay += c.genes.ambushDelay ?? 0;
+      } else {
+        herb++;
+      }
       sumSpeed += c.genes.speed;
       sumSpeed2 += c.genes.speed * c.genes.speed;
       sumMetabolism += c.genes.metabolism;
@@ -33,8 +44,11 @@ export class AnalyticsTracker {
       sumSense += c.genes.sense;
       sumSense2 += c.genes.sense * c.genes.sense;
       sumEnergy += c.energy;
+      sumHealth += c.health ?? 0;
+      sumMaxHealth += c.maxHealth ?? c.health ?? 0;
     }
 
+    const meanHealthRatio = sumMaxHealth ? sumHealth / sumMaxHealth : 0;
     const sample = {
       t: world.t,
       pop,
@@ -47,7 +61,12 @@ export class AnalyticsTracker {
       metabolismVar: pop ? (sumMetabolism2 / pop) - Math.pow(sumMetabolism / pop, 2) : 0,
       meanSense: pop ? sumSense / pop : 0,
       senseVar: pop ? (sumSense2 / pop) - Math.pow(sumSense / pop, 2) : 0,
-      meanEnergy: pop ? sumEnergy / pop : 0
+      meanEnergy: pop ? sumEnergy / pop : 0,
+      meanHealth: meanHealthRatio,
+      meanMaxHealth: pop ? sumMaxHealth / pop : 0,
+      meanPackInstinct: pred ? sumPackInstinct / pred : 0,
+      meanAggression: pred ? sumAggression / pred : 0,
+      meanAmbushDelay: pred ? sumAmbushDelay / pred : 0
     };
 
     this.samples.push(sample);
@@ -76,7 +95,12 @@ export class AnalyticsTracker {
       meanSense: this.samples.map(s => s.meanSense),
       senseVar: this.samples.map(s => s.senseVar),
       food: this.samples.map(s => s.food),
-      predatorRatio: this.samples.map(s => s.pop ? s.pred / s.pop : 0)
+      predatorRatio: this.samples.map(s => s.pop ? s.pred / s.pop : 0),
+      meanHealth: this.samples.map(s => s.meanHealth ?? 0),
+      meanMaxHealth: this.samples.map(s => s.meanMaxHealth ?? 0),
+      meanPackInstinct: this.samples.map(s => s.meanPackInstinct ?? 0),
+      meanAggression: this.samples.map(s => s.meanAggression ?? 0),
+      meanAmbushDelay: this.samples.map(s => s.meanAmbushDelay ?? 0)
     };
     return this._cachedData;
   }

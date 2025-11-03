@@ -10,16 +10,30 @@ export function renderStats(el, world, fps, extra={}) {
   const n = world.creatures.length;
   // Optimize: avoid filter() which creates new array, use simple loop
   let preds = 0;
+  let sumHealth = 0;
+  let sumMaxHealth = 0;
   for (let i = 0; i < n; i++) {
-    if (world.creatures[i].genes.predator) preds++;
+    const creature = world.creatures[i];
+    if (creature.genes.predator) preds++;
+    sumHealth += creature.health ?? 0;
+    sumMaxHealth += creature.maxHealth ?? 1;
   }
   const herbs = n - preds;
+  const avgHealth = sumMaxHealth ? sumHealth / sumMaxHealth : 0;
   const parts = [
     `Pop: ${n} (H:${herbs} P:${preds})`,
     `Food: ${world.food.length}`,
     `t=${world.t.toFixed(1)}s`,
     `${fps.toFixed(0)} FPS`
   ];
+  const events = typeof world.getActiveEvents === 'function' ? world.getActiveEvents() : [];
+  if (events.length) {
+    const eventSummary = events
+      .map(evt => `${evt.name} ${Math.ceil(evt.remaining)}s`)
+      .join(' · ');
+    parts.push(`Env: ${eventSummary}`);
+  }
+  parts.push(`HP:${(avgHealth * 100).toFixed(0)}%`);
   if (extra.tool) parts.push(`Tool: ${String(extra.tool).toUpperCase()}`);
   if (extra.fastForward && extra.fastForward !== 1) parts.push(`×${extra.fastForward}`);
   if (extra.paused) parts.push('PAUSED');
@@ -32,6 +46,10 @@ export function renderInspector(model={}, handlers={}) {
   const lineageSummaryEl = document.getElementById('lineage-summary');
   const lineageStoriesEl = document.getElementById('lineage-stories');
   const lineageStoryPanel = document.getElementById('lineage-story');
+  const lineagePulsePanel = document.getElementById('lineage-dashboard');
+  const lineagePulseMeta = document.getElementById('lineage-pulse-meta');
+  const lineageSparkCanvas = document.getElementById('lineage-sparkline');
+  const lineageTopEl = document.getElementById('lineage-top-families');
   const activityFeedEl = document.getElementById('activity-feed');
   const pinBtn = document.getElementById('btn-pin');
   const rootBtn = document.getElementById('btn-root');
@@ -43,6 +61,57 @@ export function renderInspector(model={}, handlers={}) {
   const stats = creature ? model.stats ?? creature.stats : null;
   const badges = creature ? (model.badges ?? []) : [];
   const activity = creature ? (model.activity ?? []) : [];
+  const drawLineageSparkline = (canvas, series=[]) => {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const width = canvas.width;
+    const height = canvas.height;
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = '#11131d';
+    ctx.fillRect(0, 0, width, height);
+    if (!series.length) return;
+    const padX = 4;
+    const padY = 4;
+    let min = series[0].alive;
+    let max = series[0].alive;
+    for (const pt of series) {
+      if (pt.alive < min) min = pt.alive;
+      if (pt.alive > max) max = pt.alive;
+    }
+    if (min === max) max = min + 1;
+    const range = max - min;
+    ctx.beginPath();
+    series.forEach((pt, idx) => {
+      const x = padX + (idx / Math.max(1, series.length - 1)) * (width - padX * 2);
+      const y = height - padY - ((pt.alive - min) / range) * (height - padY * 2);
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = '#6ea8ff';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    if (series.length < 3) {
+      ctx.fillStyle = '#9ec5ff';
+      series.forEach((pt, idx) => {
+        const x = padX + (idx / Math.max(1, series.length - 1)) * (width - padX * 2);
+        const y = height - padY - ((pt.alive - min) / range) * (height - padY * 2);
+        ctx.beginPath();
+        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+  };
+  const toPulseMeta = (source) => {
+    if (!source) return null;
+    return {
+      name: source.name ?? `Lineage ${source.rootId}`,
+      current: source.latest?.alive ?? source.alive ?? 0,
+      delta: source.delta ?? 0,
+      peak: source.peak ?? 0,
+      series: source.series ?? []
+    };
+  };
 
   if (!creature) {
     body.innerHTML = `<div class="muted">Click a creature to inspect.<br/>Shift-click to set lineage root.</div>`;
@@ -54,16 +123,28 @@ export function renderInspector(model={}, handlers={}) {
       <div class="row"><div>Type</div><div><span class="tag">${creature.genes.predator ? 'Predator' : 'Herbivore'}</span></div></div>
       <div class="row"><div>Age</div><div>${creature.age.toFixed(1)}s</div></div>
       <div class="row"><div>Energy</div><div>${creature.energy.toFixed(1)}</div></div>
+      <div class="row"><div>Health</div><div>${creature.health.toFixed(1)} / ${creature.maxHealth.toFixed(0)}</div></div>
       <hr style="border-color:#2b2e41;opacity:.45;margin:6px 0;">
       <div class="row"><div>Speed</div><div>${creature.genes.speed.toFixed(2)}</div></div>
       <div class="row"><div>FOV</div><div>${creature.genes.fov.toFixed(0)}°</div></div>
       <div class="row"><div>Sense</div><div>${creature.genes.sense.toFixed(0)}px</div></div>
       <div class="row"><div>Metabolism</div><div>${creature.genes.metabolism.toFixed(2)}</div></div>
       <div class="row"><div>Hue</div><div>${creature.genes.hue}</div></div>
+      <div class="row"><div>Spines</div><div>${((creature.genes.spines ?? 0) * 100).toFixed(0)}%</div></div>
+      <div class="row"><div>Herd Instinct</div><div>${((creature.genes.herdInstinct ?? 0) * 100).toFixed(0)}%</div></div>
+      <div class="row"><div>Panic Trail</div><div>${((creature.genes.panicPheromone ?? 0) * 100).toFixed(0)}%</div></div>
+      <div class="row"><div>Grit</div><div>${((creature.genes.grit ?? 0) * 100).toFixed(0)}%</div></div>
+      ${creature.genes.predator ? `
+        <div class="row"><div>Pack Instinct</div><div>${(creature.genes.packInstinct * 100).toFixed(0)}%</div></div>
+        <div class="row"><div>Ambush Delay</div><div>${creature.genes.ambushDelay.toFixed(1)}s</div></div>
+        <div class="row"><div>Aggression</div><div>${creature.genes.aggression.toFixed(2)}</div></div>
+      ` : ''}
       <hr style="border-color:#2b2e41;opacity:.45;margin:6px 0;">
       <div class="row"><div>Food eaten</div><div>${stats?.food ?? 0}</div></div>
       <div class="row"><div>Kills</div><div>${stats?.kills ?? 0}</div></div>
       <div class="row"><div>Births</div><div>${stats?.births ?? 0}</div></div>
+      <div class="row"><div>Damage Dealt</div><div>${(stats?.damageDealt ?? 0).toFixed(1)}</div></div>
+      <div class="row"><div>Damage Taken</div><div>${(stats?.damageTaken ?? 0).toFixed(1)}</div></div>
     `;
   }
 
@@ -149,6 +230,55 @@ export function renderInspector(model={}, handlers={}) {
     });
   }
 
+  if (lineagePulsePanel && lineagePulseMeta && lineageTopEl) {
+    const leaders = model.lineageLeaders ?? [];
+    const pulseData = model.lineagePulse ?? null;
+    const primaryMeta = toPulseMeta(pulseData);
+    const fallbackMeta = !primaryMeta && leaders.length ? toPulseMeta(leaders[0]) : null;
+    const sparkMeta = primaryMeta ?? fallbackMeta;
+
+    if (!sparkMeta && !leaders.length) {
+      lineagePulsePanel.classList.add('hidden');
+      lineagePulseMeta.textContent = 'No samples yet.';
+      lineageTopEl.textContent = 'Collecting lineage data…';
+      if (lineageSparkCanvas) {
+        const ctx = lineageSparkCanvas.getContext('2d');
+        ctx?.clearRect(0, 0, lineageSparkCanvas.width, lineageSparkCanvas.height);
+      }
+    } else {
+      lineagePulsePanel.classList.remove('hidden');
+      if (sparkMeta && sparkMeta.series.length) {
+        drawLineageSparkline(lineageSparkCanvas, sparkMeta.series);
+      } else if (lineageSparkCanvas) {
+        const ctx = lineageSparkCanvas.getContext('2d');
+        ctx?.clearRect(0, 0, lineageSparkCanvas.width, lineageSparkCanvas.height);
+      }
+
+      if (primaryMeta) {
+        const trend = primaryMeta.delta > 0 ? `+${primaryMeta.delta}` : primaryMeta.delta < 0 ? `${primaryMeta.delta}` : '0';
+        lineagePulseMeta.textContent = `${primaryMeta.name}: ${primaryMeta.current} alive (peak ${primaryMeta.peak}, trend ${trend})`;
+      } else if (fallbackMeta) {
+        const trend = fallbackMeta.delta > 0 ? `+${fallbackMeta.delta}` : fallbackMeta.delta < 0 ? `${fallbackMeta.delta}` : '0';
+        lineagePulseMeta.textContent = `${fallbackMeta.name}: ${fallbackMeta.current} alive (peak ${fallbackMeta.peak}, trend ${trend})`;
+      } else {
+        lineagePulseMeta.textContent = 'Collecting lineage data…';
+      }
+
+      if (!leaders.length) {
+        lineageTopEl.textContent = 'No dominant families yet.';
+      } else {
+        lineageTopEl.innerHTML = leaders.map(entry => {
+          const trendClass = entry.delta > 0 ? 'up' : entry.delta < 0 ? 'down' : 'flat';
+          const trendVal = entry.delta > 0 ? `+${entry.delta}` : entry.delta < 0 ? `${entry.delta}` : '0';
+          return `<div class="family"><button class="family-root" data-root="${entry.rootId}">${entry.name}</button><div class="metrics"><span>${entry.alive}</span><span class="direction ${trendClass}">${trendVal}</span><span class="muted">pk ${entry.peak}</span></div></div>`;
+        }).join('');
+        lineageTopEl.querySelectorAll('.family-root').forEach(btn => {
+          btn.onclick = () => handlers.onSetRootId?.(Number(btn.dataset.root));
+        });
+      }
+    }
+  }
+
   if (lineageStoriesEl && lineageStoryPanel) {
     const stories = model.lineageStories ?? [];
     if (!stories.length) {
@@ -207,6 +337,17 @@ export function renderAnalyticsCharts(ctxMap, data) {
   drawChart(ctxMap.ratio, [
     { series: data.predatorRatio, color:'#ff8888', label:'Pred %', decimals:2 }
   ], { min:0, max:1 });
+
+  drawChart(ctxMap.predators, [
+    { series: data.meanPackInstinct, color:'#5bdadf', label:'Pack', decimals:2 },
+    { series: data.meanAggression, color:'#ff9f6d', label:'Agg', decimals:2 },
+    { series: data.meanAmbushDelay, color:'#d5b4ff', label:'Amb', decimals:2 }
+  ]);
+
+  drawChart(ctxMap.health, [
+    { series: data.meanHealth, color:'#7fe07f', label:'HP', decimals:1 },
+    { series: data.meanMaxHealth, color:'#a3b0ff', label:'HPmax', decimals:1 }
+  ], { min:0 });
 }
 
 function drawChart(ctx, lines, { min=null, max=null } = {}) {

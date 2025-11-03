@@ -47,6 +47,12 @@
       <div class="section-title">Lineage</div>
       <div id="lineage-summary" class="muted">Shift-click a creature to pick a lineage root.</div>
     </div>
+    <div id="lineage-dashboard" class="section hidden">
+      <div class="section-title">Lineage Pulse</div>
+      <canvas id="lineage-sparkline" width="240" height="60"></canvas>
+      <div id="lineage-pulse-meta" class="muted tiny">No samples yet.</div>
+      <div id="lineage-top-families" class="lineage-top muted">Collecting lineage data…</div>
+    </div>
     <div id="lineage-story" class="section hidden">
       <div class="section-title">Lineage Stories</div>
       <div id="lineage-stories" class="muted">No milestones yet.</div>
@@ -85,6 +91,14 @@
       <div class="chart-block">
         <canvas id="chart-ratio" width="240" height="80"></canvas>
         <label>Predator Ratio</label>
+      </div>
+      <div class="chart-block">
+        <canvas id="chart-predators" width="240" height="80"></canvas>
+        <label>Predator Instincts</label>
+      </div>
+      <div class="chart-block">
+        <canvas id="chart-health" width="240" height="80"></canvas>
+        <label>Mean Health</label>
       </div>
     </div>
   </div>
