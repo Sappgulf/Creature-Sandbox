@@ -241,6 +241,7 @@ window.addEventListener('keydown', (e)=>{
     }
     if (e.key.toLowerCase() === 'v') {
       renderer.enableVision = !renderer.enableVision;
+      syncFeatureButton('vision', renderer.enableVision);
       console.log(`%c[VISION CONES] ${renderer.enableVision ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableVision ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       if (renderer.enableVision) {
@@ -250,6 +251,7 @@ window.addEventListener('keydown', (e)=>{
     }
     if (e.key.toLowerCase() === 'c') {
       renderer.enableClustering = !renderer.enableClustering;
+      syncFeatureButton('clustering', renderer.enableClustering);
       console.log(`%c[GENETIC CLUSTERING] ${renderer.enableClustering ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableClustering ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       if (renderer.enableClustering) {
@@ -260,12 +262,14 @@ window.addEventListener('keydown', (e)=>{
     // Feature toggle keys
     if (e.key.toLowerCase() === 't') {
       renderer.enableTerritories = !renderer.enableTerritories;
+      syncFeatureButton('territories', renderer.enableTerritories);
       console.log(`%c[TERRITORIES] ${renderer.enableTerritories ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableTerritories ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       return;
     }
     if (e.key.toLowerCase() === 'm') {
       renderer.enableMemory = !renderer.enableMemory;
+      syncFeatureButton('memory', renderer.enableMemory);
       console.log(`%c[MEMORY] ${renderer.enableMemory ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableMemory ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       if (renderer.enableMemory) {
@@ -275,12 +279,14 @@ window.addEventListener('keydown', (e)=>{
     }
     if (e.key.toLowerCase() === 'b') {
       renderer.enableSocialBonds = !renderer.enableSocialBonds;
+      syncFeatureButton('social', renderer.enableSocialBonds);
       console.log(`%c[SOCIAL BONDS] ${renderer.enableSocialBonds ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableSocialBonds ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       return;
     }
     if (e.key.toLowerCase() === 'g') {
       renderer.enableMigration = !renderer.enableMigration;
+      syncFeatureButton('migration', renderer.enableMigration);
       console.log(`%c[MIGRATION] ${renderer.enableMigration ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableMigration ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       return;
@@ -288,6 +294,7 @@ window.addEventListener('keydown', (e)=>{
     // Advanced feature toggles
     if (e.key.toLowerCase() === '1') {
       renderer.enableEmotions = !renderer.enableEmotions;
+      syncFeatureButton('emotions', renderer.enableEmotions);
       console.log(`%c[EMOTIONS] ${renderer.enableEmotions ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableEmotions ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       if (renderer.enableEmotions) {
@@ -297,18 +304,21 @@ window.addEventListener('keydown', (e)=>{
     }
     if (e.key.toLowerCase() === '2') {
       renderer.enableSensoryViz = !renderer.enableSensoryViz;
+      syncFeatureButton('sensory', renderer.enableSensoryViz);
       console.log(`%c[SENSORY TYPES] ${renderer.enableSensoryViz ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableSensoryViz ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       return;
     }
     if (e.key.toLowerCase() === '3') {
       renderer.enableIntelligence = !renderer.enableIntelligence;
+      syncFeatureButton('intelligence', renderer.enableIntelligence);
       console.log(`%c[INTELLIGENCE] ${renderer.enableIntelligence ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableIntelligence ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       return;
     }
     if (e.key.toLowerCase() === '4') {
       renderer.enableMating = !renderer.enableMating;
+      syncFeatureButton('mating', renderer.enableMating);
       console.log(`%c[MATING DISPLAYS] ${renderer.enableMating ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableMating ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       return;

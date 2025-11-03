@@ -804,15 +804,29 @@ export class Renderer {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     
-    // REDESIGNED: Clearer, more readable mini-map
-    const mapSize = 180;
-    const mapX = opts.viewportWidth - mapSize - 20;
-    const mapY = opts.viewportHeight - mapSize - 20;
-    const scale = mapSize / Math.max(world.width, world.height);
+    // FIXED: Show FULL world with correct aspect ratio
+    const maxMapSize = 180;
+    const aspectRatio = world.width / world.height;
+    
+    let mapW, mapH;
+    if (aspectRatio > 1) {
+      // Wider than tall
+      mapW = maxMapSize;
+      mapH = maxMapSize / aspectRatio;
+    } else {
+      // Taller than wide
+      mapH = maxMapSize;
+      mapW = maxMapSize * aspectRatio;
+    }
+    
+    const mapX = opts.viewportWidth - mapW - 20;
+    const mapY = opts.viewportHeight - mapH - 20;
+    const scaleX = mapW / world.width;
+    const scaleY = mapH / world.height;
     
     // Background (darker, less distracting)
     ctx.fillStyle = 'rgba(8, 10, 14, 0.95)';
-    ctx.fillRect(mapX, mapY, mapSize, mapSize);
+    ctx.fillRect(mapX, mapY, mapW, mapH);
     
     // Draw biomes (MUCH more subtle - just hints of color)
     const sampleSize = 100; // Larger samples = less detail, easier to read
@@ -822,38 +836,41 @@ export class Renderer {
         const biome = world.getBiomeAt(x, y);
         ctx.fillStyle = this._getBiomeTint(biome.type);
         ctx.fillRect(
-          mapX + x * scale,
-          mapY + y * scale,
-          sampleSize * scale + 1,
-          sampleSize * scale + 1
+          mapX + x * scaleX,
+          mapY + y * scaleY,
+          Math.max(1, sampleSize * scaleX),
+          Math.max(1, sampleSize * scaleY)
         );
       }
     }
     ctx.globalAlpha = 1;
     
     // Draw creature population as HEAT MAP (more readable!)
-    const heatmapSize = 200;
-    const heatmap = new Uint8Array(heatmapSize * heatmapSize);
+    const heatmapSize = 100; // Match world aspect ratio
+    const heatmapW = Math.floor(heatmapSize * aspectRatio);
+    const heatmapH = heatmapSize;
+    const heatmap = new Uint8Array(heatmapW * heatmapH);
     
     for (const c of world.creatures) {
-      const hx = Math.floor((c.x / world.width) * heatmapSize);
-      const hy = Math.floor((c.y / world.height) * heatmapSize);
-      if (hx >= 0 && hx < heatmapSize && hy >= 0 && hy < heatmapSize) {
-        heatmap[hy * heatmapSize + hx]++;
+      const hx = Math.floor((c.x / world.width) * heatmapW);
+      const hy = Math.floor((c.y / world.height) * heatmapH);
+      if (hx >= 0 && hx < heatmapW && hy >= 0 && hy < heatmapH) {
+        heatmap[hy * heatmapW + hx]++;
       }
     }
     
     // Render heatmap (bright spots = high population)
-    for (let hy = 0; hy < heatmapSize; hy++) {
-      for (let hx = 0; hx < heatmapSize; hx++) {
-        const count = heatmap[hy * heatmapSize + hx];
+    for (let hy = 0; hy < heatmapH; hy++) {
+      for (let hx = 0; hx < heatmapW; hx++) {
+        const count = heatmap[hy * heatmapW + hx];
         if (count > 0) {
           const intensity = Math.min(count / 3, 1); // Cap intensity
           ctx.fillStyle = `rgba(123, 183, 255, ${intensity * 0.8})`;
-          const px = mapX + (hx / heatmapSize) * mapSize;
-          const py = mapY + (hy / heatmapSize) * mapSize;
-          const size = (mapSize / heatmapSize) * 1.5;
-          ctx.fillRect(px, py, size, size);
+          const px = mapX + (hx / heatmapW) * mapW;
+          const py = mapY + (hy / heatmapH) * mapH;
+          const cellW = (mapW / heatmapW) * 1.5;
+          const cellH = (mapH / heatmapH) * 1.5;
+          ctx.fillRect(px, py, cellW, cellH);
         }
       }
     }
@@ -867,10 +884,10 @@ export class Renderer {
     ctx.strokeStyle = 'rgba(255, 255, 100, 0.9)'; // Yellow = more visible
     ctx.lineWidth = 2;
     ctx.strokeRect(
-      mapX + viewX * scale,
-      mapY + viewY * scale,
-      viewW * scale,
-      viewH * scale
+      mapX + viewX * scaleX,
+      mapY + viewY * scaleY,
+      viewW * scaleX,
+      viewH * scaleY
     );
     
     // Border with slight glow
@@ -878,7 +895,7 @@ export class Renderer {
     ctx.shadowBlur = 4;
     ctx.strokeStyle = 'rgba(123, 183, 255, 0.6)';
     ctx.lineWidth = 2;
-    ctx.strokeRect(mapX - 1, mapY - 1, mapSize + 2, mapSize + 2);
+    ctx.strokeRect(mapX - 1, mapY - 1, mapW + 2, mapH + 2);
     ctx.shadowBlur = 0;
     
     // Label
