@@ -1,0 +1,29 @@
+{
+  "name": "creature-sandbox",
+  "version": "2.0.0",
+  "description": "AI-driven creature simulation with genetic evolution, predator-prey dynamics, and real-time analytics",
+  "type": "module",
+  "scripts": {
+    "dev": "python3 -m http.server 8000 --directory creature-sim",
+    "preview": "python3 -m http.server 8000 --directory creature-sim"
+  },
+  "keywords": [
+    "simulation",
+    "evolution",
+    "genetics",
+    "ai",
+    "ecosystem",
+    "canvas",
+    "javascript"
+  ],
+  "author": "Sappgulf",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sappgulf/Creature-Sandbox.git"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
+

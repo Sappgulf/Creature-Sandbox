@@ -1,0 +1,7 @@
+OPTIMIZATION_REPORT.md
+QUICK_REFERENCE.md
+.git
+.gitignore
+*.md
+!creature-sim/README.md
+
