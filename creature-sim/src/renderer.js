@@ -804,23 +804,25 @@ export class Renderer {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     
-    // FIXED: Show FULL world with correct aspect ratio
-    const maxMapSize = 180;
-    const aspectRatio = world.width / world.height;
+    // FULLY FIXED: Show complete world with perfect aspect ratio
+    const maxMapWidth = 220; // Larger for better visibility
+    const maxMapHeight = 160;
+    const aspectRatio = world.width / world.height; // 4000/2800 = 1.43
     
+    // Calculate map size maintaining world aspect ratio
     let mapW, mapH;
-    if (aspectRatio > 1) {
-      // Wider than tall
-      mapW = maxMapSize;
-      mapH = maxMapSize / aspectRatio;
+    if (world.width / maxMapWidth > world.height / maxMapHeight) {
+      // Width-constrained
+      mapW = maxMapWidth;
+      mapH = maxMapWidth / aspectRatio;
     } else {
-      // Taller than wide
-      mapH = maxMapSize;
-      mapW = maxMapSize * aspectRatio;
+      // Height-constrained
+      mapH = maxMapHeight;
+      mapW = maxMapHeight * aspectRatio;
     }
     
-    const mapX = opts.viewportWidth - mapW - 20;
-    const mapY = opts.viewportHeight - mapH - 20;
+    const mapX = opts.viewportWidth - mapW - 16;
+    const mapY = opts.viewportHeight - mapH - 16;
     const scaleX = mapW / world.width;
     const scaleY = mapH / world.height;
     
