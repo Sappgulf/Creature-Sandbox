@@ -1,4 +1,4 @@
-import { rand, clamp, remap } from './utils.js';
+import { rand, clamp } from './utils.js';
 import { makeGenes, mutateGenes } from './genetics.js';
 import { Creature } from './creature.js';
 
@@ -16,12 +16,11 @@ class ScalarField {
   get(x,y){ return this.inb(x,y) ? this.grid[this.idx(x,y)] : 0; }
   add(x,y,val){ if (this.inb(x,y)) this.grid[this.idx(x,y)] += val; }
   step() {
-    // diffusion + decay (very cheap Jacobi-ish pass)
     const next = new Float32Array(this.grid.length);
     for (let y=0;y<this.h;y++){
       for (let x=0;x<this.w;x++){
-        let s = this.get(x,y)* (1-this.diffuse);
-        s += this.diffuse * 0.25 * (this.get(x+1,y)+this.get(x-1,y)+this.get(x,y+1)+this.get(x,y-1));
+        let s = this.get(x,y)*(1-this.diffuse);
+        s += this.diffuse*0.25*(this.get(x+1,y)+this.get(x-1,y)+this.get(x,y+1)+this.get(x,y-1));
         next[this.idx(x,y)] = s * this.decay;
       }
     }
@@ -33,225 +32,149 @@ export class World {
   constructor(width, height) {
     this.width = width; this.height = height;
     this.creatures = [];
-    this.food = []; // {x,y,r}
+    this.food = [];
     this.pheromone = new ScalarField(width, height, 20, 0.992, 0.18);
     this.temperature = new ScalarField(width, height, 40, 1.0, 0.0);
     this.t = 0;
-    this.nextId = 1;
 
-    // init temperature bands (cool edges, warm center)
+    // lineage
+    this._nextId = 1;
+    this.childrenOf = new Map(); // id -> Set(childIds)
+
+    // init temperature bands
     for (let y=0;y<this.temperature.h;y++){
       for (let x=0;x<this.temperature.w;x++){
-        const nx = (x/this.temperature.w - 0.5);
-        const ny = (y/this.temperature.h - 0.5);
-        const r = Math.sqrt(nx*nx+ny*ny);
-        this.temperature.grid[this.temperature.idx(x,y)] = clamp(0.7 - r, 0.0, 0.7); // 0..0.7 comfort
+        const nx=(x/this.temperature.w - 0.5), ny=(y/this.temperature.h - 0.5);
+        const r=Math.sqrt(nx*nx+ny*ny);
+        this.temperature.grid[this.temperature.idx(x,y)] = clamp(0.7 - r, 0.0, 0.7);
       }
     }
+  }
+
+  addCreature(creature, parentId=null){
+    creature.id = this._nextId++;
+    creature.parentId = parentId;
+    this.creatures.push(creature);
+    if (parentId) {
+      if (!this.childrenOf.has(parentId)) this.childrenOf.set(parentId, new Set());
+      this.childrenOf.get(parentId).add(creature.id);
+    }
+    return creature.id;
   }
 
   seed(nHerb=60, nPred=6, nFood=180) {
     for (let i=0;i<nHerb;i++) {
-      this.createCreature(rand(0,this.width), rand(0,this.height), makeGenes());
+      this.addCreature(new Creature(rand(0,this.width), rand(0,this.height), makeGenes()), null);
     }
     for (let i=0;i<nPred;i++) {
       const g = makeGenes({ predator:1, speed:1.1, metabolism:1.2, hue:0 });
-      this.createCreature(rand(0,this.width), rand(0,this.height), g);
+      this.addCreature(new Creature(rand(0,this.width), rand(0,this.height), g), null);
     }
     for (let i=0;i<nFood;i++) this.addFood(rand(0,this.width), rand(0,this.height), rand(1,2));
   }
 
-  createCreature(x, y, genes, opts={}) {
-    const id = this.nextId++;
-    const lineageId = opts.lineageId ?? id;
-    const creature = new Creature(x, y, genes, { ...opts, id, lineageId });
-    this.creatures.push(creature);
-    return creature;
-  }
-
-  spawnPredator(x, y, genes=null) {
-    const g = genes ?? makeGenes({ predator:1, speed:1.2, metabolism:1.2, hue:0 });
-    return this.createCreature(x, y, g);
-  }
-
   addFood(x,y,r=1.5){ this.food.push({x,y,r}); }
 
-  nearbyFood(x,y,radius) {
-    // simple coarse filter (you can spatial-hash later)
-    return this.food;
-  }
+  nearbyFood(x,y,radius){ return this.food; }
 
   tryEatFoodAt(x,y,reach=8) {
     for (let i=0;i<this.food.length;i++){
-      const f = this.food[i];
-      const dx = f.x - x, dy = f.y - y;
-      if (dx*dx + dy*dy <= (reach+f.r)*(reach+f.r)) {
-        // consume
-        this.food.splice(i,1);
-        return true;
-      }
+      const f=this.food[i]; const dx=f.x-x, dy=f.y-y;
+      if (dx*dx+dy*dy <= (reach+f.r)*(reach+f.r)) { this.food.splice(i,1); return true; }
     }
     return false;
   }
 
   tryPredation(pred) {
-    // predators eat nearest non-pred within short radius
-    let best = -1, bestD2 = 80*80;
+    let best=-1, bestD2=80*80;
     for (let i=0;i<this.creatures.length;i++){
-      const c = this.creatures[i];
-      if (!c.alive || c === pred) continue;
+      const c=this.creatures[i];
+      if (!c.alive || c===pred) continue;
       if (c.genes.predator) continue;
-      const dx = c.x - pred.x, dy = c.y - pred.y;
-      const d2 = dx*dx + dy*dy;
-      if (d2 < bestD2) { bestD2 = d2; best = i; }
+      const dx=c.x-pred.x, dy=c.y-pred.y, d2=dx*dx+dy*dy;
+      if (d2<bestD2) { bestD2=d2; best=i; }
     }
-    if (best >= 0) {
-      const vic = this.creatures[best];
-      vic.alive = false;
-      return vic;
-    }
+    if (best>=0){ const vic=this.creatures[best]; vic.alive=false; return vic; }
     return null;
   }
 
-  dropPheromone(x,y,val=1.0) {
+  dropPheromone(x,y,val=1.0){
     this.pheromone.add(Math.floor(x/this.pheromone.cell), Math.floor(y/this.pheromone.cell), val);
   }
 
-  tempPenaltyAt(x,y) {
-    // higher comfort -> lower penalty; invert and scale
-    const v = this.temperature.get(Math.floor(x/this.temperature.cell), Math.floor(y/this.temperature.cell));
-    // seasonal oscillation
-    const season = 0.2 * Math.sin(this.t * 0.05);
-    const comfort = clamp(v + season, 0, 0.8);
-    return (0.5 - comfort) * 0.5; // 0..~0.5
+  tempPenaltyAt(x,y){
+    const v=this.temperature.get(Math.floor(x/this.temperature.cell), Math.floor(y/this.temperature.cell));
+    const season=0.2*Math.sin(this.t*0.05);
+    const comfort=clamp(v+season,0,0.8);
+    return (0.5-comfort)*0.5;
   }
 
-  spawnChild(parent) {
+  spawnChild(parent){
     const childGenes = mutateGenes(parent.genes, 0.05);
-    const child = this.createCreature(parent.x, parent.y, childGenes, {
-      isChild:true,
-      parentId: parent.id,
-      lineageId: parent.lineageId
-    });
-    return child;
+    const child = new Creature(parent.x, parent.y, childGenes, true);
+    this.addCreature(child, parent.id);
   }
 
-  findNearestCreature(x, y, radius=18) {
-    const radius2 = radius*radius;
-    let best = null;
-    let bestD2 = radius2;
-    for (let c of this.creatures) {
+  /** Fast nearest creature search (linear; good enough for hundreds). */
+  nearestCreature(x,y,maxDistPx=30){
+    let best=null, bestD2=maxDistPx*maxDistPx;
+    for (const c of this.creatures){
       if (!c.alive) continue;
-      const dx = c.x - x;
-      const dy = c.y - y;
-      const d2 = dx*dx + dy*dy;
-      if (d2 <= bestD2) {
-        bestD2 = d2;
-        best = c;
-      }
+      const dx=c.x-x, dy=c.y-y, d2=dx*dx+dy*dy;
+      if (d2<bestD2){ bestD2=d2; best=c; }
     }
     return best;
   }
 
-  getCreatureById(id) {
-    if (id == null) return null;
-    for (let c of this.creatures) {
-      if (c.id === id) return c;
+  /** Compute all descendants of rootId (BFS over childrenOf). */
+  descendantsOf(rootId){
+    const out=new Set([rootId]);
+    const q=[rootId];
+    while(q.length){
+      const id=q.shift();
+      const kids=this.childrenOf.get(id);
+      if (!kids) continue;
+      for (const k of kids){ if (!out.has(k)){ out.add(k); q.push(k); } }
     }
-    return null;
+    return out;
   }
 
-  step(dt) {
+  getCreatureById(id){ return this.creatures.find(c=>c.id===id); }
+
+  step(dt){
     this.t += dt;
-    // light food respawn with chance
-    if (Math.random() < 0.3) this.addFood(rand(0,this.width), rand(0,this.height), 1.4);
-
-    // pheromone evolution
+    if (Math.random()<0.3) this.addFood(rand(0,this.width), rand(0,this.height), 1.4);
     this.pheromone.step();
-
-    // update creatures
     for (let c of this.creatures) c.update(dt, this);
-    // remove dead
     this.creatures = this.creatures.filter(c=>c.alive);
   }
 
-  draw(ctx, opts={}) {
-    const {
-      overlay='none',
-      selectedId=null,
-      highlightLineageId=null
-    } = opts;
+  draw(ctx, opts={}){
+    const { selectedId=null, lineageRootId=null } = opts;
+
     // food
     ctx.fillStyle = '#7fd36a';
-    for (let f of this.food) {
-      ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,Math.PI*2); ctx.fill();
-    }
+    for (let f of this.food){ ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,Math.PI*2); ctx.fill(); }
 
     // pheromone overlay (very faint)
-    const cell = this.pheromone.cell;
+    const cell=this.pheromone.cell;
     for (let y=0;y<this.pheromone.h;y++){
       for (let x=0;x<this.pheromone.w;x++){
-        const v = this.pheromone.get(x,y);
-        if (v < 0.05) continue;
-        ctx.fillStyle = `rgba(120,180,255,${Math.min(0.15, v*0.05)})`;
-        ctx.fillRect(x*cell, y*cell, cell, cell);
+        const v=this.pheromone.get(x,y);
+        if (v<0.05) continue;
+        ctx.fillStyle=`rgba(120,180,255,${Math.min(0.15, v*0.05)})`;
+        ctx.fillRect(x*cell,y*cell,cell,cell);
       }
     }
+
+    // precompute lineage set for glow
+    const lineageSet = lineageRootId ? this.descendantsOf(lineageRootId) : null;
 
     // creatures
-    for (let c of this.creatures) {
-      const colorInfo = this.overlayColor(c, overlay);
-      c.draw(ctx, {
-        fillStyle: colorInfo.fill,
-        energyRing: colorInfo.ring,
-        isSelected: selectedId === c.id,
-        isLineageMate: highlightLineageId && c.lineageId === highlightLineageId
-      });
-    }
-  }
-
-  overlayColor(creature, mode) {
-    if (mode === 'none') {
-      const g = creature.genes;
-      return {
-        fill: `hsl(${g.hue},85%,${g.predator?45:60}%)`,
-        ring: `hsla(${g.hue},90%,80%,0.65)`
-      };
-    }
-
-    const g = creature.genes;
-    const heat = (value, min, max) => {
-      const t = remap(min, max, 0, 1, value);
-      const hue = remap(0, 1, 210, 10, t);
-      const sat = remap(0, 1, 70, 92, t);
-      const lum = remap(0, 1, 45, 60, t);
-      return `hsl(${hue},${sat}%,${lum}%)`;
-    };
-
-    switch (mode) {
-      case 'speed': {
-        const fill = heat(g.speed, 0.2, 2.0);
-        return { fill, ring: 'rgba(255,255,255,0.45)' };
-      }
-      case 'fov': {
-        const fill = heat(g.fov, 20, 160);
-        return { fill, ring: 'rgba(255,255,255,0.4)' };
-      }
-      case 'sense': {
-        const fill = heat(g.sense, 20, 200);
-        return { fill, ring: 'rgba(255,255,255,0.35)' };
-      }
-      case 'metabolism': {
-        const fill = heat(g.metabolism, 0.4, 2.0);
-        return { fill, ring: 'rgba(255,255,255,0.5)' };
-      }
-      case 'predator': {
-        const fill = g.predator ? 'hsl(5,85%,55%)' : 'hsl(140,70%,55%)';
-        const ring = g.predator ? 'rgba(255,205,180,0.5)' : 'rgba(180,240,200,0.45)';
-        return { fill, ring };
-      }
-      default:
-        return this.overlayColor(creature, 'none');
+    for (let c of this.creatures){
+      const isSelected = (c.id===selectedId);
+      const inLineage = lineageSet ? lineageSet.has(c.id) : false;
+      c.draw(ctx, { isSelected, inLineage });
     }
   }
 }

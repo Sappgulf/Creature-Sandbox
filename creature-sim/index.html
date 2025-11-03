@@ -8,37 +8,21 @@
 </head>
 <body>
   <div id="hud">
-    <div class="hud-group">
-      <button id="btn-pause">Pause</button>
-      <button id="btn-step">Step</button>
-      <button id="btn-spawn-food">+ Food</button>
-      <button id="btn-spawn-pred">+ Predator</button>
-    </div>
-    <div class="hud-group overlay">
-      <label for="overlay-mode">Overlay</label>
-      <select id="overlay-mode">
-        <option value="none">Natural</option>
-        <option value="speed">Speed</option>
-        <option value="fov">Field of View</option>
-        <option value="sense">Sense Radius</option>
-        <option value="metabolism">Metabolism</option>
-        <option value="predator">Herbivore/Predator</option>
-      </select>
-    </div>
+    <button id="btn-pause">Pause</button>
+    <button id="btn-step">Step</button>
+    <button id="btn-spawn-food">+ Food</button>
+    <button id="btn-spawn-pred">+ Predator</button>
     <span id="stats"></span>
   </div>
+
+  <div id="inspector">
+    <div class="title">Inspector</div>
+    <div id="inspector-body">
+      <div class="muted">Click a creature to inspect.<br/>Shift-click to set lineage root.</div>
+    </div>
+  </div>
+
   <canvas id="view" width="1000" height="700"></canvas>
-  <aside id="inspector">
-    <header>
-      <h2>Creature Inspector</h2>
-      <button id="btn-clear-selection" title="Clear selection">×</button>
-    </header>
-    <div id="inspector-body"></div>
-    <canvas id="inspector-chart" width="240" height="80"></canvas>
-    <footer>
-      <small>Drag without modifiers to paint food. Hold Shift to select. Press 1-6 or <kbd>O</kbd>/<kbd>Shift+O</kbd> to cycle overlays.</small>
-    </footer>
-  </aside>
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
