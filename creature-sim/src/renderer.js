@@ -146,6 +146,11 @@ export class Renderer {
     
     this.drawCreatures(world.creatures, { selectedId, pinnedId, lineageSet, worldTime });
     
+    // NEW: Draw particle effects (birth sparkles, death markers, etc.)
+    if (world.particles) {
+      world.particles.draw(ctx);
+    }
+    
     // Advanced visualizations (after creatures)
     if (this.enableEmotions && selectedId) {
       const creature = world.getAnyCreatureById(selectedId);

@@ -1080,11 +1080,8 @@ function loop(now) {
     viewportHeight: canvas.height
   });
   
-  // NEW: Draw particle effects (after world, before UI)
-  ctx.save();
-  camera.apply(ctx);
-  particles.draw(ctx);
-  ctx.restore();
+  // NEW: Draw particle effects (in world space)
+  // Particles are drawn by the renderer during world drawing (world coordinates)
   
   // NEW: Draw notifications (screen space)
   notifications.draw(ctx, canvas.width, canvas.height);
