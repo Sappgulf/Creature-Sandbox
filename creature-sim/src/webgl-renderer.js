@@ -300,16 +300,9 @@ export class WebGLRenderer {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.circleBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(circleVertices), gl.STATIC_DRAW);
     
-    // Full-screen quad for background
-    const quadVertices = [
-      0, 0,
-      4000, 0,
-      0, 2800,
-      4000, 2800
-    ];
+    // World-sized quad for background (will match world dimensions)
     this.quadBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(quadVertices), gl.STATIC_DRAW);
+    this._updateQuadBuffer(4000, 2800); // Initial world size
     
     // Instance buffers (will be updated each frame)
     this.instancePosBuffer = gl.createBuffer();
@@ -324,6 +317,18 @@ export class WebGLRenderer {
     this.overlay.width = width;
     this.overlay.height = height;
     this.gl.viewport(0, 0, width, height);
+  }
+  
+  _updateQuadBuffer(worldWidth, worldHeight) {
+    const gl = this.gl;
+    const quadVertices = [
+      0, 0,
+      worldWidth, 0,
+      0, worldHeight,
+      worldWidth, worldHeight
+    ];
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(quadVertices), gl.STATIC_DRAW);
   }
   
   clear(width, height) {
