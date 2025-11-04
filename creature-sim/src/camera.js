@@ -29,6 +29,13 @@ export class Camera {
     this.viewportWidth = viewportWidth;
     this.viewportHeight = viewportHeight;
     this.travel = null;
+    
+    // Follow mode
+    this.followMode = 'free'; // 'free', 'follow', 'smooth-follow'
+    this.followTarget = null; // creature ID
+    this.followSmoothing = 0.12; // smoother than normal pan
+    this.followZoomAdjust = true; // auto-zoom based on creature speed
+    
     this._refreshMinZoom();
     this._clampTargets();
   }
