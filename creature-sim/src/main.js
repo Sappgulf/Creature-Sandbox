@@ -308,21 +308,25 @@ if (scenarioBalanceToggle) {
   scenarioBalanceToggle.checked = !!world.autoBalanceSettings?.enabled;
 }
 
-// Setup panel toggle
-const panelToggleBtn = document.getElementById('panel-toggle-btn');
+// Setup features panel toggle
+const btnFeatures = document.getElementById('btn-features');
 const btnCloseFeatures = document.getElementById('btn-close-features');
 
-panelToggleBtn?.addEventListener('click', () => {
-  featuresPanel?.classList.toggle('open');
-  if (panelToggleBtn) {
-    panelToggleBtn.textContent = featuresPanel?.classList.contains('open') ? '▶' : '◀';
+function toggleFeaturesPanel() {
+  const isOpen = featuresPanel?.classList.toggle('open');
+  if (btnFeatures) {
+    btnFeatures.classList.toggle('active', isOpen);
+    btnFeatures.textContent = isOpen ? '✕ Close' : '🎨 Features';
   }
-});
+}
+
+btnFeatures?.addEventListener('click', toggleFeaturesPanel);
 
 btnCloseFeatures?.addEventListener('click', () => {
   featuresPanel?.classList.remove('open');
-  if (panelToggleBtn) {
-    panelToggleBtn.textContent = '◀';
+  if (btnFeatures) {
+    btnFeatures.classList.remove('active');
+    btnFeatures.textContent = '🎨 Features';
   }
 });
 
