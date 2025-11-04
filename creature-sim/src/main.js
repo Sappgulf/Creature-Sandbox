@@ -148,11 +148,7 @@ const restSlider = document.getElementById('slider-rest');
 const fixedDt = 1/60;
 const MAX_STEPS = 6;
 
-// Feature toggle UI
-const featureToggles = document.querySelectorAll('.feature-toggle[data-feature]');
-const miniMapToggles = document.querySelectorAll('.feature-toggle[data-mini]');
-const btnToggleFeatures = document.getElementById('btn-toggle-features');
-const featuresPanel = document.getElementById('features-panel');
+// Performance metrics (features panel removed - use keyboard shortcuts)
 const metricRendered = document.getElementById('metric-rendered');
 const metricCulled = document.getElementById('metric-culled');
 const metricDraws = document.getElementById('metric-draws');
@@ -286,48 +282,39 @@ wanderSlider?.addEventListener('input', handleBehaviorChange);
 restSlider?.addEventListener('input', handleBehaviorChange);
 handleBehaviorChange();
 
-// Setup feature toggle buttons
-featureToggles.forEach(btn => {
-  btn.addEventListener('click', () => {
-    const feature = btn.dataset.feature;
-    toggleFeature(feature, btn);
-  });
-});
+// Feature toggles removed - now controlled via keyboard shortcuts only
+// See keyboard event handlers below for feature toggle keys
 
-miniMapToggles.forEach(btn => {
-  const key = btn.dataset.mini;
-  btn.addEventListener('click', () => {
-    const isActive = btn.classList.toggle('active');
-    renderer.setMiniMapOption(key, isActive);
-  });
-  const initial = renderer.miniMapSettings[key] !== false;
-  btn.classList.toggle('active', initial);
-  renderer.setMiniMapOption(key, initial);
-});
 if (scenarioBalanceToggle) {
   scenarioBalanceToggle.checked = !!world.autoBalanceSettings?.enabled;
 }
 
-// Setup features panel toggle
+// Features button now shows keyboard shortcuts
 const btnFeatures = document.getElementById('btn-features');
-const btnCloseFeatures = document.getElementById('btn-close-features');
+btnFeatures?.addEventListener('click', () => {
+  const shortcuts = `
+🎨 FEATURE KEYBOARD SHORTCUTS:
 
-function toggleFeaturesPanel() {
-  const isOpen = featuresPanel?.classList.toggle('open');
-  if (btnFeatures) {
-    btnFeatures.classList.toggle('active', isOpen);
-    btnFeatures.textContent = isOpen ? '✕ Close' : '🎨 Features';
-  }
-}
+Basic Features:
+V - Vision Cones
+C - Genetic Clustering  
+T - Territories
+M - Memory
+B - Social Bonds
+G - Migration
 
-btnFeatures?.addEventListener('click', toggleFeaturesPanel);
+Advanced Features:
+1 - Emotions
+2 - Senses
+3 - Intelligence
+4 - Mating Displays
 
-btnCloseFeatures?.addEventListener('click', () => {
-  featuresPanel?.classList.remove('open');
-  if (btnFeatures) {
-    btnFeatures.classList.remove('active');
-    btnFeatures.textContent = '🎨 Features';
-  }
+Other:
+W - Toggle WebGL/Canvas Renderer
+H - Toggle Mini-Graphs
+Shift+F - Follow Selected Creature
+  `;
+  alert(shortcuts);
 });
 
 scenarioBtn?.addEventListener('click', () => setScenarioPanelVisible(!scenarioPanelVisible));
@@ -472,16 +459,7 @@ function toggleFeature(feature, btn) {
     `color: ${isActive ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
 }
 
-function syncFeatureButton(feature, isActive) {
-  const btn = document.querySelector(`.feature-toggle[data-feature="${feature}"]`);
-  if (btn) {
-    if (isActive) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
-  }
-}
+// syncFeatureButton removed - no UI buttons for features anymore (keyboard only)
 
 function syncRendererButton() {
   const btn = document.getElementById('btn-toggle-renderer');
@@ -646,7 +624,6 @@ window.addEventListener('keydown', (e)=>{
     }
     if (e.key.toLowerCase() === 'v') {
       renderer.enableVision = !renderer.enableVision;
-      syncFeatureButton('vision', renderer.enableVision);
       console.log(`%c[VISION CONES] ${renderer.enableVision ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableVision ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       if (renderer.enableVision) {
@@ -656,7 +633,6 @@ window.addEventListener('keydown', (e)=>{
     }
     if (e.key.toLowerCase() === 'c') {
       renderer.enableClustering = !renderer.enableClustering;
-      syncFeatureButton('clustering', renderer.enableClustering);
       console.log(`%c[GENETIC CLUSTERING] ${renderer.enableClustering ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableClustering ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       if (renderer.enableClustering) {
@@ -667,14 +643,12 @@ window.addEventListener('keydown', (e)=>{
     // Feature toggle keys
     if (e.key.toLowerCase() === 't') {
       renderer.enableTerritories = !renderer.enableTerritories;
-      syncFeatureButton('territories', renderer.enableTerritories);
       console.log(`%c[TERRITORIES] ${renderer.enableTerritories ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableTerritories ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       return;
     }
     if (e.key.toLowerCase() === 'm') {
       renderer.enableMemory = !renderer.enableMemory;
-      syncFeatureButton('memory', renderer.enableMemory);
       console.log(`%c[MEMORY] ${renderer.enableMemory ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableMemory ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       if (renderer.enableMemory) {
@@ -684,14 +658,12 @@ window.addEventListener('keydown', (e)=>{
     }
     if (e.key.toLowerCase() === 'b') {
       renderer.enableSocialBonds = !renderer.enableSocialBonds;
-      syncFeatureButton('social', renderer.enableSocialBonds);
       console.log(`%c[SOCIAL BONDS] ${renderer.enableSocialBonds ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableSocialBonds ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       return;
     }
     if (e.key.toLowerCase() === 'g') {
       renderer.enableMigration = !renderer.enableMigration;
-      syncFeatureButton('migration', renderer.enableMigration);
       console.log(`%c[MIGRATION] ${renderer.enableMigration ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableMigration ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       return;
@@ -699,7 +671,6 @@ window.addEventListener('keydown', (e)=>{
     // Advanced feature toggles
     if (e.key.toLowerCase() === '1') {
       renderer.enableEmotions = !renderer.enableEmotions;
-      syncFeatureButton('emotions', renderer.enableEmotions);
       console.log(`%c[EMOTIONS] ${renderer.enableEmotions ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableEmotions ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       if (renderer.enableEmotions) {
@@ -709,21 +680,18 @@ window.addEventListener('keydown', (e)=>{
     }
     if (e.key.toLowerCase() === '2') {
       renderer.enableSensoryViz = !renderer.enableSensoryViz;
-      syncFeatureButton('sensory', renderer.enableSensoryViz);
       console.log(`%c[SENSORY TYPES] ${renderer.enableSensoryViz ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableSensoryViz ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       return;
     }
     if (e.key.toLowerCase() === '3') {
       renderer.enableIntelligence = !renderer.enableIntelligence;
-      syncFeatureButton('intelligence', renderer.enableIntelligence);
       console.log(`%c[INTELLIGENCE] ${renderer.enableIntelligence ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableIntelligence ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       return;
     }
     if (e.key.toLowerCase() === '4') {
       renderer.enableMating = !renderer.enableMating;
-      syncFeatureButton('mating', renderer.enableMating);
       console.log(`%c[MATING DISPLAYS] ${renderer.enableMating ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableMating ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       return;

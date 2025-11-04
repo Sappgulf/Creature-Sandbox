@@ -343,33 +343,8 @@ body { display:block; position:relative; }
 #lineage-top-families .direction.flat { color:#a7adcf; }
 
 /* ============================================================================
-   FEATURE TOGGLE PANEL - Modern Design
+   FEATURE TOGGLE PANEL - Removed (features controlled via keyboard shortcuts)
    ============================================================================ */
-
-#features-panel {
-  position: fixed;
-  right: -300px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 99;
-  background: rgba(15,16,24,0.95);
-  border: 1px solid #23253a;
-  border-right: none;
-  border-radius: 12px 0 0 12px;
-  padding: 12px;
-  backdrop-filter: blur(10px);
-  box-shadow: -4px 0 24px rgba(0,0,0,0.4);
-  transition: right 0.3s ease;
-  width: 300px;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-#features-panel.open {
-  right: 0;
-}
-
-/* Tab removed - using button in HUD instead */
 
 .panel-header {
   display: flex;
