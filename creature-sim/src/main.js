@@ -17,9 +17,14 @@ import { BiomeGenerator } from './perlin-noise.js';
 const canvas = document.getElementById('view');
 const ctx = canvas.getContext('2d');
 
-// Set initial canvas size
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+// Set initial canvas size to FULL window
+function setCanvasSize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+}
+setCanvasSize();
 
 // UPGRADED: 4x larger world for organic biome system
 const world = new World(4000, 2800);
@@ -51,8 +56,7 @@ let renderer = useWebGL && webglRenderer ? webglRenderer : canvasRenderer;
 
 // Resize handler (now that everything is initialized)
 function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  setCanvasSize();
   
   // Update camera viewport dimensions
   camera.viewportWidth = canvas.width;
@@ -62,6 +66,8 @@ function resizeCanvas() {
   if (webglRenderer) {
     webglRenderer.resize(canvas.width, canvas.height);
   }
+  
+  console.log(`Canvas resized: ${canvas.width}x${canvas.height}`);
 }
 
 // Handle window resize
