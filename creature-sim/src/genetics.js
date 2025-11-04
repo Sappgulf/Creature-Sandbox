@@ -19,7 +19,8 @@ export function makeGenes(seed={}) {
     spines: seed.spines ?? (predator ? 0.06 : 0.35 + Math.random()*0.2), // herbivore retaliation [0 .. 1]
     herdInstinct: seed.herdInstinct ?? (predator ? 0.12 : 0.45 + Math.random()*0.25), // herd buff strength [0 .. 1]
     panicPheromone: seed.panicPheromone ?? (predator ? 0.08 : 0.5 + Math.random()*0.3), // panic trail strength [0 .. 1]
-    grit: seed.grit ?? (predator ? 0.45 + Math.random()*0.35 : 0.1) // bleed resistance [0 .. 1]
+    grit: seed.grit ?? (predator ? 0.45 + Math.random()*0.35 : 0.1), // bleed resistance [0 .. 1]
+    nocturnal: seed.nocturnal ?? (Math.random() < 0.3 ? 0.5 + Math.random()*0.5 : Math.random() * 0.5) // day/night preference [0=diurnal .. 1=nocturnal]
   };
 }
 
@@ -44,6 +45,7 @@ export function mutateGenes(genes, amt=0.06) {
   g.herdInstinct = clamp(g.herdInstinct + randn(0, amt*1.3), 0, 1);
   g.panicPheromone = clamp(g.panicPheromone + randn(0, amt*1.5), 0, 1);
   g.grit = clamp(g.grit + randn(0, amt*1.2), 0, 1);
+  g.nocturnal = clamp((g.nocturnal ?? 0.5) + randn(0, amt*1.5), 0, 1);
   
   // Adapt traits based on diet type
   const isOmnivore = g.diet > 0.3 && g.diet < 0.7;

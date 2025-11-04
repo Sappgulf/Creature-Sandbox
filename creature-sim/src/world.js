@@ -3,7 +3,6 @@ import { makeGenes, mutateGenes } from './genetics.js';
 import { Creature } from './creature.js';
 import { SpatialGrid } from './spatial-grid.js';
 import { BiomeGenerator } from './perlin-noise.js';
-
 class ScalarField {
   constructor(w, h, cell, decay=0.985, diffuse=0.15) {
     this.w = Math.ceil(w/cell);
@@ -59,6 +58,11 @@ export class World {
     this.seasonPhase = 0;
     this.seasonSpeed = 0.015;
     this.maxFood = Math.floor((width * height) / 180); // BALANCED: 2x more food for larger world!
+    
+    // Day/Night cycle system
+    this.timeOfDay = 12.0; // 0-24 hours (start at noon)
+    this.dayLength = 120; // Real seconds for full day/night cycle
+    this.dayNightEnabled = true;
     
     // Disaster system
     this.disasterCooldown = 0;
@@ -595,6 +599,13 @@ export class World {
     this.updateTerritories(dt);
     this.t += dt;
     this.seasonPhase += dt * this.seasonSpeed;
+    
+    // Update day/night cycle
+    if (this.dayNightEnabled) {
+      this.timeOfDay += (dt / this.dayLength) * 24; // Convert dt to hours
+      this.timeOfDay = this.timeOfDay % 24; // Wrap at 24 hours
+    }
+    
     this.updateSeasonalEvents(dt);
     this.updatePredatorSignals(dt);
     this.updateDisasters(dt);
