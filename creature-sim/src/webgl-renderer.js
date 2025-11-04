@@ -38,7 +38,7 @@ export class WebGLRenderer {
     this.enableAtmosphere = true;
     this.enableWeather = false;
     this.enableDayNight = true;
-    this.enableNameLabels = false;
+    this.enableNameLabels = true; // FIX: Match Canvas renderer default
     this.enableTraitVisualization = true;
     
     // Initialize shaders and buffers

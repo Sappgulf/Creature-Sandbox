@@ -392,11 +392,24 @@ export class Renderer {
   _drawDayNightOverlay(world) {
     const ctx = this.ctx;
     
-    // Update time of day
-    this.timeOfDay = (this.timeOfDay + this.dayNightSpeed) % 1.0;
+    // FIX: Use world's time of day (0-24 hours) instead of internal clock
+    const hour = world.timeOfDay % 24;
     
     // Calculate darkness (0=bright day, 1=dark night)
-    const darkness = (Math.cos(this.timeOfDay * Math.PI * 2) * -0.5 + 0.5) * 0.5;
+    // Night: 20-6, Day: 6-20
+    let darkness = 0;
+    if (hour >= 20 || hour < 6) {
+      darkness = 0.5; // Full night
+    } else if (hour >= 6 && hour < 8) {
+      // Dawn (6-8am): darkness fades
+      darkness = 0.5 * (1 - (hour - 6) / 2);
+    } else if (hour >= 18 && hour < 20) {
+      // Dusk (6-8pm): darkness grows
+      darkness = 0.5 * ((hour - 18) / 2);
+    } else {
+      // Day (8am-6pm): no darkness
+      darkness = 0;
+    }
     
     if (darkness > 0.05) {
       ctx.fillStyle = `rgba(0, 10, 30, ${darkness})`;

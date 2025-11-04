@@ -95,7 +95,9 @@ export class SaveSystem {
         y: camera.y,
         zoom: camera.zoom,
         followMode: camera.followMode || 'free',
-        followTarget: camera.followTarget || null
+        followTarget: camera.followTarget || null,
+        viewportWidth: camera.viewportWidth || 1200,
+        viewportHeight: camera.viewportHeight || 800
       },
       
       // Analytics (condensed)
@@ -207,12 +209,17 @@ export class SaveSystem {
     world.disasterDuration = data.disasterDuration || 0;
     world.disasterIntensity = data.disasterIntensity || 1;
     
-    // Mark spatial grid as dirty
+    // Mark spatial grid as dirty and force rebuild
     world.gridDirty = true;
+    world.ensureSpatial(); // Immediately rebuild spatial grid for loaded creatures
     
     // Restore camera
     let camera = null;
     if (saveData.camera && Camera) {
+      // Use actual viewport dimensions or reasonable defaults
+      const viewportWidth = (typeof window !== 'undefined' && window.innerWidth) || saveData.camera.viewportWidth || 1200;
+      const viewportHeight = (typeof window !== 'undefined' && window.innerHeight) || saveData.camera.viewportHeight || 800;
+      
       camera = new Camera({
         x: saveData.camera.x,
         y: saveData.camera.y,
@@ -221,8 +228,8 @@ export class SaveSystem {
         maxZoom: 3,
         worldWidth: world.width,
         worldHeight: world.height,
-        viewportWidth: 1200,
-        viewportHeight: 800
+        viewportWidth,
+        viewportHeight
       });
       camera.followMode = saveData.camera.followMode || 'free';
       camera.followTarget = saveData.camera.followTarget || null;
