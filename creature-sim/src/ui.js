@@ -41,6 +41,16 @@ export function renderStats(el, world, fps, extra={}) {
     `<span>📊 ${fps.toFixed(0)} FPS</span>`
   ];
   
+  // Add time of day if available
+  if (extra.timeOfDay !== undefined) {
+    const hour = Math.floor(extra.timeOfDay);
+    const minute = Math.floor((extra.timeOfDay % 1) * 60);
+    const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+    const isDaytime = hour >= 6 && hour < 20;
+    const icon = isDaytime ? '☀️' : '🌙';
+    statParts.push(`<span>${icon} ${timeStr}</span>`);
+  }
+  
   const events = typeof world.getActiveEvents === 'function' ? world.getActiveEvents() : [];
   if (events.length) {
     const eventSummary = events

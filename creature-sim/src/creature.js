@@ -471,6 +471,26 @@ export class Creature {
       const aggressionTax = Math.max(0, (aggressionFactor - 1) * 0.18);
       energyDrain += aggressionTax;
     }
+    
+    // Day/Night cycle: nocturnal creatures use less energy at night
+    if (world.dayNightEnabled && this.genes.nocturnal !== undefined) {
+      const hour = world.timeOfDay % 24;
+      const isNight = (hour < 6 || hour >= 20);
+      const nocturnalPref = this.genes.nocturnal; // 0=diurnal, 1=nocturnal
+      
+      if (isNight && nocturnalPref > 0.5) {
+        // Nocturnal creatures active at night: bonus efficiency
+        energyDrain *= (1.0 - (nocturnalPref - 0.5) * 0.3); // Up to 15% reduction
+      } else if (!isNight && nocturnalPref < 0.5) {
+        // Diurnal creatures active during day: bonus efficiency
+        energyDrain *= (1.0 - (0.5 - nocturnalPref) * 0.3); // Up to 15% reduction
+      } else {
+        // Active at wrong time: penalty
+        const penalty = Math.abs(nocturnalPref - (isNight ? 1 : 0));
+        energyDrain *= (1.0 + penalty * 0.2); // Up to 20% increase
+      }
+    }
+    
     this.energy -= energyDrain * dt;
 
     if (this.health <= 0) {
