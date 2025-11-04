@@ -26,10 +26,20 @@ export function makeGenes(seed={}) {
 
 export function mutateGenes(genes, amt=0.06) {
   const g = { ...genes };
-  g.speed       = clamp(g.speed + randn(0, amt), 0.2, 2.0);
-  g.fov         = clamp(g.fov + randn(0, amt*100), 20, 160);
-  g.sense       = clamp(g.sense + randn(0, amt*150), 20, 200);
-  g.metabolism  = clamp(g.metabolism + randn(0, amt), 0.4, 2.0);
+  
+  // NEW: Lucky mutation (1% chance for beneficial boost!)
+  const isLucky = Math.random() < 0.01;
+  const luckyMultiplier = isLucky ? 1.5 : 1.0; // 50% boost if lucky
+  
+  if (isLucky) {
+    g._luckyMutation = true; // Flag for visual effects/badges
+    console.log('🍀 LUCKY MUTATION! Beneficial genes boosted by 50%');
+  }
+  
+  g.speed       = clamp(g.speed + randn(0, amt * luckyMultiplier), 0.2, 2.0);
+  g.fov         = clamp(g.fov + randn(0, amt*100 * luckyMultiplier), 20, 160);
+  g.sense       = clamp(g.sense + randn(0, amt*150 * luckyMultiplier), 20, 200);
+  g.metabolism  = clamp(g.metabolism + randn(0, amt * luckyMultiplier), 0.4, 2.0);
   g.hue         = (g.hue + Math.floor(randn(0, amt*180))) % 360;
   
   // Diet gene can mutate gradually (omnivores are adaptive!)

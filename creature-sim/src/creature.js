@@ -15,10 +15,17 @@ export class Creature {
     this.age = 0;
     this.alive = true;
     this.genes = genes;
+    
+    // NEW: Age stages (baby → juvenile → adult → elder)
+    this.ageStage = isChild ? 'baby' : 'adult';
+    this.baseSize = null; // Will be set below
+    
     // NEW: Size based on diet (omnivores are medium-sized)
     const diet = genes.diet ?? (genes.predator ? 1.0 : 0.0);
     const isOmnivore = diet > 0.3 && diet < 0.7;
-    this.size = isOmnivore ? 4.0 : (3.5 + (genes.predator ? 1.5 : 0));
+    this.baseSize = isOmnivore ? 4.0 : (3.5 + (genes.predator ? 1.5 : 0));
+    this.size = this.baseSize * (isChild ? 0.3 : 1.0); // Babies start at 30% size
+    
     this.target = null;
     this.id = null;       // set by World.addCreature
     this.parentId = null; // set by World.addCreature
@@ -232,6 +239,10 @@ export class Creature {
     if (!this.alive) return;
     this.age += dt;
     
+    // Update age stage and size based on age
+    this._updateAgeStage();
+    this.size = this.baseSize * this._getAgeSizeMultiplier();
+    
     // Call feature update methods
     if (this._updateMemory) this._updateMemory(dt, world);
     if (this._updateSocialBehavior) this._updateSocialBehavior(world);
@@ -357,6 +368,14 @@ export class Creature {
     const aggressionFactor = this.genes.predator ? clamp(this.personality.aggression, 0.4, 2.2) : 1;
     let baseSpeed = this.genes.speed * (this.genes.predator ? 46 : 40);
     if (this.genes.predator) baseSpeed *= 0.85 + aggressionFactor * 0.25;
+    
+    // NEW: Age stage speed modifiers
+    switch(this.ageStage) {
+      case 'baby': baseSpeed *= 0.6; break; // Babies slower, learning to walk
+      case 'juvenile': baseSpeed *= 0.85; break; // Getting faster
+      case 'elder': baseSpeed *= 0.9; break; // Slowing down
+      // Adults: no modifier (1.0)
+    }
     let speedScalar = clamp(1 - restFactor * 0.6, 0.15, 1);
     let speedBoost = 1;
     if (eff?.herdBuff > 0 && !this.genes.predator) {
@@ -464,6 +483,15 @@ export class Creature {
 
     const tempPenalty = world.tempPenaltyAt(this.x, this.y);
     let energyDrain = this.baseBurn() + tempPenalty;
+    
+    // NEW: Age stage metabolism modifiers
+    switch(this.ageStage) {
+      case 'baby': energyDrain *= 1.1; break; // Babies need more energy for growth
+      case 'juvenile': energyDrain *= 1.05; break; // Still growing
+      case 'elder': energyDrain *= 1.15; break; // Elders less efficient
+      // Adults: no modifier (1.0)
+    }
+    
     if (eff?.adrenaline > 0) energyDrain += 2.6 + eff.adrenalineBoost * 2;
     if (eff?.herdBuff > 0 && !this.genes.predator) energyDrain += eff.herdIntensity * 0.8;
     if (eff?.bleed > 0) energyDrain += 0.35 + (eff.bleedStacks || 0) * 0.4;
@@ -501,7 +529,9 @@ export class Creature {
     }
 
     // FEATURE 8: Sexual selection for reproduction
-    if (!this.genes.predator && this.energy > 36) {
+    // NEW: Only adults and elders can reproduce (not babies or juveniles)
+    const canReproduce = (this.ageStage === 'adult' || this.ageStage === 'elder');
+    if (!this.genes.predator && this.energy > 36 && canReproduce) {
       // Look for suitable mate
       const potentialMates = world.queryCreatures(this.x, this.y, this.genes.sense * 2)
         .filter(c => !c.genes.predator && c.alive && c.id !== this.id && c.energy > 30);
@@ -558,13 +588,53 @@ export class Creature {
     this.logEvent(`Spawned child #${childId}`, time);
   }
 
+  // NEW: Get age stage multipliers
+  _updateAgeStage() {
+    if (this.age < 30) {
+      this.ageStage = 'baby';
+    } else if (this.age < 60) {
+      this.ageStage = 'juvenile';
+    } else if (this.age < 240) {
+      this.ageStage = 'adult';
+    } else {
+      this.ageStage = 'elder';
+    }
+  }
+  
+  _getAgeSizeMultiplier() {
+    switch(this.ageStage) {
+      case 'baby': return clamp(0.3 + (this.age / 30) * 0.4, 0.3, 0.7); // 30% → 70%
+      case 'juvenile': return clamp(0.7 + ((this.age - 30) / 30) * 0.3, 0.7, 1.0); // 70% → 100%
+      case 'adult': return 1.0; // 100%
+      case 'elder': return clamp(1.0 - ((this.age - 240) / 60) * 0.1, 0.9, 1.0); // 100% → 90%
+      default: return 1.0;
+    }
+  }
+  
+  _getAgeStageIcon() {
+    switch(this.ageStage) {
+      case 'baby': return '🍼';
+      case 'juvenile': return '🌱';
+      case 'adult': return '⭐';
+      case 'elder': return '👴';
+      default: return '';
+    }
+  }
+
   getBadges() {
     const badges = [];
     const g = this.genes;
+    
+    // Age stage badge (visual indicator)
+    badges.push(this._getAgeStageIcon());
+    
+    // NEW: Lucky mutation badge!
+    if (g._luckyMutation) badges.push('🍀 Lucky');
+    
     if (g.speed >= 1.45) badges.push('Swift');
     if (g.sense >= 150) badges.push('Scout');
     if (g.metabolism <= 0.6) badges.push('Efficient');
-    if (this.age >= 120) badges.push('Elder');
+    if (this.ageStage === 'elder') badges.push('Elder');
     if (!g.predator && this.stats.food >= 15) badges.push('Grazer');
     if (g.predator && this.stats.kills >= 3) badges.push('Apex');
     if (this.energy >= 35) badges.push('Charged');

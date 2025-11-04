@@ -46,6 +46,13 @@ export function renderStats(el, world, fps, extra={}) {
     statParts.push(`<span>${icon} ${timeStr}</span>`);
   }
   
+  // NEW: Add season display
+  if (world.getSeasonInfo) {
+    const seasonInfo = world.getSeasonInfo();
+    const seasonName = seasonInfo.current.charAt(0).toUpperCase() + seasonInfo.current.slice(1);
+    statParts.push(`<span>${seasonInfo.icon} ${seasonName}</span>`);
+  }
+  
   const events = typeof world.getActiveEvents === 'function' ? world.getActiveEvents() : [];
   if (events.length) {
     const eventSummary = events

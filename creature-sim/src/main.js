@@ -12,6 +12,8 @@ import { BehaviorConfig, setBehaviorWeights } from './behavior.js';
 import { MiniGraphs } from './mini-graphs.js';
 import { SaveSystem } from './save-system.js';
 import { BiomeGenerator } from './perlin-noise.js';
+import { ParticleSystem } from './particle-system.js';
+import { NotificationSystem } from './notification-system.js';
 
 const canvas = document.getElementById('view');
 const ctx = canvas.getContext('2d');
@@ -65,7 +67,10 @@ const analytics = new AnalyticsTracker();
 const lineageTracker = new LineageTracker();
 const miniGraphs = new MiniGraphs();
 const saveSystem = new SaveSystem();
+const particles = new ParticleSystem(); // NEW: Particle system for visual effects
+const notifications = new NotificationSystem(); // NEW: Notification system for milestones
 world.attachLineageTracker(lineageTracker);
+world.attachParticleSystem(particles); // NEW: Give world access to particles
 world.creatures.forEach(c => lineageTracker.ensureName(lineageTracker.getRoot(world, c.id)));
 window.godModeEffects = window.godModeEffects || [];
 
@@ -1007,6 +1012,9 @@ function loop(now) {
     world.step(fixedDt);
     analytics.update(world, fixedDt);
     miniGraphs.update(world, fixedDt);
+    particles.update(fixedDt); // NEW: Update particle effects
+    notifications.checkMilestones(world); // NEW: Check for milestones
+    notifications.update(fixedDt); // NEW: Update notifications
     saveSystem.autoSave(world, camera, analytics, lineageTracker, fixedDt);
     accumulator -= fixedDt;
     steps++;
@@ -1071,6 +1079,15 @@ function loop(now) {
     viewportWidth: canvas.width,
     viewportHeight: canvas.height
   });
+  
+  // NEW: Draw particle effects (after world, before UI)
+  ctx.save();
+  camera.apply(ctx);
+  particles.draw(ctx);
+  ctx.restore();
+  
+  // NEW: Draw notifications (screen space)
+  notifications.draw(ctx, canvas.width, canvas.height);
   
   // Update performance metrics
   if (metricRendered) metricRendered.textContent = renderer.renderedCount || 0;

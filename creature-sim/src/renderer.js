@@ -381,6 +381,9 @@ export class Renderer {
       this._drawDayNightOverlay(world);
     }
     
+    // NEW: Season visual overlay
+    this._drawSeasonOverlay(world);
+    
     // Weather effects
     if (this.enableWeather && this.weatherType) {
       this._drawWeatherEffects(world);
@@ -424,6 +427,33 @@ export class Renderer {
     
     if (darkness > 0.05) {
       ctx.fillStyle = `rgba(0, 10, 30, ${darkness})`;
+      ctx.fillRect(0, 0, world.width, world.height);
+    }
+  }
+  
+  // NEW: Draw season-based overlay tint
+  _drawSeasonOverlay(world) {
+    const ctx = this.ctx;
+    const season = world.currentSeason || 'spring';
+    
+    let tint = null;
+    switch(season) {
+      case 'spring':
+        tint = 'rgba(127, 219, 106, 0.08)'; // Fresh green tint
+        break;
+      case 'summer':
+        tint = 'rgba(255, 215, 0, 0.05)'; // Golden tint
+        break;
+      case 'autumn':
+        tint = 'rgba(255, 140, 66, 0.12)'; // Orange tint
+        break;
+      case 'winter':
+        tint = 'rgba(176, 224, 230, 0.15)'; // Icy blue tint
+        break;
+    }
+    
+    if (tint) {
+      ctx.fillStyle = tint;
       ctx.fillRect(0, 0, world.width, world.height);
     }
   }
@@ -1248,7 +1278,49 @@ export class Renderer {
     ctx.font = 'bold 10px sans-serif';
     ctx.fillText('WORLD MAP', mapX + 5, mapY - 5);
     
+    // NEW: Draw biome labels at key locations
+    this._drawBiomeLabels(world, mapX, mapY, mapW, mapH, scaleX, scaleY);
+    
     ctx.restore();
+  }
+  
+  // NEW: Draw biome labels on mini-map
+  _drawBiomeLabels(world, mapX, mapY, mapW, mapH, scaleX, scaleY) {
+    const ctx = this.ctx;
+    
+    // Sample biomes at key locations
+    const samplePoints = [
+      { x: world.width * 0.15, y: world.height * 0.15 },
+      { x: world.width * 0.85, y: world.height * 0.15 },
+      { x: world.width * 0.5, y: world.height * 0.5 },
+      { x: world.width * 0.15, y: world.height * 0.85 },
+      { x: world.width * 0.85, y: world.height * 0.85 }
+    ];
+    
+    const drawnBiomes = new Set();
+    
+    for (const point of samplePoints) {
+      const biome = world.getBiomeAt(point.x, point.y);
+      if (!biome || drawnBiomes.has(biome.type)) continue;
+      
+      drawnBiomes.add(biome.type);
+      
+      const mx = mapX + point.x * scaleX;
+      const my = mapY + point.y * scaleY;
+      
+      ctx.save();
+      ctx.font = '8px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.lineWidth = 2;
+      
+      const label = biome.type.charAt(0).toUpperCase() + biome.type.slice(1);
+      ctx.strokeText(label, mx, my);
+      ctx.fillText(label, mx, my);
+      ctx.restore();
+    }
   }
 
   _getDisasterTint(type) {

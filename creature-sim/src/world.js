@@ -64,6 +64,13 @@ export class World {
     this.dayLength = 120; // Real seconds for full day/night cycle
     this.dayNightEnabled = true;
     
+    // NEW: Four Seasons System
+    this.seasonTime = 0; // Time counter for seasons
+    this.seasonDuration = 120; // Real seconds per season (2 minutes each)
+    this.currentSeason = 'spring'; // spring, summer, autumn, winter
+    this.seasonCycle = ['spring', 'summer', 'autumn', 'winter'];
+    this.seasonIndex = 0;
+    
     // Disaster system
     this.disasterCooldown = 0;
     this.activeDisaster = null;
@@ -139,6 +146,11 @@ export class World {
     if (parentId) {
       if (!this.childrenOf.has(parentId)) this.childrenOf.set(parentId, new Set());
       this.childrenOf.get(parentId).add(creature.id);
+      
+      // NEW: Birth sparkle effect!
+      if (this.particles) {
+        this.particles.addBirthEffect(creature.x, creature.y);
+      }
     }
     this.gridDirty = true;
     return creature.id;
@@ -146,6 +158,11 @@ export class World {
 
   attachLineageTracker(tracker) {
     this.lineageTracker = tracker;
+  }
+  
+  // NEW: Attach particle system for visual effects
+  attachParticleSystem(particles) {
+    this.particles = particles;
   }
 
   seed(nHerb=60, nPred=6, nFood=180) {
@@ -606,6 +623,9 @@ export class World {
       this.timeOfDay = this.timeOfDay % 24; // Wrap at 24 hours
     }
     
+    // NEW: Update four seasons system
+    this._updateSeasons(dt);
+    
     this.updateSeasonalEvents(dt);
     this.updatePredatorSignals(dt);
     this.updateDisasters(dt);
@@ -660,7 +680,64 @@ export class World {
   foodGrowthRate() {
     const base = 0.18;
     const scarcity = clamp(1 - this.food.length / Math.max(1, this.maxFood), 0, 1);
-    return (base + 0.4 * scarcity) * 0.016 * this.environment.foodRateMultiplier;
+    
+    // NEW: Season-based food growth modifiers
+    let seasonMultiplier = 1.0;
+    switch(this.currentSeason) {
+      case 'spring': seasonMultiplier = 1.5; break; // Abundant growth
+      case 'summer': seasonMultiplier = 1.2; break; // Good growth
+      case 'autumn': seasonMultiplier = 0.8; break; // Declining
+      case 'winter': seasonMultiplier = 0.3; break; // Scarce
+    }
+    
+    return (base + 0.4 * scarcity) * 0.016 * this.environment.foodRateMultiplier * seasonMultiplier;
+  }
+  
+  // NEW: Update seasons cycle
+  _updateSeasons(dt) {
+    this.seasonTime += dt;
+    
+    // Change season every seasonDuration seconds
+    if (this.seasonTime >= this.seasonDuration) {
+      this.seasonTime = 0;
+      this.seasonIndex = (this.seasonIndex + 1) % 4;
+      this.currentSeason = this.seasonCycle[this.seasonIndex];
+      
+      // Log season change
+      console.log(`🌍 Season changed to: ${this.currentSeason.toUpperCase()}`);
+    }
+  }
+  
+  // NEW: Get season info for UI/rendering
+  getSeasonInfo() {
+    const progress = this.seasonTime / this.seasonDuration;
+    return {
+      current: this.currentSeason,
+      progress: progress,
+      timeRemaining: this.seasonDuration - this.seasonTime,
+      icon: this._getSeasonIcon(),
+      color: this._getSeasonColor()
+    };
+  }
+  
+  _getSeasonIcon() {
+    switch(this.currentSeason) {
+      case 'spring': return '🌸';
+      case 'summer': return '☀️';
+      case 'autumn': return '🍂';
+      case 'winter': return '❄️';
+      default: return '🌍';
+    }
+  }
+  
+  _getSeasonColor() {
+    switch(this.currentSeason) {
+      case 'spring': return '#7FDB6A'; // Fresh green
+      case 'summer': return '#FFD700'; // Golden
+      case 'autumn': return '#FF8C42'; // Orange
+      case 'winter': return '#B0E0E6'; // Icy blue
+      default: return '#888888';
+    }
   }
 
   updateDisasters(dt) {
@@ -1800,6 +1877,12 @@ export class World {
     };
     this.corpses.push(corpse);
     this.gridDirty = true;
+    
+    // NEW: Death gravestone marker!
+    if (this.particles && this.lineageTracker) {
+      const creatureName = this.lineageTracker.getName(creature.id) || `Creature #${creature.id}`;
+      this.particles.addDeathMarker(creature.x, creature.y, creatureName);
+    }
   }
 
   _updateCorpses(dt) {
