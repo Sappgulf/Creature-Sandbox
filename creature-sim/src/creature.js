@@ -59,6 +59,16 @@ export class Creature {
       hitFlash: 0
     };
     
+    // NEW: Animation state for visual feedback
+    this.animation = {
+      state: 'idle', // idle, walking, running, eating, sleeping
+      timer: 0, // Animation cycle timer
+      bobPhase: Math.random() * Math.PI * 2, // Random start phase for variety
+      lastEat: -Infinity,
+      eatDuration: 0.5, // Eating animation lasts 0.5s
+      sleepTimer: 0 // Time creature has been idle/resting
+    };
+    
     // Cache expensive calculations
     this._cachedBaseBurn = null;
     this._senseRadius2Cache = null;
@@ -238,6 +248,7 @@ export class Creature {
   update(dt, world) {
     if (!this.alive) return;
     this.age += dt;
+    this._lastWorld = world; // Store for animation system
     
     // Update age stage and size based on age
     this._updateAgeStage();
@@ -404,6 +415,9 @@ export class Creature {
     this.x = wrap(this.x + this.vx*dt, world.width);
     this.y = wrap(this.y + this.vy*dt, world.height);
 
+    // NEW: Update animation state based on movement
+    this._updateAnimationState(spd, world.t);
+
     this.updateTrail(dt);
 
     if (this.genes.predator || diet > 0.7) {
@@ -450,6 +464,10 @@ export class Creature {
           this.logEvent('Foraged food', world.t);
           world.dropPheromone(this.x, this.y, 0.5);
           
+          // NEW: Trigger eating animation
+          this.animation.lastEat = world.t;
+          this.animation.state = 'eating';
+          
           // FEATURE 2: Remember successful food location
           if (this.rememberLocation) {
             this.rememberLocation(this.x, this.y, 'food', 0.8, world.t);
@@ -469,6 +487,10 @@ export class Creature {
         this.stats.food += 1;
         this.logEvent('Foraged food', world.t);
         world.dropPheromone(this.x, this.y, 0.5);
+        
+        // NEW: Trigger eating animation
+        this.animation.lastEat = world.t;
+        this.animation.state = 'eating';
         
         // FEATURE 2: Remember successful food location
         if (this.rememberLocation) {
@@ -620,6 +642,95 @@ export class Creature {
       default: return '';
     }
   }
+  
+  // NEW: Apply visual animation transforms
+  _applyAnimationTransform(ctx) {
+    const anim = this.animation;
+    if (!anim) return;
+    
+    switch(anim.state) {
+      case 'walking':
+        // Gentle bobbing motion
+        const walkBob = Math.sin(anim.bobPhase) * 0.8;
+        ctx.translate(0, walkBob);
+        break;
+        
+      case 'running':
+        // Faster, more exaggerated bobbing
+        const runBob = Math.sin(anim.bobPhase * 1.5) * 1.5;
+        const runTilt = Math.sin(anim.bobPhase * 1.5) * 0.05; // Slight tilt
+        ctx.translate(0, runBob);
+        ctx.rotate(runTilt);
+        break;
+        
+      case 'eating':
+        // Head bob down (pulsing)
+        const eatTime = anim.timer % 0.5;
+        const eatBob = Math.sin((eatTime / 0.5) * Math.PI) * 2;
+        ctx.translate(0, eatBob);
+        ctx.scale(1.0 + eatBob * 0.02, 1.0); // Slight stretch
+        break;
+        
+      case 'sleeping':
+        // Slow breathing motion
+        const breathe = Math.sin(anim.timer * 0.5) * 0.5;
+        ctx.scale(1.0 + breathe * 0.05, 1.0 - breathe * 0.05);
+        break;
+        
+      case 'idle':
+      default:
+        // Subtle idle sway
+        const idleSway = Math.sin(anim.timer * 0.3) * 0.3;
+        ctx.translate(0, idleSway);
+        break;
+    }
+  }
+  
+  // NEW: Update animation state based on behavior
+  _updateAnimationState(speed, worldTime) {
+    const anim = this.animation;
+    
+    // Update animation timer (used for bobbing/cycles)
+    anim.timer += 0.016; // ~60fps equivalent
+    anim.bobPhase += speed * 0.02; // Speed affects bob rate
+    
+    // Check if eating animation is active
+    if (worldTime - anim.lastEat < anim.eatDuration) {
+      anim.state = 'eating';
+      return;
+    }
+    
+    // Check if sleeping (low energy and stationary)
+    if (this.energy < 15 && speed < 5) {
+      anim.sleepTimer += 0.016;
+      if (anim.sleepTimer > 2.0) { // Sleep after 2 seconds of low energy
+        anim.state = 'sleeping';
+        
+        // Emit Zzz particles occasionally
+        if (Math.random() < 0.02) { // 2% chance per frame
+          const world = this._lastWorld; // Will be set in update()
+          if (world && world.particles) {
+            world.particles.addSleepParticle(this.x, this.y + this.size);
+          }
+        }
+        return;
+      }
+    } else {
+      anim.sleepTimer = 0;
+    }
+    
+    // Determine walking vs running based on speed
+    const baseSpeed = this.genes.speed * (this.genes.predator ? 46 : 40);
+    const speedRatio = speed / baseSpeed;
+    
+    if (speedRatio > 0.8) {
+      anim.state = 'running'; // Fast movement
+    } else if (speedRatio > 0.1) {
+      anim.state = 'walking'; // Normal movement
+    } else {
+      anim.state = 'idle'; // Stationary or very slow
+    }
+  }
 
   getBadges() {
     const badges = [];
@@ -711,6 +822,10 @@ export class Creature {
     const g = this.genes;
     ctx.save();
     ctx.translate(this.x, this.y);
+    
+    // NEW: Apply animation effects
+    this._applyAnimationTransform(ctx);
+    
     ctx.rotate(this.dir);
 
     if (effects?.recentDamage > 0) {
