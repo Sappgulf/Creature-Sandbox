@@ -14,6 +14,7 @@ import { SaveSystem } from './save-system.js';
 import { BiomeGenerator } from './perlin-noise.js';
 import { ParticleSystem } from './particle-system.js';
 import { NotificationSystem } from './notification-system.js';
+import { HeatmapSystem } from './heatmap-system.js';
 
 const canvas = document.getElementById('view');
 const ctx = canvas.getContext('2d');
@@ -69,8 +70,10 @@ const miniGraphs = new MiniGraphs();
 const saveSystem = new SaveSystem();
 const particles = new ParticleSystem(); // NEW: Particle system for visual effects
 const notifications = new NotificationSystem(); // NEW: Notification system for milestones
+const heatmaps = new HeatmapSystem(world); // NEW: Heatmap system for strategic insights
 world.attachLineageTracker(lineageTracker);
 world.attachParticleSystem(particles); // NEW: Give world access to particles
+world.attachHeatmapSystem(heatmaps); // NEW: Give world access to heatmaps
 world.creatures.forEach(c => lineageTracker.ensureName(lineageTracker.getRoot(world, c.id)));
 window.godModeEffects = window.godModeEffects || [];
 
@@ -199,14 +202,19 @@ bindUI({
   onPause: togglePause,
   onStep: stepOnce,
   onFood: () => {
-    // Spawn food randomly across the map (10-20 pieces)
+    // NEW: Spawn diverse vegetation randomly across the map (10-20 pieces)
     const count = Math.floor(Math.random() * 11) + 10; // 10-20
+    const stats = { grass: 0, berries: 0, fruit: 0 };
     for (let i = 0; i < count; i++) {
       const x = Math.random() * world.width;
       const y = Math.random() * world.height;
-      world.food.push({ x, y, energy: 3 });
+      // Let addFood determine the type based on spawn chances
+      const beforeLen = world.food.length;
+      world.addFood(x, y);
+      const added = world.food[world.food.length - 1];
+      stats[added.type]++;
     }
-    console.log(`🌿 Spawned ${count} food across the map`);
+    console.log(`🌿 Spawned ${count} vegetation: ${stats.grass} grass, ${stats.berries} berries, ${stats.fruit} fruit trees`);
   }
 });
 
@@ -308,6 +316,12 @@ Advanced Features:
 2 - Senses
 3 - Intelligence
 4 - Mating Displays
+
+Heatmaps (Strategic):
+5 - Death Heatmap
+6 - Birth Heatmap
+7 - Activity Heatmap
+8 - Energy Heatmap
 
 Other:
 H - Toggle Mini-Graphs
@@ -663,6 +677,43 @@ window.addEventListener('keydown', (e)=>{
         `color: ${renderer.enableMating ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       return;
     }
+    // Heatmap toggles
+    if (e.key === '5') {
+      heatmaps.setType('death');
+      console.log(`%c[DEATH HEATMAP] ${heatmaps.activeType === 'death' ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${heatmaps.activeType === 'death' ? '#ff0000' : '#ef4444'}; font-weight: bold;`);
+      if (heatmaps.activeType === 'death') {
+        console.log('%cℹ️ Shows where creatures die most frequently (red hotspots)', 'color: #60a5fa;');
+      }
+      return;
+    }
+    if (e.key === '6') {
+      heatmaps.setType('birth');
+      console.log(`%c[BIRTH HEATMAP] ${heatmaps.activeType === 'birth' ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${heatmaps.activeType === 'birth' ? '#00ff64' : '#ef4444'}; font-weight: bold;`);
+      if (heatmaps.activeType === 'birth') {
+        console.log('%cℹ️ Shows where creatures reproduce most (green hotspots)', 'color: #60a5fa;');
+      }
+      return;
+    }
+    if (e.key === '7') {
+      heatmaps.setType('activity');
+      console.log(`%c[ACTIVITY HEATMAP] ${heatmaps.activeType === 'activity' ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${heatmaps.activeType === 'activity' ? '#3296ff' : '#ef4444'}; font-weight: bold;`);
+      if (heatmaps.activeType === 'activity') {
+        console.log('%cℹ️ Shows high-traffic areas (blue hotspots)', 'color: #60a5fa;');
+      }
+      return;
+    }
+    if (e.key === '8') {
+      heatmaps.setType('energy');
+      console.log(`%c[ENERGY HEATMAP] ${heatmaps.activeType === 'energy' ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${heatmaps.activeType === 'energy' ? '#ffc800' : '#ef4444'}; font-weight: bold;`);
+      if (heatmaps.activeType === 'energy') {
+        console.log('%cℹ️ Shows where creatures have high energy (yellow hotspots)', 'color: #60a5fa;');
+      }
+      return;
+    }
     if (e.key.toLowerCase() === 'f') {
       tools.setMode(ToolModes.FOOD);
       return;
@@ -1010,11 +1061,19 @@ function loop(now) {
   let steps = 0;
   while (accumulator >= fixedDt && steps < MAX_STEPS) {
     world.step(fixedDt);
+    
+    // NEW: Record heatmap data from active creatures
+    for (const c of world.creatures) {
+      heatmaps.recordActivity(c.x, c.y, 0.08);
+      heatmaps.recordEnergy(c.x, c.y, c.energy);
+    }
+    
     analytics.update(world, fixedDt);
     miniGraphs.update(world, fixedDt);
     particles.update(fixedDt); // NEW: Update particle effects
     notifications.checkMilestones(world); // NEW: Check for milestones
     notifications.update(fixedDt); // NEW: Update notifications
+    heatmaps.update(fixedDt); // NEW: Update heatmaps (decay)
     saveSystem.autoSave(world, camera, analytics, lineageTracker, fixedDt);
     accumulator -= fixedDt;
     steps++;
@@ -1073,6 +1132,17 @@ function loop(now) {
     clusteringEnabled: renderer.enableClustering,
     timeOfDay: world.timeOfDay
   });
+  
+  // NEW: Draw heatmaps (must be after camera transform, before screen-space overlays)
+  if (heatmaps.activeType) {
+    // Apply camera transform for world-space rendering
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.scale(camera.zoom, camera.zoom);
+    ctx.translate(-camera.x, -camera.y);
+    heatmaps.draw(ctx, camera);
+    ctx.restore();
+  }
   
   // Draw mini-graphs overlay
   miniGraphs.draw(ctx, {

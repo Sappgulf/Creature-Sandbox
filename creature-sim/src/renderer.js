@@ -472,15 +472,45 @@ export class Renderer {
     if (food.length === 0) return;
     const ctx = this.ctx;
     
-    // OPTIMIZATION: Batch all food into single path
-    ctx.fillStyle = 'rgba(126,210,120,0.85)';
-    ctx.beginPath();
+    // NEW: Group food by type for batched rendering
+    const byType = { grass: [], berries: [], fruit: [] };
     for (let i = 0; i < food.length; i++) {
       const f = food[i];
-      ctx.moveTo(f.x + f.r, f.y);
-      ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
+      const type = f.type || 'grass';
+      if (byType[type]) {
+        byType[type].push(f);
+      }
     }
-    ctx.fill();
+    
+    // Draw each vegetation type with its color
+    for (const [type, items] of Object.entries(byType)) {
+      if (items.length === 0) continue;
+      
+      // Set color based on type
+      const firstItem = items[0];
+      ctx.fillStyle = firstItem.color || 'rgba(126,210,120,0.85)';
+      
+      // Batch draw all items of this type
+      ctx.beginPath();
+      for (const f of items) {
+        ctx.moveTo(f.x + f.r, f.y);
+        ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
+      }
+      ctx.fill();
+      
+      // Add visual distinction for rare types
+      if (type === 'fruit') {
+        // Draw stem/leaf for fruit trees
+        ctx.strokeStyle = '#8B4513';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (const f of items) {
+          ctx.moveTo(f.x, f.y + f.r);
+          ctx.lineTo(f.x, f.y + f.r + 2);
+        }
+        ctx.stroke();
+      }
+    }
   }
 
   // NEW: Draw corpses for scavengers to find

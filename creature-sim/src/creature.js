@@ -458,10 +458,12 @@ export class Creature {
       } else {
         const eaten = world.tryEatFoodAt(this.x, this.y, 8);
         if (eaten) {
-          this.energy += 9; // BALANCED: 50% more energy from food!
-          this.health = Math.min(this.maxHealth, this.health + 1.5);
+          // NEW: Use energy from vegetation type!
+          const energyGain = eaten.energy || 9;
+          this.energy += energyGain;
+          this.health = Math.min(this.maxHealth, this.health + energyGain * 0.15);
           this.stats.food += 1;
-          this.logEvent('Foraged food', world.t);
+          this.logEvent(`Foraged ${eaten.type || 'food'}`, world.t);
           world.dropPheromone(this.x, this.y, 0.5);
           
           // NEW: Trigger eating animation
@@ -482,10 +484,12 @@ export class Creature {
       // Herbivores: only eat plants
       const eaten = world.tryEatFoodAt(this.x, this.y, 8);
       if (eaten) {
-        this.energy += 9; // BALANCED: 50% more energy from food!
-        this.health = Math.min(this.maxHealth, this.health + 1.5);
+        // NEW: Use energy from vegetation type!
+        const energyGain = eaten.energy || 9;
+        this.energy += energyGain;
+        this.health = Math.min(this.maxHealth, this.health + energyGain * 0.15);
         this.stats.food += 1;
-        this.logEvent('Foraged food', world.t);
+        this.logEvent(`Foraged ${eaten.type || 'food'}`, world.t);
         world.dropPheromone(this.x, this.y, 0.5);
         
         // NEW: Trigger eating animation

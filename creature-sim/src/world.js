@@ -40,12 +40,40 @@ export class World {
   constructor(width, height) {
     this.width = width; this.height = height;
     this.creatures = [];
-    this.food = [];
+    this.food = []; // Now contains different vegetation types
     this.corpses = []; // NEW: Dead creatures that scavengers can eat
     this.corpseGrid = new SpatialGrid(40); // NEW: Spatial grid for corpse lookup
     this.pheromone = new ScalarField(width, height, 20, 0.992, 0.18);
     this.temperature = new ScalarField(width, height, 40, 1.0, 0.0);
     this.t = 0;
+    
+    // NEW: Vegetation diversity system
+    this.vegetationTypes = {
+      grass: { 
+        energy: 3, 
+        color: '#7FDB6A', 
+        size: 2,
+        growthRate: 1.0, // Base growth rate
+        spawnChance: 0.6, // 60% of food is grass
+        respawnTime: 5 // Seconds to respawn
+      },
+      berries: { 
+        energy: 8, 
+        color: '#FF6B9D', 
+        size: 3,
+        growthRate: 0.3, // Slower growth
+        spawnChance: 0.3, // 30% berries
+        respawnTime: 15
+      },
+      fruit: { 
+        energy: 15, 
+        color: '#FFA500', 
+        size: 4,
+        growthRate: 0.1, // Rare
+        spawnChance: 0.1, // 10% fruit trees
+        respawnTime: 30
+      }
+    };
 
     // lineage + registry
     this._nextId = 1;
@@ -151,6 +179,11 @@ export class World {
       if (this.particles) {
         this.particles.addBirthEffect(creature.x, creature.y);
       }
+      
+      // NEW: Record birth in heatmap
+      if (this.heatmaps) {
+        this.heatmaps.recordBirth(creature.x, creature.y, 1.0);
+      }
     }
     this.gridDirty = true;
     return creature.id;
@@ -163,6 +196,10 @@ export class World {
   // NEW: Attach particle system for visual effects
   attachParticleSystem(particles) {
     this.particles = particles;
+  }
+  
+  attachHeatmapSystem(heatmaps) {
+    this.heatmaps = heatmaps;
   }
 
   seed(nHerb=60, nPred=6, nFood=180) {
@@ -202,8 +239,30 @@ export class World {
     this.autoBalanceAccumulator = 0;
   }
 
-  addFood(x,y,r=1.5){
-    const food = {x,y,r};
+  addFood(x,y,r=1.5, type=null){
+    // NEW: Determine vegetation type if not specified
+    if (!type) {
+      const roll = Math.random();
+      if (roll < this.vegetationTypes.grass.spawnChance) {
+        type = 'grass';
+      } else if (roll < this.vegetationTypes.grass.spawnChance + this.vegetationTypes.berries.spawnChance) {
+        type = 'berries';
+      } else {
+        type = 'fruit';
+      }
+    }
+    
+    const vegType = this.vegetationTypes[type] || this.vegetationTypes.grass;
+    const food = {
+      x, 
+      y, 
+      r: r || vegType.size,
+      type: type,
+      energy: vegType.energy,
+      color: vegType.color,
+      respawnTime: vegType.respawnTime,
+      lastEaten: null // Track when it was eaten for respawning
+    };
     this.food.push(food);
     this.gridDirty = true;
   }
@@ -226,11 +285,11 @@ export class World {
         if (idx !== -1) {
           this.food.splice(idx, 1);
           this.gridDirty = true;
-          return true;
+          return f; // NEW: Return the food object so creature gets correct energy
         }
       }
     }
-    return false;
+    return null; // NEW: Return null instead of false
   }
 
   tryPredation(pred) {
@@ -1883,6 +1942,11 @@ export class World {
       const rootId = this.lineageTracker.getRoot(this, creature.id);
       const creatureName = this.lineageTracker.ensureName(rootId) || `Creature #${creature.id}`;
       this.particles.addDeathMarker(creature.x, creature.y, creatureName);
+    }
+    
+    // NEW: Record death in heatmap (will be accessed via world.heatmaps from main.js)
+    if (this.heatmaps) {
+      this.heatmaps.recordDeath(creature.x, creature.y, 1.0);
     }
   }
 

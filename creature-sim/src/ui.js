@@ -23,13 +23,20 @@ export function renderStats(el, world, fps, extra={}) {
   const herbs = n - preds - omnis;
   const avgHealth = sumMaxHealth ? sumHealth / sumMaxHealth : 0;
   
+  // NEW: Count vegetation types
+  const vegStats = { grass: 0, berries: 0, fruit: 0 };
+  for (let i = 0; i < world.food.length; i++) {
+    const type = world.food[i].type || 'grass';
+    vegStats[type]++;
+  }
+  
   // Build stats with HTML for better formatting
   const statParts = [
     `<span>🌍 Pop: ${n}</span>`,
     `<span>🌿 ${herbs}</span>`,
     `<span>🦡 ${omnis}</span>`,
     `<span>🦁 ${preds}</span>`,
-    `<span>🍎 ${world.food.length}</span>`,
+    `<span title="Grass: ${vegStats.grass}, Berries: ${vegStats.berries}, Fruit: ${vegStats.fruit}">🍎 ${world.food.length}</span>`,
     `<span>💀 ${world.corpses?.length ?? 0}</span>`,
     `<span>⏱️ ${world.t.toFixed(1)}s</span>`,
     `<span>💚 ${(avgHealth * 100).toFixed(0)}%</span>`,
