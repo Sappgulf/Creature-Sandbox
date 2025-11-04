@@ -9,6 +9,9 @@ import { Renderer } from './renderer.js';
 import { ToolController, ToolModes } from './tools.js';
 import { LineageTracker } from './lineage-tracker.js';
 import { BehaviorConfig, setBehaviorWeights } from './behavior.js';
+import { MiniGraphs } from './mini-graphs.js';
+import { SaveSystem } from './save-system.js';
+import { BiomeGenerator } from './perlin-noise.js';
 
 const canvas = document.getElementById('view');
 const ctx = canvas.getContext('2d');
@@ -32,9 +35,32 @@ const renderer = new Renderer(ctx, camera);
 const tools = new ToolController(world, camera);
 const analytics = new AnalyticsTracker();
 const lineageTracker = new LineageTracker();
+const miniGraphs = new MiniGraphs();
+const saveSystem = new SaveSystem();
 world.attachLineageTracker(lineageTracker);
 world.creatures.forEach(c => lineageTracker.ensureName(lineageTracker.getRoot(world, c.id)));
 window.godModeEffects = window.godModeEffects || [];
+
+// Check for auto-save on load
+if (saveSystem.hasAutoSave()) {
+  const shouldLoad = confirm('Auto-save detected. Load previous session?');
+  if (shouldLoad) {
+    try {
+      const loaded = saveSystem.loadAutoSave(World, Creature, Camera, makeGenes, BiomeGenerator);
+      if (loaded) {
+        Object.assign(world, loaded.world);
+        Object.assign(camera, loaded.camera);
+        if (loaded.lineageNames) {
+          lineageTracker.names = loaded.lineageNames;
+        }
+        console.log('✅ Auto-save loaded successfully!');
+      }
+    } catch (err) {
+      console.error('Failed to load auto-save:', err);
+      alert('Failed to load auto-save. Starting fresh.');
+    }
+  }
+}
 
 if (typeof camera.startTravel !== 'function') {
   camera.startTravel = function(x, y) {
@@ -580,6 +606,67 @@ window.addEventListener('keydown', (e)=>{
       fastForward = Math.max(1, fastForward - 1);
       return;
     }
+    // Follow camera mode (F key - need Shift to avoid conflict with Food tool)
+    if (e.key.toLowerCase() === 'f' && e.shiftKey) {
+      if (selectedId) {
+        if (camera.followMode === 'free') {
+          camera.followMode = 'smooth-follow';
+          camera.followTarget = selectedId;
+          console.log(`📹 Following creature #${selectedId}`);
+        } else {
+          camera.followMode = 'free';
+          camera.followTarget = null;
+          console.log('📹 Free camera mode');
+        }
+      } else {
+        console.log('⚠️ Select a creature first to follow it!');
+      }
+      return;
+    }
+    // Toggle mini-graphs (H key)
+    if (e.key.toLowerCase() === 'h') {
+      miniGraphs.enabled = !miniGraphs.enabled;
+      console.log(`📊 Mini-graphs ${miniGraphs.enabled ? 'ENABLED' : 'DISABLED'}`);
+      return;
+    }
+  }
+  // Save/Load with Ctrl/Cmd
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey) {
+    if (e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      const filename = prompt('Save name:', `save-${Date.now()}`);
+      if (filename) {
+        saveSystem.saveToFile(world, camera, analytics, lineageTracker, filename);
+      }
+      return;
+    }
+    if (e.key.toLowerCase() === 'o') {
+      e.preventDefault();
+      // Trigger file input
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.crsim,.json';
+      input.onchange = async (evt) => {
+        const file = evt.target.files[0];
+        if (file) {
+          try {
+            const loaded = await saveSystem.loadFromFile(file, World, Creature, Camera, makeGenes, BiomeGenerator);
+            Object.assign(world, loaded.world);
+            Object.assign(camera, loaded.camera);
+            if (loaded.lineageNames) {
+              lineageTracker.names = loaded.lineageNames;
+            }
+            miniGraphs.reset();
+            console.log('✅ World loaded successfully!');
+          } catch (err) {
+            console.error('Failed to load:', err);
+            alert('Failed to load file: ' + err.message);
+          }
+        }
+      };
+      input.click();
+      return;
+    }
   }
 });
 
@@ -772,11 +859,36 @@ function loop(now) {
   while (accumulator >= fixedDt && steps < MAX_STEPS) {
     world.step(fixedDt);
     analytics.update(world, fixedDt);
+    miniGraphs.update(world, fixedDt);
+    saveSystem.autoSave(world, camera, analytics, lineageTracker, fixedDt);
     accumulator -= fixedDt;
     steps++;
   }
   if (steps === MAX_STEPS) {
     accumulator = 0;
+  }
+
+  // Follow camera logic
+  if (camera.followMode !== 'free' && camera.followTarget) {
+    const target = world.getAnyCreatureById(camera.followTarget);
+    if (target && target.alive) {
+      // Smooth follow
+      const smoothing = camera.followSmoothing || 0.12;
+      camera.targetX = target.x;
+      camera.targetY = target.y;
+      
+      // Optional auto-zoom based on creature speed
+      if (camera.followZoomAdjust) {
+        const speed = target.genes.speed || 1;
+        const targetZoom = Math.max(0.3, Math.min(1.5, 1.0 / speed));
+        camera.targetZoom = targetZoom;
+      }
+    } else {
+      // Target died or lost, return to free mode
+      camera.followMode = 'free';
+      camera.followTarget = null;
+      console.log('📹 Follow mode disabled (target lost)');
+    }
   }
 
   camera.update(dt);
@@ -802,7 +914,14 @@ function loop(now) {
     paused, 
     tool: tools.mode,
     visionEnabled: renderer.enableVision,
-    clusteringEnabled: renderer.enableClustering
+    clusteringEnabled: renderer.enableClustering,
+    timeOfDay: world.timeOfDay
+  });
+  
+  // Draw mini-graphs overlay
+  miniGraphs.draw(ctx, {
+    viewportWidth: canvas.width,
+    viewportHeight: canvas.height
   });
   
   // Update performance metrics
