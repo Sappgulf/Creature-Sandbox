@@ -1059,9 +1059,14 @@ function showGodModeEffect(creature, emoji, color) {
 
 function setInspectorVisible(visible) {
   inspectorVisible = visible;
-  inspectorEl?.classList.toggle('hidden', !visible);
-  showInspectorBtn?.classList.toggle('hidden', visible);
-  if (visible) updateInspector(true);
+  if (visible) {
+    inspectorEl?.classList.remove('hidden');
+    showInspectorBtn?.classList.add('hidden');
+    updateInspector(true);
+  } else {
+    inspectorEl?.classList.add('hidden');
+    showInspectorBtn?.classList.remove('hidden');
+  }
 }
 
 function loop(now) {
