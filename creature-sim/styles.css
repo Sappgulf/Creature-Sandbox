@@ -101,6 +101,77 @@ body { display:block; position:relative; }
 }
 /* Stats moved to #hud definition above */
 
+/* Features Panel */
+#features-panel {
+  position: fixed;
+  right: 16px;
+  top: 120px;
+  width: 280px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  background: rgba(16,18,28,0.92);
+  border: 1px solid #23253a;
+  border-radius: 12px;
+  padding: 14px 16px;
+  z-index: 11;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#features-panel .panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.features-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.features-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #7d82a8;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #23253a;
+}
+
+.feature-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #c3c6e4;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.feature-toggle:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.feature-toggle input[type="checkbox"],
+.feature-toggle input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #4ade80;
+  cursor: pointer;
+}
+
+.feature-toggle span {
+  flex: 1;
+  user-select: none;
+}
+
 #inspector {
   position: fixed;
   right: 0;

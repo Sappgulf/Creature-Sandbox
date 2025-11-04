@@ -297,39 +297,92 @@ if (scenarioBalanceToggle) {
   scenarioBalanceToggle.checked = !!world.autoBalanceSettings?.enabled;
 }
 
-// Features button now shows keyboard shortcuts
+// Features panel toggle
 const btnFeatures = document.getElementById('btn-features');
-btnFeatures?.addEventListener('click', () => {
-  const shortcuts = `
-🎨 FEATURE KEYBOARD SHORTCUTS:
+const featuresPanel = document.getElementById('features-panel');
+const btnFeaturesClose = document.getElementById('btn-features-close');
+let featuresPanelVisible = false;
 
-Basic Features:
-V - Vision Cones
-C - Genetic Clustering  
-T - Territories
-M - Memory
-B - Social Bonds
-G - Migration
+function setFeaturesPanelVisible(visible) {
+  featuresPanelVisible = visible;
+  if (visible) {
+    featuresPanel?.classList.remove('hidden');
+  } else {
+    featuresPanel?.classList.add('hidden');
+  }
+}
 
-Advanced Features:
-1 - Emotions
-2 - Senses
-3 - Intelligence
-4 - Mating Displays
+btnFeatures?.addEventListener('click', () => setFeaturesPanelVisible(!featuresPanelVisible));
+btnFeaturesClose?.addEventListener('click', () => setFeaturesPanelVisible(false));
 
-Heatmaps (Strategic):
-5 - Death Heatmap
-6 - Birth Heatmap
-7 - Activity Heatmap
-8 - Energy Heatmap
+// Wire up all feature toggles
+document.getElementById('toggle-vision')?.addEventListener('change', (e) => {
+  renderer.enableVision = e.target.checked;
+  console.log(`[VISION] ${renderer.enableVision ? 'ON' : 'OFF'}`);
+});
 
-Other:
-H - Toggle Mini-Graphs
-Shift+F - Follow Selected Creature
-I - Toggle Inspector Panel
-Space - Pause/Play
-  `;
-  alert(shortcuts);
+document.getElementById('toggle-clustering')?.addEventListener('change', (e) => {
+  renderer.enableClustering = e.target.checked;
+  console.log(`[CLUSTERING] ${renderer.enableClustering ? 'ON' : 'OFF'}`);
+});
+
+document.getElementById('toggle-territories')?.addEventListener('change', (e) => {
+  renderer.enableTerritories = e.target.checked;
+  console.log(`[TERRITORIES] ${renderer.enableTerritories ? 'ON' : 'OFF'}`);
+});
+
+document.getElementById('toggle-memory')?.addEventListener('change', (e) => {
+  renderer.enableMemory = e.target.checked;
+  console.log(`[MEMORY] ${renderer.enableMemory ? 'ON' : 'OFF'}`);
+});
+
+document.getElementById('toggle-social')?.addEventListener('change', (e) => {
+  renderer.enableSocialBonds = e.target.checked;
+  console.log(`[SOCIAL BONDS] ${renderer.enableSocialBonds ? 'ON' : 'OFF'}`);
+});
+
+document.getElementById('toggle-migration')?.addEventListener('change', (e) => {
+  renderer.enableMigration = e.target.checked;
+  console.log(`[MIGRATION] ${renderer.enableMigration ? 'ON' : 'OFF'}`);
+});
+
+document.getElementById('toggle-emotions')?.addEventListener('change', (e) => {
+  renderer.enableEmotions = e.target.checked;
+  console.log(`[EMOTIONS] ${renderer.enableEmotions ? 'ON' : 'OFF'}`);
+});
+
+document.getElementById('toggle-sensory')?.addEventListener('change', (e) => {
+  renderer.enableSensoryViz = e.target.checked;
+  console.log(`[SENSORY] ${renderer.enableSensoryViz ? 'ON' : 'OFF'}`);
+});
+
+document.getElementById('toggle-intelligence')?.addEventListener('change', (e) => {
+  renderer.enableIntelligence = e.target.checked;
+  console.log(`[INTELLIGENCE] ${renderer.enableIntelligence ? 'ON' : 'OFF'}`);
+});
+
+document.getElementById('toggle-mating')?.addEventListener('change', (e) => {
+  renderer.enableMating = e.target.checked;
+  console.log(`[MATING] ${renderer.enableMating ? 'ON' : 'OFF'}`);
+});
+
+document.getElementById('toggle-minigraphs')?.addEventListener('change', (e) => {
+  miniGraphs.visible = e.target.checked;
+  console.log(`[MINI-GRAPHS] ${miniGraphs.visible ? 'ON' : 'OFF'}`);
+});
+
+// Heatmap radio buttons
+document.querySelectorAll('input[name="heatmap"]').forEach(radio => {
+  radio.addEventListener('change', (e) => {
+    const value = e.target.value;
+    if (value === 'off') {
+      heatmaps.activeType = null;
+      console.log(`[HEATMAP] OFF`);
+    } else {
+      heatmaps.activeType = value;
+      console.log(`[HEATMAP] ${value.toUpperCase()}`);
+    }
+  });
 });
 
 scenarioBtn?.addEventListener('click', () => setScenarioPanelVisible(!scenarioPanelVisible));
@@ -605,6 +658,8 @@ window.addEventListener('keydown', (e)=>{
     }
     if (e.key.toLowerCase() === 'v') {
       renderer.enableVision = !renderer.enableVision;
+      const checkbox = document.getElementById('toggle-vision');
+      if (checkbox) checkbox.checked = renderer.enableVision;
       console.log(`%c[VISION CONES] ${renderer.enableVision ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableVision ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       if (renderer.enableVision) {
@@ -614,6 +669,8 @@ window.addEventListener('keydown', (e)=>{
     }
     if (e.key.toLowerCase() === 'c') {
       renderer.enableClustering = !renderer.enableClustering;
+      const checkbox = document.getElementById('toggle-clustering');
+      if (checkbox) checkbox.checked = renderer.enableClustering;
       console.log(`%c[GENETIC CLUSTERING] ${renderer.enableClustering ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${renderer.enableClustering ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       if (renderer.enableClustering) {
@@ -680,6 +737,10 @@ window.addEventListener('keydown', (e)=>{
     // Heatmap toggles
     if (e.key === '5') {
       heatmaps.setType('death');
+      const radio = document.getElementById('toggle-heatmap-death');
+      if (radio) radio.checked = (heatmaps.activeType === 'death');
+      const offRadio = document.getElementById('toggle-heatmap-off');
+      if (heatmaps.activeType === null && offRadio) offRadio.checked = true;
       console.log(`%c[DEATH HEATMAP] ${heatmaps.activeType === 'death' ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${heatmaps.activeType === 'death' ? '#ff0000' : '#ef4444'}; font-weight: bold;`);
       if (heatmaps.activeType === 'death') {
@@ -689,6 +750,10 @@ window.addEventListener('keydown', (e)=>{
     }
     if (e.key === '6') {
       heatmaps.setType('birth');
+      const radio = document.getElementById('toggle-heatmap-birth');
+      if (radio) radio.checked = (heatmaps.activeType === 'birth');
+      const offRadio = document.getElementById('toggle-heatmap-off');
+      if (heatmaps.activeType === null && offRadio) offRadio.checked = true;
       console.log(`%c[BIRTH HEATMAP] ${heatmaps.activeType === 'birth' ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${heatmaps.activeType === 'birth' ? '#00ff64' : '#ef4444'}; font-weight: bold;`);
       if (heatmaps.activeType === 'birth') {
@@ -698,6 +763,10 @@ window.addEventListener('keydown', (e)=>{
     }
     if (e.key === '7') {
       heatmaps.setType('activity');
+      const radio = document.getElementById('toggle-heatmap-activity');
+      if (radio) radio.checked = (heatmaps.activeType === 'activity');
+      const offRadio = document.getElementById('toggle-heatmap-off');
+      if (heatmaps.activeType === null && offRadio) offRadio.checked = true;
       console.log(`%c[ACTIVITY HEATMAP] ${heatmaps.activeType === 'activity' ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${heatmaps.activeType === 'activity' ? '#3296ff' : '#ef4444'}; font-weight: bold;`);
       if (heatmaps.activeType === 'activity') {
@@ -707,6 +776,10 @@ window.addEventListener('keydown', (e)=>{
     }
     if (e.key === '8') {
       heatmaps.setType('energy');
+      const radio = document.getElementById('toggle-heatmap-energy');
+      if (radio) radio.checked = (heatmaps.activeType === 'energy');
+      const offRadio = document.getElementById('toggle-heatmap-off');
+      if (heatmaps.activeType === null && offRadio) offRadio.checked = true;
       console.log(`%c[ENERGY HEATMAP] ${heatmaps.activeType === 'energy' ? 'ENABLED ✓' : 'DISABLED'}`, 
         `color: ${heatmaps.activeType === 'energy' ? '#ffc800' : '#ef4444'}; font-weight: bold;`);
       if (heatmaps.activeType === 'energy') {
