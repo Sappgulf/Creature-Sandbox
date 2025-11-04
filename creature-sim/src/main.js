@@ -82,10 +82,19 @@ world.attachLineageTracker(lineageTracker);
 world.creatures.forEach(c => lineageTracker.ensureName(lineageTracker.getRoot(world, c.id)));
 window.godModeEffects = window.godModeEffects || [];
 
+// Game start modal
+const startModal = document.getElementById('start-modal');
+const btnContinue = document.getElementById('btn-continue');
+const btnNewGame = document.getElementById('btn-new-game');
+
+let gameStarted = false;
+
 // Check for auto-save on load
 if (saveSystem.hasAutoSave()) {
-  const shouldLoad = confirm('Auto-save detected. Load previous session?');
-  if (shouldLoad) {
+  // Show modal with options
+  startModal?.classList.remove('hidden');
+  
+  btnContinue?.addEventListener('click', () => {
     try {
       const loaded = saveSystem.loadAutoSave(World, Creature, Camera, makeGenes, BiomeGenerator);
       if (loaded) {
@@ -98,9 +107,22 @@ if (saveSystem.hasAutoSave()) {
       }
     } catch (err) {
       console.error('Failed to load auto-save:', err);
-      alert('Failed to load auto-save. Starting fresh.');
+      alert('Failed to load save. Starting new game.');
     }
-  }
+    startModal?.classList.add('hidden');
+    gameStarted = true;
+  });
+  
+  btnNewGame?.addEventListener('click', () => {
+    // Clear auto-save and start fresh
+    saveSystem.clearAutoSave();
+    console.log('🆕 Starting new game...');
+    startModal?.classList.add('hidden');
+    gameStarted = true;
+  });
+} else {
+  // No save found, start immediately
+  gameStarted = true;
 }
 
 if (typeof camera.startTravel !== 'function') {
@@ -1042,6 +1064,12 @@ function setInspectorVisible(visible) {
 }
 
 function loop(now) {
+  // Don't run game loop until user makes a choice
+  if (!gameStarted) {
+    requestAnimationFrame(loop);
+    return;
+  }
+  
   const dt = Math.min(0.25, (now - lastNow) / 1000);
   lastNow = now;
   timeScale = paused ? 0 : fastForward;
