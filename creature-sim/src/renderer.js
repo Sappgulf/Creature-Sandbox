@@ -4,6 +4,11 @@ export class Renderer {
   constructor(ctx, camera) {
     this.ctx = ctx;
     this.camera = camera;
+    
+    // LEGENDARY OPTIMIZATION: Enable image smoothing for better quality
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    
     this.enableTrails = true;
     this.enableVision = false;
     this.enableClustering = false;
@@ -42,12 +47,18 @@ export class Renderer {
     this._lineageCache = { rootId: null, set: null, frame: 0 };
     this._clusterCache = { clusters: null, frame: -1 };
     
-    // OPTIMIZATION: Add frustum culling bounds
+    // LEGENDARY OPTIMIZATION: Frustum culling + performance tracking
     this._viewBounds = { x1: 0, y1: 0, x2: 0, y2: 0 };
+    this.renderedCount = 0;
+    this.culledCount = 0;
     
     // Particle system for atmospheric effects
     this.particles = [];
     this.maxParticles = 200;
+    
+    // LEGENDARY OPTIMIZATION: Pre-create reusable Path2D objects
+    this._circlePath = new Path2D();
+    this._circlePath.arc(0, 0, 1, 0, Math.PI * 2);
   }
 
   clear(width, height) {

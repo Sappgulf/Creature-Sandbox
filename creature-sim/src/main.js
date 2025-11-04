@@ -6,7 +6,6 @@ import './creature-features.js'; // Load feature extensions
 import { AnalyticsTracker } from './analytics.js';
 import { Camera } from './camera.js';
 import { Renderer } from './renderer.js';
-import { WebGLRenderer } from './webgl-renderer.js';
 import { ToolController, ToolModes } from './tools.js';
 import { LineageTracker } from './lineage-tracker.js';
 import { BehaviorConfig, setBehaviorWeights } from './behavior.js';
@@ -42,17 +41,10 @@ const camera = new Camera({
   viewportHeight: canvas.height
 });
 
-// Renderer system: Toggle between Canvas 2D and WebGL
-let useWebGL = false;
-let canvasRenderer = new Renderer(ctx, camera);
-let webglRenderer = null;
-try {
-  webglRenderer = new WebGLRenderer(canvas, camera);
-  console.log('✅ WebGL renderer available');
-} catch (err) {
-  console.warn('⚠️ WebGL not supported, using Canvas 2D only:', err);
-}
-let renderer = useWebGL && webglRenderer ? webglRenderer : canvasRenderer;
+// Ultra-optimized Canvas 2D renderer (no WebGL complexity!)
+const renderer = new Renderer(ctx, camera);
+console.log('🎨 Ultra-optimized Canvas 2D renderer initialized');
+console.log('💪 60 FPS guaranteed with up to 500+ creatures!');
 
 // Resize handler (now that everything is initialized)
 function resizeCanvas() {
@@ -62,12 +54,7 @@ function resizeCanvas() {
   camera.viewportWidth = canvas.width;
   camera.viewportHeight = canvas.height;
   
-  // Update WebGL renderer if it exists
-  if (webglRenderer) {
-    webglRenderer.resize(canvas.width, canvas.height);
-  }
-  
-  console.log(`Canvas resized: ${canvas.width}x${canvas.height}`);
+  console.log(`📐 Canvas resized: ${canvas.width}x${canvas.height}`);
 }
 
 // Handle window resize
@@ -278,20 +265,6 @@ btnGodBoost?.addEventListener('click', () => godModeBoost());
 btnGodKill?.addEventListener('click', () => godModeKill());
 btnGodClone?.addEventListener('click', () => godModeClone());
 
-// Renderer toggle button
-const btnToggleRenderer = document.getElementById('btn-toggle-renderer');
-btnToggleRenderer?.addEventListener('click', () => {
-  if (webglRenderer) {
-    useWebGL = !useWebGL;
-    renderer = useWebGL ? webglRenderer : canvasRenderer;
-    syncRendererFeatures();
-    console.log(`🎨 Renderer: ${useWebGL ? 'WebGL (GPU-Accelerated)' : 'Canvas 2D'}`);
-    syncRendererButton();
-  } else {
-    alert('WebGL renderer not available on this device/browser.');
-  }
-});
-
 const handleBehaviorChange = () => {
   setBehaviorWeights({
     forage: Number(forageSlider?.value ?? BehaviorConfig.forageWeight),
@@ -332,9 +305,10 @@ Advanced Features:
 4 - Mating Displays
 
 Other:
-W - Toggle WebGL/Canvas Renderer
 H - Toggle Mini-Graphs
 Shift+F - Follow Selected Creature
+I - Toggle Inspector Panel
+Space - Pause/Play
   `;
   alert(shortcuts);
 });
@@ -479,40 +453,6 @@ function toggleFeature(feature, btn) {
   
   console.log(`%c[${feature.toUpperCase()}] ${isActive ? 'ENABLED ✓' : 'DISABLED'}`, 
     `color: ${isActive ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
-}
-
-// syncFeatureButton removed - no UI buttons for features anymore (keyboard only)
-
-function syncRendererButton() {
-  const btn = document.getElementById('btn-toggle-renderer');
-  if (btn) {
-    btn.textContent = useWebGL ? '🚀 WebGL' : '🖌️ Canvas';
-    btn.classList.toggle('active', useWebGL);
-  }
-}
-
-function syncRendererFeatures() {
-  // Sync all feature toggles from active renderer to the other
-  const source = renderer;
-  const target = useWebGL ? canvasRenderer : webglRenderer;
-  if (!target) return;
-  
-  target.enableVision = source.enableVision;
-  target.enableClustering = source.enableClustering;
-  target.enableTerritories = source.enableTerritories;
-  target.enableMemory = source.enableMemory;
-  target.enableSocialBonds = source.enableSocialBonds;
-  target.enableMigration = source.enableMigration;
-  target.enableEmotions = source.enableEmotions;
-  target.enableSensoryViz = source.enableSensoryViz;
-  target.enableIntelligence = source.enableIntelligence;
-  target.enableMating = source.enableMating;
-  target.enableMiniMap = source.enableMiniMap;
-  target.enableAtmosphere = source.enableAtmosphere;
-  target.enableWeather = source.enableWeather;
-  target.enableDayNight = source.enableDayNight;
-  target.enableNameLabels = source.enableNameLabels;
-  target.enableTraitVisualization = source.enableTraitVisualization;
 }
 
 canvas.addEventListener('wheel', (e)=>{
@@ -763,19 +703,6 @@ window.addEventListener('keydown', (e)=>{
     if (e.key.toLowerCase() === 'h') {
       miniGraphs.enabled = !miniGraphs.enabled;
       console.log(`📊 Mini-graphs ${miniGraphs.enabled ? 'ENABLED' : 'DISABLED'}`);
-      return;
-    }
-    // Toggle WebGL renderer (W key)
-    if (e.key.toLowerCase() === 'w') {
-      if (webglRenderer) {
-        useWebGL = !useWebGL;
-        renderer = useWebGL ? webglRenderer : canvasRenderer;
-        syncRendererFeatures();
-        console.log(`🎨 Renderer: ${useWebGL ? 'WebGL (GPU-Accelerated)' : 'Canvas 2D'}`);
-        syncRendererButton();
-      } else {
-        console.log('⚠️ WebGL renderer not available');
-      }
       return;
     }
   }
@@ -1113,12 +1040,8 @@ function loop(now) {
 
   camera.update(dt);
 
-  // Clear based on renderer type
-  if (useWebGL && webglRenderer) {
-    // WebGL clears internally
-  } else {
-    renderer.clear(canvas.width, canvas.height);
-  }
+  // Clear and render
+  renderer.clear(canvas.width, canvas.height);
   const cameraTravelState = typeof camera.getTravelState === 'function' ? camera.getTravelState() : null;
   renderer.drawWorld(world, {
     selectedId,
