@@ -23,12 +23,22 @@ import { MobileSupport } from './mobile-support.js';
 const canvas = document.getElementById('view');
 const ctx = canvas.getContext('2d');
 
-// Set initial canvas size to FULL window
+// Set initial canvas size to FULL window (proper fullscreen setup)
 function setCanvasSize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  canvas.style.width = '100%';
-  canvas.style.height = '100%';
+  // Get the actual rendered size (CSS-controlled)
+  const rect = canvas.getBoundingClientRect();
+  
+  // Set canvas internal resolution to match display size
+  // Use devicePixelRatio for crisp rendering on high-DPI displays
+  const dpr = window.devicePixelRatio || 1;
+  
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  
+  // Scale context to account for DPI
+  ctx.scale(dpr, dpr);
+  
+  console.log(`🖼️ Canvas: ${rect.width}x${rect.height} (${canvas.width}x${canvas.height} internal @ ${dpr}x DPI)`);
 }
 setCanvasSize();
 
@@ -44,8 +54,8 @@ const camera = new Camera({
   maxZoom: 3,
   worldWidth: world.width,
   worldHeight: world.height,
-  viewportWidth: canvas.width,
-  viewportHeight: canvas.height
+  viewportWidth: canvas.getBoundingClientRect().width,
+  viewportHeight: canvas.getBoundingClientRect().height
 });
 
 // Ultra-optimized Canvas 2D renderer (no WebGL complexity!)
@@ -55,17 +65,30 @@ console.log('💪 60 FPS guaranteed with up to 500+ creatures!');
 
 // Resize handler (now that everything is initialized)
 function resizeCanvas() {
-  setCanvasSize();
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
   
-  // Update camera viewport dimensions
-  camera.viewportWidth = canvas.width;
-  camera.viewportHeight = canvas.height;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
   
-  console.log(`📐 Canvas resized: ${canvas.width}x${canvas.height}`);
+  // Re-scale context after resize
+  ctx.scale(dpr, dpr);
+  
+  // Update camera viewport dimensions (use CSS size, not internal resolution)
+  camera.viewportWidth = rect.width;
+  camera.viewportHeight = rect.height;
+  
+  console.log(`📐 Canvas resized: ${rect.width}x${rect.height} (${canvas.width}x${canvas.height} internal @ ${dpr}x DPI)`);
 }
 
 // Handle window resize
 window.addEventListener('resize', resizeCanvas);
+
+// Force initial resize after a brief delay to ensure DOM is ready
+setTimeout(() => {
+  resizeCanvas();
+  console.log('🔄 Forced initial resize for fullscreen');
+}, 100);
 
 const tools = new ToolController(world, camera);
 const analytics = new AnalyticsTracker();
@@ -1396,15 +1419,15 @@ function loop(now) {
 
   camera.update(dt);
 
-  // Clear and render
-  renderer.clear(canvas.width, canvas.height);
+  // Clear and render (use camera viewport dimensions, not canvas internal resolution)
+  renderer.clear(camera.viewportWidth, camera.viewportHeight);
   const cameraTravelState = typeof camera.getTravelState === 'function' ? camera.getTravelState() : null;
   renderer.drawWorld(world, {
     selectedId,
     pinnedId,
     lineageRootId,
-    viewportWidth: canvas.width,
-    viewportHeight: canvas.height,
+    viewportWidth: camera.viewportWidth,
+    viewportHeight: camera.viewportHeight,
     worldTime: world.t,
     lineageTracker,
     world,
@@ -1426,7 +1449,7 @@ function loop(now) {
   if (heatmaps.activeType) {
     // Apply camera transform for world-space rendering
     ctx.save();
-    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.translate(camera.viewportWidth / 2, camera.viewportHeight / 2);
     ctx.scale(camera.zoom, camera.zoom);
     ctx.translate(-camera.x, -camera.y);
     heatmaps.draw(ctx, camera);
@@ -1435,8 +1458,8 @@ function loop(now) {
   
   // Draw mini-graphs overlay
   miniGraphs.draw(ctx, {
-    viewportWidth: canvas.width,
-    viewportHeight: canvas.height
+    viewportWidth: camera.viewportWidth,
+    viewportHeight: camera.viewportHeight
   });
   
   // NEW: Draw particle effects (in world space)

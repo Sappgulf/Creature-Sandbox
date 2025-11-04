@@ -1,6 +1,7 @@
-html,body { margin:0; padding:0; height:100%; width:100%; overflow:hidden; background:#15201a; color:#e7e7ea; font:14px/1.3 system-ui, sans-serif; }
-body { display:block; position:relative; }
-#view { display:block; position:absolute; top:0; left:0; width:100%; height:100%; background:#15201a; }
+* { box-sizing: border-box; }
+html { margin:0; padding:0; height:100vh; width:100vw; overflow:hidden; }
+body { margin:0; padding:0; height:100vh; width:100vw; overflow:hidden; background:#15201a; color:#e7e7ea; font:14px/1.3 system-ui, sans-serif; position:relative; }
+#view { display:block; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#15201a; touch-action: none; }
 
 .hidden {
   display: none !important;
