@@ -1,13 +1,8 @@
-export function bindUI({ onPause, onStep, onFood, onHerb, onPred, onOmnivore }) {
+export function bindUI({ onPause, onStep, onFood }) {
   document.getElementById('btn-pause').onclick = onPause;
   document.getElementById('btn-step').onclick  = onStep;
   document.getElementById('btn-spawn-food').onclick = onFood;
-  document.getElementById('btn-spawn-herb').onclick = onHerb;
-  document.getElementById('btn-spawn-pred').onclick = onPred;
-  if (onOmnivore) {
-    const omniBtn = document.getElementById('btn-spawn-omni');
-    if (omniBtn) omniBtn.onclick = onOmnivore;
-  }
+  // Note: Creature spawning is now handled via dropdown in main.js
 }
 
 export function renderStats(el, world, fps, extra={}) {
