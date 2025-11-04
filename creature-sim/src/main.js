@@ -6,6 +6,7 @@ import './creature-features.js'; // Load feature extensions
 import { AnalyticsTracker } from './analytics.js';
 import { Camera } from './camera.js';
 import { Renderer } from './renderer.js';
+import { WebGLRenderer } from './webgl-renderer.js';
 import { ToolController, ToolModes } from './tools.js';
 import { LineageTracker } from './lineage-tracker.js';
 import { BehaviorConfig, setBehaviorWeights } from './behavior.js';
@@ -31,7 +32,19 @@ const camera = new Camera({
   viewportWidth: canvas.width,
   viewportHeight: canvas.height
 });
-const renderer = new Renderer(ctx, camera);
+
+// Renderer system: Toggle between Canvas 2D and WebGL
+let useWebGL = false;
+let canvasRenderer = new Renderer(ctx, camera);
+let webglRenderer = null;
+try {
+  webglRenderer = new WebGLRenderer(canvas, camera);
+  console.log('✅ WebGL renderer available');
+} catch (err) {
+  console.warn('⚠️ WebGL not supported, using Canvas 2D only:', err);
+}
+let renderer = useWebGL && webglRenderer ? webglRenderer : canvasRenderer;
+
 const tools = new ToolController(world, camera);
 const analytics = new AnalyticsTracker();
 const lineageTracker = new LineageTracker();
@@ -87,6 +100,8 @@ let travelPreview = null;
 
 const statsEl = document.getElementById('stats');
 const exportBtn = document.getElementById('btn-export');
+const exportCSVBtn = document.getElementById('btn-export-csv');
+const exportGenesBtn = document.getElementById('btn-export-genes');
 const showInspectorBtn = document.getElementById('btn-show-inspector');
 const closeInspectorBtn = document.getElementById('btn-close-inspector');
 const inspectorEl = document.getElementById('inspector');
@@ -168,6 +183,8 @@ bindUI({
 });
 
 exportBtn?.addEventListener('click', exportSnapshot);
+exportCSVBtn?.addEventListener('click', exportCSV);
+exportGenesBtn?.addEventListener('click', exportGenesCSV);
 showInspectorBtn?.addEventListener('click', ()=>setInspectorVisible(true));
 closeInspectorBtn?.addEventListener('click', ()=>setInspectorVisible(false));
 
@@ -181,6 +198,20 @@ btnGodHeal?.addEventListener('click', () => godModeHeal());
 btnGodBoost?.addEventListener('click', () => godModeBoost());
 btnGodKill?.addEventListener('click', () => godModeKill());
 btnGodClone?.addEventListener('click', () => godModeClone());
+
+// Renderer toggle button
+const btnToggleRenderer = document.getElementById('btn-toggle-renderer');
+btnToggleRenderer?.addEventListener('click', () => {
+  if (webglRenderer) {
+    useWebGL = !useWebGL;
+    renderer = useWebGL ? webglRenderer : canvasRenderer;
+    syncRendererFeatures();
+    console.log(`🎨 Renderer: ${useWebGL ? 'WebGL (GPU-Accelerated)' : 'Canvas 2D'}`);
+    syncRendererButton();
+  } else {
+    alert('WebGL renderer not available on this device/browser.');
+  }
+});
 
 const handleBehaviorChange = () => {
   setBehaviorWeights({
@@ -372,6 +403,38 @@ function syncFeatureButton(feature, isActive) {
       btn.classList.remove('active');
     }
   }
+}
+
+function syncRendererButton() {
+  const btn = document.getElementById('btn-toggle-renderer');
+  if (btn) {
+    btn.textContent = useWebGL ? '🚀 WebGL' : '🖌️ Canvas';
+    btn.classList.toggle('active', useWebGL);
+  }
+}
+
+function syncRendererFeatures() {
+  // Sync all feature toggles from active renderer to the other
+  const source = renderer;
+  const target = useWebGL ? canvasRenderer : webglRenderer;
+  if (!target) return;
+  
+  target.enableVision = source.enableVision;
+  target.enableClustering = source.enableClustering;
+  target.enableTerritories = source.enableTerritories;
+  target.enableMemory = source.enableMemory;
+  target.enableSocialBonds = source.enableSocialBonds;
+  target.enableMigration = source.enableMigration;
+  target.enableEmotions = source.enableEmotions;
+  target.enableSensoryViz = source.enableSensoryViz;
+  target.enableIntelligence = source.enableIntelligence;
+  target.enableMating = source.enableMating;
+  target.enableMiniMap = source.enableMiniMap;
+  target.enableAtmosphere = source.enableAtmosphere;
+  target.enableWeather = source.enableWeather;
+  target.enableDayNight = source.enableDayNight;
+  target.enableNameLabels = source.enableNameLabels;
+  target.enableTraitVisualization = source.enableTraitVisualization;
 }
 
 canvas.addEventListener('wheel', (e)=>{
@@ -627,6 +690,19 @@ window.addEventListener('keydown', (e)=>{
     if (e.key.toLowerCase() === 'h') {
       miniGraphs.enabled = !miniGraphs.enabled;
       console.log(`📊 Mini-graphs ${miniGraphs.enabled ? 'ENABLED' : 'DISABLED'}`);
+      return;
+    }
+    // Toggle WebGL renderer (W key)
+    if (e.key.toLowerCase() === 'w') {
+      if (webglRenderer) {
+        useWebGL = !useWebGL;
+        renderer = useWebGL ? webglRenderer : canvasRenderer;
+        syncRendererFeatures();
+        console.log(`🎨 Renderer: ${useWebGL ? 'WebGL (GPU-Accelerated)' : 'Canvas 2D'}`);
+        syncRendererButton();
+      } else {
+        console.log('⚠️ WebGL renderer not available');
+      }
       return;
     }
   }
@@ -893,7 +969,12 @@ function loop(now) {
 
   camera.update(dt);
 
-  renderer.clear(canvas.width, canvas.height);
+  // Clear based on renderer type
+  if (useWebGL && webglRenderer) {
+    // WebGL clears internally
+  } else {
+    renderer.clear(canvas.width, canvas.height);
+  }
   const cameraTravelState = typeof camera.getTravelState === 'function' ? camera.getTravelState() : null;
   renderer.drawWorld(world, {
     selectedId,
@@ -931,6 +1012,7 @@ function loop(now) {
   
   updateInspector(false);
   updateAnalyticsCharts();
+  updateAdvancedAnalytics();
   updateScenarioStatus();
 
   requestAnimationFrame(loop);
@@ -1138,13 +1220,72 @@ function exportSnapshot() {
     }))
   });
 
-  const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+  downloadFile(`sandbox-snapshot-${Date.now()}.json`, JSON.stringify(snapshot, null, 2), 'application/json');
+  console.log('📊 Snapshot exported!');
+}
+
+function exportCSV() {
+  const csv = analytics.exportAsCSV();
+  downloadFile(`creature-sim-${Date.now()}.csv`, csv, 'text/csv');
+  console.log('📈 Population data exported to CSV!');
+}
+
+function exportGenesCSV() {
+  const csv = analytics.exportGeneHistoryCSV();
+  downloadFile(`gene-history-${Date.now()}.csv`, csv, 'text/csv');
+  console.log('🧬 Gene history exported to CSV!');
+}
+
+function downloadFile(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `sandbox-snapshot-${Date.now()}.json`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function updateAdvancedAnalytics() {
+  // Update phylogeny view
+  const phylogenyList = document.getElementById('phylogeny-list');
+  if (phylogenyList && analytics.phylogenyData) {
+    const phylogeny = analytics.buildPhylogeny(world);
+    if (phylogeny && phylogeny.length > 0) {
+      let html = '<div class="phylogeny-roots">';
+      for (const root of phylogeny.slice(0, 5)) { // Top 5 lineages
+        html += `<div class="phylogeny-item">
+          <span class="phylogeny-name">${root.name}</span>
+          <span class="phylogeny-stats">${root.alive}/${root.total} (${root.depth} gen)</span>
+        </div>`;
+      }
+      html += '</div>';
+      phylogenyList.innerHTML = html;
+    } else {
+      phylogenyList.innerHTML = '<span class="muted tiny">No lineage data yet</span>';
+    }
+  }
+  
+  // Update species groups view
+  const speciesList = document.getElementById('species-list');
+  if (speciesList && analytics.speciesGroups) {
+    if (analytics.speciesGroups.length > 0) {
+      let html = '<div class="species-groups">';
+      for (let i = 0; i < Math.min(5, analytics.speciesGroups.length); i++) {
+        const group = analytics.speciesGroups[i];
+        const diet = group.avgGenes.diet || 0;
+        const icon = diet > 0.7 ? '🦁' : (diet > 0.3 ? '🦡' : '🦌');
+        html += `<div class="species-item">
+          <span class="species-icon">${icon}</span>
+          <span class="species-size">${group.members} individuals</span>
+        </div>`;
+      }
+      html += '</div>';
+      speciesList.innerHTML = html;
+    } else {
+      speciesList.innerHTML = '<span class="muted tiny">Analyzing genetic diversity...</span>';
+    }
+  }
 }

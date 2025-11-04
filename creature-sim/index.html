@@ -29,6 +29,8 @@
     <button id="btn-spawn-pred">+ Predator</button>
     <button id="btn-spawn-omni">+ Omnivore</button>
     <span style="margin: 0 10px; color: #666;">|</span>
+    <button id="btn-toggle-renderer" title="Toggle WebGL/Canvas renderer (W key)">🖌️ Canvas</button>
+    <span style="margin: 0 10px; color: #666;">|</span>
     <button id="btn-god-heal" title="Heal selected creature">💚 Heal</button>
     <button id="btn-god-boost" title="Boost energy of selected creature">⚡ Boost</button>
     <button id="btn-god-kill" title="Kill selected creature">💀 Kill</button>
@@ -229,7 +231,19 @@
     <div id="analytics-panel" class="section">
       <div class="section-title">
         <span>Evolution Analytics</span>
-        <button id="btn-export" class="chip">Export</button>
+        <div style="display: flex; gap: 4px;">
+          <button id="btn-export" class="chip" title="Export snapshot JSON">📊 JSON</button>
+          <button id="btn-export-csv" class="chip" title="Export population CSV">📈 CSV</button>
+          <button id="btn-export-genes" class="chip" title="Export gene history CSV">🧬 Genes</button>
+        </div>
+      </div>
+      <div id="phylogeny-view" class="subsection">
+        <div class="subsection-title">Lineage Tree</div>
+        <div id="phylogeny-list" class="muted tiny">Computing...</div>
+      </div>
+      <div id="species-view" class="subsection">
+        <div class="subsection-title">Species Groups</div>
+        <div id="species-list" class="muted tiny">Analyzing...</div>
       </div>
       <div class="chart-block">
         <canvas id="chart-pop" width="240" height="80"></canvas>

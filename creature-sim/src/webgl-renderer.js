@@ -52,6 +52,10 @@ export class WebGLRenderer {
       instances: 0
     };
     
+    // For compatibility with Canvas renderer
+    this.renderedCount = 0;
+    this.culledCount = 0;
+    
     // 2D overlay context for UI elements
     this.overlay = document.createElement('canvas');
     this.overlay.width = canvas.width;
@@ -322,6 +326,15 @@ export class WebGLRenderer {
     this.gl.viewport(0, 0, width, height);
   }
   
+  clear(width, height) {
+    // For compatibility with Canvas renderer API
+    // WebGL clears in drawWorld, so this is a no-op
+    // But we can use it to update viewport if needed
+    if (width && height) {
+      this.resize(width, height);
+    }
+  }
+  
   drawWorld(world, opts) {
     const gl = this.gl;
     
@@ -329,6 +342,8 @@ export class WebGLRenderer {
     this.stats.drawCalls = 0;
     this.stats.triangles = 0;
     this.stats.instances = 0;
+    this.renderedCount = 0;
+    this.culledCount = 0;
     
     // Clear
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -441,8 +456,24 @@ export class WebGLRenderer {
     this.creatureBatch.sizes = [];
     this.creatureBatch.rotations = [];
     
+    // Simple frustum culling for performance
+    const cam = this.camera;
+    const padding = 100;
+    const left = cam.x - (this.canvas.width / cam.zoom / 2) - padding;
+    const right = cam.x + (this.canvas.width / cam.zoom / 2) + padding;
+    const top = cam.y - (this.canvas.height / cam.zoom / 2) - padding;
+    const bottom = cam.y + (this.canvas.height / cam.zoom / 2) + padding;
+    
     for (const c of creatures) {
       if (!c.alive) continue;
+      
+      // Frustum culling
+      if (c.x < left || c.x > right || c.y < top || c.y > bottom) {
+        this.culledCount++;
+        continue;
+      }
+      
+      this.renderedCount++;
       
       // Position
       this.creatureBatch.positions.push(c.x, c.y);
@@ -702,6 +733,12 @@ export class WebGLRenderer {
   
   getStats() {
     return { ...this.stats };
+  }
+  
+  // Stub methods for feature compatibility
+  setMiniMapOption(key, value) {
+    if (!this.miniMapSettings) this.miniMapSettings = {};
+    this.miniMapSettings[key] = value;
   }
 }
 

@@ -6,6 +6,13 @@ export class AnalyticsTracker {
     this._accum = 0;
     this.version = 0;
     this._cachedData = null; // Cache getData() results
+    
+    // Advanced analytics
+    this.geneHistory = []; // Track gene frequency over time
+    this.speciesGroups = []; // Detected species clusters
+    this.phylogenyData = null; // Phylogenetic tree structure
+    this._geneHistoryInterval = 2.0; // Sample genes every 2 seconds
+    this._geneHistoryAccum = 0;
   }
 
   update(world, dt) {
@@ -13,6 +20,14 @@ export class AnalyticsTracker {
     if (this._accum >= this.sampleInterval) {
       this._accum = 0;
       this.capture(world);
+    }
+    
+    // Sample gene frequencies less frequently
+    this._geneHistoryAccum += dt;
+    if (this._geneHistoryAccum >= this._geneHistoryInterval) {
+      this._geneHistoryAccum = 0;
+      this.captureGeneFrequencies(world);
+      this.detectSpecies(world);
     }
   }
 
@@ -105,12 +120,204 @@ export class AnalyticsTracker {
     return this._cachedData;
   }
 
+  captureGeneFrequencies(world) {
+    if (world.creatures.length === 0) return;
+    
+    const genes = {
+      t: world.t,
+      speed: [],
+      sense: [],
+      metabolism: [],
+      hue: [],
+      diet: [],
+      nocturnal: []
+    };
+    
+    for (const c of world.creatures) {
+      genes.speed.push(c.genes.speed);
+      genes.sense.push(c.genes.sense);
+      genes.metabolism.push(c.genes.metabolism);
+      genes.hue.push(c.genes.hue);
+      genes.diet.push(c.genes.diet || (c.genes.predator ? 1 : 0));
+      genes.nocturnal.push(c.genes.nocturnal || 0.5);
+    }
+    
+    // Calculate statistics for each gene
+    const stats = {};
+    for (const [key, values] of Object.entries(genes)) {
+      if (key === 't') {
+        stats.t = values;
+        continue;
+      }
+      const mean = values.reduce((a, b) => a + b, 0) / values.length;
+      const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      stats[key] = { mean, variance, min, max, stdDev: Math.sqrt(variance) };
+    }
+    
+    this.geneHistory.push(stats);
+    if (this.geneHistory.length > 300) this.geneHistory.shift(); // Keep last 10 minutes at 2s interval
+    this.version += 1;
+    this._cachedData = null;
+  }
+  
+  detectSpecies(world) {
+    // Simple species detection using genetic clustering
+    // Species are groups of creatures with similar genes
+    
+    if (world.creatures.length < 2) {
+      this.speciesGroups = [];
+      return;
+    }
+    
+    const threshold = 0.3; // Genetic distance threshold for same species
+    const groups = [];
+    const assigned = new Set();
+    
+    for (let i = 0; i < world.creatures.length; i++) {
+      if (assigned.has(i)) continue;
+      
+      const group = [i];
+      assigned.add(i);
+      
+      for (let j = i + 1; j < world.creatures.length; j++) {
+        if (assigned.has(j)) continue;
+        
+        const dist = this._geneticDistance(
+          world.creatures[i].genes,
+          world.creatures[j].genes
+        );
+        
+        if (dist < threshold) {
+          group.push(j);
+          assigned.add(j);
+        }
+      }
+      
+      groups.push({
+        size: group.length,
+        avgGenes: this._averageGenes(group.map(idx => world.creatures[idx].genes)),
+        members: group.length
+      });
+    }
+    
+    this.speciesGroups = groups.sort((a, b) => b.size - a.size);
+  }
+  
+  _geneticDistance(g1, g2) {
+    // Euclidean distance in normalized gene space
+    const speedDiff = (g1.speed - g2.speed) / 2.0;
+    const senseDiff = (g1.sense - g2.sense) / 200.0;
+    const metabDiff = (g1.metabolism - g2.metabolism) / 2.0;
+    const hueDiff = Math.min(Math.abs(g1.hue - g2.hue), 360 - Math.abs(g1.hue - g2.hue)) / 360.0;
+    const dietDiff = Math.abs((g1.diet || 0) - (g2.diet || 0));
+    
+    return Math.sqrt(
+      speedDiff * speedDiff +
+      senseDiff * senseDiff +
+      metabDiff * metabDiff +
+      hueDiff * hueDiff +
+      dietDiff * dietDiff
+    );
+  }
+  
+  _averageGenes(genesList) {
+    if (genesList.length === 0) return {};
+    
+    const avg = {
+      speed: 0,
+      sense: 0,
+      metabolism: 0,
+      hue: 0,
+      diet: 0
+    };
+    
+    for (const g of genesList) {
+      avg.speed += g.speed;
+      avg.sense += g.sense;
+      avg.metabolism += g.metabolism;
+      avg.hue += g.hue;
+      avg.diet += (g.diet || 0);
+    }
+    
+    const n = genesList.length;
+    avg.speed /= n;
+    avg.sense /= n;
+    avg.metabolism /= n;
+    avg.hue /= n;
+    avg.diet /= n;
+    
+    return avg;
+  }
+  
+  buildPhylogeny(world) {
+    // Build a simplified phylogenetic tree from lineage data
+    // Returns root nodes (common ancestors)
+    
+    if (!world.lineageTracker) {
+      this.phylogenyData = null;
+      return null;
+    }
+    
+    const roots = [];
+    const processed = new Set();
+    
+    for (const creature of world.creatures) {
+      const rootId = world.lineageTracker.getRoot(world, creature.id);
+      if (!processed.has(rootId)) {
+        processed.add(rootId);
+        const lineage = world.buildLineageOverview(rootId);
+        if (lineage) {
+          roots.push({
+            rootId,
+            name: world.lineageTracker.names[rootId] || `#${rootId}`,
+            alive: lineage.aliveDesc,
+            total: lineage.totalDesc,
+            depth: lineage.levels.length
+          });
+        }
+      }
+    }
+    
+    this.phylogenyData = roots.sort((a, b) => b.total - a.total);
+    return this.phylogenyData;
+  }
+
   snapshot(extra={}) {
     return {
       generatedAt: new Date().toISOString(),
       sampleInterval: this.sampleInterval,
       samples: this.samples.slice(),
+      geneHistory: this.geneHistory.slice(),
+      speciesGroups: this.speciesGroups.slice(),
+      phylogeny: this.phylogenyData,
       ...extra
     };
+  }
+  
+  // Export data as CSV
+  exportAsCSV() {
+    const data = this.getData();
+    let csv = 'Time,Population,Herbivores,Predators,Food,MeanSpeed,MeanMetabolism,MeanSense,PredatorRatio\n';
+    
+    for (let i = 0; i < data.time.length; i++) {
+      csv += `${data.time[i].toFixed(2)},${data.population[i]},${data.herbivores[i]},${data.predators[i]},${data.food[i]},${data.meanSpeed[i].toFixed(3)},${data.meanMetabolism[i].toFixed(3)},${data.meanSense[i].toFixed(3)},${data.predatorRatio[i].toFixed(3)}\n`;
+    }
+    
+    return csv;
+  }
+  
+  // Export gene history as CSV
+  exportGeneHistoryCSV() {
+    if (this.geneHistory.length === 0) return 'No gene history data';
+    
+    let csv = 'Time,Speed_Mean,Speed_Var,Sense_Mean,Sense_Var,Metabolism_Mean,Metabolism_Var,Diet_Mean,Diet_Var,Nocturnal_Mean,Nocturnal_Var\n';
+    
+    for (const sample of this.geneHistory) {
+      csv += `${sample.t.toFixed(2)},${sample.speed.mean.toFixed(3)},${sample.speed.variance.toFixed(4)},${sample.sense.mean.toFixed(3)},${sample.sense.variance.toFixed(4)},${sample.metabolism.mean.toFixed(3)},${sample.metabolism.variance.toFixed(4)},${sample.diet.mean.toFixed(3)},${sample.diet.variance.toFixed(4)},${sample.nocturnal.mean.toFixed(3)},${sample.nocturnal.variance.toFixed(4)}\n`;
+    }
+    
+    return csv;
   }
 }

@@ -87,6 +87,53 @@ body { display:flex; justify-content:center; align-items:center; min-height:100v
   margin-bottom:6px;
 }
 
+.subsection {
+  margin: 0.75em 0;
+  padding: 0.5em;
+  background: rgba(255,255,255,0.02);
+  border-radius: 4px;
+}
+
+.subsection-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 0.5em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.phylogeny-roots, .species-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+}
+
+.phylogeny-item, .species-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25em 0.5em;
+  background: rgba(255,255,255,0.03);
+  border-radius: 3px;
+  font-size: 0.85em;
+}
+
+.phylogeny-name {
+  font-weight: 600;
+  color: #f3f4ff;
+}
+
+.phylogeny-stats, .species-size {
+  color: rgba(255,255,255,0.5);
+  font-size: 0.9em;
+}
+
+.species-icon {
+  font-size: 1.2em;
+  margin-right: 0.5em;
+}
+
 .badge-list {
   display:flex;
   flex-wrap:wrap;
