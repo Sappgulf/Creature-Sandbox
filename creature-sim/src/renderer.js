@@ -27,6 +27,9 @@ export class Renderer {
     this.enableIntelligence = false; // Advanced Feature 3
     this.enableMating = false; // Advanced Feature 4
     this.enableMiniMap = !this.isMobile; // Mini-map disabled on mobile
+    this.miniMapAutoHide = true; // Auto-hide when camera is moving
+    this.miniMapOpacity = 1.0; // Current opacity for fading
+    this.miniMapTargetOpacity = 1.0;
     this.enableAtmosphere = !this.isMobile; // Atmospheric rendering disabled on mobile
     this.enableWeather = !this.isMobile; // Weather effects disabled on mobile
     this.enableDayNight = true; // Day/night cycle
@@ -1126,9 +1129,23 @@ export class Renderer {
     const ctx = this.ctx;
     const camera = this.camera;
     
+    // Auto-hide when camera is moving
+    if (this.miniMapAutoHide && opts.cameraMoving) {
+      this.miniMapTargetOpacity = 0.0;
+    } else {
+      this.miniMapTargetOpacity = 1.0;
+    }
+    
+    // Smooth fade
+    this.miniMapOpacity += (this.miniMapTargetOpacity - this.miniMapOpacity) * 0.15;
+    
+    // Skip drawing if fully transparent
+    if (this.miniMapOpacity < 0.01) return;
+    
     // Reset transform for overlay
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = this.miniMapOpacity;
     
     // FULLY FIXED: Show complete world with perfect aspect ratio
     const maxMapWidth = 220; // Larger for better visibility

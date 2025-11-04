@@ -1012,6 +1012,34 @@ window.addEventListener('keydown', (e)=>{
       }
       return;
     }
+    // Mini-map toggle
+    if (e.key.toLowerCase() === 'n') {
+      renderer.enableMiniMap = !renderer.enableMiniMap;
+      console.log(`%c[MINI-MAP] ${renderer.enableMiniMap ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${renderer.enableMiniMap ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
+      return;
+    }
+    // Mini-graphs toggle
+    if (e.key.toLowerCase() === 'l') {
+      miniGraphs.enabled = !miniGraphs.enabled;
+      console.log(`%c[STATS GRAPHS] ${miniGraphs.enabled ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${miniGraphs.enabled ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
+      return;
+    }
+    // Auto-hide toggle
+    if (e.key.toLowerCase() === 'a') {
+      const wasAutoHide = renderer.miniMapAutoHide || miniGraphs.autoHide;
+      renderer.miniMapAutoHide = !renderer.miniMapAutoHide;
+      miniGraphs.autoHide = !miniGraphs.autoHide;
+      console.log(`%c[AUTO-HIDE OVERLAYS] ${renderer.miniMapAutoHide ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${renderer.miniMapAutoHide ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
+      if (renderer.miniMapAutoHide) {
+        console.log('%cℹ️ Mini-map and stats will hide when camera is moving', 'color: #60a5fa;');
+      } else {
+        console.log('%cℹ️ Mini-map and stats will always be visible', 'color: #60a5fa;');
+      }
+      return;
+    }
     // Debug console toggle (backtick key)
     if (e.key === '`' || e.key === '~') {
       debugConsole.toggle();
@@ -1432,7 +1460,8 @@ function loop(now) {
     lineageTracker,
     world,
     travelPreview,
-    cameraTravel: cameraTravelState
+    cameraTravel: cameraTravelState,
+    cameraMoving: camera.isMoving // For auto-hide overlays
   });
 
   fps = 0.9 * fps + 0.1 * (1 / Math.max(dt, 0.0001));
@@ -1459,7 +1488,8 @@ function loop(now) {
   // Draw mini-graphs overlay
   miniGraphs.draw(ctx, {
     viewportWidth: camera.viewportWidth,
-    viewportHeight: camera.viewportHeight
+    viewportHeight: camera.viewportHeight,
+    cameraMoving: camera.isMoving // For auto-hide
   });
   
   // NEW: Draw particle effects (in world space)

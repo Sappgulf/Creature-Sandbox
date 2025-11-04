@@ -4,6 +4,9 @@
 export class MiniGraphs {
   constructor() {
     this.enabled = true;
+    this.autoHide = true; // Auto-hide when camera is moving
+    this.opacity = 1.0; // Current opacity for fading
+    this.targetOpacity = 1.0;
     this.graphs = {
       population: {
         enabled: true,
@@ -108,8 +111,22 @@ export class MiniGraphs {
   draw(ctx, opts) {
     if (!this.enabled) return;
     
+    // Auto-hide when camera is moving
+    if (this.autoHide && opts.cameraMoving) {
+      this.targetOpacity = 0.0;
+    } else {
+      this.targetOpacity = 1.0;
+    }
+    
+    // Smooth fade
+    this.opacity += (this.targetOpacity - this.opacity) * 0.15;
+    
+    // Skip drawing if fully transparent
+    if (this.opacity < 0.01) return;
+    
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset to screen coords
+    ctx.globalAlpha = this.opacity;
     
     const padding = 10;
     const graphWidth = 180;
