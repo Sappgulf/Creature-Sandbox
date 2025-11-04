@@ -316,11 +316,11 @@ export class Renderer {
     const bounds = this._viewBounds;
     const sampleSize = Math.max(30, 120 / this.camera.zoom); // Larger samples = less blocky
     
-    // Base background (subtle gradient)
+    // Base background (natural green/brown gradient)
     const bgGradient = ctx.createLinearGradient(0, 0, 0, world.height);
-    bgGradient.addColorStop(0, '#0d1117');
-    bgGradient.addColorStop(0.5, '#0e1419');
-    bgGradient.addColorStop(1, '#0b0d11');
+    bgGradient.addColorStop(0, '#1a2520');
+    bgGradient.addColorStop(0.5, '#15201a');
+    bgGradient.addColorStop(1, '#0f1812');
     ctx.fillStyle = bgGradient;
     ctx.fillRect(0, 0, world.width, world.height);
     
