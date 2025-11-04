@@ -5,6 +5,72 @@ body { display:flex; justify-content:center; align-items:center; min-height:100v
 #hud { position:fixed; top:12px; left:12px; display:flex; gap:8px; align-items:center; z-index:10; background:rgba(15,16,24,0.86); padding:8px 10px; border-radius:8px; border:1px solid #23253a; backdrop-filter:blur(6px); }
 #hud button { background:#1e2130; color:#e7e7ea; border:1px solid #2b2e41; padding:6px 10px; border-radius:6px; cursor:pointer; transition:background 0.15s ease, transform 0.15s ease; font-size:13px; }
 #hud button:hover { background:#272a3d; transform:translateY(-1px); }
+#hud button.active { background:#2d3351; border-color:#3c4170; }
+
+.spawn-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.spawn-creature-btn {
+  background:#1e2130;
+  color:#e7e7ea;
+  border:1px solid #2b2e41;
+  padding:6px 10px;
+  border-radius:6px;
+  cursor:pointer;
+  transition:background 0.15s ease, transform 0.15s ease;
+  font-size:13px;
+}
+
+.spawn-creature-btn:hover {
+  background:#272a3d;
+  transform:translateY(-1px);
+}
+
+.spawn-creature-btn.active {
+  background:#2d3351;
+  border-color:#3c4170;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: rgba(20,22,32,0.95);
+  border: 1px solid #2b2e41;
+  border-radius: 6px;
+  min-width: 160px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+}
+
+.dropdown-menu.hidden {
+  display: none;
+}
+
+.dropdown-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(43,46,65,0.5);
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background: rgba(45,51,81,0.6);
+}
+
+.dropdown-item.selected {
+  background: rgba(45,51,81,0.8);
+  color: #7bb7ff;
+}
 #stats { white-space:nowrap; font-variant-numeric:tabular-nums; opacity:0.85; margin-left:8px; font-size:13px; padding:4px 8px; background:rgba(20,22,32,0.5); border-radius:6px; display:flex; gap:12px; }
 
 #inspector {

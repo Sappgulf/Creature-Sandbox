@@ -22,12 +22,17 @@
 </head>
 <body>
   <div id="hud">
-    <button id="btn-pause">Pause</button>
-    <button id="btn-step">Step</button>
-    <button id="btn-spawn-food">+ Food</button>
-    <button id="btn-spawn-herb">+ Herbivore</button>
-    <button id="btn-spawn-pred">+ Predator</button>
-    <button id="btn-spawn-omni">+ Omnivore</button>
+    <button id="btn-pause">⏸️ Pause</button>
+    <button id="btn-step">⏭️ Step</button>
+    <button id="btn-spawn-food">🌿 Food</button>
+    <div class="spawn-dropdown">
+      <button id="btn-spawn-creature" class="spawn-creature-btn" title="Click to select creature type">🦌 Spawn Creature ▼</button>
+      <div id="creature-dropdown" class="dropdown-menu hidden">
+        <div class="dropdown-item" data-creature="herbivore">🦌 Herbivore</div>
+        <div class="dropdown-item" data-creature="omnivore">🦡 Omnivore</div>
+        <div class="dropdown-item" data-creature="predator">🦁 Predator</div>
+      </div>
+    </div>
     <span style="margin: 0 10px; color: #666;">|</span>
     <button id="btn-toggle-renderer" title="Toggle WebGL/Canvas renderer (W key)">🖌️ Canvas</button>
     <span style="margin: 0 10px; color: #666;">|</span>

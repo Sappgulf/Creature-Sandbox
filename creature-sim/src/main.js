@@ -153,6 +153,10 @@ let scenarioPanelVisible = false;
 let scenarioQueueVersion = -1;
 let lastScenarioQueueRender = 0;
 
+// Creature spawn state
+let selectedCreatureType = null;
+let spawnMode = false;
+
 bindUI({
   onPause: togglePause,
   onStep: stepOnce,
@@ -160,25 +164,6 @@ bindUI({
     tools.setMode(ToolModes.FOOD);
     tools.apply(0, 0);
     tools.setMode(ToolModes.INSPECT);
-  },
-  onHerb: () => {
-    world.spawnManual(Math.random()*world.width, Math.random()*world.height, false);
-  },
-  onPred: () => {
-    const g = makeGenes({ predator:1, speed:1.2, metabolism:1.2, hue:0 });
-    world.addCreature(new Creature(Math.random()*world.width, Math.random()*world.height, g), null);
-  },
-  onOmnivore: () => {
-    // NEW: Spawn omnivore/scavenger
-    const g = makeGenes({ 
-      predator: 0,
-      diet: 0.5, // Middle diet = omnivore/scavenger
-      speed: 1.0,
-      sense: 110, // Good sense to find corpses
-      metabolism: 0.9, // Efficient
-      hue: 30 // Distinct orange/tan color
-    });
-    world.addCreature(new Creature(Math.random()*world.width, Math.random()*world.height, g), null);
   }
 });
 
@@ -187,6 +172,49 @@ exportCSVBtn?.addEventListener('click', exportCSV);
 exportGenesBtn?.addEventListener('click', exportGenesCSV);
 showInspectorBtn?.addEventListener('click', ()=>setInspectorVisible(true));
 closeInspectorBtn?.addEventListener('click', ()=>setInspectorVisible(false));
+
+// Creature spawn dropdown
+const btnSpawnCreature = document.getElementById('btn-spawn-creature');
+const creatureDropdown = document.getElementById('creature-dropdown');
+const dropdownItems = document.querySelectorAll('.dropdown-item');
+
+btnSpawnCreature?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  creatureDropdown?.classList.toggle('hidden');
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.spawn-dropdown')) {
+    creatureDropdown?.classList.add('hidden');
+  }
+});
+
+// Handle creature type selection
+dropdownItems.forEach(item => {
+  item.addEventListener('click', (e) => {
+    const creatureType = item.dataset.creature;
+    selectedCreatureType = creatureType;
+    spawnMode = true;
+    
+    // Update dropdown items
+    dropdownItems.forEach(i => i.classList.remove('selected'));
+    item.classList.add('selected');
+    
+    // Update button text and style
+    const icons = { herbivore: '🦌', omnivore: '🦡', predator: '🦁' };
+    const names = { herbivore: 'Herbivore', omnivore: 'Omnivore', predator: 'Predator' };
+    btnSpawnCreature.textContent = `${icons[creatureType]} ${names[creatureType]} ▼`;
+    btnSpawnCreature.classList.add('active');
+    
+    // Hide dropdown
+    creatureDropdown?.classList.add('hidden');
+    
+    // Update cursor and show message
+    canvas.style.cursor = 'crosshair';
+    console.log(`🎯 Click on the map to spawn ${names[creatureType]}. Press ESC to cancel.`);
+  });
+});
 
 // GOD MODE TOOLS
 const btnGodHeal = document.getElementById('btn-god-heal');
@@ -537,6 +565,11 @@ function maybeHandleMiniMapClick(canvasX, canvasY, event) {
 
 window.addEventListener('keydown', (e)=>{
   if (e.key === 'Escape') {
+    // Cancel spawn mode first
+    if (spawnMode) {
+      cancelSpawnMode();
+      return;
+    }
     if (!inspectorVisible) {
       setInspectorVisible(true);
       return;
@@ -754,6 +787,12 @@ function handlePointerAction(e, isDrag) {
   const sy = e.clientY - rect.top - canvas.height/2;
   const { x, y } = camera.screenToWorld(sx, sy);
 
+  // Handle spawn mode
+  if (spawnMode && !isDrag) {
+    spawnCreatureAt(x, y, selectedCreatureType);
+    return;
+  }
+
   if (tools.mode !== ToolModes.INSPECT) {
     travelDrag = null;
     travelPreview = null;
@@ -792,6 +831,44 @@ function handlePointerAction(e, isDrag) {
   }
 }
 
+function spawnCreatureAt(x, y, type) {
+  if (!type) return;
+  
+  switch(type) {
+    case 'herbivore':
+      world.spawnManual(x, y, false);
+      console.log(`🦌 Spawned Herbivore at (${Math.round(x)}, ${Math.round(y)})`);
+      break;
+    case 'predator':
+      const predGenes = makeGenes({ predator:1, speed:1.2, metabolism:1.2, hue:0 });
+      world.addCreature(new Creature(x, y, predGenes), null);
+      console.log(`🦁 Spawned Predator at (${Math.round(x)}, ${Math.round(y)})`);
+      break;
+    case 'omnivore':
+      const omniGenes = makeGenes({ 
+        predator: 0,
+        diet: 0.5,
+        speed: 1.0,
+        sense: 110,
+        metabolism: 0.9,
+        hue: 30
+      });
+      world.addCreature(new Creature(x, y, omniGenes), null);
+      console.log(`🦡 Spawned Omnivore at (${Math.round(x)}, ${Math.round(y)})`);
+      break;
+  }
+}
+
+function cancelSpawnMode() {
+  spawnMode = false;
+  selectedCreatureType = null;
+  canvas.style.cursor = 'default';
+  btnSpawnCreature?.classList.remove('active');
+  btnSpawnCreature.textContent = '🦌 Spawn Creature ▼';
+  dropdownItems.forEach(i => i.classList.remove('selected'));
+  console.log('❌ Spawn mode cancelled');
+}
+
 function pickCreature(x, y, radius) {
   const candidates = world.queryCreatures(x, y, radius);
   let best = null;
@@ -808,10 +885,26 @@ function pickCreature(x, y, radius) {
 
 function togglePause() {
   paused = !paused;
+  updatePauseButton();
+  console.log(paused ? '⏸️ Paused' : '▶️ Playing');
+}
+
+function updatePauseButton() {
+  const pauseBtn = document.getElementById('btn-pause');
+  if (pauseBtn) {
+    if (paused) {
+      pauseBtn.textContent = '▶️ Play';
+      pauseBtn.classList.add('active');
+    } else {
+      pauseBtn.textContent = '⏸️ Pause';
+      pauseBtn.classList.remove('active');
+    }
+  }
 }
 
 function stepOnce() {
   paused = true;
+  updatePauseButton();
   accumulator += fixedDt;
 }
 
