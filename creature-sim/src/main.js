@@ -17,28 +17,9 @@ import { BiomeGenerator } from './perlin-noise.js';
 const canvas = document.getElementById('view');
 const ctx = canvas.getContext('2d');
 
-// Set canvas to fill viewport
-function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  
-  // Update camera viewport dimensions
-  if (camera) {
-    camera.viewportWidth = canvas.width;
-    camera.viewportHeight = canvas.height;
-  }
-  
-  // Update WebGL renderer if it exists
-  if (webglRenderer) {
-    webglRenderer.resize(canvas.width, canvas.height);
-  }
-}
-
-// Initial resize
-resizeCanvas();
-
-// Handle window resize
-window.addEventListener('resize', resizeCanvas);
+// Set initial canvas size
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
 // UPGRADED: 4x larger world for organic biome system
 const world = new World(4000, 2800);
@@ -67,6 +48,24 @@ try {
   console.warn('⚠️ WebGL not supported, using Canvas 2D only:', err);
 }
 let renderer = useWebGL && webglRenderer ? webglRenderer : canvasRenderer;
+
+// Resize handler (now that everything is initialized)
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  
+  // Update camera viewport dimensions
+  camera.viewportWidth = canvas.width;
+  camera.viewportHeight = canvas.height;
+  
+  // Update WebGL renderer if it exists
+  if (webglRenderer) {
+    webglRenderer.resize(canvas.width, canvas.height);
+  }
+}
+
+// Handle window resize
+window.addEventListener('resize', resizeCanvas);
 
 const tools = new ToolController(world, camera);
 const analytics = new AnalyticsTracker();
