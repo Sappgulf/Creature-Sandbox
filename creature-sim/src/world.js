@@ -1880,7 +1880,8 @@ export class World {
     
     // NEW: Death gravestone marker!
     if (this.particles && this.lineageTracker) {
-      const creatureName = this.lineageTracker.getName(creature.id) || `Creature #${creature.id}`;
+      const rootId = this.lineageTracker.getRoot(this, creature.id);
+      const creatureName = this.lineageTracker.ensureName(rootId) || `Creature #${creature.id}`;
       this.particles.addDeathMarker(creature.x, creature.y, creatureName);
     }
   }
