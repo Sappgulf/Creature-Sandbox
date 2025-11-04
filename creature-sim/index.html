@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <title>Creature Sandbox - Evolution Simulator</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="description" content="Watch creatures evolve in real-time. Genetic inheritance, predator-prey dynamics, and evolutionary adaptation in an interactive ecosystem simulation." />
   <meta name="keywords" content="evolution simulator, genetic algorithm, creatures, ecosystem simulation, predator prey" />
   <meta name="author" content="Sappgulf" />
@@ -39,6 +39,8 @@
     <button id="btn-god-kill" title="Kill selected creature">💀 Kill</button>
     <button id="btn-god-clone" title="Clone selected creature">👯 Clone</button>
     <button id="btn-scenario" title="Open Scenario Lab">Scenario Lab</button>
+    <button id="btn-gene-editor" title="Open Gene Editor">🧬 Gene Editor</button>
+    <button id="btn-eco-health" title="View Ecosystem Health">🌍 Eco Health</button>
     <button id="btn-features" title="Show keyboard shortcuts">🎨 Features</button>
     <div id="stats"></div>
   </div>
@@ -120,6 +122,191 @@
       </div>
       <div id="scenario-queue" class="scenario-queue">
         <div class="scenario-queue-empty muted">No queued scenarios.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gene Editor Panel -->
+  <div id="gene-editor-panel" class="hidden">
+    <div class="panel-header">
+      <span class="panel-title">🧬 Genetic Engineering Lab</span>
+      <button id="btn-gene-editor-close" class="chip ghost" title="Close gene editor">Hide</button>
+    </div>
+    <div class="panel-body">
+      <!-- Presets -->
+      <div class="gene-section">
+        <div class="gene-section-title">Presets</div>
+        <select id="gene-preset-select" class="gene-select">
+          <option value="">-- Select Preset --</option>
+          <option value="Fast Herbivore">🦌 Fast Herbivore</option>
+          <option value="Tank Herbivore">🐘 Tank Herbivore</option>
+          <option value="Pack Hunter">🐺 Pack Hunter</option>
+          <option value="Ambush Predator">🐆 Ambush Predator</option>
+          <option value="Omnivore">🦡 Omnivore</option>
+          <option value="Night Hunter">🦇 Night Hunter</option>
+          <option value="Herd Leader">🦌 Herd Leader</option>
+        </select>
+        <button id="btn-gene-randomize" class="gene-btn">🎲 Randomize</button>
+      </div>
+      
+      <!-- Core Stats -->
+      <div class="gene-section">
+        <div class="gene-section-title">Core Stats</div>
+        <label class="gene-slider">
+          <span class="gene-label">Speed <span id="gene-speed-value" class="gene-value">1.00</span></span>
+          <input type="range" id="gene-speed" min="0.2" max="2.0" step="0.05" value="1.0" />
+        </label>
+        <label class="gene-slider">
+          <span class="gene-label">FOV <span id="gene-fov-value" class="gene-value">90</span></span>
+          <input type="range" id="gene-fov" min="20" max="160" step="5" value="90" />
+        </label>
+        <label class="gene-slider">
+          <span class="gene-label">Sense Range <span id="gene-sense-value" class="gene-value">100</span></span>
+          <input type="range" id="gene-sense" min="20" max="200" step="5" value="100" />
+        </label>
+        <label class="gene-slider">
+          <span class="gene-label">Metabolism <span id="gene-metabolism-value" class="gene-value">1.00</span></span>
+          <input type="range" id="gene-metabolism" min="0.4" max="2.0" step="0.05" value="1.0" />
+        </label>
+        <label class="gene-slider">
+          <span class="gene-label">Hue <span id="gene-hue-value" class="gene-value">120</span></span>
+          <input type="range" id="gene-hue" min="0" max="359" step="1" value="120" />
+        </label>
+      </div>
+      
+      <!-- Diet & Type -->
+      <div class="gene-section">
+        <div class="gene-section-title">Diet & Type</div>
+        <label class="gene-slider">
+          <span class="gene-label">Diet (0=Herb, 1=Pred) <span id="gene-diet-value" class="gene-value">0%</span></span>
+          <input type="range" id="gene-diet" min="0" max="1" step="0.01" value="0.0" />
+        </label>
+        <label class="gene-slider">
+          <span class="gene-label">Legacy Predator <span id="gene-predator-value" class="gene-value">0%</span></span>
+          <input type="range" id="gene-predator" min="0" max="1" step="1" value="0" />
+        </label>
+      </div>
+      
+      <!-- Personality -->
+      <div class="gene-section">
+        <div class="gene-section-title">Personality Traits</div>
+        <label class="gene-slider">
+          <span class="gene-label">Spines/Defense <span id="gene-spines-value" class="gene-value">0%</span></span>
+          <input type="range" id="gene-spines" min="0" max="1" step="0.01" value="0.0" />
+        </label>
+        <label class="gene-slider">
+          <span class="gene-label">Herd Instinct <span id="gene-herdInstinct-value" class="gene-value">50%</span></span>
+          <input type="range" id="gene-herdInstinct" min="0" max="1" step="0.01" value="0.5" />
+        </label>
+        <label class="gene-slider">
+          <span class="gene-label">Panic Trail <span id="gene-panicPheromone-value" class="gene-value">30%</span></span>
+          <input type="range" id="gene-panicPheromone" min="0" max="1" step="0.01" value="0.3" />
+        </label>
+        <label class="gene-slider">
+          <span class="gene-label">Grit <span id="gene-grit-value" class="gene-value">50%</span></span>
+          <input type="range" id="gene-grit" min="0" max="1" step="0.01" value="0.5" />
+        </label>
+        <label class="gene-slider">
+          <span class="gene-label">Nocturnal <span id="gene-nocturnal-value" class="gene-value">0%</span></span>
+          <input type="range" id="gene-nocturnal" min="0" max="1" step="0.01" value="0.0" />
+        </label>
+      </div>
+      
+      <!-- Predator Traits -->
+      <div class="gene-section">
+        <div class="gene-section-title">Predator Traits</div>
+        <label class="gene-slider">
+          <span class="gene-label">Pack Instinct <span id="gene-packInstinct-value" class="gene-value">50%</span></span>
+          <input type="range" id="gene-packInstinct" min="0" max="1" step="0.01" value="0.5" />
+        </label>
+        <label class="gene-slider">
+          <span class="gene-label">Ambush Delay <span id="gene-ambushDelay-value" class="gene-value">50%</span></span>
+          <input type="range" id="gene-ambushDelay" min="0" max="1" step="0.01" value="0.5" />
+        </label>
+        <label class="gene-slider">
+          <span class="gene-label">Aggression <span id="gene-aggression-value" class="gene-value">1.00</span></span>
+          <input type="range" id="gene-aggression" min="0.4" max="2.2" step="0.05" value="1.0" />
+        </label>
+      </div>
+      
+      <!-- Spawn Controls -->
+      <div class="gene-section">
+        <div class="gene-section-title">Spawn Settings</div>
+        <label class="gene-slider">
+          <span class="gene-label">Count <span id="gene-spawn-count-value" class="gene-value">1</span></span>
+          <input type="range" id="gene-spawn-count" min="1" max="20" step="1" value="1" />
+        </label>
+        <label class="gene-slider">
+          <span class="gene-label">Spread <span id="gene-spawn-spread-value" class="gene-value">50px</span></span>
+          <input type="range" id="gene-spawn-spread" min="0" max="200" step="10" value="50" />
+        </label>
+        <div class="gene-actions">
+          <button id="btn-gene-spawn" class="gene-btn primary">✨ Spawn (Click Map)</button>
+          <button id="btn-gene-export" class="gene-btn">💾 Export</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ecosystem Health Panel -->
+  <div id="eco-health-panel" class="hidden">
+    <div class="panel-header">
+      <span class="panel-title">🌍 Ecosystem Health</span>
+      <button id="btn-eco-health-close" class="chip ghost" title="Close health panel">Hide</button>
+    </div>
+    <div class="panel-body">
+      <!-- Overall Score -->
+      <div class="health-overall">
+        <div class="health-score-container">
+          <div class="health-score-circle">
+            <span id="health-overall-score" class="health-score-value">0</span>
+          </div>
+          <div class="health-status">
+            <span id="health-status-emoji" class="health-emoji">✨</span>
+            <span id="health-status-label" class="health-label">Good</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Metrics -->
+      <div class="health-metrics">
+        <div class="health-metric">
+          <div class="health-metric-header">
+            <span>🧬 Biodiversity</span>
+            <span id="health-biodiversity-value" class="health-metric-value">0</span>
+          </div>
+          <div class="health-metric-bar">
+            <div id="health-biodiversity-fill" class="health-metric-fill" style="width: 0%"></div>
+          </div>
+        </div>
+        
+        <div class="health-metric">
+          <div class="health-metric-header">
+            <span>⚖️ Stability</span>
+            <span id="health-stability-value" class="health-metric-value">0</span>
+          </div>
+          <div class="health-metric-bar">
+            <div id="health-stability-fill" class="health-metric-fill" style="width: 0%"></div>
+          </div>
+        </div>
+        
+        <div class="health-metric">
+          <div class="health-metric-header">
+            <span>♻️ Sustainability</span>
+            <span id="health-sustainability-value" class="health-metric-value">0</span>
+          </div>
+          <div class="health-metric-bar">
+            <div id="health-sustainability-fill" class="health-metric-fill" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Recommendations -->
+      <div class="health-recommendations">
+        <div class="health-recommendations-title">📋 Recommendations</div>
+        <div id="health-recommendations-list" class="health-recommendations-list">
+          <div class="muted">Analyzing ecosystem...</div>
+        </div>
       </div>
     </div>
   </div>
@@ -300,6 +487,15 @@
 
   <canvas id="view"></canvas>
   <button id="btn-show-inspector" class="chip floating hidden" title="Show inspector">Show Panel</button>
+  
+  <!-- Mobile Quick Actions -->
+  <div id="mobile-quick-actions" class="mobile-only">
+    <button id="mobile-btn-spawn" title="Spawn Creature">🐾</button>
+    <button id="mobile-btn-food" title="Add Food">🌱</button>
+    <button id="mobile-btn-pause" title="Pause">⏸️</button>
+    <button id="mobile-btn-speed" title="Speed">⚡</button>
+  </div>
+  
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>

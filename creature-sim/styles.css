@@ -2,6 +2,10 @@ html,body { margin:0; padding:0; height:100%; width:100%; overflow:hidden; backg
 body { display:block; position:relative; }
 #view { display:block; position:absolute; top:0; left:0; width:100%; height:100%; background:#15201a; }
 
+.hidden {
+  display: none !important;
+}
+
 #hud { 
   position:fixed; 
   top:12px; 
@@ -170,6 +174,285 @@ body { display:block; position:relative; }
 .feature-toggle span {
   flex: 1;
   user-select: none;
+}
+
+/* Gene Editor Panel */
+#gene-editor-panel {
+  position: fixed;
+  left: 16px;
+  top: 120px;
+  width: 300px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  background: rgba(16,18,28,0.92);
+  border: 1px solid #23253a;
+  border-radius: 12px;
+  padding: 14px 16px;
+  z-index: 11;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#gene-editor-panel .panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gene-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gene-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #7d82a8;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #23253a;
+}
+
+.gene-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.gene-label {
+  display: flex;
+  justify-content: space-between;
+  color: #c3c6e4;
+  padding: 0 4px;
+}
+
+.gene-value {
+  color: #7bb7ff;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.gene-slider input[type="range"] {
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: #131522;
+  border: 1px solid #2b2e41;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+.gene-slider input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #4ade80;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.gene-slider input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.gene-slider input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #4ade80;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.gene-slider input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.2);
+}
+
+.gene-select {
+  background: #131522;
+  border: 1px solid #2b2e41;
+  border-radius: 8px;
+  color: #e7e7ea;
+  padding: 8px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+
+.gene-select:hover {
+  border-color: #3c4170;
+}
+
+.gene-btn {
+  background: #1e2130;
+  color: #e7e7ea;
+  border: 1px solid #2b2e41;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+  font-size: 13px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.gene-btn:hover {
+  background: #272a3d;
+  transform: translateY(-1px);
+}
+
+.gene-btn.primary {
+  background: linear-gradient(135deg, #4ade80 0%, #3b9f61 100%);
+  border-color: #3b9f61;
+  color: #fff;
+  font-weight: 600;
+}
+
+.gene-btn.primary:hover {
+  background: linear-gradient(135deg, #5def91 0%, #4ade80 100%);
+}
+
+.gene-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Ecosystem Health Panel */
+#eco-health-panel {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: 280px;
+  background: rgba(16,18,28,0.92);
+  border: 1px solid #23253a;
+  border-radius: 12px;
+  padding: 14px 16px;
+  z-index: 11;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+}
+
+.health-overall {
+  margin-bottom: 16px;
+}
+
+.health-score-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background: rgba(24, 27, 40, 0.5);
+  border-radius: 10px;
+}
+
+.health-score-circle {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4ade80 0%, #3b9f61 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.3);
+}
+
+.health-status {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.health-emoji {
+  font-size: 28px;
+}
+
+.health-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e7e7ea;
+}
+
+.health-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.health-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.health-metric-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #c3c6e4;
+}
+
+.health-metric-value {
+  font-weight: 600;
+  color: #7bb7ff;
+  font-variant-numeric: tabular-nums;
+}
+
+.health-metric-bar {
+  height: 8px;
+  background: #131522;
+  border: 1px solid #2b2e41;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.health-metric-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80 0%, #7bb7ff 100%);
+  transition: width 0.5s ease;
+}
+
+.health-recommendations {
+  padding-top: 12px;
+  border-top: 1px solid #23253a;
+}
+
+.health-recommendations-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #7d82a8;
+  margin-bottom: 8px;
+}
+
+.health-recommendations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: #c3c6e4;
+}
+
+.health-recommendations-list > div {
+  padding: 6px 8px;
+  background: rgba(24, 27, 40, 0.3);
+  border-radius: 6px;
+  border-left: 2px solid #4ade80;
 }
 
 #inspector {
@@ -880,13 +1163,116 @@ body { display:block; position:relative; }
   color: #7bb7ff;
 }
 
-/* Mobile Responsive */
+/* Mobile Responsive & Touch-Friendly */
+.mobile-device #hud button {
+  min-height: 44px; /* iOS touch target recommendation */
+  min-width: 44px;
+  padding: 10px 14px;
+  font-size: 15px;
+}
+
+.mobile-device #inspector {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: 40vh;
+  bottom: 0;
+  right: 0;
+  top: auto;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  border-radius: 16px 16px 0 0;
+}
+
+.mobile-device #inspector.visible {
+  transform: translateY(0);
+}
+
+.mobile-device #btn-show-inspector {
+  bottom: 20px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  font-size: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.mobile-device #features-panel,
+.mobile-device #gene-editor-panel,
+.mobile-device #eco-health-panel {
+  width: calc(100% - 16px);
+  max-width: 100%;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.mobile-device .panel-header {
+  padding: 16px;
+  font-size: 18px;
+}
+
+.mobile-device .panel-close {
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 20px;
+}
+
+.mobile-device .feature-toggle,
+.mobile-device .gene-slider {
+  padding: 12px;
+  min-height: 44px;
+}
+
+.mobile-device input[type="checkbox"],
+.mobile-device input[type="radio"] {
+  width: 22px;
+  height: 22px;
+  margin-right: 12px;
+}
+
+.mobile-device #start-modal .modal-content {
+  width: calc(100% - 32px);
+  max-width: 100%;
+  padding: 24px;
+}
+
+.mobile-device .modal-button {
+  min-height: 52px;
+  font-size: 16px;
+  padding: 16px 24px;
+}
+
+/* Hide debug console on mobile */
+.mobile-device .debug-console {
+  display: none !important;
+}
+
+/* Mobile-specific toast notifications */
+.mobile-device .notification-toast {
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 400px;
+}
+
+/* Touch feedback */
+.mobile-device button:active {
+  transform: scale(0.96);
+  opacity: 0.8;
+}
+
 @media (max-width: 768px) {
   #features-panel {
     bottom: 60px;
     left: 8px;
     right: 8px;
     width: auto;
+    max-height: 70vh;
+    overflow-y: auto;
   }
   
   .feature-group {
@@ -896,5 +1282,142 @@ body { display:block; position:relative; }
   #hud {
     flex-wrap: wrap;
     max-width: calc(100% - 24px);
+    gap: 6px;
+  }
+  
+  #stats {
+    font-size: 11px;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  #inspector {
+    font-size: 12px;
+  }
+  
+  #mini-graphs {
+    display: none; /* Hide graphs on small screens */
+  }
+}
+
+@media (max-width: 480px) {
+  #hud {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    padding: 6px 8px;
+    gap: 4px;
+  }
+  
+  #hud button {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  
+  #stats {
+    font-size: 10px;
+    gap: 6px;
+  }
+  
+  .feature-group {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 812px) and (orientation: landscape) {
+  #hud {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  #inspector {
+    max-height: 50vh;
+  }
+  
+  #features-panel,
+  #gene-editor-panel,
+  #eco-health-panel {
+    max-height: 60vh;
+  }
+}
+
+/* Mobile Quick Actions */
+#mobile-quick-actions {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  gap: 12px;
+  z-index: 999;
+  background: rgba(15, 16, 24, 0.95);
+  padding: 12px;
+  border-radius: 48px;
+  border: 1px solid #23253a;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.mobile-device #mobile-quick-actions {
+  display: flex;
+}
+
+#mobile-quick-actions button {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #1e2130;
+  border: 1px solid #2b2e41;
+  color: #e7e7ea;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+#mobile-quick-actions button:active {
+  transform: scale(0.9);
+  background: #272a3d;
+}
+
+#mobile-quick-actions button.active {
+  background: #2d3351;
+  border-color: #3c4170;
+  box-shadow: 0 0 16px rgba(123, 183, 255, 0.3);
+}
+
+/* Hide mobile-only elements by default */
+.mobile-only {
+  display: none;
+}
+
+.mobile-device .mobile-only {
+  display: block;
+}
+
+/* iOS safe area support */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .mobile-device #hud {
+    top: env(safe-area-inset-top, 12px);
+    left: env(safe-area-inset-left, 12px);
+    right: env(safe-area-inset-right, 12px);
+  }
+  
+  .mobile-device #inspector {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
+  }
+  
+  .mobile-device #btn-show-inspector {
+    bottom: calc(20px + env(safe-area-inset-bottom, 0));
+    right: calc(20px + env(safe-area-inset-right, 0));
+  }
+  
+  .mobile-device #mobile-quick-actions {
+    bottom: calc(20px + env(safe-area-inset-bottom, 0));
   }
 }

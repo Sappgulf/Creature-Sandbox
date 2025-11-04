@@ -15,6 +15,10 @@ import { BiomeGenerator } from './perlin-noise.js';
 import { ParticleSystem } from './particle-system.js';
 import { NotificationSystem } from './notification-system.js';
 import { HeatmapSystem } from './heatmap-system.js';
+import { GeneEditor } from './gene-editor.js';
+import { EcosystemHealth } from './ecosystem-health.js';
+import { DebugConsole } from './debug-console.js';
+import { MobileSupport } from './mobile-support.js';
 
 const canvas = document.getElementById('view');
 const ctx = canvas.getContext('2d');
@@ -71,6 +75,11 @@ const saveSystem = new SaveSystem();
 const particles = new ParticleSystem(); // NEW: Particle system for visual effects
 const notifications = new NotificationSystem(); // NEW: Notification system for milestones
 const heatmaps = new HeatmapSystem(world); // NEW: Heatmap system for strategic insights
+const geneEditor = new GeneEditor(); // NEW: Gene editor for custom creatures
+const ecoHealth = new EcosystemHealth(); // NEW: Ecosystem health tracking
+const debugConsole = new DebugConsole(world, camera); // NEW: Debug console for power users
+const mobileSupport = new MobileSupport(canvas, camera); // NEW: Mobile touch support
+window.debug = debugConsole; // Expose to global console
 world.attachLineageTracker(lineageTracker);
 world.attachParticleSystem(particles); // NEW: Give world access to particles
 world.attachHeatmapSystem(heatmaps); // NEW: Give world access to heatmaps
@@ -186,6 +195,12 @@ const scenarioEndBtn = document.getElementById('btn-scenario-end');
 const scenarioClearQueueBtn = document.getElementById('btn-scenario-clear');
 const scenarioStatus = document.getElementById('scenario-status');
 const scenarioQueueList = document.getElementById('scenario-queue');
+
+// Mobile quick action buttons
+const mobileBtnSpawn = document.getElementById('mobile-btn-spawn');
+const mobileBtnFood = document.getElementById('mobile-btn-food');
+const mobileBtnPause = document.getElementById('mobile-btn-pause');
+const mobileBtnSpeed = document.getElementById('mobile-btn-speed');
 const scenarioBalanceToggle = document.getElementById('scenario-autobalance');
 
 let renderedCount = 0;
@@ -223,6 +238,46 @@ exportCSVBtn?.addEventListener('click', exportCSV);
 exportGenesBtn?.addEventListener('click', exportGenesCSV);
 showInspectorBtn?.addEventListener('click', ()=>setInspectorVisible(true));
 closeInspectorBtn?.addEventListener('click', ()=>setInspectorVisible(false));
+
+// Mobile quick actions
+mobileBtnSpawn?.addEventListener('click', () => {
+  // Spawn a random creature at center of view
+  const centerX = camera.targetX;
+  const centerY = camera.targetY;
+  const genes = makeGenes();
+  const creature = new Creature(centerX, centerY, genes);
+  world.addCreature(creature, null);
+  console.log('📱 Mobile: Spawned creature');
+});
+
+mobileBtnFood?.addEventListener('click', () => {
+  // Spawn food at center of view
+  const centerX = camera.targetX;
+  const centerY = camera.targetY;
+  for (let i = 0; i < 20; i++) {
+    const offsetX = (Math.random() - 0.5) * 200;
+    const offsetY = (Math.random() - 0.5) * 200;
+    world.addFood(centerX + offsetX, centerY + offsetY);
+  }
+  console.log('📱 Mobile: Spawned food cluster');
+});
+
+mobileBtnPause?.addEventListener('click', () => {
+  paused = !paused;
+  mobileBtnPause.classList.toggle('active', paused);
+  mobileBtnPause.textContent = paused ? '▶️' : '⏸️';
+  console.log(`📱 Mobile: ${paused ? 'Paused' : 'Resumed'}`);
+});
+
+let mobileSpeedIndex = 1; // 0=0.5x, 1=1x, 2=2x, 3=4x
+const mobileSpeedValues = [0.5, 1, 2, 4];
+const mobileSpeedEmojis = ['🐌', '⚡', '⚡⚡', '⚡⚡⚡'];
+mobileBtnSpeed?.addEventListener('click', () => {
+  mobileSpeedIndex = (mobileSpeedIndex + 1) % mobileSpeedValues.length;
+  fastForward = mobileSpeedValues[mobileSpeedIndex];
+  mobileBtnSpeed.textContent = mobileSpeedEmojis[mobileSpeedIndex];
+  console.log(`📱 Mobile: Speed ${fastForward}x`);
+});
 
 // Creature spawn dropdown
 const btnSpawnCreature = document.getElementById('btn-spawn-creature');
@@ -384,6 +439,124 @@ document.querySelectorAll('input[name="heatmap"]').forEach(radio => {
     }
   });
 });
+
+// Gene Editor UI Bindings
+const btnGeneEditor = document.getElementById('btn-gene-editor');
+const btnGeneEditorClose = document.getElementById('btn-gene-editor-close');
+const genePresetSelect = document.getElementById('gene-preset-select');
+const btnGeneRandomize = document.getElementById('btn-gene-randomize');
+const btnGeneSpawn = document.getElementById('btn-gene-spawn');
+const btnGeneExport = document.getElementById('btn-gene-export');
+
+let geneEditorSpawnMode = false;
+
+btnGeneEditor?.addEventListener('click', () => geneEditor.toggle());
+btnGeneEditorClose?.addEventListener('click', () => geneEditor.hide());
+
+genePresetSelect?.addEventListener('change', (e) => {
+  if (e.target.value) {
+    geneEditor.applyPreset(e.target.value);
+    e.target.value = ''; // Reset selection
+  }
+});
+
+btnGeneRandomize?.addEventListener('click', () => geneEditor.randomize());
+
+btnGeneSpawn?.addEventListener('click', () => {
+  geneEditorSpawnMode = !geneEditorSpawnMode;
+  if (geneEditorSpawnMode) {
+    btnGeneSpawn.classList.add('active');
+    btnGeneSpawn.textContent = '✨ Click Map to Spawn!';
+    spawnMode = false; // Cancel normal spawn mode
+    cancelSpawnMode();
+  } else {
+    btnGeneSpawn.classList.remove('active');
+    btnGeneSpawn.textContent = '✨ Spawn (Click Map)';
+  }
+});
+
+btnGeneExport?.addEventListener('click', () => geneEditor.exportGenes());
+
+// Wire up all gene sliders
+Object.keys(geneEditor.customGenes).forEach(key => {
+  const slider = document.getElementById(`gene-${key}`);
+  const valueSpan = document.getElementById(`gene-${key}-value`);
+  
+  if (slider && valueSpan) {
+    slider.addEventListener('input', (e) => {
+      const value = parseFloat(e.target.value);
+      geneEditor.customGenes[key] = value;
+      valueSpan.textContent = geneEditor.formatGeneValue(key, value);
+    });
+  }
+});
+
+// Spawn count and spread
+const spawnCountSlider = document.getElementById('gene-spawn-count');
+const spawnCountValue = document.getElementById('gene-spawn-count-value');
+const spawnSpreadSlider = document.getElementById('gene-spawn-spread');
+const spawnSpreadValue = document.getElementById('gene-spawn-spread-value');
+
+spawnCountSlider?.addEventListener('input', (e) => {
+  geneEditor.spawnCount = parseInt(e.target.value);
+  spawnCountValue.textContent = e.target.value;
+});
+
+spawnSpreadSlider?.addEventListener('input', (e) => {
+  geneEditor.spawnSpread = parseInt(e.target.value);
+  spawnSpreadValue.textContent = `${e.target.value}px`;
+});
+
+// Ecosystem Health UI Bindings
+const btnEcoHealth = document.getElementById('btn-eco-health');
+const btnEcoHealthClose = document.getElementById('btn-eco-health-close');
+const ecoHealthPanel = document.getElementById('eco-health-panel');
+
+btnEcoHealth?.addEventListener('click', () => {
+  ecoHealth.visible = !ecoHealth.visible;
+  if (ecoHealth.visible) {
+    ecoHealthPanel?.classList.remove('hidden');
+    updateEcosystemHealthUI();
+  } else {
+    ecoHealthPanel?.classList.add('hidden');
+  }
+});
+
+btnEcoHealthClose?.addEventListener('click', () => {
+  ecoHealth.visible = false;
+  ecoHealthPanel?.classList.add('hidden');
+});
+
+function updateEcosystemHealthUI() {
+  if (!ecoHealth.visible) return;
+  
+  const metrics = ecoHealth.metrics;
+  const status = ecoHealth.getHealthStatus();
+  const recommendations = ecoHealth.getRecommendations(world);
+  
+  // Update overall score
+  document.getElementById('health-overall-score').textContent = Math.round(metrics.overall);
+  document.getElementById('health-status-emoji').textContent = status.emoji;
+  document.getElementById('health-status-label').textContent = status.label;
+  document.querySelector('.health-score-circle').style.background = 
+    `linear-gradient(135deg, ${status.color} 0%, ${status.color}CC 100%)`;
+  
+  // Update metric bars
+  document.getElementById('health-biodiversity-value').textContent = Math.round(metrics.biodiversity);
+  document.getElementById('health-biodiversity-fill').style.width = `${metrics.biodiversity}%`;
+  
+  document.getElementById('health-stability-value').textContent = Math.round(metrics.stability);
+  document.getElementById('health-stability-fill').style.width = `${metrics.stability}%`;
+  
+  document.getElementById('health-sustainability-value').textContent = Math.round(metrics.sustainability);
+  document.getElementById('health-sustainability-fill').style.width = `${metrics.sustainability}%`;
+  
+  // Update recommendations
+  const recList = document.getElementById('health-recommendations-list');
+  if (recList) {
+    recList.innerHTML = recommendations.map(r => `<div>${r}</div>`).join('');
+  }
+}
 
 scenarioBtn?.addEventListener('click', () => setScenarioPanelVisible(!scenarioPanelVisible));
 scenarioCloseBtn?.addEventListener('click', () => setScenarioPanelVisible(false));
@@ -600,6 +773,35 @@ canvas.addEventListener('pointerup', (e)=>{
   panning = false;
 });
 
+// Mobile tap handler for creature selection
+canvas.addEventListener('mobiletap', (e)=>{
+  const detail = e.detail;
+  const rect = canvas.getBoundingClientRect();
+  const sx = detail.x - rect.left - canvas.width/2;
+  const sy = detail.y - rect.top - canvas.height/2;
+  const { x, y } = camera.screenToWorld(sx, sy);
+  
+  // Find nearest creature
+  let nearest = null;
+  let minDist = 40 / camera.zoom; // Touch-friendly radius
+  
+  for (const c of world.creatures) {
+    const d = Math.hypot(c.x - x, c.y - y);
+    if (d < minDist) {
+      minDist = d;
+      nearest = c;
+    }
+  }
+  
+  if (nearest) {
+    selectedId = nearest.id;
+    pinnedId = nearest.id;
+    lineageRootId = lineageTracker.getRoot(world, nearest.id);
+    updateInspector(true);
+    console.log(`📱 Creature #${nearest.id} selected (mobile tap)`);
+  }
+});
+
 function maybeHandleMiniMapClick(canvasX, canvasY, event) {
   if (!renderer.enableMiniMap) return false;
   const bounds = renderer.lastMiniMap;
@@ -787,6 +989,12 @@ window.addEventListener('keydown', (e)=>{
       }
       return;
     }
+    // Debug console toggle (backtick key)
+    if (e.key === '`' || e.key === '~') {
+      debugConsole.toggle();
+      e.preventDefault();
+      return;
+    }
     if (e.key.toLowerCase() === 'f') {
       tools.setMode(ToolModes.FOOD);
       return;
@@ -886,6 +1094,13 @@ function handlePointerAction(e, isDrag) {
   // Handle spawn mode
   if (spawnMode && !isDrag) {
     spawnCreatureAt(x, y, selectedCreatureType);
+    return;
+  }
+  
+  // Handle gene editor spawn mode
+  if (geneEditorSpawnMode && !isDrag) {
+    geneEditor.spawnMultiple(world, x, y);
+    // Don't auto-disable spawn mode, let user spawn multiple times
     return;
   }
 
@@ -1147,6 +1362,7 @@ function loop(now) {
     notifications.checkMilestones(world); // NEW: Check for milestones
     notifications.update(fixedDt); // NEW: Update notifications
     heatmaps.update(fixedDt); // NEW: Update heatmaps (decay)
+    ecoHealth.update(world, fixedDt); // NEW: Update ecosystem health metrics
     saveSystem.autoSave(world, camera, analytics, lineageTracker, fixedDt);
     accumulator -= fixedDt;
     steps++;
@@ -1238,6 +1454,7 @@ function loop(now) {
   updateAnalyticsCharts();
   updateAdvancedAnalytics();
   updateScenarioStatus();
+  updateEcosystemHealthUI(); // NEW: Update ecosystem health UI
 
   requestAnimationFrame(loop);
 }

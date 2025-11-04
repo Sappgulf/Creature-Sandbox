@@ -5,11 +5,17 @@ export class Renderer {
     this.ctx = ctx;
     this.camera = camera;
     
-    // LEGENDARY OPTIMIZATION: Enable image smoothing for better quality
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    // Detect mobile for performance optimizations
+    this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                    (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
     
-    this.enableTrails = true;
+    // LEGENDARY OPTIMIZATION: Enable image smoothing for better quality
+    // On mobile, use lower quality for better performance
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = this.isMobile ? 'medium' : 'high';
+    
+    // Mobile-optimized default settings
+    this.enableTrails = !this.isMobile; // Trails disabled on mobile for performance
     this.enableVision = false;
     this.enableClustering = false;
     this.enableTerritories = false; // Feature 1
@@ -20,9 +26,9 @@ export class Renderer {
     this.enableSensoryViz = false; // Advanced Feature 2
     this.enableIntelligence = false; // Advanced Feature 3
     this.enableMating = false; // Advanced Feature 4
-    this.enableMiniMap = true; // Mini-map overview
-    this.enableAtmosphere = true; // Atmospheric rendering (fog, lighting)
-    this.enableWeather = true; // Weather effects
+    this.enableMiniMap = !this.isMobile; // Mini-map disabled on mobile
+    this.enableAtmosphere = !this.isMobile; // Atmospheric rendering disabled on mobile
+    this.enableWeather = !this.isMobile; // Weather effects disabled on mobile
     this.enableDayNight = true; // Day/night cycle
     this.background = '#0b0c10';
     this.lastMiniMap = null; // Cache latest mini-map bounds for interaction
@@ -52,9 +58,9 @@ export class Renderer {
     this.renderedCount = 0;
     this.culledCount = 0;
     
-    // Particle system for atmospheric effects
+    // Particle system for atmospheric effects (reduced on mobile)
     this.particles = [];
-    this.maxParticles = 200;
+    this.maxParticles = this.isMobile ? 50 : 200;
     
     // LEGENDARY OPTIMIZATION: Pre-create reusable Path2D objects
     this._circlePath = new Path2D();
