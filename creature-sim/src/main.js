@@ -161,9 +161,14 @@ bindUI({
   onPause: togglePause,
   onStep: stepOnce,
   onFood: () => {
-    tools.setMode(ToolModes.FOOD);
-    tools.apply(0, 0);
-    tools.setMode(ToolModes.INSPECT);
+    // Spawn food randomly across the map (10-20 pieces)
+    const count = Math.floor(Math.random() * 11) + 10; // 10-20
+    for (let i = 0; i < count; i++) {
+      const x = Math.random() * world.width;
+      const y = Math.random() * world.height;
+      world.food.push({ x, y, energy: 3 });
+    }
+    console.log(`🌿 Spawned ${count} food across the map`);
   }
 });
 
