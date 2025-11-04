@@ -302,9 +302,22 @@ if (scenarioBalanceToggle) {
   scenarioBalanceToggle.checked = !!world.autoBalanceSettings?.enabled;
 }
 
-// Setup panel collapse
-btnToggleFeatures?.addEventListener('click', () => {
-  featuresPanel?.classList.toggle('collapsed');
+// Setup panel toggle
+const panelToggleBtn = document.getElementById('panel-toggle-btn');
+const btnCloseFeatures = document.getElementById('btn-close-features');
+
+panelToggleBtn?.addEventListener('click', () => {
+  featuresPanel?.classList.toggle('open');
+  if (panelToggleBtn) {
+    panelToggleBtn.textContent = featuresPanel?.classList.contains('open') ? '▶' : '◀';
+  }
+});
+
+btnCloseFeatures?.addEventListener('click', () => {
+  featuresPanel?.classList.remove('open');
+  if (panelToggleBtn) {
+    panelToggleBtn.textContent = '◀';
+  }
 });
 
 scenarioBtn?.addEventListener('click', () => setScenarioPanelVisible(!scenarioPanelVisible));
