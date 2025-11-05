@@ -1,5 +1,6 @@
 import { clamp, rand, randn, dist2, wrap } from './utils.js';
 import { BehaviorConfig } from './behavior.js';
+import { getExpressedGenes, applyDisorderEffects } from './genetics.js';
 
 const TAU = Math.PI * 2;
 const TRAIL_INTERVAL = 0.12;
@@ -14,23 +15,58 @@ export class Creature {
     this.energy = isChild ? 28 : 40; // BALANCED: More starting energy!
     this.age = 0;
     this.alive = true;
-    this.genes = genes;
+    
+    // OPTIMIZATION: Only process genetics if diploid genes detected
+    const hasDiploidGenes = genes.speed && typeof genes.speed === 'object' && 'expressed' in genes.speed;
+    
+    if (hasDiploidGenes) {
+      // Store original diploid genes
+      this.genesRaw = genes;
+      
+      // Apply disorder effects and get expressed phenotype
+      const modifiedGenes = applyDisorderEffects(genes);
+      this.genes = getExpressedGenes(modifiedGenes);
+      
+      // Store sex and genetic info
+      this.sex = genes.sex || 'female';
+      this.disorders = genes.disorders || [];
+      this.mutations = genes.mutations || [];
+    } else {
+      // Old haploid genes - use directly for compatibility
+      this.genes = genes;
+      this.genesRaw = null;
+      this.sex = genes.sex || 'female';
+      this.disorders = [];
+      this.mutations = [];
+    }
     
     // NEW: Age stages (baby → juvenile → adult → elder)
     this.ageStage = isChild ? 'baby' : 'adult';
     this.baseSize = null; // Will be set below
     
     // NEW: Size based on diet (omnivores are medium-sized)
-    const diet = genes.diet ?? (genes.predator ? 1.0 : 0.0);
+    const diet = this.genes.diet ?? (this.genes.predator ? 1.0 : 0.0);
     const isOmnivore = diet > 0.3 && diet < 0.7;
-    this.baseSize = isOmnivore ? 4.0 : (3.5 + (genes.predator ? 1.5 : 0));
+    this.baseSize = isOmnivore ? 4.0 : (3.5 + (this.genes.predator ? 1.5 : 0));
+    
+    // Apply disorder size modifiers
+    if (this.genesRaw.sizeModifier) {
+      this.baseSize *= this.genesRaw.sizeModifier;
+    }
+    
     this.size = this.baseSize * (isChild ? 0.3 : 1.0); // Babies start at 30% size
     
     this.target = null;
     this.id = null;       // set by World.addCreature
     this.parentId = null; // set by World.addCreature
 
-    this.maxHealth = genes.predator ? 18 : 12;
+    this.maxHealth = this.genes.predator ? 18 : 12;
+    
+    // Apply disorder health modifiers
+    if (this.genesRaw.healthModifier) {
+      this.maxHealth *= this.genesRaw.healthModifier;
+    }
+    
     this.health = this.maxHealth;
     this.stats = { food: 0, kills: 0, births: 0, damageTaken: 0, damageDealt: 0 };
     this.trail = [{ x, y }];
@@ -38,9 +74,9 @@ export class Creature {
     this.log = [];
     this.logVersion = 0;
     this.personality = {
-      packInstinct: clamp(genes.packInstinct ?? (genes.predator ? 0.55 : 0), 0, 1),
-      ambushDelay: Math.max(0, genes.ambushDelay ?? (genes.predator ? 0.6 : 0.15)),
-      aggression: clamp(genes.aggression ?? (genes.predator ? 1.15 : 0.85), 0.4, 2.2),
+      packInstinct: clamp(this.genes.packInstinct ?? (this.genes.predator ? 0.55 : 0), 0, 1),
+      ambushDelay: Math.max(0, this.genes.ambushDelay ?? (this.genes.predator ? 0.6 : 0.15)),
+      aggression: clamp(this.genes.aggression ?? (this.genes.predator ? 1.15 : 0.85), 0.4, 2.2),
       ambushTimer: 0,
       huntCooldown: 0,
       lastSignalAt: -Infinity,

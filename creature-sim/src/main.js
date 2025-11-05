@@ -1,5 +1,5 @@
 import { World } from './world.js';
-import { bindUI, renderStats, renderInspector, renderAnalyticsCharts } from './ui.js';
+import { bindUI, renderStats, renderInspector, renderAnalyticsCharts, renderSelectedInfo } from './ui.js';
 import { makeGenes } from './genetics.js';
 import { Creature } from './creature.js';
 import './creature-features.js'; // Load feature extensions
@@ -28,9 +28,9 @@ function setCanvasSize() {
   // Get the actual rendered size (CSS-controlled)
   const rect = canvas.getBoundingClientRect();
   
-  // Set canvas internal resolution to match display size
-  // Use devicePixelRatio for crisp rendering on high-DPI displays
-  const dpr = window.devicePixelRatio || 1;
+  // PERFORMANCE: Use 1x DPR for maximum FPS (75% fewer pixels than 2x)
+  // This reduces rendering from 2.9M pixels to 732K pixels per frame
+  const dpr = 1.0;
   
   canvas.width = rect.width * dpr;
   canvas.height = rect.height * dpr;
@@ -45,6 +45,7 @@ setCanvasSize();
 // UPGRADED: 4x larger world for organic biome system
 const world = new World(4000, 2800);
 world.seed(70, 6, 200);
+window.world = world; // Expose for debugging
 
 const camera = new Camera({
   x: world.width * 0.5,
@@ -57,6 +58,7 @@ const camera = new Camera({
   viewportWidth: canvas.getBoundingClientRect().width,
   viewportHeight: canvas.getBoundingClientRect().height
 });
+window.camera = camera; // Expose for debugging
 
 // Ultra-optimized Canvas 2D renderer (no WebGL complexity!)
 const renderer = new Renderer(ctx, camera);
@@ -66,7 +68,8 @@ console.log('💪 60 FPS guaranteed with up to 500+ creatures!');
 // Resize handler (now that everything is initialized)
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
+  // PERFORMANCE: Use 1x DPR for maximum FPS
+  const dpr = 1.0;
   
   canvas.width = rect.width * dpr;
   canvas.height = rect.height * dpr;
@@ -91,6 +94,7 @@ setTimeout(() => {
 }, 100);
 
 const tools = new ToolController(world, camera);
+window.tools = tools; // Expose for debugging
 const analytics = new AnalyticsTracker();
 const lineageTracker = new LineageTracker();
 const miniGraphs = new MiniGraphs();
@@ -115,6 +119,7 @@ const btnContinue = document.getElementById('btn-continue');
 const btnNewGame = document.getElementById('btn-new-game');
 
 let gameStarted = false;
+let inspectorVisible = true;
 
 // Check for auto-save on load
 if (saveSystem.hasAutoSave()) {
@@ -170,18 +175,26 @@ let lineageRootId = null;
 let painting = false;
 let panning = false;
 let lastPointer = { x: 0, y: 0 };
-let inspectorVisible = true;
 let analyticsVersion = -1;
 let travelDrag = null;
 let travelPreview = null;
+let hudBottomHeight = 0;
+let hudBottomMeasuredAt = 0;
 
+const selectedInfoEl = document.getElementById('selected-info');
 const statsEl = document.getElementById('stats');
+const hudBottomEl = document.getElementById('hud-bottom-left');
 const exportBtn = document.getElementById('btn-export');
 const exportCSVBtn = document.getElementById('btn-export-csv');
 const exportGenesBtn = document.getElementById('btn-export-genes');
 const showInspectorBtn = document.getElementById('btn-show-inspector');
 const closeInspectorBtn = document.getElementById('btn-close-inspector');
 const inspectorEl = document.getElementById('inspector');
+
+if (inspectorVisible) {
+  inspectorEl?.classList.remove('hidden');
+}
+
 const chartCtx = {
   pop: document.getElementById('chart-pop')?.getContext('2d') ?? null,
   speed: document.getElementById('chart-speed')?.getContext('2d') ?? null,
@@ -287,8 +300,8 @@ mobileBtnFood?.addEventListener('click', () => {
 
 mobileBtnPause?.addEventListener('click', () => {
   paused = !paused;
-  mobileBtnPause.classList.toggle('active', paused);
-  mobileBtnPause.textContent = paused ? '▶️' : '⏸️';
+  mobileBtnPause?.classList.toggle('active', paused);
+  if (mobileBtnPause) mobileBtnPause.textContent = paused ? '▶️' : '⏸️';
   console.log(`📱 Mobile: ${paused ? 'Paused' : 'Resumed'}`);
 });
 
@@ -333,8 +346,10 @@ dropdownItems.forEach(item => {
     // Update button text and style
     const icons = { herbivore: '🦌', omnivore: '🦡', predator: '🦁' };
     const names = { herbivore: 'Herbivore', omnivore: 'Omnivore', predator: 'Predator' };
-    btnSpawnCreature.textContent = `${icons[creatureType]} ${names[creatureType]} ▼`;
-    btnSpawnCreature.classList.add('active');
+    if (btnSpawnCreature) {
+      btnSpawnCreature.textContent = `${icons[creatureType]} ${names[creatureType]} ▼`;
+      btnSpawnCreature.classList.add('active');
+    }
     
     // Hide dropdown
     creatureDropdown?.classList.add('hidden');
@@ -392,6 +407,20 @@ function setFeaturesPanelVisible(visible) {
 
 btnFeatures?.addEventListener('click', () => setFeaturesPanelVisible(!featuresPanelVisible));
 btnFeaturesClose?.addEventListener('click', () => setFeaturesPanelVisible(false));
+
+// Universal panel collapse handler
+document.querySelectorAll('.panel-header[data-panel]').forEach(header => {
+  header.addEventListener('click', (e) => {
+    // Don't collapse if clicking on buttons inside the header
+    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+      return;
+    }
+    const panel = header.closest('[id$="-panel"]');
+    if (panel) {
+      panel.classList.toggle('panel-collapsed');
+    }
+  });
+});
 
 // Wire up all feature toggles
 document.getElementById('toggle-vision')?.addEventListener('change', (e) => {
@@ -488,13 +517,13 @@ btnGeneRandomize?.addEventListener('click', () => geneEditor.randomize());
 btnGeneSpawn?.addEventListener('click', () => {
   geneEditorSpawnMode = !geneEditorSpawnMode;
   if (geneEditorSpawnMode) {
-    btnGeneSpawn.classList.add('active');
-    btnGeneSpawn.textContent = '✨ Click Map to Spawn!';
+    btnGeneSpawn?.classList.add('active');
+    if (btnGeneSpawn) btnGeneSpawn.textContent = '✨ Click Map to Spawn!';
     spawnMode = false; // Cancel normal spawn mode
     cancelSpawnMode();
   } else {
-    btnGeneSpawn.classList.remove('active');
-    btnGeneSpawn.textContent = '✨ Spawn (Click Map)';
+    btnGeneSpawn?.classList.remove('active');
+    if (btnGeneSpawn) btnGeneSpawn.textContent = '✨ Spawn (Click Map)';
   }
 });
 
@@ -774,8 +803,8 @@ canvas.addEventListener('pointermove', (e)=>{
 canvas.addEventListener('pointerup', (e)=>{
   canvas.releasePointerCapture?.(e.pointerId);
   const rect = canvas.getBoundingClientRect();
-  const sx = e.clientX - rect.left - canvas.width/2;
-  const sy = e.clientY - rect.top - canvas.height/2;
+  const sx = e.clientX - rect.left - rect.width/2;
+  const sy = e.clientY - rect.top - rect.height/2;
   const { x, y } = camera.screenToWorld(sx, sy);
   if (travelDrag && travelDrag.active && travelDrag.latest) {
     const dx = travelDrag.latest.x - travelDrag.startX;
@@ -959,6 +988,24 @@ window.addEventListener('keydown', (e)=>{
         `color: ${renderer.enableMating ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
       return;
     }
+    // Mini-map toggle (M key is already taken by Memory, use N)
+    if (e.key.toLowerCase() === 'n') {
+      renderer.enableMiniMap = !renderer.enableMiniMap;
+      console.log(`%c[MINI-MAP] ${renderer.enableMiniMap ? 'ENABLED ✓' : 'DISABLED'}`, 
+        `color: ${renderer.enableMiniMap ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
+      return;
+    }
+    // Stats panel toggle (H for HUD)
+    if (e.key.toLowerCase() === 'h') {
+      const statsEl = document.getElementById('stats');
+      if (statsEl) {
+        statsEl.classList.toggle('hidden');
+        const isHidden = statsEl.classList.contains('hidden');
+        console.log(`%c[STATS PANEL] ${!isHidden ? 'VISIBLE ✓' : 'HIDDEN'}`, 
+          `color: ${!isHidden ? '#4ade80' : '#ef4444'}; font-weight: bold;`);
+      }
+      return;
+    }
     // Heatmap toggles
     if (e.key === '5') {
       heatmaps.setType('death');
@@ -1138,8 +1185,8 @@ window.addEventListener('blur', ()=>{ paused = true; });
 
 function handlePointerAction(e, isDrag) {
   const rect = canvas.getBoundingClientRect();
-  const sx = e.clientX - rect.left - canvas.width/2;
-  const sy = e.clientY - rect.top - canvas.height/2;
+  const sx = e.clientX - rect.left - rect.width/2;
+  const sy = e.clientY - rect.top - rect.height/2;
   const { x, y } = camera.screenToWorld(sx, sy);
 
   // Handle spawn mode
@@ -1226,7 +1273,7 @@ function cancelSpawnMode() {
   selectedCreatureType = null;
   canvas.style.cursor = 'default';
   btnSpawnCreature?.classList.remove('active');
-  btnSpawnCreature.textContent = '🦌 Spawn Creature ▼';
+  if (btnSpawnCreature) btnSpawnCreature.textContent = '🦌 Spawn Creature ▼';
   dropdownItems.forEach(i => i.classList.remove('selected'));
   console.log('❌ Spawn mode cancelled');
 }
@@ -1385,6 +1432,10 @@ function setInspectorVisible(visible) {
   }
 }
 
+function toggleInspectorMinimize() {
+  inspectorEl?.classList.toggle('minimized');
+}
+
 function loop(now) {
   // Don't run game loop until user makes a choice
   if (!gameStarted) {
@@ -1401,19 +1452,27 @@ function loop(now) {
   while (accumulator >= fixedDt && steps < MAX_STEPS) {
     world.step(fixedDt);
     
-    // NEW: Record heatmap data from active creatures
-    for (const c of world.creatures) {
-      heatmaps.recordActivity(c.x, c.y, 0.08);
-      heatmaps.recordEnergy(c.x, c.y, c.energy);
+    // OPTIMIZATION: Only record heatmap data every 10th physics step
+    if (steps % 10 === 0) {
+      const creatures = world.creatures;
+      for (let i = 0, len = creatures.length; i < len; i++) {
+        const c = creatures[i];
+        heatmaps.recordActivity(c.x, c.y, 0.08);
+        heatmaps.recordEnergy(c.x, c.y, c.energy);
+      }
+      heatmaps.update(fixedDt * 10); // Update with accumulated time
     }
     
-    analytics.update(world, fixedDt);
-    miniGraphs.update(world, fixedDt);
-    particles.update(fixedDt); // NEW: Update particle effects
-    notifications.checkMilestones(world); // NEW: Check for milestones
-    notifications.update(fixedDt); // NEW: Update notifications
-    heatmaps.update(fixedDt); // NEW: Update heatmaps (decay)
-    ecoHealth.update(world, fixedDt); // NEW: Update ecosystem health metrics
+    // OPTIMIZATION: Update analytics/notifications less frequently
+    if (steps % 5 === 0) {
+      analytics.update(world, fixedDt * 5);
+      miniGraphs.update(world, fixedDt * 5);
+      notifications.checkMilestones(world);
+      ecoHealth.update(world, fixedDt * 5);
+    }
+    
+    particles.update(fixedDt);
+    notifications.update(fixedDt);
     saveSystem.autoSave(world, camera, analytics, lineageTracker, fixedDt);
     accumulator -= fixedDt;
     steps++;
@@ -1465,14 +1524,22 @@ function loop(now) {
   });
 
   fps = 0.9 * fps + 0.1 * (1 / Math.max(dt, 0.0001));
-  renderStats(statsEl, world, fps, { 
-    fastForward, 
-    paused, 
-    tool: tools.mode,
-    visionEnabled: renderer.enableVision,
-    clusteringEnabled: renderer.enableClustering,
-    timeOfDay: world.timeOfDay
-  });
+  
+  // OPTIMIZATION: Only update stats UI every 5 frames (~12Hz)
+  if (loop._frameCount % 5 === 0) {
+    renderStats(statsEl, world, fps, { 
+      fastForward, 
+      paused, 
+      tool: tools.mode,
+      visionEnabled: renderer.enableVision,
+      clusteringEnabled: renderer.enableClustering,
+      timeOfDay: world.timeOfDay
+    });
+
+    const focusId = pinnedId ?? selectedId ?? null;
+    const focusCreature = focusId ? world.getAnyCreatureById(focusId) : null;
+    renderSelectedInfo(selectedInfoEl, focusCreature, { world, lineageTracker });
+  }
   
   // NEW: Draw heatmaps (must be after camera transform, before screen-space overlays)
   if (heatmaps.activeType) {
@@ -1486,10 +1553,15 @@ function loop(now) {
   }
   
   // Draw mini-graphs overlay
+  if (hudBottomEl && (now - hudBottomMeasuredAt > 200)) {
+    hudBottomHeight = hudBottomEl.getBoundingClientRect().height;
+    hudBottomMeasuredAt = now;
+  }
   miniGraphs.draw(ctx, {
     viewportWidth: camera.viewportWidth,
     viewportHeight: camera.viewportHeight,
-    cameraMoving: camera.isMoving // For auto-hide
+    cameraMoving: camera.isMoving, // For auto-hide
+    bottomOffset: hudBottomHeight
   });
   
   // NEW: Draw particle effects (in world space)
@@ -1498,16 +1570,26 @@ function loop(now) {
   // NEW: Draw notifications (screen space)
   notifications.draw(ctx, canvas.width, canvas.height);
   
-  // Update performance metrics
-  if (metricRendered) metricRendered.textContent = renderer.renderedCount || 0;
-  if (metricCulled) metricCulled.textContent = renderer.culledCount || 0;
-  if (metricDraws) metricDraws.textContent = ((renderer.renderedCount || 0) + world.food.length);
+  // OPTIMIZATION: Throttle UI updates aggressively
+  if (loop._frameCount === undefined) loop._frameCount = 0;
+  loop._frameCount++;
   
-  updateInspector(false);
-  updateAnalyticsCharts();
-  updateAdvancedAnalytics();
-  updateScenarioStatus();
-  updateEcosystemHealthUI(); // NEW: Update ecosystem health UI
+  if (loop._frameCount % 10 === 0) {
+    updateInspector(false);
+    
+    // Update performance metrics (low priority)
+    if (metricRendered) metricRendered.textContent = renderer.renderedCount || 0;
+    if (metricCulled) metricCulled.textContent = renderer.culledCount || 0;
+    if (metricDraws) metricDraws.textContent = ((renderer.renderedCount || 0) + world.food.length);
+  }
+  
+  // CRITICAL: Only update charts every 30 frames (~0.5 Hz) - they don't need real-time updates
+  if (loop._frameCount % 30 === 0) {
+    updateAnalyticsCharts();
+    updateAdvancedAnalytics();
+    updateEcosystemHealthUI();
+    updateScenarioStatus();
+  }
 
   requestAnimationFrame(loop);
 }
@@ -1549,6 +1631,7 @@ function updateInspector(force) {
     onFocusParent: (id) => selectCreature(id),
     onInspectId: (id) => selectCreature(id),
     onClose: () => setInspectorVisible(false),
+    onMinimize: () => toggleInspectorMinimize(),
     onSetRootId: (id) => setLineageRootId(id)
   });
 
@@ -1591,11 +1674,21 @@ function selectCreature(id) {
   if (!creature) return;
   selectedId = id;
   camera.focusOn(creature.x, creature.y);
+  
+  // Show and un-minimize inspector when creature is selected
+  setInspectorVisible(true);
+  inspectorEl?.classList.remove('minimized');
+  
   updateInspector(true);
 }
 
 function updateAnalyticsCharts() {
   if (!inspectorVisible) return; // Don't update charts when inspector is closed
+  
+  // OPTIMIZATION: Check if Evolution Analytics section is actually visible
+  const analyticsSection = document.querySelector('#inspector-panel > .panel-body > div:nth-child(4)');
+  if (!analyticsSection || analyticsSection.offsetParent === null) return;
+  
   const data = analytics.getData();
   if (data.version === analyticsVersion) return;
   analyticsVersion = data.version;
@@ -1742,7 +1835,19 @@ function downloadFile(filename, content, mimeType) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// PERFORMANCE: Track when we last updated advanced analytics
+let lastAdvancedAnalyticsUpdate = 0;
+const ADVANCED_ANALYTICS_INTERVAL = 2000; // Only update every 2 seconds
+
 function updateAdvancedAnalytics() {
+  const now = performance.now();
+  
+  // CRITICAL FIX: Only update phylogeny/species every 2 seconds (it's VERY expensive)
+  if (now - lastAdvancedAnalyticsUpdate < ADVANCED_ANALYTICS_INTERVAL) {
+    return;
+  }
+  lastAdvancedAnalyticsUpdate = now;
+  
   // Update phylogeny view
   const phylogenyList = document.getElementById('phylogeny-list');
   if (phylogenyList && analytics.phylogenyData) {

@@ -42,6 +42,11 @@
     <button id="btn-gene-editor" title="Open Gene Editor">🧬 Gene Editor</button>
     <button id="btn-eco-health" title="View Ecosystem Health">🌍 Eco Health</button>
     <button id="btn-features" title="Show keyboard shortcuts">🎨 Features</button>
+  </div>
+
+  <!-- Stats + Selected Creature HUD (Bottom Left) -->
+  <div id="hud-bottom-left">
+    <div id="selected-info" class="hidden"></div>
     <div id="stats"></div>
   </div>
 
@@ -67,9 +72,12 @@
 
   <!-- Scenario Lab Panel -->
   <div id="scenario-panel" class="hidden">
-    <div class="panel-header">
-      <span class="panel-title">🧪 Scenario Lab</span>
-      <button id="btn-scenario-close" class="chip ghost" title="Hide scenario lab">Hide</button>
+    <div class="panel-header" data-panel="scenario">
+      <span class="panel-title">
+        <span class="panel-collapse-icon">▼</span>
+        🧪 Scenario Lab
+      </span>
+      <button id="btn-scenario-close" class="chip ghost" title="Hide scenario lab" onclick="event.stopPropagation()">Hide</button>
     </div>
     <div class="panel-body">
       <label class="scenario-field">
@@ -128,9 +136,12 @@
 
   <!-- Gene Editor Panel -->
   <div id="gene-editor-panel" class="hidden">
-    <div class="panel-header">
-      <span class="panel-title">🧬 Genetic Engineering Lab</span>
-      <button id="btn-gene-editor-close" class="chip ghost" title="Close gene editor">Hide</button>
+    <div class="panel-header" data-panel="gene-editor">
+      <span class="panel-title">
+        <span class="panel-collapse-icon">▼</span>
+        🧬 Genetic Engineering Lab
+      </span>
+      <button id="btn-gene-editor-close" class="chip ghost" title="Close gene editor" onclick="event.stopPropagation()">Hide</button>
     </div>
     <div class="panel-body">
       <!-- Presets -->
@@ -250,9 +261,12 @@
 
   <!-- Ecosystem Health Panel -->
   <div id="eco-health-panel" class="hidden">
-    <div class="panel-header">
-      <span class="panel-title">🌍 Ecosystem Health</span>
-      <button id="btn-eco-health-close" class="chip ghost" title="Close health panel">Hide</button>
+    <div class="panel-header" data-panel="eco-health">
+      <span class="panel-title">
+        <span class="panel-collapse-icon">▼</span>
+        🌍 Ecosystem Health
+      </span>
+      <button id="btn-eco-health-close" class="chip ghost" title="Close health panel" onclick="event.stopPropagation()">Hide</button>
     </div>
     <div class="panel-body">
       <!-- Overall Score -->
@@ -313,9 +327,12 @@
 
   <!-- Features Panel -->
   <div id="features-panel" class="hidden">
-    <div class="panel-header">
-      <span class="panel-title">🎨 Feature Toggles</span>
-      <button id="btn-features-close" class="chip ghost" title="Hide features panel">Hide</button>
+    <div class="panel-header" data-panel="features">
+      <span class="panel-title">
+        <span class="panel-collapse-icon">▼</span>
+        🎨 Feature Toggles
+      </span>
+      <button id="btn-features-close" class="chip ghost" title="Hide features panel" onclick="event.stopPropagation()">Hide</button>
     </div>
     <div class="panel-body">
       <div class="features-section">
@@ -406,6 +423,7 @@
       <div class="title-actions">
         <button id="btn-pin" class="chip">Pin</button>
         <button id="btn-root" class="chip">Set Root</button>
+        <button id="btn-minimize-inspector" class="chip ghost" title="Minimize">−</button>
         <button id="btn-close-inspector" class="chip ghost" title="Hide inspector">✕</button>
       </div>
     </div>

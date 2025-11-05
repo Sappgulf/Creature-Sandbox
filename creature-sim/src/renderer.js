@@ -33,7 +33,7 @@ export class Renderer {
     this.enableAtmosphere = !this.isMobile; // Atmospheric rendering disabled on mobile
     this.enableWeather = !this.isMobile; // Weather effects disabled on mobile
     this.enableDayNight = true; // Day/night cycle
-    this.background = '#0b0c10';
+    this.background = '#000000'; // Pure black background
     this.lastMiniMap = null; // Cache latest mini-map bounds for interaction
     this.miniMapSettings = {
       heatmap: true,
@@ -182,7 +182,7 @@ export class Renderer {
     // Draw god mode effects
     this._drawGodModeEffects();
     
-    // Draw mini-map overlay (top-right corner)
+    // Draw mini-map overlay (bottom-right corner)
     if (this.enableMiniMap) {
       this.drawMiniMap(world, opts);
     } else {
@@ -341,37 +341,9 @@ export class Renderer {
     const bounds = this._viewBounds;
     const sampleSize = Math.max(30, 120 / this.camera.zoom); // Larger samples = less blocky
     
-    // Base background (natural green/brown gradient)
-    const bgGradient = ctx.createLinearGradient(0, 0, 0, world.height);
-    bgGradient.addColorStop(0, '#1a2520');
-    bgGradient.addColorStop(0.5, '#15201a');
-    bgGradient.addColorStop(1, '#0f1812');
-    ctx.fillStyle = bgGradient;
+    // Base background (pure black - no biome colors)
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, world.width, world.height);
-    
-    // SUBTLE biome tinting (like atmospheric fog, not solid colors!)
-    ctx.globalCompositeOperation = 'overlay'; // Blend mode for subtle effect
-    
-    for (let y = Math.max(0, bounds.y1); y < Math.min(world.height, bounds.y2); y += sampleSize) {
-      for (let x = Math.max(0, bounds.x1); x < Math.min(world.width, bounds.x2); x += sampleSize) {
-        const biome = world.getBiomeAt(x, y);
-        
-        // Very subtle color tint based on biome (like ambient lighting)
-        const tintColor = this._getBiomeTint(biome.type);
-        ctx.fillStyle = tintColor;
-        
-        // Low opacity - just a hint of color
-        const baseAlpha = 0.08;
-        const moistureInfluence = biome.moisture * 0.03;
-        ctx.globalAlpha = baseAlpha + moistureInfluence;
-        
-        // Draw with soft edges (larger tiles, subtle effect)
-        ctx.fillRect(x, y, sampleSize + 1, sampleSize + 1);
-      }
-    }
-    
-    ctx.globalCompositeOperation = 'source-over'; // Reset blend mode
-    ctx.globalAlpha = 1;
     
     // Draw decorations with better visibility (less dense)
     if (world.decorations && this.camera.zoom > 0.4) {
@@ -1147,6 +1119,13 @@ export class Renderer {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = this.miniMapOpacity;
     
+    // Get canvas CSS size (for click handler matching) and DPR (for drawing coordinates)
+    const canvas = ctx.canvas;
+    const rect = canvas.getBoundingClientRect();
+    const cssWidth = rect.width;
+    const cssHeight = rect.height;
+    const dpr = window.devicePixelRatio || 1;
+    
     // FULLY FIXED: Show complete world with perfect aspect ratio
     const maxMapWidth = 220; // Larger for better visibility
     const maxMapHeight = 160;
@@ -1164,13 +1143,23 @@ export class Renderer {
       mapW = maxMapHeight * aspectRatio;
     }
     
-    const mapX = opts.viewportWidth - mapW - 16;
-    const mapY = opts.viewportHeight - mapH - 16;
+    // Calculate CSS pixel positions (for click handler)
+    const cssMarginX = Math.max(16, Math.round(cssWidth * 0.015));
+    const cssMarginY = Math.max(16, Math.round(cssHeight * 0.015));
+    const mapXCss = cssWidth - mapW - cssMarginX;
+    const mapYCss = cssHeight - mapH - cssMarginY;
+    
+    // Convert to canvas internal coordinates for drawing (scale by DPR)
+    const mapX = mapXCss * dpr;
+    const mapY = mapYCss * dpr;
+    const mapWCanvas = mapW * dpr;
+    const mapHCanvas = mapH * dpr;
     const scaleX = mapW / world.width;
     const scaleY = mapH / world.height;
+    // Store CSS coordinates for click handler
     this.lastMiniMap = {
-      x: mapX,
-      y: mapY,
+      x: mapXCss,
+      y: mapYCss,
       width: mapW,
       height: mapH,
       scaleX,
@@ -1179,9 +1168,9 @@ export class Renderer {
       worldHeight: world.height
     };
     
-    // Background (darker, less distracting)
+    // Background (darker, less distracting) - use scaled coordinates for drawing
     ctx.fillStyle = 'rgba(8, 10, 14, 0.95)';
-    ctx.fillRect(mapX, mapY, mapW, mapH);
+    ctx.fillRect(mapX, mapY, mapWCanvas, mapHCanvas);
 
     const activeDisaster = (this.miniMapSettings.disaster && typeof world.getActiveDisaster === 'function')
       ? world.getActiveDisaster()
@@ -1190,7 +1179,7 @@ export class Renderer {
       const tint = this._getDisasterTint(activeDisaster.type);
       if (tint) {
         ctx.fillStyle = tint;
-        ctx.fillRect(mapX, mapY, mapW, mapH);
+        ctx.fillRect(mapX, mapY, mapWCanvas, mapHCanvas);
       }
     }
     
@@ -1202,10 +1191,10 @@ export class Renderer {
         const biome = world.getBiomeAt(x, y);
         ctx.fillStyle = this._getBiomeTint(biome.type);
         ctx.fillRect(
-          mapX + x * scaleX,
-          mapY + y * scaleY,
-          Math.max(1, sampleSize * scaleX),
-          Math.max(1, sampleSize * scaleY)
+          mapX + x * scaleX * dpr,
+          mapY + y * scaleY * dpr,
+          Math.max(1, sampleSize * scaleX * dpr),
+          Math.max(1, sampleSize * scaleY * dpr)
         );
       }
     }
@@ -1233,10 +1222,10 @@ export class Renderer {
           if (count > 0) {
             const intensity = Math.min(count / 3, 1); // Cap intensity
             ctx.fillStyle = `rgba(123, 183, 255, ${intensity * 0.8})`;
-            const px = mapX + (hx / heatmapW) * mapW;
-            const py = mapY + (hy / heatmapH) * mapH;
-            const cellW = (mapW / heatmapW) * 1.5;
-            const cellH = (mapH / heatmapH) * 1.5;
+            const px = mapX + (hx / heatmapW) * mapWCanvas;
+            const py = mapY + (hy / heatmapH) * mapHCanvas;
+            const cellW = (mapWCanvas / heatmapW) * 1.5;
+            const cellH = (mapHCanvas / heatmapH) * 1.5;
             ctx.fillRect(px, py, cellW, cellH);
           }
         }
@@ -1249,9 +1238,9 @@ export class Renderer {
       ctx.strokeStyle = 'rgba(248, 113, 113, 0.6)';
       ctx.lineWidth = 1.6;
       for (const territory of world.territories.values()) {
-        const cx = mapX + territory.x * scaleX;
-        const cy = mapY + territory.y * scaleY;
-        const radius = territory.radius * scaleAvg;
+        const cx = mapX + territory.x * scaleX * dpr;
+        const cy = mapY + territory.y * scaleY * dpr;
+        const radius = territory.radius * scaleAvg * dpr;
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
         ctx.stroke();
@@ -1259,8 +1248,8 @@ export class Renderer {
       if (world.territoryConflicts && world.territoryConflicts.length) {
         ctx.fillStyle = 'rgba(248, 113, 113, 0.7)';
         for (const conflict of world.territoryConflicts) {
-          const cx = mapX + conflict.x * scaleX;
-          const cy = mapY + conflict.y * scaleY;
+          const cx = mapX + conflict.x * scaleX * dpr;
+          const cy = mapY + conflict.y * scaleY * dpr;
           ctx.beginPath();
           ctx.arc(cx, cy, 4, 0, Math.PI * 2);
           ctx.fill();
@@ -1278,18 +1267,18 @@ export class Renderer {
     ctx.strokeStyle = 'rgba(255, 255, 100, 0.9)'; // Yellow = more visible
     ctx.lineWidth = 2;
     ctx.strokeRect(
-      mapX + viewX * scaleX,
-      mapY + viewY * scaleY,
-      viewW * scaleX,
-      viewH * scaleY
+      mapX + viewX * scaleX * dpr,
+      mapY + viewY * scaleY * dpr,
+      viewW * scaleX * dpr,
+      viewH * scaleY * dpr
     );
 
     const drawCreatureMarker = (id, fillStyle, strokeStyle, icon=null) => {
       if (!id) return;
       const creature = typeof world.getAnyCreatureById === 'function' ? world.getAnyCreatureById(id) : null;
       if (!creature) return;
-      const mx = mapX + creature.x * scaleX;
-      const my = mapY + creature.y * scaleY;
+      const mx = mapX + creature.x * scaleX * dpr;
+      const my = mapY + creature.y * scaleY * dpr;
       ctx.save();
       ctx.translate(mx, my);
       ctx.fillStyle = fillStyle;
@@ -1315,11 +1304,11 @@ export class Renderer {
     }
     if (activeDisaster && this.miniMapSettings.disaster) {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-      ctx.font = 'bold 10px sans-serif';
+      ctx.font = `bold ${10 * dpr}px sans-serif`;
       ctx.fillText(
         `${activeDisaster.name} · ${Math.ceil(activeDisaster.timeRemaining ?? 0)}s`,
-        mapX + 6,
-        mapY + 14
+        mapX + 6 * dpr,
+        mapY + 14 * dpr
       );
     }
     
@@ -1328,23 +1317,25 @@ export class Renderer {
     ctx.shadowBlur = 4;
     ctx.strokeStyle = 'rgba(123, 183, 255, 0.6)';
     ctx.lineWidth = 2;
-    ctx.strokeRect(mapX - 1, mapY - 1, mapW + 2, mapH + 2);
+    ctx.strokeRect(mapX - dpr, mapY - dpr, mapWCanvas + 2*dpr, mapHCanvas + 2*dpr);
     ctx.shadowBlur = 0;
     
     // Label
     ctx.fillStyle = 'rgba(200, 200, 220, 0.8)';
-    ctx.font = 'bold 10px sans-serif';
-    ctx.fillText('WORLD MAP', mapX + 5, mapY - 5);
+    ctx.font = `bold ${10 * dpr}px sans-serif`;
+    ctx.fillText('WORLD MAP', mapX + 5 * dpr, mapY - 5 * dpr);
     
     // NEW: Draw biome labels at key locations
-    this._drawBiomeLabels(world, mapX, mapY, mapW, mapH, scaleX, scaleY);
+    this._drawBiomeLabels(world, mapX, mapY, scaleX, scaleY, dpr);
     
     ctx.restore();
   }
   
   // NEW: Draw biome labels on mini-map
-  _drawBiomeLabels(world, mapX, mapY, mapW, mapH, scaleX, scaleY) {
+  _drawBiomeLabels(world, mapX, mapY, scaleX, scaleY, dpr=1) {
     const ctx = this.ctx;
+    const scaleXPx = scaleX * dpr;
+    const scaleYPx = scaleY * dpr;
     
     // Sample biomes at key locations
     const samplePoints = [
@@ -1363,16 +1354,16 @@ export class Renderer {
       
       drawnBiomes.add(biome.type);
       
-      const mx = mapX + point.x * scaleX;
-      const my = mapY + point.y * scaleY;
+      const mx = mapX + point.x * scaleXPx;
+      const my = mapY + point.y * scaleYPx;
       
       ctx.save();
-      ctx.font = '8px sans-serif';
+      ctx.font = `bold ${8 * dpr}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2 * dpr;
       
       const label = biome.type.charAt(0).toUpperCase() + biome.type.slice(1);
       ctx.strokeText(label, mx, my);

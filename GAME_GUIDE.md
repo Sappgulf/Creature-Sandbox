@@ -40,9 +40,10 @@ open http://localhost:8000
 - A large 4000×2800 world with 6 organic biomes
 - Creatures spawned randomly (herbivores, carnivores, omnivores)
 - Food pellets scattered across the terrain
-- Stats panel in the top-left
-- Mini-map in the bottom-right
-- Feature toggle panel on the left
+- **Stats panel in the bottom-left corner**
+- **Mini-map in the bottom-right corner**
+- **Inspector panel on the right side** (showing creature info when selected)
+- Control buttons at the top
 
 ---
 
@@ -90,8 +91,17 @@ open http://localhost:8000
 | `2` | Sensory Types | Sense specializations (thermal, chemical, echo) |
 | `3` | Intelligence | IQ indicators & problem-solving |
 | `4` | Mating Displays | Courtship & sexual selection |
-| `H` | Mini-Graphs | Real-time population/trait graphs |
+| `N` | **Mini-Map** | **Toggle mini-map visibility** |
+| `H` | **Stats Panel** | **Toggle stats HUD visibility** |
+| `I` | Inspector Panel | Toggle creature inspector on/off |
 | `Shift+F` | Follow Camera | Track selected creature |
+
+### Creature Selection
+| Action | Result |
+|--------|--------|
+| **Click on creature** | Select and view info in inspector panel |
+| **Shift + Click creature** | Set as lineage root to track family tree |
+| **Pin button** (Inspector) | Keep creature selected even if it moves |
 
 ---
 

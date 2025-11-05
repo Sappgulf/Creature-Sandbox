@@ -125,14 +125,16 @@ export class MiniGraphs {
     if (this.opacity < 0.01) return;
     
     ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset to screen coords
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // Work in CSS pixel space
     ctx.globalAlpha = this.opacity;
     
-    const padding = 10;
-    const graphWidth = 180;
-    const graphHeight = 60;
-    const spacing = 10;
-    let yOffset = opts.viewportHeight - graphHeight - padding;
+    const padding = 14;
+    const graphWidth = 196;
+    const graphHeight = 62;
+    const spacing = 12;
+    const bottomOffset = (opts.bottomOffset ?? 0) + padding;
+    let yOffset = Math.max(padding, opts.viewportHeight - graphHeight - bottomOffset);
     
     // Draw each enabled graph
     if (this.graphs.population.enabled) {
@@ -360,4 +362,3 @@ export class MiniGraphs {
     }
   }
 }
-

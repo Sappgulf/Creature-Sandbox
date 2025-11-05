@@ -1,5 +1,5 @@
 import { rand, clamp, dist2 } from './utils.js';
-import { makeGenes, mutateGenes } from './genetics.js';
+import { makeGenes, mutateGenes, breedGenes } from './genetics.js';
 import { Creature } from './creature.js';
 import { SpatialGrid } from './spatial-grid.js';
 import { BiomeGenerator } from './perlin-noise.js';
@@ -542,14 +542,25 @@ export class World {
     return penalty;
   }
 
-  spawnChild(parent){
-    const childGenes = mutateGenes(parent.genes, 0.05);
-    const child = new Creature(parent.x, parent.y, childGenes, true);
-    const childId = this.addCreature(child, parent.id);
-    if (typeof parent.noteBirth === 'function') {
-      parent.noteBirth(childId, this.t);
+  spawnChild(parent1, parent2 = null){
+    let childGenes;
+    
+    if (parent2) {
+      // Sexual reproduction with two parents
+      childGenes = breedGenes(parent1.genes, parent2.genes, 0.05);
+    } else {
+      // Asexual reproduction (fallback for old code)
+      childGenes = mutateGenes(parent1.genes, 0.05);
     }
-    this.lineageTracker?.noteBirth(this, parent, child);
+    
+    const child = new Creature(parent1.x, parent1.y, childGenes, true);
+    const childId = this.addCreature(child, parent1.id);
+    
+    if (typeof parent1.noteBirth === 'function') {
+      parent1.noteBirth(childId, this.t);
+    }
+    
+    this.lineageTracker?.noteBirth(this, parent1, child);
   }
 
   nearestCreature(x,y,maxDistPx=30){

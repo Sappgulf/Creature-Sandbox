@@ -30,16 +30,11 @@ export function renderStats(el, world, fps, extra={}) {
     vegStats[type]++;
   }
   
-  // Build stats with HTML for better formatting
+  // Build stats with HTML for better formatting - SIMPLIFIED
   const statParts = [
-    `<span>🌍 Pop: ${n}</span>`,
-    `<span>🌿 ${herbs}</span>`,
-    `<span>🦡 ${omnis}</span>`,
-    `<span>🦁 ${preds}</span>`,
-    `<span title="Grass: ${vegStats.grass}, Berries: ${vegStats.berries}, Fruit: ${vegStats.fruit}">🍎 ${world.food.length}</span>`,
-    `<span>💀 ${world.corpses?.length ?? 0}</span>`,
+    `<span>🐾 ${n}</span>`,
+    `<span>🍎 ${world.food.length}</span>`,
     `<span>⏱️ ${world.t.toFixed(1)}s</span>`,
-    `<span>💚 ${(avgHealth * 100).toFixed(0)}%</span>`,
     `<span>📊 ${fps.toFixed(0)} FPS</span>`
   ];
   
@@ -75,6 +70,74 @@ export function renderStats(el, world, fps, extra={}) {
   el.innerHTML = statParts.join('');
 }
 
+export function renderSelectedInfo(el, creature, { world=null, lineageTracker=null }={}) {
+  if (!el) return;
+  if (!creature) {
+    el.classList.add('hidden');
+    el.innerHTML = '';
+    return;
+  }
+
+  el.classList.remove('hidden');
+  
+  // Resolve lineage-friendly name if available
+  let lineageName = null;
+  if (world && lineageTracker && typeof lineageTracker.getRoot === 'function' && typeof lineageTracker.ensureName === 'function') {
+    const rootId = lineageTracker.getRoot(world, creature.id);
+    if (rootId != null) {
+      lineageName = lineageTracker.ensureName(rootId);
+    }
+  }
+
+  // Determine diet label
+  const rawDiet = creature.genes?.diet ?? (creature.genes?.predator ? 1.0 : 0.0);
+  let dietLabel = 'Herbivore';
+  if (creature.genes?.predator || rawDiet >= 0.7) {
+    dietLabel = 'Predator';
+  } else if (rawDiet >= 0.3) {
+    dietLabel = 'Omnivore';
+  }
+
+  const statusClass = creature.alive ? 'alive' : 'dead';
+  const sexEmoji = creature.sex === 'male' ? ' ♂️' : ' ♀️';
+  const disorderEmojis = (creature.disorders || []).map(d => {
+    const disorders = { ALBINISM: ' 🤍', HEMOPHILIA: ' 🩸', GIGANTISM: ' 🦕', DWARFISM: ' 🐁', HYPERMETABOLISM: ' ⚡' };
+    return disorders[d] || '';
+  }).join('');
+  
+  const headline = lineageName ? `${lineageName} · #${creature.id}${sexEmoji}${disorderEmojis}` : `Creature #${creature.id}${sexEmoji}${disorderEmojis}`;
+  const sublineParts = [
+    dietLabel,
+    `Age ${creature.age.toFixed(1)}s`
+  ];
+  if (creature.parentId) {
+    sublineParts.push(`Parent #${creature.parentId}`);
+  }
+
+  const energy = creature.energy?.toFixed(1) ?? '0.0';
+  const maxHealth = creature.maxHealth ?? creature.health ?? 0;
+  const health = `${(creature.health ?? 0).toFixed(0)} / ${maxHealth.toFixed(0)}`;
+  const speed = creature.genes?.speed?.toFixed(2) ?? '0.00';
+  const sense = creature.genes?.sense?.toFixed(0) ?? '0';
+  const metabolism = creature.genes?.metabolism?.toFixed(2) ?? '0.00';
+
+  el.innerHTML = `
+    <div class="headline">
+      <span>${headline}</span>
+      <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>
+    </div>
+    <div class="subline">${sublineParts.join(' · ')}</div>
+    <div class="metrics">
+      <span><span>Energy</span><span>${energy}</span></span>
+      <span><span>Health</span><span>${health}</span></span>
+      <span><span>Speed</span><span>${speed}</span></span>
+      <span><span>Senses</span><span>${sense}px</span></span>
+      <span><span>Metabolism</span><span>${metabolism}</span></span>
+      <span><span>Children</span><span>${creature.stats?.births ?? 0}</span></span>
+    </div>
+  `;
+}
+
 export function renderInspector(model={}, handlers={}) {
   const body = document.getElementById('inspector-body');
   const badgesPanel = document.getElementById('badges-panel');
@@ -89,6 +152,7 @@ export function renderInspector(model={}, handlers={}) {
   const pinBtn = document.getElementById('btn-pin');
   const rootBtn = document.getElementById('btn-root');
   const closeBtn = document.getElementById('btn-close-inspector');
+  const minimizeBtn = document.getElementById('btn-minimize-inspector');
 
   if (!body || !lineageSummaryEl || !activityFeedEl) return;
 
@@ -152,13 +216,31 @@ export function renderInspector(model={}, handlers={}) {
     body.innerHTML = `<div class="muted">Click a creature to inspect.<br/>Shift-click to set lineage root.</div>`;
   } else {
     const parentCell = creature.parentId ? `<button class="btn-link" id="btn-parent">#${creature.parentId}</button>` : '—';
+    const sexEmoji = creature.sex === 'male' ? '♂️' : '♀️';
+    const sexLabel = creature.sex === 'male' ? 'Male' : 'Female';
+    const disorderLabels = (creature.disorders || []).map(d => {
+      const disorders = {
+        ALBINISM: '🤍 Albinism',
+        HEMOPHILIA: '🩸 Hemophilia',
+        GIGANTISM: '🦕 Gigantism',
+        DWARFISM: '🐁 Dwarfism',
+        HYPERMETABOLISM: '⚡ Hypermetabolism'
+      };
+      return disorders[d] || d;
+    }).join(', ') || 'None';
+    
+    const mutationBadge = (creature.mutations && creature.mutations.length > 0) ? 
+      ` <span class="chip" style="font-size:9px;padding:2px 6px;">🧬 ${creature.mutations.length}</span>` : '';
+    
     body.innerHTML = `
-      <div class="row"><div>ID</div><div>#${creature.id}${creature.alive? '' : ' †'}</div></div>
+      <div class="row"><div>ID</div><div>#${creature.id}${creature.alive? '' : ' †'}${mutationBadge}</div></div>
       <div class="row"><div>Parent</div><div>${parentCell}</div></div>
+      <div class="row"><div>Sex</div><div>${sexEmoji} ${sexLabel}</div></div>
       <div class="row"><div>Type</div><div><span class="tag">${creature.genes.predator ? 'Predator' : 'Herbivore'}</span></div></div>
       <div class="row"><div>Age</div><div>${creature.age.toFixed(1)}s</div></div>
       <div class="row"><div>Energy</div><div>${creature.energy.toFixed(1)}</div></div>
       <div class="row"><div>Health</div><div>${creature.health.toFixed(1)} / ${creature.maxHealth.toFixed(0)}</div></div>
+      ${(creature.disorders && creature.disorders.length > 0) ? `<div class="row"><div>Disorders</div><div style="color:#ff6b6b;">${disorderLabels}</div></div>` : ''}
       <hr style="border-color:#2b2e41;opacity:.45;margin:6px 0;">
       <div class="row"><div>Speed</div><div>${creature.genes.speed.toFixed(2)}</div></div>
       <div class="row"><div>FOV</div><div>${creature.genes.fov.toFixed(0)}°</div></div>
@@ -213,6 +295,10 @@ export function renderInspector(model={}, handlers={}) {
 
   if (closeBtn) {
     closeBtn.onclick = handlers.onClose ?? null;
+  }
+
+  if (minimizeBtn) {
+    minimizeBtn.onclick = handlers.onMinimize ?? null;
   }
 
   if (creature && creature.parentId) {
@@ -397,7 +483,8 @@ function drawChart(ctx, lines, { min=null, max=null } = {}) {
   // Guard against hidden canvases (0x0 dimensions)
   if (w <= 0 || h <= 0) return;
   const pad = 6;
-  ctx.clearRect(0,0,w,h);
+  
+  // OPTIMIZATION: Single clear/fill operation
   ctx.fillStyle = '#11131d';
   ctx.fillRect(0,0,w,h);
 
@@ -416,27 +503,39 @@ function drawChart(ctx, lines, { min=null, max=null } = {}) {
   }
   const range = (maxVal - minVal) || 1;
 
+  // OPTIMIZATION: Draw baseline once
   ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(pad, h - pad);
   ctx.lineTo(w - pad, h - pad);
   ctx.stroke();
 
-  for (const line of lines) {
-    ctx.beginPath();
-    line.series.forEach((value, idx) => {
-      const x = pad + (idx/(len-1))*(w - pad*2);
-      const y = h - pad - ((value - minVal)/range)*(h - pad*2);
-      if (idx === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-    });
+  // OPTIMIZATION: Cache calculations and use for loops
+  const xStep = (w - pad*2) / (len-1);
+  const yScale = (h - pad*2) / range;
+  
+  ctx.lineWidth = 1.4;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     ctx.strokeStyle = line.color;
-    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    
+    // Use for loop for better performance
+    for (let j = 0; j < len; j++) {
+      const value = line.series[j];
+      const x = pad + j * xStep;
+      const y = h - pad - ((value - minVal) * yScale);
+      if (j === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
     ctx.stroke();
   }
 
+  // OPTIMIZATION: Batch text rendering
   ctx.font = '11px system-ui, sans-serif';
   let textY = pad + 10;
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const last = line.series[len-1];
     ctx.fillStyle = line.color;
     ctx.fillText(`${line.label ?? ''} ${formatNumber(last, line.decimals ?? 1)}`, pad, textY);
