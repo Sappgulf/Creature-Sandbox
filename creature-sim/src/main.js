@@ -1368,10 +1368,22 @@ function godModeHeal() {
   }
   creature.health = creature.maxHealth;
   creature.logEvent('Healed by divine intervention', world.t);
-  if (audio) audio.playUISound('heal');
-  if (particles) particles.addHealEffect(creature.x, creature.y);
+  if (audio && audio.ctx) {
+    try {
+      audio.playUISound('heal');
+    } catch (e) {}
+  }
+  if (particles) {
+    try {
+      particles.addHealEffect(creature.x, creature.y);
+    } catch (e) {}
+  }
   window.godModeActionCount = (window.godModeActionCount || 0) + 1;
-  if (tutorial) tutorial.trackGodModeAction();
+  if (tutorial) {
+    try {
+      tutorial.trackGodModeAction();
+    } catch (e) {}
+  }
   showGodModeEffect(creature, '💚', '#4ade80');
   console.log(`✨ Healed creature #${creature.id} to full health!`);
 }

@@ -105,8 +105,8 @@ export class AudioSystem {
       
       let duration = 0.1;
       let type = 'sine';
-    
-    switch (event) {
+      
+      switch (event) {
       case 'birth':
         // Cute high-pitched chirp
         this.playTone(pitch * 1.5, 0.15, 'sine', volume * 0.6, 'creatures');
@@ -178,7 +178,7 @@ export class AudioSystem {
           this.playTone(pitch, 0.05, 'sine', volume * 0.2, 'creatures');
         }
         break;
-    }
+      }
     } catch (e) {
       // Ignore audio errors (non-critical)
       console.warn('Creature sound error:', e);
