@@ -359,7 +359,8 @@ export class Creature {
       if (bleedStatus) {
         penalty -= Math.min(0.5, (bleedStatus.stacks ?? 0) * 0.18 * (1 - grit * 0.35));
       }
-      if (elderAid) {
+      if (this.getStatus('elder-aid')) {
+        const elderAid = this.getStatus('elder-aid');
         penalty += Math.min(0.18, (elderAid.intensity ?? 0) * 0.2);
       }
       penalty = clamp(penalty, 0.14, 1);
