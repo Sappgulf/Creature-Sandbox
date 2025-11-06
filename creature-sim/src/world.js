@@ -201,6 +201,10 @@ export class World {
   attachHeatmapSystem(heatmaps) {
     this.heatmaps = heatmaps;
   }
+  
+  attachAudioSystem(audio) {
+    this.audio = audio;
+  }
 
   seed(nHerb=60, nPred=6, nFood=180) {
     for (let i=0;i<nHerb;i++) {
@@ -327,6 +331,26 @@ export class World {
 
     const damage = this._predatorDamage(pred, victim);
     const applied = this._applyDamage(victim, damage, { attacker: pred, type: 'bite' });
+
+    // Audio: Attack sound
+    if (this.audio && this.audio.ctx && applied && pred) {
+      try {
+        this.audio.playCreatureSound(pred, 'attack');
+      } catch (e) {
+        // Ignore audio errors (non-critical)
+      }
+    }
+    
+    // Visual: Combat hit particles
+    if (this.particles && applied) {
+      this.particles.addCombatHit(victim.x, victim.y, applied.damage || damage, applied.killed || false);
+      // Screen shake on kill
+      if (applied.killed) {
+        this.particles.triggerShake(8.0);
+      } else {
+        this.particles.triggerShake(3.0);
+      }
+    }
 
     if (pred.personality) {
       pred.personality.attackCooldown = this._predatorAttackCooldown(pred);
@@ -555,6 +579,15 @@ export class World {
     
     const child = new Creature(parent1.x, parent1.y, childGenes, true);
     const childId = this.addCreature(child, parent1.id);
+    
+    // Audio: Birth sound
+    if (this.audio && this.audio.ctx) {
+      try {
+        this.audio.playCreatureSound(child, 'birth');
+      } catch (e) {
+        // Ignore audio errors (non-critical)
+      }
+    }
     
     if (typeof parent1.noteBirth === 'function') {
       parent1.noteBirth(childId, this.t);
@@ -1982,6 +2015,15 @@ export class World {
       this.particles.addDeathMarker(creature.x, creature.y, creatureName);
     }
     
+    // Audio: Death sound
+    if (this.audio && this.audio.ctx && creature) {
+      try {
+        this.audio.playCreatureSound(creature, 'death');
+      } catch (e) {
+        // Ignore audio errors (non-critical)
+      }
+    }
+    
     // NEW: Record death in heatmap (will be accessed via world.heatmaps from main.js)
     if (this.heatmaps) {
       this.heatmaps.recordDeath(creature.x, creature.y, 1.0);
@@ -2030,6 +2072,15 @@ export class World {
     const eatAmount = Math.min(corpse.energy, 8); // How much the scavenger can eat
     corpse.energy -= eatAmount;
     scavenger.energy += eatAmount;
+    
+    // Audio: Eat sound (scavenging)
+    if (this.audio && this.audio.ctx && scavenger) {
+      try {
+        this.audio.playCreatureSound(scavenger, 'eat');
+      } catch (e) {
+        // Ignore audio errors (non-critical)
+      }
+    }
     
     // Scavenging is rewarding!
     if (scavenger.stats) scavenger.stats.food++;

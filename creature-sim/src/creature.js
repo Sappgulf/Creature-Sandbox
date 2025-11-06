@@ -50,11 +50,16 @@ export class Creature {
     this.baseSize = isOmnivore ? 4.0 : (3.5 + (this.genes.predator ? 1.5 : 0));
     
     // Apply disorder size modifiers
-    if (this.genesRaw.sizeModifier) {
+    if (this.genesRaw && this.genesRaw.sizeModifier) {
       this.baseSize *= this.genesRaw.sizeModifier;
     }
     
-    this.size = this.baseSize * (isChild ? 0.3 : 1.0); // Babies start at 30% size
+    // Age-based size multiplier
+    const ageSizeMultiplier = this._getAgeSizeMultiplier();
+    this.size = this.baseSize * ageSizeMultiplier;
+    
+    // Parent tracking for parental care
+    this.children = []; // Track offspring
     
     this.target = null;
     this.id = null;       // set by World.addCreature
@@ -507,6 +512,20 @@ export class Creature {
           this.animation.lastEat = world.t;
           this.animation.state = 'eating';
           
+          // Audio: Eat sound
+          if (world.audio && world.audio.ctx) {
+            try {
+              world.audio.playCreatureSound(this, 'eat');
+            } catch (e) {
+              // Ignore audio errors (non-critical)
+            }
+          }
+          
+          // Visual: Food absorption particles
+          if (world.particles) {
+            world.particles.addFoodAbsorption(eaten.x, eaten.y, this.x, this.y);
+          }
+          
           // FEATURE 2: Remember successful food location
           if (this.rememberLocation) {
             this.rememberLocation(this.x, this.y, 'food', 0.8, world.t);
@@ -592,8 +611,8 @@ export class Creature {
     }
 
     // FEATURE 8: Sexual selection for reproduction
-    // NEW: Only adults and elders can reproduce (not babies or juveniles)
-    const canReproduce = (this.ageStage === 'adult' || this.ageStage === 'elder');
+    // NEW: Only adults can reproduce, and elders have menopause (can't reproduce after age 270)
+    const canReproduce = this.ageStage === 'adult' || (this.ageStage === 'elder' && this.age < 270);
     if (!this.genes.predator && this.energy > 36 && canReproduce) {
       // Look for suitable mate
       const potentialMates = world.queryCreatures(this.x, this.y, this.genes.sense * 2)

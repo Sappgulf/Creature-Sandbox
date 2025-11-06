@@ -19,6 +19,9 @@ import { GeneEditor } from './gene-editor.js';
 import { EcosystemHealth } from './ecosystem-health.js';
 import { DebugConsole } from './debug-console.js';
 import { MobileSupport } from './mobile-support.js';
+import { AudioSystem } from './audio-system.js';
+import { TutorialSystem } from './tutorial-system.js';
+import { AchievementSystem } from './achievement-system.js';
 
 const canvas = document.getElementById('view');
 const ctx = canvas.getContext('2d');
@@ -106,10 +109,17 @@ const geneEditor = new GeneEditor(); // NEW: Gene editor for custom creatures
 const ecoHealth = new EcosystemHealth(); // NEW: Ecosystem health tracking
 const debugConsole = new DebugConsole(world, camera); // NEW: Debug console for power users
 const mobileSupport = new MobileSupport(canvas, camera); // NEW: Mobile touch support
+const audio = new AudioSystem(); // NEW: Audio system for procedural sounds
+const tutorial = new TutorialSystem(); // NEW: Tutorial system for onboarding
+const achievements = new AchievementSystem(); // NEW: Achievement system
 window.debug = debugConsole; // Expose to global console
+window.audio = audio; // Expose for debugging
+window.achievements = achievements; // Expose for debugging
+window.tutorial = tutorial; // Expose for debugging
 world.attachLineageTracker(lineageTracker);
 world.attachParticleSystem(particles); // NEW: Give world access to particles
 world.attachHeatmapSystem(heatmaps); // NEW: Give world access to heatmaps
+world.attachAudioSystem(audio); // NEW: Give world access to audio
 world.creatures.forEach(c => lineageTracker.ensureName(lineageTracker.getRoot(world, c.id)));
 window.godModeEffects = window.godModeEffects || [];
 
@@ -126,8 +136,24 @@ if (saveSystem.hasAutoSave()) {
   // Show modal with options
   startModal?.classList.remove('hidden');
   
+  // Initialize audio on first user interaction (required by browsers)
+  const initAudioOnInteraction = () => {
+    if (audio && !audio.ctx) {
+      audio.init();
+      // Remove listeners after first init
+      document.removeEventListener('click', initAudioOnInteraction);
+      document.removeEventListener('keydown', initAudioOnInteraction);
+      document.removeEventListener('touchstart', initAudioOnInteraction);
+    }
+  };
+  
+  document.addEventListener('click', initAudioOnInteraction, { once: true });
+  document.addEventListener('keydown', initAudioOnInteraction, { once: true });
+  document.addEventListener('touchstart', initAudioOnInteraction, { once: true });
+
   btnContinue?.addEventListener('click', () => {
     try {
+      initAudioOnInteraction(); // Ensure audio initialized
       const loaded = saveSystem.loadAutoSave(World, Creature, Camera, makeGenes, BiomeGenerator);
       if (loaded) {
         Object.assign(world, loaded.world);
@@ -136,25 +162,41 @@ if (saveSystem.hasAutoSave()) {
           lineageTracker.names = loaded.lineageNames;
         }
         console.log('✅ Auto-save loaded successfully!');
+        if (audio) audio.playUISound('success');
       }
     } catch (err) {
       console.error('Failed to load auto-save:', err);
       alert('Failed to load save. Starting new game.');
+      if (audio) audio.playUISound('error');
     }
     startModal?.classList.add('hidden');
     gameStarted = true;
   });
   
   btnNewGame?.addEventListener('click', () => {
+    initAudioOnInteraction(); // Ensure audio initialized
+    if (audio) audio.playUISound('click');
     // Clear auto-save and start fresh
     saveSystem.clearAutoSave();
     console.log('🆕 Starting new game...');
     startModal?.classList.add('hidden');
     gameStarted = true;
+    
+    // Start tutorial for new players
+    if (tutorial && tutorial.shouldShow()) {
+      tutorial.loadProgress();
+      setTimeout(() => tutorial.start(), 1000); // Start after 1 second
+    }
   });
 } else {
-  // No save found, start immediately
+  // No auto-save - start new game immediately
   gameStarted = true;
+  
+  // Start tutorial for new players
+  if (tutorial && tutorial.shouldShow()) {
+    tutorial.loadProgress();
+    setTimeout(() => tutorial.start(), 1000); // Start after 1 second
+  }
 }
 
 if (typeof camera.startTravel !== 'function') {
@@ -1326,6 +1368,10 @@ function godModeHeal() {
   }
   creature.health = creature.maxHealth;
   creature.logEvent('Healed by divine intervention', world.t);
+  if (audio) audio.playUISound('heal');
+  if (particles) particles.addHealEffect(creature.x, creature.y);
+  window.godModeActionCount = (window.godModeActionCount || 0) + 1;
+  if (tutorial) tutorial.trackGodModeAction();
   showGodModeEffect(creature, '💚', '#4ade80');
   console.log(`✨ Healed creature #${creature.id} to full health!`);
 }
@@ -1338,6 +1384,17 @@ function godModeBoost() {
   }
   creature.energy += 30;
   creature.logEvent('Received energy boost', world.t);
+  if (audio && audio.ctx) {
+    try {
+      audio.playUISound('boost');
+    } catch (e) {}
+  }
+  window.godModeActionCount = (window.godModeActionCount || 0) + 1;
+  if (tutorial) {
+    try {
+      tutorial.trackGodModeAction();
+    } catch (e) {}
+  }
   showGodModeEffect(creature, '⚡', '#fbbf24');
   console.log(`⚡ Boosted creature #${creature.id} energy by 30!`);
 }
@@ -1351,6 +1408,23 @@ function godModeKill() {
   creature.alive = false;
   creature.health = 0;
   creature.logEvent('Struck down by god', world.t);
+  if (audio && audio.ctx) {
+    try {
+      audio.playUISound('kill');
+    } catch (e) {}
+  }
+  if (particles) {
+    try {
+      particles.addCombatHit(creature.x, creature.y, 100, true);
+      particles.triggerShake(10.0);
+    } catch (e) {}
+  }
+  window.godModeActionCount = (window.godModeActionCount || 0) + 1;
+  if (tutorial) {
+    try {
+      tutorial.trackGodModeAction();
+    } catch (e) {}
+  }
   showGodModeEffect(creature, '💀', '#ef4444');
   console.log(`💀 Killed creature #${creature.id}`);
   selectedId = null;
@@ -1398,6 +1472,22 @@ function godModeClone() {
     world.gridDirty = true;
     world.ensureSpatial();
     
+    if (audio && audio.ctx) {
+      try {
+        audio.playUISound('clone');
+      } catch (e) {}
+    }
+    if (particles) {
+      try {
+        particles.addBirthEffect(cloneX, cloneY);
+      } catch (e) {}
+    }
+    window.godModeActionCount = (window.godModeActionCount || 0) + 1;
+    if (tutorial) {
+      try {
+        tutorial.trackGodModeAction();
+      } catch (e) {}
+    }
     showGodModeEffect(creature, '👯', '#a78bfa');
     console.log(`👯 Cloned creature #${creature.id} → #${cloneId} at (${Math.round(cloneX)}, ${Math.round(cloneY)})`);
   } catch (err) {
@@ -1467,10 +1557,30 @@ function loop(now) {
       miniGraphs.update(world, fixedDt * 5);
       notifications.checkMilestones(world);
       ecoHealth.update(world, fixedDt * 5);
+      
+      // Check achievements
+      if (achievements) {
+        achievements.check(world, lineageTracker);
+      }
     }
     
     particles.update(fixedDt);
     notifications.update(fixedDt);
+    
+    // OPTIMIZATION: Update adaptive music less frequently (every 10 steps = ~1 second)
+    if (steps % 10 === 0 && audio && audio.ctx) {
+      try {
+        audio.playAdaptiveMusic(world);
+        // Occasional biome ambient sounds
+        const centerBiome = world.getBiomeAt ? world.getBiomeAt(camera.x, camera.y) : null;
+        if (centerBiome && centerBiome.type) {
+          audio.playBiomeAmbient(centerBiome.type);
+        }
+      } catch (e) {
+        // Audio might not be initialized yet, ignore
+      }
+    }
+    
     saveSystem.autoSave(world, camera, analytics, lineageTracker, fixedDt);
     accumulator -= fixedDt;
     steps++;
@@ -1672,6 +1782,9 @@ function selectCreature(id) {
   if (!creature) return;
   selectedId = id;
   camera.focusOn(creature.x, creature.y);
+  
+  // Track for tutorial
+  if (tutorial) tutorial.trackSelection();
   
   // Show and un-minimize inspector when creature is selected
   setInspectorVisible(true);
