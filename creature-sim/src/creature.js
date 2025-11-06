@@ -522,7 +522,7 @@ export class Creature {
           }
           
           // Visual: Food absorption particles
-          if (world.particles) {
+          if (world.particles && typeof world.particles.addFoodAbsorption === 'function') {
             world.particles.addFoodAbsorption(eaten.x, eaten.y, this.x, this.y);
           }
           
