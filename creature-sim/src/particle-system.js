@@ -140,6 +140,72 @@ export class ParticleSystem {
     }
   }
 
+  // Season transition shimmer
+  addSeasonShift(label, config) {
+    const palette = {
+      spring: '#7FDB6A',
+      summer: '#FFD56A',
+      autumn: '#FF8C42',
+      winter: '#B0E0E6'
+    };
+    const key = (label || '').toLowerCase();
+    const tint = key.includes('winter') ? palette.winter
+      : key.includes('autumn') ? palette.autumn
+      : key.includes('summer') ? palette.summer
+      : palette.spring;
+    for (let i = 0; i < 24; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 60 + Math.random() * 40;
+      this.particles.push({
+        type: 'season',
+        x: (Math.random() - 0.5) * 400,
+        y: (Math.random() - 0.5) * 250,
+        vx: Math.cos(angle) * 18,
+        vy: Math.sin(angle) * 18,
+        life: 1.8,
+        maxLife: 1.8,
+        size: 6 + Math.random() * 8,
+        color: tint,
+        label: label ?? 'Season Shift',
+        opacity: 1.0
+      });
+    }
+  }
+
+  addDiseasePulse(x, y) {
+    this.particles.push({
+      type: 'disease',
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      life: 1.2,
+      maxLife: 1.2,
+      size: 16,
+      opacity: 1.0,
+      pulse: 0
+    });
+  }
+
+  addVenomStrike(x, y) {
+    for (let i = 0; i < 10; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 60 + Math.random() * 40;
+      this.particles.push({
+        type: 'venom',
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 0.6,
+        maxLife: 0.6,
+        size: 3 + Math.random() * 2,
+        color: '#6CFF7C',
+        opacity: 1.0
+      });
+    }
+  }
+
 
   update(dt) {
     // Update all particles
@@ -201,6 +267,26 @@ export class ParticleSystem {
       } else if (p.type === 'heal') {
         p.opacity = lifeRatio * 0.9;
         p.vy += 5 * dt; // Slow upward float
+      } else if (p.type === 'season') {
+        p.opacity = lifeRatio;
+        p.vx *= 0.96;
+        p.vy *= 0.96;
+        p.vy -= 4 * dt;
+      } else if (p.type === 'disease') {
+        p.opacity = lifeRatio * 0.8;
+        p.size += dt * 28;
+        p.pulse = (p.pulse ?? 0) + dt * 6;
+      } else if (p.type === 'venom') {
+        p.opacity = lifeRatio;
+        p.vx *= 0.9;
+        p.vy *= 0.9;
+      } else if (p.type === 'play') {
+        p.opacity = lifeRatio;
+        p.vx *= 0.88;
+        p.vy *= 0.88;
+      } else if (p.type === 'elder') {
+        p.opacity = lifeRatio * 0.7;
+        p.size += dt * 20;
       }
       
       // Update screen shake decay
@@ -218,6 +304,39 @@ export class ParticleSystem {
     if (this.particles.length > this.maxParticles) {
       this.particles.splice(0, this.particles.length - this.maxParticles);
     }
+  }
+
+  addPlayBurst(x, y) {
+    for (let i = 0; i < 8; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 70 + Math.random() * 50;
+      this.particles.push({
+        type: 'play',
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 0.5,
+        maxLife: 0.5,
+        size: 2 + Math.random() * 2,
+        color: '#9AD9FF',
+        opacity: 1.0
+      });
+    }
+  }
+
+  addElderAura(x, y) {
+    this.particles.push({
+      type: 'elder',
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      life: 1.6,
+      maxLife: 1.6,
+      size: 22,
+      opacity: 1.0
+    });
   }
 
   draw(ctx) {
@@ -276,6 +395,39 @@ export class ParticleSystem {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(p.text, p.x, p.y);
+      } else if (p.type === 'season') {
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (p.type === 'disease') {
+        ctx.strokeStyle = `rgba(120,255,150,${p.opacity})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * 0.25 * (1 + Math.sin(p.pulse ?? 0) * 0.2), 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (p.type === 'venom') {
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.type === 'play') {
+        ctx.fillStyle = `rgba(154,217,255,${p.opacity})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.type === 'elder') {
+        const gradient = ctx.createRadialGradient(p.x, p.y, p.size * 0.1, p.x, p.y, p.size);
+        gradient.addColorStop(0, `rgba(255,245,200,${p.opacity})`);
+        gradient.addColorStop(1, 'rgba(255,245,200,0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
       }
 
       ctx.restore();
@@ -303,4 +455,3 @@ export class ParticleSystem {
     this.screenShake = { x: 0, y: 0, intensity: 0 };
   }
 }
-

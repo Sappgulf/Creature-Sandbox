@@ -48,6 +48,7 @@ export class Creature {
     const diet = this.genes.diet ?? (this.genes.predator ? 1.0 : 0.0);
     const isOmnivore = diet > 0.3 && diet < 0.7;
     this.baseSize = isOmnivore ? 4.0 : (3.5 + (this.genes.predator ? 1.5 : 0));
+    this.aquaticAffinity = this.genes.aquatic ?? 0;
     
     // Apply disorder size modifiers
     if (this.genesRaw && this.genesRaw.sizeModifier) {
@@ -64,6 +65,8 @@ export class Creature {
     this.target = null;
     this.id = null;       // set by World.addCreature
     this.parentId = null; // set by World.addCreature
+    this.parents = [];
+    this.currentBiomeType = null;
 
     this.maxHealth = this.genes.predator ? 18 : 12;
     
@@ -88,16 +91,25 @@ export class Creature {
       currentTargetId: null,
       attackCooldown: 0
     };
-    this.effects = {
-      herdBuff: 0,
-      herdIntensity: 0,
+    this.statuses = new Map();
+    this.cooldowns = {
       adrenaline: 0,
-      adrenalineBoost: 0,
-      adrenalineCooldown: 0,
-      bleed: 0,
-      bleedStacks: 0,
+      familyAid: 0
+    };
+    this.damageFx = {
       recentDamage: 0,
       hitFlash: 0
+    };
+    this.statusTimers = {
+      diseaseSpread: rand(0.6, 1.2),
+      venomTick: 1.2
+    };
+    this.lifecycle = {
+      playCooldown: rand(6, 12),
+      playTimer: 0,
+      elderAidCooldown: rand(5, 9),
+      familyCheck: rand(2.5, 4.5),
+      familyAnchor: null
     };
     
     // NEW: Animation state for visual feedback
@@ -290,6 +302,12 @@ export class Creature {
     if (!this.alive) return;
     this.age += dt;
     this._lastWorld = world; // Store for animation system
+    if (!this.statusTimers) {
+      this.statusTimers = {
+        diseaseSpread: rand(0.6, 1.2),
+        venomTick: 1.2
+      };
+    }
     
     // Update age stage and size based on age
     this._updateAgeStage();
@@ -302,34 +320,31 @@ export class Creature {
     if (this._updateEmotions) this._updateEmotions(dt, world);
     if (this._updateIntelligence) this._updateIntelligence(dt, world);
     
-    const eff = this.effects;
+    this._tickStatusSystem(dt);
+    this._processStatusEffects(dt, world);
 
-    if (eff) {
-      eff.hitFlash = Math.max(0, eff.hitFlash - dt);
-      if (eff.herdBuff > 0) {
-        eff.herdBuff = Math.max(0, eff.herdBuff - dt);
-        if (eff.herdBuff <= 0) eff.herdIntensity = 0;
-      }
-      if (eff.adrenaline > 0) {
-        eff.adrenaline = Math.max(0, eff.adrenaline - dt);
-        if (eff.adrenaline <= 0) eff.adrenalineBoost = 0;
-      }
-      if (eff.adrenalineCooldown > 0) {
-        eff.adrenalineCooldown = Math.max(0, eff.adrenalineCooldown - dt);
-      }
-      if (eff.bleed > 0) {
-        const bleedRate = 0.45 + (eff.bleedStacks || 0) * 0.28;
-        const bleedDamage = bleedRate * dt;
-        if (bleedDamage > 0) {
-          this.health = Math.max(0, this.health - bleedDamage);
-          this.stats.damageTaken += bleedDamage;
-          this.energy = Math.max(0, this.energy - bleedDamage * 0.1);
-        }
-        eff.bleed = Math.max(0, eff.bleed - dt);
-        if (eff.bleed <= 0) eff.bleedStacks = 0;
-      }
-      if (eff.recentDamage > 0) {
-        eff.recentDamage = Math.max(0, eff.recentDamage - dt);
+    if (this.cooldowns.adrenaline > 0) {
+      this.cooldowns.adrenaline = Math.max(0, this.cooldowns.adrenaline - dt);
+    }
+
+    if (this.damageFx.hitFlash > 0) {
+      this.damageFx.hitFlash = Math.max(0, this.damageFx.hitFlash - dt * 2.6);
+    }
+    if (this.damageFx.recentDamage > 0) {
+      this.damageFx.recentDamage = Math.max(0, this.damageFx.recentDamage - dt);
+    }
+
+    // Ongoing bleed damage (if any)
+    const bleedStatus = this.getStatus('bleed');
+    if (bleedStatus) {
+      const stacks = Math.max(1, bleedStatus.stacks ?? 1);
+      const severity = clamp(bleedStatus.intensity ?? 1, 0.2, 3);
+      const bleedRate = (0.35 + stacks * 0.22) * severity;
+      const bleedDamage = bleedRate * dt;
+      if (bleedDamage > 0) {
+        this.health = Math.max(0, this.health - bleedDamage);
+        this.stats.damageTaken += bleedDamage;
+        this.energy = Math.max(0, this.energy - bleedDamage * 0.08);
       }
     }
 
@@ -338,32 +353,40 @@ export class Creature {
       const energyFactor = clamp(this.energy / 24, 0.3, 1.2);
       const grit = this.genes.grit ?? 0;
       let penalty = 1;
-      if (eff) {
-        if (eff.recentDamage > 0) {
-          penalty -= Math.min(0.55, (0.45 - grit * 0.25));
-        }
-        if (eff.bleed > 0) {
-          penalty -= Math.min(0.5, (eff.bleedStacks || 0) * 0.18 * (1 - grit * 0.35));
-        }
+      if (this.damageFx.recentDamage > 0) {
+        penalty -= Math.min(0.55, (0.45 - grit * 0.25));
+      }
+      if (bleedStatus) {
+        penalty -= Math.min(0.5, (bleedStatus.stacks ?? 0) * 0.18 * (1 - grit * 0.35));
+      }
+      if (elderAid) {
+        penalty += Math.min(0.18, (elderAid.intensity ?? 0) * 0.2);
       }
       penalty = clamp(penalty, 0.14, 1);
       this.health = Math.min(this.maxHealth, this.health + regenBase * energyFactor * penalty * dt);
     }
 
-    if (eff) {
-      const healthRatio = this.maxHealth > 0 ? this.health / this.maxHealth : 1;
-      if (healthRatio < 0.35 && eff.adrenaline <= 0 && eff.adrenalineCooldown <= 0) {
-        const baseBoost = 0.35 + (this.genes.panicPheromone ?? 0) * 0.45 + (eff.herdIntensity ?? 0) * 0.2;
-        eff.adrenaline = 2.6;
-        eff.adrenalineBoost = baseBoost;
-        eff.adrenalineCooldown = 7;
-      }
+    const healthRatio = this.maxHealth > 0 ? this.health / this.maxHealth : 1;
+    if (healthRatio < 0.35 && !this.hasStatus('adrenaline') && this.cooldowns.adrenaline <= 0) {
+      const herdBuff = this.getStatus('herd-buff');
+      const baseBoost = 0.35 + (this.genes.panicPheromone ?? 0) * 0.45 + (herdBuff?.intensity ?? 0) * 0.2;
+      this.applyStatus('adrenaline', { duration: 2.6, intensity: baseBoost, metadata: { boost: baseBoost } });
+      this.cooldowns.adrenaline = 7;
     }
 
+    this._handleLifecycleBehavior(dt, world);
+    const currentBiome = world.getBiomeAt ? world.getBiomeAt(this.x, this.y) : null;
+    this.currentBiome = currentBiome;
+    this.currentBiomeType = currentBiome?.type ?? this.currentBiomeType ?? null;
+    const inWetland = currentBiome?.type === 'wetland';
+    
     let wanderScale = 0.05 * BehaviorConfig.wanderWeight;
     const diet = this.genes.diet ?? (this.genes.predator ? 1.0 : 0.0);
     const isOmnivore = diet > 0.3 && diet < 0.7;
     const canScavenge = diet >= 0.3; // Omnivores and carnivores can scavenge
+    if (this.aquaticAffinity > 0.45 && inWetland) {
+      wanderScale *= 0.8;
+    }
     
     if (this.genes.predator || diet > 0.7) {
       // Carnivores: hunt or scavenge
@@ -411,6 +434,15 @@ export class Creature {
 
     let desiredAngle = this.dir + randn(0, wanderScale);
     if (this.target) desiredAngle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+    if (this.lifecycle?.playTimer > 0 && !this.target) {
+      desiredAngle += Math.sin(this.lifecycle.playTimer * 12 + (this.id ?? 0)) * 0.4;
+    }
+    if (this.aquaticAffinity > 0.5 && !inWetland && (!this.target || this.target.family)) {
+      const wetDir = this._sampleWetlandDirection(world);
+      if (wetDir != null) {
+        desiredAngle = desiredAngle * 0.7 + wetDir * 0.3;
+      }
+    }
     const aggressiveTurn = this.genes.predator && this.target && this.target.creatureId != null && this.personality.ambushTimer <= 0;
     const turnClamp = aggressiveTurn ? 0.22 : 0.15;
     let delta = Math.atan2(Math.sin(desiredAngle - this.dir), Math.cos(desiredAngle - this.dir));
@@ -420,6 +452,15 @@ export class Creature {
     const aggressionFactor = this.genes.predator ? clamp(this.personality.aggression, 0.4, 2.2) : 1;
     let baseSpeed = this.genes.speed * (this.genes.predator ? 46 : 40);
     if (this.genes.predator) baseSpeed *= 0.85 + aggressionFactor * 0.25;
+    if (inWetland) {
+      if (this.aquaticAffinity > 0.1) {
+        baseSpeed *= 1 + this.aquaticAffinity * 0.32;
+      } else {
+        baseSpeed *= 0.88;
+      }
+    } else if (this.aquaticAffinity > 0.5) {
+      baseSpeed *= 0.9 - Math.min(0.2, (this.aquaticAffinity - 0.5) * 0.25);
+    }
     
     // NEW: Age stage speed modifiers
     switch(this.ageStage) {
@@ -430,14 +471,25 @@ export class Creature {
     }
     let speedScalar = clamp(1 - restFactor * 0.6, 0.15, 1);
     let speedBoost = 1;
-    if (eff?.herdBuff > 0 && !this.genes.predator) {
-      speedBoost += eff.herdIntensity;
+    const herdBuff = this.getStatus('herd-buff');
+    const playBurst = this.getStatus('play-burst');
+    const elderAid = this.getStatus('elder-aid');
+    if (herdBuff && !this.genes.predator) {
+      speedBoost += herdBuff.intensity ?? 0;
     }
-    if (eff?.adrenaline > 0) {
-      speedBoost += eff.adrenalineBoost;
+    const adrenalineStatus = this.getStatus('adrenaline');
+    if (adrenalineStatus) {
+      const boost = adrenalineStatus.metadata?.boost ?? adrenalineStatus.intensity ?? 0;
+      speedBoost += boost;
     }
-    if (eff?.bleed > 0) {
-      speedBoost -= Math.min(0.3, 0.08 * (eff.bleedStacks || 0));
+    if (bleedStatus) {
+      speedBoost -= Math.min(0.3, 0.08 * Math.max(bleedStatus.stacks ?? 1, 0));
+    }
+    if (playBurst) {
+      speedBoost += playBurst.intensity ?? 0.25;
+    }
+    if (elderAid) {
+      speedBoost += (elderAid.intensity ?? 0) * 0.08;
     }
     speedScalar *= clamp(speedBoost, 0.6, 1.9);
     if (this.genes.predator) {
@@ -574,12 +626,19 @@ export class Creature {
       // Adults: no modifier (1.0)
     }
     
-    if (eff?.adrenaline > 0) energyDrain += 2.6 + eff.adrenalineBoost * 2;
-    if (eff?.herdBuff > 0 && !this.genes.predator) energyDrain += eff.herdIntensity * 0.8;
-    if (eff?.bleed > 0) energyDrain += 0.35 + (eff.bleedStacks || 0) * 0.4;
+    if (adrenalineStatus) energyDrain += 2.6 + (adrenalineStatus.metadata?.boost ?? adrenalineStatus.intensity ?? 0) * 2;
+    if (herdBuff && !this.genes.predator) energyDrain += (herdBuff.intensity ?? 0) * 0.8;
+    if (bleedStatus) energyDrain += 0.35 + (bleedStatus.stacks ?? 0) * 0.4;
+    if (playBurst) energyDrain += 0.45;
+    if (elderAid) energyDrain *= clamp(1 - (elderAid.intensity ?? 0) * 0.2, 0.7, 1);
     if (this.genes.predator) {
       const aggressionTax = Math.max(0, (aggressionFactor - 1) * 0.18);
       energyDrain += aggressionTax;
+    }
+    if (inWetland) {
+      energyDrain *= clamp(1 - this.aquaticAffinity * 0.25 + (this.aquaticAffinity < 0.2 ? 0.12 : 0), 0.65, 1.15);
+    } else if (this.aquaticAffinity > 0.4) {
+      energyDrain += this.aquaticAffinity * 0.35;
     }
     
     // Day/Night cycle: nocturnal creatures use less energy at night
@@ -614,32 +673,40 @@ export class Creature {
     // NEW: Only adults can reproduce, and elders have menopause (can't reproduce after age 270)
     const canReproduce = this.ageStage === 'adult' || (this.ageStage === 'elder' && this.age < 270);
     if (!this.genes.predator && this.energy > 36 && canReproduce) {
-      // Look for suitable mate
-      const potentialMates = world.queryCreatures(this.x, this.y, this.genes.sense * 2)
-        .filter(c => !c.genes.predator && c.alive && c.id !== this.id && c.energy > 30);
-      
-      let selectedMate = null;
-      let bestScore = this.sexuality.choosiness;
-      
-      for (const mate of potentialMates) {
-        if (this.shouldAcceptMate && this.shouldAcceptMate(mate, world.t)) {
-          const score = this.evaluateMate(mate);
-          if (score > bestScore) {
-            bestScore = score;
-            selectedMate = mate;
+      const fertilityFactor = clamp(world.getSeasonModifier ? world.getSeasonModifier('reproduction') : 1, 0, 1.2);
+      const reproductionChance = clamp(fertilityFactor, 0, 1);
+      if (Math.random() < reproductionChance) {
+        const potentialMates = world.queryCreatures(this.x, this.y, this.genes.sense * 2)
+          .filter(c => !c.genes.predator && c.alive && c.id !== this.id && c.energy > 30);
+        
+        let selectedMate = null;
+        let bestScore = this.sexuality.choosiness;
+        
+        for (const mate of potentialMates) {
+          if (this.shouldAcceptMate && this.shouldAcceptMate(mate, world.t)) {
+            const score = this.evaluateMate(mate);
+            if (score > bestScore) {
+              bestScore = score;
+              selectedMate = mate;
+            }
           }
         }
-      }
-      
-      if (selectedMate || potentialMates.length === 0) {
-        this.energy *= 0.55;
-        if (selectedMate) {
-          this.sexuality.lastMated = world.t;
-          selectedMate.sexuality.lastMated = world.t;
-          // Log successful mating
-          this.emotions.confidence = Math.min(1, this.emotions.confidence + 0.1);
+        
+        if (selectedMate || potentialMates.length === 0) {
+          const scarcity = Math.max(0, 1 - fertilityFactor);
+          const abundance = Math.max(0, fertilityFactor - 1);
+          const energyMultiplier = clamp(0.55 + scarcity * 0.12 - abundance * 0.08, 0.42, 0.65);
+          this.energy *= energyMultiplier;
+          if (selectedMate) {
+            this.sexuality.lastMated = world.t;
+            selectedMate.sexuality.lastMated = world.t;
+            // Log successful mating
+            this.emotions.confidence = Math.min(1, this.emotions.confidence + 0.1);
+          }
+          world.spawnChild(this, selectedMate);
         }
-        world.spawnChild(this, selectedMate);
+      } else if (fertilityFactor < 0.5 && this.emotions) {
+        this.emotions.stress = clamp((this.emotions.stress ?? 0) + 0.02, 0, 1);
       }
     }
 
@@ -648,6 +715,259 @@ export class Creature {
       this.logEvent(this.energy <= 0 ? 'Energy collapse' : 'Old age', world.t);
       if (!this.genes.predator) world.addFood(this.x, this.y, 1.5);
     }
+  }
+
+  hasStatus(key) {
+    return this.statuses.has(key);
+  }
+
+  getStatus(key) {
+    return this.statuses.get(key) || null;
+  }
+
+  getStatusIntensity(key, fallback = 0) {
+    const s = this.getStatus(key);
+    if (!s) return fallback;
+    return s.intensity ?? fallback;
+  }
+
+  applyStatus(key, opts = {}) {
+    const now = this.statuses.get(key) || { key };
+    if (opts.duration !== undefined) now.duration = Math.max(0, opts.duration);
+    if (opts.intensity !== undefined) now.intensity = opts.intensity;
+    if (opts.stacks !== undefined) {
+      now.stacks = Math.max(0, opts.stacks);
+    } else if (opts.stackDelta !== undefined) {
+      now.stacks = Math.max(0, (now.stacks ?? 0) + opts.stackDelta);
+    }
+    if (opts.metadata) {
+      now.metadata = { ...(now.metadata ?? {}), ...opts.metadata };
+    }
+    if (opts.source !== undefined) now.source = opts.source;
+    now.elapsed = 0;
+    this.statuses.set(key, now);
+    return now;
+  }
+
+  removeStatus(key) {
+    this.statuses.delete(key);
+  }
+
+  _tickStatusSystem(dt) {
+    if (!this.statuses.size) return;
+    for (const [key, status] of this.statuses) {
+      status.elapsed = (status.elapsed ?? 0) + dt;
+      if (status.duration !== undefined) {
+        status.duration -= dt;
+        if (status.duration <= 0) {
+          this.statuses.delete(key);
+          continue;
+        }
+      }
+    }
+  }
+
+  _processStatusEffects(dt, world) {
+    const disease = this.getStatus('disease');
+    if (disease) {
+      const severity = clamp(disease.intensity ?? 0.6, 0.1, 2.2);
+      // Increase stress and reduce energy
+      this.energy = Math.max(0, this.energy - severity * 0.5 * dt);
+      if (this.emotions) {
+        this.emotions.stress = clamp((this.emotions.stress ?? 0) + severity * 0.02 * dt, 0, 1);
+        this.emotions.confidence = clamp((this.emotions.confidence ?? 0) - severity * 0.015 * dt, 0, 1);
+      }
+      // Slight fever damage over time
+      this.health = Math.max(0, this.health - severity * 0.12 * dt);
+      this.statusTimers.diseaseSpread = (this.statusTimers.diseaseSpread ?? rand(0.8, 1.6)) - dt;
+      if (this.statusTimers.diseaseSpread <= 0) {
+        this._spreadDisease(world, disease);
+        this.statusTimers.diseaseSpread = rand(0.9, 1.8);
+      }
+    }
+
+    const venom = this.getStatus('venom');
+    if (venom) {
+      const potency = clamp(venom.intensity ?? 1, 0.2, 3);
+      this.statusTimers.venomTick = (this.statusTimers.venomTick ?? 1.2) - dt;
+      if (this.statusTimers.venomTick <= 0) {
+        const burst = 0.8 + potency * 0.6;
+        this.health = Math.max(0, this.health - burst);
+        this.stats.damageTaken += burst;
+        this.energy = Math.max(0, this.energy - burst * 0.2);
+        this.statusTimers.venomTick = 1.1;
+        if (typeof this.recordDamage === 'function') {
+          this.recordDamage(burst * 1.8);
+        }
+      }
+    }
+  }
+
+  _handleLifecycleBehavior(dt, world) {
+    if (!world) return;
+    this.lifecycle = this.lifecycle || {
+      playCooldown: rand(6, 12),
+      playTimer: 0,
+      elderAidCooldown: rand(5, 9),
+      familyCheck: rand(2.5, 4.5),
+      familyAnchor: null
+    };
+
+    // Juvenile play bursts
+    if (this.ageStage === 'juvenile' && !this.genes.predator) {
+      this.lifecycle.playCooldown -= dt;
+      if (this.lifecycle.playCooldown <= 0 && this.energy > 12) {
+        this.lifecycle.playTimer = 0.8;
+        this.lifecycle.playCooldown = rand(10, 18);
+        this.applyStatus('play-burst', { duration: 0.75, intensity: 0.35 });
+        this.energy = Math.max(0, this.energy - 0.8);
+        if (this.emotions) {
+          this.emotions.joy = clamp((this.emotions.joy ?? 0) + 0.2, 0, 1);
+          this.emotions.stress = clamp((this.emotions.stress ?? 0) - 0.05, 0, 1);
+        }
+        if (world.particles && typeof world.particles.addPlayBurst === 'function') {
+          world.particles.addPlayBurst(this.x, this.y);
+        }
+        if (world.audio && world.audio.ctx) {
+          try {
+            world.audio.playCreatureSound?.(this, 'play');
+          } catch (err) {
+            // Ignore audio errors
+          }
+        }
+        this.logEvent?.('Playful sprint', world.t);
+      } else {
+        this.lifecycle.playTimer = Math.max(0, (this.lifecycle.playTimer ?? 0) - dt);
+      }
+    } else {
+      this.lifecycle.playTimer = Math.max(0, (this.lifecycle.playTimer ?? 0) - dt);
+    }
+
+    // Elder support aura
+    if (this.ageStage === 'elder' && !this.genes.predator) {
+      this.lifecycle.elderAidCooldown -= dt;
+      if (this.lifecycle.elderAidCooldown <= 0) {
+        this.lifecycle.elderAidCooldown = rand(5.5, 8.5);
+        this._emitElderSupport(world);
+      }
+    }
+
+    // Family anchoring
+    if (this.children && this.children.length) {
+      this.lifecycle.familyCheck -= dt;
+      if (this.lifecycle.familyCheck <= 0) {
+        this.lifecycle.familyCheck = rand(3, 5);
+        this.lifecycle.familyAnchor = this._selectFamilyAnchor(world);
+      }
+      if (!this.genes.predator && !this.target && this.lifecycle.familyAnchor) {
+        const anchor = this.lifecycle.familyAnchor;
+        const dx = anchor.x - this.x;
+        const dy = anchor.y - this.y;
+        if ((dx * dx + dy * dy) > 45 * 45) {
+          this.target = { x: anchor.x, y: anchor.y, family: true };
+        }
+      }
+    }
+  }
+
+  _emitElderSupport(world) {
+    const radius = clamp(this.genes.sense * 0.7, 60, 150);
+    const allies = world.queryCreatures(this.x, this.y, radius)
+      .filter(c => c !== this && c.alive && !c.genes.predator);
+    if (!allies.length) return;
+    const bondStrength = clamp((this.genes.herdInstinct ?? 0.4) + (this.genes.grit ?? 0.2), 0.2, 1);
+    for (const ally of allies) {
+      const closeness = 1 - Math.min(1, dist2(ally.x, ally.y, this.x, this.y) / (radius * radius));
+      const intensity = clamp(0.15 + bondStrength * closeness * 0.6, 0.1, 0.5);
+      ally.applyStatus?.('elder-aid', { duration: 4.2, intensity });
+      ally.energy = Math.min(48, ally.energy + 1.8 * intensity * 3);
+      if (ally.emotions) {
+        ally.emotions.confidence = clamp((ally.emotions.confidence ?? 0) + intensity * 0.1, 0, 1);
+        ally.emotions.stress = clamp((ally.emotions.stress ?? 0) - intensity * 0.08, 0, 1);
+      }
+      if (world.particles && typeof world.particles.addElderAura === 'function') {
+        world.particles.addElderAura(ally.x, ally.y);
+      }
+    }
+    this.logEvent?.('Shared wisdom with the herd', world.t);
+  }
+
+  _selectFamilyAnchor(world) {
+    if (!this.children || !this.children.length) return null;
+    let best = null;
+    let bestScore = Infinity;
+    for (const childId of this.children) {
+      const child = world.getAnyCreatureById(childId);
+      if (!child || !child.alive) continue;
+      if (child.ageStage === 'adult') continue;
+      const score = child.age;
+      if (score < bestScore) {
+        bestScore = score;
+        best = child;
+      }
+    }
+    if (!best) return null;
+    return { x: best.x, y: best.y, id: best.id };
+  }
+
+  _sampleWetlandDirection(world) {
+    if (!world?.getBiomeAt) return null;
+    let bestDir = null;
+    let bestScore = 0;
+    const radius = 200 + this.aquaticAffinity * 100;
+    for (let i = 0; i < 5; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const tx = this.x + Math.cos(angle) * radius;
+      const ty = this.y + Math.sin(angle) * radius;
+      const biome = world.getBiomeAt(tx, ty);
+      if (!biome) continue;
+      let score = biome.type === 'wetland' ? 1.2 : (biome.moisture ?? 0);
+      score += (1 - Math.abs(Math.sin(angle - this.dir))) * 0.05;
+      if (score > bestScore) {
+        bestScore = score;
+        bestDir = angle;
+      }
+    }
+    return bestScore > 0.4 ? bestDir : null;
+  }
+
+  _spreadDisease(world, disease) {
+    if (!world || !disease) return;
+    const contagion = clamp(disease.metadata?.contagion ?? 0.35, 0.05, 1.0);
+    const severity = clamp(disease.intensity ?? 0.6, 0.1, 2.2);
+    const radius = clamp(this.genes.sense * 0.6, 40, 140);
+    const neighbors = world.queryCreatures(this.x, this.y, radius);
+    if (!neighbors || neighbors.length <= 1) return;
+    for (const other of neighbors) {
+      if (other === this || !other.alive || typeof other.hasStatus !== 'function') continue;
+      if (other.hasStatus('disease')) continue;
+      const immunity = clamp(other.genes.grit ?? 0, 0, 1);
+      const spreadChance = Math.max(0, contagion * 0.3 + severity * 0.05 - immunity * 0.12);
+      if (Math.random() < spreadChance) {
+        const duration = rand(18, 32);
+        const intensity = clamp(severity * rand(0.6, 1.15), 0.25, 2);
+        other.applyStatus('disease', {
+          duration,
+          intensity,
+          metadata: {
+            contagion: contagion * 0.9
+          }
+        });
+        if (typeof other.logEvent === 'function') {
+          other.logEvent('Caught a sickness', world.t);
+        }
+        if (world.particles && typeof world.particles.addDiseasePulse === 'function') {
+          world.particles.addDiseasePulse(other.x, other.y);
+        }
+      }
+    }
+  }
+
+  recordDamage(amount) {
+    if (!this.damageFx) this.damageFx = { recentDamage: 0, hitFlash: 0 };
+    const ratio = clamp(amount / 10, 0.05, 1);
+    this.damageFx.recentDamage = Math.min(2.6, (this.damageFx.recentDamage ?? 0) + ratio * 1.5);
+    this.damageFx.hitFlash = Math.max(this.damageFx.hitFlash ?? 0, 0.18 + ratio * 0.35);
   }
 
   updateTrail(dt) {
@@ -809,6 +1129,9 @@ export class Creature {
     if (!g.predator && this.stats.food >= 15) badges.push('Grazer');
     if (g.predator && this.stats.kills >= 3) badges.push('Apex');
     if (this.energy >= 35) badges.push('Charged');
+    if (this.aquaticAffinity > 0.6) badges.push('Amphibious');
+    if (this.hasStatus && this.hasStatus('disease')) badges.push('Sick');
+    if (this.hasStatus && this.hasStatus('venom')) badges.push('Poisoned');
     return badges;
   }
 
@@ -821,7 +1144,7 @@ export class Creature {
       showVision=false,
       clusterHue=null
     } = opts;
-    const effects = this.effects ?? null;
+    const damageFx = this.damageFx ?? null;
 
     if (showTrail && this.trail.length > 1) {
       ctx.save();
@@ -895,10 +1218,10 @@ export class Creature {
     const energyRatio = clamp(this.energy/40, 0.2, 1.0);
     const r = energyRatio * (3+this.size);
 
-    if (effects?.recentDamage > 0) {
+    if (damageFx?.recentDamage > 0) {
       ctx.beginPath();
       ctx.arc(0, 0, this.size + 5, 0, TAU);
-      ctx.strokeStyle = `rgba(255,96,96,${clamp(effects.recentDamage / 2.6, 0.15, 0.55)})`;
+      ctx.strokeStyle = `rgba(255,96,96,${clamp(damageFx.recentDamage / 2.6, 0.15, 0.55)})`;
       ctx.lineWidth = 1.5;
       ctx.stroke();
     }
@@ -913,7 +1236,7 @@ export class Creature {
     }
 
     const baseLight = g.predator ? 45 : 60;
-    const flash = effects ? effects.hitFlash : 0;
+    const flash = damageFx ? damageFx.hitFlash : 0;
     const lightness = Math.min(85, baseLight + flash * 90);
     ctx.fillStyle = `hsl(${displayHue},85%,${lightness}%)`;
     

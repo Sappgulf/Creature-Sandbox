@@ -1744,7 +1744,8 @@ function updateInspector(force) {
     ancestors,
     lineagePulse: lineagePulseData,
     lineageLeaders,
-    lineageStories: lineageTracker.getStories()
+    lineageStories: lineageTracker.getStories(),
+    world
   }, {
     onTogglePin: () => togglePin(creature),
     onSetRoot: () => toggleRoot(creature),

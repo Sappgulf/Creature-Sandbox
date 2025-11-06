@@ -52,7 +52,20 @@ export function renderStats(el, world, fps, extra={}) {
   if (world.getSeasonInfo) {
     const seasonInfo = world.getSeasonInfo();
     const seasonName = seasonInfo.current.charAt(0).toUpperCase() + seasonInfo.current.slice(1);
-    statParts.push(`<span>${seasonInfo.icon} ${seasonName}</span>`);
+    const progressPct = Math.round((seasonInfo.progress ?? 0) * 100);
+    const foodMul = seasonInfo.modifiers?.food ?? 1;
+    const reproMul = seasonInfo.modifiers?.reproduction ?? 1;
+    statParts.push(`<span>${seasonInfo.icon} ${seasonName} ${progressPct}% · 🌿×${foodMul.toFixed(2)} · 💞×${reproMul.toFixed(2)}</span>`);
+  }
+
+  if (world.getWeatherState) {
+    const weather = world.getWeatherState();
+    if (weather?.type) {
+      const icons = { rain: '🌧️', snow: '❄️', storm: '⛈️', wind: '💨' };
+      const icon = icons[weather.type] ?? '☁️';
+      const intensity = Math.round((weather.intensity ?? 0) * 100);
+      statParts.push(`<span>${icon} ${intensity}%</span>`);
+    }
   }
   
   const events = typeof world.getActiveEvents === 'function' ? world.getActiveEvents() : [];
@@ -120,6 +133,8 @@ export function renderSelectedInfo(el, creature, { world=null, lineageTracker=nu
   const speed = creature.genes?.speed?.toFixed(2) ?? '0.00';
   const sense = creature.genes?.sense?.toFixed(0) ?? '0';
   const metabolism = creature.genes?.metabolism?.toFixed(2) ?? '0.00';
+  const aquatic = (creature.genes?.aquatic ?? 0).toFixed(2);
+  const biome = creature.currentBiomeType ? creature.currentBiomeType : 'Unknown';
 
   el.innerHTML = `
     <div class="headline">
@@ -134,6 +149,8 @@ export function renderSelectedInfo(el, creature, { world=null, lineageTracker=nu
       <span><span>Senses</span><span>${sense}px</span></span>
       <span><span>Metabolism</span><span>${metabolism}</span></span>
       <span><span>Children</span><span>${creature.stats?.births ?? 0}</span></span>
+      <span><span>Aquatic</span><span>${aquatic}</span></span>
+      <span><span>Biome</span><span>${biome}</span></span>
     </div>
   `;
 }
@@ -141,6 +158,8 @@ export function renderSelectedInfo(el, creature, { world=null, lineageTracker=nu
 export function renderInspector(model={}, handlers={}) {
   const body = document.getElementById('inspector-body');
   const badgesPanel = document.getElementById('badges-panel');
+  const familyPanel = document.getElementById('family-panel');
+  const familyContent = document.getElementById('family-content');
   const lineageSummaryEl = document.getElementById('lineage-summary');
   const lineageStoriesEl = document.getElementById('lineage-stories');
   const lineageStoryPanel = document.getElementById('lineage-story');
@@ -158,6 +177,7 @@ export function renderInspector(model={}, handlers={}) {
 
   const creature = model.creature ?? null;
   const stats = creature ? model.stats ?? creature.stats : null;
+  const worldRef = model.world ?? null;
   const badges = creature ? (model.badges ?? []) : [];
   const activity = creature ? (model.activity ?? []) : [];
   const drawLineageSparkline = (canvas, series=[]) => {
@@ -316,6 +336,49 @@ export function renderInspector(model={}, handlers={}) {
     } else {
       badgesPanel.classList.add('hidden');
       badgesPanel.innerHTML = '';
+    }
+  }
+
+  if (familyPanel && familyContent) {
+    if (creature) {
+      const parentIds = Array.isArray(creature.parents) && creature.parents.length
+        ? creature.parents
+        : (creature.parentId ? [creature.parentId] : []);
+      const parentMarkup = parentIds.length
+        ? parentIds.map(id => {
+            const parent = worldRef?.getAnyCreatureById?.(id);
+            const alive = parent ? parent.alive !== false : false;
+            const label = alive ? `#${id}` : `#${id}✝`;
+            return `<button class="btn-link family-jump ${alive ? '' : 'muted'}" data-id="${id}">${label}</button>`;
+          }).join(', ')
+        : '<span class="muted">Unknown</span>';
+
+      const childIds = Array.isArray(creature.children) ? creature.children : [];
+      let childrenMarkup;
+      if (!childIds.length) {
+        childrenMarkup = '<span class="muted">None</span>';
+      } else {
+        const entries = childIds.slice(0, 6).map(id => {
+          const child = worldRef?.getAnyCreatureById?.(id);
+          const alive = child ? child.alive !== false : false;
+          const label = alive ? `#${id}` : `#${id}✝`;
+          return `<button class="btn-link family-jump ${alive ? '' : 'muted'}" data-id="${id}">${label}</button>`;
+        }).join(', ');
+        const extra = childIds.length > 6 ? `<span class="muted"> +${childIds.length - 6} more</span>` : '';
+        childrenMarkup = `${entries}${extra}`;
+      }
+
+      familyContent.innerHTML = `
+        <div><strong>Parents:</strong> ${parentMarkup}</div>
+        <div><strong>Children:</strong> ${childrenMarkup}</div>
+      `;
+      familyPanel.classList.remove('hidden');
+      familyContent.querySelectorAll('.family-jump').forEach(btn => {
+        btn.onclick = () => handlers.onInspectId?.(Number(btn.dataset.id));
+      });
+    } else {
+      familyPanel.classList.add('hidden');
+      familyContent.innerHTML = 'No family data.';
     }
   }
 

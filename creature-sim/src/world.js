@@ -98,6 +98,92 @@ export class World {
     this.currentSeason = 'spring'; // spring, summer, autumn, winter
     this.seasonCycle = ['spring', 'summer', 'autumn', 'winter'];
     this.seasonIndex = 0;
+    this.seasonConfigs = {
+      spring: {
+        label: 'Spring Bloom',
+        foodMultiplier: 1.4,
+        reproductionMultiplier: 1.25,
+        metabolismScalar: 0.92,
+        environment: {
+          tempOffset: 0.08,
+          foodRateMultiplier: 1.3
+        },
+        weather: {
+          type: 'rain',
+          baseIntensity: 0.35,
+          variation: 0.15,
+          transition: 6
+        },
+        audioCue: 'season_spring'
+      },
+      summer: {
+        label: 'Golden Summer',
+        foodMultiplier: 1.15,
+        reproductionMultiplier: 1.0,
+        metabolismScalar: 1.02,
+        environment: {
+          tempOffset: 0.12,
+          tempPenaltyAdd: 0.04,
+          foodRateMultiplier: 1.1
+        },
+        weather: {
+          type: 'storm',
+          baseIntensity: 0.25,
+          variation: 0.2,
+          transition: 4
+        },
+        audioCue: 'season_summer'
+      },
+      autumn: {
+        label: 'Harvest Fall',
+        foodMultiplier: 0.75,
+        reproductionMultiplier: 0.6,
+        metabolismScalar: 0.98,
+        environment: {
+          tempOffset: -0.05,
+          foodRateMultiplier: 0.85
+        },
+        weather: {
+          type: 'wind',
+          baseIntensity: 0.2,
+          variation: 0.18,
+          transition: 5
+        },
+        audioCue: 'season_autumn'
+      },
+      winter: {
+        label: 'Frostbound Winter',
+        foodMultiplier: 0.35,
+        reproductionMultiplier: 0.15,
+        metabolismScalar: 1.12,
+        environment: {
+          tempOffset: -0.18,
+          tempPenaltyScale: 1.2,
+          foodRateMultiplier: 0.55
+        },
+        weather: {
+          type: 'snow',
+          baseIntensity: 0.45,
+          variation: 0.1,
+          transition: 7
+        },
+        audioCue: 'season_winter'
+      }
+    };
+    this.currentSeasonConfig = this.seasonConfigs[this.currentSeason];
+    this.weatherState = {
+      type: null,
+      intensity: 0,
+      targetType: null,
+      targetIntensity: 0,
+      baseIntensity: 0,
+      variation: 0,
+      driftTimer: 0,
+      transition: 0,
+      transitionTime: 4
+    };
+    this._seasonEnvironmentFx = null;
+    this._diseaseSeedCooldown = 4;
     
     // Disaster system
     this.disasterCooldown = 0;
@@ -164,6 +250,144 @@ export class World {
         this.temperature.grid[this.temperature.idx(x,y)] = clamp(0.7 - r, 0.0, 0.7);
       }
     }
+
+    // Initialize season-dependent environment and weather on startup
+    if (this.currentSeasonConfig) {
+      this._applySeasonConfig(this.currentSeasonConfig, { announce: false });
+    }
+  }
+
+  _applySeasonConfig(config, { announce = true } = {}) {
+    this.currentSeasonConfig = config ?? null;
+    this._seasonEnvironmentFx = config?.environment ?? null;
+    this._configureSeasonWeather(config);
+    this._recalculateEnvironment();
+
+    if (announce && config) {
+      console.log(`🌍 Season changed to: ${this.currentSeason.toUpperCase()} (${config.label})`);
+      if (this.particles && typeof this.particles.addSeasonShift === 'function') {
+        this.particles.addSeasonShift(config.label, config);
+      }
+      if (this.audio && this.audio.ctx) {
+        try {
+          if (typeof this.audio.playSeasonTransition === 'function') {
+            this.audio.playSeasonTransition(config.audioCue ?? this.currentSeason);
+          } else if (typeof this.audio.playUISound === 'function') {
+            this.audio.playUISound('ambient');
+          }
+        } catch (err) {
+          // Audio failures are non-critical
+        }
+      }
+    }
+  }
+
+  _configureSeasonWeather(config) {
+    const ws = this.weatherState;
+    if (!ws) return;
+    if (!config?.weather) {
+      ws.targetType = null;
+      ws.baseIntensity = 0;
+      ws.targetIntensity = 0;
+      ws.variation = 0;
+      ws.transitionTime = 3;
+      ws.driftTimer = 0;
+      return;
+    }
+    const weather = config.weather;
+    ws.targetType = weather.type ?? null;
+    ws.transitionTime = Math.max(1, weather.transition ?? 4);
+    ws.baseIntensity = clamp(weather.baseIntensity ?? 0.2, 0, 1);
+    ws.targetIntensity = ws.baseIntensity;
+    ws.variation = Math.max(0, weather.variation ?? 0);
+    ws.driftTimer = Math.random() * 6 + 4;
+    if (ws.type === null) {
+      ws.type = ws.targetType;
+    }
+  }
+
+  _updateWeatherState(dt) {
+    const ws = this.weatherState;
+    if (!ws) return;
+    const changeRate = clamp(dt / Math.max(0.5, ws.transitionTime), 0.02, 0.35);
+    if (ws.type !== ws.targetType) {
+      ws.transition += dt;
+      if (ws.transition >= ws.transitionTime) {
+        ws.type = ws.targetType;
+        ws.transition = 0;
+      }
+    }
+
+    // Intensity easing
+    ws.intensity += (ws.targetIntensity - ws.intensity) * changeRate;
+    ws.intensity = clamp(ws.intensity, 0, 1);
+
+    // Wander the target intensity within variation bounds
+    ws.driftTimer -= dt;
+    if (ws.driftTimer <= 0) {
+      ws.driftTimer = Math.random() * 8 + 6;
+      const base = ws.baseIntensity ?? ws.targetIntensity;
+      const varAmt = ws.variation ?? 0;
+      if (varAmt > 0) {
+        const newTarget = clamp(base + rand(-varAmt, varAmt), 0, 1);
+        ws.targetIntensity = newTarget;
+      }
+    }
+  }
+
+  _updateDiseaseSystem(dt) {
+    const population = this.creatures.length;
+    if (population < 18) return;
+    this._diseaseSeedCooldown -= dt;
+    if (this._diseaseSeedCooldown > 0) return;
+
+    const crowding = clamp(population / 180, 0.1, 1.8);
+    const seasonal = this.getSeasonModifier('metabolism');
+    const chance = 0.18 * crowding * seasonal;
+    if (Math.random() < chance) {
+      const candidates = this.creatures.filter(c => c.alive && typeof c.hasStatus === 'function' && !c.hasStatus('disease'));
+      if (candidates.length) {
+        const carrier = candidates[Math.floor(Math.random() * candidates.length)];
+        carrier.applyStatus('disease', {
+          duration: rand(20, 34),
+          intensity: rand(0.4, 1.0),
+          metadata: { contagion: rand(0.28, 0.55) }
+        });
+        carrier.logEvent?.('Fell ill', this.t);
+        if (this.particles && typeof this.particles.addDiseasePulse === 'function') {
+          this.particles.addDiseasePulse(carrier.x, carrier.y);
+        }
+      }
+    }
+    this._diseaseSeedCooldown = rand(6, 14);
+  }
+
+  getWeatherState() {
+    if (!this.weatherState) {
+      return { type: null, intensity: 0 };
+    }
+    return {
+      type: this.weatherState.type,
+      intensity: this.weatherState.intensity,
+      targetIntensity: this.weatherState.targetIntensity,
+      transition: this.weatherState.transition,
+      transitionTime: this.weatherState.transitionTime
+    };
+  }
+
+  getSeasonModifier(kind) {
+    const cfg = this.currentSeasonConfig;
+    if (!cfg) return 1;
+    switch(kind) {
+      case 'food':
+        return cfg.foodMultiplier ?? 1;
+      case 'reproduction':
+        return cfg.reproductionMultiplier ?? 1;
+      case 'metabolism':
+        return cfg.metabolismScalar ?? 1;
+      default:
+        return 1;
+    }
   }
 
   addCreature(creature, parentId=null){
@@ -174,6 +398,13 @@ export class World {
     if (parentId) {
       if (!this.childrenOf.has(parentId)) this.childrenOf.set(parentId, new Set());
       this.childrenOf.get(parentId).add(creature.id);
+      const parent = this.registry.get(parentId);
+      if (parent) {
+        parent.children = parent.children || [];
+        if (!parent.children.includes(creature.id)) {
+          parent.children.push(creature.id);
+        }
+      }
       
       // NEW: Birth sparkle effect!
       if (this.particles) {
@@ -207,12 +438,27 @@ export class World {
   }
 
   seed(nHerb=60, nPred=6, nFood=180) {
-    for (let i=0;i<nHerb;i++) {
+    const swampCount = Math.max(2, Math.round(nHerb * 0.12));
+    const herbCount = Math.max(0, nHerb - swampCount);
+    for (let i=0;i<herbCount;i++) {
       this.addCreature(new Creature(rand(0,this.width), rand(0,this.height), makeGenes()), null);
     }
     for (let i=0;i<nPred;i++) {
       const g = makeGenes({ predator:1, speed:1.1, metabolism:1.2, hue:0 });
       this.addCreature(new Creature(rand(0,this.width), rand(0,this.height), g), null);
+    }
+    for (let i=0;i<swampCount;i++) {
+      const spot = this.findBiomeSpot('wetland');
+      const genes = makeGenes({
+        predator: 0,
+        diet: 0.6,
+        speed: 1.08,
+        sense: 130,
+        metabolism: 0.9,
+        hue: 180 + rand(-25, 25),
+        aquatic: 0.85
+      });
+      this.addCreature(new Creature(spot.x, spot.y, genes, false), null);
     }
     for (let i=0;i<nFood;i++) this.addFood(rand(0,this.width), rand(0,this.height), rand(1,2));
     this.gridDirty = true;
@@ -241,6 +487,7 @@ export class World {
     this.disasterQueueVersion = 0;
     this._nextDisasterId = 1;
     this.autoBalanceAccumulator = 0;
+    this._diseaseSeedCooldown = 4;
   }
 
   addFood(x,y,r=1.5, type=null){
@@ -361,6 +608,7 @@ export class World {
     if (!applied) return null;
 
     this._triggerPanicResponse(victim, pred, applied.damage);
+    this._applyPredatorVenom(pred, victim, applied.damage);
 
     const reflect = this._herbivoreReflectDamage(victim, pred, applied.damage);
     if (reflect > 0) {
@@ -444,12 +692,16 @@ export class World {
     const attacker = ctx.attacker ?? null;
     if (attacker && attacker !== target) {
       attacker.stats.damageDealt = (attacker.stats.damageDealt ?? 0) + dmg;
-      attacker.effects && (attacker.effects.hitFlash = Math.max(attacker.effects.hitFlash ?? 0, 0.18));
+      if (attacker.damageFx) {
+        attacker.damageFx.hitFlash = Math.max(attacker.damageFx.hitFlash ?? 0, 0.18);
+      }
     }
 
-    if (target.effects) {
-      target.effects.recentDamage = Math.min(2.6, (target.effects.recentDamage ?? 0) + 1.2);
-      target.effects.hitFlash = Math.max(target.effects.hitFlash ?? 0, 0.3 + Math.min(0.2, dmg * 0.02));
+    if (typeof target.recordDamage === 'function') {
+      target.recordDamage(dmg);
+    } else if (target.damageFx) {
+      target.damageFx.recentDamage = Math.min(2.6, (target.damageFx.recentDamage ?? 0) + 1.2);
+      target.damageFx.hitFlash = Math.max(target.damageFx.hitFlash ?? 0, 0.3 + Math.min(0.2, dmg * 0.02));
     }
 
     if (ctx.type === 'bite') {
@@ -481,7 +733,13 @@ export class World {
     if (!victim || victim.genes.predator) return 0;
     const spines = victim.genes.spines ?? 0;
     if (spines <= 0.05) return 0;
-    const herd = victim.effects?.herdIntensity ?? 0;
+    let herd = 0;
+    if (typeof victim.getStatusIntensity === 'function') {
+      herd = victim.getStatusIntensity('herd-buff', 0);
+    } else if (victim.statuses instanceof Map) {
+      const buf = victim.statuses.get('herd-buff');
+      herd = buf?.intensity ?? 0;
+    }
     const reflectScale = clamp(0.25 + spines * 0.6 + herd * 0.35, 0.1, 0.7);
     const reflect = incomingDamage * reflectScale;
     return Math.max(0, reflect);
@@ -498,13 +756,17 @@ export class World {
     const intensity = 0.12 + herd * 0.45;
     for (const ally of allies) {
       if (ally.genes.predator) continue;
-      ally.effects = ally.effects ?? {};
-      ally.effects.herdBuff = Math.max(ally.effects.herdBuff ?? 0, duration);
-      ally.effects.herdIntensity = Math.max(ally.effects.herdIntensity ?? 0, intensity);
-      if (ally !== victim && ally.effects.adrenalineCooldown <= 1.5) {
-        ally.effects.adrenaline = Math.max(ally.effects.adrenaline ?? 0, 1.2);
-        ally.effects.adrenalineBoost = Math.max(ally.effects.adrenalineBoost ?? 0, 0.25 + herd * 0.2);
-        ally.effects.adrenalineCooldown = Math.max(ally.effects.adrenalineCooldown ?? 0, 3.5);
+      if (typeof ally.applyStatus === 'function') {
+        ally.applyStatus('herd-buff', { duration, intensity });
+      }
+      if (ally !== victim) {
+        ally.cooldowns = ally.cooldowns || { adrenaline: 0, familyAid: 0 };
+        const currentCd = ally.cooldowns.adrenaline ?? 0;
+        if (currentCd <= 1.5 && typeof ally.hasStatus === 'function' && !ally.hasStatus('adrenaline')) {
+          const boost = 0.25 + herd * 0.2;
+          ally.applyStatus('adrenaline', { duration: 1.2, intensity: boost, metadata: { boost } });
+          ally.cooldowns.adrenaline = Math.max(currentCd, 3.5);
+        }
       }
     }
   }
@@ -521,12 +783,37 @@ export class World {
 
   _inflictBleed(pred, severity) {
     if (!pred || !pred.alive || severity <= 0) return;
-    const eff = pred.effects;
-    if (!eff) return;
     const stacks = clamp(severity * 2.2, 0.4, 2.6);
-    eff.bleed = Math.min(6, (eff.bleed ?? 0) + 2 + severity * 2.4);
-    eff.bleedStacks = Math.min(5, (eff.bleedStacks ?? 0) + stacks);
-    eff.hitFlash = Math.max(eff.hitFlash ?? 0, 0.22);
+    if (typeof pred.applyStatus === 'function') {
+      const existing = pred.getStatus ? pred.getStatus('bleed') : null;
+      const nextDuration = Math.min(6, (existing?.duration ?? 0) + 2 + severity * 2.4);
+      const nextStacks = Math.min(5, (existing?.stacks ?? 0) + stacks);
+      const nextIntensity = clamp((existing?.intensity ?? 1) + severity * 0.35, 0.35, 3);
+      pred.applyStatus('bleed', { duration: nextDuration, stacks: nextStacks, intensity: nextIntensity });
+    }
+    if (pred.damageFx) {
+      pred.damageFx.hitFlash = Math.max(pred.damageFx.hitFlash ?? 0, 0.22);
+    }
+  }
+
+  _applyPredatorVenom(pred, victim, damage) {
+    if (!pred || !victim || !victim.alive) return;
+    const venomGene = pred.genes?.venom ?? 0;
+    if (venomGene <= 0.05 || typeof victim.applyStatus !== 'function') return;
+    const potency = clamp(venomGene, 0.05, 1.6);
+    const chance = clamp(0.25 + potency * 0.4, 0.05, 0.85);
+    if (Math.random() > chance) return;
+    const duration = 6 + potency * 6 + rand(0, 3);
+    const intensity = clamp((damage / 18) * potency, 0.3, 2.4);
+    victim.applyStatus('venom', {
+      duration,
+      intensity,
+      metadata: { source: pred.id ?? null, potency }
+    });
+    victim.logEvent?.('Poisoned by venom', this.t, { attacker: pred.id ?? null });
+    if (this.particles && typeof this.particles.addVenomStrike === 'function') {
+      this.particles.addVenomStrike(victim.x, victim.y);
+    }
   }
 
   updateEcoStats() {
@@ -579,6 +866,21 @@ export class World {
     
     const child = new Creature(parent1.x, parent1.y, childGenes, true);
     const childId = this.addCreature(child, parent1.id);
+    child.parents = [];
+    if (parent1?.id != null) child.parents.push(parent1.id);
+    if (parent2?.id != null && parent2.id !== parent1.id) child.parents.push(parent2.id);
+    parent1.children = parent1.children || [];
+    if (!parent1.children.includes(childId)) {
+      parent1.children.push(childId);
+    }
+    if (parent2 && parent2.id != null && parent2.id !== parent1.id) {
+      if (!this.childrenOf.has(parent2.id)) this.childrenOf.set(parent2.id, new Set());
+      this.childrenOf.get(parent2.id).add(childId);
+      parent2.children = parent2.children || [];
+      if (!parent2.children.includes(childId)) {
+        parent2.children.push(childId);
+      }
+    }
     
     // Audio: Birth sound
     if (this.audio && this.audio.ctx) {
@@ -591,6 +893,9 @@ export class World {
     
     if (typeof parent1.noteBirth === 'function') {
       parent1.noteBirth(childId, this.t);
+    }
+    if (parent2 && typeof parent2.noteBirth === 'function') {
+      parent2.noteBirth(childId, this.t);
     }
     
     this.lineageTracker?.noteBirth(this, parent1, child);
@@ -648,6 +953,25 @@ export class World {
       for (const k of kids){ if (!out.has(k)){ out.add(k); q.push(k); } }
     }
     return out;
+  }
+
+  _rebuildFamilyLinks() {
+    this.childrenOf.clear();
+    for (const c of this.creatures) {
+      if (!Array.isArray(c.parents)) continue;
+      for (const pid of c.parents) {
+        if (pid == null) continue;
+        if (!this.childrenOf.has(pid)) this.childrenOf.set(pid, new Set());
+        this.childrenOf.get(pid).add(c.id);
+        const parent = this.registry.get(pid);
+        if (parent) {
+          parent.children = parent.children || [];
+          if (!parent.children.includes(c.id)) {
+            parent.children.push(c.id);
+          }
+        }
+      }
+    }
   }
 
   getCreatureById(id){ return this.creatures.find(c=>c.id===id); }
@@ -726,8 +1050,10 @@ export class World {
       this.timeOfDay = this.timeOfDay % 24; // Wrap at 24 hours
     }
     
-    // NEW: Update four seasons system
+    // Update four seasons system & weather drift
     this._updateSeasons(dt);
+    this._updateWeatherState(dt);
+    this._updateDiseaseSystem(dt);
     
     this.updateSeasonalEvents(dt);
     this.updatePredatorSignals(dt);
@@ -784,14 +1110,8 @@ export class World {
     const base = 0.18;
     const scarcity = clamp(1 - this.food.length / Math.max(1, this.maxFood), 0, 1);
     
-    // NEW: Season-based food growth modifiers
-    let seasonMultiplier = 1.0;
-    switch(this.currentSeason) {
-      case 'spring': seasonMultiplier = 1.5; break; // Abundant growth
-      case 'summer': seasonMultiplier = 1.2; break; // Good growth
-      case 'autumn': seasonMultiplier = 0.8; break; // Declining
-      case 'winter': seasonMultiplier = 0.3; break; // Scarce
-    }
+    // Season-based food growth modifiers
+    const seasonMultiplier = this.getSeasonModifier('food');
     
     return (base + 0.4 * scarcity) * 0.016 * this.environment.foodRateMultiplier * seasonMultiplier;
   }
@@ -799,27 +1119,38 @@ export class World {
   // NEW: Update seasons cycle
   _updateSeasons(dt) {
     this.seasonTime += dt;
+    const config = this.currentSeasonConfig || this.seasonConfigs[this.currentSeason];
+    if (config && !this.currentSeasonConfig) {
+      this._applySeasonConfig(config, { announce: false });
+    }
     
-    // Change season every seasonDuration seconds
     if (this.seasonTime >= this.seasonDuration) {
       this.seasonTime = 0;
-      this.seasonIndex = (this.seasonIndex + 1) % 4;
+      this.seasonIndex = (this.seasonIndex + 1) % this.seasonCycle.length;
       this.currentSeason = this.seasonCycle[this.seasonIndex];
-      
-      // Log season change
-      console.log(`🌍 Season changed to: ${this.currentSeason.toUpperCase()}`);
+      const nextConfig = this.seasonConfigs[this.currentSeason] || null;
+      this._applySeasonConfig(nextConfig, { announce: true });
     }
   }
   
   // NEW: Get season info for UI/rendering
   getSeasonInfo() {
     const progress = this.seasonTime / this.seasonDuration;
+    const config = this.currentSeasonConfig;
+    const weather = this.getWeatherState();
     return {
       current: this.currentSeason,
+       label: config?.label ?? this.currentSeason,
       progress: progress,
       timeRemaining: this.seasonDuration - this.seasonTime,
       icon: this._getSeasonIcon(),
-      color: this._getSeasonColor()
+      color: this._getSeasonColor(),
+      modifiers: {
+        food: config?.foodMultiplier ?? 1,
+        reproduction: config?.reproductionMultiplier ?? 1,
+        metabolism: config?.metabolismScalar ?? 1
+      },
+      weather
     };
   }
   
@@ -1297,6 +1628,26 @@ export class World {
     return typeMap[biome.type] ?? 1;
   }
 
+  findBiomeSpot(targetType, attempts=12) {
+    let fallback = null;
+    for (let i = 0; i < attempts; i++) {
+      const x = rand(0, this.width);
+      const y = rand(0, this.height);
+      const biome = this.getBiomeAt(x, y);
+      if (!biome) continue;
+      if (biome.type === targetType) {
+        return { x, y };
+      }
+      if (!fallback || (biome.moisture ?? 0) > fallback.score) {
+        fallback = { x, y, score: biome.moisture ?? 0 };
+      }
+    }
+    if (fallback) {
+      return { x: fallback.x, y: fallback.y };
+    }
+    return { x: rand(0, this.width), y: rand(0, this.height) };
+  }
+
   pickHabitatSpot() {
     // UPDATED: Pick random location within extended bounds (5x world size for infinite feel)
     // Sample several points and pick best
@@ -1357,10 +1708,27 @@ export class World {
         age: c.age,
         stats: { ...c.stats },
         health: c.health,
-        maxHealth: c.maxHealth
+        maxHealth: c.maxHealth,
+        parents: c.parents ? [...c.parents] : [],
+        statuses: c.statuses ? Array.from(c.statuses.entries()).map(([key, status]) => ({
+          key,
+          duration: status.duration,
+          intensity: status.intensity,
+          stacks: status.stacks,
+          metadata: status.metadata
+        })) : [],
+        cooldowns: { ...(c.cooldowns ?? {}) },
+        statusTimers: { ...(c.statusTimers ?? {}) }
       })),
       food: this.food.map(f => ({ ...f })),
       environment: { ...this.environment },
+      season: {
+        current: this.currentSeason,
+        index: this.seasonIndex,
+        time: this.seasonTime,
+        duration: this.seasonDuration,
+        weather: this.getWeatherState()
+      },
       activeEvents: this.getActiveEvents(),
       lineagePulse: {
         interval: this.lineagePulse.interval,
@@ -1382,12 +1750,30 @@ export class World {
       const c = new Creature(data.x, data.y, data.genes ?? makeGenes(), false);
       c.id = data.id;
       c.parentId = data.parentId ?? null;
+      c.parents = Array.isArray(data.parents) ? [...data.parents] : (c.parentId != null ? [c.parentId] : []);
       c.dir = data.dir ?? 0;
       c.energy = data.energy ?? 24;
       c.age = data.age ?? 0;
       c.maxHealth = data.maxHealth ?? (c.genes.predator ? 18 : 12);
       c.health = Math.min(c.maxHealth, data.health ?? c.maxHealth);
       c.stats = { food:0, kills:0, births:0, damageTaken:0, damageDealt:0, ...(data.stats ?? {}) };
+      if (Array.isArray(data.statuses) && typeof c.applyStatus === 'function') {
+        for (const status of data.statuses) {
+          if (!status || !status.key) continue;
+          c.applyStatus(status.key, {
+            duration: status.duration ?? 0,
+            intensity: status.intensity,
+            stacks: status.stacks,
+            metadata: status.metadata
+          });
+        }
+      }
+      if (data.cooldowns) {
+        c.cooldowns = { ...(c.cooldowns ?? {}), ...data.cooldowns };
+      }
+      if (data.statusTimers) {
+        c.statusTimers = { ...(c.statusTimers ?? {}), ...data.statusTimers };
+      }
       this.creatures.push(c);
       this.registry.set(c.id, c);
       if (c.parentId) {
@@ -1396,6 +1782,7 @@ export class World {
       }
       this._nextId = Math.max(this._nextId, (c.id ?? 0) + 1);
     }
+    this._rebuildFamilyLinks();
     this.food = (snapshot.food ?? []).map(f => ({ ...f }));
 
     const envSnapshot = snapshot.environment ?? null;
@@ -1762,6 +2149,14 @@ export class World {
     env.tempPenaltyScale = base.tempPenaltyScale;
     env.tempPenaltyAdd = base.tempPenaltyAdd;
     env.foodRateMultiplier = base.foodRateMultiplier;
+
+    if (this._seasonEnvironmentFx) {
+      const fx = this._seasonEnvironmentFx;
+      if (fx.tempOffset) env.tempOffset += fx.tempOffset;
+      if (fx.tempPenaltyScale) env.tempPenaltyScale *= fx.tempPenaltyScale;
+      if (fx.tempPenaltyAdd) env.tempPenaltyAdd += fx.tempPenaltyAdd;
+      if (fx.foodRateMultiplier) env.foodRateMultiplier *= fx.foodRateMultiplier;
+    }
 
     for (const state of this.eventSystem.active) {
       const fx = state.definition.effects;

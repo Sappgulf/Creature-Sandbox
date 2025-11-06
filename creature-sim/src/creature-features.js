@@ -63,8 +63,7 @@ Creature.prototype._updateSocialBehavior = function(world) {
     if (this.social.herdMates.length >= 2) {
       const herdSize = Math.min(this.social.herdMates.length, 8);
       const buffStrength = (herdSize / 8) * (this.genes.herdInstinct ?? 0.5) * 0.3;
-      this.effects.herdBuff = 0.5; // duration
-      this.effects.herdIntensity = buffStrength;
+      this.applyStatus('herd-buff', { duration: 0.5, intensity: buffStrength });
     }
   }
   
@@ -325,4 +324,3 @@ Creature.prototype.performCourtship = function() {
     active: true
   };
 };
-

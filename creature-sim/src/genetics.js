@@ -115,6 +115,7 @@ export function makeGenes(seed={}) {
     panicPheromone: createDiploidTrait(seed.panicPheromone, predator ? 0.08 : 0.65, 0, 1),
     grit: createDiploidTrait(seed.grit, predator ? 0.65 : 0.1, 0, 1),
     nocturnal: createDiploidTrait(seed.nocturnal, 0.5, 0, 1),
+    aquatic: createDiploidTrait(seed.aquatic, predator ? 0.04 : 0.12, 0, 1),
     
     // Legacy compatibility
     predator: predator,

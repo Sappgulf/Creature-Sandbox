@@ -171,6 +171,10 @@ export class AudioSystem {
         }
         break;
         
+      case 'play':
+        this.playTone(pitch * 1.4, 0.12, 'sine', volume * 0.5, 'creatures');
+        break;
+        
       case 'idle':
       default:
         // Occasional ambient chirp/growl (rare)
@@ -324,4 +328,3 @@ export class AudioSystem {
     }
   }
 }
-

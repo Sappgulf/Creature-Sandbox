@@ -167,6 +167,13 @@ export class Renderer {
       world.particles.draw(ctx);
     }
     
+    if (selectedId) {
+      const selectedCreature = world.getAnyCreatureById?.(selectedId);
+      if (selectedCreature) {
+        this._drawFamilyConnections(world, selectedCreature);
+      }
+    }
+    
     // Advanced visualizations (after creatures)
     if (this.enableEmotions && selectedId) {
       const creature = world.getAnyCreatureById(selectedId);
@@ -195,6 +202,44 @@ export class Renderer {
     } else {
       this.lastMiniMap = null;
     }
+  }
+  
+  _drawFamilyConnections(world, creature) {
+    const ctx = this.ctx;
+    ctx.save();
+    const dashLength = 4 / this.camera.zoom;
+    ctx.setLineDash([dashLength, dashLength * 0.75]);
+    ctx.lineWidth = 1.2 / this.camera.zoom;
+
+    const parents = Array.isArray(creature.parents) && creature.parents.length
+      ? creature.parents
+      : (creature.parentId ? [creature.parentId] : []);
+    if (parents.length) {
+      ctx.strokeStyle = 'rgba(255,210,130,0.45)';
+      ctx.beginPath();
+      for (const pid of parents) {
+        const parent = world.getAnyCreatureById?.(pid);
+        if (!parent) continue;
+        ctx.moveTo(creature.x, creature.y);
+        ctx.lineTo(parent.x, parent.y);
+      }
+      ctx.stroke();
+    }
+
+    const children = Array.isArray(creature.children) ? creature.children : [];
+    if (children.length) {
+      ctx.strokeStyle = 'rgba(146,210,255,0.55)';
+      ctx.beginPath();
+      for (const cid of children) {
+        const child = world.getAnyCreatureById?.(cid);
+        if (!child) continue;
+        ctx.moveTo(creature.x, creature.y);
+        ctx.lineTo(child.x, child.y);
+      }
+      ctx.stroke();
+    }
+
+    ctx.restore();
   }
   
   _drawGodModeEffects() {
