@@ -100,7 +100,9 @@ export class Renderer {
     ctx.save();
     
     // Apply screen shake offset (for dramatic effects)
-    const shakeOffset = world.particles?.getShakeOffset() || { x: 0, y: 0 };
+    const shakeOffset = (world.particles && typeof world.particles.getShakeOffset === 'function') 
+      ? world.particles.getShakeOffset() 
+      : { x: 0, y: 0 };
     
     ctx.translate(opts.viewportWidth/2 + shakeOffset.x, opts.viewportHeight/2 + shakeOffset.y);
     ctx.scale(camera.zoom, camera.zoom);
