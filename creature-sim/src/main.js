@@ -1368,11 +1368,9 @@ function godModeClone() {
     const offsetX = (Math.random() - 0.5) * 50;
     const offsetY = (Math.random() - 0.5) * 50;
     
-    // Ensure clone position is within world bounds
-    let cloneX = creature.x + offsetX;
-    let cloneY = creature.y + offsetY;
-    cloneX = Math.max(10, Math.min(world.width - 10, cloneX));
-    cloneY = Math.max(10, Math.min(world.height - 10, cloneY));
+    // REMOVED: No world boundaries - clones can spawn anywhere
+    const cloneX = creature.x + offsetX;
+    const cloneY = creature.y + offsetY;
     
     // Create clone with exact copy of genes
     const clone = new Creature(
@@ -1837,33 +1835,42 @@ function downloadFile(filename, content, mimeType) {
 
 // PERFORMANCE: Track when we last updated advanced analytics
 let lastAdvancedAnalyticsUpdate = 0;
-const ADVANCED_ANALYTICS_INTERVAL = 2000; // Only update every 2 seconds
+const ADVANCED_ANALYTICS_INTERVAL = 5000; // Only update every 5 seconds (it's VERY expensive)
 
 function updateAdvancedAnalytics() {
   const now = performance.now();
   
-  // CRITICAL FIX: Only update phylogeny/species every 2 seconds (it's VERY expensive)
+  // CRITICAL FIX: Only update phylogeny/species every 5 seconds (it's VERY expensive)
   if (now - lastAdvancedAnalyticsUpdate < ADVANCED_ANALYTICS_INTERVAL) {
     return;
   }
   lastAdvancedAnalyticsUpdate = now;
   
-  // Update phylogeny view
+  // OPTIMIZATION: Only update phylogeny if the panel is visible
   const phylogenyList = document.getElementById('phylogeny-list');
-  if (phylogenyList && analytics.phylogenyData) {
-    const phylogeny = analytics.buildPhylogeny(world);
-    if (phylogeny && phylogeny.length > 0) {
-      let html = '<div class="phylogeny-roots">';
-      for (const root of phylogeny.slice(0, 5)) { // Top 5 lineages
-        html += `<div class="phylogeny-item">
-          <span class="phylogeny-name">${root.name}</span>
-          <span class="phylogeny-stats">${root.alive}/${root.total} (${root.depth} gen)</span>
-        </div>`;
+  if (phylogenyList) {
+    // Check if phylogeny section is actually visible (not collapsed)
+    const phylogenySection = phylogenyList.closest('.panel-body');
+    const isVisible = phylogenySection && phylogenySection.offsetParent !== null;
+    
+    if (isVisible) {
+      const phylogeny = analytics.buildPhylogeny(world);
+      if (phylogeny && phylogeny.length > 0) {
+        let html = '<div class="phylogeny-roots">';
+        for (const root of phylogeny.slice(0, 5)) { // Top 5 lineages
+          html += `<div class="phylogeny-item">
+            <span class="phylogeny-name">${root.name}</span>
+            <span class="phylogeny-stats">${root.alive}/${root.total} (${root.depth} gen)</span>
+          </div>`;
+        }
+        html += '</div>';
+        phylogenyList.innerHTML = html;
+      } else {
+        phylogenyList.innerHTML = '<span class="muted tiny">No lineage data yet</span>';
       }
-      html += '</div>';
-      phylogenyList.innerHTML = html;
     } else {
-      phylogenyList.innerHTML = '<span class="muted tiny">No lineage data yet</span>';
+      // Panel collapsed - don't compute phylogeny at all
+      phylogenyList.innerHTML = '<span class="muted tiny">Computing...</span>';
     }
   }
   

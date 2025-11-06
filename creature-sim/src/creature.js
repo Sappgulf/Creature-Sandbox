@@ -448,8 +448,9 @@ export class Creature {
     const spd = baseSpeed * speedScalar;
     this.vx = Math.cos(this.dir) * spd;
     this.vy = Math.sin(this.dir) * spd;
-    this.x = wrap(this.x + this.vx*dt, world.width);
-    this.y = wrap(this.y + this.vy*dt, world.height);
+    // REMOVED: No world boundaries - creatures can move freely
+    this.x = this.x + this.vx*dt;
+    this.y = this.y + this.vy*dt;
 
     // NEW: Update animation state based on movement
     this._updateAnimationState(spd, world.t);
@@ -863,10 +864,17 @@ export class Creature {
     ctx.save();
     ctx.translate(this.x, this.y);
     
-    // NEW: Apply animation effects
-    this._applyAnimationTransform(ctx);
+    // OPTIMIZATION: Only apply animation when zoomed in enough or selected
+    const shouldAnimate = isSelected || isPinned || (opts.zoom && opts.zoom > 0.8);
+    if (shouldAnimate) {
+      this._applyAnimationTransform(ctx);
+    }
     
     ctx.rotate(this.dir);
+
+    // OPTIMIZATION: Cache size calculation
+    const energyRatio = clamp(this.energy/40, 0.2, 1.0);
+    const r = energyRatio * (3+this.size);
 
     if (effects?.recentDamage > 0) {
       ctx.beginPath();
@@ -890,6 +898,9 @@ export class Creature {
     const lightness = Math.min(85, baseLight + flash * 90);
     ctx.fillStyle = `hsl(${displayHue},85%,${lightness}%)`;
     
+    // OPTIMIZATION: Only draw detailed traits when zoomed in significantly
+    const showTraitDetails = opts.showTraitVisualization !== false && (isSelected || isPinned || (opts.zoom && opts.zoom > 1.0));
+    
     // NEW: Trait visualization - body shape based on metabolism
     const bodyScale = 0.8 + (2 - g.metabolism) * 0.3; // Low metabolism = chunkier
     ctx.save();
@@ -904,13 +915,12 @@ export class Creature {
 
     ctx.strokeStyle = `hsla(${displayHue},90%,80%,${0.65 + flash * 0.4})`;
     ctx.lineWidth = 1;
-    const r = clamp(this.energy/40, 0.2, 1.0) * (3+this.size);
     ctx.beginPath();
     ctx.arc(0,0,r,0,TAU);
     ctx.stroke();
     
-    // NEW: Trait visualization - visual features
-    if (opts.showTraitVisualization !== false) {
+    // OPTIMIZATION: Only draw detailed trait visualization when zoomed in
+    if (showTraitDetails) {
       this._drawTraits(ctx, g, displayHue, r);
     }
 

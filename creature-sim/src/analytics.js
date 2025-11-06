@@ -260,27 +260,77 @@ export class AnalyticsTracker {
       return null;
     }
     
+    // OPTIMIZATION: Initialize cache if needed
+    if (!this._phylogenyCache) {
+      this._phylogenyCache = new Map(); // rootId -> { data, version }
+    }
+    
+    // OPTIMIZATION: Use a more stable cache key - only invalidate when population changes significantly
+    // Check if population changed by more than 5% or if more than 5 seconds passed
+    const populationChanged = !this._lastPopulation || 
+      Math.abs(this._lastPopulation - world.creatures.length) > Math.max(5, this._lastPopulation * 0.05);
+    
+    const timeChanged = !this._lastPhylogenyTime || 
+      (world.t - this._lastPhylogenyTime) > 5.0; // 5 seconds
+    
+    if (!populationChanged && !timeChanged && this.phylogenyData) {
+      return this.phylogenyData; // Return cached result - no need to recompute
+    }
+    
+    // Update cache keys
+    this._lastPopulation = world.creatures.length;
+    this._lastPhylogenyTime = world.t;
+    
     const roots = [];
     const processed = new Set();
+    const rootCounts = new Map(); // rootId -> count of creatures
     
-    for (const creature of world.creatures) {
-      const rootId = world.lineageTracker.getRoot(world, creature.id);
-      if (!processed.has(rootId)) {
-        processed.add(rootId);
-        const lineage = world.buildLineageOverview(rootId);
+    // OPTIMIZATION: First pass - just count creatures per root (fast)
+    for (let i = 0; i < world.creatures.length; i++) {
+      const creature = world.creatures[i];
+      const rootId = world.lineageTracker.getRoot(world, creature.id); // Already cached!
+      if (!rootCounts.has(rootId)) {
+        rootCounts.set(rootId, { count: 0, alive: 0 });
+      }
+      const counts = rootCounts.get(rootId);
+      counts.count++;
+      if (creature.alive) counts.alive++;
+      processed.add(rootId);
+    }
+    
+    // OPTIMIZATION: Only build lineage overviews for top roots (biggest families)
+    // Sort roots by size and only process top 5-10
+    const sortedRoots = Array.from(rootCounts.entries())
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 8); // Top 8 lineages only
+    
+    // OPTIMIZATION: Build lineage overviews with caching
+    for (const [rootId, counts] of sortedRoots) {
+      // Check cache first
+      let lineage = this._phylogenyCache.get(rootId);
+      if (!lineage || lineage.version !== counts.count) {
+        // Only build full overview if not cached or counts changed
+        lineage = world.buildLineageOverview(rootId, 4); // Limit depth to 4 instead of 6
         if (lineage) {
-          roots.push({
-            rootId,
-            name: world.lineageTracker.names[rootId] || `#${rootId}`,
-            alive: lineage.aliveDesc,
-            total: lineage.totalDesc,
-            depth: lineage.levels.length
-          });
+          this._phylogenyCache.set(rootId, { ...lineage, version: counts.count });
         }
+      }
+      
+      if (lineage) {
+        roots.push({
+          rootId,
+          name: world.lineageTracker.names.get(rootId) || `#${rootId}`,
+          alive: counts.alive,
+          total: counts.count,
+          depth: lineage.levels ? lineage.levels.length : 1
+        });
       }
     }
     
-    this.phylogenyData = roots.sort((a, b) => b.total - a.total);
+    // Sort by total
+    roots.sort((a, b) => b.total - a.total);
+    this.phylogenyData = roots;
+    
     return this.phylogenyData;
   }
 

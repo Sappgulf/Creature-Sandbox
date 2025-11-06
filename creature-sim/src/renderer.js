@@ -33,7 +33,7 @@ export class Renderer {
     this.enableAtmosphere = !this.isMobile; // Atmospheric rendering disabled on mobile
     this.enableWeather = !this.isMobile; // Weather effects disabled on mobile
     this.enableDayNight = true; // Day/night cycle
-    this.background = '#000000'; // Pure black background
+    this.background = '#15201a'; // Match CSS background color
     this.lastMiniMap = null; // Cache latest mini-map bounds for interaction
     this.miniMapSettings = {
       heatmap: true,
@@ -55,6 +55,7 @@ export class Renderer {
     // Cache lineage computation
     this._lineageCache = { rootId: null, set: null, frame: 0 };
     this._clusterCache = { clusters: null, frame: -1 };
+    this._nameCache = null; // Cache for creature names to avoid repeated lookups
     
     // LEGENDARY OPTIMIZATION: Frustum culling + performance tracking
     this._viewBounds = { x1: 0, y1: 0, x2: 0, y2: 0 };
@@ -341,8 +342,23 @@ export class Renderer {
     const bounds = this._viewBounds;
     const sampleSize = Math.max(30, 120 / this.camera.zoom); // Larger samples = less blocky
     
-    // Base background (pure black - no biome colors)
-    ctx.fillStyle = '#000000';
+    // Base background - fill entire visible area (including areas outside world bounds when zoomed out)
+    ctx.fillStyle = '#15201a'; // Match CSS background
+    
+    // Calculate the full visible area in world coordinates
+    const visibleWidth = bounds.x2 - bounds.x1;
+    const visibleHeight = bounds.y2 - bounds.y1;
+    const extendAmount = Math.max(visibleWidth, visibleHeight) * 2; // Extend far beyond visible area
+    
+    // Fill entire visible area + large margin (to handle any zoom level)
+    ctx.fillRect(
+      bounds.x1 - extendAmount, 
+      bounds.y1 - extendAmount, 
+      visibleWidth + extendAmount * 2, 
+      visibleHeight + extendAmount * 2
+    );
+    
+    // Fill world area (may overlap, but ensures world is fully covered)
     ctx.fillRect(0, 0, world.width, world.height);
     
     // Draw decorations with better visibility (less dense)
@@ -412,8 +428,18 @@ export class Renderer {
     }
     
     if (darkness > 0.05) {
+      // Fill entire visible area, not just world bounds
+      const bounds = this._viewBounds;
+      const visibleWidth = bounds.x2 - bounds.x1;
+      const visibleHeight = bounds.y2 - bounds.y1;
+      const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
       ctx.fillStyle = `rgba(0, 10, 30, ${darkness})`;
-      ctx.fillRect(0, 0, world.width, world.height);
+      ctx.fillRect(
+        bounds.x1 - extendAmount,
+        bounds.y1 - extendAmount,
+        visibleWidth + extendAmount * 2,
+        visibleHeight + extendAmount * 2
+      );
     }
   }
   
@@ -439,8 +465,18 @@ export class Renderer {
     }
     
     if (tint) {
+      // Fill entire visible area, not just world bounds
+      const bounds = this._viewBounds;
+      const visibleWidth = bounds.x2 - bounds.x1;
+      const visibleHeight = bounds.y2 - bounds.y1;
+      const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
       ctx.fillStyle = tint;
-      ctx.fillRect(0, 0, world.width, world.height);
+      ctx.fillRect(
+        bounds.x1 - extendAmount,
+        bounds.y1 - extendAmount,
+        visibleWidth + extendAmount * 2,
+        visibleHeight + extendAmount * 2
+      );
     }
   }
   
@@ -452,11 +488,25 @@ export class Renderer {
   drawFood(food) {
     if (food.length === 0) return;
     const ctx = this.ctx;
+    const bounds = this._viewBounds;
     
-    // NEW: Group food by type for batched rendering
-    const byType = { grass: [], berries: [], fruit: [] };
+    // OPTIMIZATION: Frustum cull food items
+    const visibleFood = [];
     for (let i = 0; i < food.length; i++) {
       const f = food[i];
+      const margin = f.r || 5;
+      if (f.x + margin >= bounds.x1 && f.x - margin <= bounds.x2 &&
+          f.y + margin >= bounds.y1 && f.y - margin <= bounds.y2) {
+        visibleFood.push(f);
+      }
+    }
+    
+    if (visibleFood.length === 0) return;
+    
+    // OPTIMIZATION: Group food by type for batched rendering
+    const byType = { grass: [], berries: [], fruit: [] };
+    for (let i = 0; i < visibleFood.length; i++) {
+      const f = visibleFood[i];
       const type = f.type || 'grass';
       if (byType[type]) {
         byType[type].push(f);
@@ -467,25 +517,31 @@ export class Renderer {
     for (const [type, items] of Object.entries(byType)) {
       if (items.length === 0) continue;
       
-      // Set color based on type
-      const firstItem = items[0];
-      ctx.fillStyle = firstItem.color || 'rgba(126,210,120,0.85)';
+      // OPTIMIZATION: Use cached color
+      const defaultColors = {
+        grass: 'rgba(126,210,120,0.85)',
+        berries: 'rgba(200,100,150,0.85)',
+        fruit: 'rgba(255,180,80,0.85)'
+      };
+      ctx.fillStyle = items[0].color || defaultColors[type] || defaultColors.grass;
       
-      // Batch draw all items of this type
+      // OPTIMIZATION: Batch draw all items of this type
       ctx.beginPath();
-      for (const f of items) {
+      for (let i = 0; i < items.length; i++) {
+        const f = items[i];
         ctx.moveTo(f.x + f.r, f.y);
         ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
       }
       ctx.fill();
       
-      // Add visual distinction for rare types
-      if (type === 'fruit') {
+      // OPTIMIZATION: Only draw stems when zoomed in enough
+      if (type === 'fruit' && this.camera.zoom > 0.5) {
         // Draw stem/leaf for fruit trees
         ctx.strokeStyle = '#8B4513';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        for (const f of items) {
+        for (let i = 0; i < items.length; i++) {
+          const f = items[i];
           ctx.moveTo(f.x, f.y + f.r);
           ctx.lineTo(f.x, f.y + f.r + 2);
         }
@@ -545,16 +601,30 @@ export class Renderer {
     this.renderedCount = 0;
     this.culledCount = 0;
     
-    // Compute clusters if clustering is enabled
+    // OPTIMIZATION: Throttle clustering - only compute every 30 frames (0.5Hz)
     let clusterMap = null;
     if (this.enableClustering) {
-      const currentFrame = Math.floor(worldTime);
+      const currentFrame = Math.floor(worldTime * 0.5); // Slower update rate
       if (this._clusterCache.frame !== currentFrame) {
         this._clusterCache.clusters = this._computeClusters(creatures);
         this._clusterCache.frame = currentFrame;
       }
       clusterMap = this._clusterCache.clusters;
     }
+    
+    // OPTIMIZATION: Cache zoom and other expensive checks
+    const zoom = this.camera.zoom;
+    const showShadows = zoom > 0.4; // Only show shadows when zoomed in
+    const showOutlines = zoom > 0.5;
+    const showTrails = this.enableTrails && zoom > 0.6; // Only show trails when zoomed in
+    const showNames = this.enableNameLabels && zoom > 0.5; // Higher threshold for names
+    
+    // OPTIMIZATION: Cache name lookups (only recompute when selection/zoom changes significantly)
+    const nameCacheKey = `${opts.selectedId}-${opts.pinnedId}-${Math.floor(zoom * 10)}`;
+    if (!this._nameCache || this._nameCache.key !== nameCacheKey) {
+      this._nameCache = { key: nameCacheKey, map: new Map() };
+    }
+    const nameCache = this._nameCache.map;
     
     // OPTIMIZATION: Frustum cull creatures outside view
     const bounds = this._viewBounds;
@@ -582,8 +652,10 @@ export class Renderer {
         ctx.globalAlpha = alpha;
       }
       
-      // IMPROVED VISIBILITY: Draw shadow first (depth & contrast)
-      this._drawCreatureShadow(c);
+      // OPTIMIZATION: Only draw shadows when zoomed in and for visible creatures
+      if (showShadows && (isSelected || isPinned || zoom > 0.6)) {
+        this._drawCreatureShadow(c);
+      }
       
       // Override hue if clustering is enabled
       const clusterHue = clusterMap ? clusterMap.get(c.id) : null;
@@ -592,19 +664,20 @@ export class Renderer {
         isSelected,
         isPinned,
         inLineage,
-        showTrail: this.enableTrails,
+        showTrail: showTrails, // Use throttled value
         showVision: this.enableVision,
-        clusterHue
+        clusterHue,
+        zoom // Pass zoom for optimization decisions in creature.draw()
       });
       
-      // IMPROVED VISIBILITY: Subtle outline/glow for better contrast
-      if (this.camera.zoom > 0.5) {
+      // OPTIMIZATION: Only draw outlines when zoomed in enough
+      if (showOutlines && (isSelected || isPinned)) {
         this._drawCreatureOutline(c, isSelected);
       }
       
-      // NEW: Draw name label above creature
-      if (this.enableNameLabels && this.camera.zoom > 0.3) {
-        this._drawCreatureName(c, isSelected, isPinned, opts);
+      // OPTIMIZATION: Only draw names for selected/pinned or when zoomed in significantly
+      if (showNames && (isSelected || isPinned || zoom > 1.2)) {
+        this._drawCreatureName(c, isSelected, isPinned, opts, nameCache);
       }
       
       if (alpha < 0.99) {
@@ -654,21 +727,42 @@ export class Renderer {
     ctx.restore();
   }
   
-  _drawCreatureName(creature, isSelected, isPinned, opts) {
+  _drawCreatureName(creature, isSelected, isPinned, opts, nameCache=null) {
     // Draw creature name/ID above it
     const ctx = this.ctx;
     const zoom = this.camera.zoom;
     
-    // Only show names when zoomed in enough or for selected creatures
+    // OPTIMIZATION: Skip if already checked before entering this function
     if (zoom < 0.4 && !isSelected && !isPinned) return;
     
-    // Get creature name (from lineage tracker if available)
-    let name = `#${creature.id}`;
-    if (opts.lineageTracker) {
-      const rootId = opts.lineageTracker.getRoot(opts.world, creature.id);
-      const familyName = opts.lineageTracker.names.get(rootId);
-      if (familyName) {
-        name = `${familyName} #${creature.id}`;
+    // OPTIMIZATION: Use cached name if available
+    let name = null;
+    let nameColor = '#ffffff';
+    
+    if (nameCache && nameCache.has(creature.id)) {
+      const cached = nameCache.get(creature.id);
+      name = cached.name;
+      nameColor = cached.color;
+    } else {
+      // Get creature name (from lineage tracker if available)
+      name = `#${creature.id}`;
+      if (opts.lineageTracker) {
+        const rootId = opts.lineageTracker.getRoot(opts.world, creature.id);
+        const familyName = opts.lineageTracker.names.get(rootId);
+        if (familyName) {
+          name = `${familyName} #${creature.id}`;
+        }
+        
+        // Cache color lookup too
+        const rootCreature = opts.world.getAnyCreatureById(rootId);
+        if (rootCreature) {
+          nameColor = `hsl(${rootCreature.genes.hue}, 70%, 70%)`;
+        }
+      }
+      
+      // Cache the result
+      if (nameCache) {
+        nameCache.set(creature.id, { name, color: nameColor });
       }
     }
     
@@ -691,16 +785,6 @@ export class Renderer {
       14 + padding * 2
     );
     
-    // Color-code by family (use hue from root creature)
-    let nameColor = '#ffffff';
-    if (opts.lineageTracker) {
-      const rootId = opts.lineageTracker.getRoot(opts.world, creature.id);
-      const rootCreature = opts.world.getAnyCreatureById(rootId);
-      if (rootCreature) {
-        nameColor = `hsl(${rootCreature.genes.hue}, 70%, 70%)`;
-      }
-    }
-    
     // Draw name
     ctx.fillStyle = isSelected || isPinned ? '#7bb7ff' : nameColor;
     ctx.fillText(name, creature.x, creature.y + offsetY);
@@ -710,8 +794,14 @@ export class Renderer {
   _computeClusters(creatures, k=5) {
     if (creatures.length < k) return new Map();
     
+    // OPTIMIZATION: Sample subset for very large populations (speed vs accuracy trade-off)
+    const maxSampleSize = 200;
+    const sampleCreatures = creatures.length > maxSampleSize
+      ? creatures.filter((_, i) => i % Math.ceil(creatures.length / maxSampleSize) === 0)
+      : creatures;
+    
     // Simple k-means clustering on [speed, metabolism, sense, aggression]
-    const features = creatures.map(c => [
+    const features = sampleCreatures.map(c => [
       c.genes.speed / 2.0,
       c.genes.metabolism / 2.0,
       c.genes.sense / 200.0,
@@ -725,8 +815,8 @@ export class Renderer {
       centroids.push([...features[idx]]);
     }
     
-    // Run k-means for 3 iterations (fast, good enough)
-    for (let iter = 0; iter < 3; iter++) {
+    // OPTIMIZATION: Reduced iterations for performance (was 3, now 2)
+    for (let iter = 0; iter < 2; iter++) {
       const assignments = features.map(f => {
         let minDist = Infinity;
         let cluster = 0;
@@ -752,7 +842,10 @@ export class Renderer {
     // Final assignment with color mapping
     const clusterColors = [0, 60, 120, 180, 240, 300]; // Evenly spaced hues
     const clusterMap = new Map();
-    features.forEach((f, idx) => {
+    
+    // OPTIMIZATION: Use efficient for loop for final assignment
+    for (let idx = 0; idx < features.length; idx++) {
+      const f = features[idx];
       let minDist = Infinity;
       let cluster = 0;
       for (let i = 0; i < k; i++) {
@@ -763,8 +856,31 @@ export class Renderer {
         }
       }
       const hue = clusterColors[cluster];
-      clusterMap.set(creatures[idx].id, hue);
-    });
+      clusterMap.set(sampleCreatures[idx].id, hue);
+    }
+    
+    // OPTIMIZATION: For sampled creatures, assign non-sampled creatures to nearest cluster
+    if (creatures.length > maxSampleSize) {
+      const sampledIds = new Set(sampleCreatures.map(c => c.id));
+      for (let i = 0; i < creatures.length; i++) {
+        const c = creatures[i];
+        if (!sampledIds.has(c.id)) {
+          // Find nearest sampled creature and use its cluster
+          let nearestId = sampleCreatures[0].id;
+          let nearestDist = Infinity;
+          for (let j = 0; j < sampleCreatures.length; j++) {
+            const sc = sampleCreatures[j];
+            const dist = Math.abs(c.genes.speed - sc.genes.speed) +
+                        Math.abs(c.genes.metabolism - sc.genes.metabolism);
+            if (dist < nearestDist) {
+              nearestDist = dist;
+              nearestId = sc.id;
+            }
+          }
+          clusterMap.set(c.id, clusterMap.get(nearestId));
+        }
+      }
+    }
     
     return clusterMap;
   }

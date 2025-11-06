@@ -182,8 +182,9 @@ export class GeneEditor {
       // Random position within spread radius
       const angle = Math.random() * Math.PI * 2;
       const distance = Math.random() * this.spawnSpread;
-      const x = clamp(centerX + Math.cos(angle) * distance, 10, world.width - 10);
-      const y = clamp(centerY + Math.sin(angle) * distance, 10, world.height - 10);
+      // REMOVED: No world boundaries - spawn anywhere
+      const x = centerX + Math.cos(angle) * distance;
+      const y = centerY + Math.sin(angle) * distance;
       
       const creature = this.spawnCreature(world, x, y);
       spawned.push(creature);

@@ -148,34 +148,29 @@ export class Camera {
   }
 
   _clampTargets() {
-    const { minX, maxX, minY, maxY } = this._limits(this.targetZoom);
-    this.targetX = clamp(this.targetX, minX, maxX);
-    this.targetY = clamp(this.targetY, minY, maxY);
+    // REMOVED: No world boundaries - camera can move freely
+    // No clamping needed
   }
 
   _clampPosition() {
-    const { minX, maxX, minY, maxY } = this._limits(this.zoom);
-    this.x = clamp(this.x, minX, maxX);
-    this.y = clamp(this.y, minY, maxY);
+    // REMOVED: No world boundaries - camera can move freely
+    // No clamping needed
   }
 
   _limits(zoom) {
-    const halfW = this.viewportWidth / (2 * zoom);
-    const halfH = this.viewportHeight / (2 * zoom);
+    // REMOVED: No world boundaries - camera can move freely anywhere
+    // Return infinite bounds
     return {
-      minX: halfW,
-      maxX: Math.max(halfW, this.worldWidth - halfW),
-      minY: halfH,
-      maxY: Math.max(halfH, this.worldHeight - halfH)
+      minX: -Infinity,
+      maxX: Infinity,
+      minY: -Infinity,
+      maxY: Infinity
     };
   }
 
   _clampPoint(x, y, zoom=this.targetZoom) {
-    const { minX, maxX, minY, maxY } = this._limits(zoom);
-    return {
-      x: clamp(x, minX, maxX),
-      y: clamp(y, minY, maxY)
-    };
+    // REMOVED: No boundaries - return point as-is
+    return { x, y };
   }
 
   _updateTravel(dt) {

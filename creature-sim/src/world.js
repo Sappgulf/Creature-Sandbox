@@ -990,19 +990,31 @@ export class World {
     const spawnHerbivores = (count) => {
       const amount = Math.min(cfg.batchSpawn, Math.max(1, count));
       for (let i = 0; i < amount; i++) {
-        this.spawnManual(rand(0, this.width), rand(0, this.height), false);
+        // Use extended bounds for auto-spawning
+        const extendFactor = 3;
+        const spawnX = rand(-this.width * (extendFactor - 1), this.width * extendFactor);
+        const spawnY = rand(-this.height * (extendFactor - 1), this.height * extendFactor);
+        this.spawnManual(spawnX, spawnY, false);
       }
     };
     const spawnOmnivores = (count) => {
       const amount = Math.min(cfg.batchSpawn, Math.max(1, count));
       for (let i = 0; i < amount; i++) {
-        this.spawnOmnivore(rand(0, this.width), rand(0, this.height));
+        // Use extended bounds for auto-spawning
+        const extendFactor = 3;
+        const spawnX = rand(-this.width * (extendFactor - 1), this.width * extendFactor);
+        const spawnY = rand(-this.height * (extendFactor - 1), this.height * extendFactor);
+        this.spawnOmnivore(spawnX, spawnY);
       }
     };
     const spawnPredators = (count) => {
       const amount = Math.min(Math.max(1, count), cfg.batchSpawn);
       for (let i = 0; i < amount; i++) {
-        this.spawnManual(rand(0, this.width), rand(0, this.height), true);
+        // Use extended bounds for auto-spawning
+        const extendFactor = 3;
+        const spawnX = rand(-this.width * (extendFactor - 1), this.width * extendFactor);
+        const spawnY = rand(-this.height * (extendFactor - 1), this.height * extendFactor);
+        this.spawnManual(spawnX, spawnY, true);
       }
     };
 
@@ -1036,7 +1048,11 @@ export class World {
       const deficit = desiredFood - this.food.length;
       const spawnCount = Math.min(24, Math.max(4, Math.round(deficit * 0.4)));
       for (let i = 0; i < spawnCount; i++) {
-        this.addFood(rand(0, this.width), rand(0, this.height), 1.1);
+        // Use extended bounds for auto-spawning food
+        const extendFactor = 5;
+        const spawnX = rand(-this.width * (extendFactor - 1), this.width * extendFactor);
+        const spawnY = rand(-this.height * (extendFactor - 1), this.height * extendFactor);
+        this.addFood(spawnX, spawnY, 1.1);
       }
       this.environment.foodRateMultiplier = clamp(this.environment.foodRateMultiplier + 0.05, 0.6, 2.5);
     } else if (this.food.length > desiredFood * 1.6) {
@@ -1249,15 +1265,24 @@ export class World {
   }
 
   pickHabitatSpot() {
-    // NEW: Pick random location, weighted by biome food rate
+    // UPDATED: Pick random location within extended bounds (5x world size for infinite feel)
     // Sample several points and pick best
     let bestSpot = null;
     let bestScore = -1;
     
+    const extendFactor = 5; // Extend spawn area 5x in each direction
+    const minX = -this.width * (extendFactor - 1);
+    const maxX = this.width * extendFactor;
+    const minY = -this.height * (extendFactor - 1);
+    const maxY = this.height * extendFactor;
+    
     for (let i = 0; i < 5; i++) {
-      const x = rand(this.width);
-      const y = rand(this.height);
-      const biome = this.getBiomeAt(x, y);
+      const x = rand(minX, maxX);
+      const y = rand(minY, maxY);
+      // Use modulo to get biome from world (tiles repeat)
+      const biomeX = ((x % this.width) + this.width) % this.width;
+      const biomeY = ((y % this.height) + this.height) % this.height;
+      const biome = this.getBiomeAt(biomeX, biomeY);
       const score = biome.foodRate * (0.8 + Math.random() * 0.4);
       
       if (score > bestScore) {
@@ -1484,9 +1509,10 @@ export class World {
           const bursts = 12;
           for (let i = 0; i < bursts; i++) {
             const spot = world.pickHabitatSpot();
+            // Use extended bounds - no wrapping needed
             world.addFood(
-              (spot.x + rand(-35, 35) + world.width) % world.width,
-              (spot.y + rand(-20, 20) + world.height) % world.height,
+              spot.x + rand(-35, 35),
+              spot.y + rand(-20, 20),
               rand(0.9, 1.8)
             );
           }
@@ -1516,8 +1542,9 @@ export class World {
             for (let i = 0; i < cluster; i++) {
               const angle = Math.random() * Math.PI * 2;
               const radius = rand(0, 55);
-              const x = (center.x + Math.cos(angle) * radius + world.width) % world.width;
-              const y = (center.y + Math.sin(angle) * radius + world.height) % world.height;
+              // Use extended bounds - no wrapping needed
+              const x = center.x + Math.cos(angle) * radius;
+              const y = center.y + Math.sin(angle) * radius;
               world.addFood(x, y, rand(1.1, 2.2));
             }
           }
