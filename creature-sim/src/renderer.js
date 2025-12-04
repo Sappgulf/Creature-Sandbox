@@ -1,45 +1,44 @@
 import { clamp } from './utils.js';
+import { RendererConfig } from './renderer-config.js';
+import { RendererFeatureManager } from './renderer-features.js';
+import { RendererPerformanceMonitor } from './renderer-performance.js';
 
 export class Renderer {
   constructor(ctx, camera) {
     this.ctx = ctx;
     this.camera = camera;
-    
+
     // Detect mobile for performance optimizations
     this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
                     (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
-    
-    // LEGENDARY OPTIMIZATION: Enable image smoothing for better quality
-    // On mobile, use lower quality for better performance
+
+    // Setup image smoothing based on device
     ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = this.isMobile ? 'medium' : 'high';
-    
-    // Mobile-optimized default settings
-    this.enableTrails = !this.isMobile; // Trails disabled on mobile for performance
-    this.enableVision = false;
-    this.enableClustering = false;
-    this.enableTerritories = false; // Feature 1
-    this.enableMemory = false; // Feature 2
-    this.enableSocialBonds = false; // Feature 4
-    this.enableMigration = false; // Feature 9
-    this.enableEmotions = false; // Advanced Feature 1
-    this.enableSensoryViz = false; // Advanced Feature 2
-    this.enableIntelligence = false; // Advanced Feature 3
-    this.enableMating = false; // Advanced Feature 4
-    this.enableMiniMap = !this.isMobile; // Mini-map disabled on mobile
-    this.miniMapAutoHide = true; // Auto-hide when camera is moving
-    this.miniMapOpacity = 1.0; // Current opacity for fading
-    this.miniMapTargetOpacity = 1.0;
-    this.enableAtmosphere = !this.isMobile; // Atmospheric rendering disabled on mobile
-    this.enableWeather = !this.isMobile; // Weather effects disabled on mobile
-    this.enableDayNight = true; // Day/night cycle
-    this.background = '#15201a'; // Match CSS background color
-    this.lastMiniMap = null; // Cache latest mini-map bounds for interaction
+    ctx.imageSmoothingQuality = this.isMobile ?
+      RendererConfig.CANVAS.IMAGE_SMOOTHING.MOBILE :
+      RendererConfig.CANVAS.IMAGE_SMOOTHING.DESKTOP;
+
+    // Initialize subsystems
+    this.features = new RendererFeatureManager(this);
+    this.performance = new RendererPerformanceMonitor(this);
+
+    // Legacy properties for backward compatibility
+    this.background = RendererConfig.CANVAS.DEFAULT_BACKGROUND;
+    this.lastMiniMap = null;
     this.miniMapSettings = {
       heatmap: true,
       disaster: true,
       territories: true
     };
+
+    // Day/night cycle state
+    this.timeOfDay = RendererConfig.DAY_NIGHT.START_TIME;
+    this.dayNightSpeed = RendererConfig.DAY_NIGHT.SPEED;
+
+    // Mini-map state
+    this.miniMapAutoHide = RendererConfig.MINIMAP.AUTO_HIDE;
+    this.miniMapOpacity = RendererConfig.MINIMAP.OPACITY;
+    this.miniMapTargetOpacity = RendererConfig.MINIMAP.TARGET_OPACITY;
     
     // Visual enhancement settings
     this.timeOfDay = 0; // 0-1 (0=midnight, 0.5=noon)
@@ -56,6 +55,15 @@ export class Renderer {
     this._lineageCache = { rootId: null, set: null, frame: 0 };
     this._clusterCache = { clusters: null, frame: -1 };
     this._nameCache = null; // Cache for creature names to avoid repeated lookups
+    
+    // OPTIMIZATION: Mini-map heatmap cache
+    this._heatmapCache = {
+      data: null,
+      width: 0,
+      height: 0,
+      lastUpdate: 0,
+      updateInterval: 30 // Update every 30 frames (~0.5s at 60fps)
+    };
     
     // LEGENDARY OPTIMIZATION: Frustum culling + performance tracking
     this._viewBounds = { x1: 0, y1: 0, x2: 0, y2: 0 };
@@ -85,7 +93,30 @@ export class Renderer {
     }
   }
 
+  // Feature management methods
+  setFeature(feature, enabled) {
+    this.features.setFeature(feature, enabled);
+  }
+
+  toggleFeature(feature) {
+    this.features.toggleFeature(feature);
+  }
+
+  isFeatureEnabled(feature) {
+    return this.features.isFeatureEnabled(feature);
+  }
+
+  getPerformanceStats() {
+    return {
+      renderer: this.performance.getStats(),
+      features: this.features.getPerformanceImpact()
+    };
+  }
+
   drawWorld(world, opts={}) {
+    // Performance monitoring
+    this.performance.beginFrame();
+
     const {
       selectedId=null,
       pinnedId=null,
@@ -202,6 +233,10 @@ export class Renderer {
     } else {
       this.lastMiniMap = null;
     }
+
+    // Performance monitoring and adaptive quality
+    this.performance.endFrame();
+    this.performance.adjustQuality();
   }
   
   _drawFamilyConnections(world, creature) {
@@ -429,6 +464,9 @@ export class Renderer {
       }
     }
     
+    // Draw water biomes with animated waves
+    this._drawWaterBiomes(world);
+    
     // Day/night lighting overlay
     if (this.enableDayNight) {
       this._drawDayNightOverlay(world);
@@ -450,10 +488,93 @@ export class Renderer {
       case 'desert': return 'rgba(218, 165, 32, 0.5)'; // Warm gold
       case 'mountain': return 'rgba(105, 105, 105, 0.4)'; // Cool gray
       case 'wetland': return 'rgba(64, 224, 208, 0.5)'; // Cyan tint
+      case 'water': return 'rgba(30, 64, 175, 0.7)'; // Deep blue for water
       case 'meadow': return 'rgba(154, 205, 50, 0.6)'; // Yellow-green
       case 'grassland':
       default: return 'rgba(107, 142, 35, 0.5)'; // Olive
     }
+  }
+
+  /**
+   * Draw water biomes with animated wave effects
+   */
+  _drawWaterBiomes(world) {
+    const ctx = this.ctx;
+    const bounds = this._viewBounds;
+    const zoom = this.camera.zoom;
+    
+    // Skip water effects if zoomed out too far (performance)
+    if (zoom < 0.25) return;
+    
+    const worldTime = world.t || 0;
+    const sampleSize = Math.max(40, 100 / zoom);
+    
+    // Sample the visible area for water biomes
+    const startX = Math.max(0, Math.floor(bounds.x1 / sampleSize) * sampleSize);
+    const startY = Math.max(0, Math.floor(bounds.y1 / sampleSize) * sampleSize);
+    const endX = Math.min(world.width, bounds.x2);
+    const endY = Math.min(world.height, bounds.y2);
+    
+    ctx.save();
+    
+    for (let y = startY; y < endY; y += sampleSize) {
+      for (let x = startX; x < endX; x += sampleSize) {
+        const biome = world.getBiomeAt(x, y);
+        if (biome?.type !== 'water') continue;
+        
+        const depth = biome.depth || 0.5;
+        const isDeep = depth > 0.7;
+        
+        // Base water color
+        const baseColor = isDeep ? 'rgba(30, 64, 175, 0.6)' : 'rgba(59, 130, 246, 0.5)';
+        ctx.fillStyle = baseColor;
+        ctx.fillRect(x, y, sampleSize, sampleSize);
+        
+        // Animated wave highlights (only when zoomed in enough)
+        if (zoom > 0.5) {
+          const waveOffset = Math.sin(worldTime * 2 + x * 0.02 + y * 0.01) * 0.5 + 0.5;
+          const waveAlpha = 0.1 + waveOffset * 0.15;
+          
+          ctx.fillStyle = `rgba(147, 197, 253, ${waveAlpha})`;
+          
+          // Draw wavy lines
+          const waveY = y + sampleSize * 0.3 + Math.sin(worldTime * 1.5 + x * 0.03) * sampleSize * 0.1;
+          ctx.beginPath();
+          ctx.moveTo(x, waveY);
+          
+          for (let wx = x; wx < x + sampleSize; wx += 10) {
+            const wy = waveY + Math.sin(worldTime * 2 + wx * 0.05) * 3;
+            ctx.lineTo(wx, wy);
+          }
+          
+          ctx.lineTo(x + sampleSize, y + sampleSize);
+          ctx.lineTo(x, y + sampleSize);
+          ctx.closePath();
+          ctx.fill();
+        }
+        
+        // Deep water caustic pattern (extra visual for deep water)
+        if (isDeep && zoom > 0.7) {
+          const causticTime = worldTime * 0.5;
+          const cx = x + sampleSize / 2;
+          const cy = y + sampleSize / 2;
+          
+          ctx.strokeStyle = `rgba(147, 197, 253, ${0.15 + Math.sin(causticTime) * 0.05})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(
+            cx + Math.sin(causticTime * 1.3) * 5,
+            cy + Math.cos(causticTime * 0.9) * 5,
+            sampleSize * 0.3,
+            0,
+            Math.PI * 2
+          );
+          ctx.stroke();
+        }
+      }
+    }
+    
+    ctx.restore();
   }
   
   _drawDayNightOverlay(world) {
@@ -652,19 +773,23 @@ export class Renderer {
     this.renderedCount = 0;
     this.culledCount = 0;
     
-    // OPTIMIZATION: Throttle clustering - only compute every 30 frames (0.5Hz)
+    // OPTIMIZATION: Cache zoom first (used by multiple checks below)
+    const zoom = this.camera.zoom;
+    
+    // OPTIMIZATION: Throttle clustering - only compute every 60 frames (~1Hz)
+    // Also skip clustering when zoomed out (not useful to see)
     let clusterMap = null;
-    if (this.enableClustering) {
-      const currentFrame = Math.floor(worldTime * 0.5); // Slower update rate
+    if (this.enableClustering && zoom > 0.3) {
+      const currentFrame = Math.floor(worldTime * 0.25); // Update ~4x per second max
       if (this._clusterCache.frame !== currentFrame) {
+        // Only compute clustering when needed and visible
         this._clusterCache.clusters = this._computeClusters(creatures);
         this._clusterCache.frame = currentFrame;
       }
       clusterMap = this._clusterCache.clusters;
     }
     
-    // OPTIMIZATION: Cache zoom and other expensive checks
-    const zoom = this.camera.zoom;
+    // OPTIMIZATION: Cache other expensive checks
     const showShadows = zoom > 0.4; // Only show shadows when zoomed in
     const showOutlines = zoom > 0.5;
     const showTrails = this.enableTrails && zoom > 0.6; // Only show trails when zoomed in
@@ -721,6 +846,11 @@ export class Renderer {
         zoom // Pass zoom for optimization decisions in creature.draw()
       });
       
+      // Draw disease visual effects for sick creatures
+      if (c.statuses?.has('disease') && zoom > 0.3) {
+        this._drawDiseaseEffect(c, worldTime);
+      }
+      
       // OPTIMIZATION: Only draw outlines when zoomed in enough
       if (showOutlines && (isSelected || isPinned)) {
         this._drawCreatureOutline(c, isSelected);
@@ -775,6 +905,67 @@ export class Renderer {
     ctx.beginPath();
     ctx.arc(creature.x, creature.y, r + 1, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.restore();
+  }
+  
+  /**
+   * Draw disease visual effect for sick creatures
+   * @param {object} creature - The creature to draw effect for
+   * @param {number} worldTime - Current world time for animation
+   */
+  _drawDiseaseEffect(creature, worldTime) {
+    const ctx = this.ctx;
+    const diseaseStatus = creature.statuses.get('disease');
+    if (!diseaseStatus) return;
+    
+    const r = creature.genes?.size || 4;
+    const severity = diseaseStatus.metadata?.severity || diseaseStatus.severity || 0.5;
+    const diseaseColor = diseaseStatus.metadata?.color || '#7fff7f';
+    
+    ctx.save();
+    
+    // Pulsing sick aura
+    const pulse = Math.sin(worldTime * 4) * 0.3 + 0.7;
+    const auraRadius = r + 3 + severity * 4;
+    
+    // Outer glow
+    const gradient = ctx.createRadialGradient(
+      creature.x, creature.y, r,
+      creature.x, creature.y, auraRadius
+    );
+    gradient.addColorStop(0, `${diseaseColor}00`);
+    gradient.addColorStop(0.5, `${diseaseColor}${Math.floor(severity * pulse * 40).toString(16).padStart(2, '0')}`);
+    gradient.addColorStop(1, `${diseaseColor}00`);
+    
+    ctx.beginPath();
+    ctx.arc(creature.x, creature.y, auraRadius, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    
+    // Rotating disease particles
+    const particleCount = Math.floor(3 + severity * 3);
+    const rotationSpeed = worldTime * 2;
+    
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (i / particleCount) * Math.PI * 2 + rotationSpeed;
+      const distance = r + 2 + Math.sin(worldTime * 3 + i) * 2;
+      const px = creature.x + Math.cos(angle) * distance;
+      const py = creature.y + Math.sin(angle) * distance;
+      const particleSize = 1.5 + severity;
+      
+      ctx.beginPath();
+      ctx.arc(px, py, particleSize, 0, Math.PI * 2);
+      ctx.fillStyle = `${diseaseColor}${Math.floor(pulse * 180).toString(16).padStart(2, '0')}`;
+      ctx.fill();
+    }
+    
+    // Sick creature tint overlay
+    ctx.globalAlpha = severity * 0.15 * pulse;
+    ctx.beginPath();
+    ctx.arc(creature.x, creature.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = diseaseColor;
+    ctx.fill();
+    
     ctx.restore();
   }
   
@@ -845,29 +1036,36 @@ export class Renderer {
   _computeClusters(creatures, k=5) {
     if (creatures.length < k) return new Map();
     
-    // OPTIMIZATION: Sample subset for very large populations (speed vs accuracy trade-off)
-    const maxSampleSize = 200;
+    // OPTIMIZATION: Aggressive sampling for large populations
+    // 100 samples is enough for visual clustering
+    const maxSampleSize = 100;
     const sampleCreatures = creatures.length > maxSampleSize
       ? creatures.filter((_, i) => i % Math.ceil(creatures.length / maxSampleSize) === 0)
       : creatures;
     
     // Simple k-means clustering on [speed, metabolism, sense, aggression]
-    const features = sampleCreatures.map(c => [
-      c.genes.speed / 2.0,
-      c.genes.metabolism / 2.0,
-      c.genes.sense / 200.0,
-      (c.genes.aggression || 1.0) / 2.2
-    ]);
+    // Pre-allocate feature array
+    const features = new Array(sampleCreatures.length);
+    for (let i = 0; i < sampleCreatures.length; i++) {
+      const c = sampleCreatures[i];
+      features[i] = [
+        c.genes.speed / 2.0,
+        c.genes.metabolism / 2.0,
+        c.genes.sense / 200.0,
+        (c.genes.aggression || 1.0) / 2.2
+      ];
+    }
     
-    // Initialize centroids randomly
+    // Initialize centroids from first k features (deterministic, avoids Math.random overhead)
     const centroids = [];
+    const step = Math.max(1, Math.floor(features.length / k));
     for (let i = 0; i < k; i++) {
-      const idx = Math.floor(Math.random() * features.length);
+      const idx = (i * step) % features.length;
       centroids.push([...features[idx]]);
     }
     
-    // OPTIMIZATION: Reduced iterations for performance (was 3, now 2)
-    for (let iter = 0; iter < 2; iter++) {
+    // OPTIMIZATION: Single iteration often sufficient for visual clustering
+    for (let iter = 0; iter < 1; iter++) {
       const assignments = features.map(f => {
         let minDist = Infinity;
         let cluster = 0;
@@ -1356,7 +1554,8 @@ export class Renderer {
     for (let y = 0; y < world.height; y += sampleSize) {
       for (let x = 0; x < world.width; x += sampleSize) {
         const biome = world.getBiomeAt(x, y);
-        ctx.fillStyle = this._getBiomeTint(biome.type);
+        // STABILITY: Guard against undefined biome
+        ctx.fillStyle = this._getBiomeTint(biome?.type);
         ctx.fillRect(
           mapX + x * scaleX * dpr,
           mapY + y * scaleY * dpr,
@@ -1368,26 +1567,47 @@ export class Renderer {
     ctx.globalAlpha = 1;
     
     if (this.miniMapSettings.heatmap) {
-      // Draw creature population as HEAT MAP (more readable!)
-      const heatmapSize = 100; // Match world aspect ratio
+      // OPTIMIZED: Draw creature population as HEAT MAP with caching
+      const heatmapSize = 100;
       const heatmapW = Math.floor(heatmapSize * aspectRatio);
       const heatmapH = heatmapSize;
-      const heatmap = new Uint8Array(heatmapW * heatmapH);
       
-      for (const c of world.creatures) {
-        const hx = Math.floor((c.x / world.width) * heatmapW);
-        const hy = Math.floor((c.y / world.height) * heatmapH);
-        if (hx >= 0 && hx < heatmapW && hy >= 0 && hy < heatmapH) {
-          heatmap[hy * heatmapW + hx]++;
+      // Check if we need to update the heatmap cache
+      const cache = this._heatmapCache;
+      this.performance.frameCount = (this.performance.frameCount || 0) + 1;
+      const shouldUpdate = !cache.data || 
+                          cache.width !== heatmapW || 
+                          cache.height !== heatmapH ||
+                          (this.performance.frameCount - cache.lastUpdate) >= cache.updateInterval;
+      
+      if (shouldUpdate) {
+        // Reuse or create heatmap array
+        if (!cache.data || cache.data.length !== heatmapW * heatmapH) {
+          cache.data = new Uint8Array(heatmapW * heatmapH);
+        } else {
+          cache.data.fill(0);
+        }
+        cache.width = heatmapW;
+        cache.height = heatmapH;
+        cache.lastUpdate = this.performance.frameCount;
+        
+        // Populate heatmap
+        for (const c of world.creatures) {
+          const hx = Math.floor((c.x / world.width) * heatmapW);
+          const hy = Math.floor((c.y / world.height) * heatmapH);
+          if (hx >= 0 && hx < heatmapW && hy >= 0 && hy < heatmapH) {
+            cache.data[hy * heatmapW + hx]++;
+          }
         }
       }
       
-      // Render heatmap (bright spots = high population)
+      // Render cached heatmap (bright spots = high population)
+      const heatmap = cache.data;
       for (let hy = 0; hy < heatmapH; hy++) {
         for (let hx = 0; hx < heatmapW; hx++) {
           const count = heatmap[hy * heatmapW + hx];
           if (count > 0) {
-            const intensity = Math.min(count / 3, 1); // Cap intensity
+            const intensity = Math.min(count / 3, 1);
             ctx.fillStyle = `rgba(123, 183, 255, ${intensity * 0.8})`;
             const px = mapX + (hx / heatmapW) * mapWCanvas;
             const py = mapY + (hy / heatmapH) * mapHCanvas;
@@ -1517,9 +1737,11 @@ export class Renderer {
     
     for (const point of samplePoints) {
       const biome = world.getBiomeAt(point.x, point.y);
-      if (!biome || drawnBiomes.has(biome.type)) continue;
+      // STABILITY: Guard against undefined biome or type
+      const biomeType = biome?.type;
+      if (!biome || !biomeType || drawnBiomes.has(biomeType)) continue;
       
-      drawnBiomes.add(biome.type);
+      drawnBiomes.add(biomeType);
       
       const mx = mapX + point.x * scaleXPx;
       const my = mapY + point.y * scaleYPx;
@@ -1532,7 +1754,8 @@ export class Renderer {
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
       ctx.lineWidth = 2 * dpr;
       
-      const label = biome.type.charAt(0).toUpperCase() + biome.type.slice(1);
+      // biomeType already defined above with guard
+      const label = (biomeType || 'unknown').charAt(0).toUpperCase() + (biomeType || 'unknown').slice(1);
       ctx.strokeText(label, mx, my);
       ctx.fillText(label, mx, my);
       ctx.restore();

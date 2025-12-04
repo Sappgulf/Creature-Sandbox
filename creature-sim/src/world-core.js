@@ -1,0 +1,547 @@
+/**
+ * World Core - Main World class with subsystem delegation
+ * This is the clean, refactored version of the World class
+ */
+import { SpatialGrid } from './spatial-grid.js';
+import { ScalarField } from './world-scalar-field.js';
+import { WorldEnvironment } from './world-environment.js';
+import { WorldEcosystem } from './world-ecosystem.js';
+import { WorldCreatureManager } from './world-creature-manager.js';
+import { WorldCombat } from './world-combat.js';
+import { WorldDisaster } from './world-disaster.js';
+import { BiomeGenerator } from './perlin-noise.js';
+import { dist2, rand } from './utils.js';
+
+export class World {
+  constructor(width, height) {
+    this.width = width;
+    this.height = height;
+    this.t = 0; // Simulation time
+
+    // Core spatial systems
+    this.pheromone = new ScalarField(width, height, 20, 0.992, 0.18);
+    this.temperature = new ScalarField(width, height, 40, 1.0, 0.0);
+
+    // Entity collections
+    this.creatures = [];
+    this.food = [];
+    this.corpses = [];
+
+    // Spatial grids for performance
+    this.foodGrid = new SpatialGrid(36);
+    this.corpseGrid = new SpatialGrid(40);
+
+    // External system attachments
+    this.lineageTracker = null;
+    this.particles = null;
+    this.heatmaps = null;
+    this.audio = null;
+
+    // Initialize subsystems
+    this.environment = new WorldEnvironment(this);
+    this.ecosystem = new WorldEcosystem(this);
+    this.creatureManager = new WorldCreatureManager(this);
+    this.combat = new WorldCombat(this);
+    this.disaster = new WorldDisaster(this);
+
+    // World settings
+    this.maxFood = Math.floor((width * height) / 180);
+    this.gridDirty = false;
+
+    // Biome system
+    this.biomeGenerator = new BiomeGenerator(Math.random());
+    this.biomeMap = this.biomeGenerator.generateBiomeMap(width, height, 50);
+    this.biomeCache = new Map();
+
+    // Visual FX helpers
+    this.screenShake = 0;
+    this.temperatureModifier = 1.0;
+
+    console.log('🌍 World core initialized with subsystems');
+  }
+
+  // Main simulation step
+  // STABILITY: Added defensive guards
+  step(dt) {
+    // STABILITY: Validate dt
+    if (typeof dt !== 'number' || !isFinite(dt) || dt < 0) {
+      dt = 1/60; // Fallback to 60fps timestep
+    }
+    
+    this.t += dt;
+
+    // Update environmental systems (with guards)
+    try {
+      this.environment?.update(dt);
+      this.ecosystem?.update(dt);
+      this.disaster?.update(dt);
+
+      // Update scalar fields
+      this.pheromone?.step();
+      this.temperature?.step();
+
+      // Update creatures
+      this.updateCreatures(dt);
+
+      // Update corpse system
+      this.updateCorpses(dt);
+
+      // Update food growth
+      this.updateFood(dt);
+    } catch (error) {
+      console.error('World step error:', error);
+      // Attempt to continue - individual creature errors shouldn't crash world
+    }
+  }
+
+  // Update all creatures
+  // STABILITY: Added per-creature error handling
+  updateCreatures(dt) {
+    for (let i = this.creatures.length - 1; i >= 0; i--) {
+      const creature = this.creatures[i];
+      
+      // STABILITY: Skip invalid creatures
+      if (!creature) {
+        this.creatures.splice(i, 1);
+        continue;
+      }
+
+      if (!creature.alive) {
+        // Remove dead creatures after a delay
+        if (creature.deathTime && this.t - creature.deathTime > 5) {
+          this.creatures.splice(i, 1);
+          this.creatureManager?.creatureGrid?.remove(creature);
+        }
+        continue;
+      }
+
+      // Update creature logic with error isolation
+      try {
+        creature.update(dt, this);
+      } catch (error) {
+        // STABILITY: Log error but don't crash - mark creature as dead to remove it
+        console.warn(`Creature ${creature.id} update error:`, error);
+        creature.alive = false;
+        creature.deathTime = this.t;
+      }
+
+      // Handle creature death
+      if (!creature.alive) {
+        creature.deathTime = this.t;
+      }
+    }
+
+    // Update spatial grid
+    this.creatureManager?.ensureSpatial();
+  }
+
+  // Update food system
+  updateFood(dt) {
+    const growthRate = this.ecosystem.foodGrowthRate();
+
+    // Simple food growth
+    if (this.food.length < this.maxFood && Math.random() < dt * growthRate * 0.1) {
+      const x = Math.random() * this.width;
+      const y = Math.random() * this.height;
+      this.ecosystem.addFood(x, y);
+    }
+
+    // Update food timers
+    for (const food of this.food) {
+      food.t += dt;
+    }
+  }
+
+  // Update corpse system
+  updateCorpses(dt) {
+    for (let i = this.corpses.length - 1; i >= 0; i--) {
+      const corpse = this.corpses[i];
+      corpse.decayTimer -= dt;
+
+      if (corpse.decayTimer <= 0) {
+        this.corpses.splice(i, 1);
+        this.corpseGrid?.remove(corpse);
+      }
+    }
+  }
+
+  // Seed initial world state
+  seed(nHerb = 60, nPred = 6, nFood = 180) {
+    // Clear existing state
+    this.reset();
+
+    // Spawn creatures
+    for (let i = 0; i < nHerb; i++) {
+      const x = Math.random() * this.width;
+      const y = Math.random() * this.height;
+      this.creatureManager.spawnManual(x, y, false); // Herbivore
+    }
+
+    for (let i = 0; i < nPred; i++) {
+      const x = Math.random() * this.width;
+      const y = Math.random() * this.height;
+      this.creatureManager.spawnManual(x, y, true); // Predator
+    }
+
+    // Spawn food
+    for (let i = 0; i < nFood; i++) {
+      const x = Math.random() * this.width;
+      const y = Math.random() * this.height;
+      this.ecosystem.addFood(x, y);
+    }
+
+    console.log(`🌱 Seeded world: ${nHerb} herbivores, ${nPred} predators, ${nFood} food`);
+  }
+
+  // Reset world to empty state
+  reset() {
+    this.creatures = [];
+    this.food = [];
+    this.corpses = [];
+    this.t = 0;
+
+    // Reset subsystems
+    this.environment.initialize();
+    this.ecosystem.initialize();
+    this.creatureManager.initialize();
+    this.combat.initialize();
+    this.disaster.initialize();
+
+    // Clear scalar fields
+    this.pheromone.grid.fill(0);
+    this.temperature.grid.fill(0.5);
+
+    // Clear spatial grids
+    this.creatureManager.creatureGrid.clear();
+    this.foodGrid.clear();
+    this.corpseGrid?.clear();
+
+    console.log('🔄 World reset to initial state');
+  }
+
+  // Attach external systems
+  attachLineageTracker(tracker) {
+    this.lineageTracker = tracker;
+    this.creatureManager.attachLineageTracker(tracker);
+  }
+
+  attachParticleSystem(particles) {
+    this.particles = particles;
+  }
+
+  attachHeatmapSystem(heatmaps) {
+    this.heatmaps = heatmaps;
+  }
+
+  attachAudioSystem(audio) {
+    this.audio = audio;
+  }
+
+  // Query methods
+  getCreatureById(id) {
+    return this.creatureManager.getCreatureById(id);
+  }
+
+  getAnyCreatureById(id) {
+    return this.creatureManager.getAnyCreatureById(id);
+  }
+
+  addCreature(creature, parentId = null) {
+    return this.creatureManager.addCreature(creature, parentId);
+  }
+
+  spawnChild(parent1, parent2 = null) {
+    return this.creatureManager.spawnChild(parent1, parent2);
+  }
+
+  spawnManual(x, y, predator = false) {
+    return this.creatureManager.spawnManual(x, y, predator);
+  }
+
+  queryCreatures(x, y, radius) {
+    return this.creatureManager.queryCreatures(x, y, radius);
+  }
+
+  // Food helpers (proxy to ecosystem)
+  addFood(x, y, r = 1.5, type = null) {
+    return this.ecosystem.addFood(x, y, r, type);
+  }
+
+  nearbyFood(x, y, radius) {
+    return this.ecosystem.nearbyFood(x, y, radius);
+  }
+
+  tryEatFoodAt(x, y, reach = 8) {
+    return this.ecosystem.tryEatFoodAt(x, y, reach);
+  }
+
+  // Combat helpers (proxy to combat subsystem)
+  findPrey(predator, radius = 120) {
+    return this.combat.findPrey(predator, radius);
+  }
+
+  tryPredation(predator) {
+    return this.combat.tryPredation(predator);
+  }
+
+  registerPredatorSignal(x, y, strength = 1, ttl = 5, sourceId = null) {
+    return this.combat.registerPredatorSignal(x, y, strength, ttl, sourceId);
+  }
+
+  samplePredatorSignal(x, y, radius = 140, excludeSource = null) {
+    return this.combat.samplePredatorSignal(x, y, radius, excludeSource);
+  }
+
+  dropPheromone(x, y, val = 1.0) {
+    return this.combat.dropPheromone(x, y, val);
+  }
+
+  // Corpse helpers (lightweight fallback until a dedicated system is added)
+  findNearbyCorpse(x, y, radius) {
+    const source = this.corpseGrid?.nearby ? this.corpseGrid.nearby(x, y, radius) : this.corpses;
+    if (!source || source.length === 0) return null;
+
+    let best = null;
+    let bestD2 = radius * radius;
+    for (const corpse of source) {
+      if (!corpse || corpse.energy !== undefined && corpse.energy < 0.5) continue;
+      const d2 = dist2(corpse.x, corpse.y, x, y);
+      if (d2 < bestD2) {
+        bestD2 = d2;
+        best = corpse;
+      }
+    }
+    return best;
+  }
+
+  tryEatCorpse(scavenger, corpse) {
+    if (!corpse || (corpse.energy !== undefined && corpse.energy < 0.5)) return false;
+
+    const eatAmount = Math.min(corpse.energy ?? 0, 8);
+    if (eatAmount <= 0) return false;
+
+    if (corpse.energy !== undefined) {
+      corpse.energy -= eatAmount;
+    }
+    scavenger.energy += eatAmount;
+
+    if (this.audio && this.audio.ctx && scavenger) {
+      try {
+        this.audio.playCreatureSound(scavenger, 'eat');
+      } catch (_) {
+        // Non-critical
+      }
+    }
+
+    if (scavenger.stats) scavenger.stats.food++;
+    scavenger.logEvent?.('Scavenged corpse', this.t);
+    scavenger.rememberLocation?.(corpse.x, corpse.y, 'food', 0.7, this.t);
+
+    if (corpse.energy !== undefined && corpse.energy < 0.5) {
+      const idx = this.corpses.indexOf(corpse);
+      if (idx >= 0) {
+        this.corpses.splice(idx, 1);
+        this.corpseGrid?.remove?.(corpse);
+      }
+    }
+
+    return true;
+  }
+
+  // Biome helpers
+  getBiomeAt(x, y) {
+    const cacheKey = `${Math.floor(x / 50)},${Math.floor(y / 50)}`;
+    if (this.biomeCache.has(cacheKey)) {
+      return this.biomeCache.get(cacheKey);
+    }
+    const biome = this.biomeGenerator.getBiomeAt(x, y, this.width, this.height);
+    this.biomeCache.set(cacheKey, biome);
+    return biome;
+  }
+
+  getBiomeIndexAt(x, y) {
+    const biome = this.getBiomeAt(x, y);
+    const typeMap = { forest: 0, grassland: 1, desert: 2, mountain: 3, wetland: 4, meadow: 5 };
+    return typeMap[biome?.type] ?? 1;
+  }
+
+  findBiomeSpot(targetType, attempts = 12) {
+    let fallback = null;
+    for (let i = 0; i < attempts; i++) {
+      const x = rand(0, this.width);
+      const y = rand(0, this.height);
+      const biome = this.getBiomeAt(x, y);
+      if (!biome) continue;
+      if (biome.type === targetType) {
+        return { x, y };
+      }
+      if (!fallback || (biome.moisture ?? 0) > fallback.score) {
+        fallback = { x, y, score: biome.moisture ?? 0 };
+      }
+    }
+    if (fallback) {
+      return { x: fallback.x, y: fallback.y };
+    }
+    return { x: this.width * 0.5, y: this.height * 0.5 };
+  }
+
+  // Environment helpers
+  tempPenaltyAt(x, y) {
+    return this.environment.tempPenaltyAt(x, y);
+  }
+
+  getSeasonModifier(kind) {
+    return this.environment.getSeasonModifier(kind);
+  }
+
+  getSeasonInfo() {
+    return this.environment.getSeasonInfo();
+  }
+
+  getWeatherState() {
+    return this.environment.getWeatherState();
+  }
+
+  get timeOfDay() {
+    return this.environment.timeOfDay;
+  }
+
+  get dayLength() {
+    return this.environment.dayLength;
+  }
+
+  get dayNightEnabled() {
+    return this.environment.dayNightEnabled;
+  }
+
+  get seasonPhase() {
+    return this.environment.seasonPhase;
+  }
+
+  get seasonSpeed() {
+    return this.environment.seasonSpeed;
+  }
+
+  get currentSeason() {
+    return this.environment.currentSeason;
+  }
+
+  get foodGrowthMultiplier() {
+    return this.ecosystem.foodGrowthMultiplier;
+  }
+
+  // Disaster helpers
+  triggerDisaster(type, options = {}) {
+    return this.disaster.triggerDisaster(type, options);
+  }
+
+  getActiveDisaster() {
+    return this.disaster.getActiveDisaster();
+  }
+
+  getPendingDisasters() {
+    return this.disaster.getPendingDisasters();
+  }
+
+  getPendingDisastersVersion() {
+    return this.disaster.pendingDisasters?.length ?? 0;
+  }
+
+  // Family tree helpers
+  get childrenOf() {
+    return this.creatureManager.childrenOf;
+  }
+
+  get registry() {
+    return this.creatureManager.registry;
+  }
+
+  descendantsOf(rootId) {
+    return this.creatureManager.descendantsOf(rootId);
+  }
+
+  buildLineageOverview(rootId, maxDepth = 6) {
+    return this.creatureManager.buildLineageOverview(rootId, maxDepth);
+  }
+
+  ensureSpatial() {
+    this.creatureManager.ensureSpatial();
+    if (this.gridDirty && this.corpseGrid) {
+      this.corpseGrid.clear();
+      for (const corpse of this.corpses) {
+        this.corpseGrid.add(corpse);
+      }
+      this.gridDirty = false;
+    }
+  }
+
+  // Get ecosystem statistics
+  getStats() {
+    return {
+      time: this.t,
+      creatures: this.creatureManager.getPopulationStats(),
+      food: this.food.length,
+      corpses: this.corpses.length,
+      environment: this.environment.getWeatherState(),
+      ecosystem: this.ecosystem.getStats(),
+      disaster: this.disaster.getStats()
+    };
+  }
+
+  // Serialization support
+  exportState() {
+    return {
+      width: this.width,
+      height: this.height,
+      time: this.t,
+      creatures: this.creatures.map(c => c.export ? c.export() : null).filter(Boolean),
+      food: this.food,
+      corpses: this.corpses,
+      environment: this.environment.exportState ? this.environment.exportState() : {},
+      ecosystem: this.ecosystem.exportState ? this.ecosystem.exportState() : {},
+      disaster: this.disaster.exportState ? this.disaster.exportState() : {}
+    };
+  }
+
+  importState(snapshot) {
+    if (!snapshot) return;
+
+    this.width = snapshot.width;
+    this.height = snapshot.height;
+    this.t = snapshot.time || 0;
+
+    // Import entities
+    this.creatures = snapshot.creatures || [];
+    this.food = snapshot.food || [];
+    this.corpses = snapshot.corpses || [];
+
+    // Rebuild spatial indices
+    this.creatureManager.creatureGrid.clear();
+    for (const c of this.creatures) {
+      if (c.alive) {
+        this.creatureManager.creatureGrid.add(c);
+      }
+    }
+
+    this.foodGrid.clear();
+    for (const f of this.food) {
+      this.foodGrid.add(f);
+    }
+
+    // Import subsystem states
+    if (this.environment.importState) {
+      this.environment.importState(snapshot.environment);
+    }
+    if (this.ecosystem.importState) {
+      this.ecosystem.importState(snapshot.ecosystem);
+    }
+    if (this.disaster.importState) {
+      this.disaster.importState(snapshot.disaster);
+    }
+
+    // Rebuild family links
+    this.creatureManager.rebuildFamilyLinks();
+
+    console.log('📦 World state imported');
+  }
+}

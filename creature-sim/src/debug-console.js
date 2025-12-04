@@ -192,5 +192,21 @@ export class DebugConsole {
       this.world.triggerDisaster(random);
     }
   }
+
+  /**
+   * Update method called each frame (for interface compatibility)
+   * @param {number} dt - Delta time
+   */
+  update(dt) {
+    // Debug console is primarily reactive (responds to user commands)
+    // No per-frame updates needed currently
+  }
+
+  /**
+   * Check if debug console is active
+   */
+  get isActive() {
+    return this.visible;
+  }
 }
 

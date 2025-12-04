@@ -315,16 +315,16 @@ export function breedGenes(parent1Genes, parent2Genes, mutationRate = 0.05) {
   childGenes.disorders = [];
   childGenes.mutations = [];
   
-  // Apply mutations
-  childGenes = applyMutations(childGenes, mutationRate);
+  // Apply mutations (returns new object, so we use a new const)
+  const mutatedChildGenes = applyMutations(childGenes, mutationRate);
   
   // Calculate expressed traits
-  calculateExpressedGenes(childGenes);
+  calculateExpressedGenes(mutatedChildGenes);
   
   // Check for disorders
-  checkForDisorders(childGenes);
+  checkForDisorders(mutatedChildGenes);
   
-  return childGenes;
+  return mutatedChildGenes;
 }
 
 /**

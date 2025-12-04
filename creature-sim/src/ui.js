@@ -6,79 +6,62 @@ export function bindUI({ onPause, onStep, onFood }) {
 }
 
 export function renderStats(el, world, fps, extra={}) {
+  if (!el) return;
+  
   const n = world.creatures.length;
-  // Optimize: avoid filter() which creates new array, use simple loop
+  
+  // Count creature types efficiently
   let preds = 0;
-  let omnis = 0;
-  let sumHealth = 0;
-  let sumMaxHealth = 0;
   for (let i = 0; i < n; i++) {
-    const creature = world.creatures[i];
-    const diet = creature.genes.diet ?? (creature.genes.predator ? 1.0 : 0.0);
+    const diet = world.creatures[i].genes.diet ?? (world.creatures[i].genes.predator ? 1.0 : 0.0);
     if (diet > 0.7) preds++;
-    else if (diet > 0.3 && diet <= 0.7) omnis++;
-    sumHealth += creature.health ?? 0;
-    sumMaxHealth += creature.maxHealth ?? 1;
-  }
-  const herbs = n - preds - omnis;
-  const avgHealth = sumMaxHealth ? sumHealth / sumMaxHealth : 0;
-  
-  // NEW: Count vegetation types
-  const vegStats = { grass: 0, berries: 0, fruit: 0 };
-  for (let i = 0; i < world.food.length; i++) {
-    const type = world.food[i].type || 'grass';
-    vegStats[type]++;
   }
   
-  // Build stats with HTML for better formatting - SIMPLIFIED
-  const statParts = [
-    `<span>🐾 ${n}</span>`,
-    `<span>🍎 ${world.food.length}</span>`,
-    `<span>⏱️ ${world.t.toFixed(1)}s</span>`,
-    `<span>📊 ${fps.toFixed(0)} FPS</span>`
-  ];
+  // Build minimal, clean stats line
+  const statParts = [];
   
-  // Add time of day if available
-  if (extra.timeOfDay !== undefined) {
-    const hour = Math.floor(extra.timeOfDay);
-    const minute = Math.floor((extra.timeOfDay % 1) * 60);
-    const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-    const isDaytime = hour >= 6 && hour < 20;
-    const icon = isDaytime ? '☀️' : '🌙';
-    statParts.push(`<span>${icon} ${timeStr}</span>`);
-  }
+  // Core metrics - always show
+  statParts.push(`<span>🐾 <span class="value">${n}</span></span>`);
+  statParts.push(`<span>🦁 <span class="value">${preds}</span></span>`);
+  statParts.push(`<span>🌿 <span class="value">${world.food.length}</span></span>`);
   
-  // NEW: Add season display
+  // Season info - compact
   if (world.getSeasonInfo) {
     const seasonInfo = world.getSeasonInfo();
-    const seasonName = seasonInfo.current.charAt(0).toUpperCase() + seasonInfo.current.slice(1);
-    const progressPct = Math.round((seasonInfo.progress ?? 0) * 100);
-    const foodMul = seasonInfo.modifiers?.food ?? 1;
-    const reproMul = seasonInfo.modifiers?.reproduction ?? 1;
-    statParts.push(`<span>${seasonInfo.icon} ${seasonName} ${progressPct}% · 🌿×${foodMul.toFixed(2)} · 💞×${reproMul.toFixed(2)}</span>`);
-  }
-
-  if (world.getWeatherState) {
-    const weather = world.getWeatherState();
-    if (weather?.type) {
-      const icons = { rain: '🌧️', snow: '❄️', storm: '⛈️', wind: '💨' };
-      const icon = icons[weather.type] ?? '☁️';
-      const intensity = Math.round((weather.intensity ?? 0) * 100);
-      statParts.push(`<span>${icon} ${intensity}%</span>`);
+    if (seasonInfo?.current) {
+      const progressPct = Math.round((seasonInfo.progress ?? 0) * 100);
+      statParts.push(`<span>${seasonInfo.icon || '🌱'} <span class="value">${progressPct}%</span></span>`);
     }
   }
   
-  const events = typeof world.getActiveEvents === 'function' ? world.getActiveEvents() : [];
-  if (events.length) {
-    const eventSummary = events
-      .map(evt => `${evt.name} ${Math.ceil(evt.remaining)}s`)
-      .join(' · ');
-    statParts.push(`<span>🌪️ ${eventSummary}</span>`);
+  // Time of day - compact
+  if (extra.timeOfDay !== undefined) {
+    const hour = Math.floor(extra.timeOfDay);
+    const isDaytime = hour >= 6 && hour < 20;
+    statParts.push(`<span>${isDaytime ? '☀️' : '🌙'}</span>`);
   }
   
-  if (extra.tool) statParts.push(`<span>🛠️ ${String(extra.tool).toUpperCase()}</span>`);
-  if (extra.fastForward && extra.fastForward !== 1) statParts.push(`<span>⚡ ×${extra.fastForward}</span>`);
-  if (extra.paused) statParts.push(`<span style="color:#f48b8b;">⏸ PAUSED</span>`);
+  // FPS - only if performance mode or low
+  if (fps < 50) {
+    statParts.push(`<span style="color: var(--accent-warning);">${fps.toFixed(0)} FPS</span>`);
+  }
+  
+  // Speed indicator
+  if (extra.fastForward && extra.fastForward !== 1) {
+    statParts.push(`<span>⚡<span class="value">×${extra.fastForward}</span></span>`);
+  }
+  
+  // Paused state
+  if (extra.paused) {
+    statParts.push(`<span style="color: var(--accent-danger);">⏸</span>`);
+  }
+  
+  // Active events - very compact
+  const events = typeof world.getActiveEvents === 'function' ? world.getActiveEvents() : [];
+  if (events.length) {
+    const evt = events[0];
+    statParts.push(`<span style="color: var(--accent-warning);">🌪️ ${Math.ceil(evt.remaining)}s</span>`);
+  }
   
   el.innerHTML = statParts.join('');
 }

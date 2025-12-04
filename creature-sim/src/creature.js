@@ -1,18 +1,34 @@
-import { clamp, rand, randn, dist2, wrap } from './utils.js';
+import { clamp, rand, randn, dist2 } from './utils.js';
 import { BehaviorConfig } from './behavior.js';
 import { getExpressedGenes, applyDisorderEffects } from './genetics.js';
+import { CreatureConfig } from './creature-config.js';
+import { CreatureStatusSystem } from './creature-status.js';
+import { CreatureBehaviorSystem } from './creature-behavior.js';
 
-const TAU = Math.PI * 2;
-const TRAIL_INTERVAL = 0.12;
-const TRAIL_MAX = 24;
-const LOG_MAX = 12;
+// Destructure commonly-used constants for cleaner code
+const { TRAIL_INTERVAL, TRAIL_MAX, LOG_MAX, TAU } = CreatureConfig;
 
+/**
+ * Represents a creature in the simulation with genetic traits and behaviors.
+ */
 export class Creature {
-  constructor(x, y, genes, isChild=false) {
-    this.x = x; this.y = y;
-    this.vx = 0; this.vy = 0;
-    this.dir = rand(0, TAU);
-    this.energy = isChild ? 28 : 40; // BALANCED: More starting energy!
+  /**
+   * Creates a new creature with the specified position and genetic makeup.
+   * @param {number} x - The x-coordinate of the creature's position
+   * @param {number} y - The y-coordinate of the creature's position
+   * @param {Object} genes - The creature's genetic traits
+   * @param {boolean} isChild - Whether this creature was born (affects starting energy)
+   */
+  constructor(x, y, genes, isChild = false) {
+    // Core properties
+    this.x = x;
+    this.y = y;
+    this.vx = 0;
+    this.vy = 0;
+    this.dir = rand(0, CreatureConfig.TAU);
+    this.energy = isChild ?
+      CreatureConfig.STARTING_ENERGY.baby :
+      CreatureConfig.STARTING_ENERGY.adult;
     this.age = 0;
     this.alive = true;
     
@@ -44,10 +60,14 @@ export class Creature {
     this.ageStage = isChild ? 'baby' : 'adult';
     this.baseSize = null; // Will be set below
     
-    // NEW: Size based on diet (omnivores are medium-sized)
+    // Size based on diet (omnivores are medium-sized)
     const diet = this.genes.diet ?? (this.genes.predator ? 1.0 : 0.0);
-    const isOmnivore = diet > 0.3 && diet < 0.7;
-    this.baseSize = isOmnivore ? 4.0 : (3.5 + (this.genes.predator ? 1.5 : 0));
+    const isOmnivore = diet > CreatureConfig.GENETICS.DIET_THRESHOLDS.HERBIVORE_MAX &&
+                       diet < CreatureConfig.GENETICS.DIET_THRESHOLDS.OMNIVORE_MAX;
+    this.baseSize = isOmnivore ?
+      CreatureConfig.GENETICS.SIZE_MODIFIERS.OMNIVORE :
+      (CreatureConfig.GENETICS.SIZE_MODIFIERS.HERBIVORE_BASE +
+       (this.genes.predator ? CreatureConfig.GENETICS.SIZE_MODIFIERS.PREDATOR_BONUS : 0));
     this.aquaticAffinity = this.genes.aquatic ?? 0;
     
     // Apply disorder size modifiers
@@ -68,7 +88,9 @@ export class Creature {
     this.parents = [];
     this.currentBiomeType = null;
 
-    this.maxHealth = this.genes.predator ? 18 : 12;
+    this.maxHealth = this.genes.predator ?
+      CreatureConfig.BASE_HEALTH.predator :
+      CreatureConfig.BASE_HEALTH.herbivore;
     
     // Apply disorder health modifiers
     if (this.genesRaw.healthModifier) {
@@ -82,9 +104,18 @@ export class Creature {
     this.log = [];
     this.logVersion = 0;
     this.personality = {
-      packInstinct: clamp(this.genes.packInstinct ?? (this.genes.predator ? 0.55 : 0), 0, 1),
-      ambushDelay: Math.max(0, this.genes.ambushDelay ?? (this.genes.predator ? 0.6 : 0.15)),
-      aggression: clamp(this.genes.aggression ?? (this.genes.predator ? 1.15 : 0.85), 0.4, 2.2),
+      packInstinct: clamp(this.genes.packInstinct ??
+        (this.genes.predator ?
+          CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.PACK_INSTINCT.predator :
+          CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.PACK_INSTINCT.herbivore), 0, 1),
+      ambushDelay: Math.max(0, this.genes.ambushDelay ??
+        (this.genes.predator ?
+          CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.AMBUSH_DELAY.predator :
+          CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.AMBUSH_DELAY.herbivore)),
+      aggression: clamp(this.genes.aggression ??
+        (this.genes.predator ?
+          CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.AGGRESSION.predator :
+          CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.AGGRESSION.herbivore), 0.4, 2.2),
       ambushTimer: 0,
       huntCooldown: 0,
       lastSignalAt: -Infinity,
@@ -128,11 +159,12 @@ export class Creature {
     this._halfFovRad = (genes.fov * 0.5) * Math.PI / 180; // Cache FOV in radians
     
     // FEATURE 2: Learning & Memory
-    const memoryCapacity = Math.floor(10 + (genes.sense / 50)); // 10-14 memories
+    const memoryCapacity = Math.floor(CreatureConfig.MEMORY.CAPACITY_BASE +
+      (genes.sense / CreatureConfig.MEMORY.CAPACITY_SENSE_RATIO));
     this.memory = {
       capacity: memoryCapacity,
       locations: [], // { x, y, type, strength, timestamp }
-      decayRate: 0.05 // strength decays per second
+      decayRate: CreatureConfig.MEMORY.DECAY_RATE
     };
     
     // FEATURE 4: Social Behaviors
@@ -155,10 +187,10 @@ export class Creature {
     this.emotions = {
       fear: 0,          // 0-1, increases when attacked/near predators
       hunger: 0,        // 0-1, increases when low energy
-      confidence: 0.5,  // 0-1, increases with kills/successful actions
+      confidence: CreatureConfig.EMOTIONS.DEFAULT_CONFIDENCE,
       curiosity: clamp(genes.sense / 150, 0, 1), // exploration drive
       stress: 0,        // 0-1, accumulates from negative events
-      contentment: 0.5  // 0-1, decreases stress, increases with food/safety
+      contentment: CreatureConfig.EMOTIONS.DEFAULT_CONTENTMENT
     };
     
     // FEATURE 6: Sensory Specialization
@@ -166,10 +198,12 @@ export class Creature {
     
     // FEATURE 7: Problem Solving & Intelligence
     this.intelligence = {
-      level: clamp((genes.sense / 100) * (genes.metabolism ?? 1), 0, 2), // 0-2
+      level: clamp((genes.sense / CreatureConfig.INTELLIGENCE.LEVEL_SENSE_RATIO) *
+        (genes.metabolism ?? CreatureConfig.INTELLIGENCE.LEVEL_METABOLISM_MULTIPLIER),
+        0, CreatureConfig.INTELLIGENCE.LEVEL_MAX),
       patterns: [], // learned successful strategies
       experiencePoints: 0,
-      learningRate: 0.05
+      learningRate: CreatureConfig.INTELLIGENCE.PATTERN_LEARNING
     };
     
     // FEATURE 8: Sexual Selection
@@ -180,14 +214,18 @@ export class Creature {
       courtshipStyle: Math.random(), // display type
       desiredTraits: this._pickDesiredTraits(genes)
     };
+
+    // Initialize new modular systems
+    this.statusSystem = new CreatureStatusSystem(this);
+    this.behaviorSystem = new CreatureBehaviorSystem(this);
   }
   
   _determineSenseType(genes) {
     // Determine sense type based on genes
     const r = genes.hue / 360; // use hue as determinant
-    if (r < 0.25) return 'normal';
-    if (r < 0.5) return 'chemical'; // better pheromone tracking
-    if (r < 0.75) return 'thermal'; // see through obstacles
+    if (r < CreatureConfig.GENETICS.SENSE_TYPE_THRESHOLDS.NORMAL_MAX) return 'normal';
+    if (r < CreatureConfig.GENETICS.SENSE_TYPE_THRESHOLDS.CHEMICAL_MAX) return 'chemical'; // better pheromone tracking
+    if (r < CreatureConfig.GENETICS.SENSE_TYPE_THRESHOLDS.THERMAL_MAX) return 'thermal'; // see through obstacles
     return 'echolocation'; // wider detection
   }
   
@@ -298,29 +336,50 @@ export class Creature {
     persona.currentTargetId = null;
   }
 
+  /**
+   * Updates the creature's state for one simulation frame.
+   * OPTIMIZED: Early exits and reduced per-frame overhead
+   * @param {number} dt - Time delta since last update (in seconds)
+   * @param {Object} world - The world object containing simulation state
+   */
   update(dt, world) {
+    // OPTIMIZATION: Fast early exit for dead creatures
     if (!this.alive) return;
+
+    // OPTIMIZATION: Skip validation in production (dev-only checks)
+    // if (typeof dt !== 'number' || dt < 0 || !isFinite(dt)) return;
+    // if (!world || typeof world !== 'object') return;
+
     this.age += dt;
-    this._lastWorld = world; // Store for animation system
-    if (!this.statusTimers) {
-      this.statusTimers = {
-        diseaseSpread: rand(0.6, 1.2),
-        venomTick: 1.2
-      };
+    this._lastWorld = world;
+
+    // OPTIMIZATION: Only update age stage every 60 frames (~1s at 60fps)
+    // Age stage doesn't change frequently
+    if (!this._ageStageFrame || this._ageStageFrame++ > 60) {
+      this._updateAgeStage();
+      this.size = this.baseSize * this._getAgeSizeMultiplier();
+      this._ageStageFrame = 0;
     }
+
+    // Update modular systems
+    this.statusSystem.tick(dt);
+    this.behaviorSystem.update(dt, world);
+
+    // OPTIMIZATION: Only update advanced AI features every few frames
+    // These are expensive and don't need per-frame precision
+    if (!this._aiUpdateFrame) this._aiUpdateFrame = Math.floor(Math.random() * 10);
+    this._aiUpdateFrame++;
     
-    // Update age stage and size based on age
-    this._updateAgeStage();
-    this.size = this.baseSize * this._getAgeSizeMultiplier();
-    
-    // Call feature update methods
-    if (this._updateMemory) this._updateMemory(dt, world);
-    if (this._updateSocialBehavior) this._updateSocialBehavior(world);
-    if (this._updateMigration) this._updateMigration(world, dt);
-    if (this._updateEmotions) this._updateEmotions(dt, world);
-    if (this._updateIntelligence) this._updateIntelligence(dt, world);
-    
-    this._tickStatusSystem(dt);
+    if (this._aiUpdateFrame >= 10) { // Every ~10 frames
+      this._aiUpdateFrame = 0;
+      if (this._updateMemory) this._updateMemory(dt * 10, world);
+      if (this._updateSocialBehavior) this._updateSocialBehavior(world);
+      if (this._updateMigration) this._updateMigration(world, dt * 10);
+      if (this._updateEmotions) this._updateEmotions(dt * 10, world);
+      if (this._updateIntelligence) this._updateIntelligence(dt * 10, world);
+    }
+
+    // Legacy status processing (for compatibility with complex effects)
     this._processStatusEffects(dt, world);
 
     if (this.cooldowns.adrenaline > 0) {
@@ -380,12 +439,42 @@ export class Creature {
     this.currentBiome = currentBiome;
     this.currentBiomeType = currentBiome?.type ?? this.currentBiomeType ?? null;
     const inWetland = currentBiome?.type === 'wetland';
+    const inWater = currentBiome?.type === 'water';
+    const waterDepth = currentBiome?.depth || 0;
+    
+    // Swimming state tracking
+    this.isSwimming = inWater && this.aquaticAffinity > 0.3;
+    
+    // Drowning mechanic for non-aquatic creatures in water
+    if (inWater && this.aquaticAffinity < 0.4) {
+      // Non-aquatic creatures struggle in water
+      const drowningRate = (0.4 - this.aquaticAffinity) * waterDepth * 3; // 0-3 damage/sec in deep water
+      this.health -= drowningRate * dt;
+      
+      // Add drowning visual feedback periodically
+      if (!this._drowningTimer) this._drowningTimer = 0;
+      this._drowningTimer -= dt;
+      if (this._drowningTimer <= 0) {
+        this._drowningTimer = 0.5;
+        if (world.particles?.addBubbles) {
+          world.particles.addBubbles(this.x, this.y);
+        }
+        // Panic: try to move toward land
+        this.emotions.fear = Math.min(1, this.emotions.fear + 0.3);
+      }
+      
+      if (this.health <= 0) {
+        this.alive = false;
+        this.logEvent('Drowned', world.t);
+        return;
+      }
+    }
     
     let wanderScale = 0.05 * BehaviorConfig.wanderWeight;
     const diet = this.genes.diet ?? (this.genes.predator ? 1.0 : 0.0);
     const isOmnivore = diet > 0.3 && diet < 0.7;
     const canScavenge = diet >= 0.3; // Omnivores and carnivores can scavenge
-    if (this.aquaticAffinity > 0.45 && inWetland) {
+    if (this.aquaticAffinity > 0.45 && (inWetland || inWater)) {
       wanderScale *= 0.8;
     }
     
@@ -453,13 +542,27 @@ export class Creature {
     const aggressionFactor = this.genes.predator ? clamp(this.personality.aggression, 0.4, 2.2) : 1;
     let baseSpeed = this.genes.speed * (this.genes.predator ? 46 : 40);
     if (this.genes.predator) baseSpeed *= 0.85 + aggressionFactor * 0.25;
-    if (inWetland) {
+    
+    // Water biome speed modifiers
+    if (inWater) {
+      if (this.aquaticAffinity > 0.5) {
+        // Aquatic creatures are fast in water
+        baseSpeed *= currentBiome.aquaticSpeed || (1.2 + this.aquaticAffinity * 0.3);
+      } else if (this.aquaticAffinity > 0.2) {
+        // Semi-aquatic creatures are okay in water
+        baseSpeed *= 0.7 + this.aquaticAffinity * 0.5;
+      } else {
+        // Non-aquatic creatures struggle badly in water
+        baseSpeed *= currentBiome.movementSpeed || 0.3;
+      }
+    } else if (inWetland) {
       if (this.aquaticAffinity > 0.1) {
         baseSpeed *= 1 + this.aquaticAffinity * 0.32;
       } else {
         baseSpeed *= 0.88;
       }
     } else if (this.aquaticAffinity > 0.5) {
+      // Highly aquatic creatures are slower on land
       baseSpeed *= 0.9 - Math.min(0.2, (this.aquaticAffinity - 0.5) * 0.25);
     }
     
@@ -636,9 +739,22 @@ export class Creature {
       const aggressionTax = Math.max(0, (aggressionFactor - 1) * 0.18);
       energyDrain += aggressionTax;
     }
-    if (inWetland) {
+    // Water and wetland energy modifiers
+    if (inWater) {
+      if (this.aquaticAffinity > 0.5) {
+        // Aquatic creatures are efficient in water
+        energyDrain *= 0.7;
+      } else if (this.aquaticAffinity > 0.2) {
+        // Semi-aquatic: slight penalty
+        energyDrain *= 1.1;
+      } else {
+        // Non-aquatic: significant energy drain from struggling
+        energyDrain *= 1.8;
+      }
+    } else if (inWetland) {
       energyDrain *= clamp(1 - this.aquaticAffinity * 0.25 + (this.aquaticAffinity < 0.2 ? 0.12 : 0), 0.65, 1.15);
     } else if (this.aquaticAffinity > 0.4) {
+      // Aquatic creatures on dry land get tired
       energyDrain += this.aquaticAffinity * 0.35;
     }
     
@@ -718,40 +834,50 @@ export class Creature {
     }
   }
 
+  /**
+   * Checks if the creature has a specific status effect.
+   * @param {string} key - The status effect key
+   * @returns {boolean} Whether the creature has the status
+   */
   hasStatus(key) {
-    return this.statuses.has(key);
+    return this.statusSystem.hasStatus(key);
   }
 
+  /**
+   * Gets the status effect object for the specified key.
+   * @param {string} key - The status effect key
+   * @returns {Object|null} The status effect object or null if not found
+   */
   getStatus(key) {
-    return this.statuses.get(key) || null;
+    return this.statusSystem.getStatus(key);
   }
 
+  /**
+   * Gets the intensity of a status effect.
+   * @param {string} key - The status effect key
+   * @param {number} fallback - Fallback value if status not found
+   * @returns {number} The status intensity
+   */
   getStatusIntensity(key, fallback = 0) {
-    const s = this.getStatus(key);
-    if (!s) return fallback;
-    return s.intensity ?? fallback;
+    return this.statusSystem.getStatusIntensity(key, fallback);
   }
 
+  /**
+   * Applies a status effect to the creature.
+   * @param {string} key - The status effect key
+   * @param {Object} opts - Status options (duration, intensity, etc.)
+   * @returns {Object} The applied status object
+   */
   applyStatus(key, opts = {}) {
-    const now = this.statuses.get(key) || { key };
-    if (opts.duration !== undefined) now.duration = Math.max(0, opts.duration);
-    if (opts.intensity !== undefined) now.intensity = opts.intensity;
-    if (opts.stacks !== undefined) {
-      now.stacks = Math.max(0, opts.stacks);
-    } else if (opts.stackDelta !== undefined) {
-      now.stacks = Math.max(0, (now.stacks ?? 0) + opts.stackDelta);
-    }
-    if (opts.metadata) {
-      now.metadata = { ...(now.metadata ?? {}), ...opts.metadata };
-    }
-    if (opts.source !== undefined) now.source = opts.source;
-    now.elapsed = 0;
-    this.statuses.set(key, now);
-    return now;
+    return this.statusSystem.applyStatus(key, opts);
   }
 
+  /**
+   * Removes a status effect from the creature.
+   * @param {string} key - The status effect key
+   */
   removeStatus(key) {
-    this.statuses.delete(key);
+    return this.statusSystem.removeStatus(key);
   }
 
   _tickStatusSystem(dt) {
@@ -911,19 +1037,49 @@ export class Creature {
     return { x: best.x, y: best.y, id: best.id };
   }
 
+  /**
+   * Sample direction toward water/wetland for aquatic creatures,
+   * or away from water for non-aquatic creatures
+   */
   _sampleWetlandDirection(world) {
     if (!world?.getBiomeAt) return null;
     let bestDir = null;
     let bestScore = 0;
+    const isAquatic = this.aquaticAffinity > 0.4;
     const radius = 200 + this.aquaticAffinity * 100;
-    for (let i = 0; i < 5; i++) {
+    
+    for (let i = 0; i < 6; i++) {
       const angle = Math.random() * Math.PI * 2;
       const tx = this.x + Math.cos(angle) * radius;
       const ty = this.y + Math.sin(angle) * radius;
       const biome = world.getBiomeAt(tx, ty);
       if (!biome) continue;
-      let score = biome.type === 'wetland' ? 1.2 : (biome.moisture ?? 0);
-      score += (1 - Math.abs(Math.sin(angle - this.dir))) * 0.05;
+      
+      let score = 0;
+      
+      if (isAquatic) {
+        // Aquatic creatures seek water and wetlands
+        if (biome.type === 'water') {
+          score = 2.0 + (biome.depth || 0.5) * 0.5; // Prefer deeper water
+        } else if (biome.type === 'wetland') {
+          score = 1.2;
+        } else {
+          score = biome.moisture ?? 0;
+        }
+      } else {
+        // Non-aquatic creatures avoid water
+        if (biome.type === 'water') {
+          score = -2.0; // Strongly avoid
+        } else if (biome.type === 'wetland') {
+          score = 0.3; // Slightly avoid wetlands too
+        } else {
+          score = 1.0 + (1 - (biome.moisture ?? 0.5)) * 0.5; // Prefer dry land
+        }
+      }
+      
+      // Slight preference for continuing current direction
+      score += (1 - Math.abs(Math.sin(angle - this.dir))) * 0.1;
+      
       if (score > bestScore) {
         bestScore = score;
         bestDir = angle;

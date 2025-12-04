@@ -76,6 +76,10 @@ export class TutorialSystem {
     };
   }
 
+  get isActive() {
+    return this.active;
+  }
+
   // Start tutorial (first time players)
   start() {
     if (this.completed.has('all')) {
@@ -198,6 +202,22 @@ export class TutorialSystem {
     }
   }
 
+  // Update is called from the main loop so keep it lightweight
+  update(_dt, _world) {
+    if (!this.active || !this.currentStep) return;
+
+    // Keep overlay visible while active
+    const overlay = document.getElementById('tutorial-overlay');
+    if (overlay && overlay.style.display === 'none') {
+      overlay.style.display = 'block';
+    }
+
+    // Reposition highlight each frame (elements might move)
+    if (this.currentStep.highlight) {
+      this.highlightElement(this.currentStep.highlight);
+    }
+  }
+
   // Highlight an element on screen
   highlightElement(selector) {
     const highlight = document.getElementById('tutorial-highlight');
@@ -262,10 +282,7 @@ export class TutorialSystem {
     this.completed.add('all');
     this.saveProgress();
     
-    // Show completion message
-    console.log('🎓 Tutorial completed!');
-    
-    // Could trigger achievement here
+    // Trigger achievement
     if (window.achievements) {
       window.achievements.unlock('tutorial_complete');
     }
@@ -340,4 +357,3 @@ export class TutorialSystem {
     return !this.completed.has('all');
   }
 }
-

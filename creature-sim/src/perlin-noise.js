@@ -186,6 +186,40 @@ export class BiomeGenerator {
       };
     }
 
+    // Very low elevation + very high moisture = Deep Water
+    if (elevation < 0.2 && moisture > 0.8) {
+      return {
+        type: 'water',
+        name: 'Deep Water',
+        color: '#1e40af',
+        foodRate: 0.6, // Fish spawn here
+        movementSpeed: 0.3, // Very slow for non-aquatic
+        aquaticSpeed: 1.4, // Fast for aquatic creatures
+        moisture,
+        temperature,
+        elevation,
+        isWater: true,
+        depth: 1.0 // Deep water
+      };
+    }
+
+    // Low elevation + very high moisture = Shallow Water
+    if (elevation < 0.3 && moisture > 0.75) {
+      return {
+        type: 'water',
+        name: 'Shallow Water',
+        color: '#3b82f6',
+        foodRate: 0.7,
+        movementSpeed: 0.5,
+        aquaticSpeed: 1.2,
+        moisture,
+        temperature,
+        elevation,
+        isWater: true,
+        depth: 0.5 // Shallow water
+      };
+    }
+
     // Low elevation + high moisture = Wetland
     if (elevation < 0.35 && moisture > 0.6) {
       return {

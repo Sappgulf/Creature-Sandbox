@@ -1,5 +1,31 @@
 import { clamp } from './utils.js';
 
+/** Ecosystem health configuration constants */
+const ECOSYSTEM_CONFIG = {
+  /** Maximum history samples to retain */
+  MAX_HISTORY: 100,
+  /** Update interval in seconds */
+  UPDATE_INTERVAL: 1.0,
+  /** Optimal population range */
+  POPULATION: {
+    MIN_OPTIMAL: 50,
+    MAX_OPTIMAL: 200,
+    OVERPOPULATION_PENALTY_RATE: 10 // Points lost per 10 creatures over max
+  },
+  /** Target ratios for ecosystem balance */
+  TARGETS: {
+    FOOD_PER_CREATURE: 3,
+    PREDATOR_RATIO: 0.15,
+    AVERAGE_ENERGY: 40
+  },
+  /** Metric weights for overall score */
+  WEIGHTS: {
+    BIODIVERSITY: 0.3,
+    STABILITY: 0.4,
+    SUSTAINABILITY: 0.3
+  }
+};
+
 export class EcosystemHealth {
   constructor() {
     this.visible = false;
@@ -15,12 +41,13 @@ export class EcosystemHealth {
       sustainability: [],
       overall: []
     };
-    this.maxHistory = 100;
+    this.maxHistory = ECOSYSTEM_CONFIG.MAX_HISTORY;
     this.lastUpdateTime = 0;
-    this.updateInterval = 1.0; // Update every second
+    this.updateInterval = ECOSYSTEM_CONFIG.UPDATE_INTERVAL;
   }
   
-  update(world, dt) {
+  update(world, dt = 0.016) {
+    // Handle missing dt (default to ~60fps)
     this.lastUpdateTime += dt;
     if (this.lastUpdateTime < this.updateInterval) return;
     this.lastUpdateTime = 0;
@@ -35,7 +62,8 @@ export class EcosystemHealth {
     const sustainability = this.calculateSustainability(world);
     
     // Overall health is weighted average
-    const overall = (biodiversity * 0.3 + stability * 0.4 + sustainability * 0.3);
+    const { BIODIVERSITY, STABILITY, SUSTAINABILITY } = ECOSYSTEM_CONFIG.WEIGHTS;
+    const overall = (biodiversity * BIODIVERSITY + stability * STABILITY + sustainability * SUSTAINABILITY);
     
     this.metrics = { biodiversity, stability, sustainability, overall };
     
@@ -88,7 +116,7 @@ export class EcosystemHealth {
     
     // Food availability (enough food per creature)
     const foodPerCreature = world.creatures.length > 0 ? world.food.length / world.creatures.length : 0;
-    const foodScore = clamp((foodPerCreature / 3) * 100, 0, 100); // Target: 3 food per creature
+    const foodScore = clamp((foodPerCreature / ECOSYSTEM_CONFIG.TARGETS.FOOD_PER_CREATURE) * 100, 0, 100);
     
     // Predator/prey balance
     let predators = 0;
@@ -97,14 +125,14 @@ export class EcosystemHealth {
       if (diet > 0.7) predators++;
     }
     const predatorRatio = world.creatures.length > 0 ? predators / world.creatures.length : 0;
-    const balanceScore = (1 - Math.abs(predatorRatio - 0.15)) * 100; // Target: 15% predators
+    const balanceScore = (1 - Math.abs(predatorRatio - ECOSYSTEM_CONFIG.TARGETS.PREDATOR_RATIO)) * 100;
     
     return (popScore * 0.4 + foodScore * 0.3 + balanceScore * 0.3);
   }
   
   calculateSustainability(world) {
     // Use ecoStats for birth/death tracking
-    const stats = world.ecoStats;
+    const stats = world.ecoStats || {};
     
     // Birth/death ratio over last period
     const recentBirths = stats.birthsRecent || 0;
@@ -133,17 +161,17 @@ export class EcosystemHealth {
       totalEnergy += c.energy;
     }
     const avgEnergy = world.creatures.length > 0 ? totalEnergy / world.creatures.length : 0;
-    const energyScore = clamp((avgEnergy / 40) * 100, 0, 100); // Target: 40 energy
+    const energyScore = clamp((avgEnergy / ECOSYSTEM_CONFIG.TARGETS.AVERAGE_ENERGY) * 100, 0, 100);
     
     return (birthDeathScore * 0.4 + healthScore * 0.3 + energyScore * 0.3);
   }
   
   scorePopulation(count) {
-    // Optimal range: 50-200 creatures
+    const { MIN_OPTIMAL, MAX_OPTIMAL, OVERPOPULATION_PENALTY_RATE } = ECOSYSTEM_CONFIG.POPULATION;
     if (count === 0) return 0;
-    if (count >= 50 && count <= 200) return 100;
-    if (count < 50) return (count / 50) * 100;
-    if (count > 200) return Math.max(0, 100 - ((count - 200) / 10));
+    if (count >= MIN_OPTIMAL && count <= MAX_OPTIMAL) return 100;
+    if (count < MIN_OPTIMAL) return (count / MIN_OPTIMAL) * 100;
+    if (count > MAX_OPTIMAL) return Math.max(0, 100 - ((count - MAX_OPTIMAL) / OVERPOPULATION_PENALTY_RATE));
     return 50;
   }
   

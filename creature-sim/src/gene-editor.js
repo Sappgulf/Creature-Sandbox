@@ -222,5 +222,21 @@ export class GeneEditor {
       return false;
     }
   }
+
+  /**
+   * Update method called each frame (for interface compatibility)
+   * @param {number} dt - Delta time
+   */
+  update(dt) {
+    // Gene editor is primarily reactive (responds to user input)
+    // No per-frame updates needed currently
+  }
+
+  /**
+   * Check if gene editor is active
+   */
+  get isActive() {
+    return this.visible;
+  }
 }
 

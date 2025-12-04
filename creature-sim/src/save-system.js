@@ -270,8 +270,6 @@ export class SaveSystem {
     a.click();
     
     URL.revokeObjectURL(url);
-    
-    console.log(`✅ Saved to ${a.download} (${(json.length / 1024).toFixed(1)} KB)`);
   }
   
   /**
@@ -286,10 +284,9 @@ export class SaveSystem {
           const json = e.target.result;
           const saveData = JSON.parse(json);
           const result = this.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator);
-          console.log(`✅ Loaded ${file.name} - ${saveData.metadata.populationSize} creatures`);
           resolve(result);
         } catch (err) {
-          console.error('❌ Failed to load save file:', err);
+          console.error('Failed to load save file:', err);
           reject(err);
         }
       };
@@ -315,9 +312,8 @@ export class SaveSystem {
       });
       const json = JSON.stringify(saveData);
       localStorage.setItem('creature-sim-autosave', json);
-      console.log(`💾 Auto-saved (${(json.length / 1024).toFixed(1)} KB)`);
     } catch (err) {
-      console.warn('⚠️ Auto-save failed:', err);
+      console.warn('Auto-save failed:', err);
     }
   }
   
@@ -331,10 +327,9 @@ export class SaveSystem {
       
       const saveData = JSON.parse(json);
       const result = this.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator);
-      console.log(`✅ Loaded auto-save from ${new Date(saveData.timestamp).toLocaleString()}`);
       return result;
     } catch (err) {
-      console.error('❌ Failed to load auto-save:', err);
+      console.error('Failed to load auto-save:', err);
       return null;
     }
   }
@@ -351,7 +346,6 @@ export class SaveSystem {
    */
   clearAutoSave() {
     localStorage.removeItem('creature-sim-autosave');
-    console.log('🗑️ Auto-save cleared');
   }
   
   /**
@@ -370,7 +364,6 @@ export class SaveSystem {
     
     const json = JSON.stringify(saveData);
     localStorage.setItem(`creature-sim-slot-${slotNumber}`, json);
-    console.log(`💾 Saved to slot ${slotNumber}: "${name}" (${(json.length / 1024).toFixed(1)} KB)`);
   }
   
   /**
@@ -386,7 +379,6 @@ export class SaveSystem {
     
     const saveData = JSON.parse(json);
     const result = this.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator);
-    console.log(`✅ Loaded slot ${slotNumber}: "${saveData.metadata.saveName}"`);
     return result;
   }
   

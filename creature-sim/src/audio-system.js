@@ -36,7 +36,7 @@ export class AudioSystem {
     
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-      console.log('🔊 Audio system initialized');
+      // Audio system initialized
     } catch (e) {
       console.warn('Audio not supported:', e);
       this.soundsEnabled = false;
@@ -316,6 +316,46 @@ export class AudioSystem {
     this.musicEnabled = enabled;
     if (!enabled) {
       this.stopMusic();
+    }
+  }
+
+  /**
+   * Update method called each frame - currently handles adaptive music
+   * @param {number} dt - Delta time (unused but kept for interface consistency)
+   */
+  update(dt) {
+    // Audio system doesn't need per-frame updates
+    // Adaptive music is handled via playAdaptiveMusic() when called explicitly
+  }
+
+  /**
+   * Play a named sound effect (convenience method for game-loop compatibility)
+   * @param {string} soundName - Name of the sound to play
+   */
+  playSound(soundName) {
+    if (!this.soundsEnabled || !this.ctx) return;
+    
+    // Map sound names to appropriate methods
+    switch (soundName) {
+      case 'creatureBorn':
+      case 'birth':
+        this.playUISound('spawn');
+        break;
+      case 'creatureDied':
+      case 'death':
+        this.playUISound('kill');
+        break;
+      case 'achievement':
+        this.playUISound('success');
+        break;
+      case 'disaster':
+        this.playUISound('error');
+        break;
+      case 'seasonChange':
+        this.playUISound('toggle');
+        break;
+      default:
+        this.playUISound('click');
     }
   }
 

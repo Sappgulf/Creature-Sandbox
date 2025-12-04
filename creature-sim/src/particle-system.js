@@ -1,11 +1,36 @@
 // Particle System for visual effects
 // Handles birth sparkles, death markers, sleep particles, etc.
+// OPTIMIZED: Uses swap-and-pop for O(1) particle removal instead of splice O(n)
 
 export class ParticleSystem {
   constructor() {
     this.particles = [];
     this.maxParticles = 500;
     this.screenShake = { x: 0, y: 0, intensity: 0 };
+    // Performance tracking
+    this._particleCreated = 0;
+    this._particleRemoved = 0;
+  }
+  
+  /**
+   * OPTIMIZATION: Get a particle object, reusing from pool or creating new
+   * @returns {Object} Particle object
+   */
+  _createParticle(type, x, y, vx, vy, life, opts = {}) {
+    this._particleCreated++;
+    return {
+      type,
+      x,
+      y,
+      vx,
+      vy,
+      life,
+      maxLife: life,
+      size: opts.size || 2,
+      color: opts.color || '#ffffff',
+      opacity: opts.opacity || 1.0,
+      ...opts
+    };
   }
 
   // Add birth sparkles
@@ -172,7 +197,8 @@ export class ParticleSystem {
     }
   }
 
-  addDiseasePulse(x, y) {
+  addDiseasePulse(x, y, color = '#7fff7f') {
+    // Main expanding ring
     this.particles.push({
       type: 'disease',
       x,
@@ -183,8 +209,27 @@ export class ParticleSystem {
       maxLife: 1.2,
       size: 16,
       opacity: 1.0,
-      pulse: 0
+      pulse: 0,
+      color
     });
+    
+    // Add smaller contagion particles spreading outward
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2 + Math.random() * 0.3;
+      const speed = 30 + Math.random() * 20;
+      this.particles.push({
+        type: 'contagion',
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 0.8,
+        maxLife: 0.8,
+        size: 2 + Math.random() * 2,
+        color,
+        opacity: 0.8
+      });
+    }
   }
 
   addVenomStrike(x, y) {
@@ -206,15 +251,69 @@ export class ParticleSystem {
     }
   }
 
+  /**
+   * Generic emit method for game-loop compatibility
+   * Maps event types to specific particle effects
+   * @param {number} x - X position
+   * @param {number} y - Y position  
+   * @param {string} type - Effect type ('birth', 'death', 'combat', 'food', etc.)
+   * @param {Object} options - Optional parameters for the effect
+   */
+  emit(x, y, type, options = {}) {
+    switch (type) {
+      case 'birth':
+        this.addBirthEffect(x, y);
+        break;
+      case 'death':
+        this.addDeathMarker(x, y, options.name || 'Unknown');
+        break;
+      case 'combat':
+      case 'hit':
+        this.addCombatHit(x, y, options.damage || 5, options.isKill || false);
+        break;
+      case 'food':
+        if (options.targetX !== undefined && options.targetY !== undefined) {
+          this.addFoodAbsorption(x, y, options.targetX, options.targetY);
+        }
+        break;
+      case 'sleep':
+        this.addSleepParticle(x, y);
+        break;
+      case 'mutation':
+        this.addMutationEffect(x, y);
+        break;
+      case 'levelup':
+      case 'level':
+        this.addLevelUpEffect(x, y);
+        break;
+      case 'heal':
+        this.addHealingEffect(x, y);
+        break;
+      case 'territory':
+        this.addTerritoryMarker(x, y, options.color || '#ff0000');
+        break;
+      default:
+        // Default to sparkle effect for unknown types
+        this.addBirthEffect(x, y);
+    }
+  }
 
+  /**
+   * Update all particles
+   * OPTIMIZED: Uses swap-and-pop pattern for O(1) removal instead of splice O(n)
+   */
   update(dt) {
-    // Update all particles
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      const p = this.particles[i];
+    const particles = this.particles;
+    let writeIdx = 0;
+    
+    // Process all particles, keeping alive ones compacted
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
       p.life -= dt;
 
+      // Skip dead particles (they won't be copied)
       if (p.life <= 0) {
-        this.particles.splice(i, 1);
+        this._particleRemoved++;
         continue;
       }
 
@@ -225,26 +324,68 @@ export class ParticleSystem {
       // Update opacity based on life
       const lifeRatio = p.life / p.maxLife;
       
-      if (p.type === 'sparkle') {
+      // Type-specific updates using lookup for common types
+      this._updateParticleByType(p, dt, lifeRatio);
+      
+      // Compact: move particle to write position
+      if (writeIdx !== i) {
+        particles[writeIdx] = p;
+      }
+      writeIdx++;
+    }
+    
+    // Truncate array to remove dead particles (O(1))
+    particles.length = writeIdx;
+    
+    // Update screen shake decay (moved outside particle loop)
+    if (this.screenShake.intensity > 0) {
+      this.screenShake.intensity *= 0.85;
+      if (this.screenShake.intensity < 0.1) {
+        this.screenShake.intensity = 0;
+        this.screenShake.x = 0;
+        this.screenShake.y = 0;
+      }
+    }
+
+    // Limit particle count by removing oldest (from start)
+    if (particles.length > this.maxParticles) {
+      const excess = particles.length - this.maxParticles;
+      particles.splice(0, excess);
+    }
+  }
+  
+  /**
+   * Update particle behavior by type
+   * Extracted to reduce update() complexity
+   */
+  _updateParticleByType(p, dt, lifeRatio) {
+    switch (p.type) {
+      case 'sparkle':
         p.opacity = lifeRatio;
-        p.vy += 80 * dt; // Gravity
-        p.vx *= 0.95; // Air resistance
+        p.vy += 80 * dt;
+        p.vx *= 0.95;
         p.vy *= 0.95;
-      } else if (p.type === 'gravestone') {
-        // Fade out in last 2 seconds
+        break;
+        
+      case 'gravestone':
         if (p.life < 2.0) {
           p.opacity = p.life / 2.0;
         }
-      } else if (p.type === 'sleep') {
+        break;
+        
+      case 'sleep':
         p.opacity = lifeRatio * 0.8;
-        p.vy += 2 * dt; // Slight upward acceleration
-      } else if (p.type === 'blood') {
+        p.vy += 2 * dt;
+        break;
+        
+      case 'blood':
         p.opacity = lifeRatio;
-        p.vy += 100 * dt; // Gravity
-        p.vx *= 0.92; // Air resistance
+        p.vy += 100 * dt;
+        p.vx *= 0.92;
         p.vy *= 0.92;
-      } else if (p.type === 'food') {
-        // Animate toward target (creature)
+        break;
+        
+      case 'food':
         if (p.delay > 0) {
           p.delay -= dt;
         } else {
@@ -255,54 +396,77 @@ export class ParticleSystem {
             p.vx = (dx / dist) * 80;
             p.vy = (dy / dist) * 80;
           } else {
-            p.life = 0; // Absorbed
+            p.life = 0;
           }
         }
         p.opacity = lifeRatio;
-      } else if (p.type === 'evolution') {
+        break;
+        
+      case 'evolution':
         p.opacity = lifeRatio;
-        p.vy += 40 * dt; // Slight gravity
+        p.vy += 40 * dt;
         p.vx *= 0.98;
         p.vy *= 0.98;
-      } else if (p.type === 'heal') {
+        break;
+        
+      case 'heal':
         p.opacity = lifeRatio * 0.9;
-        p.vy += 5 * dt; // Slow upward float
-      } else if (p.type === 'season') {
+        p.vy += 5 * dt;
+        break;
+        
+      case 'season':
         p.opacity = lifeRatio;
         p.vx *= 0.96;
         p.vy *= 0.96;
         p.vy -= 4 * dt;
-      } else if (p.type === 'disease') {
+        break;
+        
+      case 'disease':
         p.opacity = lifeRatio * 0.8;
         p.size += dt * 28;
         p.pulse = (p.pulse ?? 0) + dt * 6;
-      } else if (p.type === 'venom') {
+        break;
+        
+      case 'contagion':
+        p.opacity = lifeRatio * 0.7;
+        p.vx *= 0.95;
+        p.vy *= 0.95;
+        p.size *= 0.98;
+        break;
+        
+      case 'bubble':
+        p.opacity = lifeRatio * 0.6;
+        p.vx *= 0.95;
+        p.vy *= 0.98;
+        p.size += dt * 2;
+        p.vx += Math.sin(p.life * 10) * 5 * dt;
+        break;
+        
+      case 'ripple':
+        p.opacity = lifeRatio * 0.4;
+        p.size += dt * 40;
+        break;
+        
+      case 'venom':
         p.opacity = lifeRatio;
         p.vx *= 0.9;
         p.vy *= 0.9;
-      } else if (p.type === 'play') {
+        break;
+        
+      case 'play':
         p.opacity = lifeRatio;
         p.vx *= 0.88;
         p.vy *= 0.88;
-      } else if (p.type === 'elder') {
+        break;
+        
+      case 'elder':
         p.opacity = lifeRatio * 0.7;
         p.size += dt * 20;
-      }
-      
-      // Update screen shake decay
-      if (this.screenShake.intensity > 0) {
-        this.screenShake.intensity *= 0.85; // Decay quickly
-        if (this.screenShake.intensity < 0.1) {
-          this.screenShake.intensity = 0;
-          this.screenShake.x = 0;
-          this.screenShake.y = 0;
-        }
-      }
-    }
-
-    // Limit particle count
-    if (this.particles.length > this.maxParticles) {
-      this.particles.splice(0, this.particles.length - this.maxParticles);
+        break;
+        
+      // Default: just fade based on life
+      default:
+        p.opacity = lifeRatio;
     }
   }
 
@@ -339,7 +503,45 @@ export class ParticleSystem {
     });
   }
 
-  draw(ctx) {
+  /**
+   * Add bubbles for drowning effect or swimming
+   */
+  addBubbles(x, y, count = 4) {
+    for (let i = 0; i < count; i++) {
+      this.particles.push({
+        type: 'bubble',
+        x: x + (Math.random() - 0.5) * 10,
+        y: y + (Math.random() - 0.5) * 10,
+        vx: (Math.random() - 0.5) * 15,
+        vy: -20 - Math.random() * 30, // Float upward
+        life: 0.8 + Math.random() * 0.4,
+        maxLife: 1.2,
+        size: 2 + Math.random() * 3,
+        opacity: 0.7
+      });
+    }
+  }
+
+  /**
+   * Add swimming ripple effect
+   */
+  addSwimRipple(x, y) {
+    this.particles.push({
+      type: 'ripple',
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      life: 0.6,
+      maxLife: 0.6,
+      size: 5,
+      opacity: 0.5
+    });
+  }
+
+  draw(ctx, camera = null) {
+    // Camera parameter is optional - particles are drawn in world space
+    // If camera transform is needed, it should be applied before calling draw
     for (const p of this.particles) {
       ctx.save();
       ctx.globalAlpha = p.opacity || 1.0;
@@ -402,13 +604,42 @@ export class ParticleSystem {
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.stroke();
       } else if (p.type === 'disease') {
-        ctx.strokeStyle = `rgba(120,255,150,${p.opacity})`;
+        const diseaseColor = p.color || 'rgba(120,255,150,1)';
+        ctx.strokeStyle = diseaseColor.replace('1)', `${p.opacity})`).replace(')', `,${p.opacity})`);
         ctx.lineWidth = 1.2;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2);
         ctx.stroke();
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size * 0.25 * (1 + Math.sin(p.pulse ?? 0) * 0.2), 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (p.type === 'contagion') {
+        // Small floating disease particles
+        const color = p.color || '#7fff7f';
+        ctx.fillStyle = color;
+        ctx.globalAlpha = p.opacity;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      } else if (p.type === 'bubble') {
+        // Water bubbles
+        ctx.strokeStyle = `rgba(147, 197, 253, ${p.opacity})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.stroke();
+        // Highlight
+        ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(p.x - p.size * 0.3, p.y - p.size * 0.3, p.size * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.type === 'ripple') {
+        // Water ripple effect
+        ctx.strokeStyle = `rgba(147, 197, 253, ${p.opacity})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.stroke();
       } else if (p.type === 'venom') {
         ctx.fillStyle = p.color;

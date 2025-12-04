@@ -17,31 +17,42 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Creature Sandbox - Evolution Simulator" />
   <meta name="twitter:description" content="Watch creatures evolve in real-time with genetic inheritance and natural selection" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2064%2064%27%3E%3Crect%20width=%2764%27%20height=%2764%27%20rx=%2714%27%20ry=%2714%27%20fill=%27%230a0f1e%27/%3E%3Cpath%20d=%27M16%2020h32M16%2032h32M24%2044h24%27%20stroke=%27%23a5f3fc%27%20stroke-width=%276%27%20stroke-linecap=%27round%27/%3E%3Ccircle%20cx=%2720%27%20cy=%2744%27%20r=%274%27%20fill=%27%23facc15%27/%3E%3C/svg%3E" />
   
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <!-- Top HUD - Minimal Controls -->
   <div id="hud">
-    <button id="btn-pause">⏸️ Pause</button>
-    <button id="btn-step">⏭️ Step</button>
-    <button id="btn-spawn-food">🌿 Food</button>
+    <button id="btn-pause" title="Pause/Resume (Space)">⏸️</button>
+    <button id="btn-step" title="Single Step">⏭️</button>
+    <div class="separator"></div>
+    <button id="btn-campaign" title="Campaign Mode">🏆</button>
+    <button id="btn-scenario" title="Scenario Lab">🧪</button>
+    <button id="btn-gene-editor" title="Gene Editor">🧬</button>
+    <button id="btn-eco-health" title="Ecosystem Health">🌍</button>
+    <button id="btn-features" title="Features">🎨</button>
+    <div class="separator"></div>
+    <button id="analytics-dashboard-toggle" title="Analytics">📊</button>
+    <button id="debug-console-toggle" title="Debug Console">🔧</button>
+    <button id="performance-monitor-toggle" title="Performance">⚡</button>
+  </div>
+
+  <!-- Floating Quick Actions - Center Bottom -->
+  <div id="quick-actions">
+    <button id="btn-spawn-food" title="Spawn Food (F)">🌿</button>
     <div class="spawn-dropdown">
-      <button id="btn-spawn-creature" class="spawn-creature-btn" title="Click to select creature type">🦌 Spawn Creature ▼</button>
+      <button id="btn-spawn-creature" title="Spawn Creature">🦌</button>
       <div id="creature-dropdown" class="dropdown-menu hidden">
         <div class="dropdown-item" data-creature="herbivore">🦌 Herbivore</div>
         <div class="dropdown-item" data-creature="omnivore">🦡 Omnivore</div>
         <div class="dropdown-item" data-creature="predator">🦁 Predator</div>
       </div>
     </div>
-    <span style="margin: 0 10px; color: #666;">|</span>
-    <button id="btn-god-heal" title="Heal selected creature">💚 Heal</button>
-    <button id="btn-god-boost" title="Boost energy of selected creature">⚡ Boost</button>
-    <button id="btn-god-kill" title="Kill selected creature">💀 Kill</button>
-    <button id="btn-god-clone" title="Clone selected creature">👯 Clone</button>
-    <button id="btn-scenario" title="Open Scenario Lab">Scenario Lab</button>
-    <button id="btn-gene-editor" title="Open Gene Editor">🧬 Gene Editor</button>
-    <button id="btn-eco-health" title="View Ecosystem Health">🌍 Eco Health</button>
-    <button id="btn-features" title="Show keyboard shortcuts">🎨 Features</button>
+    <button id="btn-god-heal" title="Heal (H)">💚</button>
+    <button id="btn-god-boost" title="Boost Energy">⚡</button>
+    <button id="btn-god-kill" title="Kill">💀</button>
+    <button id="btn-god-clone" title="Clone">👯</button>
   </div>
 
   <!-- Stats + Selected Creature HUD (Bottom Left) -->
@@ -70,14 +81,45 @@
     </div>
   </div>
 
+  <!-- Campaign Mode Panel -->
+  <div id="campaign-panel" class="modal hidden">
+    <div class="campaign-modal-content">
+      <div class="campaign-header">
+        <h2>🏆 Campaign Mode</h2>
+        <button id="btn-campaign-close" class="campaign-close-btn">×</button>
+      </div>
+      
+      <p class="campaign-subtitle">Complete challenges to unlock new levels and earn rewards!</p>
+      
+      <div id="campaign-levels" class="campaign-levels-grid">
+        <!-- Levels will be populated by JavaScript -->
+      </div>
+      
+      <!-- Campaign Progress HUD (shown during active campaign) -->
+      <div id="campaign-progress" class="campaign-progress hidden">
+        <div class="campaign-progress-header">
+          <span id="campaign-level-name">Level 1</span>
+          <span id="campaign-timer">00:00</span>
+        </div>
+        <div id="campaign-objective" class="campaign-objective">
+          Objective: Loading...
+        </div>
+        <div class="campaign-progress-bar">
+          <div id="campaign-progress-fill" class="campaign-progress-fill"></div>
+        </div>
+        <button id="btn-campaign-exit" class="campaign-exit-btn">Exit Campaign</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Scenario Lab Panel -->
-  <div id="scenario-panel" class="hidden">
+  <div id="scenario-panel" class="panel hidden">
     <div class="panel-header" data-panel="scenario">
       <span class="panel-title">
         <span class="panel-collapse-icon">▼</span>
         🧪 Scenario Lab
       </span>
-      <button id="btn-scenario-close" class="chip ghost" title="Hide scenario lab" onclick="event.stopPropagation()">Hide</button>
+      <button id="btn-scenario-close" class="panel-close" title="Close" onclick="event.stopPropagation()">×</button>
     </div>
     <div class="panel-body">
       <label class="scenario-field">
@@ -135,13 +177,13 @@
   </div>
 
   <!-- Gene Editor Panel -->
-  <div id="gene-editor-panel" class="hidden">
+  <div id="gene-editor-panel" class="panel hidden">
     <div class="panel-header" data-panel="gene-editor">
       <span class="panel-title">
         <span class="panel-collapse-icon">▼</span>
-        🧬 Genetic Engineering Lab
+        🧬 Gene Editor
       </span>
-      <button id="btn-gene-editor-close" class="chip ghost" title="Close gene editor" onclick="event.stopPropagation()">Hide</button>
+      <button id="btn-gene-editor-close" class="panel-close" title="Close" onclick="event.stopPropagation()">×</button>
     </div>
     <div class="panel-body">
       <!-- Presets -->
@@ -260,13 +302,13 @@
   </div>
 
   <!-- Ecosystem Health Panel -->
-  <div id="eco-health-panel" class="hidden">
+  <div id="eco-health-panel" class="panel hidden">
     <div class="panel-header" data-panel="eco-health">
       <span class="panel-title">
         <span class="panel-collapse-icon">▼</span>
         🌍 Ecosystem Health
       </span>
-      <button id="btn-eco-health-close" class="chip ghost" title="Close health panel" onclick="event.stopPropagation()">Hide</button>
+      <button id="btn-eco-health-close" class="panel-close" title="Close" onclick="event.stopPropagation()">×</button>
     </div>
     <div class="panel-body">
       <!-- Overall Score -->
@@ -326,13 +368,13 @@
   </div>
 
   <!-- Features Panel -->
-  <div id="features-panel" class="hidden">
+  <div id="features-panel" class="panel hidden">
     <div class="panel-header" data-panel="features">
       <span class="panel-title">
         <span class="panel-collapse-icon">▼</span>
-        🎨 Feature Toggles
+        🎨 Features
       </span>
-      <button id="btn-features-close" class="chip ghost" title="Hide features panel" onclick="event.stopPropagation()">Hide</button>
+      <button id="btn-features-close" class="panel-close" title="Close" onclick="event.stopPropagation()">×</button>
     </div>
     <div class="panel-body">
       <div class="features-section">

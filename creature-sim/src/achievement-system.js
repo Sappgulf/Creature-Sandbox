@@ -6,6 +6,7 @@ export class AchievementSystem {
     this.xp = 0;
     this.level = 1;
     this.unlocked = new Set();
+    this.notificationStylesInjected = false;
     
     // Define achievements
     this.defineAchievements();
@@ -149,6 +150,53 @@ export class AchievementSystem {
     });
   }
 
+  ensureNotificationStyles() {
+    if (this.notificationStylesInjected) return;
+    if (typeof document === 'undefined') return;
+    
+    // Avoid duplicating the style tag if it already exists
+    if (document.getElementById('achievement-notification-styles')) {
+      this.notificationStylesInjected = true;
+      return;
+    }
+    
+    const style = document.createElement('style');
+    style.id = 'achievement-notification-styles';
+    style.textContent = `
+      @keyframes slideInRight {
+        from {
+          transform: translateX(400px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes slideOutRight {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(400px);
+          opacity: 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    this.notificationStylesInjected = true;
+  }
+
+  /**
+   * Update method - alias for check() for compatibility with game loop
+   * @param {Object} world - The world object
+   * @param {Object} tracker - Optional lineage tracker
+   */
+  update(world, tracker = null) {
+    this.check(world, tracker);
+  }
+
   // Check and unlock achievements
   check(world, tracker = null) {
     if (!world || !world.creatures) return; // Safety check
@@ -205,6 +253,9 @@ export class AchievementSystem {
 
   // Show achievement notification
   showNotification(achievement) {
+    if (typeof document === 'undefined' || !document.body) return;
+    this.ensureNotificationStyles();
+    
     // Create notification element
     const notification = document.createElement('div');
     notification.className = 'achievement-notification';
@@ -234,32 +285,6 @@ export class AchievementSystem {
       animation: slideInRight 0.3s ease-out;
       min-width: 300px;
     `;
-    
-    // Add animation
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes slideInRight {
-        from {
-          transform: translateX(400px);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
-      }
-      @keyframes slideOutRight {
-        from {
-          transform: translateX(0);
-          opacity: 1;
-        }
-        to {
-          transform: translateX(400px);
-          opacity: 0;
-        }
-      }
-    `;
-    document.head.appendChild(style);
     
     // Icon style
     const icon = notification.querySelector('.achievement-icon');
@@ -365,4 +390,3 @@ export class AchievementSystem {
     }
   }
 }
-
