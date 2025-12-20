@@ -193,6 +193,7 @@ export class World {
     this.disasterManual = false;
     this.disasterQueue = [];
     this.disasterQueueVersion = 0;
+    this.randomDisasters = true;
     this._nextDisasterId = 1;
     this.disasters = {
       meteorStorm: { name: 'Meteor Storm', duration: 5, cooldown: 180 },
@@ -485,6 +486,7 @@ export class World {
     this.disasterManual = false;
     this.disasterQueue = [];
     this.disasterQueueVersion = 0;
+    this.randomDisasters = true;
     this._nextDisasterId = 1;
     this.autoBalanceAccumulator = 0;
     this._diseaseSeedCooldown = 4;
@@ -1194,7 +1196,7 @@ export class World {
     }
 
     // Random chance to trigger disaster (0.05% per frame when off cooldown)
-    if (this.disasterCooldown <= 0 && this.creatures.length > 10 && Math.random() < 0.0005) {
+    if (this.randomDisasters && this.disasterCooldown <= 0 && this.creatures.length > 10 && Math.random() < 0.0005) {
       this.triggerRandomDisaster();
     }
   }

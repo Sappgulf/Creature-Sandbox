@@ -333,6 +333,9 @@ export const GameEvents = {
   // Achievement events
   ACHIEVEMENT_UNLOCKED: 'achievement:unlocked',
   ACHIEVEMENT_PROGRESS: 'achievement:progress',
+  SESSION_GOAL_UPDATED: 'session_goal:updated',
+  SESSION_GOAL_COMPLETED: 'session_goal:completed',
+  GAME_MODE_CHANGED: 'game_mode:changed',
 
   // Analytics events
   ANALYTICS_DATA_UPDATE: 'analytics:data_update',

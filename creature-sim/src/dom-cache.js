@@ -77,6 +77,17 @@ export class DOMCache {
     this.cacheElement('debug-console-toggle', 'debugConsoleToggle');
     this.cacheElement('performance-monitor-toggle', 'performanceMonitorToggle');
 
+    // Gameplay modes + goals
+    this.cacheElement('mode-select', 'modeSelect');
+    this.cacheElement('mode-apply', 'modeApplyBtn');
+    this.cacheElement('mode-cycle', 'modeCycleBtn');
+    this.cacheElement('mode-name', 'modeName');
+    this.cacheElement('mode-description', 'modeDescription');
+    this.cacheElement('mode-tags', 'modeTags');
+    this.cacheElement('session-goals-card', 'goalCard');
+    this.cacheElement('session-goal-list', 'goalList');
+    this.cacheElement('refresh-goals', 'refreshGoalsBtn');
+
     // Modal elements
     this.cacheElement('start-modal', 'startModal');
     this.cacheElement('btn-continue', 'continueBtn');

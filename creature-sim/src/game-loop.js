@@ -50,6 +50,8 @@ export class GameLoop {
     this.saveSystem = subsystems.saveSystem;
     this.geneEditor = subsystems.geneEditor;
     this.ecoHealth = subsystems.ecoHealth;
+    this.gameplayModes = subsystems.gameplayModes;
+    this.sessionGoals = subsystems.sessionGoals;
 
     this.lastNow = performance.now();
     this.fixedDt = configManager.get('performance', 'fixedTimeStep', 1/60);
@@ -505,6 +507,11 @@ export class GameLoop {
     // Update heatmaps (apply decay)
     if (this.heatmaps) {
       this.heatmaps.update(dt);
+    }
+
+    // Update session goals tracking
+    if (this.sessionGoals) {
+      this.sessionGoals.update(this.world, dt);
     }
 
     // Update eco-health
