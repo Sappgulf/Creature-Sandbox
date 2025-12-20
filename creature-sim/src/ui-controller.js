@@ -275,23 +275,10 @@ export class UIController {
   onSpawnCreature(type) {
     const x = this.world.width / 2 + (Math.random() - 0.5) * 200;
     const y = this.world.height / 2 + (Math.random() - 0.5) * 200;
-    
-    let genes = {};
-    switch (type) {
-      case 'predator':
-        genes = { diet: 1.0, aggression: 1.5, speed: 1.3, isPredator: 1 };
-        break;
-      case 'omnivore':
-        genes = { diet: 0.5, aggression: 0.8, speed: 1.0, isPredator: 0 };
-        break;
-      case 'herbivore':
-      default:
-        genes = { diet: 0.0, aggression: 0.3, speed: 1.0, isPredator: 0 };
-        break;
-    }
-    
-    this.world.addCreature(x, y, genes);
-    if (this.hasNotifications()) {
+
+    // Use world helper so genetics and bookkeeping stay centralized
+    const creature = this.world.spawnCreatureType(type, x, y);
+    if (creature && this.hasNotifications()) {
       this.notifications.show(`Spawned ${type}!`, 'info', 1500);
     }
     console.log(`🦌 Spawned ${type} at (${x.toFixed(0)}, ${y.toFixed(0)})`);
