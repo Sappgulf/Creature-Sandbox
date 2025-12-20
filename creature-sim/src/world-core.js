@@ -10,7 +10,7 @@ import { WorldCreatureManager } from './world-creature-manager.js';
 import { WorldCombat } from './world-combat.js';
 import { WorldDisaster } from './world-disaster.js';
 import { BiomeGenerator } from './perlin-noise.js';
-import { dist2, rand } from './utils.js';
+import { clamp, dist2, rand } from './utils.js';
 
 export class World {
   constructor(width, height) {
@@ -256,6 +256,25 @@ export class World {
 
   spawnManual(x, y, predator = false) {
     return this.creatureManager.spawnManual(x, y, predator);
+  }
+
+  /**
+   * Spawn a creature of a specific type at the given coordinates.
+   * Supports herbivores, predators, and omnivores while clamping to world bounds.
+   */
+  spawnCreatureType(type = 'herbivore', x = this.width * 0.5, y = this.height * 0.5) {
+    const clampedX = clamp(x, 0, this.width);
+    const clampedY = clamp(y, 0, this.height);
+
+    switch (type) {
+      case 'predator':
+        return this.creatureManager.spawnManual(clampedX, clampedY, true);
+      case 'omnivore':
+        return this.creatureManager.spawnOmnivore(clampedX, clampedY);
+      case 'herbivore':
+      default:
+        return this.creatureManager.spawnManual(clampedX, clampedY, false);
+    }
   }
 
   queryCreatures(x, y, radius) {

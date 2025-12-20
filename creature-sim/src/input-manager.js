@@ -570,8 +570,7 @@ export class InputManager {
           eventSystem.emit('gene-editor:spawn', { x, y });
         } else if (!isDrag && gameState.selectedCreatureType) {
           // Regular spawn mode
-          const genes = this._getCreatureGenes(gameState.selectedCreatureType);
-          this.world.addCreature(x, y, genes);
+          this.world.spawnCreatureType(gameState.selectedCreatureType, x, y);
         }
         break;
         
