@@ -34,6 +34,8 @@ export class UIController {
     this.debugConsole = subsystems.debugConsole;
     this.geneEditor = subsystems.geneEditor;
     this.ecoHealth = subsystems.ecoHealth;
+    this.gameplayModes = subsystems.gameplayModes;
+    this.sessionGoals = subsystems.sessionGoals;
 
     this.boundHandlers = {
       onPause: this.onPause.bind(this),
@@ -54,7 +56,10 @@ export class UIController {
       onEcoHealthToggle: this.onEcoHealthToggle.bind(this),
       onAnalyticsToggle: this.onAnalyticsToggle.bind(this),
       onDebugToggle: this.onDebugToggle.bind(this),
-      onPerformanceToggle: this.onPerformanceToggle.bind(this)
+      onPerformanceToggle: this.onPerformanceToggle.bind(this),
+      onModeChange: this.onModeChange.bind(this),
+      onModeCycle: this.onModeCycle.bind(this),
+      onRefreshGoals: this.onRefreshGoals.bind(this)
     };
 
     // Setup event listeners for enhanced systems
@@ -85,6 +90,23 @@ export class UIController {
         this.audio.playSound('achievement');
       }
     });
+
+    eventSystem.on(GameEvents.GAME_MODE_CHANGED, (data) => {
+      this.renderGameMode(data);
+    });
+
+    eventSystem.on(GameEvents.SESSION_GOAL_UPDATED, (goals) => {
+      this.renderSessionGoals(goals);
+    });
+
+    eventSystem.on(GameEvents.SESSION_GOAL_COMPLETED, (goal) => {
+      const card = domCache.get('goalCard');
+      if (card) {
+        card.classList.add('pulse');
+        setTimeout(() => card.classList.remove('pulse'), 400);
+      }
+      if (this.audio) this.audio.playUISound?.('success');
+    });
     
     // Listen for game pause/resume events (from blur/focus)
     eventSystem.on('game:paused', () => {
@@ -108,6 +130,8 @@ export class UIController {
     this.bindPanelControls();
     this.bindBehaviorControls();
     this.bindEnhancedControls();
+    this.bindGameplayModeControls();
+    this.bindSessionGoalControls();
   }
 
   /**
@@ -187,6 +211,62 @@ export class UIController {
       
       console.log('🦌 Spawn creature controls bound');
     }
+  }
+
+  bindGameplayModeControls() {
+    if (!this.gameplayModes) return;
+    const modeSelect = domCache.get('modeSelect');
+    const modeApplyBtn = domCache.get('modeApplyBtn');
+    const modeCycleBtn = domCache.get('modeCycleBtn');
+
+    if (modeSelect) {
+      modeSelect.innerHTML = this.gameplayModes.getModes()
+        .map(m => `<option value="${m.id}">${m.icon} ${m.name}</option>`)
+        .join('');
+      modeSelect.value = this.gameplayModes.getActiveMode()?.id;
+    }
+
+    if (modeApplyBtn) {
+      modeApplyBtn.addEventListener('click', this.boundHandlers.onModeChange);
+    }
+
+    if (modeCycleBtn) {
+      modeCycleBtn.addEventListener('click', this.boundHandlers.onModeCycle);
+    }
+
+    this.renderGameMode();
+  }
+
+  bindSessionGoalControls() {
+    const refreshBtn = domCache.get('refreshGoalsBtn');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', this.boundHandlers.onRefreshGoals);
+    }
+    this.renderSessionGoals();
+  }
+
+  onModeChange() {
+    const select = domCache.get('modeSelect');
+    if (!select || !this.gameplayModes) return;
+    const value = select.value;
+    this.gameplayModes.applyMode(value);
+    this.renderGameMode();
+  }
+
+  onModeCycle() {
+    if (!this.gameplayModes) return;
+    this.gameplayModes.cycleMode(1);
+    const select = domCache.get('modeSelect');
+    if (select) {
+      select.value = this.gameplayModes.getActiveMode()?.id;
+    }
+    this.renderGameMode();
+  }
+
+  onRefreshGoals() {
+    if (!this.sessionGoals) return;
+    this.sessionGoals.refresh();
+    this.renderSessionGoals();
   }
   
   /**
@@ -365,6 +445,66 @@ export class UIController {
     } else {
       if (inspector) inspector.classList.add('hidden');
       if (showBtn) showBtn.classList.remove('hidden');
+    }
+  }
+
+  /**
+   * Render gameplay mode card
+   */
+  renderGameMode(modeData = null) {
+    const active = modeData || this.gameplayModes?.getActiveMode?.();
+    const nameEl = domCache.get('modeName');
+    const descEl = domCache.get('modeDescription');
+    const tagsEl = domCache.get('modeTags');
+    const select = domCache.get('modeSelect');
+
+    if (!active) return;
+    if (nameEl) nameEl.textContent = `${active.icon ?? '⚙️'} ${active.name}`;
+    if (descEl) descEl.textContent = active.description || '';
+    if (tagsEl) {
+      tagsEl.innerHTML = (active.tags || []).map(tag => `<span class="pill">${tag}</span>`).join('');
+    }
+    if (select && active.id) {
+      select.value = active.id;
+    }
+  }
+
+  /**
+   * Render session goals card
+   */
+  renderSessionGoals(goals = null) {
+    const container = domCache.get('goalList');
+    const card = domCache.get('goalCard');
+    const goalData = goals || this.sessionGoals?.getGoals?.() || [];
+    if (!container) return;
+
+    if (!goalData.length) {
+      container.innerHTML = '<div class="muted tiny">Goals will appear after the world starts running.</div>';
+      return;
+    }
+
+    container.innerHTML = goalData.map(goal => {
+      const percent = Math.min(100, Math.round((goal.progress || 0) * 100));
+      const complete = goal.completed || percent >= 100;
+      return `
+        <div class="goal-row ${complete ? 'complete' : ''}">
+          <div class="goal-row-header">
+            <span class="goal-icon">${goal.icon || '🎯'}</span>
+            <div class="goal-text">
+              <div class="goal-desc">${goal.description}</div>
+              <div class="goal-meta">${complete ? 'Complete' : `${percent}%`}</div>
+            </div>
+          </div>
+          <div class="goal-progress">
+            <div class="goal-progress-fill" style="width:${percent}%;"></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    if (card && goalData.some(g => g.completed)) {
+      card.classList.add('celebrate');
+      setTimeout(() => card.classList.remove('celebrate'), 600);
     }
   }
 

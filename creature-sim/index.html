@@ -55,6 +55,44 @@
     <button id="btn-god-clone" title="Clone">👯</button>
   </div>
 
+  <!-- Meta overlays: game mode + goals -->
+  <div id="session-meta">
+    <div id="mode-card" class="meta-card">
+      <div class="meta-card-header">
+        <div>
+          <div class="meta-label">Game Mode</div>
+          <div id="mode-name" class="meta-title">Balanced Evolution</div>
+        </div>
+        <div class="meta-actions">
+          <button id="mode-cycle" class="ghost-btn" title="Cycle modes">⟳</button>
+          <button id="mode-apply" class="primary-btn small" title="Apply selected mode">Apply</button>
+        </div>
+      </div>
+      <p id="mode-description" class="meta-description">Tune the world to fit your playstyle.</p>
+      <div id="mode-tags" class="meta-tags"></div>
+      <div class="meta-row">
+        <select id="mode-select" class="meta-select" aria-label="Gameplay mode">
+          <option>Loading modes...</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="session-goals-card" class="meta-card">
+      <div class="meta-card-header">
+        <div>
+          <div class="meta-label">Session Goals</div>
+          <div class="meta-title">Chase micro-challenges</div>
+        </div>
+        <div class="meta-actions">
+          <button id="refresh-goals" class="ghost-btn" title="Refresh goals">↻</button>
+        </div>
+      </div>
+      <div id="session-goal-list" class="goal-list muted tiny">
+        Progress updates as creatures evolve...
+      </div>
+    </div>
+  </div>
+
   <!-- Stats + Selected Creature HUD (Bottom Left) -->
   <div id="hud-bottom-left">
     <div id="selected-info" class="hidden"></div>

@@ -23,6 +23,8 @@ import { AudioSystem } from './audio-system.js';
 import { TutorialSystem } from './tutorial-system.js';
 import { AchievementSystem } from './achievement-system.js';
 import { BiomeGenerator } from './perlin-noise.js';
+import { GameplayModes } from './gameplay-modes.js';
+import { SessionGoals } from './session-goals.js';
 
 // Import new modular systems
 import { domCache } from './dom-cache.js';
@@ -229,6 +231,14 @@ function initializeApp() {
     return new AudioSystem();
   }, 'Audio system initialization', null);
 
+  const gameplayModes = errorHandler.safeExecute(() => {
+    return new GameplayModes(world, { notifications, audio });
+  }, 'Gameplay modes initialization', null);
+
+  const sessionGoals = errorHandler.safeExecute(() => {
+    return new SessionGoals({ notifications, audio });
+  }, 'Session goals initialization', null);
+
   const tutorial = errorHandler.safeExecute(() => {
     return new TutorialSystem();
   }, 'Tutorial system initialization', null);
@@ -274,7 +284,9 @@ function initializeApp() {
       notifications,
       debugConsole,
       geneEditor,
-      ecoHealth
+      ecoHealth,
+      gameplayModes,
+      sessionGoals
     });
   }, 'UI controller initialization', null);
 
@@ -296,7 +308,9 @@ function initializeApp() {
       debugConsole,
       saveSystem,
       geneEditor,
-      ecoHealth
+      ecoHealth,
+      gameplayModes,
+      sessionGoals
     });
   }, 'Game loop initialization', null);
 
@@ -695,6 +709,8 @@ function initializeApp() {
     window.notifications = notifications;
     window.campaignSystem = campaignSystem;
     window.diseaseSystem = diseaseSystem;
+    window.gameplayModes = gameplayModes;
+    window.sessionGoals = sessionGoals;
   }, 'Debug exports');
 
   console.log('🎉 Creature Sandbox initialized successfully!');
