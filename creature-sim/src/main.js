@@ -25,6 +25,7 @@ import { AchievementSystem } from './achievement-system.js';
 import { BiomeGenerator } from './perlin-noise.js';
 import { GameplayModes } from './gameplay-modes.js';
 import { SessionGoals } from './session-goals.js';
+import { MobileSupport } from './mobile-support.js';
 
 // Import new modular systems
 import { domCache } from './dom-cache.js';
@@ -148,6 +149,11 @@ function initializeApp() {
   const renderer = errorHandler.safeExecute(() => {
     return new Renderer(ctx, camera);
   }, 'Renderer initialization', null);
+
+  // Enable dedicated mobile/touch support (pinch, pan, taps)
+  const mobileSupport = errorHandler.safeExecute(() => {
+    return new MobileSupport(canvas, camera);
+  }, 'Mobile support initialization', null);
 
   if (!renderer) {
     errorHandler.criticalError(new Error('Failed to create renderer'), 'Renderer initialization');

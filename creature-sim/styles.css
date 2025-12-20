@@ -1444,6 +1444,25 @@ select:focus, .gene-select:focus {
   .modal-btn {
     width: 100%;
   }
+
+  #hud-bottom-left {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+    bottom: calc(84px + var(--space-sm));
+  }
+
+  #stats {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    row-gap: var(--space-xs);
+    font-size: 11px;
+  }
+
+  #selected-info {
+    max-width: 100%;
+  }
 }
 
 /* Mobile Quick Actions */
@@ -1460,20 +1479,23 @@ select:focus, .gene-select:focus {
   border-radius: var(--radius-pill);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-medium);
+  align-items: center;
 }
 
 .mobile-device #mobile-quick-actions { display: flex; }
 
 #mobile-quick-actions button {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   background: var(--bg-elevated);
   border: 1px solid var(--glass-border);
   color: var(--text-secondary);
-  font-size: 20px;
+  font-size: 22px;
   cursor: pointer;
   transition: all var(--transition-fast);
+  box-shadow: var(--shadow-soft);
 }
 
 #mobile-quick-actions button:active {
@@ -1682,7 +1704,7 @@ select:focus, .gene-select:focus {
   }
   
   .mobile-device #hud-bottom-left {
-    bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 0));
+    bottom: calc(84px + env(safe-area-inset-bottom, 0));
   }
   
   .mobile-device #mobile-quick-actions {
