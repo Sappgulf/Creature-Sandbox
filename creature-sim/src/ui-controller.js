@@ -132,6 +132,8 @@ export class UIController {
     this.bindEnhancedControls();
     this.bindGameplayModeControls();
     this.bindSessionGoalControls();
+    // Sync mobile UI state immediately
+    this.updateMobileControls();
   }
 
   /**
