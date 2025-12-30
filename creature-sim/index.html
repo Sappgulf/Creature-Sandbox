@@ -104,19 +104,62 @@
        V = Vision, C = Clustering, T = Territory, M = Memory, 
        B = Social, G = Migration, 1-4 = Advanced Features -->
 
-  <!-- Start Game Modal -->
-  <div id="start-modal" class="modal hidden">
-    <div class="modal-content">
-      <h2>🎮 Welcome Back!</h2>
-      <p>A saved game was found. Would you like to continue?</p>
-      <div class="modal-buttons">
-        <button id="btn-continue" class="modal-btn primary">
-          ▶️ Continue Game
+  <!-- Home Page (Start Screen) -->
+  <div id="home-page" class="home-page">
+    <!-- Animated background canvas -->
+    <canvas id="home-bg" class="home-bg"></canvas>
+    
+    <!-- Main content -->
+    <div class="home-content">
+      <!-- Hero Section -->
+      <header class="home-hero">
+        <div class="home-logo">🧬</div>
+        <h1 class="home-title">Creature Sandbox</h1>
+        <p class="home-tagline">Evolve life. Watch ecosystems thrive. Play god.</p>
+      </header>
+      
+      <!-- Feature Highlights -->
+      <div class="home-features">
+        <div class="home-feature">
+          <span class="home-feature-icon">🧬</span>
+          <h3>Genetic Evolution</h3>
+          <p>Watch traits emerge through natural selection</p>
+        </div>
+        <div class="home-feature">
+          <span class="home-feature-icon">🌿</span>
+          <h3>Living Ecosystems</h3>
+          <p>Predators, prey, seasons, and disasters</p>
+        </div>
+        <div class="home-feature">
+          <span class="home-feature-icon">🏆</span>
+          <h3>Campaigns & Goals</h3>
+          <p>Complete challenges and unlock achievements</p>
+        </div>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="home-actions">
+        <button id="btn-continue" class="home-btn home-btn-primary hidden">
+          <span class="home-btn-icon">▶️</span>
+          <span class="home-btn-text">Continue</span>
+          <span class="home-btn-hint" id="continue-hint"></span>
         </button>
-        <button id="btn-new-game" class="modal-btn secondary">
-          🆕 Start New Game
+        <button id="btn-new-game" class="home-btn home-btn-secondary">
+          <span class="home-btn-icon">🌱</span>
+          <span class="home-btn-text">New Sandbox</span>
+        </button>
+        <button id="btn-campaign" class="home-btn home-btn-tertiary">
+          <span class="home-btn-icon">🏆</span>
+          <span class="home-btn-text">Campaign</span>
         </button>
       </div>
+      
+      <!-- Footer -->
+      <footer class="home-footer">
+        <span class="home-version">v2.0.0</span>
+        <span class="home-separator">•</span>
+        <span class="home-hint">Press <kbd>Space</kbd> to pause • <kbd>V</kbd> vision • <kbd>?</kbd> help</span>
+      </footer>
     </div>
   </div>
 

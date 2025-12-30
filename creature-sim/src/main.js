@@ -358,13 +358,13 @@ function initializeApp() {
     // Render campaign levels
     function renderCampaignLevels() {
       if (!campaignLevelsContainer) return;
-      
+
       const levels = campaignSystem.getAllLevels();
       campaignLevelsContainer.innerHTML = levels.map(level => {
         const progress = level.progress;
         const isCompleted = progress?.completed;
         const stars = progress?.stars || 0;
-        
+
         return `
           <div class="campaign-level-card ${level.unlocked ? '' : 'locked'} ${isCompleted ? 'completed' : ''}" 
                data-level-id="${level.id}">
@@ -399,40 +399,40 @@ function initializeApp() {
     function startCampaignLevel(levelId) {
       // Pause game and reset world for campaign
       gameState.setPaused(true);
-      
+
       // Get level config
       const level = campaignSystem.getLevel(levelId);
       if (!level) return;
-      
+
       // Reset world with level configuration
       const config = level.worldConfig;
       world.reset(config.width || 4000, config.height || 2800);
-      
+
       // Seed creatures based on config
       const herbivores = config.initialCreatures || 10;
       const predators = config.initialPredators || 0;
       const food = config.initialFood || 100;
-      
+
       world.seed(herbivores, predators, food);
-      
+
       // Start campaign tracking
       campaignSystem.startLevel(levelId, world);
-      
+
       // Update camera
       camera.x = world.width / 2;
       camera.y = world.height / 2;
       camera.zoom = 0.3;
-      
+
       // Hide campaign panel, show progress HUD
       if (campaignPanel) campaignPanel.classList.add('hidden');
       if (campaignProgress) campaignProgress.classList.remove('hidden');
-      
+
       // Unpause
       gameState.setPaused(false);
-      
+
       // Update progress display
       updateCampaignProgressUI();
-      
+
       // Play sound
       if (audio) audio.playUISound('click');
     }
@@ -441,14 +441,14 @@ function initializeApp() {
     function updateCampaignProgressUI() {
       const status = campaignSystem.getStatus();
       if (!status || !campaignProgress) return;
-      
+
       const levelName = document.getElementById('campaign-level-name');
       const timer = document.getElementById('campaign-timer');
       const objective = document.getElementById('campaign-objective');
       const progressFill = document.getElementById('campaign-progress-fill');
-      
+
       if (levelName) levelName.textContent = `${status.level.icon} ${status.level.name}`;
-      
+
       // Update timer
       if (timer) {
         const elapsed = (world.t || 0) - status.state.startTime;
@@ -456,17 +456,17 @@ function initializeApp() {
         const secs = Math.floor(elapsed % 60);
         timer.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
       }
-      
+
       // Update objective
       if (objective && status.level.objectives?.primary) {
         objective.textContent = status.level.objectives.primary.description;
       }
-      
+
       // Update progress bar based on objective type
       if (progressFill && status.level.objectives?.primary) {
         const obj = status.level.objectives.primary;
         let progress = 0;
-        
+
         if (obj.type === 'population') {
           progress = Math.min(100, (world.creatures.filter(c => c.alive).length / obj.target) * 100);
         } else if (obj.type === 'survival_time') {
@@ -475,7 +475,7 @@ function initializeApp() {
         } else if (obj.type === 'stable_population') {
           progress = Math.min(100, (status.stableTimer / obj.duration) * 100);
         }
-        
+
         progressFill.style.width = `${progress}%`;
       }
     }
@@ -508,10 +508,10 @@ function initializeApp() {
     // Update campaign during game loop
     eventSystem.on(GameEvents.FRAME_UPDATE, () => {
       if (campaignSystem.isActive) {
-        campaignSystem.update(1/60, world);
-        diseaseSystem.update(1/60, world);
+        campaignSystem.update(1 / 60, world);
+        diseaseSystem.update(1 / 60, world);
         updateCampaignProgressUI();
-        
+
         // Check if level completed or failed
         if (!campaignSystem.isActive) {
           if (campaignProgress) campaignProgress.classList.add('hidden');
@@ -535,15 +535,40 @@ function initializeApp() {
     }
   }, 'Startup logic', () => startNewGame());
 
-  // Start modal for save selection
+  // Home page initialization (replaces old start modal)
   function showStartModal() {
-    const startModal = domCache.get('startModal');
+    const homePage = domCache.get('homePage');
+    const homeBg = domCache.get('homeBg');
     const continueBtn = domCache.get('continueBtn');
+    const continueHint = domCache.get('continueHint');
     const newGameBtn = domCache.get('newGameBtn');
+    const campaignBtn = domCache.get('campaignBtn');
 
+    // Show home page
     errorHandler.safeExecute(() => {
-      if (startModal) startModal.classList.remove('hidden');
-    }, 'Start modal display');
+      if (homePage) homePage.classList.remove('hidden');
+
+      // Show continue button if save exists
+      if (saveSystem && saveSystem.hasAutoSave()) {
+        if (continueBtn) continueBtn.classList.remove('hidden');
+        // Show save timestamp
+        if (continueHint) {
+          try {
+            const saveInfo = saveSystem.getAutoSaveInfo?.();
+            if (saveInfo?.timestamp) {
+              const date = new Date(saveInfo.timestamp);
+              const timeStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              continueHint.textContent = timeStr;
+            }
+          } catch (e) {
+            continueHint.textContent = '';
+          }
+        }
+      }
+
+      // Start background animation
+      startHomeBackgroundAnimation(homeBg);
+    }, 'Home page display');
 
     // Initialize audio on first user interaction
     const initAudioOnInteraction = () => {
@@ -577,7 +602,7 @@ function initializeApp() {
           });
 
           errorHandler.safeExecute(() => {
-            if (startModal) startModal.classList.add('hidden');
+            if (homePage) homePage.classList.add('hidden');
             gameState.startGame();
 
             // Start tutorial for new players
@@ -600,12 +625,120 @@ function initializeApp() {
             if (saveSystem) saveSystem.clearAutoSave();
             console.log('🆕 Starting new game...');
 
-            if (startModal) startModal.classList.add('hidden');
+            if (homePage) homePage.classList.add('hidden');
             startNewGame();
           }, 'New game setup');
         });
       }
     }, 'New game button setup');
+
+    // Handle campaign button (opens campaign panel from home)
+    errorHandler.safeExecute(() => {
+      if (campaignBtn) {
+        campaignBtn.addEventListener('click', () => {
+          errorHandler.safeExecute(() => {
+            initAudioOnInteraction();
+            if (audio) audio.playUISound('click');
+            if (homePage) homePage.classList.add('hidden');
+
+            // Trigger campaign panel open
+            const campaignPanel = document.getElementById('campaign-panel');
+            if (campaignPanel) campaignPanel.classList.remove('hidden');
+
+            // Start new game in background
+            startNewGame();
+          }, 'Campaign launch');
+        });
+      }
+    }, 'Campaign button setup');
+  }
+
+  // Home page animated background
+  function startHomeBackgroundAnimation(canvas) {
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const particles = [];
+    let animationId = null;
+
+    // Resize canvas to fill screen
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Create floating particles (creature-like blobs)
+    const numParticles = 25;
+    for (let i = 0; i < numParticles; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: 8 + Math.random() * 20,
+        speedX: (Math.random() - 0.5) * 0.5,
+        speedY: (Math.random() - 0.5) * 0.5,
+        hue: Math.random() * 360,
+        alpha: 0.1 + Math.random() * 0.3,
+        wobble: Math.random() * Math.PI * 2,
+        wobbleSpeed: 0.02 + Math.random() * 0.03
+      });
+    }
+
+    function drawParticle(p) {
+      const wobbleOffset = Math.sin(p.wobble) * 3;
+
+      // Draw creature-like blob
+      ctx.beginPath();
+      ctx.ellipse(
+        p.x + wobbleOffset,
+        p.y,
+        p.size,
+        p.size * 0.8,
+        0, 0, Math.PI * 2
+      );
+      ctx.fillStyle = `hsla(${p.hue}, 60%, 50%, ${p.alpha})`;
+      ctx.fill();
+
+      // Draw simple eyes
+      const eyeSize = p.size * 0.15;
+      const eyeOffset = p.size * 0.3;
+      ctx.fillStyle = `rgba(255,255,255,${p.alpha * 1.5})`;
+      ctx.beginPath();
+      ctx.arc(p.x + eyeOffset + wobbleOffset, p.y - p.size * 0.2, eyeSize, 0, Math.PI * 2);
+      ctx.arc(p.x + eyeOffset * 0.6 + wobbleOffset, p.y - p.size * 0.2, eyeSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (const p of particles) {
+        // Update position
+        p.x += p.speedX;
+        p.y += p.speedY;
+        p.wobble += p.wobbleSpeed;
+
+        // Wrap around edges
+        if (p.x < -p.size) p.x = canvas.width + p.size;
+        if (p.x > canvas.width + p.size) p.x = -p.size;
+        if (p.y < -p.size) p.y = canvas.height + p.size;
+        if (p.y > canvas.height + p.size) p.y = -p.size;
+
+        drawParticle(p);
+      }
+
+      // Check if home page still visible
+      const homePage = domCache.get('homePage');
+      if (homePage && !homePage.classList.contains('hidden')) {
+        animationId = requestAnimationFrame(animate);
+      } else if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+    }
+
+    animate();
   }
 
   // Start new game
@@ -640,10 +773,10 @@ function initializeApp() {
     const hud = document.getElementById('hud');
     const stats = document.getElementById('stats');
     const quickActions = document.getElementById('quick-actions');
-    
+
     let lastInteractionTime = Date.now();
     let lastCameraMoving = false;
-    
+
     // Track user interactions
     const updateInteraction = () => {
       lastInteractionTime = Date.now();
@@ -651,26 +784,26 @@ function initializeApp() {
       if (hud) hud.classList.remove('auto-hidden');
       if (quickActions) quickActions.classList.remove('hidden');
     };
-    
+
     document.addEventListener('mousemove', updateInteraction);
     document.addEventListener('mousedown', updateInteraction);
     document.addEventListener('keydown', updateInteraction);
     document.addEventListener('touchstart', updateInteraction);
-    
+
     // Auto-hide check interval
     setInterval(() => {
       const now = Date.now();
       const idleTime = now - lastInteractionTime;
       const isIdle = idleTime > 4000; // 4 seconds of no interaction
       const cameraMoving = camera?.isMoving || false;
-      
+
       // Auto-hide HUD when idle
       if (hud) {
         if (isIdle && !cameraMoving) {
           hud.classList.add('auto-hidden');
         }
       }
-      
+
       // Fade stats when camera moving
       if (stats) {
         if (cameraMoving) {
@@ -679,7 +812,7 @@ function initializeApp() {
           stats.classList.remove('faded');
         }
       }
-      
+
       // Hide quick actions when camera moving rapidly
       if (quickActions && cameraMoving !== lastCameraMoving) {
         if (cameraMoving) {
@@ -690,7 +823,7 @@ function initializeApp() {
         lastCameraMoving = cameraMoving;
       }
     }, 500);
-    
+
     console.log('✨ UI auto-hide system initialized');
   }, 'UI auto-hide system');
 

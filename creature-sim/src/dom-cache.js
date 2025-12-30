@@ -93,10 +93,13 @@ export class DOMCache {
     this.cacheElement('session-goal-list', 'goalList');
     this.cacheElement('refresh-goals', 'refreshGoalsBtn');
 
-    // Modal elements
-    this.cacheElement('start-modal', 'startModal');
+    // Home page elements
+    this.cacheElement('home-page', 'homePage');
+    this.cacheElement('home-bg', 'homeBg');
     this.cacheElement('btn-continue', 'continueBtn');
     this.cacheElement('btn-new-game', 'newGameBtn');
+    this.cacheElement('btn-campaign', 'campaignBtn');
+    this.cacheElement('continue-hint', 'continueHint');
 
     // Performance metrics (handled by performance profiler overlay)
 
