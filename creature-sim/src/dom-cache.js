@@ -64,6 +64,11 @@ export class DOMCache {
     this.cacheElement('scenario-panel', 'scenarioPanel');
     this.cacheElement('btn-scenario-close', 'scenarioCloseBtn');
 
+    // Achievements panel
+    this.cacheElement('btn-achievements', 'achievementsBtn');
+    this.cacheElement('achievements-panel', 'achievementsPanel');
+    this.cacheElement('btn-achievements-close', 'achievementsCloseBtn');
+
     // Gene editor
     this.cacheElement('btn-gene-editor', 'geneEditorBtn');
     this.cacheElement('btn-gene-editor-close', 'geneEditorCloseBtn');

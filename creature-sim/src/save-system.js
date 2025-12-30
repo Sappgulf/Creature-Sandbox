@@ -8,7 +8,7 @@ export class SaveSystem {
     this.lastAutoSave = 0;
     this.saveSlots = 3;
   }
-  
+
   /**
    * Serialize world state to JSON
    */
@@ -17,7 +17,7 @@ export class SaveSystem {
       version: '2.0',
       timestamp: Date.now(),
       savedAt: new Date().toISOString(),
-      
+
       // World state
       world: {
         width: world.width,
@@ -25,11 +25,11 @@ export class SaveSystem {
         t: world.t,
         seasonPhase: world.seasonPhase,
         _nextId: world._nextId,
-        
+
         // Time system
         timeOfDay: world.timeOfDay || 12,
         dayLength: world.dayLength || 120,
-        
+
         // Creatures
         creatures: world.creatures.map(c => ({
           id: c.id,
@@ -61,10 +61,10 @@ export class SaveSystem {
             settled: c.migration.settled
           } : null
         })),
-        
+
         // Food
         food: world.food.map(f => ({ x: f.x, y: f.y, energy: f.energy })),
-        
+
         // Corpses
         corpses: world.corpses ? world.corpses.map(c => ({
           x: c.x,
@@ -73,22 +73,22 @@ export class SaveSystem {
           age: c.age,
           isPredator: c.isPredator
         })) : [],
-        
+
         // Lineage tracking
         childrenOf: Array.from(world.childrenOf.entries()).map(([parentId, childIds]) => ({
           parentId,
           childIds: Array.from(childIds)
         })),
-        
+
         // Biome seed (for reproducibility)
         biomeSeed: world.biomeGenerator ? world.biomeGenerator.seed : Math.random(),
-        
+
         // Disasters
         activeDisaster: world.activeDisaster,
         disasterDuration: world.disasterDuration,
         disasterIntensity: world.disasterIntensity
       },
-      
+
       // Camera state
       camera: {
         x: camera.x,
@@ -99,16 +99,16 @@ export class SaveSystem {
         viewportWidth: camera.viewportWidth || 1200,
         viewportHeight: camera.viewportHeight || 800
       },
-      
+
       // Analytics (condensed)
       analytics: analytics ? {
         dataPoints: analytics.data ? analytics.data.slice(-300) : [], // Last 300 points
         totalGenerations: analytics.totalGenerations || 0
       } : null,
-      
+
       // Lineage names
       lineageNames: lineageTracker ? Array.from(lineageTracker.names.entries()) : [],
-      
+
       // Additional metadata
       metadata: {
         populationSize: world.creatures.length,
@@ -117,37 +117,42 @@ export class SaveSystem {
         ...additionalData
       }
     };
-    
+
     return saveData;
   }
-  
+
   /**
    * Deserialize JSON to world state
+   * Supports migration from older save versions
    */
   deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator) {
-    if (!saveData || saveData.version !== '2.0') {
-      throw new Error('Invalid or incompatible save file');
+    if (!saveData) {
+      throw new Error('Save file is empty or corrupted');
     }
-    
-    const data = saveData.world;
-    
+
+    // Handle version migration
+    const version = saveData.version || '1.0';
+    const migratedData = this._migrateSaveData(saveData, version);
+
+    const data = migratedData.world;
+
     // Create new world
     const world = new World(data.width, data.height);
     world.reset();
-    
+
     // Restore basic state
     world.t = data.t || 0;
     world.seasonPhase = data.seasonPhase || 0;
     world._nextId = data._nextId || 1;
     world.timeOfDay = data.timeOfDay || 12;
     world.dayLength = data.dayLength || 120;
-    
+
     // Restore biome with same seed
     if (data.biomeSeed && BiomeGenerator) {
       world.biomeGenerator = new BiomeGenerator(data.biomeSeed);
       world.biomeMap = world.biomeGenerator.generateBiomeMap(data.width, data.height, 50);
     }
-    
+
     // Restore creatures
     world.creatures = [];
     world.registry.clear();
@@ -163,7 +168,7 @@ export class SaveSystem {
       creature.health = cData.health || creature.maxHealth;
       creature.maxHealth = cData.maxHealth || creature.maxHealth;
       creature.stats = cData.stats || { food: 0, kills: 0, births: 0, damageTaken: 0, damageDealt: 0 };
-      
+
       // Restore advanced features
       if (cData.emotions && creature.emotions) {
         Object.assign(creature.emotions, cData.emotions);
@@ -181,14 +186,14 @@ export class SaveSystem {
         creature.migration.targetBiome = cData.migration.targetBiome;
         creature.migration.settled = cData.migration.settled;
       }
-      
+
       world.creatures.push(creature);
       world.registry.set(creature.id, creature);
     }
-    
+
     // Restore food
     world.food = (data.food || []).map(f => ({ x: f.x, y: f.y, energy: f.energy || 1.0 }));
-    
+
     // Restore corpses
     world.corpses = (data.corpses || []).map(c => ({
       x: c.x,
@@ -197,29 +202,29 @@ export class SaveSystem {
       age: c.age || 0,
       isPredator: c.isPredator || false
     }));
-    
+
     // Restore lineage relationships
     world.childrenOf.clear();
     for (const entry of data.childrenOf || []) {
       world.childrenOf.set(entry.parentId, new Set(entry.childIds));
     }
-    
+
     // Restore disasters
     world.activeDisaster = data.activeDisaster || null;
     world.disasterDuration = data.disasterDuration || 0;
     world.disasterIntensity = data.disasterIntensity || 1;
-    
+
     // Mark spatial grid as dirty and force rebuild
     world.gridDirty = true;
     world.ensureSpatial(); // Immediately rebuild spatial grid for loaded creatures
-    
+
     // Restore camera
     let camera = null;
     if (saveData.camera && Camera) {
       // Use actual viewport dimensions or reasonable defaults
       const viewportWidth = (typeof window !== 'undefined' && window.innerWidth) || saveData.camera.viewportWidth || 1200;
       const viewportHeight = (typeof window !== 'undefined' && window.innerHeight) || saveData.camera.viewportHeight || 800;
-      
+
       camera = new Camera({
         x: saveData.camera.x,
         y: saveData.camera.y,
@@ -234,7 +239,7 @@ export class SaveSystem {
       camera.followMode = saveData.camera.followMode || 'free';
       camera.followTarget = saveData.camera.followTarget || null;
     }
-    
+
     // Restore lineage names
     const lineageNames = new Map();
     if (saveData.lineageNames) {
@@ -242,7 +247,7 @@ export class SaveSystem {
         lineageNames.set(id, name);
       }
     }
-    
+
     return {
       world,
       camera,
@@ -251,7 +256,7 @@ export class SaveSystem {
       analytics: saveData.analytics
     };
   }
-  
+
   /**
    * Save to file (download)
    */
@@ -259,26 +264,26 @@ export class SaveSystem {
     const saveData = this.serialize(world, camera, analytics, lineageTracker, {
       saveName: filename || `save_${Date.now()}`
     });
-    
+
     const json = JSON.stringify(saveData, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    
+
     const a = document.createElement('a');
     a.href = url;
     a.download = (filename || `creature-sim-${Date.now()}`) + '.crsim';
     a.click();
-    
+
     URL.revokeObjectURL(url);
   }
-  
+
   /**
    * Load from file (upload)
    */
   async loadFromFile(file, World, Creature, Camera, makeGenes, BiomeGenerator) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      
+
       reader.onload = (e) => {
         try {
           const json = e.target.result;
@@ -290,22 +295,22 @@ export class SaveSystem {
           reject(err);
         }
       };
-      
+
       reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsText(file);
     });
   }
-  
+
   /**
    * Auto-save to localStorage
    */
   autoSave(world, camera, analytics, lineageTracker, dt) {
     if (!this.autoSaveEnabled) return;
-    
+
     this.lastAutoSave += dt;
     if (this.lastAutoSave < this.autoSaveInterval) return;
     this.lastAutoSave = 0;
-    
+
     try {
       const saveData = this.serialize(world, camera, analytics, lineageTracker, {
         isAutoSave: true
@@ -316,7 +321,7 @@ export class SaveSystem {
       console.warn('Auto-save failed:', err);
     }
   }
-  
+
   /**
    * Load from localStorage
    */
@@ -324,7 +329,7 @@ export class SaveSystem {
     try {
       const json = localStorage.getItem('creature-sim-autosave');
       if (!json) return null;
-      
+
       const saveData = JSON.parse(json);
       const result = this.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator);
       return result;
@@ -333,21 +338,21 @@ export class SaveSystem {
       return null;
     }
   }
-  
+
   /**
    * Check if auto-save exists
    */
   hasAutoSave() {
     return !!localStorage.getItem('creature-sim-autosave');
   }
-  
+
   /**
    * Clear auto-save
    */
   clearAutoSave() {
     localStorage.removeItem('creature-sim-autosave');
   }
-  
+
   /**
    * Save to slot (localStorage)
    */
@@ -355,17 +360,17 @@ export class SaveSystem {
     if (slotNumber < 1 || slotNumber > this.saveSlots) {
       throw new Error(`Invalid slot number: ${slotNumber}`);
     }
-    
+
     const saveData = this.serialize(world, camera, analytics, lineageTracker, {
       slotNumber,
       saveName: name || `Save ${slotNumber}`,
       isManualSave: true
     });
-    
+
     const json = JSON.stringify(saveData);
     localStorage.setItem(`creature-sim-slot-${slotNumber}`, json);
   }
-  
+
   /**
    * Load from slot
    */
@@ -373,15 +378,15 @@ export class SaveSystem {
     if (slotNumber < 1 || slotNumber > this.saveSlots) {
       throw new Error(`Invalid slot number: ${slotNumber}`);
     }
-    
+
     const json = localStorage.getItem(`creature-sim-slot-${slotNumber}`);
     if (!json) return null;
-    
+
     const saveData = JSON.parse(json);
     const result = this.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator);
     return result;
   }
-  
+
   /**
    * Get all save slot info
    */
@@ -408,6 +413,48 @@ export class SaveSystem {
       }
     }
     return slots;
+  }
+
+  /**
+   * Migrate save data from older versions to current version
+   * @private
+   */
+  _migrateSaveData(saveData, fromVersion) {
+    // Current version - no migration needed
+    if (fromVersion === '2.0') {
+      return saveData;
+    }
+
+    // Clone to avoid mutating original
+    const migrated = JSON.parse(JSON.stringify(saveData));
+
+    // Migration from 1.x to 2.0
+    if (fromVersion.startsWith('1.')) {
+      // Ensure world structure exists
+      if (!migrated.world) {
+        migrated.world = saveData;
+      }
+
+      // Add missing fields with defaults
+      if (!migrated.world.timeOfDay) migrated.world.timeOfDay = 12;
+      if (!migrated.world.dayLength) migrated.world.dayLength = 120;
+      if (!migrated.world.corpses) migrated.world.corpses = [];
+
+      // Ensure creatures have new fields
+      if (migrated.world.creatures) {
+        for (const c of migrated.world.creatures) {
+          if (!c.emotions) c.emotions = null;
+          if (!c.intelligence) c.intelligence = null;
+          if (!c.sexuality) c.sexuality = null;
+          if (!c.migration) c.migration = null;
+        }
+      }
+
+      migrated.version = '2.0';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.0`);
+    }
+
+    return migrated;
   }
 }
 

@@ -5,7 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "python3 -m http.server 8000 --directory creature-sim",
-    "preview": "python3 -m http.server 8000 --directory creature-sim"
+    "preview": "python3 -m http.server 8000 --directory creature-sim",
+    "lint": "npx eslint creature-sim/src --ext .js",
+    "lint:fix": "npx eslint creature-sim/src --ext .js --fix"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0"
   },
   "keywords": [
     "simulation",
@@ -26,4 +31,3 @@
     "node": ">=14.0.0"
   }
 }
-

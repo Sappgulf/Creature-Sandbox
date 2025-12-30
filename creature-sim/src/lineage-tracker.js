@@ -12,6 +12,36 @@ export class LineageTracker {
     this.generationCache = new Map(); // Cache generation depths
   }
 
+  /**
+   * Compatibility wrapper: invoked by world/creature manager when a creature is born.
+   * Accepts either (creature, world) or (creature, world, parent).
+   */
+  onCreatureBorn(creature, world, parent = null) {
+    const parentCreature =
+      parent ||
+      (creature?.parentId != null ? world?.getAnyCreatureById(creature.parentId) : null) ||
+      null;
+    // Reuse existing noteBirth logic
+    this.noteBirth(world, parentCreature, creature);
+  }
+
+  /**
+   * Compatibility wrapper for death events. Currently just trims caches and records a simple event.
+   */
+  onCreatureDied(creature, world = null) {
+    if (!creature) return;
+    // Clear cached lineage/generation for this creature to avoid stale references
+    this.rootCache.delete(creature.id);
+    this.generationCache.delete(creature.id);
+    // Optional: record a short death event
+    if (world) {
+      const rootId = this.getRoot(world, creature.id);
+      const name = this.ensureName(rootId);
+      this.events.unshift({ time: world.t, rootId, title: `${name}: died` });
+      this.trim();
+    }
+  }
+
   ensureName(rootId) {
     if (this.names.has(rootId)) return this.names.get(rootId);
     const name = NAMES[(this.names.size + rootId) % NAMES.length] + '-' + rootId;

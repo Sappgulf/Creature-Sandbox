@@ -309,6 +309,7 @@ export const GameEvents = {
   CREATURE_REPRODUCE: 'creature:reproduce',
   CREATURE_ATTACK: 'creature:attack',
   CREATURE_DEFEND: 'creature:defend',
+  CREATURE_KILLED: 'creature:killed',
 
   // World events
   WORLD_UPDATE: 'world:update',
@@ -336,6 +337,9 @@ export const GameEvents = {
   SESSION_GOAL_UPDATED: 'session_goal:updated',
   SESSION_GOAL_COMPLETED: 'session_goal:completed',
   GAME_MODE_CHANGED: 'game_mode:changed',
+
+  // God mode events
+  GOD_MODE_ACTION: 'god:action',
 
   // Analytics events
   ANALYTICS_DATA_UPDATE: 'analytics:data_update',

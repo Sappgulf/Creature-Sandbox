@@ -31,18 +31,18 @@ export class Creature {
       CreatureConfig.STARTING_ENERGY.adult;
     this.age = 0;
     this.alive = true;
-    
+
     // OPTIMIZATION: Only process genetics if diploid genes detected
     const hasDiploidGenes = genes.speed && typeof genes.speed === 'object' && 'expressed' in genes.speed;
-    
+
     if (hasDiploidGenes) {
       // Store original diploid genes
       this.genesRaw = genes;
-      
+
       // Apply disorder effects and get expressed phenotype
       const modifiedGenes = applyDisorderEffects(genes);
       this.genes = getExpressedGenes(modifiedGenes);
-      
+
       // Store sex and genetic info
       this.sex = genes.sex || 'female';
       this.disorders = genes.disorders || [];
@@ -55,33 +55,33 @@ export class Creature {
       this.disorders = [];
       this.mutations = [];
     }
-    
+
     // NEW: Age stages (baby → juvenile → adult → elder)
     this.ageStage = isChild ? 'baby' : 'adult';
     this.baseSize = null; // Will be set below
-    
+
     // Size based on diet (omnivores are medium-sized)
     const diet = this.genes.diet ?? (this.genes.predator ? 1.0 : 0.0);
     const isOmnivore = diet > CreatureConfig.GENETICS.DIET_THRESHOLDS.HERBIVORE_MAX &&
-                       diet < CreatureConfig.GENETICS.DIET_THRESHOLDS.OMNIVORE_MAX;
+      diet < CreatureConfig.GENETICS.DIET_THRESHOLDS.OMNIVORE_MAX;
     this.baseSize = isOmnivore ?
       CreatureConfig.GENETICS.SIZE_MODIFIERS.OMNIVORE :
       (CreatureConfig.GENETICS.SIZE_MODIFIERS.HERBIVORE_BASE +
-       (this.genes.predator ? CreatureConfig.GENETICS.SIZE_MODIFIERS.PREDATOR_BONUS : 0));
+        (this.genes.predator ? CreatureConfig.GENETICS.SIZE_MODIFIERS.PREDATOR_BONUS : 0));
     this.aquaticAffinity = this.genes.aquatic ?? 0;
-    
+
     // Apply disorder size modifiers
     if (this.genesRaw && this.genesRaw.sizeModifier) {
       this.baseSize *= this.genesRaw.sizeModifier;
     }
-    
+
     // Age-based size multiplier
     const ageSizeMultiplier = this._getAgeSizeMultiplier();
     this.size = this.baseSize * ageSizeMultiplier;
-    
+
     // Parent tracking for parental care
     this.children = []; // Track offspring
-    
+
     this.target = null;
     this.id = null;       // set by World.addCreature
     this.parentId = null; // set by World.addCreature
@@ -91,12 +91,12 @@ export class Creature {
     this.maxHealth = this.genes.predator ?
       CreatureConfig.BASE_HEALTH.predator :
       CreatureConfig.BASE_HEALTH.herbivore;
-    
+
     // Apply disorder health modifiers
-    if (this.genesRaw.healthModifier) {
+    if (this.genesRaw?.healthModifier) {
       this.maxHealth *= this.genesRaw.healthModifier;
     }
-    
+
     this.health = this.maxHealth;
     this.stats = { food: 0, kills: 0, births: 0, damageTaken: 0, damageDealt: 0 };
     this.trail = [{ x, y }];
@@ -142,7 +142,7 @@ export class Creature {
       familyCheck: rand(2.5, 4.5),
       familyAnchor: null
     };
-    
+
     // NEW: Animation state for visual feedback
     this.animation = {
       state: 'idle', // idle, walking, running, eating, sleeping
@@ -152,12 +152,12 @@ export class Creature {
       eatDuration: 0.5, // Eating animation lasts 0.5s
       sleepTimer: 0 // Time creature has been idle/resting
     };
-    
+
     // Cache expensive calculations
     this._cachedBaseBurn = null;
     this._senseRadius2Cache = null;
     this._halfFovRad = (genes.fov * 0.5) * Math.PI / 180; // Cache FOV in radians
-    
+
     // FEATURE 2: Learning & Memory
     const memoryCapacity = Math.floor(CreatureConfig.MEMORY.CAPACITY_BASE +
       (genes.sense / CreatureConfig.MEMORY.CAPACITY_SENSE_RATIO));
@@ -166,7 +166,7 @@ export class Creature {
       locations: [], // { x, y, type, strength, timestamp }
       decayRate: CreatureConfig.MEMORY.DECAY_RATE
     };
-    
+
     // FEATURE 4: Social Behaviors
     this.social = {
       herdMates: [], // nearby same-species creatures
@@ -174,7 +174,7 @@ export class Creature {
       offspring: [], // child IDs (recent)
       lastReproduction: -Infinity
     };
-    
+
     // FEATURE 9: Migration
     this.migration = {
       instinct: clamp(genes.herdInstinct ?? 0.5, 0, 1), // how likely to migrate
@@ -182,7 +182,7 @@ export class Creature {
       lastMigration: -Infinity,
       settled: false
     };
-    
+
     // FEATURE 5: Emotional States
     this.emotions = {
       fear: 0,          // 0-1, increases when attacked/near predators
@@ -192,10 +192,10 @@ export class Creature {
       stress: 0,        // 0-1, accumulates from negative events
       contentment: CreatureConfig.EMOTIONS.DEFAULT_CONTENTMENT
     };
-    
+
     // FEATURE 6: Sensory Specialization
     this.senseType = this._determineSenseType(genes);
-    
+
     // FEATURE 7: Problem Solving & Intelligence
     this.intelligence = {
       level: clamp((genes.sense / CreatureConfig.INTELLIGENCE.LEVEL_SENSE_RATIO) *
@@ -205,7 +205,7 @@ export class Creature {
       experiencePoints: 0,
       learningRate: CreatureConfig.INTELLIGENCE.PATTERN_LEARNING
     };
-    
+
     // FEATURE 8: Sexual Selection
     this.sexuality = {
       attractiveness: this._calculateAttractiveness(genes),
@@ -219,7 +219,7 @@ export class Creature {
     this.statusSystem = new CreatureStatusSystem(this);
     this.behaviorSystem = new CreatureBehaviorSystem(this);
   }
-  
+
   _determineSenseType(genes) {
     // Determine sense type based on genes
     const r = genes.hue / 360; // use hue as determinant
@@ -228,15 +228,15 @@ export class Creature {
     if (r < CreatureConfig.GENETICS.SENSE_TYPE_THRESHOLDS.THERMAL_MAX) return 'thermal'; // see through obstacles
     return 'echolocation'; // wider detection
   }
-  
+
   _calculateAttractiveness(genes) {
     // Multi-factor attractiveness
-    return (genes.speed * 0.3 + 
-            genes.sense * 0.002 + 
-            (2 - genes.metabolism) * 0.2 + 
-            (genes.predator ? genes.aggression * 0.2 : 1 - genes.metabolism * 0.3));
+    return (genes.speed * 0.3 +
+      genes.sense * 0.002 +
+      (2 - genes.metabolism) * 0.2 +
+      (genes.predator ? genes.aggression * 0.2 : 1 - genes.metabolism * 0.3));
   }
-  
+
   _pickDesiredTraits(genes) {
     // What this creature finds attractive
     return {
@@ -252,7 +252,7 @@ export class Creature {
     if (this._cachedBaseBurn === null) {
       const g = this.genes;
       const moveCost = 0.35 * g.speed * g.speed;
-      const senseCost = 0.08 * (g.fov/90) + 0.06 * (g.sense/100);
+      const senseCost = 0.08 * (g.fov / 90) + 0.06 * (g.sense / 100);
       this._cachedBaseBurn = (0.4 * g.metabolism) + moveCost + senseCost;
     }
     return this._cachedBaseBurn;
@@ -262,38 +262,38 @@ export class Creature {
     let best = null, bestD2 = Infinity;
     const senseRadius = this.genes.sense * (0.7 + BehaviorConfig.forageWeight * 0.6);
     const senseRadius2 = senseRadius * senseRadius;
-    
+
     // Optimize: pre-compute values outside loop
     const myX = this.x, myY = this.y, myDir = this.dir;
     const halfFov = this._halfFovRad; // Use cached FOV
     const forageWeight = BehaviorConfig.forageWeight;
-    
+
     for (let i = 0; i < foodList.length; i++) {
       const f = foodList[i];
       const dx = f.x - myX, dy = f.y - myY;
-      const d2 = dx*dx + dy*dy; // Inline dist2 to avoid function call
+      const d2 = dx * dx + dy * dy; // Inline dist2 to avoid function call
       if (d2 > senseRadius2) continue;
-      
+
       const ang = Math.atan2(dy, dx);
       const delta = Math.atan2(Math.sin(ang - myDir), Math.cos(ang - myDir));
       if (Math.abs(delta) > halfFov) continue;
-      
+
       const bias = forageWeight > 0 ? d2 / forageWeight : d2;
       if (bias < bestD2) { bestD2 = bias; best = f; }
     }
-    
+
     if (!best && pheromone) {
-      const gx = Math.floor(myX/pheromone.cell);
-      const gy = Math.floor(myY/pheromone.cell);
-      const here = pheromone.get(gx,gy);
+      const gx = Math.floor(myX / pheromone.cell);
+      const gy = Math.floor(myY / pheromone.cell);
+      const here = pheromone.get(gx, gy);
       let maxVal = here, target = null;
-      for (let oy=-1; oy<=1; oy++) {
-        for (let ox=-1; ox<=1; ox++) {
+      for (let oy = -1; oy <= 1; oy++) {
+        for (let ox = -1; ox <= 1; ox++) {
           if (!ox && !oy) continue;
-          const v = pheromone.get(gx+ox, gy+oy);
-          if (v > maxVal) { 
-            maxVal = v; 
-            target = {x:(gx+ox+0.5)*pheromone.cell, y:(gy+oy+0.5)*pheromone.cell}; 
+          const v = pheromone.get(gx + ox, gy + oy);
+          if (v > maxVal) {
+            maxVal = v;
+            target = { x: (gx + ox + 0.5) * pheromone.cell, y: (gy + oy + 0.5) * pheromone.cell };
           }
         }
       }
@@ -369,7 +369,7 @@ export class Creature {
     // These are expensive and don't need per-frame precision
     if (!this._aiUpdateFrame) this._aiUpdateFrame = Math.floor(Math.random() * 10);
     this._aiUpdateFrame++;
-    
+
     if (this._aiUpdateFrame >= 10) { // Every ~10 frames
       this._aiUpdateFrame = 0;
       if (this._updateMemory) this._updateMemory(dt * 10, world);
@@ -441,16 +441,16 @@ export class Creature {
     const inWetland = currentBiome?.type === 'wetland';
     const inWater = currentBiome?.type === 'water';
     const waterDepth = currentBiome?.depth || 0;
-    
+
     // Swimming state tracking
     this.isSwimming = inWater && this.aquaticAffinity > 0.3;
-    
+
     // Drowning mechanic for non-aquatic creatures in water
     if (inWater && this.aquaticAffinity < 0.4) {
       // Non-aquatic creatures struggle in water
       const drowningRate = (0.4 - this.aquaticAffinity) * waterDepth * 3; // 0-3 damage/sec in deep water
       this.health -= drowningRate * dt;
-      
+
       // Add drowning visual feedback periodically
       if (!this._drowningTimer) this._drowningTimer = 0;
       this._drowningTimer -= dt;
@@ -462,14 +462,14 @@ export class Creature {
         // Panic: try to move toward land
         this.emotions.fear = Math.min(1, this.emotions.fear + 0.3);
       }
-      
+
       if (this.health <= 0) {
         this.alive = false;
         this.logEvent('Drowned', world.t);
         return;
       }
     }
-    
+
     let wanderScale = 0.05 * BehaviorConfig.wanderWeight;
     const diet = this.genes.diet ?? (this.genes.predator ? 1.0 : 0.0);
     const isOmnivore = diet > 0.3 && diet < 0.7;
@@ -477,7 +477,7 @@ export class Creature {
     if (this.aquaticAffinity > 0.45 && (inWetland || inWater)) {
       wanderScale *= 0.8;
     }
-    
+
     if (this.genes.predator || diet > 0.7) {
       // Carnivores: hunt or scavenge
       this.hunt(world, dt);
@@ -487,7 +487,7 @@ export class Creature {
           this.target = { x: tracked.x, y: tracked.y, creatureId: tracked.id };
         }
       }
-      
+
       // NEW: If no prey found and can scavenge, look for corpses
       if (!this.target && canScavenge && this.energy < 30) {
         const corpse = world.findNearbyCorpse(this.x, this.y, this.genes.sense * 0.8);
@@ -495,27 +495,27 @@ export class Creature {
           this.target = { x: corpse.x, y: corpse.y, isCorpse: true, corpse };
         }
       }
-      
+
       wanderScale *= clamp(1 - this.personality.aggression * 0.25, 0.25, 1);
     } else if (isOmnivore) {
       // NEW: Omnivores: eat plants, scavenge corpses
       const foodList = world.nearbyFood(this.x, this.y, this.genes.sense);
       const corpse = world.findNearbyCorpse(this.x, this.y, this.genes.sense * 0.9);
-      
+
       // Prefer corpses when hungry, plants otherwise
       if (corpse && this.energy < 25) {
         this.target = { x: corpse.x, y: corpse.y, isCorpse: true, corpse };
       } else {
         this.seek(foodList, world.pheromone);
       }
-      
+
       // If no food found but corpse available, go for it
       if (!this.target && corpse) {
         this.target = { x: corpse.x, y: corpse.y, isCorpse: true, corpse };
       }
     } else {
       // Herbivores: only eat plants
-      this.seek(world.nearbyFood(this.x,this.y,this.genes.sense), world.pheromone);
+      this.seek(world.nearbyFood(this.x, this.y, this.genes.sense), world.pheromone);
     }
 
     if (this.genes.predator && this.personality.ambushTimer > 0) {
@@ -542,7 +542,7 @@ export class Creature {
     const aggressionFactor = this.genes.predator ? clamp(this.personality.aggression, 0.4, 2.2) : 1;
     let baseSpeed = this.genes.speed * (this.genes.predator ? 46 : 40);
     if (this.genes.predator) baseSpeed *= 0.85 + aggressionFactor * 0.25;
-    
+
     // Water biome speed modifiers
     if (inWater) {
       if (this.aquaticAffinity > 0.5) {
@@ -565,9 +565,9 @@ export class Creature {
       // Highly aquatic creatures are slower on land
       baseSpeed *= 0.9 - Math.min(0.2, (this.aquaticAffinity - 0.5) * 0.25);
     }
-    
+
     // NEW: Age stage speed modifiers
-    switch(this.ageStage) {
+    switch (this.ageStage) {
       case 'baby': baseSpeed *= 0.6; break; // Babies slower, learning to walk
       case 'juvenile': baseSpeed *= 0.85; break; // Getting faster
       case 'elder': baseSpeed *= 0.9; break; // Slowing down
@@ -609,9 +609,26 @@ export class Creature {
     const spd = baseSpeed * speedScalar;
     this.vx = Math.cos(this.dir) * spd;
     this.vy = Math.sin(this.dir) * spd;
-    // REMOVED: No world boundaries - creatures can move freely
-    this.x = this.x + this.vx*dt;
-    this.y = this.y + this.vy*dt;
+    this.x = this.x + this.vx * dt;
+    this.y = this.y + this.vy * dt;
+
+    // World boundary handling (configurable via world.boundaryMode)
+    const boundaryMode = world.boundaryMode || 'wrap'; // 'wrap', 'clamp', or 'none'
+    if (boundaryMode === 'wrap') {
+      // Wrap-around (pacman style)
+      if (this.x < 0) this.x += world.width;
+      else if (this.x >= world.width) this.x -= world.width;
+      if (this.y < 0) this.y += world.height;
+      else if (this.y >= world.height) this.y -= world.height;
+    } else if (boundaryMode === 'clamp') {
+      // Hard boundaries (bounce at edge)
+      const margin = 10;
+      if (this.x < margin) { this.x = margin; this.vx = Math.abs(this.vx); this.dir = Math.atan2(this.vy, this.vx); }
+      else if (this.x > world.width - margin) { this.x = world.width - margin; this.vx = -Math.abs(this.vx); this.dir = Math.atan2(this.vy, this.vx); }
+      if (this.y < margin) { this.y = margin; this.vy = Math.abs(this.vy); this.dir = Math.atan2(this.vy, this.vx); }
+      else if (this.y > world.height - margin) { this.y = world.height - margin; this.vy = -Math.abs(this.vy); this.dir = Math.atan2(this.vy, this.vx); }
+    }
+    // boundaryMode 'none' = no restrictions (current behavior)
 
     // NEW: Update animation state based on movement
     this._updateAnimationState(spd, world.t);
@@ -640,7 +657,7 @@ export class Creature {
         }
       }
       if (!this.alive) return;
-      
+
       // NEW: Try to scavenge corpse if nearby
       if (canScavenge && this.target?.isCorpse && this.target.corpse) {
         if (world.tryEatCorpse(this, this.target.corpse)) {
@@ -663,11 +680,11 @@ export class Creature {
           this.stats.food += 1;
           this.logEvent(`Foraged ${eaten.type || 'food'}`, world.t);
           world.dropPheromone(this.x, this.y, 0.5);
-          
+
           // NEW: Trigger eating animation
           this.animation.lastEat = world.t;
           this.animation.state = 'eating';
-          
+
           // Audio: Eat sound
           if (world.audio && world.audio.ctx) {
             try {
@@ -676,17 +693,17 @@ export class Creature {
               // Ignore audio errors (non-critical)
             }
           }
-          
+
           // Visual: Food absorption particles
           if (world.particles && typeof world.particles.addFoodAbsorption === 'function') {
             world.particles.addFoodAbsorption(eaten.x, eaten.y, this.x, this.y);
           }
-          
+
           // FEATURE 2: Remember successful food location
           if (this.rememberLocation) {
             this.rememberLocation(this.x, this.y, 'food', 0.8, world.t);
           }
-          
+
           if (this.stats.food === 20) {
             world.lineageTracker?.noteMilestone(world, this, 'foraged 20 meals');
           }
@@ -703,16 +720,16 @@ export class Creature {
         this.stats.food += 1;
         this.logEvent(`Foraged ${eaten.type || 'food'}`, world.t);
         world.dropPheromone(this.x, this.y, 0.5);
-        
+
         // NEW: Trigger eating animation
         this.animation.lastEat = world.t;
         this.animation.state = 'eating';
-        
+
         // FEATURE 2: Remember successful food location
         if (this.rememberLocation) {
           this.rememberLocation(this.x, this.y, 'food', 0.8, world.t);
         }
-        
+
         if (this.stats.food === 20) {
           world.lineageTracker?.noteMilestone(world, this, 'foraged 20 meals');
         }
@@ -721,15 +738,15 @@ export class Creature {
 
     const tempPenalty = world.tempPenaltyAt(this.x, this.y);
     let energyDrain = this.baseBurn() + tempPenalty;
-    
+
     // NEW: Age stage metabolism modifiers
-    switch(this.ageStage) {
+    switch (this.ageStage) {
       case 'baby': energyDrain *= 1.1; break; // Babies need more energy for growth
       case 'juvenile': energyDrain *= 1.05; break; // Still growing
       case 'elder': energyDrain *= 1.15; break; // Elders less efficient
       // Adults: no modifier (1.0)
     }
-    
+
     if (adrenalineStatus) energyDrain += 2.6 + (adrenalineStatus.metadata?.boost ?? adrenalineStatus.intensity ?? 0) * 2;
     if (herdBuff && !this.genes.predator) energyDrain += (herdBuff.intensity ?? 0) * 0.8;
     if (bleedStatus) energyDrain += 0.35 + (bleedStatus.stacks ?? 0) * 0.4;
@@ -757,13 +774,13 @@ export class Creature {
       // Aquatic creatures on dry land get tired
       energyDrain += this.aquaticAffinity * 0.35;
     }
-    
+
     // Day/Night cycle: nocturnal creatures use less energy at night
     if (world.dayNightEnabled && this.genes.nocturnal !== undefined) {
       const hour = world.timeOfDay % 24;
       const isNight = (hour < 6 || hour >= 20);
       const nocturnalPref = this.genes.nocturnal; // 0=diurnal, 1=nocturnal
-      
+
       if (isNight && nocturnalPref > 0.5) {
         // Nocturnal creatures active at night: bonus efficiency
         energyDrain *= (1.0 - (nocturnalPref - 0.5) * 0.3); // Up to 15% reduction
@@ -776,7 +793,7 @@ export class Creature {
         energyDrain *= (1.0 + penalty * 0.2); // Up to 20% increase
       }
     }
-    
+
     this.energy -= energyDrain * dt;
 
     if (this.health <= 0) {
@@ -795,10 +812,10 @@ export class Creature {
       if (Math.random() < reproductionChance) {
         const potentialMates = world.queryCreatures(this.x, this.y, this.genes.sense * 2)
           .filter(c => !c.genes.predator && c.alive && c.id !== this.id && c.energy > 30);
-        
+
         let selectedMate = null;
         let bestScore = this.sexuality.choosiness;
-        
+
         for (const mate of potentialMates) {
           if (this.shouldAcceptMate && this.shouldAcceptMate(mate, world.t)) {
             const score = this.evaluateMate(mate);
@@ -808,7 +825,7 @@ export class Creature {
             }
           }
         }
-        
+
         if (selectedMate || potentialMates.length === 0) {
           const scarcity = Math.max(0, 1 - fertilityFactor);
           const abundance = Math.max(0, fertilityFactor - 1);
@@ -1047,16 +1064,16 @@ export class Creature {
     let bestScore = 0;
     const isAquatic = this.aquaticAffinity > 0.4;
     const radius = 200 + this.aquaticAffinity * 100;
-    
+
     for (let i = 0; i < 6; i++) {
       const angle = Math.random() * Math.PI * 2;
       const tx = this.x + Math.cos(angle) * radius;
       const ty = this.y + Math.sin(angle) * radius;
       const biome = world.getBiomeAt(tx, ty);
       if (!biome) continue;
-      
+
       let score = 0;
-      
+
       if (isAquatic) {
         // Aquatic creatures seek water and wetlands
         if (biome.type === 'water') {
@@ -1076,10 +1093,10 @@ export class Creature {
           score = 1.0 + (1 - (biome.moisture ?? 0.5)) * 0.5; // Prefer dry land
         }
       }
-      
+
       // Slight preference for continuing current direction
       score += (1 - Math.abs(Math.sin(angle - this.dir))) * 0.1;
-      
+
       if (score > bestScore) {
         bestScore = score;
         bestDir = angle;
@@ -1136,7 +1153,7 @@ export class Creature {
     }
   }
 
-  logEvent(message, time, meta=null) {
+  logEvent(message, time, meta = null) {
     this.log.push({ message, time, meta });
     if (this.log.length > LOG_MAX) this.log.shift();
     this.logVersion += 1;
@@ -1159,9 +1176,9 @@ export class Creature {
       this.ageStage = 'elder';
     }
   }
-  
+
   _getAgeSizeMultiplier() {
-    switch(this.ageStage) {
+    switch (this.ageStage) {
       case 'baby': return clamp(0.3 + (this.age / 30) * 0.4, 0.3, 0.7); // 30% → 70%
       case 'juvenile': return clamp(0.7 + ((this.age - 30) / 30) * 0.3, 0.7, 1.0); // 70% → 100%
       case 'adult': return 1.0; // 100%
@@ -1169,9 +1186,9 @@ export class Creature {
       default: return 1.0;
     }
   }
-  
+
   _getAgeStageIcon() {
-    switch(this.ageStage) {
+    switch (this.ageStage) {
       case 'baby': return '🍼';
       case 'juvenile': return '🌱';
       case 'adult': return '⭐';
@@ -1179,19 +1196,19 @@ export class Creature {
       default: return '';
     }
   }
-  
+
   // NEW: Apply visual animation transforms
   _applyAnimationTransform(ctx) {
     const anim = this.animation;
     if (!anim) return;
-    
-    switch(anim.state) {
+
+    switch (anim.state) {
       case 'walking':
         // Gentle bobbing motion
         const walkBob = Math.sin(anim.bobPhase) * 0.8;
         ctx.translate(0, walkBob);
         break;
-        
+
       case 'running':
         // Faster, more exaggerated bobbing
         const runBob = Math.sin(anim.bobPhase * 1.5) * 1.5;
@@ -1199,7 +1216,7 @@ export class Creature {
         ctx.translate(0, runBob);
         ctx.rotate(runTilt);
         break;
-        
+
       case 'eating':
         // Head bob down (pulsing)
         const eatTime = anim.timer % 0.5;
@@ -1207,13 +1224,13 @@ export class Creature {
         ctx.translate(0, eatBob);
         ctx.scale(1.0 + eatBob * 0.02, 1.0); // Slight stretch
         break;
-        
+
       case 'sleeping':
         // Slow breathing motion
         const breathe = Math.sin(anim.timer * 0.5) * 0.5;
         ctx.scale(1.0 + breathe * 0.05, 1.0 - breathe * 0.05);
         break;
-        
+
       case 'idle':
       default:
         // Subtle idle sway
@@ -1222,27 +1239,27 @@ export class Creature {
         break;
     }
   }
-  
+
   // NEW: Update animation state based on behavior
   _updateAnimationState(speed, worldTime) {
     const anim = this.animation;
-    
+
     // Update animation timer (used for bobbing/cycles)
     anim.timer += 0.016; // ~60fps equivalent
     anim.bobPhase += speed * 0.02; // Speed affects bob rate
-    
+
     // Check if eating animation is active
     if (worldTime - anim.lastEat < anim.eatDuration) {
       anim.state = 'eating';
       return;
     }
-    
+
     // Check if sleeping (low energy and stationary)
     if (this.energy < 15 && speed < 5) {
       anim.sleepTimer += 0.016;
       if (anim.sleepTimer > 2.0) { // Sleep after 2 seconds of low energy
         anim.state = 'sleeping';
-        
+
         // Emit Zzz particles occasionally
         if (Math.random() < 0.02) { // 2% chance per frame
           const world = this._lastWorld; // Will be set in update()
@@ -1255,11 +1272,11 @@ export class Creature {
     } else {
       anim.sleepTimer = 0;
     }
-    
+
     // Determine walking vs running based on speed
     const baseSpeed = this.genes.speed * (this.genes.predator ? 46 : 40);
     const speedRatio = speed / baseSpeed;
-    
+
     if (speedRatio > 0.8) {
       anim.state = 'running'; // Fast movement
     } else if (speedRatio > 0.1) {
@@ -1272,13 +1289,13 @@ export class Creature {
   getBadges() {
     const badges = [];
     const g = this.genes;
-    
+
     // Age stage badge (visual indicator)
     badges.push(this._getAgeStageIcon());
-    
+
     // NEW: Lucky mutation badge!
     if (g._luckyMutation) badges.push('🍀 Lucky');
-    
+
     if (g.speed >= 1.45) badges.push('Swift');
     if (g.sense >= 150) badges.push('Scout');
     if (g.metabolism <= 0.6) badges.push('Efficient');
@@ -1292,14 +1309,14 @@ export class Creature {
     return badges;
   }
 
-  draw(ctx, opts={}) {
+  draw(ctx, opts = {}) {
     const {
-      isSelected=false,
-      isPinned=false,
-      inLineage=false,
-      showTrail=false,
-      showVision=false,
-      clusterHue=null
+      isSelected = false,
+      isPinned = false,
+      inLineage = false,
+      showTrail = false,
+      showVision = false,
+      clusterHue = null
     } = opts;
     const damageFx = this.damageFx ?? null;
 
@@ -1307,7 +1324,7 @@ export class Creature {
       ctx.save();
       ctx.beginPath();
       ctx.moveTo(this.trail[0].x, this.trail[0].y);
-      for (let i=1;i<this.trail.length;i++) {
+      for (let i = 1; i < this.trail.length; i++) {
         const pt = this.trail[i];
         ctx.lineTo(pt.x, pt.y);
       }
@@ -1321,25 +1338,25 @@ export class Creature {
     // Draw vision cone if enabled
     if (showVision && (isSelected || isPinned)) {
       ctx.save();
-      
+
       // Sense radius (full circle)
       const senseRadius = this.genes.sense;
       ctx.beginPath();
       ctx.arc(this.x, this.y, senseRadius, 0, TAU);
       const hasTarget = this.target !== null;
-      const senseColor = hasTarget 
+      const senseColor = hasTarget
         ? (this.genes.predator ? 'rgba(255,100,100,0.08)' : 'rgba(100,255,100,0.08)')
         : 'rgba(200,200,255,0.05)';
       ctx.fillStyle = senseColor;
       ctx.fill();
-      ctx.strokeStyle = hasTarget 
+      ctx.strokeStyle = hasTarget
         ? (this.genes.predator ? 'rgba(255,100,100,0.25)' : 'rgba(100,255,100,0.25)')
         : 'rgba(200,200,255,0.15)';
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 3]);
       ctx.stroke();
       ctx.setLineDash([]);
-      
+
       // FOV cone
       const halfFov = this._halfFovRad;
       ctx.beginPath();
@@ -1355,25 +1372,57 @@ export class Creature {
         : 'rgba(255,255,150,0.25)';
       ctx.lineWidth = 1.2;
       ctx.stroke();
-      
+
+      // NEW: Draw line to target for better AI intent visualization
+      if (this.target && (this.target.x !== undefined && this.target.y !== undefined)) {
+        const targetDist = Math.sqrt((this.target.x - this.x) ** 2 + (this.target.y - this.y) ** 2);
+        const lineLength = Math.min(targetDist, senseRadius * 0.8);
+        const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+
+        // Dashed line from creature to target
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(
+          this.x + Math.cos(angle) * lineLength,
+          this.y + Math.sin(angle) * lineLength
+        );
+        ctx.strokeStyle = this.target.creatureId !== undefined
+          ? 'rgba(255,100,100,0.6)' // Red for prey
+          : this.target.isCorpse
+            ? 'rgba(180,130,80,0.5)' // Brown for corpse
+            : 'rgba(100,220,100,0.5)'; // Green for food
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Small dot at target location
+        if (targetDist <= senseRadius) {
+          ctx.beginPath();
+          ctx.arc(this.target.x, this.target.y, 3, 0, TAU);
+          ctx.fillStyle = ctx.strokeStyle;
+          ctx.fill();
+        }
+      }
+
       ctx.restore();
     }
 
     const g = this.genes;
     ctx.save();
     ctx.translate(this.x, this.y);
-    
+
     // OPTIMIZATION: Only apply animation when zoomed in enough or selected
     const shouldAnimate = isSelected || isPinned || (opts.zoom && opts.zoom > 0.8);
     if (shouldAnimate) {
       this._applyAnimationTransform(ctx);
     }
-    
+
     ctx.rotate(this.dir);
 
     // OPTIMIZATION: Cache size calculation
-    const energyRatio = clamp(this.energy/40, 0.2, 1.0);
-    const r = energyRatio * (3+this.size);
+    const energyRatio = clamp(this.energy / 40, 0.2, 1.0);
+    const r = energyRatio * (3 + this.size);
 
     if (damageFx?.recentDamage > 0) {
       ctx.beginPath();
@@ -1384,7 +1433,7 @@ export class Creature {
     }
 
     const displayHue = clusterHue !== null ? clusterHue : g.hue;
-    
+
     if (inLineage) {
       ctx.beginPath();
       ctx.arc(0, 0, 10, 0, TAU);
@@ -1396,18 +1445,18 @@ export class Creature {
     const flash = damageFx ? damageFx.hitFlash : 0;
     const lightness = Math.min(85, baseLight + flash * 90);
     ctx.fillStyle = `hsl(${displayHue},85%,${lightness}%)`;
-    
+
     // OPTIMIZATION: Only draw detailed traits when zoomed in significantly
     const showTraitDetails = opts.showTraitVisualization !== false && (isSelected || isPinned || (opts.zoom && opts.zoom > 1.0));
-    
+
     // NEW: Trait visualization - body shape based on metabolism
     const bodyScale = 0.8 + (2 - g.metabolism) * 0.3; // Low metabolism = chunkier
     ctx.save();
     ctx.scale(1, bodyScale);
     ctx.beginPath();
-    ctx.moveTo(6,0);
-    ctx.lineTo(-4,3.5 / bodyScale);
-    ctx.lineTo(-4,-3.5 / bodyScale);
+    ctx.moveTo(6, 0);
+    ctx.lineTo(-4, 3.5 / bodyScale);
+    ctx.lineTo(-4, -3.5 / bodyScale);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
@@ -1415,9 +1464,9 @@ export class Creature {
     ctx.strokeStyle = `hsla(${displayHue},90%,80%,${0.65 + flash * 0.4})`;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(0,0,r,0,TAU);
+    ctx.arc(0, 0, r, 0, TAU);
     ctx.stroke();
-    
+
     // OPTIMIZATION: Only draw detailed trait visualization when zoomed in
     if (showTraitDetails) {
       this._drawTraits(ctx, g, displayHue, r);
@@ -1426,9 +1475,9 @@ export class Creature {
     if (isPinned) {
       ctx.strokeStyle = 'rgba(140,200,255,0.9)';
       ctx.lineWidth = 1.4;
-      ctx.setLineDash([3,2]);
+      ctx.setLineDash([3, 2]);
       ctx.beginPath();
-      ctx.arc(0,0,r+4.5,0,TAU);
+      ctx.arc(0, 0, r + 4.5, 0, TAU);
       ctx.stroke();
       ctx.setLineDash([]);
     }
@@ -1437,7 +1486,7 @@ export class Creature {
       ctx.strokeStyle = 'rgba(255,255,220,0.9)';
       ctx.lineWidth = 1.6;
       ctx.beginPath();
-      ctx.arc(0,0,r+7,0,TAU);
+      ctx.arc(0, 0, r + 7, 0, TAU);
       ctx.stroke();
     }
 
@@ -1454,11 +1503,88 @@ export class Creature {
       ctx.fillStyle = this.genes.predator ? 'rgba(255,120,120,0.85)' : 'rgba(120,255,160,0.85)';
       ctx.fillRect(x, y, barWidth * hpRatio, barHeight);
     }
+
+    // NEW: Draw behavior state indicator for AI legibility
+    if (opts.showBehaviorState !== false && (isSelected || isPinned || (opts.zoom && opts.zoom > 0.8))) {
+      this._drawBehaviorState(ctx);
+    }
   }
-  
+
+  /**
+   * Draw a small icon/indicator showing the creature's current behavior state
+   * This makes AI behavior much more legible to players
+   */
+  _drawBehaviorState(ctx) {
+    let stateIcon = null;
+    let stateColor = 'rgba(255,255,255,0.8)';
+
+    // Determine current behavior state from various indicators
+    if (this.target) {
+      if (this.target.creatureId !== undefined) {
+        // Hunting prey
+        stateIcon = '🎯';
+        stateColor = 'rgba(255,80,80,0.9)';
+      } else if (this.target.isCorpse) {
+        // Scavenging
+        stateIcon = '🦴';
+        stateColor = 'rgba(180,130,80,0.9)';
+      } else if (this.target.food) {
+        // Foraging
+        stateIcon = '🌿';
+        stateColor = 'rgba(120,220,120,0.9)';
+      } else if (this.target.family) {
+        // Following family
+        stateIcon = '❤️';
+        stateColor = 'rgba(255,150,200,0.9)';
+      } else if (this.target.pheromone) {
+        // Following scent trail
+        stateIcon = '👃';
+        stateColor = 'rgba(200,180,255,0.9)';
+      }
+    }
+
+    // Status-based overrides
+    if (this.hasStatus && this.hasStatus('adrenaline')) {
+      stateIcon = '⚡';
+      stateColor = 'rgba(255,220,80,0.9)';
+    } else if (this.emotions && this.emotions.fear > 0.6) {
+      stateIcon = '😰';
+      stateColor = 'rgba(255,200,100,0.9)';
+    } else if (this.hasStatus && this.hasStatus('disease')) {
+      stateIcon = '🤢';
+      stateColor = 'rgba(100,220,100,0.9)';
+    } else if (this.lifecycle && this.lifecycle.playTimer > 0) {
+      stateIcon = '🎮';
+      stateColor = 'rgba(255,255,150,0.9)';
+    } else if (this.animation && this.animation.state === 'eating') {
+      stateIcon = '😋';
+      stateColor = 'rgba(255,200,100,0.9)';
+    } else if (this.animation && this.animation.state === 'sleeping') {
+      stateIcon = '💤';
+      stateColor = 'rgba(150,150,220,0.9)';
+    }
+
+    // Age stage indicator (only for babies and elders)
+    if (!stateIcon && this.ageStage === 'baby') {
+      stateIcon = '🐣';
+    } else if (!stateIcon && this.ageStage === 'elder') {
+      stateIcon = '👴';
+    }
+
+    if (stateIcon) {
+      ctx.save();
+      ctx.font = '8px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillStyle = stateColor;
+      ctx.fillText(stateIcon, this.x, this.y - this.size - 10);
+      ctx.restore();
+    }
+  }
+
   _drawTraits(ctx, g, hue, r) {
     // Draw visual traits based on genes
-    
+
     // 1. EYES - Size based on sense radius (bigger sense = bigger eyes)
     const eyeSize = clamp(g.sense / 100, 0.6, 1.5);
     ctx.fillStyle = '#ffffff';
@@ -1470,7 +1596,7 @@ export class Creature {
     ctx.beginPath();
     ctx.arc(2, -1.5, eyeSize * 0.5, 0, TAU);
     ctx.fill();
-    
+
     // 2. SPIKES - Defensive herbivores have spikes
     const spineStrength = g.spines ?? 0;
     if (spineStrength > 0.2) {
@@ -1490,7 +1616,7 @@ export class Creature {
         ctx.stroke();
       }
     }
-    
+
     // 3. SPEED INDICATOR - Fast creatures have elongated tail/fins
     if (g.speed > 1.2) {
       ctx.fillStyle = `hsla(${hue}, 70%, 50%, 0.6)`;
@@ -1502,7 +1628,7 @@ export class Creature {
       ctx.closePath();
       ctx.fill();
     }
-    
+
     // 4. PREDATOR TEETH
     if (g.predator || (g.diet && g.diet > 0.7)) {
       ctx.fillStyle = '#ffffff';

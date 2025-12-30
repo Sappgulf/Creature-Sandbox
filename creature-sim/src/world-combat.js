@@ -2,6 +2,7 @@
  * World Combat System - Handles predation, damage, and combat mechanics
  */
 import { rand, clamp, dist2 } from './utils.js';
+import { eventSystem, GameEvents } from './event-system.js';
 
 export class WorldCombat {
   constructor(world) {
@@ -128,6 +129,21 @@ export class WorldCombat {
     // Check if target died
     if (target.health <= 0) {
       target.alive = false;
+      target.deathCause = ctx.attackType || 'combat';
+      target.killedBy = ctx.attacker?.id || null;
+
+      if (ctx.attacker) {
+        try {
+          eventSystem.emit(GameEvents.CREATURE_KILLED, {
+            attacker: ctx.attacker,
+            prey: target,
+            attackType: ctx.attackType || 'combat',
+            worldTime: this.world.t
+          });
+        } catch (e) {
+          console.warn('Failed to emit creature killed event:', e);
+        }
+      }
       this.handleCreatureDeath(target, ctx);
     }
 

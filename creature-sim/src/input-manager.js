@@ -5,6 +5,7 @@
 import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
 import { eventSystem } from './event-system.js';
+import { Creature } from './creature.js';
 
 export class InputManager {
   constructor(canvas, camera, tools, world) {
@@ -24,7 +25,7 @@ export class InputManager {
       onVisibilityChange: this.onVisibilityChange.bind(this),
       onMobileTap: this.onMobileTap.bind(this)
     };
-    
+
     // Track if we auto-paused so we can auto-unpause
     this._autoPausedOnBlur = false;
 
@@ -39,7 +40,7 @@ export class InputManager {
     window.addEventListener('keydown', this.boundHandlers.onKeyDown);
     window.addEventListener('blur', this.boundHandlers.onBlur);
     window.addEventListener('focus', this.boundHandlers.onFocus);
-    
+
     // Visibility change (handles tab switching, minimize, etc.)
     document.addEventListener('visibilitychange', this.boundHandlers.onVisibilityChange);
 
@@ -440,7 +441,7 @@ export class InputManager {
       eventSystem.emit('game:paused', { reason: 'blur' });
     }
   }
-  
+
   /**
    * Handle window focus (optionally unpause game)
    */
@@ -453,7 +454,7 @@ export class InputManager {
       eventSystem.emit('game:resumed', { reason: 'focus' });
     }
   }
-  
+
   /**
    * Handle visibility change (tab switching, minimize)
    */
@@ -517,7 +518,7 @@ export class InputManager {
     if (!bounds) return false;
 
     if (canvasX < bounds.x || canvasX > bounds.x + bounds.width ||
-        canvasY < bounds.y || canvasY > bounds.y + bounds.height) {
+      canvasY < bounds.y || canvasY > bounds.y + bounds.height) {
       return false;
     }
 
@@ -546,15 +547,15 @@ export class InputManager {
     const rect = this.canvas.getBoundingClientRect();
     const canvasX = e.clientX - rect.left;
     const canvasY = e.clientY - rect.top;
-    
+
     // Convert to world coordinates
     const sx = canvasX - rect.width / 2;
     const sy = canvasY - rect.height / 2;
     const { x, y } = this.camera.screenToWorld(sx, sy);
-    
+
     // Handle different tool modes
     const mode = this.tools?.mode || 'inspect';
-    
+
     switch (mode) {
       case 'food':
         // Spawn food at click location
@@ -562,7 +563,7 @@ export class InputManager {
           this.world.addFood(x, y);
         }
         break;
-        
+
       case 'spawn':
         // Spawn creature (handled elsewhere via gene editor mode)
         if (!isDrag && gameState.geneEditorSpawnMode) {
@@ -573,7 +574,7 @@ export class InputManager {
           this.world.spawnCreatureType(gameState.selectedCreatureType, x, y);
         }
         break;
-        
+
       case 'erase':
         // Kill creature at location
         if (!isDrag) {
@@ -584,7 +585,7 @@ export class InputManager {
           }
         }
         break;
-        
+
       case 'inspect':
       default:
         // Select creature at location (only on initial click, not drag)
@@ -603,7 +604,7 @@ export class InputManager {
         break;
     }
   }
-  
+
   /**
    * Find creature at world coordinates
    */
@@ -611,7 +612,7 @@ export class InputManager {
     const searchRadius = 25 / this.camera.zoom; // Adjust for zoom level
     let nearest = null;
     let minDist = searchRadius;
-    
+
     for (const c of this.world.creatures) {
       if (!c.alive) continue;
       const d = Math.hypot(c.x - x, c.y - y);
@@ -620,10 +621,10 @@ export class InputManager {
         nearest = c;
       }
     }
-    
+
     return nearest;
   }
-  
+
   /**
    * Get default genes for creature type
    */

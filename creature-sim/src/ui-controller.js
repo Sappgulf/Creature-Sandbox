@@ -8,6 +8,7 @@ import { eventSystem, GameEvents } from './event-system.js';
 import { performanceProfiler } from './performance-profiler.js';
 import { analyticsDashboard } from './enhanced-analytics.js';
 import { scenarioEditor } from './scenario-editor.js';
+import { Creature } from './creature.js';
 
 // Local helper to validate notification subsystem shape without relying on external export
 function isNotificationSystem(candidate) {
@@ -52,6 +53,8 @@ export class UIController {
       onGodClone: this.onGodClone.bind(this),
       onFeaturesToggle: this.onFeaturesToggle.bind(this),
       onScenarioToggle: this.onScenarioToggle.bind(this),
+      onAchievementsToggle: this.onAchievementsToggle.bind(this),
+      onAchievementsReset: this.onAchievementsReset.bind(this),
       onGeneEditorToggle: this.onGeneEditorToggle.bind(this),
       onEcoHealthToggle: this.onEcoHealthToggle.bind(this),
       onAnalyticsToggle: this.onAnalyticsToggle.bind(this),
@@ -89,6 +92,12 @@ export class UIController {
       if (this.audio) {
         this.audio.playSound('achievement');
       }
+      this.renderAchievementsPanel();
+    });
+
+    // Live progress updates
+    eventSystem.on(GameEvents.ACHIEVEMENT_PROGRESS, () => {
+      this.renderAchievementsPanel();
     });
 
     eventSystem.on(GameEvents.GAME_MODE_CHANGED, (data) => {
@@ -107,13 +116,13 @@ export class UIController {
       }
       if (this.audio) this.audio.playUISound?.('success');
     });
-    
+
     // Listen for game pause/resume events (from blur/focus)
     eventSystem.on('game:paused', () => {
       this.updatePauseButton();
       this.updateMobileControls();
     });
-    
+
     eventSystem.on('game:resumed', () => {
       this.updatePauseButton();
       this.updateMobileControls();
@@ -169,32 +178,36 @@ export class UIController {
 
     if (showInspectorBtn) showInspectorBtn.addEventListener('click', () => gameState.setInspectorVisible(true));
     if (closeInspectorBtn) closeInspectorBtn.addEventListener('click', () => gameState.setInspectorVisible(false));
-    
+
     // Quick action buttons (spawn food)
     const spawnFoodBtn = domCache.get('spawnFoodBtn');
     if (spawnFoodBtn) {
       spawnFoodBtn.addEventListener('click', this.boundHandlers.onFood);
       console.log('🌿 Spawn food button bound');
     }
-    
+
     // Spawn creature button and dropdown
     this.bindSpawnCreatureControls();
   }
-  
+
   /**
    * Bind spawn creature dropdown controls
    */
   bindSpawnCreatureControls() {
     const spawnCreatureBtn = domCache.get('spawnCreatureBtn');
     const creatureDropdown = domCache.get('creatureDropdown');
-    
+
     if (spawnCreatureBtn && creatureDropdown) {
-      // Toggle dropdown on button click
+      // Primary click spawns a default herbivore immediately (fast path)
       spawnCreatureBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        creatureDropdown.classList.toggle('hidden');
+        // Quick spawn default herbivore
+        this.onSpawnCreature('herbivore');
+        // Briefly show dropdown to hint other options
+        creatureDropdown.classList.remove('hidden');
+        setTimeout(() => creatureDropdown.classList.add('hidden'), 900);
       });
-      
+
       // Handle dropdown item clicks
       const dropdownItems = creatureDropdown.querySelectorAll('.dropdown-item');
       dropdownItems.forEach(item => {
@@ -205,12 +218,12 @@ export class UIController {
           creatureDropdown.classList.add('hidden');
         });
       });
-      
+
       // Close dropdown when clicking outside
       document.addEventListener('click', () => {
         creatureDropdown.classList.add('hidden');
       });
-      
+
       console.log('🦌 Spawn creature controls bound');
     }
   }
@@ -270,7 +283,7 @@ export class UIController {
     this.sessionGoals.refresh();
     this.renderSessionGoals();
   }
-  
+
   /**
    * Spawn a creature of the specified type
    */
@@ -324,6 +337,8 @@ export class UIController {
     const featuresCloseBtn = domCache.get('featuresCloseBtn');
     const scenarioBtn = domCache.get('scenarioBtn');
     const scenarioCloseBtn = domCache.get('scenarioCloseBtn');
+    const achievementsBtn = domCache.get('achievementsBtn');
+    const achievementsCloseBtn = domCache.get('achievementsCloseBtn');
     const geneEditorBtn = domCache.get('geneEditorBtn');
     const geneEditorCloseBtn = domCache.get('geneEditorCloseBtn');
     const ecoHealthBtn = domCache.get('ecoHealthBtn');
@@ -334,6 +349,9 @@ export class UIController {
 
     if (scenarioBtn) scenarioBtn.addEventListener('click', this.boundHandlers.onScenarioToggle);
     if (scenarioCloseBtn) scenarioCloseBtn.addEventListener('click', this.boundHandlers.onScenarioToggle);
+
+    if (achievementsBtn) achievementsBtn.addEventListener('click', this.boundHandlers.onAchievementsToggle);
+    if (achievementsCloseBtn) achievementsCloseBtn.addEventListener('click', this.boundHandlers.onAchievementsToggle);
 
     if (geneEditorBtn) geneEditorBtn.addEventListener('click', this.boundHandlers.onGeneEditorToggle);
     if (geneEditorCloseBtn) geneEditorCloseBtn.addEventListener('click', this.boundHandlers.onGeneEditorToggle);
@@ -627,6 +645,115 @@ export class UIController {
     }
   }
 
+  onAchievementsToggle() {
+    const panel = domCache.get('achievementsPanel') || document.getElementById('achievements-panel');
+    if (panel) {
+      panel.classList.toggle('hidden');
+      if (!panel.classList.contains('hidden')) {
+        this.renderAchievementsPanel();
+        this.bindAchievementsControls();
+      }
+    }
+  }
+
+  onAchievementsReset() {
+    if (!this.achievements?.resetAll) return;
+    const ok = typeof window === 'undefined' ? true : window.confirm('Reset all achievements and XP?');
+    if (ok) {
+      this.achievements.resetAll();
+      this.renderAchievementsPanel();
+    }
+  }
+
+  bindAchievementsControls() {
+    const filter = document.getElementById('achievements-filter');
+    const sort = document.getElementById('achievements-sort');
+    const resetBtn = document.getElementById('btn-achievements-reset');
+
+    if (filter && !filter._boundAchievements) {
+      filter.addEventListener('change', () => this.renderAchievementsPanel());
+      filter._boundAchievements = true;
+    }
+    if (sort && !sort._boundAchievements) {
+      sort.addEventListener('change', () => this.renderAchievementsPanel());
+      sort._boundAchievements = true;
+    }
+    if (resetBtn && !resetBtn._boundAchievements) {
+      resetBtn.addEventListener('click', this.boundHandlers.onAchievementsReset);
+      resetBtn._boundAchievements = true;
+    }
+  }
+
+  renderAchievementsPanel() {
+    const panel = document.getElementById('achievements-panel');
+    if (!panel || panel.classList.contains('hidden')) return;
+
+    const listEl = document.getElementById('achievements-list');
+    const summaryEl = document.getElementById('achievements-summary');
+    if (!listEl || !summaryEl || !this.achievements?.getProgress) return;
+
+    const filterValue = document.getElementById('achievements-filter')?.value || 'all';
+    const sortValue = document.getElementById('achievements-sort')?.value || 'locked';
+
+    const progress = this.achievements.getProgress();
+    let items = Array.isArray(progress.items) ? progress.items.slice() : [];
+
+    if (filterValue !== 'all') {
+      items = items.filter(i => i.type === filterValue);
+    }
+
+    switch (sortValue) {
+      case 'unlocked':
+        items.sort((a, b) => (b.unlocked === a.unlocked) ? (b.progress.percent - a.progress.percent) : (b.unlocked - a.unlocked));
+        break;
+      case 'recent':
+        items.sort((a, b) => (b.unlockedAt || 0) - (a.unlockedAt || 0));
+        break;
+      case 'name':
+        items.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        break;
+      case 'locked':
+      default:
+        items.sort((a, b) => (a.unlocked === b.unlocked) ? (b.progress.percent - a.progress.percent) : (a.unlocked - b.unlocked));
+        break;
+    }
+
+    summaryEl.textContent = `${progress.unlocked}/${progress.total} unlocked • Level ${progress.level} • ${Math.floor(progress.percentage)}%`;
+
+    listEl.innerHTML = items.map(item => {
+      const isSecretLocked = item.secret && !item.unlocked;
+      const name = isSecretLocked ? '???' : item.name;
+      const desc = isSecretLocked ? 'Hidden achievement' : (item.description || '');
+      const icon = isSecretLocked ? '❓' : (item.icon || '🏅');
+      const goal = item.progress.goal;
+      const current = item.progress.current;
+      const percent = item.progress.percent || 0;
+      const progressHtml = goal ? `
+        <div class="achievement-progress-bar">
+          <div class="achievement-progress-fill" style="width:${Math.round(percent * 100)}%"></div>
+        </div>
+        <div class="achievement-progress-text">
+          <span>${Math.floor(current)}/${goal}</span>
+          <span>${Math.round(percent * 100)}%</span>
+        </div>
+      ` : '';
+
+      return `
+        <div class="achievement-item ${item.unlocked ? 'unlocked' : ''}">
+          <div class="achievement-icon">${icon}</div>
+          <div class="achievement-main">
+            <div class="achievement-title-row">
+              <div class="achievement-name">${name}</div>
+              <div class="achievement-type">${item.type || ''}</div>
+            </div>
+            <div class="achievement-desc">${desc}</div>
+            ${progressHtml}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
   onGeneEditorToggle() {
     const panel = document.getElementById('gene-editor-panel');
     if (panel) {
@@ -645,9 +772,16 @@ export class UIController {
    * Perform god mode action on selected creature
    */
   performGodAction(action) {
-    const creature = gameState.selectedId ? this.world.getAnyCreatureById(gameState.selectedId) : null;
+    // Prefer selected creature; fall back to nearest to camera center
+    let creature = gameState.selectedId ? this.world.getAnyCreatureById(gameState.selectedId) : null;
+    if (!creature || !creature.alive) {
+      const cx = this.camera.x;
+      const cy = this.camera.y;
+      creature = this.world?.creatureManager?.nearestCreature(cx, cy, 120) || null;
+    }
 
     if (!creature || !creature.alive) {
+      this.notifications?.show?.('Select a creature first', 'warning', 1200);
       return;
     }
 
@@ -659,26 +793,42 @@ export class UIController {
           break;
 
         case 'boost':
-          creature.energy += 30;
+          creature.energy = Math.min((creature.energy ?? 0) + 30, creature.maxEnergy ?? 100);
           creature.logEvent('Received energy boost', this.world.t);
           break;
 
         case 'kill':
           creature.alive = false;
           creature.health = 0;
+          creature.deathCause = 'god';
+          creature.killedBy = 'god';
           creature.logEvent('Struck down by god', this.world.t);
           gameState.selectedId = null;
           break;
 
         case 'clone':
-          // Clone handled by world.cloneCreature()
           if (this.world.cloneCreature) {
-            this.world.cloneCreature(creature);
+            const clone = this.world.cloneCreature(creature);
+            if (clone && this.notifications) {
+              this.notifications.show(`Cloned #${creature.id}`, 'info', 1200);
+            }
+          } else if (this.notifications) {
+            this.notifications.show('Clone action unavailable', 'warning', 1200);
           }
           break;
       }
 
       window.godModeActionCount = (window.godModeActionCount || 0) + 1;
+
+      try {
+        eventSystem.emit(GameEvents.GOD_MODE_ACTION, {
+          action,
+          creatureId: creature.id,
+          worldTime: this.world.t
+        });
+      } catch (e) {
+        console.warn('Failed to emit god mode action event:', e);
+      }
 
     } catch (error) {
       console.error(`God action '${action}' failed:`, error);

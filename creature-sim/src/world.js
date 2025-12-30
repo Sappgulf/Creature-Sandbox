@@ -4,29 +4,29 @@ import { Creature } from './creature.js';
 import { SpatialGrid } from './spatial-grid.js';
 import { BiomeGenerator } from './perlin-noise.js';
 class ScalarField {
-  constructor(w, h, cell, decay=0.985, diffuse=0.15) {
-    this.w = Math.ceil(w/cell);
-    this.h = Math.ceil(h/cell);
+  constructor(w, h, cell, decay = 0.985, diffuse = 0.15) {
+    this.w = Math.ceil(w / cell);
+    this.h = Math.ceil(h / cell);
     this.cell = cell;
     this.decay = decay;
     this.diffuse = diffuse;
-    this.grid = new Float32Array(this.w*this.h);
-    this.nextGrid = new Float32Array(this.w*this.h); // Double buffer to avoid allocation
+    this.grid = new Float32Array(this.w * this.h);
+    this.nextGrid = new Float32Array(this.w * this.h); // Double buffer to avoid allocation
   }
-  idx(x,y) { return (y*this.w + x); }
-  inb(x,y){ return x>=0 && y>=0 && x<this.w && y<this.h; }
-  get(x,y){ return this.inb(x,y) ? this.grid[this.idx(x,y)] : 0; }
-  add(x,y,val){ if (this.inb(x,y)) this.grid[this.idx(x,y)] += val; }
+  idx(x, y) { return (y * this.w + x); }
+  inb(x, y) { return x >= 0 && y >= 0 && x < this.w && y < this.h; }
+  get(x, y) { return this.inb(x, y) ? this.grid[this.idx(x, y)] : 0; }
+  add(x, y, val) { if (this.inb(x, y)) this.grid[this.idx(x, y)] += val; }
   step() {
     // Use double buffering - swap instead of allocate
     const diffuse025 = this.diffuse * 0.25;
     const oneMinusDiffuse = 1 - this.diffuse;
-    
-    for (let y=0;y<this.h;y++){
-      for (let x=0;x<this.w;x++){
-        let s = this.get(x,y) * oneMinusDiffuse;
-        s += diffuse025 * (this.get(x+1,y)+this.get(x-1,y)+this.get(x,y+1)+this.get(x,y-1));
-        this.nextGrid[this.idx(x,y)] = s * this.decay;
+
+    for (let y = 0; y < this.h; y++) {
+      for (let x = 0; x < this.w; x++) {
+        let s = this.get(x, y) * oneMinusDiffuse;
+        s += diffuse025 * (this.get(x + 1, y) + this.get(x - 1, y) + this.get(x, y + 1) + this.get(x, y - 1));
+        this.nextGrid[this.idx(x, y)] = s * this.decay;
       }
     }
     // Swap buffers instead of creating new array
@@ -46,28 +46,28 @@ export class World {
     this.pheromone = new ScalarField(width, height, 20, 0.992, 0.18);
     this.temperature = new ScalarField(width, height, 40, 1.0, 0.0);
     this.t = 0;
-    
+
     // NEW: Vegetation diversity system
     this.vegetationTypes = {
-      grass: { 
-        energy: 3, 
-        color: '#7FDB6A', 
+      grass: {
+        energy: 3,
+        color: '#7FDB6A',
         size: 2,
         growthRate: 1.0, // Base growth rate
         spawnChance: 0.6, // 60% of food is grass
         respawnTime: 5 // Seconds to respawn
       },
-      berries: { 
-        energy: 8, 
-        color: '#FF6B9D', 
+      berries: {
+        energy: 8,
+        color: '#FF6B9D',
         size: 3,
         growthRate: 0.3, // Slower growth
         spawnChance: 0.3, // 30% berries
         respawnTime: 15
       },
-      fruit: { 
-        energy: 15, 
-        color: '#FFA500', 
+      fruit: {
+        energy: 15,
+        color: '#FFA500',
         size: 4,
         growthRate: 0.1, // Rare
         spawnChance: 0.1, // 10% fruit trees
@@ -86,12 +86,15 @@ export class World {
     this.seasonPhase = 0;
     this.seasonSpeed = 0.015;
     this.maxFood = Math.floor((width * height) / 180); // BALANCED: 2x more food for larger world!
-    
+
     // Day/Night cycle system
     this.timeOfDay = 12.0; // 0-24 hours (start at noon)
     this.dayLength = 120; // Real seconds for full day/night cycle
     this.dayNightEnabled = true;
-    
+
+    // World boundary mode: 'wrap' (default), 'clamp', or 'none'
+    this.boundaryMode = 'wrap';
+
     // NEW: Four Seasons System
     this.seasonTime = 0; // Time counter for seasons
     this.seasonDuration = 120; // Real seconds per season (2 minutes each)
@@ -184,7 +187,7 @@ export class World {
     };
     this._seasonEnvironmentFx = null;
     this._diseaseSeedCooldown = 4;
-    
+
     // Disaster system
     this.disasterCooldown = 0;
     this.activeDisaster = null;
@@ -221,34 +224,34 @@ export class World {
     this.biomeMap = this.biomeGenerator.generateBiomeMap(width, height, 50);
     this.biomeCache = new Map(); // Cache biome lookups for performance
     this.biomes = this._createBiomes(); // Keep legacy for gradual migration
-    
+
     this.predatorSignals = [];
     this.environment = this._defaultEnvironment();
     this.eventSystem = this._createEventSystem();
     this.lineagePulse = this._createLineagePulse();
     this.ecoStats = { meanHealth: 0.6, predatorRatio: 0.2, biomass: 0, lastUpdate: 0 };
-    
+
     // Territory system for predators
     this.territories = new Map(); // predatorId -> territory object
     this.territoryConflicts = []; // active conflicts for visualization
-    
+
     // Social behavior tracking
     this.socialBonds = new Map(); // creatureId -> array of bondedIds
     this.offspring = new Map(); // parentId -> array of childIds (recent)
-    
+
     // Migration tracking
     this.migrationTargets = new Map(); // creatureId -> target biome
     this.biomePopulations = new Map(); // track population per biome type
-    
+
     // Environmental decorations (for visual polish)
     this.decorations = this._generateDecorations();
 
     // init temperature bands
-    for (let y=0;y<this.temperature.h;y++){
-      for (let x=0;x<this.temperature.w;x++){
-        const nx=(x/this.temperature.w - 0.5), ny=(y/this.temperature.h - 0.5);
-        const r=Math.sqrt(nx*nx+ny*ny);
-        this.temperature.grid[this.temperature.idx(x,y)] = clamp(0.7 - r, 0.0, 0.7);
+    for (let y = 0; y < this.temperature.h; y++) {
+      for (let x = 0; x < this.temperature.w; x++) {
+        const nx = (x / this.temperature.w - 0.5), ny = (y / this.temperature.h - 0.5);
+        const r = Math.sqrt(nx * nx + ny * ny);
+        this.temperature.grid[this.temperature.idx(x, y)] = clamp(0.7 - r, 0.0, 0.7);
       }
     }
 
@@ -379,7 +382,7 @@ export class World {
   getSeasonModifier(kind) {
     const cfg = this.currentSeasonConfig;
     if (!cfg) return 1;
-    switch(kind) {
+    switch (kind) {
       case 'food':
         return cfg.foodMultiplier ?? 1;
       case 'reproduction':
@@ -391,7 +394,7 @@ export class World {
     }
   }
 
-  addCreature(creature, parentId=null){
+  addCreature(creature, parentId = null) {
     creature.id = this._nextId++;
     creature.parentId = parentId;
     this.creatures.push(creature);
@@ -406,12 +409,12 @@ export class World {
           parent.children.push(creature.id);
         }
       }
-      
+
       // NEW: Birth sparkle effect!
       if (this.particles) {
         this.particles.addBirthEffect(creature.x, creature.y);
       }
-      
+
       // NEW: Record birth in heatmap
       if (this.heatmaps) {
         this.heatmaps.recordBirth(creature.x, creature.y, 1.0);
@@ -424,31 +427,31 @@ export class World {
   attachLineageTracker(tracker) {
     this.lineageTracker = tracker;
   }
-  
+
   // NEW: Attach particle system for visual effects
   attachParticleSystem(particles) {
     this.particles = particles;
   }
-  
+
   attachHeatmapSystem(heatmaps) {
     this.heatmaps = heatmaps;
   }
-  
+
   attachAudioSystem(audio) {
     this.audio = audio;
   }
 
-  seed(nHerb=60, nPred=6, nFood=180) {
+  seed(nHerb = 60, nPred = 6, nFood = 180) {
     const swampCount = Math.max(2, Math.round(nHerb * 0.12));
     const herbCount = Math.max(0, nHerb - swampCount);
-    for (let i=0;i<herbCount;i++) {
-      this.addCreature(new Creature(rand(0,this.width), rand(0,this.height), makeGenes()), null);
+    for (let i = 0; i < herbCount; i++) {
+      this.addCreature(new Creature(rand(0, this.width), rand(0, this.height), makeGenes()), null);
     }
-    for (let i=0;i<nPred;i++) {
-      const g = makeGenes({ predator:1, speed:1.1, metabolism:1.2, hue:0 });
-      this.addCreature(new Creature(rand(0,this.width), rand(0,this.height), g), null);
+    for (let i = 0; i < nPred; i++) {
+      const g = makeGenes({ predator: 1, speed: 1.1, metabolism: 1.2, hue: 0 });
+      this.addCreature(new Creature(rand(0, this.width), rand(0, this.height), g), null);
     }
-    for (let i=0;i<swampCount;i++) {
+    for (let i = 0; i < swampCount; i++) {
       const spot = this.findBiomeSpot('wetland');
       const genes = makeGenes({
         predator: 0,
@@ -461,7 +464,7 @@ export class World {
       });
       this.addCreature(new Creature(spot.x, spot.y, genes, false), null);
     }
-    for (let i=0;i<nFood;i++) this.addFood(rand(0,this.width), rand(0,this.height), rand(1,2));
+    for (let i = 0; i < nFood; i++) this.addFood(rand(0, this.width), rand(0, this.height), rand(1, 2));
     this.gridDirty = true;
   }
 
@@ -492,7 +495,7 @@ export class World {
     this._diseaseSeedCooldown = 4;
   }
 
-  addFood(x,y,r=1.5, type=null){
+  addFood(x, y, r = 1.5, type = null) {
     // NEW: Determine vegetation type if not specified
     if (!type) {
       const roll = Math.random();
@@ -504,11 +507,11 @@ export class World {
         type = 'fruit';
       }
     }
-    
+
     const vegType = this.vegetationTypes[type] || this.vegetationTypes.grass;
     const food = {
-      x, 
-      y, 
+      x,
+      y,
       r: r || vegType.size,
       type: type,
       energy: vegType.energy,
@@ -520,29 +523,31 @@ export class World {
     this.gridDirty = true;
   }
 
-  nearbyFood(x,y,radius){
+  nearbyFood(x, y, radius) {
     this.ensureSpatial();
-    const candidates = this.foodGrid.nearby(x,y,radius);
+    const candidates = this.foodGrid.nearby(x, y, radius);
     return candidates;
   }
 
-  tryEatFoodAt(x,y,reach=8) {
+  tryEatFoodAt(x, y, reach = 8) {
     this.ensureSpatial();
-    const reach2 = (reach*1.1)*(reach*1.1);
+    const reach2 = (reach * 1.1) * (reach * 1.1);
     // Use spatial grid for faster lookup instead of iterating all food
-    const candidates = this.foodGrid.nearby(x, y, reach*1.1);
+    const candidates = this.foodGrid.nearby(x, y, reach * 1.1);
     for (const f of candidates) {
       if (dist2(f.x, f.y, x, y) <= reach2) {
-        // Remove from main array
+        // Remove from main array using swap-and-pop (O(1) instead of O(n) splice)
         const idx = this.food.indexOf(f);
         if (idx !== -1) {
-          this.food.splice(idx, 1);
+          // Swap with last element and pop
+          this.food[idx] = this.food[this.food.length - 1];
+          this.food.pop();
           this.gridDirty = true;
-          return f; // NEW: Return the food object so creature gets correct energy
+          return f; // Return the food object so creature gets correct energy
         }
       }
     }
-    return null; // NEW: Return null instead of false
+    return null;
   }
 
   tryPredation(pred) {
@@ -589,7 +594,7 @@ export class World {
         // Ignore audio errors (non-critical)
       }
     }
-    
+
     // Visual: Combat hit particles
     if (this.particles && applied) {
       this.particles.addCombatHit(victim.x, victim.y, applied.damage || damage, applied.killed || false);
@@ -627,7 +632,7 @@ export class World {
     return { victim, damage: applied.damage, killed: applied.killed };
   }
 
-  findPrey(pred, radius=120) {
+  findPrey(pred, radius = 120) {
     this.ensureSpatial();
     const searchRadius = Math.max(20, radius);
     const candidates = this.creatureGrid.nearby(pred.x, pred.y, searchRadius);
@@ -645,11 +650,11 @@ export class World {
     return best;
   }
 
-  dropPheromone(x,y,val=1.0){
-    this.pheromone.add(Math.floor(x/this.pheromone.cell), Math.floor(y/this.pheromone.cell), val);
+  dropPheromone(x, y, val = 1.0) {
+    this.pheromone.add(Math.floor(x / this.pheromone.cell), Math.floor(y / this.pheromone.cell), val);
   }
 
-  registerPredatorSignal(x, y, strength=1, ttl=5, sourceId=null) {
+  registerPredatorSignal(x, y, strength = 1, ttl = 5, sourceId = null) {
     const safeStrength = clamp(strength, 0, 2);
     const safeTtl = Math.max(0.5, ttl);
     this.predatorSignals.push({
@@ -660,14 +665,15 @@ export class World {
       sourceId,
       bornAt: this.t
     });
+    // Keep only the last 64 signals (O(n) slice is better than O(n) splice from front)
     if (this.predatorSignals.length > 64) {
-      this.predatorSignals.splice(0, this.predatorSignals.length - 64);
+      this.predatorSignals = this.predatorSignals.slice(-64);
     }
   }
 
-  samplePredatorSignal(x, y, radius=140, excludeSource=null) {
+  samplePredatorSignal(x, y, radius = 140, excludeSource = null) {
     if (!this.predatorSignals.length) return null;
-    const r2 = radius*radius;
+    const r2 = radius * radius;
     let best = null;
     let bestScore = 0;
     for (const sig of this.predatorSignals) {
@@ -684,7 +690,7 @@ export class World {
     return best;
   }
 
-  _applyDamage(target, amount, ctx={}) {
+  _applyDamage(target, amount, ctx = {}) {
     if (!target || !target.alive) return null;
     const dmg = Math.max(0, amount);
     if (dmg <= 0) return { damage: 0, killed: false };
@@ -844,20 +850,20 @@ export class World {
     stats.lastUpdate = this.t;
   }
 
-  tempPenaltyAt(x,y){
-    const base=this.temperature.get(Math.floor(x/this.temperature.cell), Math.floor(y/this.temperature.cell));
+  tempPenaltyAt(x, y) {
+    const base = this.temperature.get(Math.floor(x / this.temperature.cell), Math.floor(y / this.temperature.cell));
     const wave = 0.15 * Math.sin(this.seasonPhase + x / this.width * Math.PI * 2);
-    const ridge = 0.1 * Math.cos(this.seasonPhase*0.7 + y / this.height * Math.PI * 3);
+    const ridge = 0.1 * Math.cos(this.seasonPhase * 0.7 + y / this.height * Math.PI * 3);
     const env = this.environment;
-    const comfort = clamp(base + wave + ridge + env.tempOffset,0,0.85);
-    let penalty = (0.5-comfort)*0.5;
+    const comfort = clamp(base + wave + ridge + env.tempOffset, 0, 0.85);
+    let penalty = (0.5 - comfort) * 0.5;
     penalty = penalty * env.tempPenaltyScale + env.tempPenaltyAdd;
     return penalty;
   }
 
-  spawnChild(parent1, parent2 = null){
+  spawnChild(parent1, parent2 = null) {
     let childGenes;
-    
+
     if (parent2) {
       // Sexual reproduction with two parents
       childGenes = breedGenes(parent1.genes, parent2.genes, 0.05);
@@ -865,7 +871,7 @@ export class World {
       // Asexual reproduction (fallback for old code)
       childGenes = mutateGenes(parent1.genes, 0.05);
     }
-    
+
     const child = new Creature(parent1.x, parent1.y, childGenes, true);
     const childId = this.addCreature(child, parent1.id);
     child.parents = [];
@@ -883,7 +889,7 @@ export class World {
         parent2.children.push(childId);
       }
     }
-    
+
     // Audio: Birth sound
     if (this.audio && this.audio.ctx) {
       try {
@@ -892,22 +898,22 @@ export class World {
         // Ignore audio errors (non-critical)
       }
     }
-    
+
     if (typeof parent1.noteBirth === 'function') {
       parent1.noteBirth(childId, this.t);
     }
     if (parent2 && typeof parent2.noteBirth === 'function') {
       parent2.noteBirth(childId, this.t);
     }
-    
+
     this.lineageTracker?.noteBirth(this, parent1, child);
   }
 
-  nearestCreature(x,y,maxDistPx=30){
+  nearestCreature(x, y, maxDistPx = 30) {
     this.ensureSpatial();
-    const candidates = this.creatureGrid.nearby(x,y,maxDistPx);
+    const candidates = this.creatureGrid.nearby(x, y, maxDistPx);
     let best = null;
-    let bestD2 = maxDistPx*maxDistPx;
+    let bestD2 = maxDistPx * maxDistPx;
     for (const c of candidates) {
       if (!c.alive) continue;
       const d2 = dist2(c.x, c.y, x, y);
@@ -916,14 +922,14 @@ export class World {
     return best;
   }
 
-  queryCreatures(x,y,radius){
+  queryCreatures(x, y, radius) {
     this.ensureSpatial();
-    const rad2 = radius*radius;
-    return this.creatureGrid.nearby(x,y,radius).filter(c=>c.alive && dist2(c.x,c.y,x,y)<=rad2);
+    const rad2 = radius * radius;
+    return this.creatureGrid.nearby(x, y, radius).filter(c => c.alive && dist2(c.x, c.y, x, y) <= rad2);
   }
 
-  spawnManual(x, y, predator=false) {
-    const genes = predator ? makeGenes({ predator:1, speed:1.2, metabolism:1.2, hue:0 }) : makeGenes();
+  spawnManual(x, y, predator = false) {
+    const genes = predator ? makeGenes({ predator: 1, speed: 1.2, metabolism: 1.2, hue: 0 }) : makeGenes();
     const creature = new Creature(x, y, genes, false);
     this.addCreature(creature, null);
     this.lineageTracker?.ensureName(this.lineageTracker.getRoot(this, creature.id));
@@ -944,15 +950,15 @@ export class World {
   }
 
   /** Compute all descendants of rootId (BFS over childrenOf). */
-  descendantsOf(rootId){
-    const out=new Set([rootId]);
-    const q=[rootId];
+  descendantsOf(rootId) {
+    const out = new Set([rootId]);
+    const q = [rootId];
     let qIndex = 0; // Use index instead of shift() for O(1) dequeue
-    while(qIndex < q.length){
+    while (qIndex < q.length) {
       const id = q[qIndex++];
-      const kids=this.childrenOf.get(id);
+      const kids = this.childrenOf.get(id);
       if (!kids) continue;
-      for (const k of kids){ if (!out.has(k)){ out.add(k); q.push(k); } }
+      for (const k of kids) { if (!out.has(k)) { out.add(k); q.push(k); } }
     }
     return out;
   }
@@ -976,11 +982,11 @@ export class World {
     }
   }
 
-  getCreatureById(id){ return this.creatures.find(c=>c.id===id); }
+  getCreatureById(id) { return this.creatures.find(c => c.id === id); }
 
-  getAnyCreatureById(id){ return this.registry.get(id) ?? null; }
+  getAnyCreatureById(id) { return this.registry.get(id) ?? null; }
 
-  getAncestors(id, maxDepth=12) {
+  getAncestors(id, maxDepth = 12) {
     const chain = [];
     let current = this.getAnyCreatureById(id);
     let depth = 0;
@@ -994,7 +1000,7 @@ export class World {
     return chain;
   }
 
-  buildLineageOverview(rootId, maxDepth=6) {
+  buildLineageOverview(rootId, maxDepth = 6) {
     if (!rootId) return null;
     const visited = new Set([rootId]);
     const queue = [{ id: rootId, depth: 0 }];
@@ -1040,28 +1046,28 @@ export class World {
     };
   }
 
-  step(dt){
+  step(dt) {
     this.updateEcoStats();
     this.updateTerritories(dt);
     this.t += dt;
     this.seasonPhase += dt * this.seasonSpeed;
-    
+
     // Update day/night cycle
     if (this.dayNightEnabled) {
       this.timeOfDay += (dt / this.dayLength) * 24; // Convert dt to hours
       this.timeOfDay = this.timeOfDay % 24; // Wrap at 24 hours
     }
-    
+
     // Update four seasons system & weather drift
     this._updateSeasons(dt);
     this._updateWeatherState(dt);
     this._updateDiseaseSystem(dt);
-    
+
     this.updateSeasonalEvents(dt);
     this.updatePredatorSignals(dt);
     this.updateDisasters(dt);
     this.ensureSpatial();
-    
+
     // Modify food growth based on active disasters
     let foodRateModifier = 1.0;
     if (this.activeDisaster === 'iceAge') {
@@ -1072,13 +1078,13 @@ export class World {
       const intensity = clamp(this.disasterIntensity ?? 1, 0, 5);
       foodRateModifier = Math.max(0, 1 - 1.0 * intensity);
     }
-    
-    if (this.food.length < this.maxFood && Math.random()<(this.foodGrowthRate() * foodRateModifier)) {
+
+    if (this.food.length < this.maxFood && Math.random() < (this.foodGrowthRate() * foodRateModifier)) {
       const spot = this.pickHabitatSpot();
       this.addFood(spot.x, spot.y, 1.2);
     }
     this.pheromone.step();
-    
+
     // OPTIMIZATION: Update creatures and remove dead ones in single pass
     let writeIndex = 0;
     for (let i = 0; i < this.creatures.length; i++) {
@@ -1098,10 +1104,10 @@ export class World {
     if (writeIndex < this.creatures.length) {
       this.creatures.length = writeIndex;
     }
-    
+
     // NEW: Update corpses (decay over time)
     this._updateCorpses(dt);
-    
+
     this.updateLineagePulse(dt);
     this.updateEcoStats();
     this.autoBalanceEcosystem(dt);
@@ -1111,13 +1117,13 @@ export class World {
   foodGrowthRate() {
     const base = 0.18;
     const scarcity = clamp(1 - this.food.length / Math.max(1, this.maxFood), 0, 1);
-    
+
     // Season-based food growth modifiers
     const seasonMultiplier = this.getSeasonModifier('food');
-    
+
     return (base + 0.4 * scarcity) * 0.016 * this.environment.foodRateMultiplier * seasonMultiplier;
   }
-  
+
   // NEW: Update seasons cycle
   _updateSeasons(dt) {
     this.seasonTime += dt;
@@ -1125,7 +1131,7 @@ export class World {
     if (config && !this.currentSeasonConfig) {
       this._applySeasonConfig(config, { announce: false });
     }
-    
+
     if (this.seasonTime >= this.seasonDuration) {
       this.seasonTime = 0;
       this.seasonIndex = (this.seasonIndex + 1) % this.seasonCycle.length;
@@ -1134,7 +1140,7 @@ export class World {
       this._applySeasonConfig(nextConfig, { announce: true });
     }
   }
-  
+
   // NEW: Get season info for UI/rendering
   getSeasonInfo() {
     const progress = this.seasonTime / this.seasonDuration;
@@ -1142,7 +1148,7 @@ export class World {
     const weather = this.getWeatherState();
     return {
       current: this.currentSeason,
-       label: config?.label ?? this.currentSeason,
+      label: config?.label ?? this.currentSeason,
       progress: progress,
       timeRemaining: this.seasonDuration - this.seasonTime,
       icon: this._getSeasonIcon(),
@@ -1155,9 +1161,9 @@ export class World {
       weather
     };
   }
-  
+
   _getSeasonIcon() {
-    switch(this.currentSeason) {
+    switch (this.currentSeason) {
       case 'spring': return '🌸';
       case 'summer': return '☀️';
       case 'autumn': return '🍂';
@@ -1165,9 +1171,9 @@ export class World {
       default: return '🌍';
     }
   }
-  
+
   _getSeasonColor() {
-    switch(this.currentSeason) {
+    switch (this.currentSeason) {
       case 'spring': return '#7FDB6A'; // Fresh green
       case 'summer': return '#FFD700'; // Golden
       case 'autumn': return '#FF8C42'; // Orange
@@ -1207,7 +1213,7 @@ export class World {
     this._beginDisaster(type, { manual: false });
   }
 
-  triggerDisaster(type, options={}) {
+  triggerDisaster(type, options = {}) {
     const config = this.disasters[type];
     if (!config) return { started: false, queuedId: null };
     const {
@@ -1240,7 +1246,7 @@ export class World {
     return { started: !!started, queuedId: null };
   }
 
-  _beginDisaster(type, { duration, intensity=1, manual=false, applyCooldown=true }={}) {
+  _beginDisaster(type, { duration, intensity = 1, manual = false, applyCooldown = true } = {}) {
     const config = this.disasters[type];
     if (!config) return false;
 
@@ -1263,10 +1269,10 @@ export class World {
         rootId: null,
         title: `${icon} ${config.name} begins!`
       });
-    this.lineageTracker.trim();
+      this.lineageTracker.trim();
+    }
+    return true;
   }
-  return true;
-}
 
   _processScheduledDisasters() {
     if (!this.disasterQueue.length) return;
@@ -1482,7 +1488,7 @@ export class World {
     }
   }
 
-  endDisaster({ cancelled=false }={}) {
+  endDisaster({ cancelled = false } = {}) {
     if (this.lineageTracker && this.activeDisaster) {
       const config = this.disasters[this.activeDisaster];
       const icon = cancelled ? '⏹️' : '✓';
@@ -1568,18 +1574,18 @@ export class World {
     // Sample the world and place decorations based on biome type
     const decorations = [];
     const sampleDensity = 80; // Distance between samples
-    
+
     for (let y = 0; y < this.height; y += sampleDensity) {
       for (let x = 0; x < this.width; x += sampleDensity) {
         const biome = this.getBiomeAt(x, y);
         const jitterX = (Math.random() - 0.5) * sampleDensity * 0.8;
         const jitterY = (Math.random() - 0.5) * sampleDensity * 0.8;
-        
+
         // Place decoration based on biome type
         let decoration = null;
         const roll = Math.random();
-        
-        switch(biome.type) {
+
+        switch (biome.type) {
           case 'forest':
             if (roll < 0.6) decoration = { type: 'tree', size: 8 + Math.random() * 12, hue: 120 };
             break;
@@ -1596,7 +1602,7 @@ export class World {
             if (roll < 0.5) decoration = { type: 'flower', size: 3 + Math.random() * 5, hue: 330 };
             break;
         }
-        
+
         if (decoration) {
           decorations.push({
             x: x + jitterX,
@@ -1606,22 +1612,22 @@ export class World {
         }
       }
     }
-    
+
     return decorations;
   }
 
   getBiomeAt(x, y) {
     // NEW: Use Perlin noise biome system
-    const cacheKey = `${Math.floor(x/50)},${Math.floor(y/50)}`;
+    const cacheKey = `${Math.floor(x / 50)},${Math.floor(y / 50)}`;
     if (this.biomeCache.has(cacheKey)) {
       return this.biomeCache.get(cacheKey);
     }
-    
+
     const biome = this.biomeGenerator.getBiomeAt(x, y, this.width, this.height);
     this.biomeCache.set(cacheKey, biome);
     return biome;
   }
-  
+
   getBiomeIndexAt(x, y) {
     // NEW: Return biome type instead of index
     const biome = this.getBiomeAt(x, y);
@@ -1630,7 +1636,7 @@ export class World {
     return typeMap[biome.type] ?? 1;
   }
 
-  findBiomeSpot(targetType, attempts=12) {
+  findBiomeSpot(targetType, attempts = 12) {
     let fallback = null;
     for (let i = 0; i < attempts; i++) {
       const x = rand(0, this.width);
@@ -1655,13 +1661,13 @@ export class World {
     // Sample several points and pick best
     let bestSpot = null;
     let bestScore = -1;
-    
+
     const extendFactor = 5; // Extend spawn area 5x in each direction
     const minX = -this.width * (extendFactor - 1);
     const maxX = this.width * extendFactor;
     const minY = -this.height * (extendFactor - 1);
     const maxY = this.height * extendFactor;
-    
+
     for (let i = 0; i < 5; i++) {
       const x = rand(minX, maxX);
       const y = rand(minY, maxY);
@@ -1670,18 +1676,18 @@ export class World {
       const biomeY = ((y % this.height) + this.height) % this.height;
       const biome = this.getBiomeAt(biomeX, biomeY);
       const score = biome.foodRate * (0.8 + Math.random() * 0.4);
-      
+
       if (score > bestScore) {
         bestScore = score;
         bestSpot = { x, y, biome };
       }
     }
-    
+
     // Return the best spot found
     return { x: bestSpot.x, y: bestSpot.y };
   }
 
-  ensureSpatial(){
+  ensureSpatial() {
     if (!this.gridDirty) return;
     this.creatureGrid.clear();
     for (const c of this.creatures) {
@@ -1758,7 +1764,7 @@ export class World {
       c.age = data.age ?? 0;
       c.maxHealth = data.maxHealth ?? (c.genes.predator ? 18 : 12);
       c.health = Math.min(c.maxHealth, data.health ?? c.maxHealth);
-      c.stats = { food:0, kills:0, births:0, damageTaken:0, damageDealt:0, ...(data.stats ?? {}) };
+      c.stats = { food: 0, kills: 0, births: 0, damageTaken: 0, damageDealt: 0, ...(data.stats ?? {}) };
       if (Array.isArray(data.statuses) && typeof c.applyStatus === 'function') {
         for (const status of data.statuses) {
           if (!status || !status.key) continue;
@@ -1840,25 +1846,25 @@ export class World {
     this.gridDirty = true;
   }
 
-  draw(ctx, opts={}){
+  draw(ctx, opts = {}) {
     const {
-      selectedId=null,
-      pinnedId=null,
-      lineageRootId=null
+      selectedId = null,
+      pinnedId = null,
+      lineageRootId = null
     } = opts;
 
     // food
     ctx.fillStyle = '#7fd36a';
-    for (let f of this.food){ ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,Math.PI*2); ctx.fill(); }
+    for (let f of this.food) { ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill(); }
 
     // pheromone overlay (very faint)
-    const cell=this.pheromone.cell;
-    for (let y=0;y<this.pheromone.h;y++){
-      for (let x=0;x<this.pheromone.w;x++){
-        const v=this.pheromone.get(x,y);
-        if (v<0.05) continue;
-        ctx.fillStyle=`rgba(120,180,255,${Math.min(0.15, v*0.05)})`;
-        ctx.fillRect(x*cell,y*cell,cell,cell);
+    const cell = this.pheromone.cell;
+    for (let y = 0; y < this.pheromone.h; y++) {
+      for (let x = 0; x < this.pheromone.w; x++) {
+        const v = this.pheromone.get(x, y);
+        if (v < 0.05) continue;
+        ctx.fillStyle = `rgba(120,180,255,${Math.min(0.15, v * 0.05)})`;
+        ctx.fillRect(x * cell, y * cell, cell, cell);
       }
     }
 
@@ -1866,8 +1872,8 @@ export class World {
     const lineageSet = lineageRootId ? this.descendantsOf(lineageRootId) : null;
 
     // creatures
-    for (let c of this.creatures){
-      const isSelected = (c.id===selectedId);
+    for (let c of this.creatures) {
+      const isSelected = (c.id === selectedId);
       const isPinned = (pinnedId != null && c.id === pinnedId);
       const inLineage = lineageSet ? lineageSet.has(c.id) : false;
       const showTrail = isSelected || isPinned || inLineage;
@@ -2267,7 +2273,7 @@ export class World {
     };
   }
 
-  getLineageLeaders(limit=3) {
+  getLineageLeaders(limit = 3) {
     if (!this.lineagePulse) return [];
     const max = Math.max(0, limit ?? 3);
     return this.lineagePulse.topFamilies.slice(0, max).map(entry => ({
@@ -2283,7 +2289,7 @@ export class World {
   // ============================================================================
   // FEATURE 1: TERRITORY & DOMINANCE SYSTEM
   // ============================================================================
-  
+
   updateTerritories(dt) {
     // Clean up dead territories
     for (const [id] of this.territories.entries()) {
@@ -2292,7 +2298,7 @@ export class World {
         this.territories.delete(id);
       }
     }
-    
+
     // Update/establish territories
     const predators = this.creatures.filter(c => c.genes.predator && c.alive);
     for (const predator of predators) {
@@ -2315,26 +2321,26 @@ export class World {
         });
       }
     }
-    
+
     // Resolve conflicts
     this._resolveTeritorialConflicts(dt);
     this._updateDominanceRanks();
   }
-  
+
   _calculateTerritorialStrength(predator) {
-    const geneScore = (predator.genes.aggression || 1) * 0.3 + 
-                      (predator.genes.speed || 1) * 0.2 +
-                      (predator.genes.metabolism || 1) * 0.1;
+    const geneScore = (predator.genes.aggression || 1) * 0.3 +
+      (predator.genes.speed || 1) * 0.2 +
+      (predator.genes.metabolism || 1) * 0.1;
     const healthScore = (predator.health / predator.maxHealth) * 0.2;
     const killScore = Math.min(predator.stats.kills / 10, 1) * 0.2;
     const ageScore = Math.min(predator.age / 60, 1) * 0.1;
     return clamp(geneScore + healthScore + killScore + ageScore, 0.3, 2.5);
   }
-  
+
   _resolveTeritorialConflicts(dt) {
     this.territoryConflicts = [];
     const territories = Array.from(this.territories.values());
-    
+
     for (let i = 0; i < territories.length; i++) {
       for (let j = i + 1; j < territories.length; j++) {
         const t1 = territories[i];
@@ -2343,11 +2349,11 @@ export class World {
         const dy = t2.y - t1.y;
         const distSq = dx * dx + dy * dy;
         const minDist = t1.radius + t2.radius;
-        
+
         if (distSq < minDist * minDist) {
           const owner1 = this.registry.get(t1.owner);
           const owner2 = this.registry.get(t2.owner);
-          
+
           if (owner1 && owner2 && owner1.alive && owner2.alive) {
             this.territoryConflicts.push({
               x: (t1.x + t2.x) / 2,
@@ -2356,7 +2362,7 @@ export class World {
               predator2: t2.owner,
               intensity: 1 - Math.sqrt(distSq) / minDist
             });
-            
+
             if (t1.strength > t2.strength * 1.2) {
               this._applyDominanceEffect(owner2, owner1, dt);
             } else if (t2.strength > t1.strength * 1.2) {
@@ -2367,7 +2373,7 @@ export class World {
       }
     }
   }
-  
+
   _applyDominanceEffect(subordinate, dominant, dt) {
     subordinate.energy -= 0.3 * dt;
     const dx = subordinate.x - dominant.x;
@@ -2379,7 +2385,7 @@ export class World {
     }
     dominant.energy += 0.1 * dt;
   }
-  
+
   _updateDominanceRanks() {
     const territories = Array.from(this.territories.values())
       .sort((a, b) => b.strength - a.strength);
@@ -2404,14 +2410,14 @@ export class World {
     };
     this.corpses.push(corpse);
     this.gridDirty = true;
-    
+
     // NEW: Death gravestone marker!
     if (this.particles && this.lineageTracker) {
       const rootId = this.lineageTracker.getRoot(this, creature.id);
       const creatureName = this.lineageTracker.ensureName(rootId) || `Creature #${creature.id}`;
       this.particles.addDeathMarker(creature.x, creature.y, creatureName);
     }
-    
+
     // Audio: Death sound
     if (this.audio && this.audio.ctx && creature) {
       try {
@@ -2420,7 +2426,7 @@ export class World {
         // Ignore audio errors (non-critical)
       }
     }
-    
+
     // NEW: Record death in heatmap (will be accessed via world.heatmaps from main.js)
     if (this.heatmaps) {
       this.heatmaps.recordDeath(creature.x, creature.y, 1.0);
@@ -2433,7 +2439,7 @@ export class World {
     for (let i = 0; i < this.corpses.length; i++) {
       const corpse = this.corpses[i];
       corpse.decay += corpse.decayRate * dt;
-      
+
       if (corpse.decay < 1.0 && corpse.energy > 0.1) {
         if (writeIndex !== i) {
           this.corpses[writeIndex] = corpse;
@@ -2465,11 +2471,11 @@ export class World {
 
   tryEatCorpse(scavenger, corpse) {
     if (!corpse || corpse.energy < 0.5) return false;
-    
+
     const eatAmount = Math.min(corpse.energy, 8); // How much the scavenger can eat
     corpse.energy -= eatAmount;
     scavenger.energy += eatAmount;
-    
+
     // Audio: Eat sound (scavenging)
     if (this.audio && this.audio.ctx && scavenger) {
       try {
@@ -2478,12 +2484,12 @@ export class World {
         // Ignore audio errors (non-critical)
       }
     }
-    
+
     // Scavenging is rewarding!
     if (scavenger.stats) scavenger.stats.food++;
     scavenger.logEvent?.('Scavenged corpse', this.t);
     scavenger.rememberLocation?.(corpse.x, corpse.y, 'food', 0.7, this.t);
-    
+
     if (corpse.energy < 0.5) {
       // Corpse fully consumed
       const index = this.corpses.indexOf(corpse);
@@ -2492,7 +2498,7 @@ export class World {
         this.gridDirty = true;
       }
     }
-    
+
     return true;
   }
 }

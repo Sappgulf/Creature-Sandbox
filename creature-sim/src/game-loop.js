@@ -131,7 +131,6 @@ export class GameLoop {
   setupEventListeners() {
     // World events
     eventSystem.on(GameEvents.WORLD_UPDATE, () => {
-      if (this.achievements) this.achievements.update(this.world);
       if (this.ecoHealth) this.ecoHealth.update(this.world);
     });
 
@@ -328,6 +327,11 @@ export class GameLoop {
       this.worldUpdateEvent.time = this.world.t;
       this.worldUpdateEvent.creatureCount = this.world.creatures.length;
       this.worldUpdateEvent.foodCount = this.world.food.length;
+      this.worldUpdateEvent.world = this.world;
+      this.worldUpdateEvent.context = {
+        analytics: this.analytics,
+        lineageTracker: this.lineageTracker
+      };
       eventSystem.emit(GameEvents.WORLD_UPDATE, this.worldUpdateEvent);
     }
 
@@ -337,9 +341,7 @@ export class GameLoop {
     }
 
     // Update achievement system
-    if (this.achievements) {
-      this.achievements.update(this.world);
-    }
+    // Achievements are now event-driven via WORLD_UPDATE / kill / god action events.
   }
 
   /**
@@ -484,10 +486,7 @@ export class GameLoop {
       this.tutorial.update(dt, this.world);
     }
 
-    // Update achievement system
-    if (this.achievements) {
-      this.achievements.update(this.world);
-    }
+    // Achievement system is event-driven; no per-frame update needed.
 
     // Update audio system
     if (this.audio) {

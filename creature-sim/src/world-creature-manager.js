@@ -5,6 +5,7 @@ import { rand, clamp } from './utils.js';
 import { makeGenes, mutateGenes, breedGenes } from './genetics.js';
 import { Creature } from './creature.js';
 import { SpatialGrid } from './spatial-grid.js';
+import { eventSystem, GameEvents } from './event-system.js';
 
 export class WorldCreatureManager {
   constructor(world) {
@@ -47,6 +48,24 @@ export class WorldCreatureManager {
     // Notify lineage tracker
     if (this.lineageTracker) {
       this.lineageTracker.onCreatureBorn(creature, this.world);
+    }
+
+    // Emit creature born event for other systems (achievements, audio, etc.)
+    try {
+      eventSystem.emit(GameEvents.CREATURE_BORN, {
+        creature,
+        parentId,
+        worldTime: this.world.t
+      });
+      if (parentId !== null) {
+        eventSystem.emit(GameEvents.CREATURE_REPRODUCE, {
+          creature,
+          parentId,
+          worldTime: this.world.t
+        });
+      }
+    } catch (e) {
+      console.warn('Failed to emit creature born/reproduce event:', e);
     }
 
     return creature;
@@ -124,6 +143,19 @@ export class WorldCreatureManager {
     const genes = makeGenes(predator);
     const creature = new Creature(x, y, genes);
     return this.addCreature(creature);
+  }
+
+  // Clone an existing creature (shallow gene copy + small offset)
+  cloneCreature(source) {
+    if (!source) return null;
+    const genes = { ...(source.genesRaw || source.genes) };
+    const offset = 20;
+    const nx = clamp(source.x + (Math.random() - 0.5) * offset, 0, this.world.width);
+    const ny = clamp(source.y + (Math.random() - 0.5) * offset, 0, this.world.height);
+    const clone = new Creature(nx, ny, genes, true);
+    // Parent linkage for lineage
+    clone.parents = [source.id];
+    return this.addCreature(clone, source.id);
   }
 
   // Spawn omnivore creature

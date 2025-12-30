@@ -11,6 +11,7 @@ import { WorldCombat } from './world-combat.js';
 import { WorldDisaster } from './world-disaster.js';
 import { BiomeGenerator } from './perlin-noise.js';
 import { clamp, dist2, rand } from './utils.js';
+import { eventSystem, GameEvents } from './event-system.js';
 
 export class World {
   constructor(width, height) {
@@ -65,9 +66,9 @@ export class World {
   step(dt) {
     // STABILITY: Validate dt
     if (typeof dt !== 'number' || !isFinite(dt) || dt < 0) {
-      dt = 1/60; // Fallback to 60fps timestep
+      dt = 1 / 60; // Fallback to 60fps timestep
     }
-    
+
     this.t += dt;
 
     // Update environmental systems (with guards)
@@ -99,7 +100,7 @@ export class World {
   updateCreatures(dt) {
     for (let i = this.creatures.length - 1; i >= 0; i--) {
       const creature = this.creatures[i];
-      
+
       // STABILITY: Skip invalid creatures
       if (!creature) {
         this.creatures.splice(i, 1);
@@ -107,6 +108,19 @@ export class World {
       }
 
       if (!creature.alive) {
+        if (!creature._deathEmitted) {
+          creature._deathEmitted = true;
+          try {
+            eventSystem.emit(GameEvents.CREATURE_DIED, {
+              creature,
+              worldTime: this.t,
+              cause: creature.deathCause || 'unknown',
+              attackerId: creature.killedBy || null
+            });
+          } catch (e) {
+            console.warn('Failed to emit creature died event:', e);
+          }
+        }
         // Remove dead creatures after a delay
         if (creature.deathTime && this.t - creature.deathTime > 5) {
           this.creatures.splice(i, 1);
@@ -128,6 +142,19 @@ export class World {
       // Handle creature death
       if (!creature.alive) {
         creature.deathTime = this.t;
+        if (!creature._deathEmitted) {
+          creature._deathEmitted = true;
+          try {
+            eventSystem.emit(GameEvents.CREATURE_DIED, {
+              creature,
+              worldTime: this.t,
+              cause: creature.deathCause || 'unknown',
+              attackerId: creature.killedBy || null
+            });
+          } catch (e) {
+            console.warn('Failed to emit creature died event:', e);
+          }
+        }
       }
     }
 
@@ -248,6 +275,10 @@ export class World {
 
   addCreature(creature, parentId = null) {
     return this.creatureManager.addCreature(creature, parentId);
+  }
+
+  cloneCreature(creature) {
+    return this.creatureManager.cloneCreature(creature);
   }
 
   spawnChild(parent1, parent2 = null) {
