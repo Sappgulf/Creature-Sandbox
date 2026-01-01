@@ -526,23 +526,29 @@ function initializeApp() {
   // STARTUP LOGIC
   // ============================================================================
 
-  // Check for auto-save
+  // Check for auto-save and show home page
   errorHandler.safeExecute(() => {
-    if (saveSystem && saveSystem.hasAutoSave()) {
-      showStartModal();
-    } else {
-      startNewGame();
-    }
+    // Always show home page first (handles both new game and continue)
+    showHomePage();
   }, 'Startup logic', () => startNewGame());
 
-  // Home page initialization (replaces old start modal)
-  function showStartModal() {
-    const homePage = domCache.get('homePage');
-    const homeBg = domCache.get('homeBg');
-    const continueBtn = domCache.get('continueBtn');
-    const continueHint = domCache.get('continueHint');
-    const newGameBtn = domCache.get('newGameBtn');
-    const campaignBtn = domCache.get('campaignBtn');
+  // Home page initialization
+  function showHomePage() {
+    console.log('🏠 showHomePage() called');
+
+    const homePage = domCache.get('homePage') || document.getElementById('home-page');
+    const homeBg = domCache.get('homeBg') || document.getElementById('home-bg');
+    const continueBtn = domCache.get('continueBtn') || document.getElementById('btn-continue');
+    const continueHint = domCache.get('continueHint') || document.getElementById('continue-hint');
+    const newGameBtn = domCache.get('newGameBtn') || document.getElementById('btn-new-game');
+    const campaignBtn = domCache.get('campaignBtn') || document.getElementById('btn-campaign');
+
+    console.log('🔍 Button elements found:', {
+      homePage: !!homePage,
+      continueBtn: !!continueBtn,
+      newGameBtn: !!newGameBtn,
+      campaignBtn: !!campaignBtn
+    });
 
     // Show home page
     errorHandler.safeExecute(() => {
@@ -617,8 +623,10 @@ function initializeApp() {
 
     // Handle new game button
     errorHandler.safeExecute(() => {
+      console.log('🔧 Setting up New Game button:', !!newGameBtn);
       if (newGameBtn) {
         newGameBtn.addEventListener('click', () => {
+          console.log('🆕 New Game button clicked!');
           errorHandler.safeExecute(() => {
             initAudioOnInteraction();
             if (audio) audio.playUISound('click');
@@ -863,3 +871,49 @@ if (document.readyState === 'loading') {
   // DOM is already ready
   initializeApp();
 }
+
+// ============================================================================
+// SIMPLE HOME PAGE BUTTON HANDLERS (FALLBACK)
+// These run independently to ensure buttons always work
+// ============================================================================
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('🏠 Setting up home page buttons (fallback)...');
+
+  const homePage = document.getElementById('home-page');
+  const newGameBtn = document.getElementById('btn-new-game');
+  const continueBtn = document.getElementById('btn-continue');
+  const campaignBtn = document.getElementById('btn-campaign');
+
+  console.log('📍 Found elements:', {
+    homePage: !!homePage,
+    newGameBtn: !!newGameBtn,
+    continueBtn: !!continueBtn,
+    campaignBtn: !!campaignBtn
+  });
+
+  // New Game button
+  if (newGameBtn) {
+    newGameBtn.onclick = () => {
+      console.log('🆕 New Game clicked (fallback handler)');
+      if (homePage) homePage.classList.add('hidden');
+    };
+  }
+
+  // Continue button  
+  if (continueBtn) {
+    continueBtn.onclick = () => {
+      console.log('▶️ Continue clicked (fallback handler)');
+      if (homePage) homePage.classList.add('hidden');
+    };
+  }
+
+  // Campaign button
+  if (campaignBtn) {
+    campaignBtn.onclick = () => {
+      console.log('🏆 Campaign clicked (fallback handler)');
+      if (homePage) homePage.classList.add('hidden');
+      const campaignPanel = document.getElementById('campaign-panel');
+      if (campaignPanel) campaignPanel.classList.remove('hidden');
+    };
+  }
+});
