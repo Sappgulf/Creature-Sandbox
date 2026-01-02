@@ -1,6 +1,6 @@
 const NAMES = [
-  'Aurora','Zephyr','Nimbus','Marrow','Sylph','Ember','Quartz','Halcyon','Vanta','Caldera',
-  'Mistral','Solace','Echo','Tundra','Nova','Beryl','Thorne','Juniper','Fable','Lumen'
+  'Aurora', 'Zephyr', 'Nimbus', 'Marrow', 'Sylph', 'Ember', 'Quartz', 'Halcyon', 'Vanta', 'Caldera',
+  'Mistral', 'Solace', 'Echo', 'Tundra', 'Nova', 'Beryl', 'Thorne', 'Juniper', 'Fable', 'Lumen'
 ];
 
 export class LineageTracker {
@@ -69,6 +69,16 @@ export class LineageTracker {
     const name = this.ensureName(rootId);
     this.events.unshift({ time: world.t, rootId, title: `${name}: ${message}` });
     this.trim();
+
+    // Visual feedback: evolution particles for milestone achievement
+    if (world.particles && typeof world.particles.addEvolutionEffect === 'function') {
+      world.particles.addEvolutionEffect(creature.x, creature.y);
+    }
+
+    // Audio feedback for milestone 
+    if (world.audio && typeof world.audio.playUISound === 'function') {
+      world.audio.playUISound('success');
+    }
   }
 
   getRoot(world, id) {
@@ -76,11 +86,11 @@ export class LineageTracker {
     if (this.rootCache.has(id)) {
       return this.rootCache.get(id);
     }
-    
+
     let current = world.getAnyCreatureById(id);
     let last = current;
     const path = [id]; // Track path to cache all intermediate nodes
-    
+
     while (current && current.parentId) {
       // Check if we've already cached the parent's root
       if (this.rootCache.has(current.parentId)) {
@@ -91,7 +101,7 @@ export class LineageTracker {
         }
         return rootId;
       }
-      
+
       path.push(current.parentId);
       last = world.getAnyCreatureById(current.parentId) || last;
       current = last;
@@ -105,7 +115,7 @@ export class LineageTracker {
         return rootId;
       }
     }
-    
+
     const rootId = last?.id ?? id;
     // Cache all nodes in path
     for (const nodeId of path) {
@@ -119,11 +129,11 @@ export class LineageTracker {
     if (this.generationCache.has(id)) {
       return this.generationCache.get(id);
     }
-    
+
     let depth = 0;
     let node = world.getAnyCreatureById(id);
     const path = [id];
-    
+
     while (node && node.parentId) {
       // Check if parent's generation is cached
       if (this.generationCache.has(node.parentId)) {
@@ -135,16 +145,16 @@ export class LineageTracker {
       if (node && node.parentId) depth++;
       else { depth++; break; }
     }
-    
+
     // Cache generation for all nodes in path (backfill)
     for (let i = path.length - 1; i >= 0; i--) {
       this.generationCache.set(path[i], depth - i);
     }
-    
+
     return this.generationCache.get(id) || depth;
   }
 
-  trim(limit=12) {
+  trim(limit = 12) {
     if (this.events.length > limit) this.events.length = limit;
   }
 

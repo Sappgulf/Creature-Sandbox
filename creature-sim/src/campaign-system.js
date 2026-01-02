@@ -22,7 +22,7 @@ export const CAMPAIGN_LEVELS = [
     difficulty: 'easy',
     icon: '🌱',
     unlocked: true, // First level always unlocked
-    
+
     objectives: {
       primary: {
         type: 'population',
@@ -34,7 +34,7 @@ export const CAMPAIGN_LEVELS = [
         { type: 'no_extinctions', description: 'Keep at least 1 creature alive at all times' }
       ]
     },
-    
+
     worldConfig: {
       width: 2000,
       height: 1400,
@@ -45,7 +45,7 @@ export const CAMPAIGN_LEVELS = [
       disastersEnabled: false,
       predatorsEnabled: false
     },
-    
+
     tutorial: {
       enabled: true,
       hints: [
@@ -54,13 +54,13 @@ export const CAMPAIGN_LEVELS = [
         'Green dots are food - creatures need it to survive and reproduce.'
       ]
     },
-    
+
     rewards: {
       xp: 50,
       achievement: 'campaign_first_steps'
     }
   },
-  
+
   {
     id: 2,
     name: 'Survival',
@@ -69,7 +69,7 @@ export const CAMPAIGN_LEVELS = [
     difficulty: 'normal',
     icon: '⏱️',
     unlocked: false,
-    
+
     objectives: {
       primary: {
         type: 'survival_time',
@@ -80,7 +80,7 @@ export const CAMPAIGN_LEVELS = [
         { type: 'extinction', description: 'All creatures die' }
       ]
     },
-    
+
     worldConfig: {
       width: 2500,
       height: 1800,
@@ -92,13 +92,13 @@ export const CAMPAIGN_LEVELS = [
       disastersEnabled: false,
       predatorsEnabled: false
     },
-    
+
     rewards: {
       xp: 100,
       achievement: 'campaign_survival'
     }
   },
-  
+
   {
     id: 3,
     name: "Predator's Rise",
@@ -107,7 +107,7 @@ export const CAMPAIGN_LEVELS = [
     difficulty: 'normal',
     icon: '🦁',
     unlocked: false,
-    
+
     objectives: {
       primary: {
         type: 'predator_kills',
@@ -119,7 +119,7 @@ export const CAMPAIGN_LEVELS = [
         { type: 'min_population', target: 10, description: 'Keep at least 10 creatures alive' }
       ]
     },
-    
+
     worldConfig: {
       width: 3000,
       height: 2000,
@@ -131,13 +131,13 @@ export const CAMPAIGN_LEVELS = [
       disastersEnabled: false,
       predatorsEnabled: true
     },
-    
+
     rewards: {
       xp: 150,
       achievement: 'campaign_predator'
     }
   },
-  
+
   {
     id: 4,
     name: 'The Plague',
@@ -146,7 +146,7 @@ export const CAMPAIGN_LEVELS = [
     difficulty: 'hard',
     icon: '🦠',
     unlocked: false,
-    
+
     objectives: {
       primary: {
         type: 'survive_disease',
@@ -158,7 +158,7 @@ export const CAMPAIGN_LEVELS = [
         { type: 'population_below', target: 5, description: 'Population drops below 5' }
       ]
     },
-    
+
     worldConfig: {
       width: 3000,
       height: 2000,
@@ -174,13 +174,13 @@ export const CAMPAIGN_LEVELS = [
         initialInfections: 5
       }
     },
-    
+
     rewards: {
       xp: 200,
       achievement: 'campaign_plague'
     }
   },
-  
+
   {
     id: 5,
     name: 'Harsh Winter',
@@ -189,7 +189,7 @@ export const CAMPAIGN_LEVELS = [
     difficulty: 'hard',
     icon: '❄️',
     unlocked: false,
-    
+
     objectives: {
       primary: {
         type: 'survive_season',
@@ -201,7 +201,7 @@ export const CAMPAIGN_LEVELS = [
         { type: 'min_population_end', target: 15, description: 'End with 15+ creatures' }
       ]
     },
-    
+
     worldConfig: {
       width: 3500,
       height: 2400,
@@ -213,13 +213,13 @@ export const CAMPAIGN_LEVELS = [
       disastersEnabled: false,
       predatorsEnabled: false
     },
-    
+
     rewards: {
       xp: 200,
       achievement: 'campaign_winter'
     }
   },
-  
+
   {
     id: 6,
     name: 'Aquatic Evolution',
@@ -228,7 +228,7 @@ export const CAMPAIGN_LEVELS = [
     difficulty: 'hard',
     icon: '🐟',
     unlocked: false,
-    
+
     objectives: {
       primary: {
         type: 'aquatic_creatures',
@@ -238,7 +238,7 @@ export const CAMPAIGN_LEVELS = [
       },
       timeLimit: 360, // 6 minutes
     },
-    
+
     worldConfig: {
       width: 3500,
       height: 2400,
@@ -251,13 +251,13 @@ export const CAMPAIGN_LEVELS = [
       waterBiomeBoost: true, // Increase water biome generation
       initialAquaticCreatures: 3 // Start with some semi-aquatic creatures
     },
-    
+
     rewards: {
       xp: 250,
       achievement: 'campaign_aquatic'
     }
   },
-  
+
   {
     id: 7,
     name: 'Ecosystem Master',
@@ -266,7 +266,7 @@ export const CAMPAIGN_LEVELS = [
     difficulty: 'expert',
     icon: '🏆',
     unlocked: false,
-    
+
     objectives: {
       primary: {
         type: 'stable_population',
@@ -279,7 +279,7 @@ export const CAMPAIGN_LEVELS = [
         { type: 'biodiversity', target: 0.5, description: 'Maintain genetic diversity above 50%' }
       ]
     },
-    
+
     worldConfig: {
       width: 4000,
       height: 2800,
@@ -292,7 +292,7 @@ export const CAMPAIGN_LEVELS = [
       disasterFrequency: 0.5, // Less frequent
       predatorsEnabled: true
     },
-    
+
     rewards: {
       xp: 500,
       achievement: 'campaign_master'
@@ -313,7 +313,7 @@ export class CampaignSystem {
     this.stablePopulationTimer = 0;
     this.winterSurvived = false;
     this.diseaseSurvived = false;
-    
+
     this.loadProgress();
   }
 
@@ -326,7 +326,7 @@ export class CampaignSystem {
       if (saved) {
         const data = JSON.parse(saved);
         this.levelProgress = new Map(Object.entries(data.progress || {}));
-        
+
         // Unlock levels based on progress
         CAMPAIGN_LEVELS.forEach((level, index) => {
           if (index === 0) {
@@ -403,7 +403,7 @@ export class CampaignSystem {
     this.stablePopulationTimer = 0;
     this.winterSurvived = false;
     this.diseaseSurvived = false;
-    
+
     // Initialize objective state
     this.activeObjectiveState = {
       startTime: this.levelStartTime,
@@ -498,10 +498,10 @@ export class CampaignSystem {
     switch (condition.type) {
       case 'extinction':
         return world.creatures.filter(c => c.alive).length === 0;
-      
+
       case 'population_below':
         return world.creatures.filter(c => c.alive).length < condition.target;
-      
+
       default:
         return false;
     }
@@ -512,39 +512,39 @@ export class CampaignSystem {
    */
   checkObjective(objective, world, dt) {
     const aliveCreatures = world.creatures.filter(c => c.alive);
-    
+
     switch (objective.type) {
       case 'population':
         return aliveCreatures.length >= objective.target;
-      
+
       case 'survival_time': {
         const elapsed = (world.t || 0) - this.levelStartTime;
         return elapsed >= objective.target;
       }
-      
+
       case 'predator_kills': {
         const predatorWithKills = aliveCreatures.find(
           c => c.genes?.predator && c.stats?.kills >= objective.target
         );
         return !!predatorWithKills;
       }
-      
+
       case 'survive_disease': {
         // Check if disease outbreak happened and population survived
         const hasDisease = aliveCreatures.some(c => c.statuses?.has('disease'));
         const hadDisease = this.diseaseSurvived || hasDisease;
-        
+
         if (hasDisease) {
           this.diseaseSurvived = true;
         }
-        
+
         // Win if disease happened and we have enough survivors
         if (hadDisease && !hasDisease && aliveCreatures.length >= objective.target) {
           return true;
         }
         return false;
       }
-      
+
       case 'survive_season': {
         const currentSeason = world.currentSeason;
         if (currentSeason === objective.targetSeason) {
@@ -556,14 +556,14 @@ export class CampaignSystem {
         }
         return false;
       }
-      
+
       case 'aquatic_creatures': {
         const aquaticCount = aliveCreatures.filter(
           c => (c.aquaticAffinity || c.genes?.aquatic || 0) >= (objective.minAquaticAffinity || 0.6)
         ).length;
         return aquaticCount >= objective.target;
       }
-      
+
       case 'stable_population': {
         if (aliveCreatures.length >= objective.target) {
           this.stablePopulationTimer += dt;
@@ -576,7 +576,7 @@ export class CampaignSystem {
         }
         return false;
       }
-      
+
       default:
         return false;
     }
@@ -627,6 +627,28 @@ export class CampaignSystem {
     // Award XP if achievement system exists
     if (level.rewards?.xp) {
       eventSystem?.emit('achievement:xp', { amount: level.rewards.xp });
+    }
+
+    // 🎊 CELEBRATION EFFECTS - visual and audio feedback
+    // Spawn multiple evolution effects across screen for celebration
+    if (world.particles && typeof world.particles.addEvolutionEffect === 'function') {
+      const centerX = world.width / 2;
+      const centerY = world.height / 2;
+      // Create celebratory burst pattern
+      for (let i = 0; i < stars * 3; i++) {
+        const angle = (i / (stars * 3)) * Math.PI * 2;
+        const distance = 50 + Math.random() * 100;
+        const px = centerX + Math.cos(angle) * distance;
+        const py = centerY + Math.sin(angle) * distance;
+        setTimeout(() => {
+          world.particles.addEvolutionEffect(px, py);
+        }, i * 100); // Staggered for cascade effect
+      }
+    }
+
+    // Play victory sound
+    if (world.audio && typeof world.audio.playUISound === 'function') {
+      world.audio.playUISound('success');
     }
 
     this.isActive = false;
