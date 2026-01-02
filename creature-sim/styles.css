@@ -46,6 +46,11 @@
   --space-lg: 16px;
   --space-xl: 24px;
 
+  /* Mobile UI metrics */
+  --mobile-action-size: 64px;
+  --mobile-action-bar-width: 520px;
+  --mobile-action-bar-height: 124px;
+
   /* Borders */
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -71,7 +76,7 @@ html,
 body {
   margin: 0;
   padding: 0;
-  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
   width: 100vw;
   overflow: hidden;
 }
@@ -91,7 +96,7 @@ body {
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
   background: var(--bg-deep);
   touch-action: none;
 }
@@ -497,6 +502,14 @@ input[type="range"]:focus-visible {
   backdrop-filter: blur(12px);
   box-shadow: var(--shadow-medium);
   transition: all var(--transition-normal);
+}
+
+#quick-actions {
+  /* Hidden on mobile in favor of the dedicated bar */
+}
+
+.mobile-device #quick-actions {
+  display: none;
 }
 
 #quick-actions.hidden {
@@ -1802,7 +1815,7 @@ select:focus,
     flex-direction: column;
     align-items: stretch;
     gap: var(--space-sm);
-    bottom: calc(84px + var(--space-sm));
+    bottom: calc(var(--mobile-action-bar-height) + var(--space-md));
   }
 
   #stats {
@@ -1816,24 +1829,35 @@ select:focus,
   #selected-info {
     max-width: 100%;
   }
+
+  .mobile-device #quick-actions {
+    display: none;
+  }
+
+  .mobile-device #mobile-quick-actions {
+    width: calc(100% - var(--space-lg) * 2);
+  }
 }
 
 /* Mobile Quick Actions */
 #mobile-quick-actions {
   position: fixed;
-  bottom: 80px;
+  bottom: var(--space-lg);
+  bottom: calc(env(safe-area-inset-bottom, 0) + var(--space-lg));
   left: 50%;
   transform: translateX(-50%);
   display: none;
-  gap: var(--space-sm);
+  gap: var(--space-md);
   z-index: 60;
   background: var(--glass-bg);
-  padding: var(--space-sm);
-  border-radius: var(--radius-pill);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(12px);
   box-shadow: var(--shadow-medium);
   align-items: center;
+  width: min(var(--mobile-action-bar-width), calc(100% - var(--space-lg) * 2));
+  justify-content: space-between;
 }
 
 .mobile-device #mobile-quick-actions {
@@ -1841,26 +1865,68 @@ select:focus,
 }
 
 #mobile-quick-actions button {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
+  flex: 1 1 0;
+  min-width: calc(var(--mobile-action-size) + 8px);
+  height: calc(var(--mobile-action-size) + 12px);
+  border-radius: var(--radius-md);
   background: var(--bg-elevated);
   border: 1px solid var(--glass-border);
   color: var(--text-secondary);
-  font-size: 22px;
+  font-size: 26px;
   cursor: pointer;
   transition: all var(--transition-fast);
   box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  line-height: 1;
+  letter-spacing: 0.2px;
+  padding: var(--space-xs);
+}
+
+#mobile-quick-actions button::after {
+  content: attr(data-label);
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: block;
 }
 
 #mobile-quick-actions button:active {
-  transform: scale(0.9);
+  transform: scale(0.97);
   background: var(--bg-hover);
 }
 
 #mobile-quick-actions button.active {
   background: var(--accent-primary-dim);
   color: var(--accent-primary);
+  border-color: rgba(0, 212, 255, 0.35);
+  box-shadow: var(--glow-primary);
+}
+
+@media (max-width: 480px) {
+  #mobile-quick-actions {
+    bottom: var(--space-md);
+    width: calc(100% - var(--space-lg));
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    bottom: calc(env(safe-area-inset-bottom, 0) + var(--space-md));
+  }
+
+  #mobile-quick-actions button {
+    height: calc(var(--mobile-action-size) + 6px);
+    font-size: 23px;
+    gap: 4px;
+  }
+
+  #mobile-quick-actions button::after {
+    font-size: 10px;
+  }
+
+  .mobile-device #hud-bottom-left {
+    bottom: calc(var(--mobile-action-bar-height) + var(--space-lg));
+  }
 }
 
 /* ============================================================================
@@ -2059,11 +2125,11 @@ select:focus,
   }
 
   .mobile-device #hud-bottom-left {
-    bottom: calc(84px + env(safe-area-inset-bottom, 0));
+    bottom: calc(var(--mobile-action-bar-height) + env(safe-area-inset-bottom, 0));
   }
 
   .mobile-device #mobile-quick-actions {
-    bottom: calc(80px + env(safe-area-inset-bottom, 0));
+    bottom: calc(env(safe-area-inset-bottom, 0) + var(--space-lg));
   }
 }
 

@@ -188,9 +188,11 @@ export class GameState {
   getMobileSpeedInfo() {
     const speeds = [0.5, 1, 2, 4];
     const emojis = ['🐌', '⚡', '⚡⚡', '⚡⚡⚡'];
+    const labels = ['0.5×', '1×', '2×', '4×'];
     return {
       speed: speeds[this.mobileSpeedIndex],
-      emoji: emojis[this.mobileSpeedIndex]
+      emoji: emojis[this.mobileSpeedIndex],
+      label: labels[this.mobileSpeedIndex]
     };
   }
 
