@@ -84,6 +84,14 @@ export class UIController {
       }
     });
 
+    // Generic UI notifications (campaign, disease, etc.)
+    eventSystem.on(GameEvents.NOTIFICATION, (data) => {
+      if (!data || !this.hasNotifications()) return;
+      const message = data.message || '';
+      if (!message) return;
+      this.notifications.show(message, data.type || 'info', data.duration || 3000);
+    });
+
     // Listen for achievement unlocks
     eventSystem.on(GameEvents.ACHIEVEMENT_UNLOCKED, (data) => {
       if (this.hasNotifications()) {
@@ -91,6 +99,15 @@ export class UIController {
       }
       if (this.audio) {
         this.audio.playSound('achievement');
+      }
+      this.renderAchievementsPanel();
+    });
+
+    // XP grants (campaign rewards, etc.)
+    eventSystem.on(GameEvents.ACHIEVEMENT_XP, (data) => {
+      const amount = Number(data?.amount) || 0;
+      if (amount > 0 && this.hasNotifications()) {
+        this.notifications.show(`+${amount} XP`, 'achievement', 2200);
       }
       this.renderAchievementsPanel();
     });
@@ -718,7 +735,9 @@ export class UIController {
         break;
     }
 
-    summaryEl.textContent = `${progress.unlocked}/${progress.total} unlocked • Level ${progress.level} • ${Math.floor(progress.percentage)}%`;
+    const xpTotal = Math.floor(progress.xp || 0);
+    const nextLevelXP = Math.max(0, Math.floor(progress.nextLevelXP || 0));
+    summaryEl.textContent = `${progress.unlocked}/${progress.total} unlocked • Level ${progress.level} • ${xpTotal}/${nextLevelXP} XP • ${Math.floor(progress.percentage)}%`;
 
     listEl.innerHTML = items.map(item => {
       const isSecretLocked = item.secret && !item.unlocked;

@@ -1,0 +1,100 @@
+{
+  "version": "2.0",
+  "timestamp": 0,
+  "savedAt": "1970-01-01T00:00:00.000Z",
+  "world": {
+    "width": 100,
+    "height": 100,
+    "t": 0,
+    "seasonPhase": 0,
+    "_nextId": 2,
+    "timeOfDay": 0,
+    "dayLength": 0,
+    "creatures": [
+      {
+        "id": 1,
+        "parentId": null,
+        "x": 10,
+        "y": 20,
+        "vx": 0,
+        "vy": 0,
+        "dir": 0,
+        "energy": 0,
+        "age": 0,
+        "health": 0,
+        "maxHealth": 10,
+        "alive": false,
+        "deathTime": 1,
+        "deathCause": "test",
+        "killedBy": null,
+        "genes": {
+          "speed": 1,
+          "metabolism": 1,
+          "sense": 1,
+          "predator": false,
+          "diet": 0,
+          "packInstinct": 0.5,
+          "aggression": 1,
+          "ambushDelay": 0,
+          "aquatic": 0
+        },
+        "stats": {
+          "food": 0,
+          "kills": 0,
+          "births": 0,
+          "damageTaken": 0,
+          "damageDealt": 0
+        },
+        "emotions": null,
+        "intelligence": null,
+        "sexuality": null,
+        "migration": null
+      }
+    ],
+    "food": [
+      {
+        "x": 1,
+        "y": 2,
+        "energy": 0
+      }
+    ],
+    "corpses": [
+      {
+        "x": 3,
+        "y": 4,
+        "energy": 0,
+        "age": 0,
+        "isPredator": false
+      }
+    ],
+    "childrenOf": [
+      {
+        "parentId": 1,
+        "childIds": [
+          2
+        ]
+      }
+    ],
+    "biomeSeed": 0,
+    "activeDisaster": null,
+    "disasterDuration": 0,
+    "disasterIntensity": 1
+  },
+  "camera": {
+    "x": 0,
+    "y": 0,
+    "zoom": 0.5,
+    "followMode": "free",
+    "followTarget": null,
+    "viewportWidth": 800,
+    "viewportHeight": 600
+  },
+  "analytics": null,
+  "lineageNames": [],
+  "metadata": {
+    "populationSize": 1,
+    "timeElapsed": 0,
+    "generationsElapsed": 0,
+    "saveName": "Fixture"
+  }
+}

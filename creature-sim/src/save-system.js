@@ -1,16 +1,20 @@
 // Save/Load system for world state persistence
 // Handles serialization, compression, and file I/O
 
+/** @typedef {import('./types.js').SaveData} SaveData */
+
 export class SaveSystem {
   constructor() {
     this.autoSaveEnabled = true;
     this.autoSaveInterval = 60; // seconds
     this.lastAutoSave = 0;
     this.saveSlots = 3;
+    this._autoSaveScheduled = false;
   }
 
   /**
    * Serialize world state to JSON
+   * @returns {SaveData}
    */
   serialize(world, camera, analytics, lineageTracker, additionalData = {}) {
     const saveData = {
@@ -24,11 +28,11 @@ export class SaveSystem {
         height: world.height,
         t: world.t,
         seasonPhase: world.seasonPhase,
-        _nextId: world._nextId,
+        _nextId: world.creatureManager?._nextId ?? world._nextId,
 
         // Time system
-        timeOfDay: world.timeOfDay || 12,
-        dayLength: world.dayLength || 120,
+        timeOfDay: world.timeOfDay ?? 12,
+        dayLength: world.dayLength ?? 120,
 
         // Creatures
         creatures: world.creatures.map(c => ({
@@ -43,6 +47,10 @@ export class SaveSystem {
           age: c.age,
           health: c.health,
           maxHealth: c.maxHealth,
+          alive: c.alive,
+          deathTime: c.deathTime ?? null,
+          deathCause: c.deathCause ?? null,
+          killedBy: c.killedBy ?? null,
           genes: { ...c.genes },
           stats: { ...c.stats },
           // Advanced features
@@ -84,9 +92,9 @@ export class SaveSystem {
         biomeSeed: world.biomeGenerator ? world.biomeGenerator.seed : Math.random(),
 
         // Disasters
-        activeDisaster: world.activeDisaster,
-        disasterDuration: world.disasterDuration,
-        disasterIntensity: world.disasterIntensity
+        activeDisaster: world.disaster?.activeDisaster ?? null,
+        disasterDuration: world.disaster?.activeDisaster?.duration ?? 0,
+        disasterIntensity: world.disaster?.activeDisaster?.intensity ?? 1
       },
 
       // Camera state
@@ -135,20 +143,34 @@ export class SaveSystem {
     const migratedData = this._migrateSaveData(saveData, version);
 
     const data = migratedData.world;
+    const toNumber = (value, fallback) => {
+      if (value == null) return fallback;
+      const num = Number(value);
+      return Number.isFinite(num) ? num : fallback;
+    };
 
     // Create new world
     const world = new World(data.width, data.height);
     world.reset();
 
     // Restore basic state
-    world.t = data.t || 0;
-    world.seasonPhase = data.seasonPhase || 0;
-    world._nextId = data._nextId || 1;
-    world.timeOfDay = data.timeOfDay || 12;
-    world.dayLength = data.dayLength || 120;
+    world.t = toNumber(data.t, 0);
+    if (world.environment) {
+      world.environment.seasonPhase = toNumber(data.seasonPhase, 0);
+    }
+    const nextId = toNumber(data._nextId, 1);
+    if (world.creatureManager) {
+      world.creatureManager._nextId = nextId;
+    } else {
+      world._nextId = nextId;
+    }
+    if (world.environment) {
+      world.environment.timeOfDay = toNumber(data.timeOfDay, 12);
+      world.environment.dayLength = toNumber(data.dayLength, 120);
+    }
 
     // Restore biome with same seed
-    if (data.biomeSeed && BiomeGenerator) {
+    if (data.biomeSeed != null && BiomeGenerator) {
       world.biomeGenerator = new BiomeGenerator(data.biomeSeed);
       world.biomeMap = world.biomeGenerator.generateBiomeMap(data.width, data.height, 50);
     }
@@ -160,13 +182,25 @@ export class SaveSystem {
       const creature = new Creature(cData.x, cData.y, cData.genes || makeGenes(), false);
       creature.id = cData.id;
       creature.parentId = cData.parentId || null;
-      creature.vx = cData.vx || 0;
-      creature.vy = cData.vy || 0;
-      creature.dir = cData.dir || 0;
-      creature.energy = cData.energy || 24;
-      creature.age = cData.age || 0;
-      creature.health = cData.health || creature.maxHealth;
-      creature.maxHealth = cData.maxHealth || creature.maxHealth;
+      creature.vx = toNumber(cData.vx, 0);
+      creature.vy = toNumber(cData.vy, 0);
+      creature.dir = toNumber(cData.dir, 0);
+      creature.energy = toNumber(cData.energy, 24);
+      creature.age = toNumber(cData.age, 0);
+      creature.maxHealth = toNumber(cData.maxHealth, creature.maxHealth);
+      creature.health = toNumber(cData.health, creature.maxHealth);
+      creature.alive = cData.alive ?? true;
+      if (!creature.alive) {
+        const deathTime = cData.deathTime;
+        if (deathTime != null) {
+          creature.deathTime = toNumber(deathTime, world.t);
+        } else {
+          creature.deathTime = world.t;
+        }
+        creature.deathCause = cData.deathCause ?? creature.deathCause;
+        creature.killedBy = cData.killedBy ?? creature.killedBy ?? null;
+        creature._deathEmitted = true;
+      }
       creature.stats = cData.stats || { food: 0, kills: 0, births: 0, damageTaken: 0, damageDealt: 0 };
 
       // Restore advanced features
@@ -192,15 +226,19 @@ export class SaveSystem {
     }
 
     // Restore food
-    world.food = (data.food || []).map(f => ({ x: f.x, y: f.y, energy: f.energy || 1.0 }));
+    world.food = (data.food || []).map(f => ({
+      x: f.x,
+      y: f.y,
+      energy: toNumber(f.energy, 1.0)
+    }));
 
     // Restore corpses
     world.corpses = (data.corpses || []).map(c => ({
       x: c.x,
       y: c.y,
-      energy: c.energy || 5,
-      age: c.age || 0,
-      isPredator: c.isPredator || false
+      energy: toNumber(c.energy, 5),
+      age: toNumber(c.age, 0),
+      isPredator: c.isPredator ?? false
     }));
 
     // Restore lineage relationships
@@ -210,9 +248,12 @@ export class SaveSystem {
     }
 
     // Restore disasters
-    world.activeDisaster = data.activeDisaster || null;
-    world.disasterDuration = data.disasterDuration || 0;
-    world.disasterIntensity = data.disasterIntensity || 1;
+    if (world.disaster) {
+      const activeDisaster = data.activeDisaster;
+      world.disaster.activeDisaster = (activeDisaster && typeof activeDisaster === 'object')
+        ? activeDisaster
+        : null;
+    }
 
     // Mark spatial grid as dirty and force rebuild
     world.gridDirty = true;
@@ -307,18 +348,32 @@ export class SaveSystem {
   autoSave(world, camera, analytics, lineageTracker, dt) {
     if (!this.autoSaveEnabled) return;
 
-    this.lastAutoSave += dt;
+    const delta = Number(dt);
+    if (!Number.isFinite(delta) || delta <= 0) return;
+
+    this.lastAutoSave += delta;
     if (this.lastAutoSave < this.autoSaveInterval) return;
     this.lastAutoSave = 0;
+    if (this._autoSaveScheduled) return;
+    this._autoSaveScheduled = true;
 
-    try {
-      const saveData = this.serialize(world, camera, analytics, lineageTracker, {
-        isAutoSave: true
-      });
-      const json = JSON.stringify(saveData);
-      localStorage.setItem('creature-sim-autosave', json);
-    } catch (err) {
-      console.warn('Auto-save failed:', err);
+    const runSave = () => {
+      this._autoSaveScheduled = false;
+      try {
+        const saveData = this.serialize(world, camera, analytics, lineageTracker, {
+          isAutoSave: true
+        });
+        const json = JSON.stringify(saveData);
+        localStorage.setItem('creature-sim-autosave', json);
+      } catch (err) {
+        console.warn('Auto-save failed:', err);
+      }
+    };
+
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(runSave, { timeout: 2000 });
+    } else {
+      setTimeout(runSave, 0);
     }
   }
 
@@ -457,4 +512,3 @@ export class SaveSystem {
     return migrated;
   }
 }
-

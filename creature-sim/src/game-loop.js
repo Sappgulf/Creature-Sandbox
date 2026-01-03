@@ -149,8 +149,15 @@ export class GameLoop {
 
     // Achievement events
     eventSystem.on(GameEvents.ACHIEVEMENT_UNLOCKED, (data) => {
-      if (this.hasNotifications()) this.notifications.show(`Achievement: ${data.name}`, 'achievement');
-      if (this.audio) this.audio.playSound('achievement');
+      const uiHandlesNotifications = this.uiController && typeof this.uiController.hasNotifications === 'function';
+      const uiHasAudio = !!this.uiController?.audio;
+
+      if (!uiHandlesNotifications && this.hasNotifications()) {
+        this.notifications.show(`Achievement: ${data.name}`, 'achievement');
+      }
+      if (!uiHasAudio && this.audio) {
+        this.audio.playSound('achievement');
+      }
     });
   }
 
@@ -481,11 +488,6 @@ export class GameLoop {
    * @param {number} dt - Delta time
    */
   updateSubsystems(dt) {
-    // Update tutorial system
-    if (this.tutorial?.update) {
-      this.tutorial.update(dt, this.world);
-    }
-
     // Achievement system is event-driven; no per-frame update needed.
 
     // Update audio system
@@ -529,8 +531,8 @@ export class GameLoop {
     }
 
     // Update save system (auto-save)
-    if (this.saveSystem && this.frameCount % 1800 === 0) { // Every 30 seconds
-      this.saveSystem.autoSave(this.world, this.camera, this.lineageTracker);
+    if (this.saveSystem) {
+      this.saveSystem.autoSave(this.world, this.camera, this.analytics, this.lineageTracker, dt);
     }
   }
 

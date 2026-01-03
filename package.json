@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "python3 -m http.server 8000 --directory creature-sim",
     "preview": "python3 -m http.server 8000 --directory creature-sim",
+    "test": "node scripts/save-system.test.mjs",
     "lint": "npx eslint creature-sim/src --ext .js",
     "lint:fix": "npx eslint creature-sim/src --ext .js --fix"
   },

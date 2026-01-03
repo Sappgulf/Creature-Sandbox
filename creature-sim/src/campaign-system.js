@@ -626,7 +626,7 @@ export class CampaignSystem {
 
     // Award XP if achievement system exists
     if (level.rewards?.xp) {
-      eventSystem?.emit('achievement:xp', { amount: level.rewards.xp });
+      eventSystem?.emit(GameEvents.ACHIEVEMENT_XP, { amount: level.rewards.xp });
     }
 
     // 🎊 CELEBRATION EFFECTS - visual and audio feedback

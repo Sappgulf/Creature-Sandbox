@@ -141,6 +141,16 @@ export class NotificationSystem {
     ctx.restore();
   }
 
+  _drawRoundedRect(ctx, x, y, width, height, radius) {
+    const r = Math.min(radius, width / 2, height / 2);
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + width, y, x + width, y + height, r);
+    ctx.arcTo(x + width, y + height, x, y + height, r);
+    ctx.arcTo(x, y + height, x, y, r);
+    ctx.arcTo(x, y, x + width, y, r);
+    ctx.closePath();
+  }
+
   _drawNotification(ctx, notif, x, y) {
     ctx.save();
     ctx.globalAlpha = notif.opacity * 0.95;
@@ -155,6 +165,8 @@ export class NotificationSystem {
       warning: { bg: 'rgba(251, 191, 36, 0.9)', text: '#1a1a1a' },
       milestone: { bg: 'rgba(34, 197, 94, 0.9)', text: '#ffffff' },
       achievement: { bg: 'rgba(139, 92, 246, 0.9)', text: '#ffffff' },
+      success: { bg: 'rgba(34, 197, 94, 0.9)', text: '#ffffff' },
+      error: { bg: 'rgba(239, 68, 68, 0.9)', text: '#ffffff' },
       info: { bg: 'rgba(18, 21, 29, 0.92)', text: '#e4e7eb' },
       performance: { bg: 'rgba(239, 68, 68, 0.85)', text: '#ffffff' }
     };
@@ -166,7 +178,11 @@ export class NotificationSystem {
     ctx.shadowOffsetY = 4;
     
     ctx.beginPath();
-    ctx.roundRect(x - width / 2, y - height / 2, width, height, radius);
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(x - width / 2, y - height / 2, width, height, radius);
+    } else {
+      this._drawRoundedRect(ctx, x - width / 2, y - height / 2, width, height, radius);
+    }
     ctx.fillStyle = color.bg;
     ctx.fill();
     

@@ -1,11 +1,15 @@
 export class AnalyticsTracker {
-  constructor({ maxSamples = 600, sampleInterval = 0.5 } = {}) {
+  constructor({ maxSamples = 600, sampleInterval = 0.5, useWorker = true } = {}) {
     this.samples = [];
     this.maxSamples = maxSamples;
     this.sampleInterval = sampleInterval;
     this._accum = 0;
     this.version = 0;
     this._cachedData = null; // Cache getData() results
+    this.useWorker = useWorker;
+    this.worker = null;
+    this._workerPending = false;
+    this._workerQueued = null;
     
     // Advanced analytics
     this.geneHistory = []; // Track gene frequency over time
@@ -13,13 +17,56 @@ export class AnalyticsTracker {
     this.phylogenyData = null; // Phylogenetic tree structure
     this._geneHistoryInterval = 2.0; // Sample genes every 2 seconds
     this._geneHistoryAccum = 0;
+
+    this._initializeWorker();
+  }
+
+  _initializeWorker() {
+    if (!this.useWorker || typeof Worker === 'undefined') return;
+
+    try {
+      this.worker = new Worker(new URL('./analytics-worker.js', import.meta.url), { type: 'module' });
+      this.worker.onmessage = (event) => {
+        this._workerPending = false;
+        if (event?.data) {
+          this._applySample(event.data);
+        }
+
+        if (this._workerQueued) {
+          const next = this._workerQueued;
+          this._workerQueued = null;
+          this._workerPending = true;
+          this.worker.postMessage(next);
+        }
+      };
+      this.worker.onerror = (err) => {
+        console.warn('Analytics worker error, falling back to main thread.', err);
+        this._disableWorker();
+      };
+    } catch (err) {
+      console.warn('Analytics worker unavailable, falling back to main thread.', err);
+      this._disableWorker();
+    }
+  }
+
+  _disableWorker() {
+    if (this.worker) {
+      this.worker.terminate();
+    }
+    this.worker = null;
+    this._workerPending = false;
+    this._workerQueued = null;
   }
 
   update(world, dt) {
     this._accum += dt;
     if (this._accum >= this.sampleInterval) {
       this._accum = 0;
-      this.capture(world);
+      if (this.worker) {
+        this._queueWorkerSample(world);
+      } else {
+        this.capture(world);
+      }
     }
     
     // Sample gene frequencies less frequently
@@ -84,10 +131,41 @@ export class AnalyticsTracker {
       meanAmbushDelay: pred ? sumAmbushDelay / pred : 0
     };
 
+    this._applySample(sample);
+  }
+
+  _applySample(sample) {
     this.samples.push(sample);
     if (this.samples.length > this.maxSamples) this.samples.shift();
     this.version += 1;
     this._cachedData = null; // Invalidate cache
+  }
+
+  _queueWorkerSample(world) {
+    const payload = {
+      t: world.t,
+      foodCount: world.food.length,
+      creatures: world.creatures.map(c => ({
+        predator: !!c.genes.predator,
+        speed: c.genes.speed ?? 0,
+        metabolism: c.genes.metabolism ?? 0,
+        sense: c.genes.sense ?? 0,
+        energy: c.energy ?? 0,
+        health: c.health ?? 0,
+        maxHealth: c.maxHealth ?? c.health ?? 0,
+        packInstinct: c.genes.packInstinct ?? 0,
+        aggression: c.genes.aggression ?? 0,
+        ambushDelay: c.genes.ambushDelay ?? 0
+      }))
+    };
+
+    if (this._workerPending) {
+      this._workerQueued = payload;
+      return;
+    }
+
+    this._workerPending = true;
+    this.worker.postMessage(payload);
   }
 
   getData() {

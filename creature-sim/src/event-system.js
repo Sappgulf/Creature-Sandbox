@@ -323,6 +323,7 @@ export const GameEvents = {
   UI_PANEL_CLOSE: 'ui:panel_close',
   UI_INSPECTOR_UPDATE: 'ui:inspector_update',
   UI_CHART_UPDATE: 'ui:chart_update',
+  NOTIFICATION: 'ui:notification',
 
   // Input events
   INPUT_KEY_DOWN: 'input:key_down',
@@ -334,6 +335,7 @@ export const GameEvents = {
   // Achievement events
   ACHIEVEMENT_UNLOCKED: 'achievement:unlocked',
   ACHIEVEMENT_PROGRESS: 'achievement:progress',
+  ACHIEVEMENT_XP: 'achievement:xp',
   SESSION_GOAL_UPDATED: 'session_goal:updated',
   SESSION_GOAL_COMPLETED: 'session_goal:completed',
   GAME_MODE_CHANGED: 'game_mode:changed',

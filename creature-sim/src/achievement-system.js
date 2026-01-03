@@ -121,6 +121,15 @@ export class AchievementSystem {
       );
     }
 
+    // Direct XP awards (campaign rewards, etc.)
+    if (GameEvents.ACHIEVEMENT_XP) {
+      this._subscriptions.push(
+        eventSystem.on(GameEvents.ACHIEVEMENT_XP, (event) => {
+          this.awardXP(event?.amount);
+        })
+      );
+    }
+
     // World update (state + sustain checks)
     this._subscriptions.push(
       eventSystem.on(GameEvents.WORLD_UPDATE, (event) => {
@@ -236,7 +245,16 @@ export class AchievementSystem {
     for (const [id, achievement] of this.achievements) {
       if (!achievement || achievement.unlocked) continue;
       if (achievement.trigger !== trigger) continue;
-      if (achievement.eventPredicate && !achievement.eventPredicate(event)) continue;
+      if (achievement.eventPredicate) {
+        let matches = false;
+        try {
+          matches = achievement.eventPredicate(event);
+        } catch (e) {
+          console.warn(`Achievement event predicate failed for ${id}:`, e);
+          matches = false;
+        }
+        if (!matches) continue;
+      }
       this.incrementProgress(id, amount, { event });
     }
   }
@@ -308,6 +326,23 @@ export class AchievementSystem {
     return Math.floor(base * Math.pow(level - 1, 1.35));
   }
 
+  awardXP(amount, { save = true } = {}) {
+    const value = Number(amount);
+    if (!Number.isFinite(value) || value <= 0) return;
+
+    this.xp += value;
+
+    const newLevel = this.getLevelFromXP(this.xp);
+    if (newLevel > this.level) {
+      this.level = newLevel;
+      console.log(`🎉 Level Up! Now level ${this.level}`);
+    }
+
+    if (save) {
+      this.saveProgress();
+    }
+  }
+
   getLevelFromXP(xp) {
     let level = 1;
     while (xp >= this.xpForLevel(level + 1)) level++;
@@ -374,13 +409,7 @@ export class AchievementSystem {
     }
 
     const xpGained = Number(achievement.xp) || 0;
-    this.xp += xpGained;
-
-    const newLevel = this.getLevelFromXP(this.xp);
-    if (newLevel > this.level) {
-      this.level = newLevel;
-      console.log(`🎉 Level Up! Now level ${this.level}`);
-    }
+    this.awardXP(xpGained, { save: false });
 
     const world = context.world;
 
@@ -403,12 +432,12 @@ export class AchievementSystem {
     // Show notification
     this.showNotification(achievement);
     
-    // Save progress
-    this.saveProgress();
-
     if (achievement.repeatable) {
       this.resetProgress(id);
     }
+
+    // Save progress
+    this.saveProgress();
     
     console.log(`🏆 Achievement Unlocked: ${achievement.name} (+${achievement.xp} XP)`);
   }
