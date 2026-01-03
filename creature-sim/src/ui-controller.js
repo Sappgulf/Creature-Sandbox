@@ -430,13 +430,18 @@ export class UIController {
     const mobileSpeedBtn = domCache.get('mobileSpeedBtn');
 
     if (mobilePauseBtn) {
-      mobilePauseBtn.classList.toggle('active', gameState.paused);
-      mobilePauseBtn.textContent = gameState.paused ? '▶️' : '⏸️';
+      const isPaused = gameState.paused;
+      mobilePauseBtn.classList.toggle('active', isPaused);
+      mobilePauseBtn.textContent = isPaused ? '▶️' : '⏸️';
+      mobilePauseBtn.dataset.label = isPaused ? 'Play' : 'Pause';
     }
 
     if (mobileSpeedBtn) {
       const speedInfo = gameState.getMobileSpeedInfo();
       mobileSpeedBtn.textContent = speedInfo.emoji;
+      if (speedInfo.label) {
+        mobileSpeedBtn.dataset.label = speedInfo.label;
+      }
     }
   }
 
