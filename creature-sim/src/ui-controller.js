@@ -94,7 +94,8 @@ export class UIController {
 
     // Listen for achievement unlocks
     eventSystem.on(GameEvents.ACHIEVEMENT_UNLOCKED, (data) => {
-      if (this.hasNotifications()) {
+      const notificationsEnabled = this.achievements?.notificationsEnabled !== false;
+      if (this.hasNotifications() && notificationsEnabled) {
         this.notifications.show(`🏆 ${data.name}`, 'achievement', 3000);
       }
       if (this.audio) {
@@ -106,7 +107,8 @@ export class UIController {
     // XP grants (campaign rewards, etc.)
     eventSystem.on(GameEvents.ACHIEVEMENT_XP, (data) => {
       const amount = Number(data?.amount) || 0;
-      if (amount > 0 && this.hasNotifications()) {
+      const notificationsEnabled = this.achievements?.notificationsEnabled !== false;
+      if (amount > 0 && this.hasNotifications() && notificationsEnabled) {
         this.notifications.show(`+${amount} XP`, 'achievement', 2200);
       }
       this.renderAchievementsPanel();
@@ -742,7 +744,18 @@ export class UIController {
 
     const xpTotal = Math.floor(progress.xp || 0);
     const nextLevelXP = Math.max(0, Math.floor(progress.nextLevelXP || 0));
-    summaryEl.textContent = `${progress.unlocked}/${progress.total} unlocked • Level ${progress.level} • ${xpTotal}/${nextLevelXP} XP • ${Math.floor(progress.percentage)}%`;
+    const levelProgress = nextLevelXP > 0 ? Math.min(1, xpTotal / nextLevelXP) : 1;
+    summaryEl.innerHTML = `
+      <div class="achievements-summary-row">
+        <span>${progress.unlocked}/${progress.total} unlocked</span>
+        <span>Level ${progress.level}</span>
+        <span>${xpTotal}/${nextLevelXP} XP</span>
+        <span>${Math.floor(progress.percentage)}%</span>
+      </div>
+      <div class="achievements-level-bar">
+        <div class="achievements-level-fill" style="width:${Math.round(levelProgress * 100)}%"></div>
+      </div>
+    `;
 
     listEl.innerHTML = items.map(item => {
       const isSecretLocked = item.secret && !item.unlocked;

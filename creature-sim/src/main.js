@@ -186,7 +186,9 @@ function initializeApp() {
 
   // Analytics and tracking
   const analytics = errorHandler.safeExecute(() => {
-    return new AnalyticsTracker();
+    return new AnalyticsTracker({
+      useWorker: configManager.get('performance', 'analyticsWorker', true)
+    });
   }, 'Analytics initialization', null);
 
   const lineageTracker = errorHandler.safeExecute(() => {
@@ -506,10 +508,11 @@ function initializeApp() {
     }
 
     // Update campaign during game loop
-    eventSystem.on(GameEvents.FRAME_UPDATE, () => {
+    eventSystem.on(GameEvents.FRAME_UPDATE, (data) => {
       if (campaignSystem.isActive) {
-        campaignSystem.update(1 / 60, world);
-        diseaseSystem.update(1 / 60, world);
+        const dt = Number(data?.dt) || 1 / 60;
+        campaignSystem.update(dt, world);
+        diseaseSystem.update(dt, world);
         updateCampaignProgressUI();
 
         // Check if level completed or failed

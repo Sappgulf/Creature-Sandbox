@@ -312,6 +312,7 @@ export const GameEvents = {
   CREATURE_KILLED: 'creature:killed',
 
   // World events
+  FRAME_UPDATE: 'frame:update',
   WORLD_UPDATE: 'world:update',
   WORLD_SEASON_CHANGE: 'world:season_change',
   WORLD_WEATHER_CHANGE: 'world:weather_change',

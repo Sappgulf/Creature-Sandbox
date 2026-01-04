@@ -10,6 +10,22 @@
     "_nextId": 2,
     "timeOfDay": 0,
     "dayLength": 0,
+    "environment": {
+      "timeOfDay": 0,
+      "dayLength": 0,
+      "dayNightEnabled": false,
+      "seasonTime": 0,
+      "seasonDuration": 0,
+      "currentSeason": "spring",
+      "seasonIndex": 0,
+      "seasonPhase": 0,
+      "seasonSpeed": 0,
+      "weatherIntensity": 0,
+      "weatherType": null,
+      "weatherTransitionTime": 0,
+      "weatherTargetIntensity": 0,
+      "diseaseTimer": 0
+    },
     "creatures": [
       {
         "id": 1,
@@ -78,7 +94,12 @@
     "biomeSeed": 0,
     "activeDisaster": null,
     "disasterDuration": 0,
-    "disasterIntensity": 1
+    "disasterIntensity": 1,
+    "disaster": {
+      "active": null,
+      "pending": [],
+      "cooldown": 0
+    }
   },
   "camera": {
     "x": 0,

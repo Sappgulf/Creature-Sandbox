@@ -52,6 +52,7 @@
  * @property {number} _nextId
  * @property {number} timeOfDay
  * @property {number} dayLength
+ * @property {Object|null} environment
  * @property {SaveCreature[]} creatures
  * @property {SaveFood[]} food
  * @property {SaveCorpse[]} corpses
@@ -60,6 +61,7 @@
  * @property {Object|null} activeDisaster
  * @property {number} disasterDuration
  * @property {number} disasterIntensity
+ * @property {Object|null} disaster
  */
 
 /**

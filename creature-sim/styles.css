@@ -690,6 +690,29 @@ input[type="range"]:focus-visible {
 
 .achievements-summary {
   font-variant-numeric: tabular-nums;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.achievements-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.achievements-level-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.achievements-level-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-primary), #22c55e);
+  transition: width 0.25s ease;
 }
 
 .achievements-list {

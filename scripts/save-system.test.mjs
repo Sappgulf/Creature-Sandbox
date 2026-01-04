@@ -68,9 +68,13 @@ function buildWorldWithZeroes() {
   return { world, camera };
 }
 
-function assertZeroPreservation(result, { expectedNextId = 0 } = {}) {
+function assertZeroPreservation(result, { expectedNextId = 0, expectedDayNightEnabled = true } = {}) {
   assert.equal(result.world.timeOfDay, 0, 'timeOfDay should preserve 0');
   assert.equal(result.world.dayLength, 0, 'dayLength should preserve 0');
+  assert.equal(result.world.environment.timeOfDay, 0, 'environment timeOfDay should preserve 0');
+  assert.equal(result.world.environment.dayLength, 0, 'environment dayLength should preserve 0');
+  assert.equal(result.world.environment.seasonPhase, 0, 'environment seasonPhase should preserve 0');
+  assert.equal(result.world.environment.dayNightEnabled, expectedDayNightEnabled, 'environment dayNightEnabled should preserve value');
   assert.equal(result.world.t, 0, 'world.t should preserve 0');
   assert.equal(result.world.seasonPhase, 0, 'seasonPhase should preserve 0');
   assert.equal(result.world.creatureManager._nextId, expectedNextId, '_nextId should preserve value');
@@ -94,13 +98,13 @@ assert.equal(saveData.world.timeOfDay, 0, 'serialized timeOfDay should be 0');
 assert.equal(saveData.world.dayLength, 0, 'serialized dayLength should be 0');
 
 const roundTrip = saveSystem.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator);
-assertZeroPreservation(roundTrip, { expectedNextId: 0 });
+assertZeroPreservation(roundTrip, { expectedNextId: 0, expectedDayNightEnabled: true });
 
 const fixturePath = path.join(__dirname, 'fixtures', 'save-v2.json');
 const fixtureRaw = await fs.readFile(fixturePath, 'utf8');
 const fixtureData = JSON.parse(fixtureRaw);
 const fixtureResult = saveSystem.deserialize(fixtureData, World, Creature, Camera, makeGenes, BiomeGenerator);
-assertZeroPreservation(fixtureResult, { expectedNextId: 2 });
+assertZeroPreservation(fixtureResult, { expectedNextId: 2, expectedDayNightEnabled: false });
 assert.equal(fixtureResult.world.biomeGenerator.seed, 0, 'biomeSeed should preserve 0');
 
 console.log('Save system tests passed.');

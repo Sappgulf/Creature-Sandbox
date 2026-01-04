@@ -64,6 +64,7 @@ export class GameLoop {
     // Performance tracking
     this.lastAnalyticsUpdate = 0;
     this.lastUIUpdate = 0;
+    this.lastDashboardUpdate = 0;
     
     // Track pause state for UI sync
     this._lastPausedState = false;
@@ -262,6 +263,18 @@ export class GameLoop {
     this.profileStart('subsystem-update');
     this.updateSubsystems(dt);
     this.profileEnd();
+
+    // Per-frame updates for systems that want wall-clock cadence
+    try {
+      eventSystem.emit(GameEvents.FRAME_UPDATE, {
+        dt,
+        now,
+        worldTime: this.world.t,
+        timeScale: gameState.timeScale
+      }, { throwOnError: false });
+    } catch {
+      // Ignore frame update listener failures to keep loop alive
+    }
 
     this.profileEnd();
 
@@ -477,9 +490,13 @@ export class GameLoop {
       this.particles.draw(ctx, this.camera);
     }
 
-    // Update enhanced analytics dashboard
+    // Update enhanced analytics dashboard (throttled)
     if (analyticsDashboard.isVisible) {
-      analyticsDashboard.update(advancedStatsCalculator.stats, this.world, performanceProfiler.getStats());
+      const now = performance.now();
+      if (now - this.lastDashboardUpdate > 250) {
+        analyticsDashboard.update(advancedStatsCalculator.stats, this.world, performanceProfiler.getStats());
+        this.lastDashboardUpdate = now;
+      }
     }
   }
 

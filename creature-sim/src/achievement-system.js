@@ -1,6 +1,7 @@
 // Achievement System - Goals, progression, XP, and challenges
 
 import { eventSystem, GameEvents } from './event-system.js';
+import { configManager } from './config-manager.js';
 import { ACHIEVEMENTS_DATA, ACHIEVEMENTS_DATA_VERSION } from './achievements-data.js';
 
 const SAVE_KEY = 'achievements';
@@ -14,13 +15,28 @@ export class AchievementSystem {
     this.xp = 0;
     this.level = 1;
     this.notificationStylesInjected = false;
+    this.enabled = true;
+    this.notificationsEnabled = true;
+    this.autoSaveEnabled = true;
+    this.xpMultiplier = 1.0;
 
     this._subscriptions = [];
     this._lastWorldTime = null;
     
+    this.refreshConfig();
+    configManager.onChange('achievements', () => this.refreshConfig());
+
     this.defineAchievements();
     this.loadProgress();
     this.setupEventListeners();
+  }
+
+  refreshConfig() {
+    this.enabled = !!configManager.get('achievements', 'enabled', true);
+    this.notificationsEnabled = !!configManager.get('achievements', 'notifications', true);
+    this.autoSaveEnabled = !!configManager.get('achievements', 'autoSave', true);
+    const multiplier = Number(configManager.get('achievements', 'rewards.xpMultiplier', 1.0));
+    this.xpMultiplier = Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1.0;
   }
 
   defineAchievements() {
@@ -146,7 +162,7 @@ export class AchievementSystem {
    * @param {Object|any} trackerOrContext - Optional lineage tracker or context object
    */
   update(world, trackerOrContext = null) {
-    if (!world) return;
+    if (!world || !this.enabled) return;
 
     // Back-compat: if second arg isn't an object, treat it as tracker
     const context =
@@ -174,6 +190,7 @@ export class AchievementSystem {
   }
 
   checkState(world, ctx, dt) {
+    if (!this.enabled) return;
     this.updateSustainProgress(world, ctx, dt);
 
     for (const [id, achievement] of this.achievements) {
@@ -200,6 +217,7 @@ export class AchievementSystem {
   }
 
   updateSustainProgress(world, ctx, dt) {
+    if (!this.enabled) return;
     if (!dt) return;
 
     for (const [id, achievement] of this.achievements) {
@@ -242,6 +260,7 @@ export class AchievementSystem {
   }
 
   handleTrigger(trigger, amount, event) {
+    if (!this.enabled) return;
     for (const [id, achievement] of this.achievements) {
       if (!achievement || achievement.unlocked) continue;
       if (achievement.trigger !== trigger) continue;
@@ -327,10 +346,10 @@ export class AchievementSystem {
   }
 
   awardXP(amount, { save = true } = {}) {
+    if (!this.enabled) return;
     const value = Number(amount);
     if (!Number.isFinite(value) || value <= 0) return;
-
-    this.xp += value;
+    this.xp += value * this.xpMultiplier;
 
     const newLevel = this.getLevelFromXP(this.xp);
     if (newLevel > this.level) {
@@ -338,7 +357,7 @@ export class AchievementSystem {
       console.log(`🎉 Level Up! Now level ${this.level}`);
     }
 
-    if (save) {
+    if (save && this.autoSaveEnabled) {
       this.saveProgress();
     }
   }
@@ -389,6 +408,7 @@ export class AchievementSystem {
 
   // Unlock an achievement
   unlock(id, context = {}) {
+    if (!this.enabled) return;
     const achievement = this.achievements.get(id);
     if (!achievement) return;
 
@@ -437,13 +457,16 @@ export class AchievementSystem {
     }
 
     // Save progress
-    this.saveProgress();
+    if (this.autoSaveEnabled) {
+      this.saveProgress();
+    }
     
     console.log(`🏆 Achievement Unlocked: ${achievement.name} (+${achievement.xp} XP)`);
   }
 
   // Show achievement notification
   showNotification(achievement) {
+    if (!this.notificationsEnabled) return;
     // If the central NotificationSystem exists, let it handle display via events
     if (typeof window !== 'undefined' &&
         window.notifications &&
@@ -591,6 +614,7 @@ export class AchievementSystem {
 
   // Save progress to localStorage
   saveProgress() {
+    if (!this.autoSaveEnabled) return;
     try {
       const data = {
         version: SAVE_VERSION,

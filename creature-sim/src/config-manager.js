@@ -400,6 +400,7 @@ export class ConfigManager {
       targetFPS: 60,
       fixedTimeStep: 1/60,
       maxFrameSkip: 6,
+      analyticsWorker: true,
       updateThrottles: {
         ui: 200,      // UI updates every 200ms
         charts: 5000, // Charts every 5 seconds

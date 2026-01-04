@@ -33,6 +33,22 @@ export class SaveSystem {
         // Time system
         timeOfDay: world.timeOfDay ?? 12,
         dayLength: world.dayLength ?? 120,
+        environment: world.environment ? {
+          timeOfDay: world.environment.timeOfDay,
+          dayLength: world.environment.dayLength,
+          dayNightEnabled: world.environment.dayNightEnabled,
+          seasonTime: world.environment.seasonTime,
+          seasonDuration: world.environment.seasonDuration,
+          currentSeason: world.environment.currentSeason,
+          seasonIndex: world.environment.seasonIndex,
+          seasonPhase: world.environment.seasonPhase,
+          seasonSpeed: world.environment.seasonSpeed,
+          weatherIntensity: world.environment.weatherIntensity,
+          weatherType: world.environment.weatherType,
+          weatherTransitionTime: world.environment.weatherTransitionTime,
+          weatherTargetIntensity: world.environment.weatherTargetIntensity,
+          diseaseTimer: world.environment.diseaseTimer
+        } : null,
 
         // Creatures
         creatures: world.creatures.map(c => ({
@@ -94,7 +110,14 @@ export class SaveSystem {
         // Disasters
         activeDisaster: world.disaster?.activeDisaster ?? null,
         disasterDuration: world.disaster?.activeDisaster?.duration ?? 0,
-        disasterIntensity: world.disaster?.activeDisaster?.intensity ?? 1
+        disasterIntensity: world.disaster?.activeDisaster?.intensity ?? 1,
+        disaster: world.disaster ? {
+          active: world.disaster.activeDisaster ?? null,
+          pending: Array.isArray(world.disaster.pendingDisasters)
+            ? world.disaster.pendingDisasters.map(item => ({ ...item }))
+            : [],
+          cooldown: world.disaster.disasterCooldown ?? 0
+        } : null
       },
 
       // Camera state
@@ -155,9 +178,6 @@ export class SaveSystem {
 
     // Restore basic state
     world.t = toNumber(data.t, 0);
-    if (world.environment) {
-      world.environment.seasonPhase = toNumber(data.seasonPhase, 0);
-    }
     const nextId = toNumber(data._nextId, 1);
     if (world.creatureManager) {
       world.creatureManager._nextId = nextId;
@@ -165,8 +185,39 @@ export class SaveSystem {
       world._nextId = nextId;
     }
     if (world.environment) {
-      world.environment.timeOfDay = toNumber(data.timeOfDay, 12);
-      world.environment.dayLength = toNumber(data.dayLength, 120);
+      const envData = data.environment && typeof data.environment === 'object' ? data.environment : null;
+      const seasonPhaseValue = envData?.seasonPhase ?? data.seasonPhase;
+      world.environment.seasonPhase = toNumber(seasonPhaseValue, world.environment.seasonPhase);
+      world.environment.timeOfDay = toNumber(envData?.timeOfDay ?? data.timeOfDay, world.environment.timeOfDay);
+      world.environment.dayLength = toNumber(envData?.dayLength ?? data.dayLength, world.environment.dayLength);
+      if (envData?.dayNightEnabled !== undefined) {
+        world.environment.dayNightEnabled = !!envData.dayNightEnabled;
+      }
+      world.environment.seasonTime = toNumber(envData?.seasonTime, world.environment.seasonTime);
+      world.environment.seasonDuration = toNumber(envData?.seasonDuration, world.environment.seasonDuration);
+      world.environment.seasonSpeed = toNumber(envData?.seasonSpeed, world.environment.seasonSpeed);
+      if (envData?.seasonIndex != null) {
+        world.environment.seasonIndex = toNumber(envData.seasonIndex, world.environment.seasonIndex);
+      }
+      if (envData?.currentSeason) {
+        world.environment.currentSeason = envData.currentSeason;
+        const derivedIndex = world.environment.seasonCycle?.indexOf(envData.currentSeason);
+        if (derivedIndex >= 0) {
+          world.environment.seasonIndex = derivedIndex;
+        }
+      }
+      world.environment.weatherIntensity = toNumber(envData?.weatherIntensity, world.environment.weatherIntensity);
+      if (envData?.weatherType !== undefined) {
+        world.environment.weatherType = envData.weatherType;
+      }
+      world.environment.weatherTransitionTime = toNumber(envData?.weatherTransitionTime, world.environment.weatherTransitionTime);
+      world.environment.weatherTargetIntensity = toNumber(envData?.weatherTargetIntensity, world.environment.weatherTargetIntensity);
+      world.environment.diseaseTimer = toNumber(envData?.diseaseTimer, world.environment.diseaseTimer);
+
+      const seasonKey = world.environment.currentSeason || world.environment.seasonCycle?.[world.environment.seasonIndex];
+      if (seasonKey && world.environment.seasonConfigs?.[seasonKey]) {
+        world.environment.applySeasonConfig(world.environment.seasonConfigs[seasonKey], { announce: false });
+      }
     }
 
     // Restore biome with same seed
@@ -249,10 +300,24 @@ export class SaveSystem {
 
     // Restore disasters
     if (world.disaster) {
-      const activeDisaster = data.activeDisaster;
-      world.disaster.activeDisaster = (activeDisaster && typeof activeDisaster === 'object')
-        ? activeDisaster
+      const disasterData = data.disaster && typeof data.disaster === 'object'
+        ? data.disaster
         : null;
+      if (disasterData) {
+        world.disaster.activeDisaster = (disasterData.active && typeof disasterData.active === 'object')
+          ? disasterData.active
+          : null;
+        world.disaster.pendingDisasters = Array.isArray(disasterData.pending)
+          ? disasterData.pending.map(item => ({ ...item }))
+          : [];
+        world.disaster.disasterCooldown = toNumber(disasterData.cooldown, world.disaster.disasterCooldown);
+        world.disaster.pendingDisasters.sort((a, b) => (a.scheduledFor || 0) - (b.scheduledFor || 0));
+      } else {
+        const activeDisaster = data.activeDisaster;
+        world.disaster.activeDisaster = (activeDisaster && typeof activeDisaster === 'object')
+          ? activeDisaster
+          : null;
+      }
     }
 
     // Mark spatial grid as dirty and force rebuild

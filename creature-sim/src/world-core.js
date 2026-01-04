@@ -480,6 +480,12 @@ export class World {
     return this.ecosystem.foodGrowthMultiplier;
   }
 
+  set foodGrowthMultiplier(value) {
+    if (this.ecosystem) {
+      this.ecosystem.foodGrowthMultiplier = value;
+    }
+  }
+
   // Disaster helpers
   triggerDisaster(type, options = {}) {
     return this.disaster.triggerDisaster(type, options);
