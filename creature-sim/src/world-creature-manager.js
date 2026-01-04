@@ -83,7 +83,7 @@ export class WorldCreatureManager {
 
   // Get creature by ID
   getCreatureById(id) {
-    return this.world.creatures.find(c => c.id === id);
+    return this.registry.get(id) ?? this.world.creatures.find(c => c.id === id) ?? null;
   }
 
   getAnyCreatureById(id) {

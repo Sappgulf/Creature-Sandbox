@@ -414,7 +414,8 @@ export class ConfigManager {
       },
       profiling: {
         enabled: false,
-        sampleRate: 1000 // Sample every 1000ms
+        sampleRate: 1000, // Sample every 1000ms
+        includeScopes: false
       }
     };
   }

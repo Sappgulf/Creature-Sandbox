@@ -68,6 +68,7 @@ export class GameLoop {
     
     // Track pause state for UI sync
     this._lastPausedState = false;
+    this._uiCache = new Map();
 
     // Reusable event objects to reduce allocations
     this.worldUpdateEvent = {
@@ -100,6 +101,20 @@ export class GameLoop {
     // STABILITY: Watchdog to detect if game loop stops
     this._lastLoopTime = 0;
     this._watchdogInterval = null;
+
+    // Profiling report controls
+    this.profileReportEnabled = !!configManager.get('performance', 'profiling.enabled', false);
+    this.profileReportInterval = Number(configManager.get('performance', 'profiling.sampleRate', 1000)) || 1000;
+    this.profileReportIncludeScopes = !!configManager.get('performance', 'profiling.includeScopes', false);
+    this.lastPerfReport = 0;
+    performanceProfiler.setEnabled(this.profileReportEnabled);
+
+    configManager.onChange('performance', () => {
+      this.profileReportEnabled = !!configManager.get('performance', 'profiling.enabled', false);
+      this.profileReportInterval = Number(configManager.get('performance', 'profiling.sampleRate', 1000)) || 1000;
+      this.profileReportIncludeScopes = !!configManager.get('performance', 'profiling.includeScopes', false);
+      performanceProfiler.setEnabled(this.profileReportEnabled);
+    });
 
     // Initialize enhanced systems
     this.initializeEnhancedSystems();
@@ -284,6 +299,15 @@ export class GameLoop {
     // Update performance monitor
     updatePerformanceMonitor();
 
+    // Optional performance report logging
+    if (this.profileReportEnabled) {
+      const reportNow = performance.now();
+      if (reportNow - this.lastPerfReport >= this.profileReportInterval) {
+        this.lastPerfReport = reportNow;
+        this.logPerformanceSnapshot();
+      }
+    }
+
     } catch (error) {
       // STABILITY: Log error but don't crash - attempt recovery
       console.error('Game loop error:', error);
@@ -310,6 +334,32 @@ export class GameLoop {
   profileEnd() {
     if (typeof profile !== 'undefined' && profile.end) {
       profile.end();
+    }
+  }
+
+  logPerformanceSnapshot() {
+    const stats = performanceProfiler.getStats();
+    const avg = stats.averages;
+    const current = stats.current;
+    const summary = [
+      `fps=${avg.fps.toFixed(1)}`,
+      `frame=${avg.frameTime.toFixed(2)}ms`,
+      `mem=${avg.memoryMB.toFixed(1)}MB`,
+      `draws=${current.drawCalls}`,
+      `creatures=${current.creaturesRendered}`
+    ].join(' ');
+    console.log(`[Perf] ${summary}`);
+
+    if (this.profileReportIncludeScopes) {
+      const scopes = performanceProfiler.getScopeStats();
+      const topScopes = Object.entries(scopes)
+        .sort((a, b) => b[1].avgDuration - a[1].avgDuration)
+        .slice(0, 3)
+        .map(([name, data]) => `${name}:${data.avgDuration.toFixed(2)}ms`)
+        .join(' ');
+      if (topScopes) {
+        console.log(`[PerfScopes] ${topScopes}`);
+      }
     }
   }
 
@@ -426,6 +476,15 @@ export class GameLoop {
 
     this.renderer.drawWorld(this.world, opts);
 
+    const drawEstimate = (this.renderer.renderedCount || 0) +
+      (this.world.food?.length || 0) +
+      (this.world.corpses?.length || 0);
+    performanceProfiler.updateRenderMetrics(
+      drawEstimate,
+      this.renderer.renderedCount || 0,
+      this.particles?.particles?.length || 0
+    );
+
     // Update FPS calculation
     gameState.fps = 0.9 * gameState.fps + 0.1 * (1 / Math.max(dt, 0.0001));
 
@@ -498,6 +557,21 @@ export class GameLoop {
         this.lastDashboardUpdate = now;
       }
     }
+  }
+
+  getCachedElement(key, resolver) {
+    if (this._uiCache.has(key)) {
+      const cached = this._uiCache.get(key);
+      if (cached && document.contains(cached)) {
+        return cached;
+      }
+    }
+
+    const element = resolver();
+    if (element) {
+      this._uiCache.set(key, element);
+    }
+    return element;
   }
 
   /**
@@ -632,7 +706,9 @@ export class GameLoop {
     if (!gameState.inspectorVisible) return;
 
     // Check if Evolution Analytics section is visible
-    const analyticsSection = document.querySelector('#inspector-panel > .panel-body > div:nth-child(4)');
+    const analyticsSection = this.getCachedElement('analyticsSection', () =>
+      document.querySelector('#inspector-panel > .panel-body > div:nth-child(4)')
+    );
     if (!analyticsSection || analyticsSection.offsetParent === null) return;
 
     const data = this.analytics.getData();
@@ -654,7 +730,9 @@ export class GameLoop {
     this.lastAdvancedAnalyticsUpdate = now;
 
     // Update phylogeny if panel is visible
-    const phylogenyList = document.getElementById('phylogeny-list');
+    const phylogenyList = this.getCachedElement('phylogeny-list', () =>
+      document.getElementById('phylogeny-list')
+    );
     if (phylogenyList && this.analytics) {
       const phylogenySection = phylogenyList.closest('.panel-body');
       const isVisible = phylogenySection && phylogenySection.offsetParent !== null;
@@ -680,7 +758,9 @@ export class GameLoop {
     }
 
     // Update species groups
-    const speciesList = document.getElementById('species-list');
+    const speciesList = this.getCachedElement('species-list', () =>
+      document.getElementById('species-list')
+    );
     if (speciesList && this.analytics.speciesGroups) {
       if (this.analytics.speciesGroups.length > 0) {
         let html = '<div class="species-groups">';
@@ -712,41 +792,63 @@ export class GameLoop {
     const recommendations = this.world.ecoHealth.getRecommendations(this.world);
 
     // Update overall score
-    const overallScore = document.getElementById('health-overall-score');
+    const overallScore = this.getCachedElement('health-overall-score', () =>
+      document.getElementById('health-overall-score')
+    );
     if (overallScore) overallScore.textContent = Math.round(metrics.overall);
 
-    const statusEmoji = document.getElementById('health-status-emoji');
+    const statusEmoji = this.getCachedElement('health-status-emoji', () =>
+      document.getElementById('health-status-emoji')
+    );
     if (statusEmoji) statusEmoji.textContent = status.emoji;
 
-    const statusLabel = document.getElementById('health-status-label');
+    const statusLabel = this.getCachedElement('health-status-label', () =>
+      document.getElementById('health-status-label')
+    );
     if (statusLabel) statusLabel.textContent = status.label;
 
-    const scoreCircle = document.querySelector('.health-score-circle');
+    const scoreCircle = this.getCachedElement('health-score-circle', () =>
+      document.querySelector('.health-score-circle')
+    );
     if (scoreCircle) {
       scoreCircle.style.background = `linear-gradient(135deg, ${status.color} 0%, ${status.color}CC 100%)`;
     }
 
     // Update metric bars
-    const biodiversityValue = document.getElementById('health-biodiversity-value');
+    const biodiversityValue = this.getCachedElement('health-biodiversity-value', () =>
+      document.getElementById('health-biodiversity-value')
+    );
     if (biodiversityValue) biodiversityValue.textContent = Math.round(metrics.biodiversity);
 
-    const biodiversityFill = document.getElementById('health-biodiversity-fill');
+    const biodiversityFill = this.getCachedElement('health-biodiversity-fill', () =>
+      document.getElementById('health-biodiversity-fill')
+    );
     if (biodiversityFill) biodiversityFill.style.width = `${metrics.biodiversity}%`;
 
-    const stabilityValue = document.getElementById('health-stability-value');
+    const stabilityValue = this.getCachedElement('health-stability-value', () =>
+      document.getElementById('health-stability-value')
+    );
     if (stabilityValue) stabilityValue.textContent = Math.round(metrics.stability);
 
-    const stabilityFill = document.getElementById('health-stability-fill');
+    const stabilityFill = this.getCachedElement('health-stability-fill', () =>
+      document.getElementById('health-stability-fill')
+    );
     if (stabilityFill) stabilityFill.style.width = `${metrics.stability}%`;
 
-    const sustainabilityValue = document.getElementById('health-sustainability-value');
+    const sustainabilityValue = this.getCachedElement('health-sustainability-value', () =>
+      document.getElementById('health-sustainability-value')
+    );
     if (sustainabilityValue) sustainabilityValue.textContent = Math.round(metrics.sustainability);
 
-    const sustainabilityFill = document.getElementById('health-sustainability-fill');
+    const sustainabilityFill = this.getCachedElement('health-sustainability-fill', () =>
+      document.getElementById('health-sustainability-fill')
+    );
     if (sustainabilityFill) sustainabilityFill.style.width = `${metrics.sustainability}%`;
 
     // Update recommendations
-    const recList = document.getElementById('health-recommendations-list');
+    const recList = this.getCachedElement('health-recommendations-list', () =>
+      document.getElementById('health-recommendations-list')
+    );
     if (recList) {
       recList.innerHTML = recommendations.map(r => `<div>${r}</div>`).join('');
     }
@@ -756,7 +858,9 @@ export class GameLoop {
    * Update scenario status
    */
   updateScenarioStatus() {
-    const scenarioStatus = document.getElementById('scenario-status');
+    const scenarioStatus = this.getCachedElement('scenario-status', () =>
+      document.getElementById('scenario-status')
+    );
     if (!scenarioStatus) return;
 
     const pending = typeof this.world.getPendingDisasters === 'function'
@@ -797,7 +901,9 @@ export class GameLoop {
    * Render scenario queue
    */
   renderScenarioQueue(pending = null) {
-    const scenarioQueueList = document.getElementById('scenario-queue');
+    const scenarioQueueList = this.getCachedElement('scenario-queue', () =>
+      document.getElementById('scenario-queue')
+    );
     if (!scenarioQueueList) return;
 
     const items = pending ?? (typeof this.world.getPendingDisasters === 'function'

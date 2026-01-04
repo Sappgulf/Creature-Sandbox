@@ -857,6 +857,8 @@ function initializeApp() {
     window.gameLoop = gameLoop;
     window.errorHandler = errorHandler;
     window.notifications = notifications;
+    window.performanceProfiler = performanceProfiler;
+    window.configManager = configManager;
     window.campaignSystem = campaignSystem;
     window.diseaseSystem = diseaseSystem;
     window.gameplayModes = gameplayModes;
