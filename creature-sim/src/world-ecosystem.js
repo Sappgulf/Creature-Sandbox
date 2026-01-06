@@ -241,19 +241,15 @@ export class WorldEcosystem {
       switch (action) {
         case 'add_predator':
           this.spawnBalancingPredator();
-          console.log('⚖️ Auto-balanced: Added predator');
           break;
         case 'reduce_predators':
           this.cullExcessPredators();
-          console.log('⚖️ Auto-balanced: Reduced predators');
           break;
         case 'add_food':
           this.addEmergencyFood();
-          console.log('⚖️ Auto-balanced: Added emergency food');
           break;
         case 'reduce_population':
           this.cullExcessPopulation();
-          console.log('⚖️ Auto-balanced: Reduced population');
           break;
       }
     }

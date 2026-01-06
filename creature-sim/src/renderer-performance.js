@@ -14,54 +14,54 @@ export class RendererPerformanceMonitor {
       frameTime: 0,
       lastFrameTime: performance.now()
     };
-    
+
     // ENHANCEMENT: FPS tracking for quality scaling
     this.fpsHistory = new Array(60).fill(60); // Rolling average
     this.fpsHistoryIndex = 0;
     this.currentFps = 60;
     this.frameCount = 0;
-    
+
     // ENHANCEMENT: Quality preset tracking
     this.currentQuality = 'high';
     this.qualityLockTimer = 0; // Prevent rapid quality changes
     this.qualityLockDuration = 120; // ~2 seconds at 60fps
-    
+
     // Detect mobile for default quality
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                     (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+      (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
     if (isMobile) {
       this.currentQuality = 'medium';
       this.applyQualityPreset('medium');
     }
-    
+
     this.reset();
   }
-  
+
   /**
    * Apply a quality preset to the renderer
    */
   applyQualityPreset(presetName) {
     const preset = RendererConfig.QUALITY_PRESETS[presetName];
     if (!preset || !this.renderer) return;
-    
+
     this.currentQuality = presetName;
-    
+
     // Apply preset settings to renderer
     if (this.renderer.particles) {
       this.renderer.particles.maxParticles = preset.maxParticles;
     }
-    
+
     this.renderer.enableTrails = preset.trailsEnabled;
     this.renderer.enableClustering = preset.clusteringEnabled;
     this.renderer.enableMiniMap = preset.miniMapEnabled;
     this.renderer.enableNameLabels = preset.nameLabelsEnabled;
     this.renderer.enableTraitVisualization = preset.traitVisualizationEnabled;
-    
+
     // Update heatmap cache interval
     if (this.renderer._heatmapCache) {
       this.renderer._heatmapCache.updateInterval = preset.miniMapUpdateInterval;
     }
-    
+
     console.log(`🎨 Quality set to: ${presetName}`);
   }
 
@@ -162,40 +162,40 @@ export class RendererPerformanceMonitor {
   adjustQuality() {
     const stats = this.getStats();
     this.frameCount++;
-    
+
     // Update FPS history
     const fps = stats.frameTime > 0 ? 1000 / stats.frameTime : 60;
     this.fpsHistory[this.fpsHistoryIndex] = fps;
     this.fpsHistoryIndex = (this.fpsHistoryIndex + 1) % this.fpsHistory.length;
-    
+
     // Calculate rolling average FPS
     let sum = 0;
     for (let i = 0; i < this.fpsHistory.length; i++) {
       sum += this.fpsHistory[i];
     }
     this.currentFps = sum / this.fpsHistory.length;
-    
+
     // Decrement quality lock timer
     if (this.qualityLockTimer > 0) {
       this.qualityLockTimer--;
       return;
     }
-    
+
     // Quality preset transitions based on FPS
     const presets = ['low', 'medium', 'high', 'ultra'];
     const currentIndex = presets.indexOf(this.currentQuality);
-    
+
     // Downgrade quality if FPS too low
     if (this.currentFps < 25 && currentIndex > 0) {
       this.applyQualityPreset(presets[currentIndex - 1]);
       this.qualityLockTimer = this.qualityLockDuration;
-      console.log(`⚠️ Low FPS (${this.currentFps.toFixed(1)}), reducing quality to ${this.currentQuality}`);
+
     }
     // Upgrade quality if FPS is good
     else if (this.currentFps > 55 && currentIndex < presets.length - 1) {
       this.applyQualityPreset(presets[currentIndex + 1]);
       this.qualityLockTimer = this.qualityLockDuration;
-      console.log(`✨ Good FPS (${this.currentFps.toFixed(1)}), increasing quality to ${this.currentQuality}`);
+
     }
 
     // Legacy threshold adjustments (fine-tuning)
@@ -215,14 +215,14 @@ export class RendererPerformanceMonitor {
     RendererConfig.THRESHOLDS.MAX_RENDERED_OBJECTS = Math.max(500,
       Math.min(2000, RendererConfig.THRESHOLDS.MAX_RENDERED_OBJECTS));
   }
-  
+
   /**
    * Get current quality preset name
    */
   getCurrentQuality() {
     return this.currentQuality;
   }
-  
+
   /**
    * Get current FPS (rolling average)
    */

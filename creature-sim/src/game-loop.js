@@ -54,7 +54,7 @@ export class GameLoop {
     this.sessionGoals = subsystems.sessionGoals;
 
     this.lastNow = performance.now();
-    this.fixedDt = configManager.get('performance', 'fixedTimeStep', 1/60);
+    this.fixedDt = configManager.get('performance', 'fixedTimeStep', 1 / 60);
     this.MAX_STEPS = configManager.get('performance', 'maxFrameSkip', 6);
 
     this.frameCount = 0;
@@ -65,7 +65,7 @@ export class GameLoop {
     this.lastAnalyticsUpdate = 0;
     this.lastUIUpdate = 0;
     this.lastDashboardUpdate = 0;
-    
+
     // Track pause state for UI sync
     this._lastPausedState = false;
     this._uiCache = new Map();
@@ -97,7 +97,7 @@ export class GameLoop {
     };
 
     this.boundLoop = this.loop.bind(this);
-    
+
     // STABILITY: Watchdog to detect if game loop stops
     this._lastLoopTime = 0;
     this._watchdogInterval = null;
@@ -184,7 +184,7 @@ export class GameLoop {
     console.log('🎮 Starting game loop');
     this._lastLoopTime = performance.now();
     requestAnimationFrame(this.boundLoop);
-    
+
     // STABILITY: Watchdog timer to detect and recover from stalled game loop
     // Checks every 2 seconds if the loop is still running
     if (this._watchdogInterval) {
@@ -193,7 +193,7 @@ export class GameLoop {
     this._watchdogInterval = setInterval(() => {
       const now = performance.now();
       const elapsed = now - this._lastLoopTime;
-      
+
       // If more than 3 seconds have passed since last loop, something is wrong
       if (elapsed > 3000 && gameState.isReady()) {
         console.warn('⚠️ Game loop watchdog: Loop appears stalled, attempting restart...');
@@ -202,7 +202,7 @@ export class GameLoop {
       }
     }, 2000);
   }
-  
+
   /**
    * Stop the game loop (for cleanup)
    */
@@ -221,7 +221,7 @@ export class GameLoop {
   loop(now) {
     // STABILITY: Update watchdog timestamp
     this._lastLoopTime = now || performance.now();
-    
+
     // Don't run if game hasn't started
     if (!gameState.isReady()) {
       requestAnimationFrame(this.boundLoop);
@@ -242,71 +242,71 @@ export class GameLoop {
       const dt = Math.min(0.25, (now - this.lastNow) / 1000);
       this.lastNow = now;
 
-    // Calculate time scale (pause/speed controls)
-    gameState.timeScale = gameState.paused ? 0 : gameState.fastForward;
-    gameState.accumulator += dt * gameState.timeScale;
+      // Calculate time scale (pause/speed controls)
+      gameState.timeScale = gameState.paused ? 0 : gameState.fastForward;
+      gameState.accumulator += dt * gameState.timeScale;
 
-    // Run physics steps
-    let steps = 0;
-    while (gameState.accumulator >= this.fixedDt && steps < this.MAX_STEPS) {
-      this.step(this.fixedDt);
-      gameState.accumulator -= this.fixedDt;
-      steps++;
-    }
-
-    // Prevent accumulator from getting too large
-    if (steps === this.MAX_STEPS) {
-      gameState.accumulator = 0;
-    }
-
-    // Update camera
-    this.profileStart('camera-update');
-    this.camera.update(dt);
-    this.profileEnd();
-
-    // Render frame
-    this.profileStart('render');
-    this.render(dt);
-    this.profileEnd();
-
-    // Update UI (throttled)
-    this.profileStart('ui-update');
-    this.updateUI(dt);
-    this.profileEnd();
-
-    // Update subsystems
-    this.profileStart('subsystem-update');
-    this.updateSubsystems(dt);
-    this.profileEnd();
-
-    // Per-frame updates for systems that want wall-clock cadence
-    try {
-      eventSystem.emit(GameEvents.FRAME_UPDATE, {
-        dt,
-        now,
-        worldTime: this.world.t,
-        timeScale: gameState.timeScale
-      }, { throwOnError: false });
-    } catch {
-      // Ignore frame update listener failures to keep loop alive
-    }
-
-    this.profileEnd();
-
-    // Performance profiling end frame
-    performanceProfiler.endFrame();
-
-    // Update performance monitor
-    updatePerformanceMonitor();
-
-    // Optional performance report logging
-    if (this.profileReportEnabled) {
-      const reportNow = performance.now();
-      if (reportNow - this.lastPerfReport >= this.profileReportInterval) {
-        this.lastPerfReport = reportNow;
-        this.logPerformanceSnapshot();
+      // Run physics steps
+      let steps = 0;
+      while (gameState.accumulator >= this.fixedDt && steps < this.MAX_STEPS) {
+        this.step(this.fixedDt);
+        gameState.accumulator -= this.fixedDt;
+        steps++;
       }
-    }
+
+      // Prevent accumulator from getting too large
+      if (steps === this.MAX_STEPS) {
+        gameState.accumulator = 0;
+      }
+
+      // Update camera
+      this.profileStart('camera-update');
+      this.camera.update(dt);
+      this.profileEnd();
+
+      // Render frame
+      this.profileStart('render');
+      this.render(dt);
+      this.profileEnd();
+
+      // Update UI (throttled)
+      this.profileStart('ui-update');
+      this.updateUI(dt);
+      this.profileEnd();
+
+      // Update subsystems
+      this.profileStart('subsystem-update');
+      this.updateSubsystems(dt);
+      this.profileEnd();
+
+      // Per-frame updates for systems that want wall-clock cadence
+      try {
+        eventSystem.emit(GameEvents.FRAME_UPDATE, {
+          dt,
+          now,
+          worldTime: this.world.t,
+          timeScale: gameState.timeScale
+        }, { throwOnError: false });
+      } catch {
+        // Ignore frame update listener failures to keep loop alive
+      }
+
+      this.profileEnd();
+
+      // Performance profiling end frame
+      performanceProfiler.endFrame();
+
+      // Update performance monitor
+      updatePerformanceMonitor();
+
+      // Optional performance report logging
+      if (this.profileReportEnabled) {
+        const reportNow = performance.now();
+        if (reportNow - this.lastPerfReport >= this.profileReportInterval) {
+          this.lastPerfReport = reportNow;
+          this.logPerformanceSnapshot();
+        }
+      }
 
     } catch (error) {
       // STABILITY: Log error but don't crash - attempt recovery
@@ -436,7 +436,7 @@ export class GameLoop {
         // Target died or lost, return to free mode
         this.camera.followMode = 'free';
         this.camera.followTarget = null;
-        console.log('📹 Follow mode disabled (target lost)');
+
       }
     }
   }
@@ -634,7 +634,7 @@ export class GameLoop {
     this.frameCount++;
     this.statsUpdateCounter++;
     this.chartUpdateCounter++;
-    
+
     // STABILITY: Ensure pause button state is always synchronized
     // This catches any edge cases where pause state changes without UI update
     if (gameState.paused !== this._lastPausedState) {
@@ -943,6 +943,6 @@ export class GameLoop {
   stepOnce() {
     gameState.paused = true;
     gameState.accumulator += this.fixedDt;
-    console.log('⏯️ Single step executed');
+
   }
 }

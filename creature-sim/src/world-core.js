@@ -58,6 +58,21 @@ export class World {
     this.screenShake = 0;
     this.temperatureModifier = 1.0;
 
+    // Auto-balance settings (used by gameplay-modes.js)
+    this.autoBalanceSettings = {
+      enabled: true,
+      minPopulation: 36,
+      targetPredatorRatio: 0.24,
+      maxPredators: 16,
+      targetFoodFraction: 0.5,
+      minFoodAbsolute: 180
+    };
+
+    // Disaster settings
+    this.randomDisasters = true;
+    this.disasterCooldown = 40;
+    this.disasterIntensity = 1.0;
+
     console.log('🌍 World core initialized with subsystems');
   }
 
