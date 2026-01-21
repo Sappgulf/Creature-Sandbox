@@ -74,6 +74,17 @@ class InteractiveChart {
     this.draw();
   }
 
+  resize(width, height) {
+    const nextWidth = Math.max(1, Math.floor(width));
+    const nextHeight = Math.max(1, Math.floor(height));
+    if (nextWidth === this.options.width && nextHeight === this.options.height) return;
+
+    this.options.width = nextWidth;
+    this.options.height = nextHeight;
+    this.setupCanvas();
+    this.draw();
+  }
+
   addDataPoint(...values) {
     for (let i = 0; i < values.length && i < this.data.length; i++) {
       this.data[i].push(values[i]);
@@ -261,8 +272,10 @@ export class AnalyticsDashboard {
       position: fixed;
       top: 50px;
       left: 10px;
-      width: 800px;
-      height: 600px;
+      width: min(92vw, 900px);
+      height: min(82vh, 640px);
+      max-width: calc(100vw - 20px);
+      max-height: calc(100vh - 70px);
       background: rgba(20, 20, 20, 0.95);
       border: 2px solid #00ff00;
       border-radius: 8px;
@@ -272,6 +285,7 @@ export class AnalyticsDashboard {
       color: #00ff00;
       backdrop-filter: blur(10px);
       overflow: hidden;
+      box-sizing: border-box;
     `;
 
     this.panel.innerHTML = `
@@ -298,7 +312,7 @@ export class AnalyticsDashboard {
         </div>
 
         <!-- Charts Grid -->
-        <div id="analytics-charts" style="flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; overflow: hidden;">
+        <div id="analytics-charts" style="flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; overflow: hidden; min-height: 0;">
           <div class="chart-container">
             <h3 style="margin: 0 0 5px 0; font-size: 14px;">Population Dynamics</h3>
             <canvas id="population-chart" width="380" height="180"></canvas>
@@ -341,13 +355,20 @@ export class AnalyticsDashboard {
         padding: 8px;
         display: flex;
         flex-direction: column;
+        min-height: 0;
       }
       .chart-container canvas {
         border: 1px solid #555;
         border-radius: 2px;
+        display: block;
+        width: 100%;
+        height: 100%;
+        flex: 1;
       }
     `;
     document.head.appendChild(style);
+
+    this.defaultHeight = this.panel.style.height;
   }
 
   setupEventListeners() {
@@ -362,6 +383,12 @@ export class AnalyticsDashboard {
     exportBtn.addEventListener('click', () => this.exportData());
     clearBtn.addEventListener('click', () => this.clearData());
     timeRangeSelect.addEventListener('change', () => this.updateTimeRange());
+
+    window.addEventListener('resize', () => {
+      if (this.isVisible) {
+        this.resizeCharts();
+      }
+    });
 
     // Keyboard shortcut (Ctrl+Shift+A)
     document.addEventListener('keydown', (e) => {
@@ -413,9 +440,21 @@ export class AnalyticsDashboard {
     });
   }
 
+  resizeCharts() {
+    this.charts.forEach((chart, id) => {
+      const canvas = this.panel.querySelector(`#${id}`);
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        chart.resize(rect.width, rect.height);
+      }
+    });
+  }
+
   show() {
     this.panel.style.display = 'block';
     this.isVisible = true;
+    requestAnimationFrame(() => this.resizeCharts());
     console.log('📊 Analytics dashboard opened');
   }
 
@@ -445,7 +484,8 @@ export class AnalyticsDashboard {
     } else {
       chartsContainer.style.display = 'grid';
       summary.style.display = 'block';
-      this.panel.style.height = '600px';
+      this.panel.style.height = this.defaultHeight;
+      requestAnimationFrame(() => this.resizeCharts());
     }
   }
 

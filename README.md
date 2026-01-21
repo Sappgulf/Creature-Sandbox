@@ -27,6 +27,7 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Population tracking**: Monitor herbivore/predator ratios
 - **Trait evolution**: Watch speed, metabolism, and sense evolve over time
 - **Variance analysis**: Track genetic diversity
+- **Responsive dashboard**: Scales analytics panels to fit the viewport
 - **Export data**: Download simulation snapshots as JSON
 
 ### 🎨 Interactive Interface

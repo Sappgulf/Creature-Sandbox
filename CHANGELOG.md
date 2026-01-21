@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Panel max-heights now respect dynamic mobile viewport sizing.
 - Mobile viewport handling now uses VisualViewport updates when available.
+- Analytics dashboard now scales charts to fit the current viewport.
 
 ## [2026-01-21]
 ### Added
