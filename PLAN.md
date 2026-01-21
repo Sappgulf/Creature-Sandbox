@@ -36,6 +36,20 @@
 ### 2026-01-21
 
 **Changed:**
+- `creature-sim/src/enhanced-analytics.js` — Made analytics dashboard responsive to viewport sizing and resizable charts
+- `README.md` — Documented responsive analytics dashboard behavior
+- `CHANGELOG.md` — Added Unreleased note for responsive analytics sizing
+
+**Why:**
+- Ensure the analytics dashboard fits smaller screens and scales chart canvases when resizing.
+
+**Verified:**
+- `npm test` — pass
+- `npm run lint` — 0 errors, 80 warnings (unused vars)
+
+### 2026-01-21
+
+**Changed:**
 - `creature-sim/src/input-manager.js` — Added brush size hotkeys for tools
 - `creature-sim/src/tools.js` — Added brush size clamping helpers
 - `creature-sim/src/ui.js` — Added tool HUD indicator in stats
