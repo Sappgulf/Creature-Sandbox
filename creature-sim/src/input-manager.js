@@ -154,6 +154,12 @@ export class InputManager {
       case 'x':
         this.tools.setMode('inspect');
         break;
+      case '[':
+        this.tools?.adjustBrushSize?.(-4);
+        break;
+      case ']':
+        this.tools?.adjustBrushSize?.(4);
+        break;
 
       // Speed controls
       case '+':

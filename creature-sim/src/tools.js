@@ -20,6 +20,8 @@ export class ToolController {
     this.camera = camera;
     this.mode = ToolModes.INSPECT;
     this.brushSize = 26;
+    this.minBrushSize = 8;
+    this.maxBrushSize = 120;
 
     // Undo/redo history
     this.undoStack = [];
@@ -29,6 +31,16 @@ export class ToolController {
 
   setMode(mode) {
     this.mode = mode;
+  }
+
+  setBrushSize(size) {
+    const next = Math.max(this.minBrushSize, Math.min(this.maxBrushSize, size));
+    this.brushSize = next;
+    return this.brushSize;
+  }
+
+  adjustBrushSize(delta) {
+    return this.setBrushSize(this.brushSize + delta);
   }
 
   apply(localX, localY, opts={}) {

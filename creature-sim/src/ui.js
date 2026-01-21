@@ -9,6 +9,12 @@ export function renderStats(el, world, fps, extra={}) {
   if (!el) return;
 
   const n = world.creatures.length;
+  const toolMeta = {
+    food: { icon: '🌿', label: 'Food' },
+    spawn: { icon: '🧬', label: 'Spawn' },
+    erase: { icon: '🧹', label: 'Erase' },
+    inspect: { icon: '🔍', label: 'Inspect' }
+  };
 
   // Count creature types efficiently
   let preds = 0;
@@ -24,6 +30,16 @@ export function renderStats(el, world, fps, extra={}) {
   statParts.push(`<span>🐾 <span class="value">${n}</span></span>`);
   statParts.push(`<span>🦁 <span class="value">${preds}</span></span>`);
   statParts.push(`<span>🌿 <span class="value">${world.food.length}</span></span>`);
+
+  // Tool indicator
+  if (extra.tool) {
+    const meta = toolMeta[extra.tool] || { icon: '🛠️', label: extra.tool };
+    const brushSize = Number.isFinite(extra.brushSize) ? Math.round(extra.brushSize) : null;
+    const toolLabel = brushSize && extra.tool !== 'inspect'
+      ? `${meta.label} ${brushSize}px`
+      : meta.label;
+    statParts.push(`<span class="stat-tool">${meta.icon} <span class="value">${toolLabel}</span></span>`);
+  }
 
   // Season info - compact
   if (world.getSeasonInfo) {

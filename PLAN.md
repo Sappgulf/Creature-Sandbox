@@ -2,13 +2,39 @@
 
 ## Active
 
-- [ ] Consider extracting renderer feature modules (creature drawing, biomes, mini-map)
+- [ ] Evaluate tool favorites / quick swap UX (post-brush-size update)
+- [ ] Audit save/load UX for surfaced feedback (non-intrusive)
 
 ## Next
 
 - [ ] Expand ECS stub for batch processing if needed
+- [ ] Prototype creature presets panel for sandbox quick starts
 
 ## Done
+
+### 2026-01-21
+
+**Changed:**
+- `creature-sim/src/input-manager.js` — Added brush size hotkeys for tools
+- `creature-sim/src/tools.js` — Added brush size clamping helpers
+- `creature-sim/src/ui.js` — Added tool HUD indicator in stats
+- `creature-sim/src/game-loop.js` — Routed tool/brush size data into HUD
+- `creature-sim/src/ui-controller.js` — Spawn button remembers last creature type
+- `creature-sim/styles.css` — Styled tool indicator in stats HUD
+- `creature-sim/index.html` — Updated shortcuts overlay with brush size controls
+- `docs/SMOKE_TESTS.md` — Added manual core loop checks and save/load smoke steps
+- `docs/ROADMAP.md` — Added prioritized roadmap with verification steps
+- `AGENT.md` — Added guidance for future Codex sessions
+- `CHANGELOG.md` — Added release notes entry
+- `README.md` — Documented brush size shortcuts
+
+**Why:**
+- Make tool state more visible and editing faster without touching core simulation logic
+- Lock the core loop into documented smoke tests and roadmap guidance
+
+**Verified:**
+- `npm test` — pass
+- `npm run lint` — 0 errors, 80 warnings (unused vars)
 
 ### 2026-01-21
 
