@@ -7,7 +7,7 @@
    - Confirm the home screen renders and buttons are clickable.
 
 2. **Create or edit a creature**
-   - Click **🧬 Gene Editor** in the top HUD.
+   - Click **⋯ More Actions** in the top HUD, then choose **🧬 Gene Editor**.
    - Adjust at least one gene slider and close the panel.
    - Spawn a creature via the quick actions or tools to ensure gene edits apply.
 
@@ -21,7 +21,11 @@
    - Use **E** to erase a creature.
    - Toggle pause/resume with **Space** and confirm the sim halts/continues.
 
-5. **Save/load roundtrip**
+5. **Top menu navigation**
+   - Click **🎛️ Modes & Goals** and confirm the Game Mode + Session Goals card toggles.
+   - Open **⋯ More Actions** and verify every item opens its respective panel or toggle.
+
+6. **Save/load roundtrip**
    - Use **Ctrl+S** to save the game.
    - Refresh the page.
    - Use **Ctrl+O** to load the save.
@@ -39,14 +43,16 @@
    - Confirm panels stay visible and inputs remain reachable with the keyboard open.
 
 3. **Tap targets**
-   - Tap top HUD buttons and mobile quick actions.
+   - Tap top HUD buttons and the **⋯ More Actions** sheet items.
    - Confirm no tiny targets block touch usage.
+   - Confirm the sheet respects safe-area padding.
 
 ## Accessibility Checks
 
 1. **Keyboard navigation**
    - Use **Tab** to reach top HUD buttons and panel controls.
    - Confirm visible focus rings appear.
+   - Open **⋯ More Actions** and use **Arrow keys / Enter / Escape** to navigate.
 
 2. **Reduced motion**
    - Toggle Reduced Motion in the Features panel.

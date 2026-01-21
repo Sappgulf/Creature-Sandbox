@@ -38,6 +38,7 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Camera controls**: Pan, zoom, and follow creatures
 - **Gene sharing**: Copy/import gene codes from the Gene Editor
 - **Display toggles**: Nameplates and reduced-motion options in the Features panel
+- **Condensed top HUD**: Primary controls plus a ⋯ overflow menu for all panels
 
 ### ⚡ Performance Optimized
 - **Spatial partitioning**: O(1) proximity queries with grid-based optimization
@@ -199,6 +200,7 @@ this.energy += 18;  // Predation reward
 
 - **Reduced motion**: Toggle in the Features panel (persists across sessions).
 - **Keyboard support**: Most core actions remain accessible via shortcuts (press `?` for help).
+- **Menu navigation**: Overflow menu supports arrow keys, Enter, and Escape.
 
 ---
 

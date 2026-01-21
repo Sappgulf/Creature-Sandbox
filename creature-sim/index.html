@@ -22,21 +22,52 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Top HUD - Minimal Controls -->
+  <!-- Top HUD - Condensed Primary Controls -->
   <div id="hud">
-    <button id="btn-pause" title="Pause/Resume (Space)" aria-label="Pause or resume">⏸️</button>
-	    <button id="btn-step" title="Single Step" aria-label="Single step">⏭️</button>
-	    <div class="separator"></div>
-	    <button id="btn-campaign" title="Campaign Mode" aria-label="Open campaign mode">🏆</button>
-	    <button id="btn-achievements" title="Achievements" aria-label="Open achievements">🏅</button>
-	    <button id="btn-scenario" title="Scenario Lab" aria-label="Open scenario lab">🧪</button>
-	    <button id="btn-gene-editor" title="Gene Editor" aria-label="Open gene editor">🧬</button>
-	    <button id="btn-eco-health" title="Ecosystem Health" aria-label="Open ecosystem health">🌍</button>
-	    <button id="btn-features" title="Features" aria-label="Open features panel">🎨</button>
-    <div class="separator"></div>
-    <button id="analytics-dashboard-toggle" title="Analytics" aria-label="Toggle analytics dashboard">📊</button>
-    <button id="debug-console-toggle" title="Debug Console" aria-label="Toggle debug console">🔧</button>
-    <button id="performance-monitor-toggle" title="Performance" aria-label="Toggle performance monitor">⚡</button>
+    <div id="hud-primary" class="hud-primary" role="toolbar" aria-label="Primary actions"></div>
+    <button
+      id="hud-overflow-trigger"
+      class="hud-overflow-trigger"
+      title="More actions"
+      aria-label="Open more actions"
+      aria-haspopup="menu"
+      aria-expanded="false"
+      aria-controls="hud-overflow-menu"
+    >
+      ⋯
+    </button>
+    <div id="hud-overflow-menu" class="hud-overflow-menu hidden" role="menu" aria-label="More actions"></div>
+  </div>
+
+  <div id="hud-action-bank" class="hidden" aria-hidden="true">
+    <button id="btn-mode" title="Game modes & goals" aria-label="Game modes and goals">🎛️ Mode</button>
+    <button id="btn-pause" title="Pause/Resume (Space)" aria-label="Pause or resume">⏸️ Pause</button>
+    <button id="btn-step" title="Single Step" aria-label="Single step">⏭️ Step</button>
+    <button id="btn-campaign" title="Campaign Mode" aria-label="Open campaign mode">🏆 Campaign</button>
+    <button id="btn-achievements" title="Achievements" aria-label="Open achievements">🏅 Achievements</button>
+    <button id="btn-scenario" title="Scenario Lab" aria-label="Open scenario lab">🧪 Scenario</button>
+    <button id="btn-gene-editor" title="Gene Editor" aria-label="Open gene editor">🧬 Gene Editor</button>
+    <button id="btn-eco-health" title="Ecosystem Health" aria-label="Open ecosystem health">🌍 Eco Health</button>
+    <button id="btn-features" title="Features" aria-label="Open features panel">🎨 Features</button>
+    <button id="analytics-dashboard-toggle" title="Analytics" aria-label="Toggle analytics dashboard">📊 Analytics</button>
+    <button id="debug-console-toggle" title="Debug Console" aria-label="Toggle debug console">🔧 Debug</button>
+    <button id="performance-monitor-toggle" title="Performance" aria-label="Toggle performance monitor">⚡ Performance</button>
+  </div>
+
+  <div id="hud-overflow-backdrop" class="hud-overflow-backdrop hidden" tabindex="-1" aria-hidden="true"></div>
+  <div
+    id="hud-overflow-sheet"
+    class="hud-overflow-sheet hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-label="More actions"
+    aria-hidden="true"
+  >
+    <div class="hud-overflow-sheet-header">
+      <span>More Actions</span>
+      <button id="hud-overflow-close" class="hud-overflow-close" aria-label="Close menu">Close</button>
+    </div>
+    <div id="hud-overflow-sheet-content" class="hud-overflow-sheet-content" role="menu" aria-label="More actions"></div>
   </div>
 
   <!-- Floating Quick Actions - Center Bottom -->

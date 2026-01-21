@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Panel max-heights now respect dynamic mobile viewport sizing.
 - Mobile viewport handling now uses VisualViewport updates when available.
 - Analytics dashboard now scales charts to fit the current viewport.
+- Condensed top HUD into primary actions with an overflow menu and mobile sheet.
 
 ## [2026-01-21]
 ### Added

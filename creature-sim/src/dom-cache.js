@@ -26,6 +26,7 @@ export class DOMCache {
     this.cacheElement('btn-close-inspector', 'closeInspectorBtn');
 
     // UI controls
+    this.cacheElement('btn-mode', 'modeBtn');
     this.cacheElement('btn-pause', 'pauseBtn');
     this.cacheElement('btn-step', 'stepBtn');
     this.cacheElement('btn-export', 'exportBtn');
@@ -82,7 +83,16 @@ export class DOMCache {
     this.cacheElement('debug-console-toggle', 'debugConsoleToggle');
     this.cacheElement('performance-monitor-toggle', 'performanceMonitorToggle');
 
+    // HUD overflow menu
+    this.cacheElement('hud-overflow-trigger', 'hudOverflowTrigger');
+    this.cacheElement('hud-overflow-menu', 'hudOverflowMenu');
+    this.cacheElement('hud-overflow-backdrop', 'hudOverflowBackdrop');
+    this.cacheElement('hud-overflow-sheet', 'hudOverflowSheet');
+    this.cacheElement('hud-overflow-sheet-content', 'hudOverflowSheetContent');
+    this.cacheElement('hud-overflow-close', 'hudOverflowClose');
+
     // Gameplay modes + goals
+    this.cacheElement('session-meta', 'sessionMeta');
     this.cacheElement('mode-select', 'modeSelect');
     this.cacheElement('mode-apply', 'modeApplyBtn');
     this.cacheElement('mode-cycle', 'modeCycleBtn');
