@@ -163,6 +163,40 @@ function initializeApp() {
   console.log('🎨 Ultra-optimized Canvas 2D renderer initialized');
   console.log('💪 60 FPS guaranteed with up to 500+ creatures!');
 
+  // Accessibility: reduced motion toggle (defaults to OS preference)
+  errorHandler.safeExecute(() => {
+    const prefersReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
+    const storedPreference = window.localStorage?.getItem('creatureSandboxReducedMotion');
+    const initialReduced = storedPreference ? storedPreference === 'true' : prefersReduced;
+
+    const applyReducedMotion = (enabled) => {
+      document.body.classList.toggle('reduced-motion', enabled);
+    };
+
+    applyReducedMotion(initialReduced);
+
+    const reducedMotionToggle = document.getElementById('toggle-reduced-motion');
+    if (reducedMotionToggle) {
+      reducedMotionToggle.checked = initialReduced;
+      reducedMotionToggle.addEventListener('change', () => {
+        const enabled = reducedMotionToggle.checked;
+        applyReducedMotion(enabled);
+        window.localStorage?.setItem('creatureSandboxReducedMotion', String(enabled));
+      });
+    }
+  }, 'Reduced motion accessibility toggle');
+
+  // Nameplates toggle
+  errorHandler.safeExecute(() => {
+    const nameplatesToggle = document.getElementById('toggle-nameplates');
+    if (nameplatesToggle && renderer) {
+      nameplatesToggle.checked = !!renderer.enableNameLabels;
+      nameplatesToggle.addEventListener('change', () => {
+        renderer.enableNameLabels = nameplatesToggle.checked;
+      });
+    }
+  }, 'Nameplates toggle');
+
   // Initialize batch renderer once we have the 2D context
   errorHandler.safeExecute(() => {
     if (batchRenderer?.init) {
@@ -226,6 +260,16 @@ function initializeApp() {
   const geneEditor = errorHandler.safeExecute(() => {
     return new GeneEditor();
   }, 'Gene editor initialization', null);
+
+  if (geneEditor) {
+    errorHandler.safeExecute(() => {
+      eventSystem.on('gene-editor:spawn', ({ x, y }) => {
+        geneEditor.spawnMultiple(world, x, y);
+        gameState.setGeneEditorSpawnMode(false);
+        geneEditor.updateSpawnButton?.();
+      });
+    }, 'Gene editor spawn binding');
+  }
 
   const ecoHealth = errorHandler.safeExecute(() => {
     return new EcosystemHealth();

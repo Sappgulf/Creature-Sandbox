@@ -12,6 +12,27 @@
 
 ## Done
 
+### 2026-01-22
+
+**Changed:**
+- `creature-sim/src/gene-editor.js` — Wired gene editor controls, spawn-mode feedback, and code sharing helpers
+- `creature-sim/index.html` — Added gene code share UI, nameplates/reduced motion toggles, and improved button labels
+- `creature-sim/styles.css` — Added reduced motion styles, gene code UI styles, larger tap targets, and mobile-safe panel sizing
+- `creature-sim/src/main.js` — Wired reduced motion + nameplates toggles and gene editor spawn events
+- `creature-sim/src/mobile-support.js` — Use VisualViewport-aware sizing for mobile keyboard safety
+- `docs/ACCESSIBILITY.md` — Documented accessibility support, limitations, and quick tests
+- `docs/SMOKE_TESTS.md` — Added mobile and accessibility smoke steps
+- `docs/ROADMAP.md` — Logged shipped upgrades and verification notes
+- `README.md` — Documented gene sharing + accessibility controls
+- `CHANGELOG.md` — Added Unreleased notes for this pass
+
+**Why:**
+- Improve mobile viewport stability, accessibility affordances, and lightweight sharing features without changing the core loop
+
+**Verified:**
+- `npm test` — pass
+- `npm run lint` — 0 errors, 80 warnings (unused vars)
+
 ### 2026-01-21
 
 **Changed:**

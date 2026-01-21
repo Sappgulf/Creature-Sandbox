@@ -1,5 +1,25 @@
 # Creature Sandbox Roadmap
 
+## Shipped (2026-01-22)
+
+1. **Gene code sharing + spawn mode feedback**
+   - **Description:** Gene editor now supports copy/import code flow and clearer spawn-mode state.
+   - **Likely files:** `creature-sim/src/gene-editor.js`, `creature-sim/index.html`, `creature-sim/styles.css`
+   - **Risk level:** Low
+   - **Verification:** Open Gene Editor, copy code, paste it back, and spawn a custom creature.
+
+2. **Nameplates toggle**
+   - **Description:** Added a UI toggle to enable/disable creature nameplates.
+   - **Likely files:** `creature-sim/src/main.js`, `creature-sim/index.html`
+   - **Risk level:** Low
+   - **Verification:** Toggle nameplates in Features panel and confirm labels show/hide.
+
+3. **Reduced motion toggle**
+   - **Description:** Added a reduced motion switch that respects OS preference and persists per user.
+   - **Likely files:** `creature-sim/src/main.js`, `creature-sim/styles.css`, `creature-sim/index.html`
+   - **Risk level:** Low
+   - **Verification:** Toggle reduced motion and confirm UI animations are minimized.
+
 ## Quick Wins (Low Risk, High Visibility)
 
 1. **Tool mode HUD + brush size controls**

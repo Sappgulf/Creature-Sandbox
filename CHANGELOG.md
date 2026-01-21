@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### Added
+- Gene editor share codes (copy/import) and spawn-mode feedback.
+- Nameplates toggle in Features panel.
+- Reduced motion toggle (respects OS preference + stored setting).
+- Accessibility status messaging for gene code actions.
+
+### Changed
+- Panel max-heights now respect dynamic mobile viewport sizing.
+- Mobile viewport handling now uses VisualViewport updates when available.
 
 ## [2026-01-21]
 ### Added

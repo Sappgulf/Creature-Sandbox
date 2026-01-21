@@ -50,12 +50,18 @@ export class MobileSupport {
 
     // Stabilize viewport height to account for dynamic browser chrome
     const setViewportHeight = () => {
-      const vh = window.innerHeight * 0.01;
+      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      const vh = viewportHeight * 0.01;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
     };
 
     setViewportHeight();
     window.addEventListener('resize', setViewportHeight);
+    window.addEventListener('orientationchange', setViewportHeight);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', setViewportHeight);
+      window.visualViewport.addEventListener('scroll', setViewportHeight);
+    }
   }
 
   handleTouchStart(e) {
