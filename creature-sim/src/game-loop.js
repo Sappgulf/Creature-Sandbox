@@ -2,7 +2,7 @@
  * Game Loop - Main game loop and timing management
  * Handles the core simulation loop with proper timing and performance monitoring
  * Now integrated with all subsystems for complete feature restoration
- * 
+ *
  * PERFORMANCE: Static imports instead of dynamic to avoid per-frame import() latency
  */
 import { gameState } from './game-state.js';
@@ -13,8 +13,7 @@ import { configManager } from './config-manager.js';
 import { poolManager } from './object-pool.js';
 import { batchRenderer } from './batch-renderer.js';
 import { ecsWorld } from './ecs.js';
-import { analyticsDashboard } from './enhanced-analytics.js';
-import { advancedStatsCalculator } from './enhanced-analytics.js';
+import { analyticsDashboard, advancedStatsCalculator } from './enhanced-analytics.js';
 // STATIC UI IMPORTS - avoids dynamic import() latency in hot path
 import { renderStats, renderSelectedInfo, renderAnalyticsCharts } from './ui.js';
 
@@ -138,7 +137,7 @@ export class GameLoop {
       particles: 200
     });
 
-    console.log('🔗 Enhanced systems integrated into game loop');
+    console.debug('🔗 Enhanced systems integrated into game loop');
   }
 
   /**
@@ -181,7 +180,7 @@ export class GameLoop {
    * Start the game loop
    */
   start() {
-    console.log('🎮 Starting game loop');
+    console.debug('🎮 Starting game loop');
     this._lastLoopTime = performance.now();
     requestAnimationFrame(this.boundLoop);
 
@@ -211,7 +210,7 @@ export class GameLoop {
       clearInterval(this._watchdogInterval);
       this._watchdogInterval = null;
     }
-    console.log('🛑 Game loop stopped');
+    console.debug('🛑 Game loop stopped');
   }
 
   /**

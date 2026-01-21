@@ -469,9 +469,9 @@ export class CreatureBehaviorSystem {
    * Apply herding forces (separation, alignment, cohesion)
    */
   applyHerdForces(herdMembers, dt) {
-    let separationForce = { x: 0, y: 0 };
-    let alignmentForce = { x: 0, y: 0 };
-    let cohesionForce = { x: 0, y: 0 };
+    const separationForce = { x: 0, y: 0 };
+    const alignmentForce = { x: 0, y: 0 };
+    const cohesionForce = { x: 0, y: 0 };
 
     for (const other of herdMembers) {
       const dx = other.x - this.creature.x;
@@ -673,7 +673,7 @@ export class CreatureBehaviorSystem {
       if (child.ageStage === 'adult') continue; // Adults are independent
 
       const score = child.ageStage === 'juvenile' ? 2 :
-                   child.ageStage === 'baby' ? 3 : 1;
+        child.ageStage === 'baby' ? 3 : 1;
 
       if (score > bestScore) {
         bestScore = score;

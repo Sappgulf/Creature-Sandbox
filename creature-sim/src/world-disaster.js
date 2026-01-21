@@ -52,7 +52,7 @@ export class WorldDisaster {
       }
     };
 
-    console.log('🌪️ World disaster system initialized');
+    console.debug('🌪️ World disaster system initialized');
   }
 
   update(dt) {
@@ -258,11 +258,11 @@ export class WorldDisaster {
   applyDiseaseEffect(dt, intensity, progress) {
     // Only try to infect new creatures periodically, not every frame
     if (Math.random() > dt * 0.5) return; // ~50% chance per second to attempt infections
-    
+
     // Pick a random disease type based on intensity
     const diseaseTypes = Object.keys(DISEASE_TYPES);
     let diseaseId;
-    
+
     if (intensity >= 0.8) {
       // High intensity: chance of blight
       diseaseId = Math.random() < 0.3 ? 'blight' : diseaseTypes[Math.floor(Math.random() * diseaseTypes.length)];

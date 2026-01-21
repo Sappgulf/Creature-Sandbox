@@ -1,6 +1,6 @@
 /**
  * Perlin Noise Generator for Organic Terrain
- * 
+ *
  * Creates smooth, natural-looking noise patterns for biome generation.
  * Based on Ken Perlin's improved noise algorithm.
  */
@@ -17,14 +17,14 @@ export class PerlinNoise {
     for (let i = 0; i < 256; i++) {
       p[i] = i;
     }
-    
+
     // Fisher-Yates shuffle with seed
-    let random = this._seededRandom(seed);
+    const random = this._seededRandom(seed);
     for (let i = 255; i > 0; i--) {
       const j = Math.floor(random() * (i + 1));
       [p[i], p[j]] = [p[j], p[i]];
     }
-    
+
     // Duplicate for overflow
     return [...p, ...p];
   }
@@ -125,7 +125,7 @@ export class PerlinNoise {
    */
   generateMap(width, height, scale = 100, octaves = 4) {
     const map = new Float32Array(width * height);
-    
+
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const nx = x / scale;
@@ -135,7 +135,7 @@ export class PerlinNoise {
         map[y * width + x] = (value + 1) / 2;
       }
     }
-    
+
     return map;
   }
 }
@@ -161,7 +161,7 @@ export class BiomeGenerator {
    */
   getBiomeAt(x, y, worldWidth, worldHeight) {
     const scale = 0.001; // Adjust for biome size
-    
+
     // Get noise values (0-1 range)
     const moisture = (this.moistureNoise.octaveNoise(x * scale, y * scale, 3) + 1) / 2;
     const temperature = (this.temperatureNoise.octaveNoise(x * scale * 0.8, y * scale * 0.8, 3) + 1) / 2;

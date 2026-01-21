@@ -200,7 +200,7 @@ export class Creature {
     this.intelligence = {
       level: clamp((genes.sense / CreatureConfig.INTELLIGENCE.LEVEL_SENSE_RATIO) *
         (genes.metabolism ?? CreatureConfig.INTELLIGENCE.LEVEL_METABOLISM_MULTIPLIER),
-        0, CreatureConfig.INTELLIGENCE.LEVEL_MAX),
+      0, CreatureConfig.INTELLIGENCE.LEVEL_MAX),
       patterns: [], // learned successful strategies
       experiencePoints: 0,
       learningRate: CreatureConfig.INTELLIGENCE.PATTERN_LEARNING
@@ -535,7 +535,7 @@ export class Creature {
     }
     const aggressiveTurn = this.genes.predator && this.target && this.target.creatureId != null && this.personality.ambushTimer <= 0;
     const turnClamp = aggressiveTurn ? 0.22 : 0.15;
-    let delta = Math.atan2(Math.sin(desiredAngle - this.dir), Math.cos(desiredAngle - this.dir));
+    const delta = Math.atan2(Math.sin(desiredAngle - this.dir), Math.cos(desiredAngle - this.dir));
     this.dir += clamp(delta, -turnClamp, turnClamp);
 
     const restFactor = BehaviorConfig.restWeight * clamp(1 - this.energy / 36, 0, 1);

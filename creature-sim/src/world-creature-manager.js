@@ -22,7 +22,7 @@ export class WorldCreatureManager {
     this.gridDirty = true;
     this.lineageTracker = null;
 
-    console.log('🧬 World creature manager initialized');
+    console.debug('🧬 World creature manager initialized');
   }
 
   // Add creature to world
@@ -77,6 +77,7 @@ export class WorldCreatureManager {
     if (index >= 0) {
       this.world.creatures.splice(index, 1);
       this.creatureGrid.remove(creature);
+      this.registry.delete(creature.id);
       this.gridDirty = true;
     }
   }
@@ -142,6 +143,17 @@ export class WorldCreatureManager {
   spawnManual(x, y, predator = false) {
     const genes = makeGenes(predator);
     const creature = new Creature(x, y, genes);
+    return this.addCreature(creature);
+  }
+
+  // Spawn creature with provided gene set (used for undo/redo restores)
+  spawnManualWithGenes(x, y, genes) {
+    if (!genes) return null;
+
+    const safeGenes = { ...(genes.genesRaw || genes) };
+    const clampedX = clamp(x, 0, this.world.width);
+    const clampedY = clamp(y, 0, this.world.height);
+    const creature = new Creature(clampedX, clampedY, safeGenes, true);
     return this.addCreature(creature);
   }
 

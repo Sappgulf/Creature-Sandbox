@@ -79,7 +79,7 @@ export class InputManager {
     }
 
     // Handle meta/cmd key combinations first
-    if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey) {
+    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
       this.handleCtrlKey(e);
       return;
     }
@@ -95,6 +95,18 @@ export class InputManager {
    */
   handleCtrlKey(e) {
     switch (e.key.toLowerCase()) {
+      case 'z':
+        e.preventDefault();
+        if (e.shiftKey) {
+          this.tools?.redo?.();
+        } else {
+          this.tools?.undo?.();
+        }
+        break;
+      case 'y':
+        e.preventDefault();
+        this.tools?.redo?.();
+        break;
       case 's':
         e.preventDefault();
         // Save handled by main.js saveSystem
@@ -240,6 +252,11 @@ export class InputManager {
         e.preventDefault();
         break;
 
+      // Help overlay
+      case '?':
+        this.toggleShortcutsHelp();
+        break;
+
       // Escape key
       case 'escape':
         this.handleEscape();
@@ -248,9 +265,26 @@ export class InputManager {
   }
 
   /**
+   * Toggle keyboard shortcuts help overlay
+   */
+  toggleShortcutsHelp() {
+    const overlay = document.getElementById('shortcuts-overlay');
+    if (overlay) {
+      overlay.classList.toggle('hidden');
+    }
+  }
+
+  /**
    * Handle escape key
    */
   handleEscape() {
+    // Close shortcuts overlay if open
+    const shortcutsOverlay = document.getElementById('shortcuts-overlay');
+    if (shortcutsOverlay && !shortcutsOverlay.classList.contains('hidden')) {
+      shortcutsOverlay.classList.add('hidden');
+      return;
+    }
+
     // Cancel spawn mode first
     if (gameState.spawnMode) {
       this.cancelSpawnMode();
@@ -557,37 +591,55 @@ export class InputManager {
     const mode = this.tools?.mode || 'inspect';
 
     switch (mode) {
-      case 'food':
+      case 'food': {
         // Spawn food at click location
         if (!isDrag || Math.random() < 0.3) { // Throttle during drag
-          this.world.addFood(x, y);
-        }
-        break;
-
-      case 'spawn':
-        // Spawn creature (handled elsewhere via gene editor mode)
-        if (!isDrag && gameState.geneEditorSpawnMode) {
-          // Gene editor spawn mode - dispatch event
-          eventSystem.emit('gene-editor:spawn', { x, y });
-        } else if (!isDrag && gameState.selectedCreatureType) {
-          // Regular spawn mode
-          this.world.spawnCreatureType(gameState.selectedCreatureType, x, y);
-        }
-        break;
-
-      case 'erase':
-        // Kill creature at location
-        if (!isDrag) {
-          const creature = this._findCreatureAt(x, y);
-          if (creature) {
-            creature.alive = false;
-            creature.deathTime = this.world.t;
+          if (this.tools?.scatterFood) {
+            this.tools.scatterFood(x, y, e.shiftKey ? 2 : 10);
+          } else {
+            this.world.addFood(x, y);
           }
         }
         break;
+      }
+
+      case 'spawn': {
+        if (isDrag) break;
+
+        // Spawn creature (handled elsewhere via gene editor mode)
+        if (gameState.geneEditorSpawnMode) {
+          // Gene editor spawn mode - dispatch event
+          eventSystem.emit('gene-editor:spawn', { x, y });
+          break;
+        }
+
+        const selectedType = gameState.selectedCreatureType || 'herbivore';
+        if (this.tools?.spawnCreature) {
+          this.tools.spawnCreature(x, y, { type: selectedType });
+        } else {
+          this.world.spawnCreatureType(selectedType, x, y);
+        }
+        break;
+      }
+
+      case 'erase': {
+        // Kill creature at location
+        if (!isDrag) {
+          if (this.tools?.eraseCreatures) {
+            this.tools.eraseCreatures(x, y);
+          } else {
+            const creature = this._findCreatureAt(x, y);
+            if (creature) {
+              creature.alive = false;
+              creature.deathTime = this.world.t;
+            }
+          }
+        }
+        break;
+      }
 
       case 'inspect':
-      default:
+      default: {
         // Select creature at location (only on initial click, not drag)
         if (!isDrag) {
           const creature = this._findCreatureAt(x, y);
@@ -602,6 +654,7 @@ export class InputManager {
           }
         }
         break;
+      }
     }
   }
 

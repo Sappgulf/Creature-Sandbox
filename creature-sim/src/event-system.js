@@ -2,16 +2,16 @@
  * Event System - Decoupled communication between game systems.
  * Provides publish-subscribe pattern for clean system interactions.
  * Uses a circular buffer for event history to avoid O(n) array operations.
- * 
+ *
  * @example
  * // Subscribe to an event
  * const unsubscribe = eventSystem.on('creature:born', (data) => {
  *   console.log('Creature born:', data.id);
  * });
- * 
+ *
  * // Emit an event
  * eventSystem.emit('creature:born', { id: 123, genes: {...} });
- * 
+ *
  * // Unsubscribe
  * unsubscribe();
  */
@@ -279,7 +279,7 @@ export class EventSystem {
   getRecentEvents(count = 10) {
     const actualCount = Math.min(count, this.historyCount);
     const result = [];
-    
+
     for (let i = 0; i < actualCount; i++) {
       // Walk backwards from most recent
       const idx = (this.historyHead - 1 - i + this.maxHistorySize) % this.maxHistorySize;
@@ -288,7 +288,7 @@ export class EventSystem {
         result.push(event);
       }
     }
-    
+
     return result;
   }
 }

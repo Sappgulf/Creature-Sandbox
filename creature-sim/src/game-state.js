@@ -1,17 +1,17 @@
 /**
  * Game State Manager - Centralized state management.
  * Replaces scattered global variables with organized state.
- * 
+ *
  * Provides a single source of truth for:
  * - Game flow (paused, started, speed)
  * - Selection state (selectedId, pinnedId, lineageRootId)
  * - Input state (painting, panning)
  * - UI visibility (inspector, panels)
  * - Performance metrics (FPS, rendered/culled counts)
- * 
+ *
  * @example
  * import { gameState } from './game-state.js';
- * 
+ *
  * gameState.togglePause();
  * gameState.selectCreature(42);
  * if (gameState.paused) { ... }

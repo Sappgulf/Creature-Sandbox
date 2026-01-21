@@ -1,11 +1,11 @@
 /**
  * High-performance spatial hash grid using typed arrays for broad-phase queries.
  * Optimized for cache-friendly operations and minimal allocations.
- * 
+ *
  * Provides O(1) insertion and near-O(1) proximity queries by dividing the world
  * into a grid of cells. Items are sorted into cells based on their position,
  * and queries only check cells within the search radius.
- * 
+ *
  * @example
  * const grid = new SpatialGrid(50, 1000, 700); // 50px cells
  * grid.clear();

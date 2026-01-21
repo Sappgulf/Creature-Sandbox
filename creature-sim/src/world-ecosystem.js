@@ -46,7 +46,7 @@ export class WorldEcosystem {
     this.balanceCheckInterval = 60; // Check every minute
     this.lastEcoStats = null;
 
-    console.log('🌱 World ecosystem system initialized');
+    console.debug('🌱 World ecosystem system initialized');
   }
 
   update(dt) {
@@ -213,7 +213,7 @@ export class WorldEcosystem {
     // Skip balancing if ecosystem is too young or empty
     if (total < 5 || this.world.t < 60) return;
 
-    let actions = [];
+    const actions = [];
 
     // Predator imbalance
     if (predators === 0 && total > 10) {

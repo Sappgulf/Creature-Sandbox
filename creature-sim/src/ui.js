@@ -7,24 +7,24 @@ export function bindUI({ onPause, onStep, onFood }) {
 
 export function renderStats(el, world, fps, extra={}) {
   if (!el) return;
-  
+
   const n = world.creatures.length;
-  
+
   // Count creature types efficiently
   let preds = 0;
   for (let i = 0; i < n; i++) {
     const diet = world.creatures[i].genes.diet ?? (world.creatures[i].genes.predator ? 1.0 : 0.0);
     if (diet > 0.7) preds++;
   }
-  
+
   // Build minimal, clean stats line
   const statParts = [];
-  
+
   // Core metrics - always show
   statParts.push(`<span>🐾 <span class="value">${n}</span></span>`);
   statParts.push(`<span>🦁 <span class="value">${preds}</span></span>`);
   statParts.push(`<span>🌿 <span class="value">${world.food.length}</span></span>`);
-  
+
   // Season info - compact
   if (world.getSeasonInfo) {
     const seasonInfo = world.getSeasonInfo();
@@ -33,36 +33,36 @@ export function renderStats(el, world, fps, extra={}) {
       statParts.push(`<span>${seasonInfo.icon || '🌱'} <span class="value">${progressPct}%</span></span>`);
     }
   }
-  
+
   // Time of day - compact
   if (extra.timeOfDay !== undefined) {
     const hour = Math.floor(extra.timeOfDay);
     const isDaytime = hour >= 6 && hour < 20;
     statParts.push(`<span>${isDaytime ? '☀️' : '🌙'}</span>`);
   }
-  
+
   // FPS - only if performance mode or low
   if (fps < 50) {
     statParts.push(`<span style="color: var(--accent-warning);">${fps.toFixed(0)} FPS</span>`);
   }
-  
+
   // Speed indicator
   if (extra.fastForward && extra.fastForward !== 1) {
     statParts.push(`<span>⚡<span class="value">×${extra.fastForward}</span></span>`);
   }
-  
+
   // Paused state
   if (extra.paused) {
-    statParts.push(`<span style="color: var(--accent-danger);">⏸</span>`);
+    statParts.push('<span style="color: var(--accent-danger);">⏸</span>');
   }
-  
+
   // Active events - very compact
   const events = typeof world.getActiveEvents === 'function' ? world.getActiveEvents() : [];
   if (events.length) {
     const evt = events[0];
     statParts.push(`<span style="color: var(--accent-warning);">🌪️ ${Math.ceil(evt.remaining)}s</span>`);
   }
-  
+
   el.innerHTML = statParts.join('');
 }
 
@@ -75,7 +75,7 @@ export function renderSelectedInfo(el, creature, { world=null, lineageTracker=nu
   }
 
   el.classList.remove('hidden');
-  
+
   // Resolve lineage-friendly name if available
   let lineageName = null;
   if (world && lineageTracker && typeof lineageTracker.getRoot === 'function' && typeof lineageTracker.ensureName === 'function') {
@@ -100,7 +100,7 @@ export function renderSelectedInfo(el, creature, { world=null, lineageTracker=nu
     const disorders = { ALBINISM: ' 🤍', HEMOPHILIA: ' 🩸', GIGANTISM: ' 🦕', DWARFISM: ' 🐁', HYPERMETABOLISM: ' ⚡' };
     return disorders[d] || '';
   }).join('');
-  
+
   const headline = lineageName ? `${lineageName} · #${creature.id}${sexEmoji}${disorderEmojis}` : `Creature #${creature.id}${sexEmoji}${disorderEmojis}`;
   const sublineParts = [
     dietLabel,
@@ -216,7 +216,7 @@ export function renderInspector(model={}, handlers={}) {
   };
 
   if (!creature) {
-    body.innerHTML = `<div class="muted">Click a creature to inspect.<br/>Shift-click to set lineage root.</div>`;
+    body.innerHTML = '<div class="muted">Click a creature to inspect.<br/>Shift-click to set lineage root.</div>';
   } else {
     const parentCell = creature.parentId ? `<button class="btn-link" id="btn-parent">#${creature.parentId}</button>` : '—';
     const sexEmoji = creature.sex === 'male' ? '♂️' : '♀️';
@@ -231,10 +231,10 @@ export function renderInspector(model={}, handlers={}) {
       };
       return disorders[d] || d;
     }).join(', ') || 'None';
-    
-    const mutationBadge = (creature.mutations && creature.mutations.length > 0) ? 
+
+    const mutationBadge = (creature.mutations && creature.mutations.length > 0) ?
       ` <span class="chip" style="font-size:9px;padding:2px 6px;">🧬 ${creature.mutations.length}</span>` : '';
-    
+
     body.innerHTML = `
       <div class="row"><div>ID</div><div>#${creature.id}${creature.alive? '' : ' †'}${mutationBadge}</div></div>
       <div class="row"><div>Parent</div><div>${parentCell}</div></div>
@@ -329,11 +329,11 @@ export function renderInspector(model={}, handlers={}) {
         : (creature.parentId ? [creature.parentId] : []);
       const parentMarkup = parentIds.length
         ? parentIds.map(id => {
-            const parent = worldRef?.getAnyCreatureById?.(id);
-            const alive = parent ? parent.alive !== false : false;
-            const label = alive ? `#${id}` : `#${id}✝`;
-            return `<button class="btn-link family-jump ${alive ? '' : 'muted'}" data-id="${id}">${label}</button>`;
-          }).join(', ')
+          const parent = worldRef?.getAnyCreatureById?.(id);
+          const alive = parent ? parent.alive !== false : false;
+          const label = alive ? `#${id}` : `#${id}✝`;
+          return `<button class="btn-link family-jump ${alive ? '' : 'muted'}" data-id="${id}">${label}</button>`;
+        }).join(', ')
         : '<span class="muted">Unknown</span>';
 
       const childIds = Array.isArray(creature.children) ? creature.children : [];
@@ -529,7 +529,7 @@ function drawChart(ctx, lines, { min=null, max=null } = {}) {
   // Guard against hidden canvases (0x0 dimensions)
   if (w <= 0 || h <= 0) return;
   const pad = 6;
-  
+
   // OPTIMIZATION: Single clear/fill operation
   ctx.fillStyle = '#11131d';
   ctx.fillRect(0,0,w,h);
@@ -560,13 +560,13 @@ function drawChart(ctx, lines, { min=null, max=null } = {}) {
   // OPTIMIZATION: Cache calculations and use for loops
   const xStep = (w - pad*2) / (len-1);
   const yScale = (h - pad*2) / range;
-  
+
   ctx.lineWidth = 1.4;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     ctx.strokeStyle = line.color;
     ctx.beginPath();
-    
+
     // Use for loop for better performance
     for (let j = 0; j < len; j++) {
       const value = line.series[j];

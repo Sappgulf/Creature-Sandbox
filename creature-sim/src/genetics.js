@@ -77,35 +77,35 @@ export const MUTATION_TYPES = {
 export function makeGenes(seed={}) {
   const predator = seed.predator ?? 0;
   const diet = seed.diet ?? (predator ? 1.0 : 0.0);
-  
+
   // Determine sex (50/50 split unless specified)
   const sex = seed.sex ?? (Math.random() < 0.5 ? 'male' : 'female');
-  
+
   // Create diploid genes (two alleles per trait)
   // Format: { allele1: value, allele2: value, expressed: dominant_value }
   const genes = {
     sex: sex, // XX = female, XY = male
-    
+
     // Core physical traits (diploid)
     speed: createDiploidTrait(seed.speed, 0.8, 0.2, 2.0),
     fov: createDiploidTrait(seed.fov, 70, 20, 160),
     sense: createDiploidTrait(seed.sense, 90, 20, 200),
     metabolism: createDiploidTrait(seed.metabolism, 1, 0.4, 2.0),
-    
+
     // Color (polygenic - average of both alleles)
     hue: {
       allele1: seed.hue ?? Math.floor(Math.random()*360),
       allele2: seed.hue ?? Math.floor(Math.random()*360),
       expressed: null // Will be calculated
     },
-    
+
     // Diet (co-dominant)
     diet: {
       allele1: seed.diet ?? diet,
       allele2: seed.diet ?? diet,
       expressed: null
     },
-    
+
     // Behavioral traits (diploid with varying dominance)
     packInstinct: createDiploidTrait(seed.packInstinct, predator ? 0.55 : 0, 0, 1),
     ambushDelay: createDiploidTrait(seed.ambushDelay, predator ? 0.6 : 0.15, 0, 5),
@@ -116,23 +116,23 @@ export function makeGenes(seed={}) {
     grit: createDiploidTrait(seed.grit, predator ? 0.65 : 0.1, 0, 1),
     nocturnal: createDiploidTrait(seed.nocturnal, 0.5, 0, 1),
     aquatic: createDiploidTrait(seed.aquatic, predator ? 0.04 : 0.12, 0, 1),
-    
+
     // Legacy compatibility
     predator: predator,
-    
+
     // Genetic disorders
     disorders: seed.disorders || [],
-    
+
     // Mutation tracking
     mutations: seed.mutations || []
   };
-  
+
   // Calculate expressed traits
   calculateExpressedGenes(genes);
-  
+
   // Check for genetic disorders
   checkForDisorders(genes);
-  
+
   return genes;
 }
 
@@ -149,12 +149,12 @@ function createDiploidTrait(seedValue, defaultValue, min, max) {
       max: max
     };
   }
-  
+
   // Random alleles with slight variation
   const base = defaultValue + randn(0, defaultValue * 0.1);
   const allele1 = clamp(base + randn(0, defaultValue * 0.15), min, max);
   const allele2 = clamp(base + randn(0, defaultValue * 0.15), min, max);
-  
+
   return {
     allele1: allele1,
     allele2: allele2,
@@ -184,7 +184,7 @@ function calculateExpressedGenes(genes) {
       }
     }
   }
-  
+
   // Sexual dimorphism: males and females have different trait expressions
   if (genes.sex === 'male') {
     // Males: Higher speed, aggression, lower metabolism
@@ -204,11 +204,11 @@ function calculateExpressedGenes(genes) {
  */
 function checkForDisorders(genes) {
   genes.disorders = [];
-  
+
   // Check each disorder
   for (const [key, disorder] of Object.entries(GENETIC_DISORDERS)) {
     let hasDisorder = false;
-    
+
     if (key === 'HEMOPHILIA') {
       // Hemophilia is sex-linked (X chromosome)
       // Males (XY) only need one recessive allele
@@ -222,7 +222,7 @@ function checkForDisorders(genes) {
       // Other disorders: need two recessive alleles
       hasDisorder = Math.random() < disorder.chance;
     }
-    
+
     if (hasDisorder) {
       genes.disorders.push(key);
     }
@@ -235,26 +235,26 @@ function checkForDisorders(genes) {
  */
 export function applyDisorderEffects(genes) {
   if (!genes.disorders || genes.disorders.length === 0) return genes;
-  
+
   // OPTIMIZATION: Modify in-place if no disorders
   const disordersCount = genes.disorders.length;
   if (disordersCount === 0) return genes;
-  
+
   // Only spread if we actually have disorders
   const modifiedGenes = { ...genes };
-  
+
   for (let i = 0; i < disordersCount; i++) {
     const disorderKey = genes.disorders[i];
     const disorder = GENETIC_DISORDERS[disorderKey];
     if (!disorder) continue;
-    
+
     // Apply each effect (optimized loop)
     const effects = disorder.effects;
     const effectKeys = Object.keys(effects);
     for (let j = 0, len = effectKeys.length; j < len; j++) {
       const trait = effectKeys[j];
       const multiplier = effects[trait];
-      
+
       if (trait === 'hue') {
         modifiedGenes.hue.expressed = multiplier;
       } else if (trait === 'size' || trait === 'health') {
@@ -270,7 +270,7 @@ export function applyDisorderEffects(genes) {
       }
     }
   }
-  
+
   return modifiedGenes;
 }
 
@@ -279,25 +279,25 @@ export function applyDisorderEffects(genes) {
  */
 export function breedGenes(parent1Genes, parent2Genes, mutationRate = 0.05) {
   const childGenes = {};
-  
+
   // Determine sex (50/50 from sex chromosomes)
   childGenes.sex = Math.random() < 0.5 ? 'male' : 'female';
-  
+
   // For each trait, randomly inherit one allele from each parent
   for (const key of Object.keys(parent1Genes)) {
     const trait1 = parent1Genes[key];
     const trait2 = parent2Genes[key];
-    
+
     // Skip non-genetic properties
     if (key === 'sex' || key === 'disorders' || key === 'mutations' || key === 'predator') {
       continue;
     }
-    
+
     if (trait1 && typeof trait1 === 'object' && 'allele1' in trait1) {
       // Mendelian inheritance: randomly pick one allele from each parent
       const inheritedAllele1 = Math.random() < 0.5 ? trait1.allele1 : trait1.allele2;
       const inheritedAllele2 = Math.random() < 0.5 ? trait2.allele1 : trait2.allele2;
-      
+
       childGenes[key] = {
         allele1: inheritedAllele1,
         allele2: inheritedAllele2,
@@ -307,23 +307,23 @@ export function breedGenes(parent1Genes, parent2Genes, mutationRate = 0.05) {
       };
     }
   }
-  
+
   // Legacy predator trait
   childGenes.predator = parent1Genes.predator || parent2Genes.predator;
-  
+
   // Initialize disorder and mutation tracking
   childGenes.disorders = [];
   childGenes.mutations = [];
-  
+
   // Apply mutations (returns new object, so we use a new const)
   const mutatedChildGenes = applyMutations(childGenes, mutationRate);
-  
+
   // Calculate expressed traits
   calculateExpressedGenes(mutatedChildGenes);
-  
+
   // Check for disorders
   checkForDisorders(mutatedChildGenes);
-  
+
   return mutatedChildGenes;
 }
 
@@ -333,16 +333,16 @@ export function breedGenes(parent1Genes, parent2Genes, mutationRate = 0.05) {
 export function applyMutations(genes, mutationRate = 0.05) {
   const mutatedGenes = { ...genes };
   mutatedGenes.mutations = [...(genes.mutations || [])];
-  
+
   // For each gene, chance of mutation
   for (const key of Object.keys(genes)) {
     const trait = genes[key];
-    
+
     if (trait && typeof trait === 'object' && 'allele1' in trait && Math.random() < mutationRate) {
       // Determine mutation type
       const mutationType = selectMutationType();
       const mutation = MUTATION_TYPES[mutationType];
-      
+
       // Randomly mutate one or both alleles
       if (Math.random() < 0.5) {
         mutatedGenes[key].allele1 = mutateValue(
@@ -359,21 +359,21 @@ export function applyMutations(genes, mutationRate = 0.05) {
           mutation
         );
       }
-      
+
       // Track the mutation
       mutatedGenes.mutations.push({
         trait: key,
         type: mutationType,
         generation: mutatedGenes.mutations.length
       });
-      
+
       // Keep only recent mutations (last 5)
       if (mutatedGenes.mutations.length > 5) {
         mutatedGenes.mutations.shift();
       }
     }
   }
-  
+
   return mutatedGenes;
 }
 
@@ -383,14 +383,14 @@ export function applyMutations(genes, mutationRate = 0.05) {
 function selectMutationType() {
   const roll = Math.random();
   let cumulative = 0;
-  
+
   for (const [type, data] of Object.entries(MUTATION_TYPES)) {
     cumulative += data.weight;
     if (roll < cumulative) {
       return type;
     }
   }
-  
+
   return 'NEUTRAL';
 }
 
@@ -400,7 +400,7 @@ function selectMutationType() {
 function mutateValue(value, min, max, mutation) {
   const range = max - min;
   const mutationAmount = range * 0.06 * mutation.multiplier;
-  
+
   let newValue;
   if (mutation.negative) {
     // Harmful mutation: tends to make traits worse
@@ -415,7 +415,7 @@ function mutateValue(value, min, max, mutation) {
     // Beneficial or neutral mutation
     newValue = value + randn(0, mutationAmount);
   }
-  
+
   return clamp(newValue, min, max);
 }
 
@@ -428,7 +428,7 @@ export function mutateGenes(genes, amt=0.06) {
   if (genes.speed && typeof genes.speed === 'object' && 'allele1' in genes.speed) {
     return applyMutations(genes, amt);
   }
-  
+
   // Convert old haploid genes to diploid
   const diploidGenes = makeGenes(genes);
   return applyMutations(diploidGenes, amt);
@@ -444,14 +444,14 @@ export function getExpressedGenes(genes) {
   // Check cache first
   const cached = expressedGenesCache.get(genes);
   if (cached) return cached;
-  
+
   const simple = {
     sex: genes.sex,
     predator: genes.predator,
     disorders: genes.disorders || [],
     mutations: genes.mutations || []
   };
-  
+
   // OPTIMIZATION: Use for-in loop instead of Object.entries
   for (const key in genes) {
     const value = genes[key];
@@ -461,7 +461,7 @@ export function getExpressedGenes(genes) {
       simple[key] = value;
     }
   }
-  
+
   // Cache result
   expressedGenesCache.set(genes, simple);
   return simple;
@@ -477,10 +477,10 @@ export function getGeneticInfo(genes) {
     disorders: genes.disorders || [],
     disorderLabels: (genes.disorders || []).map(d => GENETIC_DISORDERS[d]?.emoji + ' ' + GENETIC_DISORDERS[d]?.name),
     mutations: genes.mutations || [],
-    recentMutation: genes.mutations && genes.mutations.length > 0 
-      ? MUTATION_TYPES[genes.mutations[genes.mutations.length - 1].type]?.label 
+    recentMutation: genes.mutations && genes.mutations.length > 0
+      ? MUTATION_TYPES[genes.mutations[genes.mutations.length - 1].type]?.label
       : null
   };
-  
+
   return info;
 }

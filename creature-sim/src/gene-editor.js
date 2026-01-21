@@ -34,26 +34,26 @@ export class GeneEditor {
     this.spawnCount = 1;
     this.spawnSpread = 50;
   }
-  
+
   toggle() {
     this.visible = !this.visible;
     this.updateUI();
   }
-  
+
   show() {
     this.visible = true;
     this.updateUI();
   }
-  
+
   hide() {
     this.visible = false;
     this.updateUI();
   }
-  
+
   updateUI() {
     const panel = document.getElementById('gene-editor-panel');
     if (!panel) return;
-    
+
     if (this.visible) {
       panel.classList.remove('hidden');
       this.syncUIToGenes();
@@ -61,7 +61,7 @@ export class GeneEditor {
       panel.classList.add('hidden');
     }
   }
-  
+
   syncUIToGenes() {
     // Update all sliders to match current gene values
     Object.keys(this.customGenes).forEach(key => {
@@ -74,14 +74,14 @@ export class GeneEditor {
         }
       }
     });
-    
+
     // Update spawn controls
     const spawnCountInput = document.getElementById('gene-spawn-count');
     const spawnSpreadInput = document.getElementById('gene-spawn-spread');
     if (spawnCountInput) spawnCountInput.value = this.spawnCount;
     if (spawnSpreadInput) spawnSpreadInput.value = this.spawnSpread;
   }
-  
+
   formatGeneValue(key, value) {
     switch (key) {
       case 'predator':
@@ -106,11 +106,11 @@ export class GeneEditor {
         return value.toFixed(2);
     }
   }
-  
+
   applyPreset(presetName) {
     const preset = this.presets[presetName];
     if (!preset) return;
-    
+
     // Reset to defaults first
     this.customGenes = {
       speed: 1.0,
@@ -129,14 +129,14 @@ export class GeneEditor {
       aggression: 1.0,
       nocturnal: 0.0
     };
-    
+
     // Apply preset values
     Object.assign(this.customGenes, preset);
-    
+
     this.syncUIToGenes();
     console.log(`✨ Applied preset: ${presetName}`);
   }
-  
+
   randomize() {
     this.customGenes = {
       speed: clamp(0.5 + Math.random() * 1.5, 0.2, 2.0),
@@ -155,28 +155,28 @@ export class GeneEditor {
       aggression: clamp(0.5 + Math.random(), 0.4, 2.2),
       nocturnal: Math.random() > 0.8 ? 1 : 0
     };
-    
+
     this.syncUIToGenes();
     console.log('🎲 Randomized genes!');
   }
-  
+
   spawnCreature(world, x, y) {
     if (!world) return;
-    
+
     // Create genes object from custom values
     const genes = makeGenes(this.customGenes);
-    
+
     // Create and add creature
     const creature = new Creature(x, y, genes, false);
     world.addCreature(creature, null);
-    
+
     console.log(`🧬 Spawned custom creature at (${Math.round(x)}, ${Math.round(y)})`);
     return creature;
   }
-  
+
   spawnMultiple(world, centerX, centerY) {
     if (!world) return;
-    
+
     const spawned = [];
     for (let i = 0; i < this.spawnCount; i++) {
       // Random position within spread radius
@@ -185,15 +185,15 @@ export class GeneEditor {
       // REMOVED: No world boundaries - spawn anywhere
       const x = centerX + Math.cos(angle) * distance;
       const y = centerY + Math.sin(angle) * distance;
-      
+
       const creature = this.spawnCreature(world, x, y);
       spawned.push(creature);
     }
-    
+
     console.log(`🧬 Spawned ${spawned.length} custom creatures!`);
     return spawned;
   }
-  
+
   exportGenes() {
     const json = JSON.stringify(this.customGenes, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
@@ -205,7 +205,7 @@ export class GeneEditor {
     URL.revokeObjectURL(url);
     console.log('📥 Exported custom genes!');
   }
-  
+
   importGenes(jsonString) {
     try {
       const imported = JSON.parse(jsonString);

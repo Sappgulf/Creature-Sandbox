@@ -20,7 +20,7 @@ export const RendererConfig = {
     WEATHER_DISABLED_MOBILE: true,
     MINIMAP_DISABLED_MOBILE: true
   },
-  
+
   // QUALITY PRESETS - for dynamic quality scaling
   QUALITY_PRESETS: {
     ultra: {

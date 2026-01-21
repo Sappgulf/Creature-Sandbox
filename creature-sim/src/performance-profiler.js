@@ -96,14 +96,14 @@ export class PerformanceProfiler {
     this.lastFrameTime = performance.now();
     this.frameCount = 0;
     this.lastFPSTime = performance.now();
-    
+
     // === NEW: Silent mode and debug controls ===
     this.debugMode = false;           // Only show warnings when true
     this.showOverlayAlerts = false;   // Show intrusive overlay alerts
     this.startupGracePeriod = 300;    // Ignore first 300 frames (5 seconds)
     this.framesSinceStart = 0;
     this.alertsEnabled = false;       // Master switch - alerts completely disabled by default
-    
+
     // Alert cooldown system (prevents spam)
     this.alertCooldowns = new Map();  // type -> lastAlertTime
     this.alertCooldownMs = 5000;      // 5 seconds between same alert type
@@ -151,7 +151,7 @@ export class PerformanceProfiler {
       external: 0,
       gcCollections: 0
     };
-    
+
     // Reusable sample object (reduces GC pressure)
     this._reusableSample = new PerformanceSample();
 
@@ -289,7 +289,7 @@ export class PerformanceProfiler {
   collectSample() {
     // Only collect samples every 3rd frame to reduce overhead
     if (this.framesSinceStart % 3 !== 0) return;
-    
+
     // Create new sample only when needed (reuse where possible)
     const sample = new PerformanceSample();
     sample.timestamp = performance.now();
@@ -319,12 +319,12 @@ export class PerformanceProfiler {
     if (!this.alertsEnabled) {
       return;
     }
-    
+
     // Skip during startup grace period
     if (this.framesSinceStart < this.startupGracePeriod) {
       return;
     }
-    
+
     const now = performance.now();
     const issues = [];
 
@@ -379,7 +379,7 @@ export class PerformanceProfiler {
       if (lastAlert && (now - lastAlert) < this.alertCooldownMs) {
         continue; // Skip this alert, still in cooldown
       }
-      
+
       // Update cooldown
       this.alertCooldowns.set(issue.type, now);
       issue.timestamp = now;
@@ -400,7 +400,7 @@ export class PerformanceProfiler {
       }
     }
   }
-  
+
   /**
    * Enable/disable debug mode (shows console warnings)
    */
@@ -409,7 +409,7 @@ export class PerformanceProfiler {
     this.alertsEnabled = enabled; // Also enable alerts when debug mode is on
     console.log(`🔧 Performance debug mode: ${enabled ? 'ON' : 'OFF'}`);
   }
-  
+
   /**
    * Enable/disable overlay alerts (intrusive notifications)
    */
@@ -418,7 +418,7 @@ export class PerformanceProfiler {
     this.alertsEnabled = enabled; // Also enable alerts when overlay alerts are on
     console.log(`🔔 Performance overlay alerts: ${enabled ? 'ON' : 'OFF'}`);
   }
-  
+
   /**
    * Enable/disable all performance alerts (master switch)
    */

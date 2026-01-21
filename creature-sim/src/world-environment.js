@@ -110,7 +110,7 @@ export class WorldEnvironment {
     this.diseaseCheckInterval = 30; // Check every 30 seconds
     this.diseaseProbability = 0.02; // 2% chance per check
 
-    console.log('🌤️ World environment system initialized');
+    console.debug('🌤️ World environment system initialized');
   }
 
   update(dt) {

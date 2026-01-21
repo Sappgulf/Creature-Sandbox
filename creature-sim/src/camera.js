@@ -29,17 +29,17 @@ export class Camera {
     this.viewportWidth = viewportWidth;
     this.viewportHeight = viewportHeight;
     this.travel = null;
-    
+
     // Follow mode
     this.followMode = 'free'; // 'free', 'follow', 'smooth-follow'
     this.followTarget = null; // creature ID
     this.followSmoothing = 0.12; // smoother than normal pan
     this.followZoomAdjust = true; // auto-zoom based on creature speed
-    
+
     // Movement tracking for auto-hide overlays
     this.isMoving = false;
     this.movementThreshold = 0.5; // Distance threshold to consider "moving"
-    
+
     this._refreshMinZoom();
     this._clampTargets();
   }
@@ -56,7 +56,7 @@ export class Camera {
     this.x = lerp(this.x, this.targetX, t);
     this.y = lerp(this.y, this.targetY, t);
     this._clampPosition();
-    
+
     // Track if camera is moving (for auto-hide overlays)
     const dx = Math.abs(this.x - this.targetX);
     const dy = Math.abs(this.y - this.targetY);

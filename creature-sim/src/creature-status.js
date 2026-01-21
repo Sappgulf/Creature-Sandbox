@@ -158,7 +158,7 @@ export class CreatureStatusSystem {
     if (this.creature.statusTimers.diseaseSpread === undefined) {
       this.creature.statusTimers.diseaseSpread = rand(0.6, 1.2);
     }
-    
+
     this.creature.statusTimers.diseaseSpread -= dt;
     if (this.creature.statusTimers.diseaseSpread <= 0) {
       this.creature.statusTimers.diseaseSpread = rand(0.6, 1.2);
@@ -289,7 +289,7 @@ export class CreatureStatusSystem {
       if (this.creature.statusTimers) {
         delete this.creature.statusTimers.diseaseSpread;
       }
-      
+
       // Handle disease recovery - grant immunity if creature is still alive
       if (this.creature.alive && status.metadata?.diseaseType) {
         diseaseSystem.handleRecovery(this.creature, status.metadata.diseaseType);

@@ -62,11 +62,11 @@ export class TutorialSystem {
         waitFor: { type: 'god_mode_action', count: 1 }
       }
     ];
-    
+
     this.stepIndex = 0;
     this.active = false;
     this.skipRequested = false;
-    
+
     // Event listeners tracking
     this.listeners = {
       zoom: 0,
@@ -85,11 +85,11 @@ export class TutorialSystem {
     if (this.completed.has('all')) {
       return; // Already completed
     }
-    
+
     this.active = true;
     this.stepIndex = 0;
     this.showStep(this.steps[0]);
-    
+
     // Setup global listeners for tutorial tracking
     this.setupListeners();
   }
@@ -106,7 +106,7 @@ export class TutorialSystem {
   // Show a tutorial step
   showStep(step) {
     this.currentStep = step;
-    
+
     // Create tutorial overlay if it doesn't exist
     let overlay = document.getElementById('tutorial-overlay');
     if (!overlay) {
@@ -124,7 +124,7 @@ export class TutorialSystem {
         <div id="tutorial-highlight"></div>
       `;
       document.body.appendChild(overlay);
-      
+
       // Style it
       overlay.style.cssText = `
         position: fixed;
@@ -135,7 +135,7 @@ export class TutorialSystem {
         z-index: 10000;
         pointer-events: none;
       `;
-      
+
       const content = overlay.querySelector('#tutorial-content');
       content.style.cssText = `
         position: absolute;
@@ -150,7 +150,7 @@ export class TutorialSystem {
         pointer-events: auto;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
       `;
-      
+
       const highlight = overlay.querySelector('#tutorial-highlight');
       highlight.style.cssText = `
         position: absolute;
@@ -160,7 +160,7 @@ export class TutorialSystem {
         box-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
         transition: all 0.3s ease;
       `;
-      
+
       // Button styles
       const buttons = content.querySelectorAll('button');
       buttons.forEach(btn => {
@@ -175,23 +175,23 @@ export class TutorialSystem {
           font-size: 14px;
         `;
       });
-      
+
       // Event listeners
       content.querySelector('#tutorial-next').addEventListener('click', () => this.nextStep());
       content.querySelector('#tutorial-skip').addEventListener('click', () => this.skip());
     }
-    
+
     // Update content
     overlay.querySelector('#tutorial-title').textContent = step.title;
     overlay.querySelector('#tutorial-text').textContent = step.text;
-    
+
     // Highlight element if specified
     if (step.highlight) {
       this.highlightElement(step.highlight);
     } else {
       this.hideHighlight();
     }
-    
+
     // Auto-advance if configured
     if (step.autoAdvance) {
       setTimeout(() => {
@@ -222,9 +222,9 @@ export class TutorialSystem {
   highlightElement(selector) {
     const highlight = document.getElementById('tutorial-highlight');
     if (!highlight) return;
-    
+
     let element = null;
-    
+
     // Try different selector strategies
     if (selector === 'canvas') {
       element = document.getElementById('view');
@@ -233,7 +233,7 @@ export class TutorialSystem {
     } else if (selector === 'god-mode-buttons') {
       element = document.querySelector('.god-mode-buttons') || document.querySelector('[data-god-mode]');
     }
-    
+
     if (element) {
       const rect = element.getBoundingClientRect();
       highlight.style.display = 'block';
@@ -265,7 +265,7 @@ export class TutorialSystem {
   // Move to next step
   nextStep() {
     this.completed.add(this.currentStep?.id);
-    
+
     if (this.stepIndex < this.steps.length - 1) {
       this.stepIndex++;
       this.showStep(this.steps[this.stepIndex]);
@@ -281,7 +281,7 @@ export class TutorialSystem {
     this.active = false;
     this.completed.add('all');
     this.saveProgress();
-    
+
     // Trigger achievement
     if (window.achievements) {
       window.achievements.unlock('tutorial_complete');
@@ -299,11 +299,11 @@ export class TutorialSystem {
         }
       }
     }, { passive: true });
-    
+
     // Track keypresses
     window.addEventListener('keydown', (e) => {
       if (!this.active) return;
-      
+
       const key = e.code === 'Space' ? 'Space' : e.key.toLowerCase();
       if (this.currentStep?.waitFor?.key === key) {
         setTimeout(() => this.nextStep(), 500);

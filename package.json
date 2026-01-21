@@ -7,11 +7,12 @@
     "dev": "python3 -m http.server 8000 --directory creature-sim",
     "preview": "python3 -m http.server 8000 --directory creature-sim",
     "test": "node scripts/save-system.test.mjs",
-    "lint": "npx eslint creature-sim/src --ext .js",
-    "lint:fix": "npx eslint creature-sim/src --ext .js --fix"
+    "lint": "eslint creature-sim/src",
+    "lint:fix": "eslint creature-sim/src --fix"
   },
   "devDependencies": {
-    "eslint": "^8.56.0"
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0"
   },
   "keywords": [
     "simulation",

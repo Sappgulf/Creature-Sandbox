@@ -1,6 +1,6 @@
 /**
  * Disease System - Manages disease types, outbreaks, immunity, and epidemiology
- * 
+ *
  * Features:
  * - Multiple disease types with unique effects
  * - Immunity system (temporary and permanent)
@@ -31,7 +31,7 @@ export const DISEASE_TYPES = {
     immunityDuration: 120, // 2 minutes immunity after recovery
     immunityChance: 0.8    // 80% chance to gain immunity
   },
-  
+
   lethargy: {
     id: 'lethargy',
     name: 'Lethargy Plague',
@@ -51,7 +51,7 @@ export const DISEASE_TYPES = {
     immunityDuration: 90,
     immunityChance: 0.9
   },
-  
+
   parasite: {
     id: 'parasite',
     name: 'Gut Parasite',
@@ -71,7 +71,7 @@ export const DISEASE_TYPES = {
     immunityDuration: 180, // Longer immunity
     immunityChance: 0.6
   },
-  
+
   blight: {
     id: 'blight',
     name: 'The Blight',
@@ -174,10 +174,10 @@ export class DiseaseSystem {
   updateOutbreaks(world) {
     // Count infections by disease type
     const infectionCounts = new Map();
-    
+
     for (const creature of world.creatures) {
       if (!creature?.alive) continue;
-      
+
       const diseaseStatus = creature.statuses?.get('disease');
       if (diseaseStatus?.metadata?.diseaseType) {
         const type = diseaseStatus.metadata.diseaseType;
@@ -195,7 +195,7 @@ export class DiseaseSystem {
           peakInfections: count,
           totalInfected: count
         });
-        
+
         eventSystem?.emit(GameEvents.NOTIFICATION, {
           message: `${DISEASE_TYPES[diseaseId]?.icon || '🦠'} ${DISEASE_TYPES[diseaseId]?.name || 'Disease'} outbreak detected!`,
           type: 'warning'
@@ -216,7 +216,7 @@ export class DiseaseSystem {
           duration: world.t - outbreak.startTime
         });
         this.activeOutbreaks.delete(diseaseId);
-        
+
         eventSystem?.emit(GameEvents.NOTIFICATION, {
           message: `${DISEASE_TYPES[diseaseId]?.icon || '✅'} ${DISEASE_TYPES[diseaseId]?.name || 'Disease'} outbreak has ended`,
           type: 'success'
@@ -234,10 +234,10 @@ export class DiseaseSystem {
   isImmune(creatureId, diseaseId) {
     const immunities = this.immuneCreatures.get(creatureId);
     if (!immunities) return false;
-    
+
     const expiryTime = immunities.get(diseaseId);
     if (expiryTime === undefined) return false;
-    
+
     return expiryTime === Infinity || expiryTime > this.lastUpdateTime;
   }
 
@@ -251,7 +251,7 @@ export class DiseaseSystem {
     if (!this.immuneCreatures.has(creatureId)) {
       this.immuneCreatures.set(creatureId, new Map());
     }
-    
+
     const expiryTime = duration === Infinity ? Infinity : this.lastUpdateTime + duration;
     this.immuneCreatures.get(creatureId).set(diseaseId, expiryTime);
   }
@@ -265,7 +265,7 @@ export class DiseaseSystem {
    */
   infectCreature(creature, diseaseId, options = {}) {
     if (!creature?.alive || !creature.applyStatus) return false;
-    
+
     const diseaseType = DISEASE_TYPES[diseaseId];
     if (!diseaseType) return false;
 
@@ -281,7 +281,7 @@ export class DiseaseSystem {
     }
 
     // Calculate duration
-    const duration = options.duration || 
+    const duration = options.duration ||
       diseaseType.baseDuration + (Math.random() - 0.5) * 2 * diseaseType.durationVariance;
 
     // Apply the disease status
@@ -317,7 +317,7 @@ export class DiseaseSystem {
     // Check for immunity gain
     if (Math.random() < diseaseType.immunityChance) {
       this.grantImmunity(creature.id, diseaseId, diseaseType.immunityDuration);
-      
+
       if (creature.logEvent) {
         creature.logEvent(`Developed immunity to ${diseaseType.name}`, this.lastUpdateTime);
       }
@@ -345,7 +345,7 @@ export class DiseaseSystem {
     if (!diseaseType) return;
 
     const targetCount = options.initialInfections || Math.ceil(world.creatures.length * 0.1);
-    const candidates = world.creatures.filter(c => 
+    const candidates = world.creatures.filter(c =>
       c?.alive && !this.isImmune(c.id, diseaseId)
     );
 

@@ -73,7 +73,7 @@ export class World {
     this.disasterCooldown = 40;
     this.disasterIntensity = 1.0;
 
-    console.log('🌍 World core initialized with subsystems');
+    console.debug('🌍 World core initialized with subsystems');
   }
 
   // Main simulation step
@@ -258,7 +258,7 @@ export class World {
     this.foodGrid.clear();
     this.corpseGrid?.clear();
 
-    console.log('🔄 World reset to initial state');
+    console.debug('🔄 World reset to initial state');
   }
 
   // Attach external systems
@@ -302,6 +302,10 @@ export class World {
 
   spawnManual(x, y, predator = false) {
     return this.creatureManager.spawnManual(x, y, predator);
+  }
+
+  spawnManualWithGenes(x, y, genes) {
+    return this.creatureManager.spawnManualWithGenes(x, y, genes);
   }
 
   /**

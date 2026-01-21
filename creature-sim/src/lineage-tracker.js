@@ -75,7 +75,7 @@ export class LineageTracker {
       world.particles.addEvolutionEffect(creature.x, creature.y);
     }
 
-    // Audio feedback for milestone 
+    // Audio feedback for milestone
     if (world.audio && typeof world.audio.playUISound === 'function') {
       world.audio.playUISound('success');
     }

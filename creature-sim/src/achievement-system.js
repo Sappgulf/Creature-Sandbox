@@ -22,7 +22,7 @@ export class AchievementSystem {
 
     this._subscriptions = [];
     this._lastWorldTime = null;
-    
+
     this.refreshConfig();
     configManager.onChange('achievements', () => this.refreshConfig());
 
@@ -371,13 +371,13 @@ export class AchievementSystem {
   ensureNotificationStyles() {
     if (this.notificationStylesInjected) return;
     if (typeof document === 'undefined') return;
-    
+
     // Avoid duplicating the style tag if it already exists
     if (document.getElementById('achievement-notification-styles')) {
       this.notificationStylesInjected = true;
       return;
     }
-    
+
     const style = document.createElement('style');
     style.id = 'achievement-notification-styles';
     style.textContent = `
@@ -448,10 +448,10 @@ export class AchievementSystem {
     } catch (e) {
       console.warn('Failed to emit achievement event:', e);
     }
-    
+
     // Show notification
     this.showNotification(achievement);
-    
+
     if (achievement.repeatable) {
       this.resetProgress(id);
     }
@@ -460,7 +460,7 @@ export class AchievementSystem {
     if (this.autoSaveEnabled) {
       this.saveProgress();
     }
-    
+
     console.log(`🏆 Achievement Unlocked: ${achievement.name} (+${achievement.xp} XP)`);
   }
 
@@ -475,7 +475,7 @@ export class AchievementSystem {
     }
     if (typeof document === 'undefined' || !document.body) return;
     this.ensureNotificationStyles();
-    
+
     // Create notification element
     const notification = document.createElement('div');
     notification.className = 'achievement-notification';
@@ -487,7 +487,7 @@ export class AchievementSystem {
         <div class="achievement-xp">+${achievement.xp} XP</div>
       </div>
     `;
-    
+
     // Style it
     notification.style.cssText = `
       position: fixed;
@@ -505,14 +505,14 @@ export class AchievementSystem {
       animation: slideInRight 0.3s ease-out;
       min-width: 300px;
     `;
-    
+
     // Icon style
     const icon = notification.querySelector('.achievement-icon');
     icon.style.cssText = `
       font-size: 40px;
       line-height: 1;
     `;
-    
+
     // Content styles
     const title = notification.querySelector('.achievement-title');
     title.style.cssText = `
@@ -521,22 +521,22 @@ export class AchievementSystem {
       text-transform: uppercase;
       letter-spacing: 1px;
     `;
-    
+
     const name = notification.querySelector('.achievement-name');
     name.style.cssText = `
       font-size: 18px;
       font-weight: bold;
       margin: 5px 0;
     `;
-    
+
     const xp = notification.querySelector('.achievement-xp');
     xp.style.cssText = `
       font-size: 14px;
       opacity: 0.8;
     `;
-    
+
     document.body.appendChild(notification);
-    
+
     // Auto-remove after 5 seconds
     setTimeout(() => {
       notification.style.animation = 'slideOutRight 0.3s ease-out';
@@ -625,7 +625,7 @@ export class AchievementSystem {
         achievements: {},
         progress: {}
       };
-      
+
       for (const [id, achievement] of this.achievements) {
         const prog = this.progress.get(id);
 
@@ -646,7 +646,7 @@ export class AchievementSystem {
           };
         }
       }
-      
+
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     } catch (e) {
       console.warn('Failed to save achievements:', e);
@@ -666,7 +666,7 @@ export class AchievementSystem {
 
         this.xp = Number(data.xp) || 0;
         this.level = this.getLevelFromXP(this.xp);
-        
+
         // Restore achievement states
         for (const id of this.unlocked) {
           const achievement = this.achievements.get(id);

@@ -1,11 +1,11 @@
 /**
  * High-performance object pool system for minimizing garbage collection.
  * Provides reusable object instances to reduce allocation/deallocation overhead.
- * 
+ *
  * Object pools are essential for high-frequency allocations like particles,
  * temporary vectors, and status effects. Instead of creating new objects
  * (which triggers GC), pools recycle existing objects.
- * 
+ *
  * @example
  * const particlePool = new ObjectPool(
  *   () => ({ x: 0, y: 0, life: 0 }),  // Factory
@@ -13,7 +13,7 @@
  *   100,                               // Initial size
  *   1000                               // Max size
  * );
- * 
+ *
  * const particle = particlePool.get();
  * particle.x = 100;
  * // ... use particle ...

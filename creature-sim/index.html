@@ -669,6 +669,66 @@
 
   <canvas id="view"></canvas>
   <button id="btn-show-inspector" class="chip floating hidden" title="Show inspector">Show Panel</button>
+
+  <!-- Keyboard Shortcuts Help Overlay -->
+  <div id="shortcuts-overlay" class="shortcuts-overlay hidden">
+    <div class="shortcuts-modal">
+      <div class="shortcuts-header">
+        <h2>⌨️ Keyboard Shortcuts</h2>
+        <button id="btn-shortcuts-close" class="shortcuts-close">×</button>
+      </div>
+      <div class="shortcuts-body">
+        <div class="shortcuts-section">
+          <h3>Core Controls</h3>
+          <div class="shortcut-row"><kbd>Space</kbd><span>Pause / Resume</span></div>
+          <div class="shortcut-row"><kbd>I</kbd><span>Toggle Inspector</span></div>
+          <div class="shortcut-row"><kbd>Esc</kbd><span>Deselect / Close panels</span></div>
+          <div class="shortcut-row"><kbd>+</kbd> / <kbd>-</kbd><span>Speed up / Slow down</span></div>
+        </div>
+        <div class="shortcuts-section">
+          <h3>Tools</h3>
+          <div class="shortcut-row"><kbd>F</kbd><span>Food tool</span></div>
+          <div class="shortcut-row"><kbd>S</kbd><span>Spawn creature tool</span></div>
+          <div class="shortcut-row"><kbd>E</kbd><span>Erase tool</span></div>
+          <div class="shortcut-row"><kbd>X</kbd><span>Inspect tool</span></div>
+          <div class="shortcut-row"><kbd>Shift+F</kbd><span>Toggle camera follow</span></div>
+        </div>
+        <div class="shortcuts-section">
+          <h3>Visualization</h3>
+          <div class="shortcut-row"><kbd>V</kbd><span>Vision cones</span></div>
+          <div class="shortcut-row"><kbd>C</kbd><span>Genetic clustering</span></div>
+          <div class="shortcut-row"><kbd>T</kbd><span>Territories</span></div>
+          <div class="shortcut-row"><kbd>M</kbd><span>Memory visualization</span></div>
+          <div class="shortcut-row"><kbd>B</kbd><span>Social bonds</span></div>
+          <div class="shortcut-row"><kbd>G</kbd><span>Migration paths</span></div>
+        </div>
+        <div class="shortcuts-section">
+          <h3>Advanced Features</h3>
+          <div class="shortcut-row"><kbd>1</kbd><span>Emotions display</span></div>
+          <div class="shortcut-row"><kbd>2</kbd><span>Sensory visualization</span></div>
+          <div class="shortcut-row"><kbd>3</kbd><span>Intelligence indicators</span></div>
+          <div class="shortcut-row"><kbd>4</kbd><span>Mating displays</span></div>
+          <div class="shortcut-row"><kbd>5-8</kbd><span>Heatmaps (death/birth/activity/energy)</span></div>
+        </div>
+        <div class="shortcuts-section">
+          <h3>UI Toggles</h3>
+          <div class="shortcut-row"><kbd>H</kbd><span>Stats panel</span></div>
+          <div class="shortcut-row"><kbd>L</kbd><span>Mini-graphs</span></div>
+          <div class="shortcut-row"><kbd>N</kbd><span>Mini-map</span></div>
+          <div class="shortcut-row"><kbd>A</kbd><span>Auto-hide UI</span></div>
+          <div class="shortcut-row"><kbd>`</kbd><span>Debug console</span></div>
+        </div>
+        <div class="shortcuts-section">
+          <h3>Save / Load</h3>
+          <div class="shortcut-row"><kbd>Ctrl+S</kbd><span>Save game</span></div>
+          <div class="shortcut-row"><kbd>Ctrl+O</kbd><span>Load game</span></div>
+        </div>
+      </div>
+      <div class="shortcuts-footer">
+        <span class="muted">Press <kbd>?</kbd> or <kbd>Esc</kbd> to close</span>
+      </div>
+    </div>
+  </div>
   
   <!-- Mobile Quick Actions -->
   <div id="mobile-quick-actions" class="mobile-only">

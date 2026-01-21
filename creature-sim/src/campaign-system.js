@@ -1,6 +1,6 @@
 /**
  * Campaign System - Manages campaign levels, progression, and objectives
- * 
+ *
  * Features:
  * - 7 progressive levels with unique objectives
  * - Progress tracking via localStorage
@@ -236,7 +236,7 @@ export const CAMPAIGN_LEVELS = [
         minAquaticAffinity: 0.6,
         description: 'Have 5 aquatic creatures (60%+ affinity)'
       },
-      timeLimit: 360, // 6 minutes
+      timeLimit: 360 // 6 minutes
     },
 
     worldConfig: {

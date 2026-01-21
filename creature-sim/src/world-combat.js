@@ -11,7 +11,7 @@ export class WorldCombat {
   }
 
   initialize() {
-    console.log('⚔️ World combat system initialized');
+    console.debug('⚔️ World combat system initialized');
   }
 
   // Attempt predation at location

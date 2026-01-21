@@ -22,7 +22,7 @@ export class DebugConsole {
       chaos: () => this.chaosMode()
     };
   }
-  
+
   toggle() {
     this.visible = !this.visible;
     if (this.visible) {
@@ -31,7 +31,7 @@ export class DebugConsole {
       this.showHelp();
     }
   }
-  
+
   showHelp() {
     console.log('%c📜 Available Commands:', 'color: #7bb7ff; font-weight: bold;');
     console.log('%c  debug.spawn(count)     %c- Spawn N random creatures', 'color: #ffc800;', 'color: #c3c6e4;');
@@ -51,7 +51,7 @@ export class DebugConsole {
     console.log('%c  debug.export()         %c- Export world state to console', 'color: #ffc800;', 'color: #c3c6e4;');
     console.log('\n%c💡 Tip: Type "debug" to access the console object', 'color: #9aa0c6; font-style: italic;');
   }
-  
+
   spawnCreatures(count = 10) {
     for (let i = 0; i < count; i++) {
       this.world.spawnManual(
@@ -62,7 +62,7 @@ export class DebugConsole {
     }
     console.log(`✅ Spawned ${count} creatures`);
   }
-  
+
   spawnFood(count = 50) {
     for (let i = 0; i < count; i++) {
       this.world.addFood(
@@ -72,55 +72,55 @@ export class DebugConsole {
     }
     console.log(`✅ Spawned ${count} food pieces`);
   }
-  
+
   clearAll() {
     this.world.creatures = [];
     console.log('✅ All creatures removed');
   }
-  
+
   killAll() {
     for (const c of this.world.creatures) {
       c.alive = false;
     }
     console.log(`✅ Killed ${this.world.creatures.length} creatures`);
   }
-  
+
   boostAll() {
     for (const c of this.world.creatures) {
       c.energy = 100;
     }
     console.log(`✅ Boosted ${this.world.creatures.length} creatures`);
   }
-  
+
   healAll() {
     for (const c of this.world.creatures) {
       c.health = c.maxHealth;
     }
     console.log(`✅ Healed ${this.world.creatures.length} creatures`);
   }
-  
+
   setSpeed(multiplier = 1) {
     window.debugSpeed = multiplier;
     console.log(`✅ Speed set to ${multiplier}x`);
   }
-  
+
   setZoom(level = 1) {
     this.camera.zoom = level;
     this.camera.targetZoom = level;
     console.log(`✅ Zoom set to ${level}`);
   }
-  
+
   gotoPosition(x, y) {
     this.camera.targetX = x;
     this.camera.targetY = y;
     console.log(`✅ Moving camera to (${x}, ${y})`);
   }
-  
+
   togglePause() {
     window.debugPause = !window.debugPause;
     console.log(`✅ Game ${window.debugPause ? 'paused' : 'unpaused'}`);
   }
-  
+
   showStats() {
     console.log('%c📊 World Statistics:', 'color: #7bb7ff; font-weight: bold;');
     console.log(`  Population: ${this.world.creatures.length}`);
@@ -128,7 +128,7 @@ export class DebugConsole {
     console.log(`  Corpses: ${this.world.corpses?.length || 0}`);
     console.log(`  Time: ${this.world.t.toFixed(1)}s`);
     console.log(`  World Size: ${this.world.width} × ${this.world.height}`);
-    
+
     let herbs = 0, omnis = 0, preds = 0;
     let totalEnergy = 0, totalHealth = 0;
     for (const c of this.world.creatures) {
@@ -139,14 +139,14 @@ export class DebugConsole {
       totalEnergy += c.energy;
       totalHealth += c.health;
     }
-    
+
     console.log(`  Herbivores: ${herbs}`);
     console.log(`  Omnivores: ${omnis}`);
     console.log(`  Predators: ${preds}`);
     console.log(`  Avg Energy: ${(totalEnergy / this.world.creatures.length).toFixed(1)}`);
     console.log(`  Avg Health: ${(totalHealth / this.world.creatures.length).toFixed(1)}`);
   }
-  
+
   exportState() {
     const state = {
       population: this.world.creatures.length,
@@ -163,12 +163,12 @@ export class DebugConsole {
     console.log(state);
     return state;
   }
-  
+
   removeAllFood() {
     this.world.food = [];
     console.log('✅ All food removed');
   }
-  
+
   godMode() {
     for (const c of this.world.creatures) {
       c.energy = 999;
@@ -177,7 +177,7 @@ export class DebugConsole {
     }
     console.log('✅ GOD MODE ACTIVATED - Creatures are now immortal!');
   }
-  
+
   chaosMode() {
     console.log('✅ CHAOS MODE - Random mutations incoming!');
     for (const c of this.world.creatures) {

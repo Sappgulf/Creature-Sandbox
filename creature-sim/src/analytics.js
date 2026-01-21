@@ -10,7 +10,7 @@ export class AnalyticsTracker {
     this.worker = null;
     this._workerPending = false;
     this._workerQueued = null;
-    
+
     // Advanced analytics
     this.geneHistory = []; // Track gene frequency over time
     this.speciesGroups = []; // Detected species clusters
@@ -68,7 +68,7 @@ export class AnalyticsTracker {
         this.capture(world);
       }
     }
-    
+
     // Sample gene frequencies less frequently
     this._geneHistoryAccum += dt;
     if (this._geneHistoryAccum >= this._geneHistoryInterval) {
@@ -173,7 +173,7 @@ export class AnalyticsTracker {
     if (this._cachedData && this._cachedData.version === this.version) {
       return this._cachedData;
     }
-    
+
     const times = this.samples.map(s => s.t);
     this._cachedData = {
       version: this.version,
@@ -200,7 +200,7 @@ export class AnalyticsTracker {
 
   captureGeneFrequencies(world) {
     if (world.creatures.length === 0) return;
-    
+
     const genes = {
       t: world.t,
       speed: [],
@@ -210,7 +210,7 @@ export class AnalyticsTracker {
       diet: [],
       nocturnal: []
     };
-    
+
     for (const c of world.creatures) {
       genes.speed.push(c.genes.speed);
       genes.sense.push(c.genes.sense);
@@ -219,7 +219,7 @@ export class AnalyticsTracker {
       genes.diet.push(c.genes.diet || (c.genes.predator ? 1 : 0));
       genes.nocturnal.push(c.genes.nocturnal || 0.5);
     }
-    
+
     // Calculate statistics for each gene
     const stats = {};
     for (const [key, values] of Object.entries(genes)) {
@@ -233,56 +233,56 @@ export class AnalyticsTracker {
       const max = Math.max(...values);
       stats[key] = { mean, variance, min, max, stdDev: Math.sqrt(variance) };
     }
-    
+
     this.geneHistory.push(stats);
     if (this.geneHistory.length > 300) this.geneHistory.shift(); // Keep last 10 minutes at 2s interval
     this.version += 1;
     this._cachedData = null;
   }
-  
+
   detectSpecies(world) {
     // Simple species detection using genetic clustering
     // Species are groups of creatures with similar genes
-    
+
     if (world.creatures.length < 2) {
       this.speciesGroups = [];
       return;
     }
-    
+
     const threshold = 0.3; // Genetic distance threshold for same species
     const groups = [];
     const assigned = new Set();
-    
+
     for (let i = 0; i < world.creatures.length; i++) {
       if (assigned.has(i)) continue;
-      
+
       const group = [i];
       assigned.add(i);
-      
+
       for (let j = i + 1; j < world.creatures.length; j++) {
         if (assigned.has(j)) continue;
-        
+
         const dist = this._geneticDistance(
           world.creatures[i].genes,
           world.creatures[j].genes
         );
-        
+
         if (dist < threshold) {
           group.push(j);
           assigned.add(j);
         }
       }
-      
+
       groups.push({
         size: group.length,
         avgGenes: this._averageGenes(group.map(idx => world.creatures[idx].genes)),
         members: group.length
       });
     }
-    
+
     this.speciesGroups = groups.sort((a, b) => b.size - a.size);
   }
-  
+
   _geneticDistance(g1, g2) {
     // Euclidean distance in normalized gene space
     const speedDiff = (g1.speed - g2.speed) / 2.0;
@@ -290,7 +290,7 @@ export class AnalyticsTracker {
     const metabDiff = (g1.metabolism - g2.metabolism) / 2.0;
     const hueDiff = Math.min(Math.abs(g1.hue - g2.hue), 360 - Math.abs(g1.hue - g2.hue)) / 360.0;
     const dietDiff = Math.abs((g1.diet || 0) - (g2.diet || 0));
-    
+
     return Math.sqrt(
       speedDiff * speedDiff +
       senseDiff * senseDiff +
@@ -299,10 +299,10 @@ export class AnalyticsTracker {
       dietDiff * dietDiff
     );
   }
-  
+
   _averageGenes(genesList) {
     if (genesList.length === 0) return {};
-    
+
     const avg = {
       speed: 0,
       sense: 0,
@@ -310,7 +310,7 @@ export class AnalyticsTracker {
       hue: 0,
       diet: 0
     };
-    
+
     for (const g of genesList) {
       avg.speed += g.speed;
       avg.sense += g.sense;
@@ -318,51 +318,51 @@ export class AnalyticsTracker {
       avg.hue += g.hue;
       avg.diet += (g.diet || 0);
     }
-    
+
     const n = genesList.length;
     avg.speed /= n;
     avg.sense /= n;
     avg.metabolism /= n;
     avg.hue /= n;
     avg.diet /= n;
-    
+
     return avg;
   }
-  
+
   buildPhylogeny(world) {
     // Build a simplified phylogenetic tree from lineage data
     // Returns root nodes (common ancestors)
-    
+
     if (!world.lineageTracker) {
       this.phylogenyData = null;
       return null;
     }
-    
+
     // OPTIMIZATION: Initialize cache if needed
     if (!this._phylogenyCache) {
       this._phylogenyCache = new Map(); // rootId -> { data, version }
     }
-    
+
     // OPTIMIZATION: Use a more stable cache key - only invalidate when population changes significantly
     // Check if population changed by more than 5% or if more than 5 seconds passed
-    const populationChanged = !this._lastPopulation || 
+    const populationChanged = !this._lastPopulation ||
       Math.abs(this._lastPopulation - world.creatures.length) > Math.max(5, this._lastPopulation * 0.05);
-    
-    const timeChanged = !this._lastPhylogenyTime || 
+
+    const timeChanged = !this._lastPhylogenyTime ||
       (world.t - this._lastPhylogenyTime) > 5.0; // 5 seconds
-    
+
     if (!populationChanged && !timeChanged && this.phylogenyData) {
       return this.phylogenyData; // Return cached result - no need to recompute
     }
-    
+
     // Update cache keys
     this._lastPopulation = world.creatures.length;
     this._lastPhylogenyTime = world.t;
-    
+
     const roots = [];
     const processed = new Set();
     const rootCounts = new Map(); // rootId -> count of creatures
-    
+
     // OPTIMIZATION: First pass - just count creatures per root (fast)
     for (let i = 0; i < world.creatures.length; i++) {
       const creature = world.creatures[i];
@@ -375,13 +375,13 @@ export class AnalyticsTracker {
       if (creature.alive) counts.alive++;
       processed.add(rootId);
     }
-    
+
     // OPTIMIZATION: Only build lineage overviews for top roots (biggest families)
     // Sort roots by size and only process top 5-10
     const sortedRoots = Array.from(rootCounts.entries())
       .sort((a, b) => b[1].count - a[1].count)
       .slice(0, 8); // Top 8 lineages only
-    
+
     // OPTIMIZATION: Build lineage overviews with caching
     for (const [rootId, counts] of sortedRoots) {
       // Check cache first
@@ -393,7 +393,7 @@ export class AnalyticsTracker {
           this._phylogenyCache.set(rootId, { ...lineage, version: counts.count });
         }
       }
-      
+
       if (lineage) {
         roots.push({
           rootId,
@@ -404,11 +404,11 @@ export class AnalyticsTracker {
         });
       }
     }
-    
+
     // Sort by total
     roots.sort((a, b) => b.total - a.total);
     this.phylogenyData = roots;
-    
+
     return this.phylogenyData;
   }
 
@@ -423,29 +423,29 @@ export class AnalyticsTracker {
       ...extra
     };
   }
-  
+
   // Export data as CSV
   exportAsCSV() {
     const data = this.getData();
     let csv = 'Time,Population,Herbivores,Predators,Food,MeanSpeed,MeanMetabolism,MeanSense,PredatorRatio\n';
-    
+
     for (let i = 0; i < data.time.length; i++) {
       csv += `${data.time[i].toFixed(2)},${data.population[i]},${data.herbivores[i]},${data.predators[i]},${data.food[i]},${data.meanSpeed[i].toFixed(3)},${data.meanMetabolism[i].toFixed(3)},${data.meanSense[i].toFixed(3)},${data.predatorRatio[i].toFixed(3)}\n`;
     }
-    
+
     return csv;
   }
-  
+
   // Export gene history as CSV
   exportGeneHistoryCSV() {
     if (this.geneHistory.length === 0) return 'No gene history data';
-    
+
     let csv = 'Time,Speed_Mean,Speed_Var,Sense_Mean,Sense_Var,Metabolism_Mean,Metabolism_Var,Diet_Mean,Diet_Var,Nocturnal_Mean,Nocturnal_Var\n';
-    
+
     for (const sample of this.geneHistory) {
       csv += `${sample.t.toFixed(2)},${sample.speed.mean.toFixed(3)},${sample.speed.variance.toFixed(4)},${sample.sense.mean.toFixed(3)},${sample.sense.variance.toFixed(4)},${sample.metabolism.mean.toFixed(3)},${sample.metabolism.variance.toFixed(4)},${sample.diet.mean.toFixed(3)},${sample.diet.variance.toFixed(4)},${sample.nocturnal.mean.toFixed(3)},${sample.nocturnal.variance.toFixed(4)}\n`;
     }
-    
+
     return csv;
   }
 }

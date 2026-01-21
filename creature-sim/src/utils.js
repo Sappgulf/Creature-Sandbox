@@ -13,8 +13,8 @@ export const remap = (inMin, inMax, outMin, outMax, v) => {
 
 // Box-Muller Gaussian
 export function randn(mean=0, std=1) {
-  let u = 1 - Math.random(), v = 1 - Math.random();
-  let z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2*Math.PI*v);
+  const u = 1 - Math.random(), v = 1 - Math.random();
+  const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2*Math.PI*v);
   return mean + z * std;
 }
 

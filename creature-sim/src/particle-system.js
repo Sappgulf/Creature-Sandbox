@@ -11,7 +11,7 @@ export class ParticleSystem {
     this._particleCreated = 0;
     this._particleRemoved = 0;
   }
-  
+
   /**
    * OPTIMIZATION: Get a particle object, reusing from pool or creating new
    * @returns {Object} Particle object
@@ -176,8 +176,8 @@ export class ParticleSystem {
     const key = (label || '').toLowerCase();
     const tint = key.includes('winter') ? palette.winter
       : key.includes('autumn') ? palette.autumn
-      : key.includes('summer') ? palette.summer
-      : palette.spring;
+        : key.includes('summer') ? palette.summer
+          : palette.spring;
     for (let i = 0; i < 24; i++) {
       const angle = Math.random() * Math.PI * 2;
       const radius = 60 + Math.random() * 40;
@@ -212,7 +212,7 @@ export class ParticleSystem {
       pulse: 0,
       color
     });
-    
+
     // Add smaller contagion particles spreading outward
     for (let i = 0; i < 6; i++) {
       const angle = (i / 6) * Math.PI * 2 + Math.random() * 0.3;
@@ -255,7 +255,7 @@ export class ParticleSystem {
    * Generic emit method for game-loop compatibility
    * Maps event types to specific particle effects
    * @param {number} x - X position
-   * @param {number} y - Y position  
+   * @param {number} y - Y position
    * @param {string} type - Effect type ('birth', 'death', 'combat', 'food', etc.)
    * @param {Object} options - Optional parameters for the effect
    */
@@ -305,7 +305,7 @@ export class ParticleSystem {
   update(dt) {
     const particles = this.particles;
     let writeIdx = 0;
-    
+
     // Process all particles, keeping alive ones compacted
     for (let i = 0; i < particles.length; i++) {
       const p = particles[i];
@@ -323,20 +323,20 @@ export class ParticleSystem {
 
       // Update opacity based on life
       const lifeRatio = p.life / p.maxLife;
-      
+
       // Type-specific updates using lookup for common types
       this._updateParticleByType(p, dt, lifeRatio);
-      
+
       // Compact: move particle to write position
       if (writeIdx !== i) {
         particles[writeIdx] = p;
       }
       writeIdx++;
     }
-    
+
     // Truncate array to remove dead particles (O(1))
     particles.length = writeIdx;
-    
+
     // Update screen shake decay (moved outside particle loop)
     if (this.screenShake.intensity > 0) {
       this.screenShake.intensity *= 0.85;
@@ -353,7 +353,7 @@ export class ParticleSystem {
       particles.splice(0, excess);
     }
   }
-  
+
   /**
    * Update particle behavior by type
    * Extracted to reduce update() complexity
@@ -366,25 +366,25 @@ export class ParticleSystem {
         p.vx *= 0.95;
         p.vy *= 0.95;
         break;
-        
+
       case 'gravestone':
         if (p.life < 2.0) {
           p.opacity = p.life / 2.0;
         }
         break;
-        
+
       case 'sleep':
         p.opacity = lifeRatio * 0.8;
         p.vy += 2 * dt;
         break;
-        
+
       case 'blood':
         p.opacity = lifeRatio;
         p.vy += 100 * dt;
         p.vx *= 0.92;
         p.vy *= 0.92;
         break;
-        
+
       case 'food':
         if (p.delay > 0) {
           p.delay -= dt;
@@ -401,39 +401,39 @@ export class ParticleSystem {
         }
         p.opacity = lifeRatio;
         break;
-        
+
       case 'evolution':
         p.opacity = lifeRatio;
         p.vy += 40 * dt;
         p.vx *= 0.98;
         p.vy *= 0.98;
         break;
-        
+
       case 'heal':
         p.opacity = lifeRatio * 0.9;
         p.vy += 5 * dt;
         break;
-        
+
       case 'season':
         p.opacity = lifeRatio;
         p.vx *= 0.96;
         p.vy *= 0.96;
         p.vy -= 4 * dt;
         break;
-        
+
       case 'disease':
         p.opacity = lifeRatio * 0.8;
         p.size += dt * 28;
         p.pulse = (p.pulse ?? 0) + dt * 6;
         break;
-        
+
       case 'contagion':
         p.opacity = lifeRatio * 0.7;
         p.vx *= 0.95;
         p.vy *= 0.95;
         p.size *= 0.98;
         break;
-        
+
       case 'bubble':
         p.opacity = lifeRatio * 0.6;
         p.vx *= 0.95;
@@ -441,29 +441,29 @@ export class ParticleSystem {
         p.size += dt * 2;
         p.vx += Math.sin(p.life * 10) * 5 * dt;
         break;
-        
+
       case 'ripple':
         p.opacity = lifeRatio * 0.4;
         p.size += dt * 40;
         break;
-        
+
       case 'venom':
         p.opacity = lifeRatio;
         p.vx *= 0.9;
         p.vy *= 0.9;
         break;
-        
+
       case 'play':
         p.opacity = lifeRatio;
         p.vx *= 0.88;
         p.vy *= 0.88;
         break;
-        
+
       case 'elder':
         p.opacity = lifeRatio * 0.7;
         p.size += dt * 20;
         break;
-        
+
       // Default: just fade based on life
       default:
         p.opacity = lifeRatio;
@@ -558,7 +558,7 @@ export class ParticleSystem {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('🪦', p.x, p.y);
-        
+
         // Draw creature name below (small text)
         if (p.name && p.opacity > 0.5) {
           ctx.font = '8px Arial';

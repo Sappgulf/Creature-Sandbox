@@ -904,7 +904,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  // Continue button  
+  // Continue button
   if (continueBtn) {
     continueBtn.onclick = () => {
       console.log('▶️ Continue clicked (fallback handler)');
@@ -919,6 +919,25 @@ document.addEventListener('DOMContentLoaded', () => {
       if (homePage) homePage.classList.add('hidden');
       const campaignPanel = document.getElementById('campaign-panel');
       if (campaignPanel) campaignPanel.classList.remove('hidden');
+    };
+  }
+
+  // Shortcuts overlay close button
+  const shortcutsCloseBtn = document.getElementById('btn-shortcuts-close');
+  if (shortcutsCloseBtn) {
+    shortcutsCloseBtn.onclick = () => {
+      const overlay = document.getElementById('shortcuts-overlay');
+      if (overlay) overlay.classList.add('hidden');
+    };
+  }
+
+  // Also close shortcuts overlay when clicking outside the modal
+  const shortcutsOverlay = document.getElementById('shortcuts-overlay');
+  if (shortcutsOverlay) {
+    shortcutsOverlay.onclick = (e) => {
+      if (e.target === shortcutsOverlay) {
+        shortcutsOverlay.classList.add('hidden');
+      }
     };
   }
 });
