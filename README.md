@@ -83,6 +83,7 @@ open http://localhost:8000
 - **F**: Food painting mode
 - **S**: Spawn creature mode
 - **E**: Erase creatures mode
+- **[ / ]**: Decrease/increase tool brush size
 
 ### Inspector Panel
 - **Click creature**: Inspect individual stats and genes
@@ -243,4 +244,3 @@ Found a bug? Have a feature idea?
 ---
 
 **Enjoy watching evolution unfold in real-time!** 🧬✨
-

@@ -683,7 +683,8 @@ export class GameLoop {
       renderStats(statsEl, this.world, gameState.fps, {
         fastForward: gameState.fastForward,
         paused: gameState.paused,
-        tool: this.world.tools?.mode,
+        tool: this.uiController?.tools?.mode,
+        brushSize: this.uiController?.tools?.brushSize,
         visionEnabled: this.renderer.enableVision,
         clusteringEnabled: this.renderer.enableClustering,
         timeOfDay: this.world.timeOfDay

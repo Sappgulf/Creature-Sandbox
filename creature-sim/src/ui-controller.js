@@ -23,6 +23,7 @@ export class UIController {
     this.world = world;
     this.camera = camera;
     this.tools = tools;
+    this.lastSpawnType = 'herbivore';
 
     // Store subsystems for enhanced integration
     this.subsystems = subsystems;
@@ -162,6 +163,7 @@ export class UIController {
     this.bindSessionGoalControls();
     // Sync mobile UI state immediately
     this.updateMobileControls();
+    this.updateSpawnButton(this.lastSpawnType);
   }
 
   /**
@@ -217,11 +219,11 @@ export class UIController {
     const creatureDropdown = domCache.get('creatureDropdown');
 
     if (spawnCreatureBtn && creatureDropdown) {
-      // Primary click spawns a default herbivore immediately (fast path)
+      // Primary click spawns the last selected creature immediately (fast path)
       spawnCreatureBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        // Quick spawn default herbivore
-        this.onSpawnCreature('herbivore');
+        // Quick spawn last selection
+        this.onSpawnCreature(this.lastSpawnType);
         // Briefly show dropdown to hint other options
         creatureDropdown.classList.remove('hidden');
         setTimeout(() => creatureDropdown.classList.add('hidden'), 900);
@@ -312,10 +314,33 @@ export class UIController {
 
     // Use world helper so genetics and bookkeeping stay centralized
     const creature = this.world.spawnCreatureType(type, x, y);
+    this.lastSpawnType = type;
+    this.updateSpawnButton(type);
     if (creature && this.hasNotifications()) {
       this.notifications.show(`Spawned ${type}!`, 'info', 1500);
     }
     console.log(`🦌 Spawned ${type} at (${x.toFixed(0)}, ${y.toFixed(0)})`);
+  }
+
+  updateSpawnButton(type) {
+    const spawnCreatureBtn = domCache.get('spawnCreatureBtn');
+    if (!spawnCreatureBtn) return;
+
+    const iconMap = {
+      herbivore: '🦌',
+      omnivore: '🦡',
+      predator: '🦁'
+    };
+    const labelMap = {
+      herbivore: 'Herbivore',
+      omnivore: 'Omnivore',
+      predator: 'Predator'
+    };
+
+    const icon = iconMap[type] || '🦌';
+    const label = labelMap[type] || 'Herbivore';
+    spawnCreatureBtn.textContent = icon;
+    spawnCreatureBtn.title = `Spawn ${label}`;
   }
 
   /**
