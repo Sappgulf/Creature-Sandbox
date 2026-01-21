@@ -1,10 +1,13 @@
 import { makeGenes } from './genetics.js';
 import { Creature } from './creature.js';
 import { clamp } from './utils.js';
+import { gameState } from './game-state.js';
 
 export class GeneEditor {
   constructor() {
     this.visible = false;
+    this.spawnModeActive = false;
+    this._uiBound = false;
     this.customGenes = {
       speed: 1.0,
       fov: 90,
@@ -33,6 +36,8 @@ export class GeneEditor {
     };
     this.spawnCount = 1;
     this.spawnSpread = 50;
+
+    this.bindUI();
   }
 
   toggle() {
@@ -59,6 +64,8 @@ export class GeneEditor {
       this.syncUIToGenes();
     } else {
       panel.classList.add('hidden');
+      gameState.setGeneEditorSpawnMode(false);
+      this.updateSpawnButton();
     }
   }
 
@@ -80,6 +87,8 @@ export class GeneEditor {
     const spawnSpreadInput = document.getElementById('gene-spawn-spread');
     if (spawnCountInput) spawnCountInput.value = this.spawnCount;
     if (spawnSpreadInput) spawnSpreadInput.value = this.spawnSpread;
+    this.updateSpawnLabels();
+    this.updateGeneCodeField();
   }
 
   formatGeneValue(key, value) {
@@ -134,6 +143,7 @@ export class GeneEditor {
     Object.assign(this.customGenes, preset);
 
     this.syncUIToGenes();
+    this.setStatus(`Preset applied: ${presetName}`, 'success');
     console.log(`✨ Applied preset: ${presetName}`);
   }
 
@@ -157,6 +167,7 @@ export class GeneEditor {
     };
 
     this.syncUIToGenes();
+    this.setStatus('Randomized gene set.', 'success');
     console.log('🎲 Randomized genes!');
   }
 
@@ -203,6 +214,7 @@ export class GeneEditor {
     a.download = 'custom-creature.json';
     a.click();
     URL.revokeObjectURL(url);
+    this.setStatus('Exported gene JSON file.', 'success');
     console.log('📥 Exported custom genes!');
   }
 
@@ -215,9 +227,11 @@ export class GeneEditor {
         }
       });
       this.syncUIToGenes();
+      this.setStatus('Imported gene code.', 'success');
       console.log('📤 Imported custom genes!');
       return true;
     } catch (err) {
+      this.setStatus('Invalid gene code. Paste JSON from Export or Copy Code.', 'error');
       console.error('Failed to import genes:', err);
       return false;
     }
@@ -230,6 +244,11 @@ export class GeneEditor {
   update(dt) {
     // Gene editor is primarily reactive (responds to user input)
     // No per-frame updates needed currently
+    const isActive = gameState.geneEditorSpawnMode === true;
+    if (isActive !== this.spawnModeActive) {
+      this.spawnModeActive = isActive;
+      this.updateSpawnButton();
+    }
   }
 
   /**
@@ -238,5 +257,149 @@ export class GeneEditor {
   get isActive() {
     return this.visible;
   }
-}
 
+  bindUI() {
+    if (this._uiBound) return;
+    const panel = document.getElementById('gene-editor-panel');
+    if (!panel) return;
+
+    this._uiBound = true;
+
+    const presetSelect = document.getElementById('gene-preset-select');
+    if (presetSelect) {
+      presetSelect.addEventListener('change', (e) => {
+        const nextPreset = e.target.value;
+        if (nextPreset) {
+          this.applyPreset(nextPreset);
+        }
+      });
+    }
+
+    const randomizeBtn = document.getElementById('btn-gene-randomize');
+    if (randomizeBtn) {
+      randomizeBtn.addEventListener('click', () => this.randomize());
+    }
+
+    const spawnBtn = document.getElementById('btn-gene-spawn');
+    if (spawnBtn) {
+      spawnBtn.addEventListener('click', () => this.toggleSpawnMode());
+    }
+
+    const exportBtn = document.getElementById('btn-gene-export');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => this.exportGenes());
+    }
+
+    const copyBtn = document.getElementById('btn-gene-copy');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => this.copyGeneCode());
+    }
+
+    const importBtn = document.getElementById('btn-gene-import');
+    if (importBtn) {
+      importBtn.addEventListener('click', () => {
+        const codeInput = document.getElementById('gene-code-input');
+        const text = codeInput?.value?.trim() ?? '';
+        if (!text) {
+          this.setStatus('Paste a gene code JSON first.', 'error');
+          return;
+        }
+        this.importGenes(text);
+      });
+    }
+
+    Object.keys(this.customGenes).forEach(key => {
+      const slider = document.getElementById(`gene-${key}`);
+      const valueSpan = document.getElementById(`gene-${key}-value`);
+      if (!slider) return;
+      slider.addEventListener('input', () => {
+        const value = Number(slider.value);
+        this.customGenes[key] = value;
+        if (valueSpan) {
+          valueSpan.textContent = this.formatGeneValue(key, value);
+        }
+        this.updateGeneCodeField();
+      });
+    });
+
+    const spawnCountInput = document.getElementById('gene-spawn-count');
+    const spawnSpreadInput = document.getElementById('gene-spawn-spread');
+    if (spawnCountInput) {
+      spawnCountInput.addEventListener('input', () => {
+        this.spawnCount = Number(spawnCountInput.value);
+        this.updateSpawnLabels();
+      });
+    }
+    if (spawnSpreadInput) {
+      spawnSpreadInput.addEventListener('input', () => {
+        this.spawnSpread = Number(spawnSpreadInput.value);
+        this.updateSpawnLabels();
+      });
+    }
+  }
+
+  updateSpawnLabels() {
+    const spawnCountValue = document.getElementById('gene-spawn-count-value');
+    const spawnSpreadValue = document.getElementById('gene-spawn-spread-value');
+    if (spawnCountValue) spawnCountValue.textContent = `${this.spawnCount}`;
+    if (spawnSpreadValue) spawnSpreadValue.textContent = `${this.spawnSpread}px`;
+  }
+
+  updateGeneCodeField() {
+    const codeInput = document.getElementById('gene-code-input');
+    if (codeInput) {
+      codeInput.value = JSON.stringify(this.customGenes);
+    }
+  }
+
+  toggleSpawnMode() {
+    const next = !gameState.geneEditorSpawnMode;
+    gameState.setGeneEditorSpawnMode(next);
+    this.spawnModeActive = next;
+    this.updateSpawnButton();
+  }
+
+  updateSpawnButton() {
+    const spawnBtn = document.getElementById('btn-gene-spawn');
+    if (!spawnBtn) return;
+    const active = gameState.geneEditorSpawnMode === true;
+    spawnBtn.classList.toggle('active', active);
+    spawnBtn.textContent = active ? '🗺️ Tap Map to Spawn' : '✨ Spawn (Click Map)';
+  }
+
+  setStatus(message, tone = 'info') {
+    const status = document.getElementById('gene-editor-status');
+    if (!status) return;
+    status.textContent = message;
+    status.classList.remove('success', 'error');
+    if (tone === 'success') status.classList.add('success');
+    if (tone === 'error') status.classList.add('error');
+  }
+
+  copyGeneCode() {
+    const code = JSON.stringify(this.customGenes);
+    const onSuccess = () => this.setStatus('Gene code copied to clipboard.', 'success');
+    const onError = () => this.setStatus('Copy failed. Use the code box to copy manually.', 'error');
+
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(code).then(onSuccess).catch(onError);
+      return;
+    }
+
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = code;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'absolute';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      onSuccess();
+    } catch (err) {
+      console.error('Failed to copy gene code:', err);
+      onError();
+    }
+  }
+}
