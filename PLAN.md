@@ -12,6 +12,28 @@
 
 ## Done
 
+### 2026-01-23
+
+**Changed:**
+- `creature-sim/index.html` — condensed top HUD markup and added overflow sheet containers.
+- `creature-sim/src/menu-model.js` — centralized HUD action model with grouping metadata.
+- `creature-sim/src/hud-menu.js` — renders HUD primary/overflow menus with keyboard support.
+- `creature-sim/src/ui-controller.js` — wired menu actions, session meta toggle, and ARIA updates.
+- `creature-sim/src/dom-cache.js` — cached new HUD/menu elements.
+- `creature-sim/src/game-state.js` — added session meta visibility state.
+- `creature-sim/styles.css` — styled overflow dropdown and mobile bottom sheet.
+- `docs/UI_NAVIGATION.md` — documented audit and mapping for top menu actions.
+- `docs/SMOKE_TESTS.md` — added navigation-specific checks.
+- `README.md` — documented condensed HUD and overflow navigation.
+- `CHANGELOG.md` — noted condensed HUD behavior.
+
+**Why:**
+- Reduce top menu clutter while keeping all actions within 1-2 taps and preserving accessibility.
+
+**Verified:**
+- `npm test` (pass)
+- `npm run lint` (0 errors, 77 warnings)
+
 ### 2026-01-22
 
 **Changed:**

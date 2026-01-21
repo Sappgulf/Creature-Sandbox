@@ -49,6 +49,7 @@ export class GameState {
     this.inspectorVisible = true;
     this.scenarioPanelVisible = false;
     this.featuresPanelVisible = false;
+    this.sessionMetaVisible = true;
 
     // Spawn state
     this.selectedCreatureType = null;

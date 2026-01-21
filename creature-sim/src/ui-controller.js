@@ -5,10 +5,8 @@
 import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
 import { eventSystem, GameEvents } from './event-system.js';
-import { performanceProfiler } from './performance-profiler.js';
 import { analyticsDashboard } from './enhanced-analytics.js';
-import { scenarioEditor } from './scenario-editor.js';
-import { Creature } from './creature.js';
+import { HudMenu } from './hud-menu.js';
 
 // Local helper to validate notification subsystem shape without relying on external export
 function isNotificationSystem(candidate) {
@@ -61,6 +59,8 @@ export class UIController {
       onAnalyticsToggle: this.onAnalyticsToggle.bind(this),
       onDebugToggle: this.onDebugToggle.bind(this),
       onPerformanceToggle: this.onPerformanceToggle.bind(this),
+      onSessionMetaToggle: this.onSessionMetaToggle.bind(this),
+      onCampaignToggle: this.onCampaignToggle.bind(this),
       onModeChange: this.onModeChange.bind(this),
       onModeCycle: this.onModeCycle.bind(this),
       onRefreshGoals: this.onRefreshGoals.bind(this)
@@ -153,6 +153,7 @@ export class UIController {
    * Initialize UI event bindings
    */
   initialize() {
+    this.setupHudMenu();
     this.bindCoreControls();
     this.bindMobileControls();
     this.bindGodModeControls();
@@ -163,7 +164,13 @@ export class UIController {
     this.bindSessionGoalControls();
     // Sync mobile UI state immediately
     this.updateMobileControls();
+    this.updateSessionMetaVisibility();
     this.updateSpawnButton(this.lastSpawnType);
+  }
+
+  setupHudMenu() {
+    this.hudMenu = new HudMenu({ handlers: this.boundHandlers });
+    this.hudMenu.initialize();
   }
 
   /**
@@ -177,13 +184,6 @@ export class UIController {
    * Bind core game controls
    */
   bindCoreControls() {
-    // Pause/Step buttons
-    const pauseBtn = domCache.get('pauseBtn');
-    const stepBtn = domCache.get('stepBtn');
-
-    if (pauseBtn) pauseBtn.addEventListener('click', this.boundHandlers.onPause);
-    if (stepBtn) stepBtn.addEventListener('click', this.boundHandlers.onStep);
-
     // Export buttons
     const exportBtn = domCache.get('exportBtn');
     const exportCSVBtn = domCache.get('exportCSVBtn');
@@ -377,30 +377,20 @@ export class UIController {
    * Bind panel toggle controls
    */
   bindPanelControls() {
-    const featuresBtn = domCache.get('featuresBtn');
     const featuresCloseBtn = domCache.get('featuresCloseBtn');
-    const scenarioBtn = domCache.get('scenarioBtn');
     const scenarioCloseBtn = domCache.get('scenarioCloseBtn');
-    const achievementsBtn = domCache.get('achievementsBtn');
     const achievementsCloseBtn = domCache.get('achievementsCloseBtn');
-    const geneEditorBtn = domCache.get('geneEditorBtn');
     const geneEditorCloseBtn = domCache.get('geneEditorCloseBtn');
-    const ecoHealthBtn = domCache.get('ecoHealthBtn');
     const ecoHealthCloseBtn = domCache.get('ecoHealthCloseBtn');
 
-    if (featuresBtn) featuresBtn.addEventListener('click', this.boundHandlers.onFeaturesToggle);
     if (featuresCloseBtn) featuresCloseBtn.addEventListener('click', this.boundHandlers.onFeaturesToggle);
 
-    if (scenarioBtn) scenarioBtn.addEventListener('click', this.boundHandlers.onScenarioToggle);
     if (scenarioCloseBtn) scenarioCloseBtn.addEventListener('click', this.boundHandlers.onScenarioToggle);
 
-    if (achievementsBtn) achievementsBtn.addEventListener('click', this.boundHandlers.onAchievementsToggle);
     if (achievementsCloseBtn) achievementsCloseBtn.addEventListener('click', this.boundHandlers.onAchievementsToggle);
 
-    if (geneEditorBtn) geneEditorBtn.addEventListener('click', this.boundHandlers.onGeneEditorToggle);
     if (geneEditorCloseBtn) geneEditorCloseBtn.addEventListener('click', this.boundHandlers.onGeneEditorToggle);
 
-    if (ecoHealthBtn) ecoHealthBtn.addEventListener('click', this.boundHandlers.onEcoHealthToggle);
     if (ecoHealthCloseBtn) ecoHealthCloseBtn.addEventListener('click', this.boundHandlers.onEcoHealthToggle);
   }
 
@@ -428,9 +418,9 @@ export class UIController {
     const debugToggle = domCache.get('debug-console-toggle');
     const performanceToggle = domCache.get('performance-monitor-toggle');
 
-    if (analyticsToggle) analyticsToggle.addEventListener('click', this.boundHandlers.onAnalyticsToggle);
-    if (debugToggle) debugToggle.addEventListener('click', this.boundHandlers.onDebugToggle);
-    if (performanceToggle) performanceToggle.addEventListener('click', this.boundHandlers.onPerformanceToggle);
+    if (analyticsToggle) analyticsToggle.setAttribute('aria-label', 'Toggle analytics dashboard');
+    if (debugToggle) debugToggle.setAttribute('aria-label', 'Toggle debug console');
+    if (performanceToggle) performanceToggle.setAttribute('aria-label', 'Toggle performance monitor');
   }
 
   /**
@@ -441,11 +431,31 @@ export class UIController {
     if (pauseBtn) {
       if (gameState.paused) {
         pauseBtn.textContent = '▶️ Play';
+        pauseBtn.setAttribute('aria-label', 'Resume simulation');
+        pauseBtn.setAttribute('aria-pressed', 'true');
         pauseBtn.classList.add('active');
       } else {
         pauseBtn.textContent = '⏸️ Pause';
+        pauseBtn.setAttribute('aria-label', 'Pause simulation');
+        pauseBtn.setAttribute('aria-pressed', 'false');
         pauseBtn.classList.remove('active');
       }
+    }
+  }
+
+  updateSessionMetaVisibility() {
+    const sessionMeta = domCache.get('sessionMeta');
+    const modeBtn = domCache.get('modeBtn');
+    const isVisible = gameState.sessionMetaVisible !== false;
+
+    if (sessionMeta) {
+      sessionMeta.classList.toggle('hidden', !isVisible);
+      sessionMeta.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
+    }
+
+    if (modeBtn) {
+      modeBtn.setAttribute('aria-pressed', isVisible ? 'true' : 'false');
+      modeBtn.setAttribute('aria-expanded', isVisible ? 'true' : 'false');
     }
   }
 
@@ -586,6 +596,15 @@ export class UIController {
     this.updatePauseButton();
     this.updateMobileControls();
     // Single step handled by game loop's step mode
+  }
+
+  onSessionMetaToggle() {
+    gameState.sessionMetaVisible = !gameState.sessionMetaVisible;
+    this.updateSessionMetaVisibility();
+  }
+
+  onCampaignToggle() {
+    // Campaign panel toggle handled in main.js (kept for unified menu model)
   }
 
   onFood() {
