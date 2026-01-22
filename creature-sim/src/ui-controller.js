@@ -9,6 +9,13 @@ import { analyticsDashboard } from './enhanced-analytics.js';
 import { HudMenu } from './hud-menu.js';
 import { SANDBOX_PROP_TYPES } from './sandbox-props.js';
 
+const CREATURE_SPAWN_TYPES = {
+  herbivore: { icon: '🦌', label: 'Herbivore' },
+  omnivore: { icon: '🦡', label: 'Omnivore' },
+  predator: { icon: '🦁', label: 'Predator' }
+};
+const DEFAULT_SPAWN_TYPE = 'herbivore';
+
 // Local helper to validate notification subsystem shape without relying on external export
 function isNotificationSystem(candidate) {
   return !!candidate &&
@@ -22,7 +29,7 @@ export class UIController {
     this.world = world;
     this.camera = camera;
     this.tools = tools;
-    this.lastSpawnType = 'herbivore';
+    this.lastSpawnType = DEFAULT_SPAWN_TYPE;
     this.propTypeOrder = Object.keys(SANDBOX_PROP_TYPES);
 
     // Store subsystems for enhanced integration
@@ -67,7 +74,8 @@ export class UIController {
       onCampaignToggle: this.onCampaignToggle.bind(this),
       onModeChange: this.onModeChange.bind(this),
       onModeCycle: this.onModeCycle.bind(this),
-      onRefreshGoals: this.onRefreshGoals.bind(this)
+      onRefreshGoals: this.onRefreshGoals.bind(this),
+      onMobileSpawnConfirm: this.onMobileSpawnConfirm.bind(this)
     };
 
     // Setup event listeners for enhanced systems
@@ -160,9 +168,11 @@ export class UIController {
     this.setupHudMenu();
     this.bindCoreControls();
     this.bindMobileControls();
+    this.bindMobileSpawnSheet();
     this.bindPropControls();
     this.bindGodModeControls();
     this.bindPanelControls();
+    this.bindInteractionHintControls();
     this.bindBehaviorControls();
     this.bindEnhancedControls();
     this.bindGameplayModeControls();
@@ -170,7 +180,7 @@ export class UIController {
     // Sync mobile UI state immediately
     this.updateMobileControls();
     this.updateSessionMetaVisibility();
-    this.updateSpawnButton(this.lastSpawnType);
+    this.applySpawnSelection(gameState.selectedCreatureType || this.lastSpawnType, { silent: true });
     this.setPropType(gameState.selectedPropType || 'bounce');
     this.updateSandboxUiVisibility();
   }
@@ -319,6 +329,58 @@ export class UIController {
     }
   }
 
+  bindMobileSpawnSheet() {
+    const mobileSpawnBtn = domCache.get('mobileSpawnBtn');
+    const mobileSpawnSheet = domCache.get('mobileSpawnSheet');
+    const mobileSpawnBackdrop = domCache.get('mobileSpawnBackdrop');
+    const mobileSpawnClose = domCache.get('mobileSpawnClose');
+    const mobileSpawnConfirm = domCache.get('mobileSpawnConfirm');
+
+    if (mobileSpawnBtn) {
+      mobileSpawnBtn.addEventListener('click', this.boundHandlers.onMobileSpawn);
+    }
+
+    if (mobileSpawnClose) {
+      mobileSpawnClose.addEventListener('click', () => this.closeMobileSpawnSheet());
+    }
+
+    if (mobileSpawnBackdrop) {
+      mobileSpawnBackdrop.addEventListener('click', () => this.closeMobileSpawnSheet());
+    }
+
+    if (mobileSpawnConfirm) {
+      mobileSpawnConfirm.addEventListener('click', this.boundHandlers.onMobileSpawnConfirm);
+    }
+
+    if (mobileSpawnSheet) {
+      mobileSpawnSheet.addEventListener('click', (event) => {
+        const option = event.target.closest('.mobile-spawn-option');
+        if (!option) return;
+        event.stopPropagation();
+        const creatureType = option.dataset.creature;
+        this.applySpawnSelection(creatureType);
+      });
+    }
+  }
+
+  bindInteractionHintControls() {
+    const hint = domCache.get('interactionHint');
+    const hintClose = domCache.get('interactionHintClose');
+    if (hintClose) {
+      hintClose.addEventListener('click', (event) => {
+        event.stopPropagation();
+        this.dismissInteractionHint();
+      });
+    }
+
+    document.addEventListener('pointerdown', (event) => {
+      if (!hint || hint.classList.contains('hidden')) return;
+      if (!hint.contains(event.target)) {
+        this.dismissInteractionHint();
+      }
+    });
+  }
+
   bindGameplayModeControls() {
     if (!this.gameplayModes) return;
     const modeSelect = domCache.get('modeSelect');
@@ -357,6 +419,7 @@ export class UIController {
     const value = select.value;
     this.gameplayModes.applyMode(value);
     this.renderGameMode();
+    this.dismissInteractionHint();
   }
 
   onModeCycle() {
@@ -367,6 +430,7 @@ export class UIController {
       select.value = this.gameplayModes.getActiveMode()?.id;
     }
     this.renderGameMode();
+    this.dismissInteractionHint();
   }
 
   onRefreshGoals() {
@@ -379,51 +443,126 @@ export class UIController {
    * Spawn a creature of the specified type
    */
   onSpawnCreature(type) {
+    const safeType = this.resolveSpawnType(type, { notifyOnFallback: true });
+    if (!safeType) return;
     const x = this.world.width / 2 + (Math.random() - 0.5) * 200;
     const y = this.world.height / 2 + (Math.random() - 0.5) * 200;
 
     // Use world helper so genetics and bookkeeping stay centralized
-    const creature = this.world.spawnCreatureType(type, x, y);
-    this.lastSpawnType = type;
-    this.updateSpawnButton(type);
+    const creature = this.world.spawnCreatureType(safeType, x, y);
+    this.applySpawnSelection(safeType, { silent: true });
+    this.dismissInteractionHint();
     if (creature && this.hasNotifications()) {
-      this.notifications.show(`Spawned ${type}!`, 'info', 1500);
+      this.notifications.show(`Spawned ${safeType}!`, 'info', 1500);
     }
-    console.log(`🦌 Spawned ${type} at (${x.toFixed(0)}, ${y.toFixed(0)})`);
+    console.log(`🦌 Spawned ${safeType} at (${x.toFixed(0)}, ${y.toFixed(0)})`);
   }
 
   updateSpawnButton(type) {
     const spawnCreatureBtn = domCache.get('spawnCreatureBtn');
     if (!spawnCreatureBtn) return;
 
-    const iconMap = {
-      herbivore: '🦌',
-      omnivore: '🦡',
-      predator: '🦁'
-    };
-    const labelMap = {
-      herbivore: 'Herbivore',
-      omnivore: 'Omnivore',
-      predator: 'Predator'
-    };
-
-    const icon = iconMap[type] || '🦌';
-    const label = labelMap[type] || 'Herbivore';
+    const meta = CREATURE_SPAWN_TYPES[type] || CREATURE_SPAWN_TYPES[DEFAULT_SPAWN_TYPE];
+    const icon = meta.icon;
+    const label = meta.label;
     spawnCreatureBtn.textContent = icon;
     spawnCreatureBtn.title = `Spawn ${label}`;
+  }
+
+  updateSpawnDropdownSelection(type) {
+    const creatureDropdown = domCache.get('creatureDropdown');
+    if (!creatureDropdown) return;
+    creatureDropdown.querySelectorAll('.dropdown-item').forEach(item => {
+      item.classList.toggle('selected', item.dataset.creature === type);
+    });
+  }
+
+  updateMobileSpawnButton(type) {
+    const mobileSpawnBtn = domCache.get('mobileSpawnBtn');
+    if (!mobileSpawnBtn) return;
+    const meta = CREATURE_SPAWN_TYPES[type] || CREATURE_SPAWN_TYPES[DEFAULT_SPAWN_TYPE];
+    mobileSpawnBtn.textContent = meta.icon;
+    mobileSpawnBtn.dataset.label = 'Spawn';
+  }
+
+  updateMobileSpawnSelection(type) {
+    const mobileSpawnSheet = domCache.get('mobileSpawnSheet');
+    if (!mobileSpawnSheet) return;
+    const options = mobileSpawnSheet.querySelectorAll('.mobile-spawn-option');
+    options.forEach(option => {
+      const isSelected = option.dataset.creature === type;
+      option.classList.toggle('selected', isSelected);
+      option.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+    });
+  }
+
+  applySpawnSelection(type, { silent = false } = {}) {
+    const safeType = CREATURE_SPAWN_TYPES[type] ? type : DEFAULT_SPAWN_TYPE;
+    if (!CREATURE_SPAWN_TYPES[type] && !silent && this.hasNotifications()) {
+      this.notifications.show('Unknown creature type. Defaulting to herbivore.', 'warning', 2000);
+    }
+    this.lastSpawnType = safeType;
+    gameState.selectedCreatureType = safeType;
+    this.updateSpawnButton(safeType);
+    this.updateSpawnDropdownSelection(safeType);
+    this.updateMobileSpawnButton(safeType);
+    this.updateMobileSpawnSelection(safeType);
+    return safeType;
+  }
+
+  resolveSpawnType(type, { notifyOnFallback = false } = {}) {
+    const directType = CREATURE_SPAWN_TYPES[type] ? type : null;
+    if (directType) return directType;
+
+    const fallback = CREATURE_SPAWN_TYPES[this.lastSpawnType]
+      ? this.lastSpawnType
+      : DEFAULT_SPAWN_TYPE;
+
+    if (notifyOnFallback && this.hasNotifications()) {
+      const message = type
+        ? 'Selected creature missing. Spawning last used.'
+        : 'No creature selected — spawning last used.';
+      this.notifications.show(message, 'warning', 2200);
+    }
+    return fallback;
+  }
+
+  openMobileSpawnSheet() {
+    const mobileSpawnSheet = domCache.get('mobileSpawnSheet');
+    const mobileSpawnBackdrop = domCache.get('mobileSpawnBackdrop');
+    if (!mobileSpawnSheet || !mobileSpawnBackdrop) {
+      this.onSpawnCreature(this.resolveSpawnType(gameState.selectedCreatureType, { notifyOnFallback: true }));
+      return;
+    }
+    this.applySpawnSelection(gameState.selectedCreatureType || this.lastSpawnType, { silent: true });
+    mobileSpawnSheet.classList.remove('hidden');
+    mobileSpawnSheet.setAttribute('aria-hidden', 'false');
+    mobileSpawnBackdrop.classList.remove('hidden');
+    mobileSpawnBackdrop.setAttribute('aria-hidden', 'false');
+  }
+
+  closeMobileSpawnSheet() {
+    const mobileSpawnSheet = domCache.get('mobileSpawnSheet');
+    const mobileSpawnBackdrop = domCache.get('mobileSpawnBackdrop');
+    if (mobileSpawnSheet) {
+      mobileSpawnSheet.classList.add('hidden');
+      mobileSpawnSheet.setAttribute('aria-hidden', 'true');
+    }
+    if (mobileSpawnBackdrop) {
+      mobileSpawnBackdrop.classList.add('hidden');
+      mobileSpawnBackdrop.setAttribute('aria-hidden', 'true');
+    }
   }
 
   /**
    * Bind mobile quick action controls
    */
   bindMobileControls() {
-    const mobileSpawnBtn = domCache.get('mobileSpawnBtn');
     const mobileFoodBtn = domCache.get('mobileFoodBtn');
     const mobilePropBtn = domCache.get('mobilePropBtn');
     const mobilePauseBtn = domCache.get('mobilePauseBtn');
     const mobileSpeedBtn = domCache.get('mobileSpeedBtn');
 
-    if (mobileSpawnBtn) mobileSpawnBtn.addEventListener('click', this.boundHandlers.onMobileSpawn);
     if (mobileFoodBtn) mobileFoodBtn.addEventListener('click', this.boundHandlers.onMobileFood);
     if (mobilePropBtn) mobilePropBtn.addEventListener('click', this.boundHandlers.onMobileProp);
     if (mobilePauseBtn) mobilePauseBtn.addEventListener('click', this.boundHandlers.onMobilePause);
@@ -542,7 +681,10 @@ export class UIController {
 
     if (quickActions) quickActions.classList.toggle('hidden', editorOpen);
     if (mobileQuickActions) mobileQuickActions.classList.toggle('hidden', editorOpen);
-    if (interactionHint) interactionHint.classList.toggle('hidden', editorOpen);
+    if (interactionHint) {
+      interactionHint.classList.toggle('hidden', editorOpen);
+      interactionHint.setAttribute('aria-hidden', editorOpen ? 'true' : 'false');
+    }
   }
 
   /**
@@ -571,6 +713,16 @@ export class UIController {
         mobileSpeedBtn.dataset.label = speedInfo.label;
       }
     }
+
+    this.updateMobileSpawnButton(gameState.selectedCreatureType || this.lastSpawnType);
+  }
+
+  dismissInteractionHint() {
+    const hint = domCache.get('interactionHint');
+    if (!hint) return;
+    hint.dataset.dismissed = 'true';
+    hint.classList.add('hidden');
+    hint.setAttribute('aria-hidden', 'true');
   }
 
   /**
@@ -737,17 +889,17 @@ export class UIController {
   }
 
   onMobileSpawn() {
-    // Spawn a random creature at center of view
-    const centerX = this.camera.targetX;
-    const centerY = this.camera.targetY;
+    this.openMobileSpawnSheet();
+  }
 
-    import('./genetics.js').then(({ makeGenes }) => {
-      import('./creature.js').then(({ Creature }) => {
-        const genes = makeGenes();
-        const creature = new Creature(centerX, centerY, genes);
-        this.world.addCreature(creature, null);
-      });
-    });
+  onMobileSpawnConfirm() {
+    const selectedType = CREATURE_SPAWN_TYPES[gameState.selectedCreatureType]
+      ? gameState.selectedCreatureType
+      : null;
+    const safeType = this.resolveSpawnType(selectedType, { notifyOnFallback: true });
+    if (!safeType) return;
+    this.onSpawnCreature(safeType);
+    this.closeMobileSpawnSheet();
   }
 
   onMobileFood() {
@@ -811,6 +963,7 @@ export class UIController {
         featuresPanel.classList.add('hidden');
       }
     }
+    this.dismissInteractionHint();
   }
 
   onScenarioToggle() {
@@ -824,6 +977,7 @@ export class UIController {
       }
     }
     this.updateSandboxUiVisibility();
+    this.dismissInteractionHint();
   }
 
   onAchievementsToggle() {
@@ -835,6 +989,7 @@ export class UIController {
         this.bindAchievementsControls();
       }
     }
+    this.dismissInteractionHint();
   }
 
   onAchievementsReset() {
@@ -954,6 +1109,7 @@ export class UIController {
       panel.classList.toggle('hidden');
     }
     this.updateSandboxUiVisibility();
+    this.dismissInteractionHint();
   }
 
   onEcoHealthToggle() {
@@ -961,6 +1117,7 @@ export class UIController {
     if (panel) {
       panel.classList.toggle('hidden');
     }
+    this.dismissInteractionHint();
   }
 
   /**

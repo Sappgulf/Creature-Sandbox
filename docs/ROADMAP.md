@@ -1,5 +1,13 @@
 # Creature Sandbox Roadmap
 
+## Shipped (2026-01-28)
+
+1. **Mobile spawn picker + hint lifecycle**
+   - **Description:** Added a mobile spawn picker sheet with persistent selection plus auto-dismissing, dismissible interaction hints.
+   - **Likely files:** `creature-sim/index.html`, `creature-sim/styles.css`, `creature-sim/src/ui-controller.js`, `creature-sim/src/ui.js`
+   - **Risk level:** Low
+   - **Verification:** Open the mobile spawn sheet, select each creature type, spawn, and confirm the hint banner auto-dismisses and closes on tap.
+
 ## Shipped (2026-01-27)
 
 1. **Grab affordance highlights + grab reaction**

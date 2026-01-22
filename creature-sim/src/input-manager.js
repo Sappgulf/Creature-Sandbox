@@ -317,6 +317,18 @@ export class InputManager {
       return;
     }
 
+    const mobileSpawnSheet = domCache.get('mobileSpawnSheet');
+    const mobileSpawnBackdrop = domCache.get('mobileSpawnBackdrop');
+    if (mobileSpawnSheet && !mobileSpawnSheet.classList.contains('hidden')) {
+      mobileSpawnSheet.classList.add('hidden');
+      mobileSpawnSheet.setAttribute('aria-hidden', 'true');
+      if (mobileSpawnBackdrop) {
+        mobileSpawnBackdrop.classList.add('hidden');
+        mobileSpawnBackdrop.setAttribute('aria-hidden', 'true');
+      }
+      return;
+    }
+
     // Cancel spawn mode first
     if (gameState.spawnMode) {
       this.cancelSpawnMode();

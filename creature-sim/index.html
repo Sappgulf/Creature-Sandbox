@@ -96,7 +96,10 @@
     <button id="btn-god-kill" title="Kill" aria-label="Kill selected creature" data-tooltip="Remove selected">💀</button>
     <button id="btn-god-clone" title="Clone" aria-label="Clone selected creature" data-tooltip="Clone selected">👯</button>
   </div>
-  <div id="interaction-hint" class="interaction-hint" aria-live="polite"></div>
+  <div id="interaction-hint" class="interaction-hint" aria-live="polite" role="status">
+    <span class="interaction-hint-text"></span>
+    <button id="interaction-hint-close" class="interaction-hint-close" aria-label="Dismiss hint">×</button>
+  </div>
 
   <!-- Meta overlays: game mode + goals -->
   <div id="session-meta">
@@ -807,6 +810,41 @@
     <button id="mobile-btn-prop" title="Sandbox Props" aria-label="Sandbox props" data-label="Props">🟣</button>
     <button id="mobile-btn-pause" title="Pause" aria-label="Pause or resume" data-label="Pause">⏸️</button>
     <button id="mobile-btn-speed" title="Speed" aria-label="Cycle speed" data-label="Speed">⚡</button>
+  </div>
+
+  <div id="mobile-spawn-backdrop" class="mobile-sheet-backdrop hidden" aria-hidden="true"></div>
+  <div
+    id="mobile-spawn-sheet"
+    class="mobile-sheet hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Choose creature to spawn"
+    aria-hidden="true"
+  >
+    <div class="mobile-sheet-header">
+      <span>Choose Creature</span>
+      <button id="mobile-spawn-close" class="mobile-sheet-close" aria-label="Close spawn menu">Close</button>
+    </div>
+    <div class="mobile-sheet-body" role="listbox" aria-label="Creature types">
+      <button class="mobile-spawn-option" data-creature="herbivore" role="option" aria-selected="false">
+        <span class="mobile-spawn-icon">🦌</span>
+        <span class="mobile-spawn-label">Herbivore</span>
+        <span class="mobile-spawn-meta">Balanced grazer</span>
+      </button>
+      <button class="mobile-spawn-option" data-creature="omnivore" role="option" aria-selected="false">
+        <span class="mobile-spawn-icon">🦡</span>
+        <span class="mobile-spawn-label">Omnivore</span>
+        <span class="mobile-spawn-meta">Adaptable eater</span>
+      </button>
+      <button class="mobile-spawn-option" data-creature="predator" role="option" aria-selected="false">
+        <span class="mobile-spawn-icon">🦁</span>
+        <span class="mobile-spawn-label">Predator</span>
+        <span class="mobile-spawn-meta">Fast hunter</span>
+      </button>
+    </div>
+    <div class="mobile-sheet-footer">
+      <button id="mobile-spawn-confirm" class="primary-btn">Spawn Selected</button>
+    </div>
   </div>
   
   <script type="module" src="./src/main.js"></script>

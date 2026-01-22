@@ -67,6 +67,23 @@
 
 ## Done
 
+### 2026-01-28
+
+**Changed:**
+- `creature-sim/index.html` — added mobile spawn sheet markup and dismissible interaction hint button.
+- `creature-sim/styles.css` — styled mobile spawn sheet, hint close affordance, and selection highlight.
+- `creature-sim/src/ui-controller.js` — centralized spawn selection state, mobile spawn sheet handlers, and hint lifecycle clearing.
+- `creature-sim/src/ui.js` — updated spawn hint copy and auto-dismiss logic.
+- `creature-sim/src/dom-cache.js`, `creature-sim/src/input-manager.js` — cached new UI nodes and escape-to-close for the spawn sheet.
+- `docs/SMOKE_TESTS.md`, `docs/ROADMAP.md`, `README.md`, `CHANGELOG.md` — documented mobile spawn selection + help hint lifecycle updates.
+
+**Why:**
+- Fix mobile creature selection and ensure help hints dismiss cleanly without blocking touch interactions.
+
+**Verified:**
+- `npm test`
+- `npm run lint` (warnings only)
+
 ### 2026-01-27
 
 **Changed:**
