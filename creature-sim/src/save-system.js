@@ -98,6 +98,9 @@ export class SaveSystem {
           isPredator: c.isPredator
         })) : [],
 
+        // Sandbox props
+        sandboxProps: world.sandbox?.serialize?.() ?? [],
+
         // Lineage tracking
         childrenOf: Array.from(world.childrenOf.entries()).map(([parentId, childIds]) => ({
           parentId,
@@ -224,6 +227,10 @@ export class SaveSystem {
     if (data.biomeSeed != null && BiomeGenerator) {
       world.biomeGenerator = new BiomeGenerator(data.biomeSeed);
       world.biomeMap = world.biomeGenerator.generateBiomeMap(data.width, data.height, 50);
+    }
+
+    if (world.sandbox?.restore) {
+      world.sandbox.restore(data.sandboxProps || data.sandbox?.props || []);
     }
 
     // Restore creatures

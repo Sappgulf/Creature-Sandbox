@@ -36,6 +36,8 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Behavior tuning**: Adjust forage/wander/rest weights in real-time
 - **Tool modes**: Paint food, spawn creatures, or erase with mouse
 - **Camera controls**: Pan, zoom, and follow creatures
+- **Sandbox props**: Drop bounce pads, spinners, gravity wells, and food buttons
+- **Direct manipulation**: Drag, move, and throw creatures for playful experiments
 - **Creature feedback**: Selection glow, success pulses, and friendly error shakes
 - **Gene sharing**: Copy/import gene codes from the Gene Editor
 - **Display toggles**: Nameplates and reduced-motion options in the Features panel
@@ -82,6 +84,7 @@ open http://localhost:8000
 - **+/-**: Adjust simulation speed (1x to 5x)
 - **Mouse Wheel**: Zoom camera
 - **Middle Click / Alt+Drag**: Pan camera
+- **Drag**: Grab, move, and throw creatures (mouse or touch)
 - **Ctrl/⌘ + S / Ctrl/⌘ + O**: Save to file / load from file
 
 ### Tool Modes (Keyboard Shortcuts)
@@ -89,6 +92,7 @@ open http://localhost:8000
 - **F**: Food painting mode
 - **S**: Spawn creature mode
 - **E**: Erase creatures mode
+- **P**: Sandbox props mode (bounce/spinner/gravity/button)
 - **[ / ]**: Decrease/increase tool brush size
 
 ### Inspector Panel

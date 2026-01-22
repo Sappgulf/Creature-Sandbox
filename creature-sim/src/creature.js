@@ -26,6 +26,9 @@ export class Creature {
     this.vx = 0;
     this.vy = 0;
     this.dir = rand(0, CreatureConfig.TAU);
+    this.externalImpulse = { vx: 0, vy: 0, decay: 6, cap: 360 };
+    this.isGrabbed = false;
+    this.grabTarget = { x, y };
     this.energy = isChild ?
       CreatureConfig.STARTING_ENERGY.baby :
       CreatureConfig.STARTING_ENERGY.adult;
@@ -375,6 +378,16 @@ export class Creature {
     this.statusSystem.tick(dt);
     this.behaviorSystem.update(dt, world);
 
+    if (this.isGrabbed && this.grabTarget) {
+      this.x = clamp(this.grabTarget.x, 0, world.width);
+      this.y = clamp(this.grabTarget.y, 0, world.height);
+      this.vx = 0;
+      this.vy = 0;
+      this._updateReaction(dt);
+      this.updateTrail(dt);
+      return;
+    }
+
     // OPTIMIZATION: Only update advanced AI features every few frames
     // These are expensive and don't need per-frame precision
     if (!this._aiUpdateFrame) this._aiUpdateFrame = Math.floor(Math.random() * 10);
@@ -621,6 +634,7 @@ export class Creature {
     this.vy = Math.sin(this.dir) * spd;
     this.x = this.x + this.vx * dt;
     this.y = this.y + this.vy * dt;
+    this._applyExternalImpulse(dt);
 
     // World boundary handling (configurable via world.boundaryMode)
     const boundaryMode = world.boundaryMode || 'wrap'; // 'wrap', 'clamp', or 'none'
@@ -1154,6 +1168,32 @@ export class Creature {
     this.damageFx.recentDamage = Math.min(2.6, (this.damageFx.recentDamage ?? 0) + ratio * 1.5);
     this.damageFx.hitFlash = Math.max(this.damageFx.hitFlash ?? 0, 0.18 + ratio * 0.35);
     this.reactToCollision(amount);
+  }
+
+  applyImpulse(vx, vy, { decay = 6, cap = 360 } = {}) {
+    if (!this.externalImpulse) {
+      this.externalImpulse = { vx: 0, vy: 0, decay, cap };
+    }
+    this.externalImpulse.vx = clamp(this.externalImpulse.vx + vx, -cap, cap);
+    this.externalImpulse.vy = clamp(this.externalImpulse.vy + vy, -cap, cap);
+    this.externalImpulse.decay = decay;
+    this.externalImpulse.cap = cap;
+  }
+
+  _applyExternalImpulse(dt) {
+    const impulse = this.externalImpulse;
+    if (!impulse) return;
+    if (Math.abs(impulse.vx) < 0.1 && Math.abs(impulse.vy) < 0.1) {
+      impulse.vx = 0;
+      impulse.vy = 0;
+      return;
+    }
+    this.x += impulse.vx * dt;
+    this.y += impulse.vy * dt;
+    const decay = impulse.decay ?? 6;
+    const decayFactor = Math.max(0, 1 - decay * dt);
+    impulse.vx *= decayFactor;
+    impulse.vy *= decayFactor;
   }
 
   reactToPoke({ x = null, y = null } = {}) {

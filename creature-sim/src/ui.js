@@ -13,7 +13,8 @@ export function renderStats(el, world, fps, extra={}) {
     food: { icon: '🌿', label: 'Food' },
     spawn: { icon: '🧬', label: 'Spawn' },
     erase: { icon: '🧹', label: 'Erase' },
-    inspect: { icon: '🔍', label: 'Inspect' }
+    inspect: { icon: '🔍', label: 'Inspect' },
+    prop: { icon: '🧱', label: 'Props' }
   };
 
   // Count creature types efficiently
@@ -80,6 +81,43 @@ export function renderStats(el, world, fps, extra={}) {
   }
 
   el.innerHTML = statParts.join('');
+}
+
+export function renderInteractionHint(el, { tool = 'inspect', propType = null, hasSelection = false } = {}) {
+  if (!el) return;
+  const propLabels = {
+    bounce: 'Bounce Pad',
+    spinner: 'Spinner',
+    gravity: 'Gravity Well',
+    button: 'Food Button'
+  };
+
+  let message = '';
+  switch (tool) {
+    case 'food':
+      message = 'Drag to paint food · Tap to drop a cluster';
+      break;
+    case 'spawn':
+      message = 'Tap to spawn creatures · Use the dropdown to switch types';
+      break;
+    case 'erase':
+      message = 'Tap to erase creatures or props';
+      break;
+    case 'prop': {
+      const label = propLabels[propType] || 'Prop';
+      message = `Tap to place ${label} · Switch types from the props menu`;
+      break;
+    }
+    case 'inspect':
+    default:
+      message = hasSelection
+        ? 'Drag a creature to move it · Tap to inspect'
+        : 'Tap a creature to inspect · Drag to move and throw';
+      break;
+  }
+
+  el.textContent = message;
+  el.classList.toggle('hidden', !message);
 }
 
 export function renderSelectedInfo(el, creature, { world=null, lineageTracker=null }={}) {

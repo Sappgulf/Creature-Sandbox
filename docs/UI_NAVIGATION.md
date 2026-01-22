@@ -64,3 +64,9 @@ Mobile behavior:
 - **Developer-only actions**: grouped under Developer; no changes to existing toggles.
 - **Keyboard**: Overflow supports arrow keys, Enter, Escape.
 - **Screen reader**: icon buttons retain `aria-label` and `aria-keyshortcuts` where available.
+
+## Quick Actions (Sandbox Surface)
+
+- Bottom-center quick actions now include **Props** alongside food + spawn.
+- Props menu is a small dropdown (progressive disclosure) for bounce, spinner, gravity, and food button tools.
+- A contextual **interaction hint** appears above quick actions to guide current tool usage.

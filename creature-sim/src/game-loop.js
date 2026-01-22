@@ -15,7 +15,7 @@ import { batchRenderer } from './batch-renderer.js';
 import { ecsWorld } from './ecs.js';
 import { analyticsDashboard, advancedStatsCalculator } from './enhanced-analytics.js';
 // STATIC UI IMPORTS - avoids dynamic import() latency in hot path
-import { renderStats, renderSelectedInfo, renderAnalyticsCharts } from './ui.js';
+import { renderStats, renderSelectedInfo, renderAnalyticsCharts, renderInteractionHint } from './ui.js';
 
 // Local helper to validate notification subsystem shape without depending on cross-module export availability
 function isNotificationSystem(candidate) {
@@ -701,6 +701,7 @@ export class GameLoop {
   updateStatsUI() {
     const statsEl = domCache.get('stats');
     const selectedInfoEl = domCache.get('selectedInfo');
+    const interactionHintEl = domCache.get('interactionHint');
 
     if (statsEl) {
       renderStats(statsEl, this.world, gameState.fps, {
@@ -718,6 +719,14 @@ export class GameLoop {
       const focusId = gameState.pinnedId ?? gameState.selectedId ?? null;
       const focusCreature = focusId ? this.world.getAnyCreatureById(focusId) : null;
       renderSelectedInfo(selectedInfoEl, focusCreature, { world: this.world, lineageTracker: this.world.lineageTracker });
+    }
+
+    if (interactionHintEl) {
+      renderInteractionHint(interactionHintEl, {
+        tool: this.uiController?.tools?.mode,
+        propType: gameState.selectedPropType,
+        hasSelection: !!(gameState.pinnedId ?? gameState.selectedId)
+      });
     }
   }
 

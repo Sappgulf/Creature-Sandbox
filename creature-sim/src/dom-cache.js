@@ -19,6 +19,8 @@ export class DOMCache {
     this.cacheElement('stats', 'stats');
     this.cacheElement('selected-info', 'selectedInfo');
     this.cacheElement('hud-bottom-left', 'hudBottom');
+    this.cacheElement('quick-actions', 'quickActions');
+    this.cacheElement('mobile-quick-actions', 'mobileQuickActions');
 
     // Inspector elements
     this.cacheElement('inspector', 'inspector');
@@ -42,6 +44,9 @@ export class DOMCache {
     this.cacheElement('btn-spawn-food', 'spawnFoodBtn');
     this.cacheElement('btn-spawn-creature', 'spawnCreatureBtn');
     this.cacheElement('creature-dropdown', 'creatureDropdown');
+    this.cacheElement('btn-prop-tool', 'propToolBtn');
+    this.cacheElement('prop-dropdown', 'propDropdown');
+    this.cacheElement('interaction-hint', 'interactionHint');
 
     // God mode buttons (quick actions)
     this.cacheElement('btn-god-heal', 'godHealBtn');
@@ -52,6 +57,7 @@ export class DOMCache {
     // Mobile controls
     this.cacheElement('mobile-btn-spawn', 'mobileSpawnBtn');
     this.cacheElement('mobile-btn-food', 'mobileFoodBtn');
+    this.cacheElement('mobile-btn-prop', 'mobilePropBtn');
     this.cacheElement('mobile-btn-pause', 'mobilePauseBtn');
     this.cacheElement('mobile-btn-speed', 'mobileSpeedBtn');
 
@@ -72,6 +78,7 @@ export class DOMCache {
 
     // Gene editor
     this.cacheElement('btn-gene-editor', 'geneEditorBtn');
+    this.cacheElement('gene-editor-panel', 'geneEditorPanel');
     this.cacheElement('btn-gene-editor-close', 'geneEditorCloseBtn');
 
     // Ecosystem health

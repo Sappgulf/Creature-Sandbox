@@ -1,5 +1,19 @@
 # Creature Sandbox Roadmap
 
+## Shipped (2026-01-26)
+
+1. **Sandbox props + drag/throw**
+   - **Description:** Added placeable bounce pads, spinners, gravity wells, and food buttons, plus grab/drag/throw creature interactions.
+   - **Likely files:** `creature-sim/src/sandbox-props.js`, `creature-sim/src/input-manager.js`, `creature-sim/src/renderer.js`
+   - **Risk level:** Medium
+   - **Verification:** Place each prop type, drag a creature into it, and confirm visible reactions and movement changes.
+
+2. **Contextual sandbox prompts + goals**
+   - **Description:** Added interaction hints and new session goals for prop triggers and creature launches.
+   - **Likely files:** `creature-sim/src/ui.js`, `creature-sim/src/session-goals.js`, `creature-sim/src/game-loop.js`
+   - **Risk level:** Low
+   - **Verification:** Toggle tools and confirm prompts update; complete a throw/prop goal to see progress.
+
 ## Shipped (2026-01-25)
 
 1. **Creature feel + reactions**
@@ -100,11 +114,11 @@
    - **Risk level:** Medium
    - **Verification:** Favorite a tool, swap with hotkeys, and validate HUD updates.
 
-3. **Sandbox prop interactions**
-   - **Description:** Add simple props (rocks, bushes) for creatures to navigate around.
-   - **Likely files:** `creature-sim/src/world-core.js`, `creature-sim/src/renderer.js`, `creature-sim/src/world-ecosystem.js`
+3. **Prop persistence + presets**
+   - **Description:** Add prop presets and save slot previews for quick sandbox setups.
+   - **Likely files:** `creature-sim/src/save-system.js`, `creature-sim/src/ui-controller.js`, `creature-sim/src/sandbox-props.js`
    - **Risk level:** Medium
-   - **Verification:** Spawn props, ensure pathing avoids them, and save/load preserves props.
+   - **Verification:** Save a prop-heavy sandbox and verify it restores with presets intact.
 
 ## Big Rocks (Future Systems, Optional)
 

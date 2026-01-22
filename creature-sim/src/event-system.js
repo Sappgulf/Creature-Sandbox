@@ -310,6 +310,8 @@ export const GameEvents = {
   CREATURE_ATTACK: 'creature:attack',
   CREATURE_DEFEND: 'creature:defend',
   CREATURE_KILLED: 'creature:killed',
+  CREATURE_THROWN: 'creature:thrown',
+  CREATURE_BUMPED: 'creature:bumped',
 
   // World events
   FRAME_UPDATE: 'frame:update',
@@ -340,6 +342,8 @@ export const GameEvents = {
   SESSION_GOAL_UPDATED: 'session_goal:updated',
   SESSION_GOAL_COMPLETED: 'session_goal:completed',
   GAME_MODE_CHANGED: 'game_mode:changed',
+  SANDBOX_PROP_PLACED: 'sandbox:prop_placed',
+  SANDBOX_PROP_TRIGGERED: 'sandbox:prop_triggered',
 
   // God mode events
   GOD_MODE_ACTION: 'god:action',

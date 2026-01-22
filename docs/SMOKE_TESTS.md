@@ -19,6 +19,9 @@
 4. **Interact/play**
    - Press **F** and paint food into the world.
    - Use **E** to erase a creature.
+   - Press **P** to switch to Props and drop a bounce pad + gravity well.
+   - Drag a creature onto a prop and confirm it reacts (bounce/spin/grav pull).
+   - Drag a creature quickly and release to throw it.
    - Toggle pause/resume with **Space** and confirm the sim halts/continues.
    - Tap or click a creature and confirm a glow outline + reaction animation plays.
 
@@ -30,7 +33,7 @@
    - Use **Ctrl+S** to save the game.
    - Refresh the page.
    - Use **Ctrl+O** to load the save.
-   - Confirm creatures, food counts, and time of day restore correctly.
+   - Confirm creatures, food counts, sandbox props, and time of day restore correctly.
    - Optional: use **Ctrl/⌘ + S** to download a save file and **Ctrl/⌘ + O** to load it back.
 
 7. **Help section**
@@ -46,6 +49,7 @@
 1. **Touch controls + safe areas**
    - Open on a mobile device or emulator.
    - Pan with one finger, pinch to zoom, and double-tap to zoom.
+   - Tap **Props** in the mobile bar to cycle prop types, then tap the canvas to place one.
    - Confirm HUD and mobile quick actions clear the notch/home indicator areas.
 
 2. **On-screen keyboard**
