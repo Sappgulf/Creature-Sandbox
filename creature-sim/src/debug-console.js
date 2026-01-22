@@ -1,3 +1,5 @@
+import { gameState } from './game-state.js';
+
 export class DebugConsole {
   constructor(world, camera) {
     this.world = world;
@@ -19,7 +21,8 @@ export class DebugConsole {
       export: () => this.exportState(),
       nofood: () => this.removeAllFood(),
       god: () => this.godMode(),
-      chaos: () => this.chaosMode()
+      chaos: () => this.chaosMode(),
+      goals: () => this.toggleGoalDebug()
     };
   }
 
@@ -48,6 +51,7 @@ export class DebugConsole {
     console.log('%c  debug.nofood()         %c- Remove all food', 'color: #ffc800;', 'color: #c3c6e4;');
     console.log('%c  debug.god()            %c- God mode: immortal creatures', 'color: #ffc800;', 'color: #c3c6e4;');
     console.log('%c  debug.chaos()          %c- Chaos mode: random events', 'color: #ffc800;', 'color: #c3c6e4;');
+    console.log('%c  debug.goals()          %c- Toggle goal/target debug overlays', 'color: #ffc800;', 'color: #c3c6e4;');
     console.log('%c  debug.export()         %c- Export world state to console', 'color: #ffc800;', 'color: #c3c6e4;');
     console.log('\n%c💡 Tip: Type "debug" to access the console object', 'color: #9aa0c6; font-style: italic;');
   }
@@ -193,6 +197,11 @@ export class DebugConsole {
     }
   }
 
+  toggleGoalDebug() {
+    gameState.showGoalDebug = !gameState.showGoalDebug;
+    console.log(`✅ Goal debug ${gameState.showGoalDebug ? 'enabled' : 'disabled'}`);
+  }
+
   /**
    * Update method called each frame (for interface compatibility)
    * @param {number} dt - Delta time
@@ -209,4 +218,3 @@ export class DebugConsole {
     return this.visible;
   }
 }
-

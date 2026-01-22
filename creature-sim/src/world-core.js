@@ -29,10 +29,15 @@ export class World {
     this.creatures = [];
     this.food = [];
     this.corpses = [];
+    this.restZones = [];
 
     // Spatial grids for performance
     this.foodGrid = new SpatialGrid(36);
     this.corpseGrid = new SpatialGrid(40);
+    this.restGrid = new SpatialGrid(120, width, height);
+    this.foodGridDirty = true;
+    this.corpseGridDirty = true;
+    this.restGridDirty = true;
 
     // External system attachments
     this.lineageTracker = null;
@@ -205,7 +210,10 @@ export class World {
     }
 
     // Update spatial grid
-    this.creatureManager?.ensureSpatial();
+    if (this.creatureManager) {
+      this.creatureManager.gridDirty = true;
+      this.creatureManager.ensureSpatial();
+    }
   }
 
   applyCreatureBumps() {
@@ -279,6 +287,11 @@ export class World {
     for (const food of this.food) {
       food.t += dt;
     }
+
+    if (this.foodGridDirty && this.foodGrid?.buildIndex) {
+      this.foodGrid.buildIndex();
+      this.foodGridDirty = false;
+    }
   }
 
   // Update corpse system
@@ -290,7 +303,13 @@ export class World {
       if (corpse.decayTimer <= 0) {
         this.corpses.splice(i, 1);
         this.corpseGrid?.remove(corpse);
+        this.corpseGridDirty = true;
       }
+    }
+
+    if (this.corpseGridDirty && this.corpseGrid?.buildIndex) {
+      this.corpseGrid.buildIndex();
+      this.corpseGridDirty = false;
     }
   }
 
@@ -327,6 +346,7 @@ export class World {
     this.creatures = [];
     this.food = [];
     this.corpses = [];
+    this.restZones = [];
     this.t = 0;
 
     // Reset subsystems
@@ -345,6 +365,8 @@ export class World {
     this.creatureManager.creatureGrid.clear();
     this.foodGrid.clear();
     this.corpseGrid?.clear();
+    this.foodGridDirty = true;
+    this.corpseGridDirty = true;
 
     console.debug('🔄 World reset to initial state');
   }
@@ -438,8 +460,8 @@ export class World {
     return this.ecosystem.nearbyFood(x, y, radius);
   }
 
-  tryEatFoodAt(x, y, reach = 8) {
-    return this.ecosystem.tryEatFoodAt(x, y, reach);
+  tryEatFoodAt(x, y, reach = 8, biteSize = 1) {
+    return this.ecosystem.tryEatFoodAt(x, y, reach, biteSize);
   }
 
   // Combat helpers (proxy to combat subsystem)
@@ -509,10 +531,11 @@ export class World {
       if (idx >= 0) {
         this.corpses.splice(idx, 1);
         this.corpseGrid?.remove?.(corpse);
+        this.corpseGridDirty = true;
       }
     }
 
-    return true;
+    return { energy: eatAmount, corpse };
   }
 
   // Biome helpers
@@ -644,7 +667,16 @@ export class World {
       for (const corpse of this.corpses) {
         this.corpseGrid.add(corpse);
       }
+      this.corpseGrid.buildIndex?.();
       this.gridDirty = false;
+    }
+    if (this.restGridDirty && this.restGrid) {
+      this.restGrid.clear();
+      for (const zone of this.restZones) {
+        this.restGrid.add(zone);
+      }
+      this.restGrid.buildIndex?.();
+      this.restGridDirty = false;
     }
   }
 
@@ -670,6 +702,7 @@ export class World {
       creatures: this.creatures.map(c => c.export ? c.export() : null).filter(Boolean),
       food: this.food,
       corpses: this.corpses,
+      restZones: this.restZones,
       environment: this.environment.exportState ? this.environment.exportState() : {},
       ecosystem: this.ecosystem.exportState ? this.ecosystem.exportState() : {},
       disaster: this.disaster.exportState ? this.disaster.exportState() : {}
@@ -687,6 +720,7 @@ export class World {
     this.creatures = snapshot.creatures || [];
     this.food = snapshot.food || [];
     this.corpses = snapshot.corpses || [];
+    this.restZones = snapshot.restZones || this.restZones || [];
 
     // Rebuild spatial indices
     this.creatureManager.creatureGrid.clear();
@@ -700,6 +734,15 @@ export class World {
     for (const f of this.food) {
       this.foodGrid.add(f);
     }
+    this.foodGrid.buildIndex?.();
+    this.foodGridDirty = false;
+
+    this.restGrid?.clear();
+    for (const zone of this.restZones) {
+      this.restGrid?.add(zone);
+    }
+    this.restGrid?.buildIndex?.();
+    this.restGridDirty = false;
 
     // Import subsystem states
     if (this.environment.importState) {

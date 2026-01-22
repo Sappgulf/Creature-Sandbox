@@ -33,36 +33,48 @@
    - Confirm hard impacts cause small, readable damage spikes rather than instant deaths.
    - Observe that creatures settle (less jitter) when left alone and show more wobble after repeated impacts.
 
-5. **Top menu navigation**
+5. **Ecosystem agent loop**
+   - Spawn at least two herbivores and one omnivore.
+   - Paint a small food patch and confirm nearby creatures path toward it.
+   - Observe a creature eating multiple bites (short pauses between bites).
+   - Confirm hunger eases (less frantic wandering) after eating.
+   - Let a creature idle in a calm area; confirm it slows down and recovers energy.
+   - Optional: run `debug.goals()` in the console and confirm goal labels + target lines appear.
+   - Watch two adults with high social drive approach and perform a brief bonding interaction.
+   - Confirm an offspring spawns and population growth slows if the world is overcrowded.
+
+6. **Top menu navigation**
    - Click **🎛️ Modes & Goals** and confirm the Game Mode + Session Goals card toggles.
    - Open **⋯ More Actions** and verify every item opens its respective panel or toggle.
 
-6. **Save/load roundtrip**
+7. **Save/load roundtrip**
    - Use **Ctrl+S** to save the game.
    - Refresh the page.
    - Use **Ctrl+O** to load the save.
    - Confirm creatures, food counts, sandbox props, and time of day restore correctly.
    - Confirm loaded creatures retain reasonable ecosystem state (no immediate panic spiral, no zeroed energy).
+   - Confirm hunger/energy/social/stress values load without NaNs (inspect a creature).
+   - Confirm food patches keep remaining bites after reload.
    - Optional: use **Ctrl/⌘ + S** to download a save file and **Ctrl/⌘ + O** to load it back.
 
-7. **Help section**
+8. **Help section**
    - Open **⋯ More Actions**.
    - Confirm the Help section lists controls, shortcuts, and where features live.
 
-8. **Session goals**
+9. **Session goals**
    - Open **🎛️ Modes & Goals**.
    - Confirm a goal appears for manual creature spawns and progresses when you spawn creatures.
 
-9. **Balance pass: grab/throw consistency**
+10. **Balance pass: grab/throw consistency**
    - Switch to **Inspect** mode and grab a creature with a short drag.
    - Confirm gentle drags release without huge launches.
    - Flick a longer drag and confirm throws feel capped and predictable (no extreme launches).
 
-10. **Balance pass: camera stability**
+11. **Balance pass: camera stability**
     - Pan and zoom quickly, then release.
     - Confirm the camera settles without lingering jitter and overlays reappear after it stops.
 
-11. **Balance pass: creature reactions**
+12. **Balance pass: creature reactions**
     - Trigger a bounce pad or spinner on a creature.
     - Drop a creature from a height and confirm a squish/landing reaction.
     - Poke a creature repeatedly and confirm an overreaction triggers but resets quickly.
@@ -83,6 +95,8 @@
    - Reopen the sheet, select **Predator**, spawn again, and confirm a predator spawns.
    - Tap **Food** and confirm nearby creatures react and move toward it.
    - Let the sim run for 60–120 seconds and confirm creatures remain alive during gentle play.
+   - Observe at least one creature slow down to rest and another take multiple food bites.
+   - Spawn two adults and confirm a short mating interaction can happen without runaway growth.
 
 3. **Help / hints lifecycle**
    - Trigger the spawn tool or open **⋯ More Actions** → **Help**.

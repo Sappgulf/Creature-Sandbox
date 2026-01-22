@@ -72,6 +72,7 @@ export class GameState {
     this.lastScenarioQueueRender = 0;
     this.hudBottomHeight = 0;
     this.hudBottomMeasuredAt = 0;
+    this.showGoalDebug = false;
 
     // Mobile state
     this.mobileSpeedIndex = 1; // 0=0.5x, 1=1x, 2=2x, 3=4x

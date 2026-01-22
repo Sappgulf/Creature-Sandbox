@@ -2,6 +2,7 @@
  * World Ecosystem System - Manages food, balancing, and ecological dynamics
  */
 import { rand, clamp, dist2 } from './utils.js';
+import { CreatureAgentTuning } from './creature-agent-constants.js';
 
 export class WorldEcosystem {
   constructor(world) {
@@ -46,7 +47,37 @@ export class WorldEcosystem {
     this.balanceCheckInterval = 60; // Check every minute
     this.lastEcoStats = null;
 
+    this.seedRestZones();
+
     console.debug('🌱 World ecosystem system initialized');
+  }
+
+  seedRestZones() {
+    if (!this.world) return;
+    this.world.restZones = [];
+
+    const count = CreatureAgentTuning.REST_ZONES.COUNT;
+    const radius = CreatureAgentTuning.REST_ZONES.RADIUS;
+
+    for (let i = 0; i < count; i++) {
+      const zone = {
+        id: `rest-${i}-${Math.floor(Math.random() * 10000)}`,
+        x: rand(80, this.world.width - 80),
+        y: rand(80, this.world.height - 80),
+        radius,
+        calmBoost: CreatureAgentTuning.REST_ZONES.STRESS_RECOVERY
+      };
+      this.world.restZones.push(zone);
+    }
+
+    if (this.world.restGrid) {
+      this.world.restGrid.clear();
+      for (const zone of this.world.restZones) {
+        this.world.restGrid.add(zone);
+      }
+      this.world.restGrid.buildIndex?.();
+      this.world.restGridDirty = false;
+    }
   }
 
   update(dt) {
@@ -83,10 +114,15 @@ export class WorldEcosystem {
     const config = this.vegetationTypes[type];
     if (!config) return null;
 
+    const bites = Math.max(1, Math.round(config.energy / CreatureAgentTuning.FOOD.BITE_ENERGY));
+    const biteEnergy = config.energy / bites;
     const food = {
       x, y, r,
       type,
       energy: config.energy,
+      bites,
+      biteEnergy,
+      scentRadius: CreatureAgentTuning.FOOD.SCENT_RADIUS,
       color: config.color,
       size: config.size,
       respawnTime: config.respawnTime,
@@ -95,6 +131,7 @@ export class WorldEcosystem {
 
     this.world.food.push(food);
     this.world.foodGrid.add(food);
+    this.world.foodGridDirty = true;
     return food;
   }
 
@@ -104,20 +141,53 @@ export class WorldEcosystem {
   }
 
   // Attempt to eat food at position
-  tryEatFoodAt(x, y, reach = 8) {
+  tryEatFoodAt(x, y, reach = 8, biteSize = 1) {
     const foods = this.nearbyFood(x, y, reach);
     for (const food of foods) {
       if (dist2(x, y, food.x, food.y) <= reach * reach) {
-        // Remove food
-        const index = this.world.food.indexOf(food);
-        if (index >= 0) {
-          this.world.food.splice(index, 1);
-          this.world.foodGrid.remove(food);
-          return food;
+        const bites = Math.max(1, biteSize);
+        const biteEnergy = food.biteEnergy ?? (food.energy ?? 1);
+        const consumedBites = Math.min(food.bites ?? 1, bites);
+        const consumedEnergy = biteEnergy * consumedBites;
+        food.bites = (food.bites ?? 1) - consumedBites;
+        if (food.energy !== undefined) {
+          food.energy = Math.max(0, food.energy - consumedEnergy);
         }
+
+        if (food.bites <= 0) {
+          const index = this.world.food.indexOf(food);
+          if (index >= 0) {
+            this.world.food.splice(index, 1);
+            this.world.foodGrid.remove(food);
+            this.world.foodGridDirty = true;
+          }
+        }
+
+        return {
+          food,
+          energy: consumedEnergy,
+          depleted: food.bites <= 0,
+          bitesLeft: food.bites
+        };
       }
     }
     return null;
+  }
+
+  nearestRestZone(x, y, radius) {
+    const zones = this.world.restGrid?.nearby ? this.world.restGrid.nearby(x, y, radius) : this.world.restZones;
+    if (!zones || zones.length === 0) return null;
+
+    let best = null;
+    let bestD2 = radius * radius;
+    for (const zone of zones) {
+      const d2 = dist2(x, y, zone.x, zone.y);
+      if (d2 < bestD2) {
+        bestD2 = d2;
+        best = zone;
+      }
+    }
+    return best;
   }
 
   // Update ecosystem statistics

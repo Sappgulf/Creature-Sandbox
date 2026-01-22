@@ -43,6 +43,19 @@
 - Implement lightweight ecosystem state updates with crowd pressure + social contagion.
 - Update save schema + smoke tests + docs.
 
+## Session Audit (2026-02-01)
+
+### Focus
+1. Needs-driven creature agents (hunger/energy/social/stress) with utility goals.
+2. Rest zones + food bite consumption with scent-based sensing.
+3. Mating loop with cooldowns, population guardrails, and save/load support.
+
+### Planned Actions
+- Add centralized agent tuning constants and per-creature needs/goal state.
+- Add rest zones and bite-based food consumption (local scent sensing).
+- Update mating logic with controlled offspring + population caps.
+- Extend save/load schema + docs + smoke tests for new agent loop.
+
 ## Session Audit (2026-01-26)
 
 ### Phase 1 Gameplay Audit (code inspection)
