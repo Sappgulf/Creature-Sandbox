@@ -54,11 +54,26 @@
    - Tap **Props** in the mobile bar to cycle prop types, then tap the canvas to place one.
    - Confirm HUD and mobile quick actions clear the notch/home indicator areas.
 
-2. **On-screen keyboard**
+2. **Spawn selection + play loop**
+   - Tap **Spawn** in the mobile bar to open the creature sheet.
+   - Select **Herbivore**, then tap **Spawn Selected** and confirm a herbivore spawns.
+   - Reopen the sheet, select **Predator**, spawn again, and confirm a predator spawns.
+   - Tap **Food** and confirm nearby creatures react and move toward it.
+
+3. **Help / hints lifecycle**
+   - Trigger the spawn tool or open **⋯ More Actions** → **Help**.
+   - Confirm hints auto-dismiss within a few seconds and can be dismissed by tapping outside or the close button.
+   - Confirm dismissing a hint keeps it hidden until another help trigger happens.
+
+4. **Save/load roundtrip (mobile)**
+   - Use the save button or keyboard shortcut (if available).
+   - Reload and confirm the save restores creatures, food, props, and time of day.
+
+5. **On-screen keyboard**
    - Open Scenario Lab or Gene Editor and focus a text input.
    - Confirm panels stay visible and inputs remain reachable with the keyboard open.
 
-3. **Tap targets**
+6. **Tap targets**
    - Tap top HUD buttons and the **⋯ More Actions** sheet items.
    - Confirm no tiny targets block touch usage.
    - Confirm the sheet respects safe-area padding.

@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- Mobile spawn picker sheet with large tap targets and explicit spawn confirmation.
 - Gene editor share codes (copy/import) and spawn-mode feedback.
 - Nameplates toggle in Features panel.
 - Reduced motion toggle (respects OS preference + stored setting).
@@ -21,6 +22,7 @@ All notable changes to this project will be documented in this file.
 - Contextual sandbox action prompts.
 
 ### Changed
+- Interaction hints now auto-dismiss, include a close button, and clear on mode/panel transitions.
 - Panel max-heights now respect dynamic mobile viewport sizing.
 - Mobile viewport handling now uses VisualViewport updates when available.
 - Analytics dashboard now scales charts to fit the current viewport.
@@ -37,6 +39,12 @@ All notable changes to this project will be documented in this file.
 - **WHY:** Make interactable creatures feel obvious and responsive during drag/throw play.
 - **RISK:** Low; visual-only feedback layered on existing input handling.
 - **VERIFY:** `npm test`, `npm run lint`, and manual hover/drag checks.
+
+### Notes (2026-01-28)
+- **WHAT:** Added mobile spawn picker sheet and auto-dismissing, dismissible interaction hints.
+- **WHY:** Fix mobile creature selection and prevent help text from lingering over gameplay.
+- **RISK:** Low; UI-only changes with fallback to the last used spawn type.
+- **VERIFY:** `npm test`, `npm run lint`, and mobile spawn selection smoke checks.
 
 ## [2026-01-21]
 ### Added

@@ -83,7 +83,12 @@ export function renderStats(el, world, fps, extra={}) {
   el.innerHTML = statParts.join('');
 }
 
-export function renderInteractionHint(el, { tool = 'inspect', propType = null, hasSelection = false } = {}) {
+export function renderInteractionHint(el, {
+  tool = 'inspect',
+  propType = null,
+  hasSelection = false,
+  hintDurationMs = 4500
+} = {}) {
   if (!el) return;
   const propLabels = {
     bounce: 'Bounce Pad',
@@ -98,7 +103,7 @@ export function renderInteractionHint(el, { tool = 'inspect', propType = null, h
       message = 'Drag to paint food · Tap to drop a cluster';
       break;
     case 'spawn':
-      message = 'Tap to spawn creatures · Use the dropdown to switch types';
+      message = 'Tap to spawn creatures · Use the spawn menu to switch types';
       break;
     case 'erase':
       message = 'Tap to erase creatures or props';
@@ -116,8 +121,27 @@ export function renderInteractionHint(el, { tool = 'inspect', propType = null, h
       break;
   }
 
-  el.textContent = message;
-  el.classList.toggle('hidden', !message);
+  const now = performance.now();
+  const textEl = el.querySelector('.interaction-hint-text') || el;
+  const lastMessage = el.dataset.message || '';
+
+  if (message && message !== lastMessage) {
+    el.dataset.message = message;
+    el.dataset.dismissed = 'false';
+    el.dataset.expiresAt = String(now + hintDurationMs);
+  }
+
+  const dismissed = el.dataset.dismissed === 'true';
+  const expiresAt = Number(el.dataset.expiresAt || 0);
+  const isExpired = expiresAt > 0 && now > expiresAt;
+  const shouldHide = !message || dismissed || isExpired;
+
+  if (!shouldHide) {
+    textEl.textContent = message;
+  }
+
+  el.classList.toggle('hidden', shouldHide);
+  el.setAttribute('aria-hidden', shouldHide ? 'true' : 'false');
 }
 
 export function renderSelectedInfo(el, creature, { world=null, lineageTracker=null }={}) {

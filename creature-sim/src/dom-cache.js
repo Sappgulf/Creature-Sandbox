@@ -47,6 +47,7 @@ export class DOMCache {
     this.cacheElement('btn-prop-tool', 'propToolBtn');
     this.cacheElement('prop-dropdown', 'propDropdown');
     this.cacheElement('interaction-hint', 'interactionHint');
+    this.cacheElement('interaction-hint-close', 'interactionHintClose');
 
     // God mode buttons (quick actions)
     this.cacheElement('btn-god-heal', 'godHealBtn');
@@ -60,6 +61,10 @@ export class DOMCache {
     this.cacheElement('mobile-btn-prop', 'mobilePropBtn');
     this.cacheElement('mobile-btn-pause', 'mobilePauseBtn');
     this.cacheElement('mobile-btn-speed', 'mobileSpeedBtn');
+    this.cacheElement('mobile-spawn-sheet', 'mobileSpawnSheet');
+    this.cacheElement('mobile-spawn-backdrop', 'mobileSpawnBackdrop');
+    this.cacheElement('mobile-spawn-close', 'mobileSpawnClose');
+    this.cacheElement('mobile-spawn-confirm', 'mobileSpawnConfirm');
 
     // Feature panel
     this.cacheElement('btn-features', 'featuresBtn');

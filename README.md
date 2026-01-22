@@ -97,6 +97,12 @@ open http://localhost:8000
 - **P**: Sandbox props mode (bounce/spinner/gravity/button)
 - **[ / ]**: Decrease/increase tool brush size
 
+### Mobile Quick Actions
+- **Spawn**: Opens the creature picker sheet. Choose a type and tap **Spawn Selected**.
+- **Food**: Drops food clusters near the camera center.
+- **Props**: Cycles props, then tap the canvas to place.
+- **Pause / Speed**: Toggle pause and cycle simulation speed.
+
 ### Inspector Panel
 - **Click creature**: Inspect individual stats and genes
 - **Shift+Click creature**: Set as lineage root to explore family tree
