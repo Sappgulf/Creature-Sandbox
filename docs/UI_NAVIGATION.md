@@ -37,6 +37,7 @@ Overflow menu groups:
 - **Tools**: Scenario Lab, Gene Editor, Features
 - **Insights**: Ecosystem Health, Analytics Dashboard
 - **Developer**: Debug Console, Performance Monitor
+- **Help**: Inline guidance for controls, shortcuts, and menu mapping
 
 Mobile behavior:
 - Overflow opens a **bottom sheet** with 44px+ tap targets and safe-area padding.

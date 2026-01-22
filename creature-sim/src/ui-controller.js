@@ -955,6 +955,9 @@ export class UIController {
       a.download = `creature-sim-snapshot-${Date.now()}.json`;
       a.click();
       URL.revokeObjectURL(url);
+      if (this.hasNotifications()) {
+        this.notifications.show('📊 Snapshot exported', 'success', 2000);
+      }
     }
   }
 
@@ -968,6 +971,9 @@ export class UIController {
       a.download = `creature-sim-population-${Date.now()}.csv`;
       a.click();
       URL.revokeObjectURL(url);
+      if (this.hasNotifications()) {
+        this.notifications.show('📈 Population CSV exported', 'success', 2000);
+      }
     }
   }
 
@@ -981,6 +987,9 @@ export class UIController {
       a.download = `creature-sim-genes-${Date.now()}.csv`;
       a.click();
       URL.revokeObjectURL(url);
+      if (this.hasNotifications()) {
+        this.notifications.show('🧬 Gene history CSV exported', 'success', 2000);
+      }
     }
   }
 }

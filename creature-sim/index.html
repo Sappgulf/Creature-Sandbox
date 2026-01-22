@@ -30,6 +30,7 @@
       class="hud-overflow-trigger"
       title="More actions"
       aria-label="Open more actions"
+      data-tooltip="More actions"
       aria-haspopup="menu"
       aria-expanded="false"
       aria-controls="hud-overflow-menu"
@@ -72,19 +73,19 @@
 
   <!-- Floating Quick Actions - Center Bottom -->
   <div id="quick-actions">
-    <button id="btn-spawn-food" title="Spawn Food (F)" aria-label="Spawn food">🌿</button>
+    <button id="btn-spawn-food" title="Spawn Food (F)" aria-label="Spawn food" data-tooltip="Spawn food (F)">🌿</button>
     <div class="spawn-dropdown">
-      <button id="btn-spawn-creature" title="Spawn Creature" aria-label="Spawn creature">🦌</button>
+      <button id="btn-spawn-creature" title="Spawn Creature" aria-label="Spawn creature" data-tooltip="Spawn creature">🦌</button>
       <div id="creature-dropdown" class="dropdown-menu hidden">
         <div class="dropdown-item" data-creature="herbivore">🦌 Herbivore</div>
         <div class="dropdown-item" data-creature="omnivore">🦡 Omnivore</div>
         <div class="dropdown-item" data-creature="predator">🦁 Predator</div>
       </div>
     </div>
-    <button id="btn-god-heal" title="Heal (H)" aria-label="Heal selected creature">💚</button>
-    <button id="btn-god-boost" title="Boost Energy" aria-label="Boost energy">⚡</button>
-    <button id="btn-god-kill" title="Kill" aria-label="Kill selected creature">💀</button>
-    <button id="btn-god-clone" title="Clone" aria-label="Clone selected creature">👯</button>
+    <button id="btn-god-heal" title="Heal (H)" aria-label="Heal selected creature" data-tooltip="Heal selected (H)">💚</button>
+    <button id="btn-god-boost" title="Boost Energy" aria-label="Boost energy" data-tooltip="Boost energy">⚡</button>
+    <button id="btn-god-kill" title="Kill" aria-label="Kill selected creature" data-tooltip="Remove selected">💀</button>
+    <button id="btn-god-clone" title="Clone" aria-label="Clone selected creature" data-tooltip="Clone selected">👯</button>
   </div>
 
   <!-- Meta overlays: game mode + goals -->
@@ -636,7 +637,7 @@
       <div class="title-actions">
         <button id="btn-pin" class="chip">Pin</button>
         <button id="btn-root" class="chip">Set Root</button>
-        <button id="btn-minimize-inspector" class="chip ghost" title="Minimize">−</button>
+        <button id="btn-minimize-inspector" class="chip ghost" title="Minimize" aria-label="Minimize inspector">−</button>
         <button id="btn-close-inspector" class="chip ghost" title="Hide inspector" aria-label="Hide inspector">✕</button>
       </div>
     </div>

@@ -10,6 +10,9 @@ export class MobileSupport {
     this.doubleTapTimer = null;
     this.lastTapTime = 0;
     this.tapCount = 0;
+    this.panSensitivity = 0.9;
+    this.pinchSensitivity = 0.85;
+    this.panThreshold = 0.5;
 
     this.init();
   }
@@ -55,13 +58,41 @@ export class MobileSupport {
       document.documentElement.style.setProperty('--vh', `${vh}px`);
     };
 
+    const updateKeyboardOffset = () => {
+      const visualViewport = window.visualViewport;
+      const viewportHeight = visualViewport?.height || window.innerHeight;
+      const viewportOffset = visualViewport?.offsetTop || 0;
+      const offset = Math.max(0, window.innerHeight - viewportHeight - viewportOffset);
+      document.documentElement.style.setProperty('--keyboard-offset', `${offset}px`);
+      document.body.classList.toggle('keyboard-open', offset > 0);
+    };
+
     setViewportHeight();
+    updateKeyboardOffset();
     window.addEventListener('resize', setViewportHeight);
     window.addEventListener('orientationchange', setViewportHeight);
+    window.addEventListener('resize', updateKeyboardOffset);
+    window.addEventListener('orientationchange', updateKeyboardOffset);
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', setViewportHeight);
       window.visualViewport.addEventListener('scroll', setViewportHeight);
+      window.visualViewport.addEventListener('resize', updateKeyboardOffset);
+      window.visualViewport.addEventListener('scroll', updateKeyboardOffset);
     }
+
+    document.addEventListener('focusin', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (!target.matches('input, textarea, select')) return;
+      setTimeout(() => {
+        target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        updateKeyboardOffset();
+      }, 50);
+    });
+
+    document.addEventListener('focusout', () => {
+      setTimeout(() => updateKeyboardOffset(), 50);
+    });
   }
 
   handleTouchStart(e) {
@@ -149,9 +180,10 @@ export class MobileSupport {
     // Pan camera
     const dx = touch.clientX - this.lastPanCenter.x;
     const dy = touch.clientY - this.lastPanCenter.y;
+    if (Math.abs(dx) + Math.abs(dy) < this.panThreshold) return;
 
-    this.camera.targetX -= dx / this.camera.zoom;
-    this.camera.targetY -= dy / this.camera.zoom;
+    this.camera.targetX -= (dx * this.panSensitivity) / this.camera.zoom;
+    this.camera.targetY -= (dy * this.panSensitivity) / this.camera.zoom;
 
     this.lastPanCenter = {
       x: touch.clientX,
@@ -180,8 +212,11 @@ export class MobileSupport {
     if (this.lastPinchDistance) {
       // Zoom
       const scale = distance / this.lastPinchDistance;
-      this.camera.targetZoom *= scale;
-      this.camera.targetZoom = Math.max(0.1, Math.min(3.0, this.camera.targetZoom));
+      const zoomFactor = 1 + (scale - 1) * this.pinchSensitivity;
+      this.camera.targetZoom *= zoomFactor;
+      const minZoom = this.camera.minZoom ?? 0.1;
+      const maxZoom = this.camera.maxZoom ?? 3.0;
+      this.camera.targetZoom = Math.max(minZoom, Math.min(maxZoom, this.camera.targetZoom));
     }
 
     // Pan (two-finger drag)
@@ -192,8 +227,10 @@ export class MobileSupport {
       const dx = centerX - this.lastPanCenter.x;
       const dy = centerY - this.lastPanCenter.y;
 
-      this.camera.targetX -= dx / this.camera.zoom;
-      this.camera.targetY -= dy / this.camera.zoom;
+      if (Math.abs(dx) + Math.abs(dy) >= this.panThreshold) {
+        this.camera.targetX -= (dx * this.panSensitivity) / this.camera.zoom;
+        this.camera.targetY -= (dy * this.panSensitivity) / this.camera.zoom;
+      }
     }
 
     this.lastPinchDistance = distance;

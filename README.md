@@ -81,6 +81,7 @@ open http://localhost:8000
 - **+/-**: Adjust simulation speed (1x to 5x)
 - **Mouse Wheel**: Zoom camera
 - **Middle Click / Alt+Drag**: Pan camera
+- **Ctrl/⌘ + S / Ctrl/⌘ + O**: Save to file / load from file
 
 ### Tool Modes (Keyboard Shortcuts)
 - **X**: Inspect mode (default)
@@ -201,6 +202,7 @@ this.energy += 18;  // Predation reward
 - **Reduced motion**: Toggle in the Features panel (persists across sessions).
 - **Keyboard support**: Most core actions remain accessible via shortcuts (press `?` for help).
 - **Menu navigation**: Overflow menu supports arrow keys, Enter, and Escape.
+- **Help section**: The ⋯ menu includes a quick map of controls and shortcuts.
 
 ---
 

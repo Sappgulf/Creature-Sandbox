@@ -121,6 +121,32 @@ body.reduced-motion * {
   font-size: 11px;
 }
 
+/* Tooltip helper for icon-only controls */
+[data-tooltip] {
+  position: relative;
+}
+
+@media (hover: hover) {
+  [data-tooltip]:hover::after,
+  [data-tooltip]:focus-visible::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 18, 26, 0.95);
+    color: var(--text-primary);
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    white-space: nowrap;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--glass-border);
+    z-index: 2000;
+    pointer-events: none;
+  }
+}
+
 /* === ACCESSIBILITY - KEYBOARD FOCUS STATES === */
 /* Show focus ring only for keyboard navigation (not mouse clicks) */
 :focus-visible {
@@ -169,6 +195,24 @@ input[type="range"]:focus-visible {
 
 .skip-link:focus {
   top: 0;
+}
+
+/* Dev-only FPS overlay */
+.dev-fps {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0) + 12px);
+  right: 12px;
+  z-index: 1200;
+  background: rgba(10, 15, 30, 0.92);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  pointer-events: none;
+  box-shadow: var(--shadow-soft);
 }
 
 /* Error state styling */
@@ -419,6 +463,59 @@ input[type="range"]:focus-visible {
   padding-right: 0;
 }
 
+.hud-help {
+  border-top: 1px solid var(--glass-border);
+  margin-top: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--text-secondary);
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.hud-help-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.hud-help-subtitle {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+
+.hud-help-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-sm);
+}
+
+.hud-help-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+
+.hud-help-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 /* HUD Separator */
 #hud .separator {
   width: 1px;
@@ -634,6 +731,25 @@ input[type="range"]:focus-visible {
   color: var(--text-muted);
   padding-top: var(--space-xs);
   border-top: 1px solid var(--glass-border);
+}
+
+#selected-info.selected-empty {
+  color: var(--text-muted);
+  gap: var(--space-xs);
+}
+
+#selected-info.selected-empty .empty-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+#selected-info.selected-empty .empty-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
 }
 
 /* ============================================================================
@@ -2147,6 +2263,23 @@ select:focus,
   .hud-overflow-sheet {
     max-height: 75vh;
   }
+}
+
+@media (min-width: 480px) {
+  .hud-help-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.mobile-device.keyboard-open .panel {
+  padding-bottom: calc(var(--space-lg) + var(--keyboard-offset, 0px));
+}
+
+.mobile-device.keyboard-open #scenario-panel,
+.mobile-device.keyboard-open #gene-editor-panel,
+.mobile-device.keyboard-open #features-panel,
+.mobile-device.keyboard-open #achievements-panel {
+  max-height: calc((var(--vh, 1vh) * 100) - 160px - var(--keyboard-offset, 0px));
 }
 
 /* ============================================================================
