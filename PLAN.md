@@ -4,6 +4,35 @@
 
 - [ ] Evaluate tool favorites / quick swap UX (post-brush-size update)
 - [ ] Audit save/load UX for surfaced feedback (non-intrusive)
+- [ ] Expand sandbox interactions with props, drag/throw, and micro-goals
+
+## Session Audit (2026-01-26)
+
+### Phase 1 Gameplay Audit (code inspection)
+**What the player can do**
+- Spawn, inspect, and erase creatures; paint food; pause/resume; adjust speeds.
+- Toggle simulation features, pan/zoom camera, follow selected creature.
+- Use gene editor, scenario lab, campaigns, and goals for longer-term play.
+
+**World reactions**
+- Creatures move, hunt, eat, reproduce, and die with visual/audio feedback.
+- Selection glow, poke/drop reactions, and particle effects on events.
+- Environmental seasons/weather, disasters, and ecosystem balancing.
+
+**Choices that matter**
+- Spawn/food placement affects population health and predator-prey balance.
+- Gene edits affect traits and emergent survival.
+- Tool usage (erase/spawn) and goal selection guide session direction.
+
+### Gameplay dead zones
+- Creature interaction is mostly observational after spawn (limited direct manipulation).
+- Many UI actions (feature toggles) provide little immediate causal feedback.
+- Sandbox lacks tactile props or environment rules for quick experiments.
+
+### Missing affordances
+- Drag/throw creatures or objects to test physics outcomes.
+- Placeable props/zones (bounce, gravity, spinner) for emergent play.
+- Clear contextual prompts for what to try next in the sandbox.
 
 ## Session Audit (2026-01-24)
 

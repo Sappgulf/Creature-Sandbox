@@ -147,6 +147,9 @@ export class Renderer {
     // Draw biomes
     this.drawBiomes(world);
 
+    // Sandbox props
+    this.drawSandboxProps(world);
+
     // Feature 1: Draw territories
     if (this.enableTerritories) {
       this.drawTerritories(world);
@@ -653,6 +656,93 @@ export class Renderer {
   _drawWeatherEffects(world) {
     // Placeholder for weather particles (rain, snow, dust)
     // Will be enhanced with particle system
+  }
+
+  drawSandboxProps(world) {
+    const props = world.sandbox?.props;
+    if (!props || props.length === 0) return;
+
+    const ctx = this.ctx;
+    ctx.save();
+
+    for (const prop of props) {
+      if (!prop) continue;
+      const radius = prop.radius || 40;
+      const color = prop.color || '#94a3b8';
+
+      switch (prop.type) {
+        case 'bounce': {
+          ctx.globalAlpha = 0.55;
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 0.85;
+          ctx.strokeStyle = '#f8fafc';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, radius * 0.45, 0, Math.PI * 2);
+          ctx.stroke();
+          break;
+        }
+        case 'spinner': {
+          ctx.globalAlpha = 0.5;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, radius, 0, Math.PI * 2);
+          ctx.stroke();
+          const spin = (world.t * 2.2) % (Math.PI * 2);
+          ctx.save();
+          ctx.translate(prop.x, prop.y);
+          ctx.rotate(spin);
+          ctx.strokeStyle = '#e2e8f0';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(-radius * 0.6, 0);
+          ctx.lineTo(radius * 0.6, 0);
+          ctx.moveTo(0, -radius * 0.6);
+          ctx.lineTo(0, radius * 0.6);
+          ctx.stroke();
+          ctx.restore();
+          break;
+        }
+        case 'gravity': {
+          const gradient = ctx.createRadialGradient(prop.x, prop.y, radius * 0.2, prop.x, prop.y, radius);
+          gradient.addColorStop(0, 'rgba(255,255,255,0.3)');
+          gradient.addColorStop(1, 'rgba(30,41,59,0.05)');
+          ctx.globalAlpha = 0.6;
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, radius * 0.65, 0, Math.PI * 2);
+          ctx.stroke();
+          break;
+        }
+        case 'button': {
+          ctx.globalAlpha = 0.6;
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, radius * 0.8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, radius * 0.4, 0, Math.PI * 2);
+          ctx.stroke();
+          break;
+        }
+        default:
+          break;
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.restore();
   }
 
   drawFood(food) {

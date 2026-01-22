@@ -815,6 +815,32 @@ input[type="range"]:focus-visible {
   box-shadow: var(--glow-primary);
 }
 
+/* Contextual interaction hints */
+.interaction-hint {
+  position: fixed;
+  bottom: calc(var(--space-lg) + 112px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  background: rgba(10, 15, 30, 0.78);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: var(--text-primary);
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(10px);
+  z-index: 55;
+  transition: opacity var(--transition-fast);
+  pointer-events: none;
+  max-width: min(80vw, 520px);
+  text-align: center;
+}
+
+.interaction-hint.hidden {
+  opacity: 0;
+}
+
 /* ============================================================================
    PANELS - Glassmorphism Design
    ============================================================================ */
@@ -2189,6 +2215,11 @@ select:focus,
 
   .mobile-device #mobile-quick-actions {
     width: calc(100% - var(--space-lg) * 2);
+  }
+
+  .mobile-device .interaction-hint {
+    bottom: calc(env(safe-area-inset-bottom, 0) + 140px);
+    font-size: 11px;
   }
 }
 

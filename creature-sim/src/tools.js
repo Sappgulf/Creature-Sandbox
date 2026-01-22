@@ -2,7 +2,8 @@ export const ToolModes = Object.freeze({
   INSPECT: 'inspect',
   FOOD: 'food',
   SPAWN: 'spawn',
-  ERASE: 'erase'
+  ERASE: 'erase',
+  PROP: 'prop'
 });
 
 /**
@@ -11,7 +12,9 @@ export const ToolModes = Object.freeze({
 const ActionType = {
   SPAWN_CREATURE: 'spawn_creature',
   ERASE_CREATURES: 'erase_creatures',
-  ADD_FOOD: 'add_food'
+  ADD_FOOD: 'add_food',
+  PLACE_PROP: 'place_prop',
+  REMOVE_PROP: 'remove_prop'
 };
 
 export class ToolController {
@@ -27,6 +30,9 @@ export class ToolController {
     this.undoStack = [];
     this.redoStack = [];
     this.maxHistory = 50;
+
+    // Sandbox prop defaults
+    this.propType = 'bounce';
   }
 
   setMode(mode) {
@@ -37,6 +43,12 @@ export class ToolController {
     const next = Math.max(this.minBrushSize, Math.min(this.maxBrushSize, size));
     this.brushSize = next;
     return this.brushSize;
+  }
+
+  setPropType(type) {
+    if (!type) return this.propType;
+    this.propType = type;
+    return this.propType;
   }
 
   adjustBrushSize(delta) {
@@ -54,7 +66,10 @@ export class ToolController {
         this.spawnCreature(x, y, shiftKey);
         break;
       case ToolModes.ERASE:
-        this.eraseCreatures(x, y);
+        this.eraseAt(x, y);
+        break;
+      case ToolModes.PROP:
+        this.placeProp(x, y);
         break;
       default:
         break;
@@ -95,6 +110,12 @@ export class ToolController {
         // Remove added food
         this.undoAddFood(action);
         break;
+      case ActionType.PLACE_PROP:
+        this.undoPlaceProp(action);
+        break;
+      case ActionType.REMOVE_PROP:
+        this.undoRemoveProp(action);
+        break;
     }
 
     return true;
@@ -121,6 +142,12 @@ export class ToolController {
       case ActionType.ADD_FOOD:
         // Re-add the food
         this.redoAddFood(action);
+        break;
+      case ActionType.PLACE_PROP:
+        this.redoPlaceProp(action);
+        break;
+      case ActionType.REMOVE_PROP:
+        this.redoRemoveProp(action);
         break;
     }
 
@@ -178,6 +205,68 @@ export class ToolController {
         this.world.foodGrid.add(food);
       }
     }
+  }
+
+  placeProp(x, y, options = {}) {
+    const type = options.type || this.propType || 'bounce';
+    const prop = this.world.sandbox?.addProp?.(type, x, y, options);
+    if (!prop) return null;
+
+    this.pushAction({
+      type: ActionType.PLACE_PROP,
+      prop: {
+        id: prop.id,
+        type: prop.type,
+        x: prop.x,
+        y: prop.y,
+        radius: prop.radius,
+        strength: prop.strength,
+        color: prop.color
+      }
+    });
+
+    return prop;
+  }
+
+  eraseAt(x, y) {
+    const removedProp = this.world.sandbox?.removeNearestProp?.(x, y, this.brushSize * 0.65);
+    if (removedProp) {
+      this.pushAction({
+        type: ActionType.REMOVE_PROP,
+        prop: {
+          id: removedProp.id,
+          type: removedProp.type,
+          x: removedProp.x,
+          y: removedProp.y,
+          radius: removedProp.radius,
+          strength: removedProp.strength,
+          color: removedProp.color
+        }
+      });
+      return;
+    }
+
+    this.eraseCreatures(x, y);
+  }
+
+  undoPlaceProp(action) {
+    if (!action.prop) return;
+    this.world.sandbox?.removePropById?.(action.prop.id);
+  }
+
+  redoPlaceProp(action) {
+    if (!action.prop) return;
+    this.world.sandbox?.addProp?.(action.prop.type, action.prop.x, action.prop.y, action.prop);
+  }
+
+  undoRemoveProp(action) {
+    if (!action.prop) return;
+    this.world.sandbox?.addProp?.(action.prop.type, action.prop.x, action.prop.y, action.prop);
+  }
+
+  redoRemoveProp(action) {
+    if (!action.prop) return;
+    this.world.sandbox?.removePropById?.(action.prop.id);
   }
 
   _reactToFoodDrop(x, y) {

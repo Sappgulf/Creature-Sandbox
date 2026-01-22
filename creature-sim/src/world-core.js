@@ -10,6 +10,7 @@ import { WorldCreatureManager } from './world-creature-manager.js';
 import { WorldCombat } from './world-combat.js';
 import { WorldDisaster } from './world-disaster.js';
 import { BiomeGenerator } from './perlin-noise.js';
+import { SandboxProps } from './sandbox-props.js';
 import { clamp, dist2, rand } from './utils.js';
 import { eventSystem, GameEvents } from './event-system.js';
 
@@ -44,6 +45,7 @@ export class World {
     this.creatureManager = new WorldCreatureManager(this);
     this.combat = new WorldCombat(this);
     this.disaster = new WorldDisaster(this);
+    this.sandbox = new SandboxProps(this);
 
     // World settings
     this.maxFood = Math.floor((width * height) / 180);
@@ -57,6 +59,8 @@ export class World {
     // Visual FX helpers
     this.screenShake = 0;
     this.temperatureModifier = 1.0;
+    this.bumpCheckTimer = 0;
+    this.bumpIndex = 0;
 
     // Auto-balance settings (used by gameplay-modes.js)
     this.autoBalanceSettings = {
@@ -91,6 +95,7 @@ export class World {
       this.environment?.update(dt);
       this.ecosystem?.update(dt);
       this.disaster?.update(dt);
+      this.sandbox?.update(dt);
 
       // Update scalar fields
       this.pheromone?.step();
@@ -98,6 +103,13 @@ export class World {
 
       // Update creatures
       this.updateCreatures(dt);
+
+      // Soft bump interactions (throttled for performance)
+      this.bumpCheckTimer += dt;
+      if (this.bumpCheckTimer >= 0.2) {
+        this.bumpCheckTimer = 0;
+        this.applyCreatureBumps();
+      }
 
       // Update corpse system
       this.updateCorpses(dt);
@@ -177,6 +189,43 @@ export class World {
     this.creatureManager?.ensureSpatial();
   }
 
+  applyCreatureBumps() {
+    const creatures = this.creatures;
+    if (!creatures || creatures.length < 2) return;
+
+    const maxSamples = Math.min(14, creatures.length);
+    const bumpRadius = 22;
+    const bumpRadiusSq = bumpRadius * bumpRadius;
+
+    for (let i = 0; i < maxSamples; i++) {
+      const idx = this.bumpIndex % creatures.length;
+      this.bumpIndex += 1;
+      const a = creatures[idx];
+      if (!a || !a.alive || a.isGrabbed) continue;
+
+      for (let j = 0; j < creatures.length; j++) {
+        if (j === idx) continue;
+        const b = creatures[j];
+        if (!b || !b.alive || b.isGrabbed) continue;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const distSq = dx * dx + dy * dy;
+        if (distSq > bumpRadiusSq || distSq < 1) continue;
+
+        const dist = Math.sqrt(distSq);
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const force = 110;
+        a.applyImpulse?.(-nx * force, -ny * force, { decay: 7.5, cap: 220 });
+        b.applyImpulse?.(nx * force, ny * force, { decay: 7.5, cap: 220 });
+        a.reactToCollision?.(0.35);
+        b.reactToCollision?.(0.35);
+        eventSystem.emit(GameEvents.CREATURE_BUMPED, { aId: a.id, bId: b.id });
+        break;
+      }
+    }
+  }
+
   // Update food system
   updateFood(dt) {
     const growthRate = this.ecosystem.foodGrowthRate();
@@ -248,6 +297,7 @@ export class World {
     this.creatureManager.initialize();
     this.combat.initialize();
     this.disaster.initialize();
+    this.sandbox?.clear();
 
     // Clear scalar fields
     this.pheromone.grid.fill(0);

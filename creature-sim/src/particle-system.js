@@ -522,6 +522,21 @@ export class ParticleSystem {
     }
   }
 
+  addImpactRing(x, y, { color = 'rgba(147, 197, 253, 1)', size = 8 } = {}) {
+    this.particles.push({
+      type: 'ripple',
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      life: 0.55,
+      maxLife: 0.55,
+      size,
+      color,
+      opacity: 0.6
+    });
+  }
+
   /**
    * Add swimming ripple effect
    */
@@ -636,7 +651,11 @@ export class ParticleSystem {
         ctx.fill();
       } else if (p.type === 'ripple') {
         // Water ripple effect
-        ctx.strokeStyle = `rgba(147, 197, 253, ${p.opacity})`;
+        const rippleColor = p.color || 'rgba(147, 197, 253, 1)';
+        const strokeColor = rippleColor.includes('rgba')
+          ? rippleColor.replace('1)', `${p.opacity})`)
+          : rippleColor;
+        ctx.strokeStyle = strokeColor;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);

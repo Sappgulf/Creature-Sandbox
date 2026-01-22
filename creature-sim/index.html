@@ -82,11 +82,21 @@
         <div class="dropdown-item" data-creature="predator">🦁 Predator</div>
       </div>
     </div>
+    <div class="spawn-dropdown prop-dropdown">
+      <button id="btn-prop-tool" title="Sandbox Props (P)" aria-label="Sandbox props" data-tooltip="Sandbox props (P)">🟣</button>
+      <div id="prop-dropdown" class="dropdown-menu hidden">
+        <div class="dropdown-item" data-prop="bounce">🟣 Bounce Pad</div>
+        <div class="dropdown-item" data-prop="spinner">🌀 Spinner</div>
+        <div class="dropdown-item" data-prop="gravity">🕳️ Gravity Well</div>
+        <div class="dropdown-item" data-prop="button">🔘 Food Button</div>
+      </div>
+    </div>
     <button id="btn-god-heal" title="Heal (H)" aria-label="Heal selected creature" data-tooltip="Heal selected (H)">💚</button>
     <button id="btn-god-boost" title="Boost Energy" aria-label="Boost energy" data-tooltip="Boost energy">⚡</button>
     <button id="btn-god-kill" title="Kill" aria-label="Kill selected creature" data-tooltip="Remove selected">💀</button>
     <button id="btn-god-clone" title="Clone" aria-label="Clone selected creature" data-tooltip="Clone selected">👯</button>
   </div>
+  <div id="interaction-hint" class="interaction-hint" aria-live="polite"></div>
 
   <!-- Meta overlays: game mode + goals -->
   <div id="session-meta">
@@ -745,8 +755,13 @@
           <div class="shortcut-row"><kbd>S</kbd><span>Spawn creature tool</span></div>
           <div class="shortcut-row"><kbd>E</kbd><span>Erase tool</span></div>
           <div class="shortcut-row"><kbd>X</kbd><span>Inspect tool</span></div>
+          <div class="shortcut-row"><kbd>P</kbd><span>Sandbox prop tool</span></div>
           <div class="shortcut-row"><kbd>Shift+F</kbd><span>Toggle camera follow</span></div>
           <div class="shortcut-row"><kbd>[</kbd> / <kbd>]</kbd><span>Adjust brush size</span></div>
+        </div>
+        <div class="shortcuts-section">
+          <h3>Sandbox Gestures</h3>
+          <div class="shortcut-row"><kbd>Drag</kbd><span>Grab, drag, and throw creatures</span></div>
         </div>
         <div class="shortcuts-section">
           <h3>Visualization</h3>
@@ -789,6 +804,7 @@
   <div id="mobile-quick-actions" class="mobile-only">
     <button id="mobile-btn-spawn" title="Spawn Creature" aria-label="Spawn creature" data-label="Spawn">🐾</button>
     <button id="mobile-btn-food" title="Add Food" aria-label="Add food" data-label="Food">🌱</button>
+    <button id="mobile-btn-prop" title="Sandbox Props" aria-label="Sandbox props" data-label="Props">🟣</button>
     <button id="mobile-btn-pause" title="Pause" aria-label="Pause or resume" data-label="Pause">⏸️</button>
     <button id="mobile-btn-speed" title="Speed" aria-label="Cycle speed" data-label="Speed">⚡</button>
   </div>

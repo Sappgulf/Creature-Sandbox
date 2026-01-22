@@ -4,8 +4,7 @@
  */
 import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
-import { eventSystem } from './event-system.js';
-import { Creature } from './creature.js';
+import { eventSystem, GameEvents } from './event-system.js';
 
 export class InputManager {
   constructor(canvas, camera, tools, world) {
@@ -28,6 +27,27 @@ export class InputManager {
 
     // Track if we auto-paused so we can auto-unpause
     this._autoPausedOnBlur = false;
+
+    this.dragState = {
+      active: false,
+      pending: false,
+      creature: null,
+      pointerId: null,
+      startX: 0,
+      startY: 0,
+      startTime: 0,
+      lastX: 0,
+      lastY: 0,
+      lastWorldX: 0,
+      lastWorldY: 0,
+      lastTime: 0,
+      velocityX: 0,
+      velocityY: 0,
+      grabOffsetX: 0,
+      grabOffsetY: 0
+    };
+    this.grabActivateMs = 140;
+    this.grabMoveThreshold = 6;
 
     this.initialize();
   }
@@ -153,6 +173,9 @@ export class InputManager {
         break;
       case 'x':
         this.tools.setMode('inspect');
+        break;
+      case 'p':
+        this.tools.setMode('prop');
         break;
       case '[':
         this.tools?.adjustBrushSize?.(-4);
@@ -371,6 +394,9 @@ export class InputManager {
     const rect = this.canvas.getBoundingClientRect();
     const canvasX = e.clientX - rect.left;
     const canvasY = e.clientY - rect.top;
+    const sx = canvasX - rect.width / 2;
+    const sy = canvasY - rect.height / 2;
+    const worldPos = this.camera.screenToWorld(sx, sy);
 
     // Handle mini-map clicks first
     if (this.handleMiniMapClick(canvasX, canvasY, e)) {
@@ -396,8 +422,14 @@ export class InputManager {
     if (e.button === 0) {
       gameState.painting = true;
 
+      const dragCandidate = this._prepareCreatureDrag(worldPos.x, worldPos.y, e);
+      if (dragCandidate) {
+        gameState.travelDrag = null;
+        gameState.travelPreview = null;
+      }
+
       // Set up travel drag for inspect mode
-      if (this.tools.mode === 'inspect' && !e.shiftKey) {
+      if (this.tools.mode === 'inspect' && !e.shiftKey && !dragCandidate) {
         gameState.travelDrag = {
           startX: this.camera.targetX,
           startY: this.camera.targetY,
@@ -419,6 +451,11 @@ export class InputManager {
    * Handle pointer move events
    */
   onPointerMove(e) {
+    if (this.dragState.active || this.dragState.pending) {
+      this._updateCreatureDrag(e);
+      return;
+    }
+
     if (gameState.panning) {
       const dx = e.clientX - gameState.lastPointer.x;
       const dy = e.clientY - gameState.lastPointer.y;
@@ -442,6 +479,22 @@ export class InputManager {
    */
   onPointerUp(e) {
     this.canvas.releasePointerCapture?.(e.pointerId);
+
+    const wasDragging = this.dragState.active;
+    if (this.dragState.active || this.dragState.pending) {
+      this._releaseCreatureDrag(e);
+      this.dragState.pending = false;
+      this.dragState.active = false;
+      this.dragState.creature = null;
+      this.dragState.pointerId = null;
+    }
+    if (wasDragging) {
+      gameState.travelDrag = null;
+      gameState.travelPreview = null;
+      gameState.painting = false;
+      gameState.panning = false;
+      return;
+    }
 
     const rect = this.canvas.getBoundingClientRect();
     const sx = e.clientX - rect.left - rect.width / 2;
@@ -648,7 +701,9 @@ export class InputManager {
       case 'erase': {
         // Kill creature at location
         if (!isDrag) {
-          if (this.tools?.eraseCreatures) {
+          if (this.tools?.eraseAt) {
+            this.tools.eraseAt(x, y);
+          } else if (this.tools?.eraseCreatures) {
             this.tools.eraseCreatures(x, y);
           } else {
             const creature = this._findCreatureAt(x, y);
@@ -657,6 +712,14 @@ export class InputManager {
               creature.deathTime = this.world.t;
             }
           }
+        }
+        break;
+      }
+      case 'prop': {
+        if (isDrag) break;
+        const selectedType = gameState.selectedPropType || this.tools?.propType || 'bounce';
+        if (this.tools?.placeProp) {
+          this.tools.placeProp(x, y, { type: selectedType });
         }
         break;
       }
@@ -706,6 +769,105 @@ export class InputManager {
     }
 
     return nearest;
+  }
+
+  _prepareCreatureDrag(x, y, event) {
+    if (this.tools.mode !== 'inspect' || event.shiftKey) return false;
+    const creature = this._findCreatureAt(x, y);
+    if (!creature) return false;
+
+    this.dragState.pending = true;
+    this.dragState.active = false;
+    this.dragState.creature = creature;
+    this.dragState.pointerId = event.pointerId;
+    this.dragState.startX = event.clientX;
+    this.dragState.startY = event.clientY;
+    this.dragState.startTime = performance.now();
+    this.dragState.lastX = event.clientX;
+    this.dragState.lastY = event.clientY;
+    this.dragState.lastWorldX = x;
+    this.dragState.lastWorldY = y;
+    this.dragState.lastTime = this.dragState.startTime;
+    this.dragState.velocityX = 0;
+    this.dragState.velocityY = 0;
+    this.dragState.grabOffsetX = creature.x - x;
+    this.dragState.grabOffsetY = creature.y - y;
+
+    return true;
+  }
+
+  _activateCreatureDrag(worldX, worldY) {
+    const { creature } = this.dragState;
+    if (!creature) return;
+    this.dragState.active = true;
+    this.dragState.pending = false;
+    creature.isGrabbed = true;
+    creature.grabTarget = creature.grabTarget || { x: worldX, y: worldY };
+    creature.grabTarget.x = worldX + this.dragState.grabOffsetX;
+    creature.grabTarget.y = worldY + this.dragState.grabOffsetY;
+  }
+
+  _updateCreatureDrag(event) {
+    if (event.pointerId !== this.dragState.pointerId) return;
+
+    const rect = this.canvas.getBoundingClientRect();
+    const canvasX = event.clientX - rect.left;
+    const canvasY = event.clientY - rect.top;
+    const sx = canvasX - rect.width / 2;
+    const sy = canvasY - rect.height / 2;
+    const { x: worldX, y: worldY } = this.camera.screenToWorld(sx, sy);
+
+    if (this.dragState.pending) {
+      const dx = event.clientX - this.dragState.startX;
+      const dy = event.clientY - this.dragState.startY;
+      const dist = Math.hypot(dx, dy);
+      const heldMs = performance.now() - this.dragState.startTime;
+      if (dist >= this.grabMoveThreshold || heldMs >= this.grabActivateMs) {
+        this._activateCreatureDrag(worldX, worldY);
+      } else {
+        return;
+      }
+    }
+
+    const creature = this.dragState.creature;
+    if (!creature || !this.dragState.active) return;
+
+    const now = performance.now();
+    const dt = Math.max(0.016, (now - this.dragState.lastTime) / 1000);
+    const vx = (worldX - this.dragState.lastWorldX) / dt;
+    const vy = (worldY - this.dragState.lastWorldY) / dt;
+
+    this.dragState.velocityX = this.dragState.velocityX * 0.6 + vx * 0.4;
+    this.dragState.velocityY = this.dragState.velocityY * 0.6 + vy * 0.4;
+
+    this.dragState.lastWorldX = worldX;
+    this.dragState.lastWorldY = worldY;
+    this.dragState.lastTime = now;
+
+    creature.grabTarget.x = worldX + this.dragState.grabOffsetX;
+    creature.grabTarget.y = worldY + this.dragState.grabOffsetY;
+  }
+
+  _releaseCreatureDrag(event) {
+    if (event.pointerId !== this.dragState.pointerId) return;
+    const creature = this.dragState.creature;
+    if (!creature) return;
+
+    if (this.dragState.active) {
+      const throwVX = this.dragState.velocityX;
+      const throwVY = this.dragState.velocityY;
+      const throwSpeed = Math.hypot(throwVX, throwVY);
+      if (throwSpeed > 40) {
+        const scale = 0.45;
+        creature.applyImpulse?.(throwVX * scale, throwVY * scale, { decay: 5.2, cap: 420 });
+        creature.dir = Math.atan2(throwVY, throwVX);
+        eventSystem.emit(GameEvents.CREATURE_THROWN, { creatureId: creature.id, speed: throwSpeed });
+        this.world?.particles?.addImpactRing?.(creature.x, creature.y, { color: '#facc15', size: 10 });
+      }
+    }
+
+    creature.isGrabbed = false;
+    creature.grabTarget = creature.grabTarget || { x: creature.x, y: creature.y };
   }
 
   /**

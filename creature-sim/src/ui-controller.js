@@ -7,6 +7,7 @@ import { domCache } from './dom-cache.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { analyticsDashboard } from './enhanced-analytics.js';
 import { HudMenu } from './hud-menu.js';
+import { SANDBOX_PROP_TYPES } from './sandbox-props.js';
 
 // Local helper to validate notification subsystem shape without relying on external export
 function isNotificationSystem(candidate) {
@@ -22,6 +23,7 @@ export class UIController {
     this.camera = camera;
     this.tools = tools;
     this.lastSpawnType = 'herbivore';
+    this.propTypeOrder = Object.keys(SANDBOX_PROP_TYPES);
 
     // Store subsystems for enhanced integration
     this.subsystems = subsystems;
@@ -44,8 +46,10 @@ export class UIController {
       onBehaviorChange: this.onBehaviorChange.bind(this),
       onMobileSpawn: this.onMobileSpawn.bind(this),
       onMobileFood: this.onMobileFood.bind(this),
+      onMobileProp: this.onMobileProp.bind(this),
       onMobilePause: this.onMobilePause.bind(this),
       onMobileSpeed: this.onMobileSpeed.bind(this),
+      onPropTool: this.onPropTool.bind(this),
       onGodHeal: this.onGodHeal.bind(this),
       onGodBoost: this.onGodBoost.bind(this),
       onGodKill: this.onGodKill.bind(this),
@@ -156,6 +160,7 @@ export class UIController {
     this.setupHudMenu();
     this.bindCoreControls();
     this.bindMobileControls();
+    this.bindPropControls();
     this.bindGodModeControls();
     this.bindPanelControls();
     this.bindBehaviorControls();
@@ -166,6 +171,8 @@ export class UIController {
     this.updateMobileControls();
     this.updateSessionMetaVisibility();
     this.updateSpawnButton(this.lastSpawnType);
+    this.setPropType(gameState.selectedPropType || 'bounce');
+    this.updateSandboxUiVisibility();
   }
 
   setupHudMenu() {
@@ -209,6 +216,69 @@ export class UIController {
 
     // Spawn creature button and dropdown
     this.bindSpawnCreatureControls();
+  }
+
+  bindPropControls() {
+    const propToolBtn = domCache.get('propToolBtn');
+    const propDropdown = domCache.get('propDropdown');
+
+    if (propToolBtn && propDropdown) {
+      propToolBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.onPropTool();
+        propDropdown.classList.remove('hidden');
+        setTimeout(() => propDropdown.classList.add('hidden'), 1200);
+      });
+
+      const dropdownItems = propDropdown.querySelectorAll('.dropdown-item');
+      dropdownItems.forEach(item => {
+        item.addEventListener('click', (event) => {
+          event.stopPropagation();
+          const propType = item.dataset.prop;
+          this.setPropType(propType);
+          this.onPropTool();
+          propDropdown.classList.add('hidden');
+        });
+      });
+
+      document.addEventListener('click', () => propDropdown.classList.add('hidden'));
+    }
+  }
+
+  setPropType(type) {
+    if (!type) return;
+    const safeType = SANDBOX_PROP_TYPES[type] ? type : 'bounce';
+    gameState.selectedPropType = safeType;
+    this.tools?.setPropType?.(safeType);
+    this.updatePropButton(safeType);
+
+    const propDropdown = domCache.get('propDropdown');
+    if (propDropdown) {
+      propDropdown.querySelectorAll('.dropdown-item').forEach(item => {
+        item.classList.toggle('selected', item.dataset.prop === safeType);
+      });
+    }
+  }
+
+  cyclePropType(direction = 1) {
+    const current = gameState.selectedPropType || 'bounce';
+    const idx = this.propTypeOrder.indexOf(current);
+    const nextIdx = (idx + direction + this.propTypeOrder.length) % this.propTypeOrder.length;
+    this.setPropType(this.propTypeOrder[nextIdx]);
+  }
+
+  updatePropButton(type) {
+    const propToolBtn = domCache.get('propToolBtn');
+    const mobilePropBtn = domCache.get('mobilePropBtn');
+    const meta = SANDBOX_PROP_TYPES[type] || SANDBOX_PROP_TYPES.bounce;
+    if (propToolBtn) {
+      propToolBtn.textContent = meta.icon;
+      propToolBtn.title = `${meta.label} (P)`;
+    }
+    if (mobilePropBtn) {
+      mobilePropBtn.textContent = meta.icon;
+      mobilePropBtn.dataset.label = 'Props';
+    }
   }
 
   /**
@@ -349,11 +419,13 @@ export class UIController {
   bindMobileControls() {
     const mobileSpawnBtn = domCache.get('mobileSpawnBtn');
     const mobileFoodBtn = domCache.get('mobileFoodBtn');
+    const mobilePropBtn = domCache.get('mobilePropBtn');
     const mobilePauseBtn = domCache.get('mobilePauseBtn');
     const mobileSpeedBtn = domCache.get('mobileSpeedBtn');
 
     if (mobileSpawnBtn) mobileSpawnBtn.addEventListener('click', this.boundHandlers.onMobileSpawn);
     if (mobileFoodBtn) mobileFoodBtn.addEventListener('click', this.boundHandlers.onMobileFood);
+    if (mobilePropBtn) mobilePropBtn.addEventListener('click', this.boundHandlers.onMobileProp);
     if (mobilePauseBtn) mobilePauseBtn.addEventListener('click', this.boundHandlers.onMobilePause);
     if (mobileSpeedBtn) mobileSpeedBtn.addEventListener('click', this.boundHandlers.onMobileSpeed);
   }
@@ -459,18 +531,37 @@ export class UIController {
     }
   }
 
+  updateSandboxUiVisibility() {
+    const quickActions = domCache.get('quickActions');
+    const mobileQuickActions = domCache.get('mobileQuickActions');
+    const interactionHint = domCache.get('interactionHint');
+    const scenarioPanel = domCache.get('scenarioPanel');
+    const geneEditorPanel = domCache.get('geneEditorPanel');
+    const editorOpen = (scenarioPanel && !scenarioPanel.classList.contains('hidden')) ||
+      (geneEditorPanel && !geneEditorPanel.classList.contains('hidden'));
+
+    if (quickActions) quickActions.classList.toggle('hidden', editorOpen);
+    if (mobileQuickActions) mobileQuickActions.classList.toggle('hidden', editorOpen);
+    if (interactionHint) interactionHint.classList.toggle('hidden', editorOpen);
+  }
+
   /**
    * Update mobile controls
    */
   updateMobileControls() {
     const mobilePauseBtn = domCache.get('mobilePauseBtn');
     const mobileSpeedBtn = domCache.get('mobileSpeedBtn');
+    const mobilePropBtn = domCache.get('mobilePropBtn');
 
     if (mobilePauseBtn) {
       const isPaused = gameState.paused;
       mobilePauseBtn.classList.toggle('active', isPaused);
       mobilePauseBtn.textContent = isPaused ? '▶️' : '⏸️';
       mobilePauseBtn.dataset.label = isPaused ? 'Play' : 'Pause';
+    }
+
+    if (mobilePropBtn) {
+      mobilePropBtn.classList.toggle('active', this.tools?.mode === 'prop');
     }
 
     if (mobileSpeedBtn) {
@@ -623,6 +714,13 @@ export class UIController {
     }
   }
 
+  onPropTool() {
+    this.tools?.setMode?.('prop');
+    if (!gameState.selectedPropType) {
+      this.setPropType('bounce');
+    }
+  }
+
   onBehaviorChange() {
     // Import and update behavior weights dynamically
     import('./behavior.js').then(({ setBehaviorWeights }) => {
@@ -673,6 +771,11 @@ export class UIController {
     }
   }
 
+  onMobileProp() {
+    this.cyclePropType(1);
+    this.onPropTool();
+  }
+
   onMobilePause() {
     this.onPause();
   }
@@ -720,6 +823,7 @@ export class UIController {
         scenarioPanel.classList.add('hidden');
       }
     }
+    this.updateSandboxUiVisibility();
   }
 
   onAchievementsToggle() {
@@ -845,10 +949,11 @@ export class UIController {
   }
 
   onGeneEditorToggle() {
-    const panel = document.getElementById('gene-editor-panel');
+    const panel = domCache.get('geneEditorPanel') || document.getElementById('gene-editor-panel');
     if (panel) {
       panel.classList.toggle('hidden');
     }
+    this.updateSandboxUiVisibility();
   }
 
   onEcoHealthToggle() {

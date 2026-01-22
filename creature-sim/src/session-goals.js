@@ -43,6 +43,20 @@ const GOAL_POOL = [
     icon: '✨',
     makeTarget: () => 3 + Math.floor(Math.random() * 3),
     getDescription: (target) => `Spawn ${target} creatures by hand`
+  },
+  {
+    id: 'launch_creature',
+    type: 'creature_throws',
+    icon: '🎯',
+    makeTarget: () => 2 + Math.floor(Math.random() * 3),
+    getDescription: (target) => `Launch ${target} creatures across the sandbox`
+  },
+  {
+    id: 'prop_chain',
+    type: 'prop_triggers',
+    icon: '🧩',
+    makeTarget: () => 4 + Math.floor(Math.random() * 4),
+    getDescription: (target) => `Trigger sandbox props ${target} times`
   }
 ];
 
@@ -53,9 +67,21 @@ export class SessionGoals {
     this.goals = [];
     this._lastUpdate = 0;
     this.manualSpawns = 0;
+    this.creatureThrows = 0;
+    this.propTriggers = 0;
+    this.propPlacements = 0;
     eventSystem.on(GameEvents.CREATURE_BORN, (event) => {
       if (!event || event.parentId !== null) return;
       this.manualSpawns += 1;
+    });
+    eventSystem.on(GameEvents.CREATURE_THROWN, () => {
+      this.creatureThrows += 1;
+    });
+    eventSystem.on(GameEvents.SANDBOX_PROP_TRIGGERED, () => {
+      this.propTriggers += 1;
+    });
+    eventSystem.on(GameEvents.SANDBOX_PROP_PLACED, () => {
+      this.propPlacements += 1;
     });
     this.generateGoals();
   }
@@ -138,7 +164,10 @@ export class SessionGoals {
       foodCollected: 0,
       births: 0,
       time: world.t ?? 0,
-      manualSpawns: this.manualSpawns
+      manualSpawns: this.manualSpawns,
+      creatureThrows: this.creatureThrows,
+      propTriggers: this.propTriggers,
+      propPlacements: this.propPlacements
     };
 
     for (const creature of world.creatures || []) {
@@ -167,6 +196,12 @@ export class SessionGoals {
         return metrics.time / goal.target;
       case 'manual_spawns':
         return metrics.manualSpawns / goal.target;
+      case 'creature_throws':
+        return metrics.creatureThrows / goal.target;
+      case 'prop_triggers':
+        return metrics.propTriggers / goal.target;
+      case 'prop_places':
+        return metrics.propPlacements / goal.target;
       default:
         return 0;
     }

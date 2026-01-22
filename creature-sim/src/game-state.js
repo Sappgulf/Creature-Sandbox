@@ -54,6 +54,7 @@ export class GameState {
 
     // Spawn state
     this.selectedCreatureType = null;
+    this.selectedPropType = 'bounce';
     this.spawnMode = false;
     this.geneEditorSpawnMode = false;
 
