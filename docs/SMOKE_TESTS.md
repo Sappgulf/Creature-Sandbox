@@ -20,6 +20,7 @@
    - Press **F** and paint food into the world.
    - Use **E** to erase a creature.
    - Toggle pause/resume with **Space** and confirm the sim halts/continues.
+   - Tap or click a creature and confirm a glow outline + reaction animation plays.
 
 5. **Top menu navigation**
    - Click **🎛️ Modes & Goals** and confirm the Game Mode + Session Goals card toggles.
@@ -35,6 +36,10 @@
 7. **Help section**
    - Open **⋯ More Actions**.
    - Confirm the Help section lists controls, shortcuts, and where features live.
+
+8. **Session goals**
+   - Open **🎛️ Modes & Goals**.
+   - Confirm a goal appears for manual creature spawns and progresses when you spawn creatures.
 
 ## Mobile-Specific Checks
 

@@ -36,6 +36,7 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Behavior tuning**: Adjust forage/wander/rest weights in real-time
 - **Tool modes**: Paint food, spawn creatures, or erase with mouse
 - **Camera controls**: Pan, zoom, and follow creatures
+- **Creature feedback**: Selection glow, success pulses, and friendly error shakes
 - **Gene sharing**: Copy/import gene codes from the Gene Editor
 - **Display toggles**: Nameplates and reduced-motion options in the Features panel
 - **Condensed top HUD**: Primary controls plus a ⋯ overflow menu for all panels

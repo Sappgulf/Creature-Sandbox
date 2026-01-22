@@ -1,5 +1,25 @@
 # Creature Sandbox Roadmap
 
+## Shipped (2026-01-25)
+
+1. **Creature feel + reactions**
+   - **Description:** Added lightweight personality-driven idle variation and poke/drop/collision reactions with selection glow feedback.
+   - **Likely files:** `creature-sim/src/creature.js`, `creature-sim/src/input-manager.js`, `creature-sim/src/renderer.js`
+   - **Risk level:** Low
+   - **Verification:** Select a creature to see the glow, poke/tap it to see a reaction, and feed nearby creatures to observe drop reactions.
+
+2. **Session nudges for manual spawns**
+   - **Description:** Added a session goal that encourages manual creature spawns.
+   - **Likely files:** `creature-sim/src/session-goals.js`
+   - **Risk level:** Low
+   - **Verification:** Spawn creatures manually and confirm progress increases on the goal card.
+
+3. **Home screen tone polish**
+   - **Description:** Updated the home screen copy to emphasize playful sandbox identity.
+   - **Likely files:** `creature-sim/index.html`
+   - **Risk level:** Low
+   - **Verification:** Load the home screen and confirm updated tagline and feature copy.
+
 ## Shipped (2026-01-24)
 
 1. **Help section + UX guidance**

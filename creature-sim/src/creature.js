@@ -120,7 +120,11 @@ export class Creature {
       huntCooldown: 0,
       lastSignalAt: -Infinity,
       currentTargetId: null,
-      attackCooldown: 0
+      attackCooldown: 0,
+      idleTempo: rand(0.7, 1.4),
+      idleSway: rand(0.6, 1.3),
+      reactivity: clamp(0.35 + rand(-0.1, 0.25) + (this.genes.sense / 200) * 0.25, 0.2, 1.2),
+      playfulness: clamp(0.3 + rand(-0.2, 0.4) + (1 - this.genes.metabolism / 2) * 0.2, 0.1, 1.2)
     };
     this.statuses = new Map();
     this.cooldowns = {
@@ -150,7 +154,13 @@ export class Creature {
       bobPhase: Math.random() * Math.PI * 2, // Random start phase for variety
       lastEat: -Infinity,
       eatDuration: 0.5, // Eating animation lasts 0.5s
-      sleepTimer: 0 // Time creature has been idle/resting
+      sleepTimer: 0, // Time creature has been idle/resting
+      reaction: {
+        type: null,
+        timer: 0,
+        duration: 0,
+        intensity: 0
+      }
     };
 
     // Cache expensive calculations
@@ -632,6 +642,7 @@ export class Creature {
 
     // NEW: Update animation state based on movement
     this._updateAnimationState(spd, world.t);
+    this._updateReaction(dt);
 
     this.updateTrail(dt);
 
@@ -1142,6 +1153,62 @@ export class Creature {
     const ratio = clamp(amount / 10, 0.05, 1);
     this.damageFx.recentDamage = Math.min(2.6, (this.damageFx.recentDamage ?? 0) + ratio * 1.5);
     this.damageFx.hitFlash = Math.max(this.damageFx.hitFlash ?? 0, 0.18 + ratio * 0.35);
+    this.reactToCollision(amount);
+  }
+
+  reactToPoke({ x = null, y = null } = {}) {
+    const intensity = clamp(0.35 + this.personality.reactivity * 0.7, 0.3, 1.3);
+    this._triggerReaction('poke', intensity, 0.35);
+    if (this.emotions) {
+      this.emotions.curiosity = clamp(this.emotions.curiosity + 0.08, 0, 1);
+      this.emotions.confidence = clamp(this.emotions.confidence + 0.03, 0, 1);
+    }
+    if (x !== null && y !== null) {
+      this.dir = Math.atan2(y - this.y, x - this.x);
+    }
+    if (this._lastWorld) {
+      this.logEvent('Poked', this._lastWorld.t, { source: 'player' });
+    }
+  }
+
+  reactToDrop({ x = null, y = null } = {}) {
+    const intensity = clamp(0.3 + this.personality.playfulness * 0.7, 0.25, 1.2);
+    this._triggerReaction('drop', intensity, 0.45);
+    if (this.emotions) {
+      this.emotions.curiosity = clamp(this.emotions.curiosity + 0.12, 0, 1);
+    }
+    if (x !== null && y !== null) {
+      this.dir = Math.atan2(y - this.y, x - this.x);
+    }
+  }
+
+  reactToCollision(amount = 0.5) {
+    const intensity = clamp(0.25 + amount * 0.08 + this.personality.reactivity * 0.25, 0.2, 1.2);
+    this._triggerReaction('collision', intensity, 0.25);
+    if (this.emotions) {
+      this.emotions.fear = clamp(this.emotions.fear + 0.08, 0, 1);
+      this.emotions.stress = clamp(this.emotions.stress + 0.05, 0, 1);
+    }
+  }
+
+  _triggerReaction(type, intensity = 0.5, duration = 0.35) {
+    const reaction = this.animation?.reaction;
+    if (!reaction) return;
+    reaction.type = type;
+    reaction.timer = duration;
+    reaction.duration = duration;
+    reaction.intensity = intensity;
+  }
+
+  _updateReaction(dt) {
+    const reaction = this.animation?.reaction;
+    if (!reaction || reaction.timer <= 0) return;
+    reaction.timer = Math.max(0, reaction.timer - dt);
+    if (reaction.timer <= 0) {
+      reaction.type = null;
+      reaction.duration = 0;
+      reaction.intensity = 0;
+    }
   }
 
   updateTrail(dt) {
@@ -1201,6 +1268,30 @@ export class Creature {
   _applyAnimationTransform(ctx) {
     const anim = this.animation;
     if (!anim) return;
+    const reaction = anim.reaction;
+    if (reaction && reaction.timer > 0) {
+      const progress = reaction.duration > 0 ? reaction.timer / reaction.duration : 0;
+      const pulse = Math.sin((1 - progress) * Math.PI);
+      const intensity = reaction.intensity;
+      switch (reaction.type) {
+        case 'poke': {
+          ctx.translate(0, -pulse * 1.2 * intensity);
+          ctx.scale(1 + pulse * 0.03 * intensity, 1 - pulse * 0.02 * intensity);
+          break;
+        }
+        case 'drop': {
+          ctx.scale(1 + pulse * 0.04 * intensity, 1 + pulse * 0.04 * intensity);
+          break;
+        }
+        case 'collision': {
+          const shake = Math.sin(progress * Math.PI * 12) * 1.1 * intensity;
+          ctx.translate(shake, 0);
+          break;
+        }
+        default:
+          break;
+      }
+    }
 
     switch (anim.state) {
       case 'walking':
@@ -1234,7 +1325,9 @@ export class Creature {
       case 'idle':
       default:
         // Subtle idle sway
-        const idleSway = Math.sin(anim.timer * 0.3) * 0.3;
+        const tempo = this.personality?.idleTempo ?? 1;
+        const sway = this.personality?.idleSway ?? 1;
+        const idleSway = Math.sin(anim.timer * 0.3 * tempo) * 0.3 * sway;
         ctx.translate(0, idleSway);
         break;
     }

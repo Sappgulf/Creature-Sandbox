@@ -157,6 +157,7 @@ export class ToolController {
         type: ActionType.ADD_FOOD,
         food: addedFood
       });
+      this._reactToFoodDrop(x, y);
     }
   }
 
@@ -175,6 +176,19 @@ export class ToolController {
       if (!this.world.food.includes(food)) {
         this.world.food.push(food);
         this.world.foodGrid.add(food);
+      }
+    }
+  }
+
+  _reactToFoodDrop(x, y) {
+    const nearby = this.world.queryCreatures?.(x, y, this.brushSize * 1.2) || [];
+    if (!nearby.length) return;
+    let reacted = 0;
+    for (const creature of nearby) {
+      if (reacted >= 4) break;
+      if (typeof creature.reactToDrop === 'function') {
+        creature.reactToDrop({ x, y });
+        reacted += 1;
       }
     }
   }

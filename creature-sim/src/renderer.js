@@ -851,7 +851,7 @@ export class Renderer {
 
       // OPTIMIZATION: Only draw outlines when zoomed in enough
       if (showOutlines && (isSelected || isPinned)) {
-        this._drawCreatureOutline(c, isSelected);
+        this._drawCreatureOutline(c, isSelected, opts.selectionPulseUntil);
       }
 
       // OPTIMIZATION: Only draw names for selected/pinned or when zoomed in significantly
@@ -892,16 +892,26 @@ export class Renderer {
     ctx.restore();
   }
 
-  _drawCreatureOutline(creature, isSelected) {
+  _drawCreatureOutline(creature, isSelected, selectionPulseUntil = null) {
     // Subtle outline for contrast (not too thick!)
     const ctx = this.ctx;
     const r = creature.genes.size;
+    const now = performance.now();
+    const pulseActive = isSelected && typeof selectionPulseUntil === 'number' && now < selectionPulseUntil;
+    const pulseProgress = pulseActive
+      ? 1 - (selectionPulseUntil - now) / 400
+      : 0;
+    const pulseScale = pulseActive ? 1 + Math.sin(pulseProgress * Math.PI) * 0.25 : 1;
 
     ctx.save();
-    ctx.strokeStyle = isSelected ? 'rgba(123, 183, 255, 0.6)' : 'rgba(255, 255, 255, 0.15)';
-    ctx.lineWidth = isSelected ? 2 : 1;
+    ctx.strokeStyle = isSelected ? 'rgba(123, 183, 255, 0.75)' : 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = isSelected ? 2.2 : 1;
+    if (isSelected) {
+      ctx.shadowColor = 'rgba(123, 183, 255, 0.45)';
+      ctx.shadowBlur = 8;
+    }
     ctx.beginPath();
-    ctx.arc(creature.x, creature.y, r + 1, 0, Math.PI * 2);
+    ctx.arc(creature.x, creature.y, (r + 1) * pulseScale, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
   }
