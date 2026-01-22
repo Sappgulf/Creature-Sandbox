@@ -67,6 +67,23 @@
 
 ## Done
 
+### 2026-01-27
+
+**Changed:**
+- `creature-sim/src/input-manager.js` — added hover affordance tracking, grab cursor feedback, and grab/drop reactions during drag.
+- `creature-sim/src/creature.js` — added grab reaction animation response.
+- `creature-sim/src/renderer.js` — added hover/grab outlines for clear interaction affordance.
+- `creature-sim/src/game-loop.js` — routed hovered creature state into renderer.
+- `docs/SMOKE_TESTS.md`, `docs/ROADMAP.md` — updated verification and shipped notes.
+- `README.md`, `CHANGELOG.md` — documented new grab affordances.
+
+**Why:**
+- Improve direct manipulation clarity and creature expressiveness without changing the core loop.
+
+**Verified:**
+- `npm test`
+- `npm run lint`
+
 ### 2026-01-24
 
 **Changed:**

@@ -119,6 +119,7 @@ export class Renderer {
       selectedId=null,
       pinnedId=null,
       lineageRootId=null,
+      hoveredId=null,
       worldTime=0,
       travelPreview=null,
       cameraTravel=null
@@ -192,7 +193,7 @@ export class Renderer {
       this.drawMatingDisplays(world);
     }
 
-    this.drawCreatures(world.creatures, { selectedId, pinnedId, lineageSet, worldTime });
+    this.drawCreatures(world.creatures, { selectedId, pinnedId, hoveredId, lineageSet, worldTime, selectionPulseUntil: opts.selectionPulseUntil });
 
     // NEW: Draw particle effects (birth sparkles, death markers, etc.)
     if (world.particles) {
@@ -898,6 +899,8 @@ export class Renderer {
       // Skip creatures outside view (unless selected/pinned)
       const isSelected = opts.selectedId === c.id;
       const isPinned = opts.pinnedId === c.id;
+      const isHovered = opts.hoveredId === c.id;
+      const isGrabbed = Boolean(c.isGrabbed);
       if (!isSelected && !isPinned) {
         if (c.x < bounds.x1 || c.x > bounds.x2 || c.y < bounds.y1 || c.y > bounds.y2) {
           this.culledCount++;
@@ -940,8 +943,14 @@ export class Renderer {
       }
 
       // OPTIMIZATION: Only draw outlines when zoomed in enough
-      if (showOutlines && (isSelected || isPinned)) {
-        this._drawCreatureOutline(c, isSelected, opts.selectionPulseUntil);
+      if (showOutlines && (isSelected || isPinned || isHovered || isGrabbed)) {
+        if (isSelected || isPinned) {
+          this._drawCreatureOutline(c, isSelected, opts.selectionPulseUntil);
+        } else if (isGrabbed) {
+          this._drawCreatureGrabbedOutline(c);
+        } else if (isHovered) {
+          this._drawCreatureHoverOutline(c);
+        }
       }
 
       // OPTIMIZATION: Only draw names for selected/pinned or when zoomed in significantly
@@ -1002,6 +1011,40 @@ export class Renderer {
     }
     ctx.beginPath();
     ctx.arc(creature.x, creature.y, (r + 1) * pulseScale, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  _drawCreatureHoverOutline(creature) {
+    const ctx = this.ctx;
+    const r = creature.genes.size;
+    const now = performance.now();
+    const pulse = 0.6 + Math.sin(now * 0.006) * 0.15;
+
+    ctx.save();
+    ctx.strokeStyle = `rgba(255, 255, 255, ${pulse})`;
+    ctx.lineWidth = 1.6;
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.35)';
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.arc(creature.x, creature.y, r + 2.2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  _drawCreatureGrabbedOutline(creature) {
+    const ctx = this.ctx;
+    const r = creature.genes.size;
+    const now = performance.now();
+    const pulse = 0.7 + Math.sin(now * 0.01) * 0.2;
+
+    ctx.save();
+    ctx.strokeStyle = `rgba(250, 204, 21, ${pulse})`;
+    ctx.lineWidth = 2.1;
+    ctx.shadowColor = 'rgba(250, 204, 21, 0.45)';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(creature.x, creature.y, r + 2.8, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
   }

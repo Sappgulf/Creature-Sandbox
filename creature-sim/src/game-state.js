@@ -38,6 +38,7 @@ export class GameState {
     this.pinnedId = null;
     this.lineageRootId = null;
     this.selectionPulseUntil = null;
+    this.hoveredId = null;
 
     // Input state
     this.painting = false;

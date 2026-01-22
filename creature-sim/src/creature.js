@@ -1211,6 +1211,18 @@ export class Creature {
     }
   }
 
+  reactToGrab({ x = null, y = null } = {}) {
+    const intensity = clamp(0.3 + this.personality.playfulness * 0.5 + this.personality.reactivity * 0.3, 0.25, 1.2);
+    this._triggerReaction('grab', intensity, 0.4);
+    if (this.emotions) {
+      this.emotions.curiosity = clamp(this.emotions.curiosity + 0.06, 0, 1);
+      this.emotions.stress = clamp(this.emotions.stress + 0.04, 0, 1);
+    }
+    if (x !== null && y !== null) {
+      this.dir = Math.atan2(y - this.y, x - this.x);
+    }
+  }
+
   reactToDrop({ x = null, y = null } = {}) {
     const intensity = clamp(0.3 + this.personality.playfulness * 0.7, 0.25, 1.2);
     this._triggerReaction('drop', intensity, 0.45);
@@ -1321,6 +1333,11 @@ export class Creature {
         }
         case 'drop': {
           ctx.scale(1 + pulse * 0.04 * intensity, 1 + pulse * 0.04 * intensity);
+          break;
+        }
+        case 'grab': {
+          ctx.translate(0, -pulse * 0.8 * intensity);
+          ctx.scale(1 + pulse * 0.05 * intensity, 1 - pulse * 0.03 * intensity);
           break;
         }
         case 'collision': {

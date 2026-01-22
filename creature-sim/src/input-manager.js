@@ -18,6 +18,7 @@ export class InputManager {
       onPointerDown: this.onPointerDown.bind(this),
       onPointerMove: this.onPointerMove.bind(this),
       onPointerUp: this.onPointerUp.bind(this),
+      onPointerLeave: this.onPointerLeave.bind(this),
       onWheel: this.onWheel.bind(this),
       onBlur: this.onBlur.bind(this),
       onFocus: this.onFocus.bind(this),
@@ -68,6 +69,7 @@ export class InputManager {
     this.canvas.addEventListener('pointerdown', this.boundHandlers.onPointerDown);
     this.canvas.addEventListener('pointermove', this.boundHandlers.onPointerMove);
     this.canvas.addEventListener('pointerup', this.boundHandlers.onPointerUp);
+    this.canvas.addEventListener('pointerleave', this.boundHandlers.onPointerLeave);
     this.canvas.addEventListener('wheel', this.boundHandlers.onWheel, { passive: false });
 
     // Mobile touch events
@@ -85,6 +87,7 @@ export class InputManager {
     this.canvas.removeEventListener('pointerdown', this.boundHandlers.onPointerDown);
     this.canvas.removeEventListener('pointermove', this.boundHandlers.onPointerMove);
     this.canvas.removeEventListener('pointerup', this.boundHandlers.onPointerUp);
+    this.canvas.removeEventListener('pointerleave', this.boundHandlers.onPointerLeave);
     this.canvas.removeEventListener('wheel', this.boundHandlers.onWheel);
     this.canvas.removeEventListener('mobiletap', this.boundHandlers.onMobileTap);
   }
@@ -412,6 +415,10 @@ export class InputManager {
       gameState.lastPointer = { x: e.clientX, y: e.clientY };
     }
 
+    if (this.tools.mode !== 'inspect') {
+      this._setHoveredCreature(null);
+    }
+
     // Handle panning (middle mouse or alt key)
     if (e.button === 1 || e.button === 2 || e.altKey || e.metaKey) {
       gameState.panning = true;
@@ -469,6 +476,10 @@ export class InputManager {
       return;
     }
 
+    if (!gameState.painting) {
+      this._updateHoverTarget(e);
+    }
+
     if (!gameState.painting) return;
 
     this.handlePointerAction(e, true);
@@ -522,6 +533,13 @@ export class InputManager {
     gameState.travelPreview = null;
     gameState.painting = false;
     gameState.panning = false;
+  }
+
+  /**
+   * Handle pointer leave events
+   */
+  onPointerLeave() {
+    this._setHoveredCreature(null);
   }
 
   /**
@@ -754,8 +772,7 @@ export class InputManager {
   /**
    * Find creature at world coordinates
    */
-  _findCreatureAt(x, y) {
-    const searchRadius = 25 / this.camera.zoom; // Adjust for zoom level
+  _findCreatureAt(x, y, searchRadius = 25 / this.camera.zoom) {
     let nearest = null;
     let minDist = searchRadius;
 
@@ -802,6 +819,10 @@ export class InputManager {
     this.dragState.active = true;
     this.dragState.pending = false;
     creature.isGrabbed = true;
+    this.canvas.style.cursor = 'grabbing';
+    if (typeof creature.reactToGrab === 'function') {
+      creature.reactToGrab({ x: worldX, y: worldY });
+    }
     creature.grabTarget = creature.grabTarget || { x: worldX, y: worldY };
     creature.grabTarget.x = worldX + this.dragState.grabOffsetX;
     creature.grabTarget.y = worldY + this.dragState.grabOffsetY;
@@ -864,10 +885,54 @@ export class InputManager {
         eventSystem.emit(GameEvents.CREATURE_THROWN, { creatureId: creature.id, speed: throwSpeed });
         this.world?.particles?.addImpactRing?.(creature.x, creature.y, { color: '#facc15', size: 10 });
       }
+      if (typeof creature.reactToDrop === 'function') {
+        creature.reactToDrop({ x: creature.x, y: creature.y });
+      }
     }
 
     creature.isGrabbed = false;
     creature.grabTarget = creature.grabTarget || { x: creature.x, y: creature.y };
+    if (event.pointerType === 'touch') {
+      this._setHoveredCreature(null);
+    } else {
+      this._updateHoverTarget(event);
+    }
+  }
+
+  _updateHoverTarget(event) {
+    if (this.tools.mode !== 'inspect') {
+      this._setHoveredCreature(null);
+      return;
+    }
+
+    if (event.pointerType === 'touch') {
+      this._setHoveredCreature(null);
+      return;
+    }
+
+    const rect = this.canvas.getBoundingClientRect();
+    const canvasX = event.clientX - rect.left;
+    const canvasY = event.clientY - rect.top;
+    const sx = canvasX - rect.width / 2;
+    const sy = canvasY - rect.height / 2;
+    const { x, y } = this.camera.screenToWorld(sx, sy);
+    const hoverRadius = 34 / this.camera.zoom;
+    const creature = this._findCreatureAt(x, y, hoverRadius);
+    this._setHoveredCreature(creature?.id ?? null);
+  }
+
+  _setHoveredCreature(id) {
+    if (gameState.hoveredId === id) return;
+    gameState.hoveredId = id;
+    if (this.dragState.active) {
+      this.canvas.style.cursor = 'grabbing';
+      return;
+    }
+    if (id && this.tools.mode === 'inspect') {
+      this.canvas.style.cursor = 'grab';
+    } else {
+      this.canvas.style.cursor = 'default';
+    }
   }
 
   /**
