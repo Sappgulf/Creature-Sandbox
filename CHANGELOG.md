@@ -32,6 +32,9 @@ All notable changes to this project will be documented in this file.
 - Bite-based food consumption with scent detection.
 - Mating loop with bonding, cooldowns, and population guardrails.
 - Goal debug overlay toggle in the debug console (`debug.goals()`).
+- Place memory + learning (food/calm/danger/nest) with reinforcement and decay.
+- Life stages (baby/adult/elder) with smoother growth, elder fade-out, and default save migration.
+- Observer overlay toggle to visualize life stages, goals, and memory markers (`debug.observe()`).
 
 ### Changed
 - Interaction hints now auto-dismiss, include a close button, and clear on mode/panel transitions.
@@ -50,6 +53,13 @@ All notable changes to this project will be documented in this file.
 - Smoothed combat damage with clamped hits and attack cooldowns for longer-lived creatures.
 - Food and creature spatial grids now rebuild indices when dirty for accurate sensing.
 - Save/load schema bumped to v2.2 for needs/goals/rest zones.
+- Save/load schema bumped to v2.3 to preserve creature memory and life-stage state.
+
+### Notes (2026-02-03)
+- **WHAT:** Added creature memory/learning, life-stage tuning, elder fade-out, and an observer debug overlay with save migration.
+- **WHY:** Make the ecosystem feel persistent and generational without heavy AI or performance hits.
+- **RISK:** Medium; touches creature update loop, rendering overlays, and save migration paths.
+- **VERIFY:** Run `npm test`, `npm run lint`, and the new memory/life-cycle smoke checks.
 
 ### Notes (2026-02-02)
 - **WHAT:** Removed the Campaign button from the start menu while keeping other actions intact.

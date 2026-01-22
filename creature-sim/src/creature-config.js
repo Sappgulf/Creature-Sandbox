@@ -61,13 +61,6 @@ export const CreatureConfig = {
     PANIC_DURATION: 8
   },
 
-  // Memory and learning
-  MEMORY: {
-    CAPACITY_BASE: 10,
-    CAPACITY_MAX: 14,
-    FORGET_CHANCE: 0.02
-  },
-
   // Social behavior
   SOCIAL: {
     PLAY_COOLDOWN: { min: 6, max: 12 },
@@ -102,11 +95,28 @@ export const CreatureConfig = {
 
   // Memory and learning
   MEMORY: {
-    CAPACITY_BASE: 10,
-    CAPACITY_MAX: 14,
-    CAPACITY_SENSE_RATIO: 50,
-    DECAY_RATE: 0.05,
-    LEARNING_RATE: 0.05
+    SLOTS_MIN: 3,
+    SLOTS_MAX: 6,
+    SLOTS_SENSE_RATIO: 80,
+    MERGE_RADIUS: 32,
+    MAX_DISTANCE: 320,
+    AVOID_RADIUS: 240,
+    AVOID_STRENGTH: 0.9,
+    DECAY_RATE: 0.03,
+    MIN_STRENGTH: 0.18,
+    REINFORCE_AMOUNT: 0.18,
+    FAILURE_DECAY: 0.35,
+    LEARNING_INTERVAL: 2.2,
+    FAILURE_TIMEOUT: 7,
+    RECALL_PAUSE: 0.25,
+    RECALL_SLOW: 0.25,
+    HUNGER_THRESHOLD: 55,
+    STRESS_THRESHOLD: 55,
+    CALM_STRESS_MAX: 40,
+    DANGER_COOLDOWN: 6,
+    CALM_COOLDOWN: 8,
+    NEST_COOLDOWN: 12,
+    STRESS_SPIKE_THRESHOLD: 12
   },
 
   // Emotions and psychology

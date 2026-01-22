@@ -198,6 +198,12 @@ export class Renderer {
     if (opts.showGoalDebug) {
       this.drawGoalDebug(world);
     }
+    if (opts.showMemoryDebug) {
+      this.drawMemoryDebug(world);
+    }
+    if (opts.showLifeStageDebug) {
+      this.drawLifeStageDebug(world);
+    }
 
     // NEW: Draw particle effects (birth sparkles, death markers, etc.)
     if (world.particles) {
@@ -1489,12 +1495,19 @@ export class Renderer {
       const alpha = mem.strength * 0.6;
       let color;
 
-      switch(mem.type) {
+      const tag = mem.tag ?? mem.type;
+      switch(tag) {
         case 'food':
           color = `rgba(100, 255, 100, ${alpha})`;
           break;
         case 'danger':
           color = `rgba(255, 100, 100, ${alpha})`;
+          break;
+        case 'calm':
+          color = `rgba(120, 200, 255, ${alpha})`;
+          break;
+        case 'nest':
+          color = `rgba(255, 200, 140, ${alpha})`;
           break;
         case 'safe':
           color = `rgba(100, 200, 255, ${alpha})`;
@@ -1512,6 +1525,51 @@ export class Renderer {
       ctx.stroke();
       ctx.restore();
     }
+  }
+
+  drawMemoryDebug(world) {
+    const ctx = this.ctx;
+    const view = this._viewBounds;
+    ctx.save();
+    for (const creature of world.creatures) {
+      if (!creature?.alive || !creature.memory?.locations) continue;
+      for (const mem of creature.memory.locations) {
+        if (mem.x < view.x1 || mem.x > view.x2 || mem.y < view.y1 || mem.y > view.y2) continue;
+        const alpha = clamp((mem.strength ?? 0) * 0.35, 0.08, 0.35);
+        const tag = mem.tag ?? mem.type;
+        let color = `rgba(200, 200, 200, ${alpha})`;
+        if (tag === 'food') color = `rgba(120, 255, 150, ${alpha})`;
+        if (tag === 'danger') color = `rgba(255, 120, 120, ${alpha})`;
+        if (tag === 'calm') color = `rgba(140, 210, 255, ${alpha})`;
+        if (tag === 'nest') color = `rgba(255, 210, 160, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(mem.x, mem.y, 8, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
+  drawLifeStageDebug(world) {
+    const ctx = this.ctx;
+    const view = this._viewBounds;
+
+    ctx.save();
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillStyle = 'rgba(255, 240, 200, 0.9)';
+
+    for (const creature of world.creatures) {
+      if (!creature?.alive) continue;
+      if (creature.x < view.x1 || creature.x > view.x2 || creature.y < view.y1 || creature.y > view.y2) continue;
+      const label = creature.lifeStage ? creature.lifeStage.toUpperCase() : '';
+      if (!label) continue;
+      ctx.fillText(label, creature.x, creature.y - creature.size - 6);
+    }
+
+    ctx.restore();
   }
 
   drawSocialBonds(world) {

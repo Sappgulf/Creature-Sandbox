@@ -43,11 +43,20 @@
    - Watch two adults with high social drive approach and perform a brief bonding interaction.
    - Confirm an offspring spawns and population growth slows if the world is overcrowded.
 
-6. **Top menu navigation**
+6. **Memory + life-cycle loop**
+   - With `debug.observe()` enabled, watch a creature eat and note a green memory marker at that spot.
+   - Move food away and confirm a hungry creature later drifts back toward the remembered area.
+   - Trigger a high-stress event (hard impact or overcrowding) and confirm a red danger marker appears.
+   - Observe stressed creatures bias away from the danger marker over time.
+   - Let a creature rest calmly; confirm a blue calm marker appears near the rest zone.
+   - Speed up the sim (`debug.speed(5)`), wait for baby → adult → elder transitions, and confirm elders move slower and begin to fade.
+   - Confirm offspring inherit visible traits (color/size variance) with small mutations.
+
+7. **Top menu navigation**
    - Click **🎛️ Modes & Goals** and confirm the Game Mode + Session Goals card toggles.
    - Open **⋯ More Actions** and verify every item opens its respective panel or toggle.
 
-7. **Save/load roundtrip**
+8. **Save/load roundtrip**
    - Use **Ctrl+S** to save the game.
    - Refresh the page.
    - Use **Ctrl+O** to load the save.
@@ -55,26 +64,27 @@
    - Confirm loaded creatures retain reasonable ecosystem state (no immediate panic spiral, no zeroed energy).
    - Confirm hunger/energy/social/stress values load without NaNs (inspect a creature).
    - Confirm food patches keep remaining bites after reload.
+   - With `debug.observe()` enabled, confirm life-stage labels and memory markers persist after reload.
    - Optional: use **Ctrl/⌘ + S** to download a save file and **Ctrl/⌘ + O** to load it back.
 
-8. **Help section**
+9. **Help section**
    - Open **⋯ More Actions**.
    - Confirm the Help section lists controls, shortcuts, and where features live.
 
-9. **Session goals**
+10. **Session goals**
    - Open **🎛️ Modes & Goals**.
    - Confirm a goal appears for manual creature spawns and progresses when you spawn creatures.
 
-10. **Balance pass: grab/throw consistency**
+11. **Balance pass: grab/throw consistency**
    - Switch to **Inspect** mode and grab a creature with a short drag.
    - Confirm gentle drags release without huge launches.
    - Flick a longer drag and confirm throws feel capped and predictable (no extreme launches).
 
-11. **Balance pass: camera stability**
+12. **Balance pass: camera stability**
     - Pan and zoom quickly, then release.
     - Confirm the camera settles without lingering jitter and overlays reappear after it stops.
 
-12. **Balance pass: creature reactions**
+13. **Balance pass: creature reactions**
     - Trigger a bounce pad or spinner on a creature.
     - Drop a creature from a height and confirm a squish/landing reaction.
     - Poke a creature repeatedly and confirm an overreaction triggers but resets quickly.
