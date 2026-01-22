@@ -51,6 +51,12 @@ All notable changes to this project will be documented in this file.
 - Food and creature spatial grids now rebuild indices when dirty for accurate sensing.
 - Save/load schema bumped to v2.2 for needs/goals/rest zones.
 
+### Notes (2026-02-02)
+- **WHAT:** Removed the Campaign button from the start menu while keeping other actions intact.
+- **WHY:** Reduce start menu clutter per updated UX direction.
+- **RISK:** Low; start menu-only markup change.
+- **VERIFY:** Load the home screen and confirm the Campaign button is absent while New Sandbox remains.
+
 ### Notes (2026-02-01)
 - **WHAT:** Added needs-driven goals, rest zones, bite-based food, and a controlled mating loop with guardrails.
 - **WHY:** Make creatures feel like simple agents while keeping performance stable and emergent play readable.
