@@ -7,7 +7,7 @@ export const SANDBOX_PROP_TYPES = {
     label: 'Bounce Pad',
     icon: '🟣',
     radius: 52,
-    strength: 320,
+    strength: 280,
     cooldown: 0.35,
     color: '#7c3aed'
   },
@@ -16,7 +16,7 @@ export const SANDBOX_PROP_TYPES = {
     label: 'Spinner',
     icon: '🌀',
     radius: 64,
-    strength: 220,
+    strength: 190,
     cooldown: 0.25,
     color: '#38bdf8'
   },
@@ -25,7 +25,7 @@ export const SANDBOX_PROP_TYPES = {
     label: 'Gravity Well',
     icon: '🕳️',
     radius: 140,
-    strength: 85,
+    strength: 70,
     cooldown: 0,
     color: '#6366f1'
   },
@@ -175,7 +175,7 @@ export class SandboxProps {
     const ny = dy / dist;
     const strength = prop.strength * clamp(1 - dist / prop.radius, 0.35, 1);
 
-    creature.applyImpulse?.(nx * strength, ny * strength, { decay: 5.5, cap: 420 });
+    creature.applyImpulse?.(nx * strength, ny * strength, { decay: 6, cap: 340 });
     creature.reactToCollision?.(0.7);
     creature.applyStatus?.('play-burst', { duration: 0.4, intensity: 0.25 });
     prop.cooldown = prop.cooldownMax;
@@ -194,7 +194,7 @@ export class SandboxProps {
     const tangentY = nx;
     const strength = prop.strength * clamp(1 - dist / prop.radius, 0.2, 1);
 
-    creature.applyImpulse?.(tangentX * strength, tangentY * strength, { decay: 6.5, cap: 380 });
+    creature.applyImpulse?.(tangentX * strength, tangentY * strength, { decay: 6.8, cap: 320 });
     creature.dir += 0.6 * clamp(1 - dist / prop.radius, 0.2, 1);
     creature.reactToCollision?.(0.5);
     prop.cooldown = prop.cooldownMax;
@@ -211,7 +211,7 @@ export class SandboxProps {
     const nx = -dx / dist;
     const ny = -dy / dist;
 
-    creature.applyImpulse?.(nx * pull * dt * 60, ny * pull * dt * 60, { decay: 10, cap: 260 });
+    creature.applyImpulse?.(nx * pull * dt * 60, ny * pull * dt * 60, { decay: 11, cap: 220 });
     creature.reactToCollision?.(0.2);
   }
 

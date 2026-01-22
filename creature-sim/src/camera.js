@@ -23,7 +23,7 @@ export class Camera {
     this.targetZoom = zoom;
     this.targetX = x;
     this.targetY = y;
-    this.smooth = 0.18;
+    this.smooth = 0.14;
     this.worldWidth = worldWidth;
     this.worldHeight = worldHeight;
     this.viewportWidth = viewportWidth;
@@ -38,7 +38,7 @@ export class Camera {
 
     // Movement tracking for auto-hide overlays
     this.isMoving = false;
-    this.movementThreshold = 0.5; // Distance threshold to consider "moving"
+    this.movementThreshold = 0.8; // Distance threshold to consider "moving"
 
     this._refreshMinZoom();
     this._clampTargets();
@@ -55,6 +55,9 @@ export class Camera {
     this._clampZoom();
     this.x = lerp(this.x, this.targetX, t);
     this.y = lerp(this.y, this.targetY, t);
+    if (Math.abs(this.zoom - this.targetZoom) < 0.002) this.zoom = this.targetZoom;
+    if (Math.abs(this.x - this.targetX) < 0.05) this.x = this.targetX;
+    if (Math.abs(this.y - this.targetY) < 0.05) this.y = this.targetY;
     this._clampPosition();
 
     // Track if camera is moving (for auto-hide overlays)

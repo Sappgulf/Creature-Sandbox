@@ -5,6 +5,30 @@
 - [ ] Evaluate tool favorites / quick swap UX (post-brush-size update)
 - [ ] Audit save/load UX for surfaced feedback (non-intrusive)
 - [ ] Expand sandbox interactions with props, drag/throw, and micro-goals
+- [ ] Balance pass: tune grab/throw, camera smoothing, prop forces, and mobile touch sensitivity
+
+## Session Audit (2026-01-29)
+
+### Phase 1 Gameplay Audit (code inspection)
+**Interactions too strong / inconsistent**
+- Throw impulses use raw drag velocity with a high cap (420), leading to extreme launches.
+- Bounce/spinner props and creature bump impulses stack high forces without weight scaling.
+- External impulses ignore creature size, so larger creatures feel too light.
+
+**Actions that dominate play**
+- Rapid drag/throw can override normal locomotion, making props feel secondary.
+
+**Systems lacking feedback or consequence**
+- Collision reactions can trigger in rapid succession on bumps, reducing readability.
+- Camera movement never fully settles due to tiny residual interpolation.
+
+**Chaos: fun vs frustrating**
+- Physics chaos is playful, but extreme launches and jittery camera transitions can feel unfair.
+
+**Primary imbalance sources**
+- Physics values: throw caps, prop strength, bump forces, impulse decay.
+- Camera smoothing and movement thresholds.
+- Touch thresholds for grab activation and pan sensitivity.
 
 ## Session Audit (2026-01-26)
 
@@ -66,6 +90,24 @@
 - [ ] Prototype creature presets panel for sandbox quick starts
 
 ## Done
+
+### 2026-01-29
+
+**Changed:**
+- `creature-sim/src/input-manager.js` — tuned grab/throw thresholds, added throw caps, and scaled impact feedback by throw intensity.
+- `creature-sim/src/creature.js` — normalized external impulse by size, added collision reaction cooldown, and made animation timing frame-rate independent.
+- `creature-sim/src/sandbox-props.js` — reduced prop strengths and impulse caps for bounce/spinner/gravity.
+- `creature-sim/src/world-core.js` — softened creature bump forces.
+- `creature-sim/src/camera.js` — smoothed camera interpolation and snap-to-target thresholds.
+- `creature-sim/src/mobile-support.js` — reduced pan/zoom sensitivity and increased movement threshold.
+- `docs/SMOKE_TESTS.md`, `docs/ROADMAP.md`, `README.md`, `CHANGELOG.md` — documented balance pass checks and notes.
+
+**Why:**
+- Improve interaction fairness, reduce extreme launches, and stabilize camera/touch feel without changing the core loop.
+
+**Verified:**
+- `npm test`
+- `npm run lint` (warnings only)
 
 ### 2026-01-28
 

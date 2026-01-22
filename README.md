@@ -86,6 +86,7 @@ open http://localhost:8000
 - **Mouse Wheel**: Zoom camera
 - **Middle Click / Alt+Drag**: Pan camera
 - **Drag**: Grab, move, and throw creatures (mouse or touch)
+- **Throw feel**: Throws are capped for predictable arcs (short drags stay gentle)
 - **Hover (mouse/pen)**: See a grab outline on creatures in Inspect mode
 - **Ctrl/⌘ + S / Ctrl/⌘ + O**: Save to file / load from file
 

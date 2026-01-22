@@ -1,5 +1,12 @@
 # Creature Sandbox Roadmap
 
+## Known Quirks (2026-01-29)
+
+1. **Camera can drift far off-world**
+   - **Description:** The camera has no world bounds, so heavy panning or travel can move far away from active creatures.
+   - **Impact:** Players may need to manually recenter by focusing on a creature or double-tapping a new target.
+   - **Owner:** TBD
+
 ## Shipped (2026-01-28)
 
 1. **Mobile spawn picker + hint lifecycle**

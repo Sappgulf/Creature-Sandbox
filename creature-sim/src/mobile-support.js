@@ -10,9 +10,9 @@ export class MobileSupport {
     this.doubleTapTimer = null;
     this.lastTapTime = 0;
     this.tapCount = 0;
-    this.panSensitivity = 0.9;
-    this.pinchSensitivity = 0.85;
-    this.panThreshold = 0.5;
+    this.panSensitivity = 0.75;
+    this.pinchSensitivity = 0.8;
+    this.panThreshold = 1.2;
 
     this.init();
   }
