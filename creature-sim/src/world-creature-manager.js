@@ -18,7 +18,7 @@ export class WorldCreatureManager {
     this._nextId = 1;
     this.childrenOf = new Map(); // id -> Set(childIds)
     this.registry = new Map();
-    this.creatureGrid = new SpatialGrid(48);
+    this.creatureGrid = new SpatialGrid(48, this.world.width, this.world.height);
     this.gridDirty = true;
     this.lineageTracker = null;
 
@@ -121,6 +121,15 @@ export class WorldCreatureManager {
 
     const child = new Creature(clampedX, clampedY, childGenes, true);
 
+    const parentTraits = parent1.traits || { bounce: 1, temperament: 0.5 };
+    const mateTraits = parent2?.traits || parentTraits;
+    const blend = (a, b, variance, min, max) =>
+      clamp((a + b) * 0.5 + rand(-variance, variance), min, max);
+    if (child.traits) {
+      child.traits.bounce = blend(parentTraits.bounce ?? 1, mateTraits.bounce ?? 1, 0.12, 0.7, 1.3);
+      child.traits.temperament = blend(parentTraits.temperament ?? 0.5, mateTraits.temperament ?? 0.5, 0.1, 0, 1);
+    }
+
     // Set parent relationships
     child.parents = [parent1.id];
     if (parent2) {
@@ -201,6 +210,22 @@ export class WorldCreatureManager {
     return this.world.creatures.filter(c =>
       c.alive && (c.x - x) * (c.x - x) + (c.y - y) * (c.y - y) <= r2
     );
+  }
+
+  // Fast spatial query using grid buckets
+  queryCreaturesFast(x, y, radius, outArray = null) {
+    this.ensureSpatial();
+    if (!this.creatureGrid?.nearby) return this.queryCreatures(x, y, radius);
+    const results = this.creatureGrid.nearby(x, y, radius, outArray);
+    let count = 0;
+    for (let i = 0; i < results.length; i++) {
+      const creature = results[i];
+      if (creature && creature.alive) {
+        results[count++] = creature;
+      }
+    }
+    results.length = count;
+    return results;
   }
 
   // Get ancestors of a creature
@@ -343,6 +368,7 @@ export class WorldCreatureManager {
           this.creatureGrid.add(c);
         }
       }
+      this.creatureGrid.buildIndex?.();
       this.gridDirty = false;
     }
   }

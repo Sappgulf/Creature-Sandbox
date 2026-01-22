@@ -27,6 +27,11 @@ All notable changes to this project will be documented in this file.
 - Mood icons, recovery poses, and silly-action badges.
 - Ecosystem internal states (stress/energy/curiosity/stability) with social contagion and crowd pressure.
 - Creature tuning constants for health and damage balance.
+- Needs-driven creature agents (hunger/energy/social/stress) with utility-based goals.
+- Rest zones for calm recovery and energy restoration.
+- Bite-based food consumption with scent detection.
+- Mating loop with bonding, cooldowns, and population guardrails.
+- Goal debug overlay toggle in the debug console (`debug.goals()`).
 
 ### Changed
 - Interaction hints now auto-dismiss, include a close button, and clear on mode/panel transitions.
@@ -43,6 +48,14 @@ All notable changes to this project will be documented in this file.
 - Tuned grab/throw thresholds, impulse caps, prop forces, and camera smoothing for more predictable play.
 - Increased default creature health, added collision/fall damage thresholds, and applied short damage i-frames.
 - Smoothed combat damage with clamped hits and attack cooldowns for longer-lived creatures.
+- Food and creature spatial grids now rebuild indices when dirty for accurate sensing.
+- Save/load schema bumped to v2.2 for needs/goals/rest zones.
+
+### Notes (2026-02-01)
+- **WHAT:** Added needs-driven goals, rest zones, bite-based food, and a controlled mating loop with guardrails.
+- **WHY:** Make creatures feel like simple agents while keeping performance stable and emergent play readable.
+- **RISK:** Medium; touches core creature update loops and save/load fields.
+- **VERIFY:** `npm test`, `npm run lint`, plus updated ecosystem smoke tests.
 
 ### Notes (2026-01-30)
 - **WHAT:** Added lightweight ecosystem state updates and rebalanced health/damage to reduce accidental deaths.

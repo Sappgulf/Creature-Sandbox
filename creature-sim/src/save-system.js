@@ -5,6 +5,7 @@
 
 import { CreatureTuning } from './creature-tuning.js';
 import { createEcosystemState } from './creature-ecosystem.js';
+import { CreatureAgentTuning } from './creature-agent-constants.js';
 
 export class SaveSystem {
   constructor() {
@@ -21,7 +22,7 @@ export class SaveSystem {
    */
   serialize(world, camera, analytics, lineageTracker, additionalData = {}) {
     const saveData = {
-      version: '2.1',
+      version: '2.2',
       timestamp: Date.now(),
       savedAt: new Date().toISOString(),
 
@@ -73,6 +74,14 @@ export class SaveSystem {
           killedBy: c.killedBy ?? null,
           genes: { ...c.genes },
           stats: { ...c.stats },
+          traits: c.traits ? { ...c.traits } : null,
+          needs: c.needs ? { ...c.needs } : null,
+          goal: c.goal ? {
+            current: c.goal.current,
+            lastChange: c.goal.lastChange,
+            cooldown: c.goal.cooldown,
+            mateCooldown: c.goal.mateCooldown
+          } : null,
           ecosystem: c.ecosystem ? { ...c.ecosystem } : null,
           // Advanced features
           emotions: c.emotions ? { ...c.emotions } : null,
@@ -92,7 +101,21 @@ export class SaveSystem {
         })),
 
         // Food
-        food: world.food.map(f => ({ x: f.x, y: f.y, energy: f.energy })),
+        food: world.food.map(f => ({
+          x: f.x,
+          y: f.y,
+          energy: f.energy,
+          bites: f.bites,
+          biteEnergy: f.biteEnergy,
+          type: f.type,
+          scentRadius: f.scentRadius
+        })),
+        restZones: world.restZones ? world.restZones.map(z => ({
+          id: z.id,
+          x: z.x,
+          y: z.y,
+          radius: z.radius
+        })) : [],
 
         // Corpses
         corpses: world.corpses ? world.corpses.map(c => ({
@@ -273,6 +296,25 @@ export class SaveSystem {
         creature._deathEmitted = true;
       }
       creature.stats = cData.stats || { food: 0, kills: 0, births: 0, damageTaken: 0, damageDealt: 0 };
+      if (cData.traits && creature.traits) {
+        creature.traits.bounce = toNumber(cData.traits.bounce, creature.traits.bounce);
+        creature.traits.temperament = toNumber(cData.traits.temperament, creature.traits.temperament);
+      }
+      if (creature.needs) {
+        const needsData = cData.needs || {};
+        creature.needs.hunger = toNumber(needsData.hunger, creature.needs.hunger ?? CreatureAgentTuning.NEEDS.START.hunger);
+        creature.needs.energy = toNumber(needsData.energy, creature.needs.energy ?? CreatureAgentTuning.NEEDS.START.energy);
+        creature.needs.socialDrive = toNumber(needsData.socialDrive, creature.needs.socialDrive ?? CreatureAgentTuning.NEEDS.START.socialDrive);
+        creature.needs.stress = toNumber(needsData.stress, creature.needs.stress ?? CreatureAgentTuning.NEEDS.START.stress);
+        creature.needs.lastEatAt = toNumber(needsData.lastEatAt, creature.needs.lastEatAt ?? -Infinity);
+      }
+      if (creature.goal) {
+        const goalData = cData.goal || {};
+        creature.goal.current = goalData.current ?? creature.goal.current;
+        creature.goal.lastChange = toNumber(goalData.lastChange, creature.goal.lastChange ?? 0);
+        creature.goal.cooldown = toNumber(goalData.cooldown, creature.goal.cooldown ?? 0);
+        creature.goal.mateCooldown = toNumber(goalData.mateCooldown, creature.goal.mateCooldown ?? 0);
+      }
 
       // Restore advanced features
       if (cData.emotions && creature.emotions) {
@@ -310,8 +352,37 @@ export class SaveSystem {
     world.food = (data.food || []).map(f => ({
       x: f.x,
       y: f.y,
-      energy: toNumber(f.energy, 1.0)
+      energy: toNumber(f.energy, 1.0),
+      bites: toNumber(f.bites, Math.max(1, Math.round(toNumber(f.energy, 1.0) / CreatureAgentTuning.FOOD.BITE_ENERGY))),
+      biteEnergy: toNumber(f.biteEnergy, CreatureAgentTuning.FOOD.BITE_ENERGY),
+      type: f.type ?? 'grass',
+      scentRadius: toNumber(f.scentRadius, CreatureAgentTuning.FOOD.SCENT_RADIUS),
+      t: 0
     }));
+    if (world.foodGrid) {
+      world.foodGrid.clear();
+      for (const food of world.food) {
+        world.foodGrid.add(food);
+      }
+      world.foodGrid.buildIndex?.();
+      world.foodGridDirty = false;
+    }
+    if (data.restZones && data.restZones.length > 0) {
+      world.restZones = data.restZones.map(z => ({
+        id: z.id ?? `rest-${Math.random().toString(36).slice(2, 7)}`,
+        x: toNumber(z.x, 0),
+        y: toNumber(z.y, 0),
+        radius: toNumber(z.radius, CreatureAgentTuning.REST_ZONES.RADIUS)
+      }));
+    }
+    if (world.restGrid) {
+      world.restGrid.clear();
+      for (const zone of world.restZones) {
+        world.restGrid.add(zone);
+      }
+      world.restGrid.buildIndex?.();
+      world.restGridDirty = false;
+    }
 
     // Restore corpses
     world.corpses = (data.corpses || []).map(c => ({
@@ -570,9 +641,35 @@ export class SaveSystem {
    * @private
    */
   _migrateSaveData(saveData, fromVersion) {
+    const toNumber = (value, fallback) => {
+      if (value == null) return fallback;
+      const num = Number(value);
+      return Number.isFinite(num) ? num : fallback;
+    };
     // Current version - no migration needed
-    if (fromVersion === '2.1') {
+    if (fromVersion === '2.2') {
       return saveData;
+    }
+
+    if (fromVersion === '2.1') {
+      if (migrated.world?.creatures) {
+        for (const c of migrated.world.creatures) {
+          if (!c.needs) c.needs = { ...CreatureAgentTuning.NEEDS.START };
+          if (!c.goal) c.goal = { current: 'WANDER', lastChange: 0, cooldown: 0, mateCooldown: 0 };
+        }
+      }
+      if (migrated.world?.food) {
+        for (const food of migrated.world.food) {
+          const energy = toNumber(food.energy, 1.0);
+          food.bites = Math.max(1, Math.round(energy / CreatureAgentTuning.FOOD.BITE_ENERGY));
+          food.biteEnergy = energy / food.bites;
+          food.scentRadius = CreatureAgentTuning.FOOD.SCENT_RADIUS;
+        }
+      }
+      if (!migrated.world?.restZones) migrated.world.restZones = [];
+      migrated.version = '2.2';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.2`);
+      return migrated;
     }
 
     // Clone to avoid mutating original
@@ -582,10 +679,21 @@ export class SaveSystem {
       if (migrated.world?.creatures) {
         for (const c of migrated.world.creatures) {
           if (!c.ecosystem) c.ecosystem = createEcosystemState();
+          if (!c.needs) c.needs = { ...CreatureAgentTuning.NEEDS.START };
+          if (!c.goal) c.goal = { current: 'WANDER', lastChange: 0, cooldown: 0, mateCooldown: 0 };
         }
       }
-      migrated.version = '2.1';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.1`);
+      if (migrated.world?.food) {
+        for (const food of migrated.world.food) {
+          const energy = toNumber(food.energy, 1.0);
+          food.bites = Math.max(1, Math.round(energy / CreatureAgentTuning.FOOD.BITE_ENERGY));
+          food.biteEnergy = energy / food.bites;
+          food.scentRadius = CreatureAgentTuning.FOOD.SCENT_RADIUS;
+        }
+      }
+      if (!migrated.world?.restZones) migrated.world.restZones = [];
+      migrated.version = '2.2';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.2`);
       return migrated;
     }
 
@@ -600,6 +708,7 @@ export class SaveSystem {
       if (!migrated.world.timeOfDay) migrated.world.timeOfDay = 12;
       if (!migrated.world.dayLength) migrated.world.dayLength = 120;
       if (!migrated.world.corpses) migrated.world.corpses = [];
+      if (!migrated.world.restZones) migrated.world.restZones = [];
 
       // Ensure creatures have new fields
       if (migrated.world.creatures) {
@@ -609,11 +718,21 @@ export class SaveSystem {
           if (!c.sexuality) c.sexuality = null;
           if (!c.migration) c.migration = null;
           if (!c.ecosystem) c.ecosystem = createEcosystemState();
+          if (!c.needs) c.needs = { ...CreatureAgentTuning.NEEDS.START };
+          if (!c.goal) c.goal = { current: 'WANDER', lastChange: 0, cooldown: 0, mateCooldown: 0 };
         }
       }
 
-      migrated.version = '2.1';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.1`);
+      if (migrated.world?.food) {
+        for (const food of migrated.world.food) {
+          const energy = toNumber(food.energy, 1.0);
+          food.bites = Math.max(1, Math.round(energy / CreatureAgentTuning.FOOD.BITE_ENERGY));
+          food.biteEnergy = energy / food.bites;
+          food.scentRadius = CreatureAgentTuning.FOOD.SCENT_RADIUS;
+        }
+      }
+      migrated.version = '2.2';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.2`);
     }
 
     return migrated;

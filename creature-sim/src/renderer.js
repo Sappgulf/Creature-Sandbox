@@ -195,6 +195,10 @@ export class Renderer {
 
     this.drawCreatures(world.creatures, { selectedId, pinnedId, hoveredId, lineageSet, worldTime, selectionPulseUntil: opts.selectionPulseUntil });
 
+    if (opts.showGoalDebug) {
+      this.drawGoalDebug(world);
+    }
+
     // NEW: Draw particle effects (birth sparkles, death markers, etc.)
     if (world.particles) {
       world.particles.draw(ctx);
@@ -1708,6 +1712,52 @@ export class Renderer {
       }
       ctx.restore();
     }
+  }
+
+  drawGoalDebug(world) {
+    const ctx = this.ctx;
+    const view = this._viewBounds;
+
+    ctx.save();
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+
+    for (const creature of world.creatures) {
+      if (!creature?.alive) continue;
+      if (creature.x < view.x1 || creature.x > view.x2 || creature.y < view.y1 || creature.y > view.y2) continue;
+
+      const goalLabel = creature.goal?.current;
+      if (goalLabel) {
+        ctx.fillStyle = 'rgba(120, 220, 255, 0.9)';
+        ctx.fillText(goalLabel, creature.x, creature.y - creature.size - 18);
+      }
+
+      const target = creature.target;
+      if (target) {
+        const tx = target.x ?? creature.x;
+        const ty = target.y ?? creature.y;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(120, 220, 255, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(creature.x, creature.y);
+        ctx.lineTo(tx, ty);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(120, 220, 255, 0.6)';
+        ctx.beginPath();
+        ctx.arc(tx, ty, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    ctx.restore();
   }
 
   drawMatingDisplays(world) {
