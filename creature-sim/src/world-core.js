@@ -61,6 +61,16 @@ export class World {
     this.temperatureModifier = 1.0;
     this.bumpCheckTimer = 0;
     this.bumpIndex = 0;
+    this.crowdCheckTimer = 0;
+    this.lastPointerWorld = { x: width * 0.5, y: height * 0.5 };
+    this.chaos = {
+      level: 0.5,
+      gravity: 0,
+      bounceBoost: 1,
+      wobbleBoost: 1,
+      reactionBoost: 1
+    };
+    this.setChaosLevel(0.5);
 
     // Auto-balance settings (used by gameplay-modes.js)
     this.autoBalanceSettings = {
@@ -109,6 +119,12 @@ export class World {
       if (this.bumpCheckTimer >= 0.2) {
         this.bumpCheckTimer = 0;
         this.applyCreatureBumps();
+      }
+
+      this.crowdCheckTimer += dt;
+      if (this.crowdCheckTimer >= 0.6) {
+        this.crowdCheckTimer = 0;
+        this.applyCrowdJitter();
       }
 
       // Update corpse system
@@ -215,14 +231,33 @@ export class World {
         const dist = Math.sqrt(distSq);
         const nx = dx / dist;
         const ny = dy / dist;
-        const force = 90;
-        a.applyImpulse?.(-nx * force, -ny * force, { decay: 7, cap: 200 });
-        b.applyImpulse?.(nx * force, ny * force, { decay: 7, cap: 200 });
-        a.reactToCollision?.(0.35);
-        b.reactToCollision?.(0.35);
+        const exaggerate = Math.random() < 0.25 ? 1.4 : 1;
+        const force = 90 * exaggerate;
+        a.applyImpulse?.(-nx * force, -ny * force, { decay: 7, cap: 220 });
+        b.applyImpulse?.(nx * force, ny * force, { decay: 7, cap: 220 });
+        a.reactToCollision?.(0.45);
+        b.reactToCollision?.(0.45);
         eventSystem.emit(GameEvents.CREATURE_BUMPED, { aId: a.id, bId: b.id });
         break;
       }
+    }
+  }
+
+  applyCrowdJitter() {
+    const creatures = this.creatures;
+    if (!creatures || creatures.length < 5) return;
+    const samples = Math.min(6, creatures.length);
+    for (let i = 0; i < samples; i++) {
+      const idx = Math.floor(Math.random() * creatures.length);
+      const creature = creatures[idx];
+      if (!creature || !creature.alive || creature.isGrabbed) continue;
+      const nearby = this.creatureManager?.queryCreatures?.(creature.x, creature.y, 48) || [];
+      if (nearby.length < 4) continue;
+      const angle = Math.random() * Math.PI * 2;
+      const shove = 35 + Math.random() * 25;
+      creature.applyImpulse?.(Math.cos(angle) * shove, Math.sin(angle) * shove, { decay: 8, cap: 180 });
+      creature._triggerReaction?.('fall', 0.35, 0.2);
+      creature.setMood?.('😵', 0.4);
     }
   }
 
@@ -327,6 +362,16 @@ export class World {
 
   attachAudioSystem(audio) {
     this.audio = audio;
+  }
+
+  setChaosLevel(level = 0.5) {
+    const safeLevel = clamp(level, 0, 1);
+    this.chaos.level = safeLevel;
+    const offset = safeLevel - 0.5;
+    this.chaos.gravity = offset * 18;
+    this.chaos.bounceBoost = clamp(1 + offset * 0.6, 0.7, 1.35);
+    this.chaos.wobbleBoost = clamp(1 + offset * 0.8, 0.6, 1.5);
+    this.chaos.reactionBoost = clamp(1 + offset * 0.7, 0.65, 1.4);
   }
 
   // Query methods

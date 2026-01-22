@@ -19,13 +19,15 @@
 4. **Interact/play**
    - Press **F** and paint food into the world.
    - Use **E** to erase a creature.
-   - Press **P** to switch to Props and drop a bounce pad + gravity well.
-   - Drag a creature onto a prop and confirm it reacts (bounce/spin/grav pull).
+   - Press **P** to switch to Props and drop a bounce pad, spring pad, wind fan, and conveyor belt.
+   - Drag a creature onto each prop and confirm it reacts (bounce/spring, wind push, conveyor glide).
+   - Place a Launch Button and confirm it catapults a creature with a playful impact.
    - Hover a creature in Inspect mode and confirm a subtle white outline appears to show it's grabbable.
    - Drag a creature quickly and release to throw it.
    - Confirm grabbed creatures show a warm grab outline and a brief grab/drop reaction.
    - Toggle pause/resume with **Space** and confirm the sim halts/continues.
    - Tap or click a creature and confirm a glow outline + reaction animation plays.
+   - Open **Features** and adjust the Chaos Dial; confirm bounce strength, wobble, and gravity drift change without breaking control.
 
 5. **Top menu navigation**
    - Click **🎛️ Modes & Goals** and confirm the Game Mode + Session Goals card toggles.
@@ -57,6 +59,8 @@
 
 11. **Balance pass: creature reactions**
     - Trigger a bounce pad or spinner on a creature.
+    - Drop a creature from a height and confirm a squish/landing reaction.
+    - Poke a creature repeatedly and confirm an overreaction triggers but resets quickly.
     - Confirm collision reactions are readable but not rapid-fire flashing.
 
 ## Mobile-Specific Checks
@@ -66,6 +70,7 @@
    - Pan with one finger, pinch to zoom, and double-tap to zoom.
    - Tap **Props** in the mobile bar to cycle prop types, then tap the canvas to place one.
    - Confirm HUD and mobile quick actions clear the notch/home indicator areas.
+   - Open **Features** and adjust the Chaos Dial slider to confirm it remains touch-friendly.
 
 2. **Spawn selection + play loop**
    - Tap **Spawn** in the mobile bar to open the creature sheet.

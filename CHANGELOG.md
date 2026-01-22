@@ -20,6 +20,11 @@ All notable changes to this project will be documented in this file.
 - Creature grab/drag/throw interactions with throw feedback.
 - Session goals for prop triggers and creature launches.
 - Contextual sandbox action prompts.
+- Chaos dial slider that tunes playful physics intensity.
+- Extra sandbox props: spring pads, launch buttons, see-saws, conveyors, speed slopes, wind fans, and sticky zones.
+- Creature polish: fall/landing reactions, poke overreactions, impact squeaks, and eye tracking toward the pointer.
+- Curiosity prompts + tiny win toasts for playful experimentation.
+- Mood icons, recovery poses, and silly-action badges.
 
 ### Changed
 - Interaction hints now auto-dismiss, include a close button, and clear on mode/panel transitions.
@@ -46,6 +51,12 @@ All notable changes to this project will be documented in this file.
 - **WHY:** Make interactions readable, weighty, and consistent across desktop and mobile.
 - **RISK:** Medium; gameplay feel changes in core manipulation and prop responses.
 - **VERIFY:** `npm test`, `npm run lint`, plus updated balance-focused smoke checks.
+
+### Notes (2026-01-29 Playful Pass)
+- **WHAT:** Added chaos slider, new props, extra creature reactions, and lightweight prompts/toasts for experimentation.
+- **WHY:** Increase delight and replayability without altering the core loop.
+- **RISK:** Medium; additional physics effects and UI controls.
+- **VERIFY:** `npm test`, `npm run lint`, plus updated sandbox smoke checks.
 
 ### Notes (2026-01-28)
 - **WHAT:** Added mobile spawn picker sheet and auto-dismissing, dismissible interaction hints.

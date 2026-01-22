@@ -29,6 +29,7 @@ export class SaveSystem {
         t: world.t,
         seasonPhase: world.seasonPhase,
         _nextId: world.creatureManager?._nextId ?? world._nextId,
+        chaosLevel: world.chaos?.level ?? 0.5,
 
         // Time system
         timeOfDay: world.timeOfDay ?? 12,
@@ -221,6 +222,9 @@ export class SaveSystem {
       if (seasonKey && world.environment.seasonConfigs?.[seasonKey]) {
         world.environment.applySeasonConfig(world.environment.seasonConfigs[seasonKey], { announce: false });
       }
+    }
+    if (world.setChaosLevel) {
+      world.setChaosLevel(toNumber(data.chaosLevel, world.chaos?.level ?? 0.5));
     }
 
     // Restore biome with same seed

@@ -8,6 +8,7 @@ import { eventSystem, GameEvents } from './event-system.js';
 import { analyticsDashboard } from './enhanced-analytics.js';
 import { HudMenu } from './hud-menu.js';
 import { SANDBOX_PROP_TYPES } from './sandbox-props.js';
+import { clamp } from './utils.js';
 
 const CREATURE_SPAWN_TYPES = {
   herbivore: { icon: '🦌', label: 'Herbivore' },
@@ -175,6 +176,7 @@ export class UIController {
     this.bindInteractionHintControls();
     this.bindBehaviorControls();
     this.bindEnhancedControls();
+    this.bindChaosControls();
     this.bindGameplayModeControls();
     this.bindSessionGoalControls();
     // Sync mobile UI state immediately
@@ -634,6 +636,41 @@ export class UIController {
     if (performanceToggle) performanceToggle.setAttribute('aria-label', 'Toggle performance monitor');
   }
 
+  bindChaosControls() {
+    const chaosSlider = domCache.get('chaosSlider');
+    const chaosValue = domCache.get('chaosValue');
+    if (!chaosSlider) return;
+
+    const stored = typeof window !== 'undefined'
+      ? Number(window.localStorage?.getItem('creatureSandboxChaosLevel'))
+      : null;
+    const initialLevel = Number.isFinite(stored) ? stored : gameState.chaosLevel;
+    const safeLevel = clamp(initialLevel, 0, 1);
+    gameState.chaosLevel = safeLevel;
+    if (this.world?.setChaosLevel) {
+      this.world.setChaosLevel(safeLevel);
+    }
+
+    chaosSlider.value = String(Math.round(safeLevel * 100));
+    if (chaosValue) {
+      chaosValue.textContent = `${Math.round(safeLevel * 100)}%`;
+    }
+
+    chaosSlider.addEventListener('input', () => {
+      const level = clamp(Number(chaosSlider.value) / 100, 0, 1);
+      gameState.chaosLevel = level;
+      if (this.world?.setChaosLevel) {
+        this.world.setChaosLevel(level);
+      }
+      if (chaosValue) {
+        chaosValue.textContent = `${Math.round(level * 100)}%`;
+      }
+      if (typeof window !== 'undefined') {
+        window.localStorage?.setItem('creatureSandboxChaosLevel', String(level));
+      }
+    });
+  }
+
   /**
    * Update pause button state
    */
@@ -720,6 +757,11 @@ export class UIController {
   dismissInteractionHint() {
     const hint = domCache.get('interactionHint');
     if (!hint) return;
+    const promptId = gameState.curiosityPrompt?.id;
+    if (promptId) {
+      gameState.curiosityPromptDismissed.add(promptId);
+      gameState.curiosityPrompt = null;
+    }
     hint.dataset.dismissed = 'true';
     hint.classList.add('hidden');
     hint.setAttribute('aria-hidden', 'true');

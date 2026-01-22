@@ -7,6 +7,29 @@ import { CreatureBehaviorSystem } from './creature-behavior.js';
 
 // Destructure commonly-used constants for cleaner code
 const { TRAIL_INTERVAL, TRAIL_MAX, LOG_MAX, TAU } = CreatureConfig;
+const NAME_SUGGESTIONS = [
+  'Fizz',
+  'Pebble',
+  'Wiggle',
+  'Pip',
+  'Bloop',
+  'Ziggy',
+  'Sprout',
+  'Nib',
+  'Mochi',
+  'Skitter',
+  'Jelly',
+  'Nimbus',
+  'Gizmo',
+  'Sprocket',
+  'Noodle'
+];
+
+function pickNameSuggestion(seed) {
+  const idx = Math.abs(Math.floor(seed)) % NAME_SUGGESTIONS.length;
+  const tag = Math.abs(Math.floor(seed * 37)) % 99;
+  return `${NAME_SUGGESTIONS[idx]}-${tag}`;
+}
 
 /**
  * Represents a creature in the simulation with genetic traits and behaviors.
@@ -102,6 +125,8 @@ export class Creature {
 
     this.health = this.maxHealth;
     this.stats = { food: 0, kills: 0, births: 0, damageTaken: 0, damageDealt: 0 };
+    this.funStats = { hardLandings: 0, goofyFails: 0, propBounces: 0 };
+    this.nameSuggestion = pickNameSuggestion(this.x + this.y + Math.random() * 1000);
     this.trail = [{ x, y }];
     this.trailTimer = 0;
     this.log = [];
@@ -139,6 +164,16 @@ export class Creature {
       hitFlash: 0
     };
     this._lastCollisionReactAt = -Infinity;
+    this._lastPokeAt = -Infinity;
+    this._pokeCombo = 0;
+    this._fallReactCooldown = 0;
+    this._lastExternalSpeed = 0;
+    this._ragdollCooldown = 0;
+    this.recoveryPoseTimer = 0;
+    this.mood = {
+      icon: null,
+      timer: 0
+    };
     this.statusTimers = {
       diseaseSpread: rand(0.6, 1.2),
       venomTick: 1.2
@@ -385,6 +420,8 @@ export class Creature {
       this.vx = 0;
       this.vy = 0;
       this._updateReaction(dt);
+      this._updateMood(dt);
+      this.recoveryPoseTimer = Math.max(0, this.recoveryPoseTimer - dt);
       this.updateTrail(dt);
       return;
     }
@@ -631,11 +668,40 @@ export class Creature {
     }
 
     const spd = baseSpeed * speedScalar;
+    const chaosGravity = world?.chaos?.gravity ?? 0;
+    if (Math.abs(chaosGravity) > 0.1) {
+      this.applyImpulse(0, chaosGravity * dt * 60, { decay: 10, cap: 200 });
+    }
     this.vx = Math.cos(this.dir) * spd;
     this.vy = Math.sin(this.dir) * spd;
     this.x = this.x + this.vx * dt;
     this.y = this.y + this.vy * dt;
     this._applyExternalImpulse(dt);
+    const impulse = this.externalImpulse;
+    const externalSpeed = impulse ? Math.hypot(impulse.vx, impulse.vy) : 0;
+    const prevExternalSpeed = this._lastExternalSpeed || 0;
+    this._lastExternalSpeed = externalSpeed;
+    this._fallReactCooldown = Math.max(0, this._fallReactCooldown - dt);
+
+    if (externalSpeed > 120 && this._fallReactCooldown <= 0 && !this.isGrabbed) {
+      this._triggerReaction('fall', clamp(externalSpeed / 220, 0.4, 1.2), 0.25);
+      this.setMood('😰', 0.6);
+      this._fallReactCooldown = 0.4;
+    }
+
+    if (prevExternalSpeed > 140 && externalSpeed < 40 && !this.isGrabbed) {
+      const landingIntensity = clamp(prevExternalSpeed / 220, 0.4, 1.3);
+      this._triggerReaction('landing', landingIntensity, 0.35);
+      if (prevExternalSpeed > 180) {
+        this.funStats.hardLandings += 1;
+        this.setMood('😳', 1.1);
+        this.recoveryPoseTimer = Math.max(this.recoveryPoseTimer, 0.8);
+        if (Math.random() < 0.12) {
+          this._triggerReaction('oops', 1.1, 0.45);
+          this.funStats.goofyFails += 1;
+        }
+      }
+    }
 
     // World boundary handling (configurable via world.boundaryMode)
     const boundaryMode = world.boundaryMode || 'wrap'; // 'wrap', 'clamp', or 'none'
@@ -658,6 +724,9 @@ export class Creature {
     // NEW: Update animation state based on movement
     this._updateAnimationState(spd, world.t, dt);
     this._updateReaction(dt);
+    this._updateMood(dt);
+    this._ragdollCooldown = Math.max(0, this._ragdollCooldown - dt);
+    this.recoveryPoseTimer = Math.max(0, this.recoveryPoseTimer - dt);
 
     this.updateTrail(dt);
 
@@ -1184,6 +1253,15 @@ export class Creature {
     this.externalImpulse.vy = clamp(this.externalImpulse.vy + scaledVY, -effectiveCap, effectiveCap);
     this.externalImpulse.decay = decay;
     this.externalImpulse.cap = effectiveCap;
+
+    const projected = Math.hypot(this.externalImpulse.vx, this.externalImpulse.vy);
+    if (projected > 140 && this._ragdollCooldown <= 0) {
+      this._ragdollCooldown = 0.6;
+      this._triggerReaction('ragdoll', clamp(projected / 220, 0.6, 1.4), 0.5);
+      this.setMood('😵', 0.9);
+      this.recoveryPoseTimer = Math.max(this.recoveryPoseTimer, 0.6);
+      this.funStats.goofyFails += 1;
+    }
   }
 
   _applyExternalImpulse(dt) {
@@ -1204,7 +1282,21 @@ export class Creature {
 
   reactToPoke({ x = null, y = null } = {}) {
     const intensity = clamp(0.35 + this.personality.reactivity * 0.7, 0.3, 1.3);
-    this._triggerReaction('poke', intensity, 0.35);
+    const worldTime = this._lastWorld?.t ?? 0;
+    if (worldTime - this._lastPokeAt < 0.75) {
+      this._pokeCombo += 1;
+    } else {
+      this._pokeCombo = 1;
+    }
+    this._lastPokeAt = worldTime;
+
+    if (this._pokeCombo >= 3) {
+      this._triggerReaction('overreact', intensity + 0.4, 0.55);
+      this.setMood('😵', 1.1);
+      this._pokeCombo = 0;
+    } else {
+      this._triggerReaction('poke', intensity, 0.35);
+    }
     if (this.emotions) {
       this.emotions.curiosity = clamp(this.emotions.curiosity + 0.08, 0, 1);
       this.emotions.confidence = clamp(this.emotions.confidence + 0.03, 0, 1);
@@ -1220,6 +1312,7 @@ export class Creature {
   reactToGrab({ x = null, y = null } = {}) {
     const intensity = clamp(0.3 + this.personality.playfulness * 0.5 + this.personality.reactivity * 0.3, 0.25, 1.2);
     this._triggerReaction('grab', intensity, 0.4);
+    this.setMood('😮', 0.6);
     if (this.emotions) {
       this.emotions.curiosity = clamp(this.emotions.curiosity + 0.06, 0, 1);
       this.emotions.stress = clamp(this.emotions.stress + 0.04, 0, 1);
@@ -1232,6 +1325,7 @@ export class Creature {
   reactToDrop({ x = null, y = null } = {}) {
     const intensity = clamp(0.3 + this.personality.playfulness * 0.7, 0.25, 1.2);
     this._triggerReaction('drop', intensity, 0.45);
+    this.setMood('😄', 0.7);
     if (this.emotions) {
       this.emotions.curiosity = clamp(this.emotions.curiosity + 0.12, 0, 1);
     }
@@ -1250,15 +1344,25 @@ export class Creature {
       this.emotions.fear = clamp(this.emotions.fear + 0.08, 0, 1);
       this.emotions.stress = clamp(this.emotions.stress + 0.05, 0, 1);
     }
+    if (amount > 0.8 && this._lastWorld?.audio?.playCreatureSound) {
+      this._lastWorld.audio.playCreatureSound(this, 'impact');
+    }
+    if (amount > 0.7 && this._lastWorld?.particles?.addImpactRing) {
+      this._lastWorld.particles.addImpactRing(this.x, this.y, { color: 'rgba(248, 250, 252, 1)', size: 10 });
+    }
+    if (amount > 0.9 && this._lastWorld?.particles?.triggerShake) {
+      this._lastWorld.particles.triggerShake(2.5);
+    }
   }
 
   _triggerReaction(type, intensity = 0.5, duration = 0.35) {
     const reaction = this.animation?.reaction;
     if (!reaction) return;
+    const chaosBoost = this._lastWorld?.chaos?.reactionBoost ?? 1;
     reaction.type = type;
     reaction.timer = duration;
     reaction.duration = duration;
-    reaction.intensity = intensity;
+    reaction.intensity = clamp(intensity * chaosBoost, 0.1, 1.6);
   }
 
   _updateReaction(dt) {
@@ -1270,6 +1374,36 @@ export class Creature {
       reaction.duration = 0;
       reaction.intensity = 0;
     }
+  }
+
+  setMood(icon, duration = 0.6) {
+    if (!icon) return;
+    this.mood.icon = icon;
+    this.mood.timer = Math.max(this.mood.timer, duration);
+  }
+
+  _updateMood(dt) {
+    if (!this.mood || this.mood.timer <= 0) return;
+    this.mood.timer = Math.max(0, this.mood.timer - dt);
+    if (this.mood.timer <= 0) {
+      this.mood.icon = null;
+    }
+  }
+
+  _getLookOffset() {
+    const world = this._lastWorld;
+    const pointer = world?.lastPointerWorld;
+    if (!pointer) return { x: 0, y: 0 };
+    const dx = pointer.x - this.x;
+    const dy = pointer.y - this.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 4) return { x: 0, y: 0 };
+    const influence = clamp(1 - dist / 240, 0, 1);
+    const maxOffset = 0.9 * influence;
+    return {
+      x: (dx / dist) * maxOffset,
+      y: (dy / dist) * maxOffset
+    };
   }
 
   updateTrail(dt) {
@@ -1330,10 +1464,11 @@ export class Creature {
     const anim = this.animation;
     if (!anim) return;
     const reaction = anim.reaction;
+    const chaosWobble = this._lastWorld?.chaos?.wobbleBoost ?? 1;
     if (reaction && reaction.timer > 0) {
       const progress = reaction.duration > 0 ? reaction.timer / reaction.duration : 0;
       const pulse = Math.sin((1 - progress) * Math.PI);
-      const intensity = reaction.intensity;
+      const intensity = reaction.intensity * chaosWobble;
       switch (reaction.type) {
         case 'poke': {
           ctx.translate(0, -pulse * 1.2 * intensity);
@@ -1352,6 +1487,33 @@ export class Creature {
         case 'collision': {
           const shake = Math.sin(progress * Math.PI * 12) * 1.1 * intensity;
           ctx.translate(shake, 0);
+          break;
+        }
+        case 'landing': {
+          ctx.translate(0, pulse * 0.8 * intensity);
+          ctx.scale(1 + pulse * 0.08 * intensity, 1 - pulse * 0.12 * intensity);
+          break;
+        }
+        case 'fall': {
+          const wobble = Math.sin(progress * Math.PI * 10) * 0.25 * intensity;
+          ctx.rotate(wobble);
+          break;
+        }
+        case 'overreact': {
+          ctx.translate(0, -pulse * 1.6 * intensity);
+          ctx.scale(1 + pulse * 0.12 * intensity, 1 - pulse * 0.08 * intensity);
+          break;
+        }
+        case 'ragdoll': {
+          const flop = Math.sin(progress * Math.PI * 6) * 0.35 * intensity;
+          ctx.rotate(flop);
+          ctx.scale(1 + pulse * 0.05 * intensity, 1 - pulse * 0.05 * intensity);
+          break;
+        }
+        case 'oops': {
+          const dip = Math.sin(progress * Math.PI * 8) * 0.4 * intensity;
+          ctx.translate(0, dip);
+          ctx.rotate(dip * 0.06);
           break;
         }
         default:
@@ -1396,6 +1558,11 @@ export class Creature {
         const idleSway = Math.sin(anim.timer * 0.3 * tempo) * 0.3 * sway;
         ctx.translate(0, idleSway);
         break;
+    }
+
+    if (this.recoveryPoseTimer > 0) {
+      const pose = Math.sin(this.recoveryPoseTimer * 6) * 0.06;
+      ctx.rotate(pose);
     }
   }
 
@@ -1466,6 +1633,9 @@ export class Creature {
     if (this.aquaticAffinity > 0.6) badges.push('Amphibious');
     if (this.hasStatus && this.hasStatus('disease')) badges.push('Sick');
     if (this.hasStatus && this.hasStatus('venom')) badges.push('Poisoned');
+    if (this.funStats?.hardLandings >= 2) badges.push('😵 Crash Landed');
+    if (this.funStats?.propBounces >= 3) badges.push('🎯 Bounce Star');
+    if (this.funStats?.goofyFails >= 2) badges.push('🤹 Goofball');
     return badges;
   }
 
@@ -1724,6 +1894,11 @@ export class Creature {
       stateColor = 'rgba(150,150,220,0.9)';
     }
 
+    if (!stateIcon && this.mood?.icon) {
+      stateIcon = this.mood.icon;
+      stateColor = 'rgba(255,220,220,0.9)';
+    }
+
     // Age stage indicator (only for babies and elders)
     if (!stateIcon && this.ageStage === 'baby') {
       stateIcon = '🐣';
@@ -1747,6 +1922,7 @@ export class Creature {
 
     // 1. EYES - Size based on sense radius (bigger sense = bigger eyes)
     const eyeSize = clamp(g.sense / 100, 0.6, 1.5);
+    const look = this._getLookOffset();
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(2, -1.5, eyeSize, 0, TAU);
@@ -1754,7 +1930,7 @@ export class Creature {
     // Pupil
     ctx.fillStyle = '#000000';
     ctx.beginPath();
-    ctx.arc(2, -1.5, eyeSize * 0.5, 0, TAU);
+    ctx.arc(2 + look.x, -1.5 + look.y, eyeSize * 0.5, 0, TAU);
     ctx.fill();
 
     // 2. SPIKES - Defensive herbivores have spikes

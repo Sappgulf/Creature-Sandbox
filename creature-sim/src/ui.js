@@ -87,14 +87,23 @@ export function renderInteractionHint(el, {
   tool = 'inspect',
   propType = null,
   hasSelection = false,
-  hintDurationMs = 4500
+  hintDurationMs = 4500,
+  customMessage = null,
+  customId = null
 } = {}) {
   if (!el) return;
   const propLabels = {
     bounce: 'Bounce Pad',
+    spring: 'Spring Pad',
     spinner: 'Spinner',
+    seesaw: 'See-Saw',
+    conveyor: 'Conveyor Belt',
+    slope: 'Speed Slope',
+    fan: 'Wind Fan',
+    sticky: 'Sticky Zone',
     gravity: 'Gravity Well',
-    button: 'Food Button'
+    button: 'Food Button',
+    launch: 'Launch Button'
   };
 
   let message = '';
@@ -123,10 +132,15 @@ export function renderInteractionHint(el, {
 
   const now = performance.now();
   const textEl = el.querySelector('.interaction-hint-text') || el;
+  const activeMessage = (customMessage && String(customMessage).trim().length > 0)
+    ? String(customMessage).trim()
+    : message;
+  const messageKey = customMessage ? `prompt:${customId || activeMessage}` : activeMessage;
   const lastMessage = el.dataset.message || '';
 
-  if (message && message !== lastMessage) {
-    el.dataset.message = message;
+  if (activeMessage && messageKey !== lastMessage) {
+    el.dataset.message = messageKey;
+    el.dataset.promptId = customId || '';
     el.dataset.dismissed = 'false';
     el.dataset.expiresAt = String(now + hintDurationMs);
   }
@@ -134,10 +148,10 @@ export function renderInteractionHint(el, {
   const dismissed = el.dataset.dismissed === 'true';
   const expiresAt = Number(el.dataset.expiresAt || 0);
   const isExpired = expiresAt > 0 && now > expiresAt;
-  const shouldHide = !message || dismissed || isExpired;
+  const shouldHide = !activeMessage || dismissed || isExpired;
 
   if (!shouldHide) {
-    textEl.textContent = message;
+    textEl.textContent = activeMessage;
   }
 
   el.classList.toggle('hidden', shouldHide);
@@ -205,6 +219,7 @@ export function renderSelectedInfo(el, creature, { world=null, lineageTracker=nu
   const metabolism = creature.genes?.metabolism?.toFixed(2) ?? '0.00';
   const aquatic = (creature.genes?.aquatic ?? 0).toFixed(2);
   const biome = creature.currentBiomeType ? creature.currentBiomeType : 'Unknown';
+  const nameSuggestion = creature.nameSuggestion ? `💡 ${creature.nameSuggestion}` : null;
 
   el.innerHTML = `
     <div class="headline">
@@ -212,6 +227,7 @@ export function renderSelectedInfo(el, creature, { world=null, lineageTracker=nu
       <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>
     </div>
     <div class="subline">${sublineParts.join(' · ')}</div>
+    ${nameSuggestion ? `<div class="muted tiny">${nameSuggestion}</div>` : ''}
     <div class="metrics">
       <span><span>Energy</span><span>${energy}</span></span>
       <span><span>Health</span><span>${health}</span></span>
