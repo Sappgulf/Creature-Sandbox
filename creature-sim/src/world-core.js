@@ -77,7 +77,13 @@ export class World {
       wobbleBoost: 1,
       reactionBoost: 1
     };
-    this.setChaosLevel(0.5);
+    this.chaosBaseLevel = 0.5;
+    this.chaosNudge = {
+      timer: 0,
+      intensity: 0,
+      duration: 0
+    };
+    this._applyChaosLevel(this.chaosBaseLevel);
 
     // Auto-balance settings (used by gameplay-modes.js)
     this.autoBalanceSettings = {
@@ -112,6 +118,7 @@ export class World {
       this.environment?.update(dt);
       this.ecosystem?.update(dt);
       this.creatureEcosystem?.update(dt);
+      this.updateChaosNudge(dt);
       this.disaster?.update(dt);
       this.sandbox?.update(dt);
 
@@ -276,8 +283,12 @@ export class World {
   updateFood(dt) {
     const growthRate = this.ecosystem.foodGrowthRate();
 
-    // Simple food growth
-    if (this.food.length < this.maxFood && Math.random() < dt * growthRate * 0.1) {
+    // Patch-based food growth handled by ecosystem
+    this.ecosystem.updateFoodPatches?.(dt);
+
+    // Baseline food growth safety net
+    const minReserve = this.ecosystem.minFoodReserve ?? Math.max(40, Math.round(this.maxFood * 0.2));
+    if (this.food.length < minReserve && Math.random() < dt * growthRate * 0.4) {
       const x = Math.random() * this.width;
       const y = Math.random() * this.height;
       this.ecosystem.addFood(x, y);
@@ -356,6 +367,8 @@ export class World {
     this.combat.initialize();
     this.disaster.initialize();
     this.sandbox?.clear();
+    this.chaosNudge = { timer: 0, intensity: 0, duration: 0 };
+    this._applyChaosLevel(this.chaosBaseLevel);
 
     // Clear scalar fields
     this.pheromone.grid.fill(0);
@@ -391,12 +404,40 @@ export class World {
 
   setChaosLevel(level = 0.5) {
     const safeLevel = clamp(level, 0, 1);
+    this.chaosBaseLevel = safeLevel;
+    this._applyChaosLevel(this.chaosBaseLevel + (this.chaosNudge?.intensity || 0));
+  }
+
+  _applyChaosLevel(level = 0.5) {
+    const safeLevel = clamp(level, 0, 1);
     this.chaos.level = safeLevel;
     const offset = safeLevel - 0.5;
     this.chaos.gravity = offset * 18;
     this.chaos.bounceBoost = clamp(1 + offset * 0.6, 0.7, 1.35);
     this.chaos.wobbleBoost = clamp(1 + offset * 0.8, 0.6, 1.5);
     this.chaos.reactionBoost = clamp(1 + offset * 0.7, 0.65, 1.4);
+  }
+
+  updateChaosNudge(dt) {
+    if (!this.chaosNudge || this.chaosNudge.timer <= 0) return;
+    this.chaosNudge.timer = Math.max(0, this.chaosNudge.timer - dt);
+    const fade = this.chaosNudge.duration > 0 ? this.chaosNudge.timer / this.chaosNudge.duration : 0;
+    this._applyChaosLevel(this.chaosBaseLevel + this.chaosNudge.intensity * fade);
+    if (this.chaosNudge.timer <= 0) {
+      this.chaosNudge.intensity = 0;
+      this._applyChaosLevel(this.chaosBaseLevel);
+    }
+  }
+
+  triggerChaosNudge(intensity = 0.25, duration = 6) {
+    const safeIntensity = clamp(intensity, 0.05, 0.6);
+    const safeDuration = clamp(duration, 2, 12);
+    this.chaosNudge = {
+      intensity: safeIntensity,
+      duration: safeDuration,
+      timer: safeDuration
+    };
+    this._applyChaosLevel(this.chaosBaseLevel + safeIntensity);
   }
 
   // Query methods
@@ -604,6 +645,14 @@ export class World {
     return this.environment.dayNightEnabled;
   }
 
+  get dayNightState() {
+    return this.environment.getDayNightState();
+  }
+
+  get moodState() {
+    return this.environment.getMoodState();
+  }
+
   get seasonPhase() {
     return this.environment.seasonPhase;
   }
@@ -624,6 +673,10 @@ export class World {
     if (this.ecosystem) {
       this.ecosystem.foodGrowthMultiplier = value;
     }
+  }
+
+  addCalmZone(x, y, radius, duration, strength) {
+    return this.environment.addCalmZone(x, y, radius, duration, strength);
   }
 
   // Disaster helpers

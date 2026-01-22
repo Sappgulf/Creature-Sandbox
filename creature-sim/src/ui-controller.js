@@ -58,10 +58,9 @@ export class UIController {
       onMobilePause: this.onMobilePause.bind(this),
       onMobileSpeed: this.onMobileSpeed.bind(this),
       onPropTool: this.onPropTool.bind(this),
-      onGodHeal: this.onGodHeal.bind(this),
-      onGodBoost: this.onGodBoost.bind(this),
-      onGodKill: this.onGodKill.bind(this),
-      onGodClone: this.onGodClone.bind(this),
+      onGodModeToggle: this.onGodModeToggle.bind(this),
+      onGodModeExit: this.onGodModeExit.bind(this),
+      onGodToolSelect: this.onGodToolSelect.bind(this),
       onFeaturesToggle: this.onFeaturesToggle.bind(this),
       onScenarioToggle: this.onScenarioToggle.bind(this),
       onAchievementsToggle: this.onAchievementsToggle.bind(this),
@@ -104,6 +103,10 @@ export class UIController {
       const message = data.message || '';
       if (!message) return;
       this.notifications.show(message, data.type || 'info', data.duration || 3000);
+    });
+
+    eventSystem.on(GameEvents.GOD_MODE_TOGGLE, (data) => {
+      this.setGodModeActive(!gameState.godModeActive, { source: data?.source || 'gesture' });
     });
 
     // Listen for achievement unlocks
@@ -185,6 +188,7 @@ export class UIController {
     this.applySpawnSelection(gameState.selectedCreatureType || this.lastSpawnType, { silent: true });
     this.setPropType(gameState.selectedPropType || 'bounce');
     this.updateSandboxUiVisibility();
+    this.updateGodModeUI();
   }
 
   setupHudMenu() {
@@ -575,15 +579,21 @@ export class UIController {
    * Bind god mode controls
    */
   bindGodModeControls() {
-    const godHealBtn = domCache.get('godHealBtn');
-    const godBoostBtn = domCache.get('godBoostBtn');
-    const godKillBtn = domCache.get('godKillBtn');
-    const godCloneBtn = domCache.get('godCloneBtn');
+    const godExitBtn = domCache.get('godModeExit');
+    const godTools = [
+      domCache.get('godToolFood'),
+      domCache.get('godToolCalm'),
+      domCache.get('godToolChaos'),
+      domCache.get('godToolSpawn'),
+      domCache.get('godToolRemove')
+    ];
 
-    if (godHealBtn) godHealBtn.addEventListener('click', this.boundHandlers.onGodHeal);
-    if (godBoostBtn) godBoostBtn.addEventListener('click', this.boundHandlers.onGodBoost);
-    if (godKillBtn) godKillBtn.addEventListener('click', this.boundHandlers.onGodKill);
-    if (godCloneBtn) godCloneBtn.addEventListener('click', this.boundHandlers.onGodClone);
+    if (godExitBtn) godExitBtn.addEventListener('click', this.boundHandlers.onGodModeExit);
+
+    for (const btn of godTools) {
+      if (!btn) continue;
+      btn.addEventListener('click', this.boundHandlers.onGodToolSelect);
+    }
   }
 
   /**
@@ -715,12 +725,39 @@ export class UIController {
     const geneEditorPanel = domCache.get('geneEditorPanel');
     const editorOpen = (scenarioPanel && !scenarioPanel.classList.contains('hidden')) ||
       (geneEditorPanel && !geneEditorPanel.classList.contains('hidden'));
+    const godModeActive = gameState.godModeActive;
 
-    if (quickActions) quickActions.classList.toggle('hidden', editorOpen);
-    if (mobileQuickActions) mobileQuickActions.classList.toggle('hidden', editorOpen);
+    if (quickActions) quickActions.classList.toggle('hidden', editorOpen || godModeActive);
+    if (mobileQuickActions) mobileQuickActions.classList.toggle('hidden', editorOpen || godModeActive);
     if (interactionHint) {
-      interactionHint.classList.toggle('hidden', editorOpen);
-      interactionHint.setAttribute('aria-hidden', editorOpen ? 'true' : 'false');
+      interactionHint.classList.toggle('hidden', editorOpen || godModeActive);
+      interactionHint.setAttribute('aria-hidden', editorOpen || godModeActive ? 'true' : 'false');
+    }
+  }
+
+  updateGodModeUI() {
+    const panel = domCache.get('godModePanel');
+    const indicator = domCache.get('godModeIndicator');
+    const toolButtons = [
+      domCache.get('godToolFood'),
+      domCache.get('godToolCalm'),
+      domCache.get('godToolChaos'),
+      domCache.get('godToolSpawn'),
+      domCache.get('godToolRemove')
+    ];
+
+    if (panel) {
+      panel.classList.toggle('hidden', !gameState.godModeActive);
+      panel.setAttribute('aria-hidden', gameState.godModeActive ? 'false' : 'true');
+    }
+    if (indicator) {
+      indicator.classList.toggle('hidden', !gameState.godModeActive);
+    }
+
+    for (const btn of toolButtons) {
+      if (!btn) continue;
+      const tool = btn.dataset.godTool;
+      btn.classList.toggle('active', gameState.godModeTool === tool);
     }
   }
 
@@ -979,20 +1016,38 @@ export class UIController {
     this.updateMobileControls();
   }
 
-  onGodHeal() {
-    this.performGodAction('heal');
+  onGodModeToggle() {
+    this.setGodModeActive(!gameState.godModeActive, { source: 'menu' });
   }
 
-  onGodBoost() {
-    this.performGodAction('boost');
+  onGodModeExit() {
+    this.setGodModeActive(false, { source: 'panel' });
   }
 
-  onGodKill() {
-    this.performGodAction('kill');
+  onGodToolSelect(event) {
+    const tool = event?.currentTarget?.dataset?.godTool;
+    if (!tool) return;
+    gameState.godModeTool = tool;
+    this.updateGodModeUI();
   }
 
-  onGodClone() {
-    this.performGodAction('clone');
+  setGodModeActive(active, { source = 'menu' } = {}) {
+    gameState.godModeActive = !!active;
+    if (gameState.godModeActive) {
+      this.tools?.setMode?.('inspect');
+      gameState.spawnMode = false;
+      gameState.geneEditorSpawnMode = false;
+      if (!gameState.godModeTool) {
+        gameState.godModeTool = 'food';
+      }
+      if (this.hasNotifications() && source !== 'gesture') {
+        this.notifications.show('✨ God mode on', 'info', 1400);
+      }
+    } else if (this.hasNotifications() && source !== 'gesture') {
+      this.notifications.show('God mode off', 'info', 1200);
+    }
+    this.updateGodModeUI();
+    this.updateSandboxUiVisibility();
   }
 
   onFeaturesToggle() {

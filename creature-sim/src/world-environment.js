@@ -13,8 +13,23 @@ export class WorldEnvironment {
   initialize() {
     // Day/Night cycle system
     this.timeOfDay = 12.0; // 0-24 hours (start at noon)
-    this.dayLength = 120; // Real seconds for full day/night cycle
+    this.dayLength = 600; // Real seconds for full day/night cycle (10 min)
     this.dayNightEnabled = true;
+    this.dayPhase = 'day';
+    this.dayLight = 1;
+    this.dayNightState = {
+      phase: 'day',
+      light: 1,
+      activityBias: 1,
+      restBias: 1,
+      eatBias: 1,
+      wanderBias: 1,
+      hungerRateMult: 1,
+      socialRateMult: 1,
+      overcrowdStressMult: 1,
+      movementSpeedMult: 1,
+      foodGrowthMult: 1
+    };
 
     // Four Seasons System
     this.seasonTime = 0; // Time counter for seasons
@@ -105,17 +120,40 @@ export class WorldEnvironment {
     this.weatherTransitionTime = 0;
     this.weatherTargetIntensity = 0;
 
+    // Ambient mood system (wind/calm)
+    this.moodType = 'neutral';
+    this.moodIntensity = 0;
+    this.moodTimer = rand(10, 18);
+    this.moodDuration = 0;
+    this.windAngle = rand() * Math.PI * 2;
+    this.windStrength = 0;
+    this.windX = 0;
+    this.windY = 0;
+    this.calmBoost = 0;
+    this.moodState = {
+      type: 'neutral',
+      intensity: 0,
+      windX: 0,
+      windY: 0,
+      calmBoost: 0
+    };
+    this.calmZones = [];
+    this.calmZoneId = 1;
+
     // Disease system
     this.diseaseTimer = 0;
     this.diseaseCheckInterval = 30; // Check every 30 seconds
     this.diseaseProbability = 0.02; // 2% chance per check
 
+    this.updateDayNightState();
     console.debug('🌤️ World environment system initialized');
   }
 
   update(dt) {
     this.updateSeasons(dt);
     this.updateWeather(dt);
+    this.updateAmbientMood(dt);
+    this.updateCalmZones(dt);
     this.updateDiseaseSystem(dt);
   }
 
@@ -133,6 +171,7 @@ export class WorldEnvironment {
 
     // Update day/night cycle
     this.timeOfDay = (this.timeOfDay + (24 * dt / this.dayLength)) % 24;
+    this.updateDayNightState();
   }
 
   transitionToNextSeason() {
@@ -204,6 +243,140 @@ export class WorldEnvironment {
     }
   }
 
+  updateDayNightState() {
+    const hour = this.timeOfDay % 24;
+    let phase = 'night';
+    let light = 0.25;
+
+    if (hour >= 6 && hour < 18) {
+      phase = 'day';
+      light = 1;
+    } else if (hour >= 18 && hour < 20) {
+      phase = 'dusk';
+      light = 1 - ((hour - 18) / 2) * 0.75;
+    } else if (hour >= 4 && hour < 6) {
+      phase = 'dawn';
+      light = 0.25 + ((hour - 4) / 2) * 0.75;
+    }
+
+    this.dayPhase = phase;
+    this.dayLight = clamp(light, 0.2, 1);
+
+    const activityBias = 0.85 + this.dayLight * 0.35;
+    const restBias = 1.25 - this.dayLight * 0.35;
+    const eatBias = 0.95 + this.dayLight * 0.2;
+    const wanderBias = 0.85 + this.dayLight * 0.35;
+    const hungerRateMult = 0.9 + this.dayLight * 0.2;
+    const socialRateMult = 0.9 + this.dayLight * 0.15;
+    const overcrowdStressMult = 1.25 - this.dayLight * 0.3;
+    const movementSpeedMult = 0.9 + this.dayLight * 0.15;
+    const foodGrowthMult = 0.85 + this.dayLight * 0.25;
+
+    this.dayNightState.phase = phase;
+    this.dayNightState.light = this.dayLight;
+    this.dayNightState.activityBias = activityBias;
+    this.dayNightState.restBias = restBias;
+    this.dayNightState.eatBias = eatBias;
+    this.dayNightState.wanderBias = wanderBias;
+    this.dayNightState.hungerRateMult = hungerRateMult;
+    this.dayNightState.socialRateMult = socialRateMult;
+    this.dayNightState.overcrowdStressMult = overcrowdStressMult;
+    this.dayNightState.movementSpeedMult = movementSpeedMult;
+    this.dayNightState.foodGrowthMult = foodGrowthMult;
+  }
+
+  updateAmbientMood(dt) {
+    if (this.moodDuration > 0) {
+      this.moodDuration = Math.max(0, this.moodDuration - dt);
+      if (this.moodType === 'wind') {
+        const fade = this.moodDuration < 4 ? this.moodDuration / 4 : 1;
+        const intensity = this.moodIntensity * fade;
+        this.windStrength = intensity;
+        this.windAngle += dt * 0.12;
+      } else if (this.moodType === 'calm') {
+        const fade = this.moodDuration < 3 ? this.moodDuration / 3 : 1;
+        this.calmBoost = this.moodIntensity * fade;
+        this.windStrength = 0;
+      }
+    } else {
+      this.windStrength = 0;
+      this.calmBoost = 0;
+      this.moodTimer -= dt;
+      if (this.moodTimer <= 0) {
+        this.startAmbientMood();
+      }
+    }
+
+    this.windX = Math.cos(this.windAngle) * this.windStrength;
+    this.windY = Math.sin(this.windAngle) * this.windStrength;
+
+    this.moodState.type = this.moodType;
+    this.moodState.intensity = this.moodIntensity;
+    this.moodState.windX = this.windX;
+    this.moodState.windY = this.windY;
+    this.moodState.calmBoost = this.calmBoost;
+  }
+
+  updateCalmZones(dt) {
+    if (!this.calmZones.length) return;
+    for (let i = this.calmZones.length - 1; i >= 0; i--) {
+      const zone = this.calmZones[i];
+      zone.t -= dt;
+      if (zone.t <= 0) {
+        this.calmZones.splice(i, 1);
+      }
+    }
+  }
+
+  addCalmZone(x, y, radius = 120, duration = 16, strength = 0.6) {
+    const zone = {
+      id: this.calmZoneId++,
+      x,
+      y,
+      radius,
+      strength: clamp(strength, 0.2, 1),
+      t: duration
+    };
+    this.calmZones.push(zone);
+    return zone;
+  }
+
+  getCalmZoneAt(x, y) {
+    if (!this.calmZones.length) return null;
+    let best = null;
+    let bestD2 = Infinity;
+    for (const zone of this.calmZones) {
+      const dx = zone.x - x;
+      const dy = zone.y - y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 <= zone.radius * zone.radius && d2 < bestD2) {
+        bestD2 = d2;
+        best = zone;
+      }
+    }
+    return best;
+  }
+
+  startAmbientMood() {
+    const roll = rand();
+    this.moodType = roll < 0.55 ? 'wind' : 'calm';
+    this.moodIntensity = this.moodType === 'wind' ? rand(0.18, 0.45) : rand(0.2, 0.5);
+    this.moodDuration = this.moodType === 'wind' ? rand(12, 20) : rand(10, 16);
+    this.moodTimer = rand(16, 26);
+    if (this.moodType === 'wind') {
+      this.windAngle = rand() * Math.PI * 2;
+    }
+  }
+
+  triggerWindBurst(intensity = 0.35, duration = 6) {
+    this.moodType = 'wind';
+    this.moodIntensity = clamp(intensity, 0.15, 0.6);
+    this.moodDuration = clamp(duration, 3, 12);
+    this.moodTimer = rand(14, 22);
+    this.windAngle = rand() * Math.PI * 2;
+    this.updateAmbientMood(0);
+  }
+
   triggerDiseaseOutbreak() {
     const victim = this.world.creatures[Math.floor(rand() * this.world.creatures.length)];
     if (victim && victim.alive) {
@@ -224,6 +397,14 @@ export class WorldEnvironment {
       timeOfDay: this.timeOfDay,
       season: this.currentSeason
     };
+  }
+
+  getDayNightState() {
+    return this.dayNightState;
+  }
+
+  getMoodState() {
+    return this.moodState;
   }
 
   getSeasonModifier(kind) {

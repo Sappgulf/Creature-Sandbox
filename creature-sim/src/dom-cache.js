@@ -49,11 +49,15 @@ export class DOMCache {
     this.cacheElement('interaction-hint', 'interactionHint');
     this.cacheElement('interaction-hint-close', 'interactionHintClose');
 
-    // God mode buttons (quick actions)
-    this.cacheElement('btn-god-heal', 'godHealBtn');
-    this.cacheElement('btn-god-boost', 'godBoostBtn');
-    this.cacheElement('btn-god-kill', 'godKillBtn');
-    this.cacheElement('btn-god-clone', 'godCloneBtn');
+    // God mode UI
+    this.cacheElement('god-mode-indicator', 'godModeIndicator');
+    this.cacheElement('god-mode-panel', 'godModePanel');
+    this.cacheElement('god-mode-exit', 'godModeExit');
+    this.cacheElement('god-tool-food', 'godToolFood');
+    this.cacheElement('god-tool-calm', 'godToolCalm');
+    this.cacheElement('god-tool-chaos', 'godToolChaos');
+    this.cacheElement('god-tool-spawn', 'godToolSpawn');
+    this.cacheElement('god-tool-remove', 'godToolRemove');
 
     // Mobile controls
     this.cacheElement('mobile-btn-spawn', 'mobileSpawnBtn');

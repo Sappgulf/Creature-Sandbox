@@ -141,6 +141,19 @@ export function createHudMenuActions(handlers = {}) {
       risk: 'Low'
     },
     {
+      id: 'btn-god-mode',
+      label: 'God Mode',
+      icon: '✨',
+      group: 'tools',
+      shortcut: '',
+      handler: handlers.onGodModeToggle,
+      enabledWhen: () => true,
+      primary: false,
+      context: 'Sandbox-only',
+      frequency: 'Rare',
+      risk: 'Medium'
+    },
+    {
       id: 'analytics-dashboard-toggle',
       label: 'Analytics Dashboard',
       icon: '📊',

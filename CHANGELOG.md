@@ -61,6 +61,10 @@ All notable changes to this project will be documented in this file.
 - **RISK:** Medium; touches creature update loop, rendering overlays, and save migration paths.
 - **VERIFY:** Run `npm test`, `npm run lint`, and the new memory/life-cycle smoke checks.
 
+### Notes (2026-02-04)
+- **Planned:** Add environmental rhythm (day/night + food cycles), lightweight weather mood, and optional god mode tools with save/load support; baseline `npm test` ran successfully (with npm env warning). 
+- **Implemented:** Added day/night rhythm biasing, food regrowth patches, wind/calm moods, and optional god mode tools with save/load updates. Verified `npm test` and `npm run lint` (lint warnings pre-existing). 
+
 ### Notes (2026-02-02)
 - **WHAT:** Removed the Campaign button from the start menu while keeping other actions intact.
 - **WHY:** Reduce start menu clutter per updated UX direction.
