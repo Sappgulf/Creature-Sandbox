@@ -554,6 +554,13 @@ export class InputManager {
       gameState.setInspectorVisible(true);
       const inspector = domCache.get('inspector');
       if (inspector) inspector.classList.remove('minimized');
+      if (typeof nearest.reactToPoke === 'function') {
+        nearest.reactToPoke({ x, y });
+      }
+      if (gameState.selectionPulseUntil === null) {
+        gameState.selectionPulseUntil = 0;
+      }
+      gameState.selectionPulseUntil = performance.now() + 400;
     }
   }
 
@@ -664,6 +671,13 @@ export class InputManager {
             // Show selected info
             const selectedInfo = document.getElementById('selected-info');
             if (selectedInfo) selectedInfo.classList.remove('hidden');
+            if (typeof creature.reactToPoke === 'function') {
+              creature.reactToPoke({ x, y });
+            }
+            if (gameState.selectionPulseUntil === null) {
+              gameState.selectionPulseUntil = 0;
+            }
+            gameState.selectionPulseUntil = performance.now() + 400;
           } else {
             // Clicked empty space - deselect
             gameState.selectedId = null;

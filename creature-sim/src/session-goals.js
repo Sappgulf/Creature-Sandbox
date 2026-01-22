@@ -36,6 +36,13 @@ const GOAL_POOL = [
     icon: '⏳',
     makeTarget: () => 180 + Math.floor(Math.random() * 180),
     getDescription: (target) => `Survive ${Math.round(target / 60)} minutes`
+  },
+  {
+    id: 'spawn_party',
+    type: 'manual_spawns',
+    icon: '✨',
+    makeTarget: () => 3 + Math.floor(Math.random() * 3),
+    getDescription: (target) => `Spawn ${target} creatures by hand`
   }
 ];
 
@@ -45,6 +52,11 @@ export class SessionGoals {
     this.audio = audio;
     this.goals = [];
     this._lastUpdate = 0;
+    this.manualSpawns = 0;
+    eventSystem.on(GameEvents.CREATURE_BORN, (event) => {
+      if (!event || event.parentId !== null) return;
+      this.manualSpawns += 1;
+    });
     this.generateGoals();
   }
 
@@ -125,7 +137,8 @@ export class SessionGoals {
       predatorKills: 0,
       foodCollected: 0,
       births: 0,
-      time: world.t ?? 0
+      time: world.t ?? 0,
+      manualSpawns: this.manualSpawns
     };
 
     for (const creature of world.creatures || []) {
@@ -152,6 +165,8 @@ export class SessionGoals {
         return metrics.births / goal.target;
       case 'survival_time':
         return metrics.time / goal.target;
+      case 'manual_spawns':
+        return metrics.manualSpawns / goal.target;
       default:
         return 0;
     }

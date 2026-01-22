@@ -24,6 +24,13 @@
 2. Frequent UI updates for stats/selected info even when unchanged.
 3. Pointer move allocations during continuous panning.
 
+## Session Audit (2026-01-25)
+
+### Focus
+1. Creature feel upgrades (personality reactions + selection feedback).
+2. Session nudges for manual spawns.
+3. Home screen tone polish.
+
 ## Next
 
 - [ ] Expand ECS stub for batch processing if needed

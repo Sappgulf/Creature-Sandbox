@@ -662,6 +662,15 @@ export class UIController {
       const offsetY = (Math.random() - 0.5) * 200;
       this.world.addFood(centerX + offsetX, centerY + offsetY);
     }
+    const nearby = this.world.queryCreatures?.(centerX, centerY, 200) || [];
+    let reacted = 0;
+    for (const creature of nearby) {
+      if (reacted >= 3) break;
+      if (typeof creature.reactToDrop === 'function') {
+        creature.reactToDrop({ x: centerX, y: centerY });
+        reacted += 1;
+      }
+    }
   }
 
   onMobilePause() {

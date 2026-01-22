@@ -11,6 +11,9 @@ All notable changes to this project will be documented in this file.
 - Overflow menu Help section with controls and shortcuts.
 - Save/load hotkeys for file downloads (Ctrl/⌘ + S / Ctrl/⌘ + O).
 - Dev-only FPS overlay and timing logs behind `?devtools=1`.
+- Creature reactions to poke/drop/collision with subtle personality-driven animation.
+- Session goal nudges for manual creature spawns.
+- Success pulse + error shake feedback for gene editor status messages.
 
 ### Changed
 - Panel max-heights now respect dynamic mobile viewport sizing.
@@ -20,6 +23,8 @@ All notable changes to this project will be documented in this file.
 - Tuned mobile pan/zoom sensitivity and keyboard-safe panel padding.
 - Throttled eco-health updates and reduced pointer move allocations.
 - Selected creature panel now shows guidance when nothing is selected.
+- Home screen copy now highlights playful sandbox tone.
+- Selected creature outlines now glow and pulse on selection.
 
 ## [2026-01-21]
 ### Added

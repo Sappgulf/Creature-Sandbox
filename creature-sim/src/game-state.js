@@ -37,6 +37,7 @@ export class GameState {
     this.selectedId = null;
     this.pinnedId = null;
     this.lineageRootId = null;
+    this.selectionPulseUntil = null;
 
     // Input state
     this.painting = false;
