@@ -433,6 +433,15 @@ export class InputManager {
     } else {
       gameState.lastPointer = { x: e.clientX, y: e.clientY };
     }
+    if (gameState.lastPointerWorld) {
+      gameState.lastPointerWorld.x = worldPos.x;
+      gameState.lastPointerWorld.y = worldPos.y;
+    } else {
+      gameState.lastPointerWorld = { x: worldPos.x, y: worldPos.y };
+    }
+    if (this.world) {
+      this.world.lastPointerWorld = { x: worldPos.x, y: worldPos.y };
+    }
 
     if (this.tools.mode !== 'inspect') {
       this._setHoveredCreature(null);
@@ -480,6 +489,21 @@ export class InputManager {
     if (this.dragState.active || this.dragState.pending) {
       this._updateCreatureDrag(e);
       return;
+    }
+
+    const rect = this.canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left - rect.width / 2;
+    const sy = e.clientY - rect.top - rect.height / 2;
+    const worldPos = this.camera.screenToWorld(sx, sy);
+
+    if (gameState.lastPointerWorld) {
+      gameState.lastPointerWorld.x = worldPos.x;
+      gameState.lastPointerWorld.y = worldPos.y;
+    } else {
+      gameState.lastPointerWorld = { x: worldPos.x, y: worldPos.y };
+    }
+    if (this.world) {
+      this.world.lastPointerWorld = { x: worldPos.x, y: worldPos.y };
     }
 
     if (gameState.panning) {

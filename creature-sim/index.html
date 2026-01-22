@@ -86,9 +86,16 @@
       <button id="btn-prop-tool" title="Sandbox Props (P)" aria-label="Sandbox props" data-tooltip="Sandbox props (P)">🟣</button>
       <div id="prop-dropdown" class="dropdown-menu hidden">
         <div class="dropdown-item" data-prop="bounce">🟣 Bounce Pad</div>
+        <div class="dropdown-item" data-prop="spring">🟢 Spring Pad</div>
         <div class="dropdown-item" data-prop="spinner">🌀 Spinner</div>
+        <div class="dropdown-item" data-prop="seesaw">🪜 See-Saw</div>
+        <div class="dropdown-item" data-prop="conveyor">➡️ Conveyor Belt</div>
+        <div class="dropdown-item" data-prop="slope">⛰️ Speed Slope</div>
+        <div class="dropdown-item" data-prop="fan">🪭 Wind Fan</div>
+        <div class="dropdown-item" data-prop="sticky">🫧 Sticky Zone</div>
         <div class="dropdown-item" data-prop="gravity">🕳️ Gravity Well</div>
         <div class="dropdown-item" data-prop="button">🔘 Food Button</div>
+        <div class="dropdown-item" data-prop="launch">🚀 Launch Button</div>
       </div>
     </div>
     <button id="btn-god-heal" title="Heal (H)" aria-label="Heal selected creature" data-tooltip="Heal selected (H)">💚</button>
@@ -636,6 +643,13 @@
       
       <div class="features-section">
         <div class="features-section-title">Other</div>
+        <div class="feature-slider">
+          <div class="feature-slider-row">
+            <span>🧪 Chaos Dial</span>
+            <span class="muted tiny" id="chaos-value">50%</span>
+          </div>
+          <input type="range" id="chaos-slider" min="0" max="100" step="1" value="50" aria-label="Chaos level" />
+        </div>
         <label class="feature-toggle">
           <input type="checkbox" id="toggle-minigraphs" />
           <span>📊 Mini-Graphs (H)</span>

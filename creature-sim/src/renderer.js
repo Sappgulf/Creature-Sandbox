@@ -686,6 +686,27 @@ export class Renderer {
           ctx.stroke();
           break;
         }
+        case 'spring': {
+          ctx.globalAlpha = 0.55;
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 0.9;
+          ctx.strokeStyle = '#f0fdf4';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, radius * 0.55, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = 0.9;
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.moveTo(prop.x - radius * 0.35, prop.y);
+          ctx.lineTo(prop.x + radius * 0.35, prop.y);
+          ctx.stroke();
+          break;
+        }
         case 'spinner': {
           ctx.globalAlpha = 0.5;
           ctx.strokeStyle = color;
@@ -706,6 +727,104 @@ export class Renderer {
           ctx.lineTo(0, radius * 0.6);
           ctx.stroke();
           ctx.restore();
+          break;
+        }
+        case 'seesaw': {
+          ctx.globalAlpha = 0.6;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2.6;
+          ctx.save();
+          ctx.translate(prop.x, prop.y);
+          const tilt = Math.sin(world.t * 1.8 + prop.id) * 0.2;
+          ctx.rotate(tilt);
+          ctx.beginPath();
+          ctx.moveTo(-radius * 0.7, 0);
+          ctx.lineTo(radius * 0.7, 0);
+          ctx.stroke();
+          ctx.restore();
+          ctx.fillStyle = '#1f2937';
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y + radius * 0.25, radius * 0.18, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+        case 'conveyor': {
+          ctx.globalAlpha = 0.5;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, radius, 0, Math.PI * 2);
+          ctx.stroke();
+          const dir = prop.dir ?? 0;
+          ctx.save();
+          ctx.translate(prop.x, prop.y);
+          ctx.rotate(dir);
+          ctx.strokeStyle = '#e2e8f0';
+          ctx.beginPath();
+          ctx.moveTo(-radius * 0.5, 0);
+          ctx.lineTo(radius * 0.5, 0);
+          ctx.lineTo(radius * 0.35, -radius * 0.2);
+          ctx.moveTo(radius * 0.5, 0);
+          ctx.lineTo(radius * 0.35, radius * 0.2);
+          ctx.stroke();
+          ctx.restore();
+          break;
+        }
+        case 'slope': {
+          ctx.globalAlpha = 0.55;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2.4;
+          const dir = prop.dir ?? 0;
+          ctx.save();
+          ctx.translate(prop.x, prop.y);
+          ctx.rotate(dir);
+          ctx.beginPath();
+          ctx.moveTo(-radius * 0.6, radius * 0.3);
+          ctx.lineTo(radius * 0.6, -radius * 0.3);
+          ctx.stroke();
+          ctx.strokeStyle = '#e2e8f0';
+          ctx.beginPath();
+          ctx.moveTo(radius * 0.35, -radius * 0.25);
+          ctx.lineTo(radius * 0.55, -radius * 0.25);
+          ctx.lineTo(radius * 0.48, -radius * 0.1);
+          ctx.moveTo(radius * 0.55, -radius * 0.25);
+          ctx.lineTo(radius * 0.48, -radius * 0.4);
+          ctx.stroke();
+          ctx.restore();
+          break;
+        }
+        case 'fan': {
+          ctx.globalAlpha = 0.5;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, radius, 0, Math.PI * 2);
+          ctx.stroke();
+          const dir = prop.dir ?? 0;
+          ctx.save();
+          ctx.translate(prop.x, prop.y);
+          ctx.rotate(dir);
+          ctx.fillStyle = 'rgba(226,232,240,0.5)';
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.arc(0, 0, radius * 0.7, -0.35, 0.35);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+          break;
+        }
+        case 'sticky': {
+          ctx.globalAlpha = 0.4;
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 0.6;
+          ctx.strokeStyle = '#fdf2f8';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, radius * 0.55, 0, Math.PI * 2);
+          ctx.stroke();
           break;
         }
         case 'gravity': {
@@ -734,6 +853,25 @@ export class Renderer {
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.arc(prop.x, prop.y, radius * 0.4, 0, Math.PI * 2);
+          ctx.stroke();
+          break;
+        }
+        case 'launch': {
+          ctx.globalAlpha = 0.6;
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, radius * 0.8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#fee2e2';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, radius * 0.35, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(prop.x, prop.y - radius * 0.4);
+          ctx.lineTo(prop.x, prop.y - radius * 0.7);
           ctx.stroke();
           break;
         }

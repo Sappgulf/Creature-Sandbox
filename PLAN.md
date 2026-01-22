@@ -94,6 +94,23 @@
 ### 2026-01-29
 
 **Changed:**
+- `creature-sim/src/creature.js` — added landing/fall/overreaction reactions, mood icons, eye tracking, silly badges, and recovery poses.
+- `creature-sim/src/sandbox-props.js` — added spring/launch/see-saw/conveyor/slope/fan/sticky props with tuned forces and chaos scaling.
+- `creature-sim/src/renderer.js` — drew new prop affordances and impact highlights.
+- `creature-sim/src/game-loop.js`, `creature-sim/src/ui.js`, `creature-sim/src/ui-controller.js` — added curiosity prompts and chaos dial bindings.
+- `creature-sim/index.html`, `creature-sim/styles.css` — added chaos slider UI and new prop entries.
+- `docs/SMOKE_TESTS.md`, `docs/ROADMAP.md`, `README.md`, `CHANGELOG.md` — documented playful pass updates.
+
+**Why:**
+- Increase tactile feedback, replayable toy interactions, and fun prompts while keeping the core loop intact.
+
+**Verified:**
+- `npm test`
+- `npm run lint`
+
+### 2026-01-29
+
+**Changed:**
 - `creature-sim/src/input-manager.js` — tuned grab/throw thresholds, added throw caps, and scaled impact feedback by throw intensity.
 - `creature-sim/src/creature.js` — normalized external impulse by size, added collision reaction cooldown, and made animation timing frame-rate independent.
 - `creature-sim/src/sandbox-props.js` — reduced prop strengths and impulse caps for bounce/spinner/gravity.

@@ -68,6 +68,14 @@ export class GameLoop {
     this.lastEcoHealthUpdate = 0;
     this.lastTimingLog = 0;
     this.timingLogInterval = Number(this.devTools.timingLogInterval || 5000) || 5000;
+    this.curiosityState = {
+      lastPromptAt: 0,
+      nextPromptAt: 6,
+      throwCount: 0,
+      propCount: 0,
+      tinyWinTypes: new Set(),
+      lastThrowToastAt: 0
+    };
 
     // Track pause state for UI sync
     this._lastPausedState = false;
@@ -176,6 +184,40 @@ export class GameLoop {
       }
       if (!uiHasAudio && this.audio) {
         this.audio.playSound('achievement');
+      }
+    });
+
+    eventSystem.on(GameEvents.CREATURE_THROWN, (data) => {
+      this.curiosityState.throwCount += 1;
+      const speed = Number(data?.speed ?? 0);
+      const now = performance.now();
+      if (this.hasNotifications() && speed > 160 && now - this.curiosityState.lastThrowToastAt > 8000) {
+        this.notifications.show('Nice throw!', 'success', 2200);
+        this.curiosityState.lastThrowToastAt = now;
+      }
+    });
+
+    eventSystem.on(GameEvents.SANDBOX_PROP_TRIGGERED, (data) => {
+      this.curiosityState.propCount += 1;
+      const type = data?.type;
+      if (!type || !this.hasNotifications()) return;
+      if (this.curiosityState.tinyWinTypes.has(type)) return;
+      const labelMap = {
+        spring: 'Spring boost!',
+        bounce: 'Bouncy!',
+        spinner: 'Spin cycle!',
+        seesaw: 'See-saw chaos!',
+        conveyor: 'Conveyor cruise!',
+        slope: 'Speed slope!',
+        fan: 'Wind ride!',
+        sticky: 'Sticky giggle!',
+        launch: 'Lift off!',
+        button: 'Snack time!'
+      };
+      const message = labelMap[type];
+      if (message) {
+        this.notifications.show(message, 'success', 2000);
+        this.curiosityState.tinyWinTypes.add(type);
       }
     });
   }
@@ -723,11 +765,58 @@ export class GameLoop {
     }
 
     if (interactionHintEl) {
+      this.updateCuriosityPrompt();
       renderInteractionHint(interactionHintEl, {
         tool: this.uiController?.tools?.mode,
         propType: gameState.selectedPropType,
-        hasSelection: !!(gameState.pinnedId ?? gameState.selectedId)
+        hasSelection: !!(gameState.pinnedId ?? gameState.selectedId),
+        customMessage: gameState.curiosityPrompt?.message || null,
+        customId: gameState.curiosityPrompt?.id || null,
+        hintDurationMs: gameState.curiosityPrompt?.durationMs || 4500
       });
+    }
+  }
+
+  updateCuriosityPrompt() {
+    const worldTime = this.world?.t ?? 0;
+    const activePrompt = gameState.curiosityPrompt;
+    if (activePrompt && activePrompt.expiresAt && worldTime > activePrompt.expiresAt) {
+      gameState.curiosityPrompt = null;
+    }
+    if (gameState.curiosityPrompt || worldTime < this.curiosityState.nextPromptAt) return;
+
+    const prompts = [
+      {
+        id: 'drop-high',
+        message: 'Try dropping one from high up.',
+        condition: () => this.curiosityState.throwCount === 0 && worldTime > 8
+      },
+      {
+        id: 'stack-three',
+        message: 'Can you stack three?',
+        condition: () => (this.world?.creatures?.length ?? 0) >= 3 && worldTime > 18
+      },
+      {
+        id: 'try-props',
+        message: 'Try a spring pad or wind fan.',
+        condition: () => this.curiosityState.propCount === 0 && worldTime > 12
+      }
+    ];
+
+    for (const prompt of prompts) {
+      if (gameState.curiosityPromptHistory.has(prompt.id)) continue;
+      if (gameState.curiosityPromptDismissed.has(prompt.id)) continue;
+      if (!prompt.condition()) continue;
+      gameState.curiosityPrompt = {
+        id: prompt.id,
+        message: prompt.message,
+        durationMs: 6500,
+        expiresAt: worldTime + 8
+      };
+      gameState.curiosityPromptHistory.add(prompt.id);
+      this.curiosityState.lastPromptAt = worldTime;
+      this.curiosityState.nextPromptAt = worldTime + 18;
+      break;
     }
   }
 

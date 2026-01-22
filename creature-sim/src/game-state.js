@@ -46,6 +46,11 @@ export class GameState {
     this.travelDrag = null;
     this.travelPreview = null;
     this.lastPointer = { x: 0, y: 0 };
+    this.lastPointerWorld = { x: 0, y: 0 };
+    this.chaosLevel = 0.5;
+    this.curiosityPrompt = null;
+    this.curiosityPromptHistory = new Set();
+    this.curiosityPromptDismissed = new Set();
 
     // UI state
     this.inspectorVisible = true;

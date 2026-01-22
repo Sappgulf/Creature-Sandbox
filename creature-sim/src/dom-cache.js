@@ -70,6 +70,8 @@ export class DOMCache {
     this.cacheElement('btn-features', 'featuresBtn');
     this.cacheElement('features-panel', 'featuresPanel');
     this.cacheElement('btn-features-close', 'featuresCloseBtn');
+    this.cacheElement('chaos-slider', 'chaosSlider');
+    this.cacheElement('chaos-value', 'chaosValue');
 
     // Scenario panel
     this.cacheElement('btn-scenario', 'scenarioBtn');

@@ -37,9 +37,11 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Tool modes**: Paint food, spawn creatures, or erase with mouse
 - **Camera controls**: Pan, zoom, and follow creatures
 - **Sandbox props**: Drop bounce pads, spinners, gravity wells, and food buttons
+- **Micro toys**: Spring pads, launch buttons, see-saws, conveyors, wind fans, sticky zones, and speed slopes
 - **Direct manipulation**: Drag, move, and throw creatures for playful experiments
 - **Grab affordances**: Hover creatures to see a grab outline and grabbed highlight
 - **Creature feedback**: Selection glow, success pulses, and friendly error shakes
+- **Chaos dial**: Tune physics wobble, bounce energy, and gravity drift from calm to silly
 - **Gene sharing**: Copy/import gene codes from the Gene Editor
 - **Display toggles**: Nameplates and reduced-motion options in the Features panel
 - **Condensed top HUD**: Primary controls plus a ⋯ overflow menu for all panels
@@ -95,7 +97,7 @@ open http://localhost:8000
 - **F**: Food painting mode
 - **S**: Spawn creature mode
 - **E**: Erase creatures mode
-- **P**: Sandbox props mode (bounce/spinner/gravity/button)
+- **P**: Sandbox props mode (bounce/spring/spinner/see-saw/conveyor/slope/fan/sticky/gravity/button/launch)
 - **[ / ]**: Decrease/increase tool brush size
 
 ### Mobile Quick Actions

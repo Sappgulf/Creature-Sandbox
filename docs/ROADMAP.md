@@ -7,6 +7,14 @@
    - **Impact:** Players may need to manually recenter by focusing on a creature or double-tapping a new target.
    - **Owner:** TBD
 
+## Shipped (2026-01-29)
+
+1. **Playful reactions + chaos dial + micro toys**
+   - **Description:** Added landing/fall reactions, poke overreactions, impact squeaks, eye tracking, chaos slider, and new props (spring, see-saw, conveyor, fan, sticky, slope, launch).
+   - **Likely files:** `creature-sim/src/creature.js`, `creature-sim/src/sandbox-props.js`, `creature-sim/src/renderer.js`, `creature-sim/index.html`, `creature-sim/styles.css`
+   - **Risk level:** Medium
+   - **Verification:** Use the Features panel to adjust Chaos; drop/throw creatures into props and confirm reactions, props, and prompts feel responsive.
+
 ## Shipped (2026-01-28)
 
 1. **Mobile spawn picker + hint lifecycle**

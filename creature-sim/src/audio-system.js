@@ -107,6 +107,9 @@ export class AudioSystem {
       const type = 'sine';
 
       switch (event) {
+        case 'impact':
+          this.playTone(pitch * 1.8, 0.06, 'triangle', volume * 0.45, 'creatures');
+          break;
         case 'birth':
         // Cute high-pitched chirp
           this.playTone(pitch * 1.5, 0.15, 'sine', volume * 0.6, 'creatures');
