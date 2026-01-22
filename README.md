@@ -20,6 +20,7 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 ### 🌍 Dynamic Ecosystem
 - **Predator-prey dynamics**: Herbivores graze, predators hunt
 - **Seasonal variations**: Environmental changes affect food availability
+- **Day/night rhythm**: Activity, rest biasing, and ambient lighting shift across the cycle
 - **Temperature zones**: Comfort-based energy penalties
 - **Pheromone trails**: Creatures leave chemical signals for food sources
 - **Internal state loop**: Stress, curiosity, energy, and stability shift with impacts, crowding, and rest
@@ -27,6 +28,8 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Needs-driven goals**: Hunger, energy, social drive, and stress select goals (eat/rest/mate/wander)
 - **Rest zones**: Calm pockets where tired creatures recover energy and reduce stress
 - **Bite-based food**: Food patches deplete in bites with scent detection
+- **Food regrowth cycles**: Patches replenish over time with time-of-day and population pressure
+- **Weather moods**: Short wind/calm phases shift the ecosystem’s tone without hard rules
 - **Population guardrails**: Mating slows down above soft caps to prevent runaway growth
 - **Place memory + learning**: Creatures remember food, calm, danger, and nest locations with reinforcement/decay
 - **Life stages**: Babies explore fast, adults stabilize, elders slow down and fade gently
@@ -50,6 +53,7 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Grab affordances**: Hover creatures to see a grab outline and grabbed highlight
 - **Creature feedback**: Selection glow, success pulses, and friendly error shakes
 - **Chaos dial**: Tune physics wobble, bounce energy, and gravity drift from calm to silly
+- **God mode (optional)**: Enter a gentle intervention mode to place food, calm zones, or nudge chaos
 - **Gene sharing**: Copy/import gene codes from the Gene Editor
 - **Display toggles**: Nameplates and reduced-motion options in the Features panel
 - **Condensed top HUD**: Primary controls plus a ⋯ overflow menu for all panels
@@ -99,6 +103,7 @@ open http://localhost:8000
 - **Throw feel**: Throws are capped for predictable arcs (short drags stay gentle)
 - **Hover (mouse/pen)**: See a grab outline on creatures in Inspect mode
 - **Ctrl/⌘ + S / Ctrl/⌘ + O**: Save to file / load from file
+- **God Mode**: Open **⋯ More Actions** → **✨ God Mode** or long-press the world (touch)
 
 ### Tool Modes (Keyboard Shortcuts)
 - **X**: Inspect mode (default)
@@ -113,6 +118,11 @@ open http://localhost:8000
 - **Food**: Drops food clusters near the camera center.
 - **Props**: Cycles props, then tap the canvas to place.
 - **Pause / Speed**: Toggle pause and cycle simulation speed.
+
+### God Mode (Optional)
+- **Enter/Exit**: Toggle via **⋯ More Actions** or long-press the world.
+- **Tools**: Place a food source, create a calm zone, nudge chaos, or spawn/remove a creature.
+- **Autonomy-first**: Leaving god mode resumes normal time and creature behavior.
 
 ### Inspector Panel
 - **Click creature**: Inspect individual stats and genes

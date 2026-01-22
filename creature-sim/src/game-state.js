@@ -77,6 +77,11 @@ export class GameState {
 
     // Mobile state
     this.mobileSpeedIndex = 1; // 0=0.5x, 1=1x, 2=2x, 3=4x
+
+    // God mode state
+    this.godModeActive = false;
+    this.godModeTool = 'food';
+    this.godModeTimeScale = 0.65;
   }
 
   /**

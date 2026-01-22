@@ -52,11 +52,24 @@
    - Speed up the sim (`debug.speed(5)`), wait for baby → adult → elder transitions, and confirm elders move slower and begin to fade.
    - Confirm offspring inherit visible traits (color/size variance) with small mutations.
 
-7. **Top menu navigation**
+7. **Environmental rhythm + food cycles**
+   - Let the simulation run for at least 2–3 minutes.
+   - Confirm the ambient lighting shifts (day → dusk → night → dawn).
+   - Observe creature behavior: higher activity/exploration during day and more resting at night.
+   - Watch food patches slowly regrow over time, even without player input.
+   - Overconsume a local patch and confirm nearby food thins out temporarily before regrowing.
+
+8. **Top menu navigation**
    - Click **🎛️ Modes & Goals** and confirm the Game Mode + Session Goals card toggles.
    - Open **⋯ More Actions** and verify every item opens its respective panel or toggle.
 
-8. **Save/load roundtrip**
+9. **God mode (optional)**
+   - Open **⋯ More Actions** and toggle **✨ God Mode** (or long-press the world).
+   - Place a food source, a calm zone, and a chaos nudge; confirm clear visual previews.
+   - Spawn and remove a creature; confirm population guardrails prevent overpopulation.
+   - Exit god mode and confirm creatures resume autonomous behavior with normal time flow.
+
+10. **Save/load roundtrip**
    - Use **Ctrl+S** to save the game.
    - Refresh the page.
    - Use **Ctrl+O** to load the save.
@@ -67,24 +80,24 @@
    - With `debug.observe()` enabled, confirm life-stage labels and memory markers persist after reload.
    - Optional: use **Ctrl/⌘ + S** to download a save file and **Ctrl/⌘ + O** to load it back.
 
-9. **Help section**
+11. **Help section**
    - Open **⋯ More Actions**.
    - Confirm the Help section lists controls, shortcuts, and where features live.
 
-10. **Session goals**
+12. **Session goals**
    - Open **🎛️ Modes & Goals**.
    - Confirm a goal appears for manual creature spawns and progresses when you spawn creatures.
 
-11. **Balance pass: grab/throw consistency**
+13. **Balance pass: grab/throw consistency**
    - Switch to **Inspect** mode and grab a creature with a short drag.
    - Confirm gentle drags release without huge launches.
    - Flick a longer drag and confirm throws feel capped and predictable (no extreme launches).
 
-12. **Balance pass: camera stability**
+14. **Balance pass: camera stability**
     - Pan and zoom quickly, then release.
     - Confirm the camera settles without lingering jitter and overlays reappear after it stops.
 
-13. **Balance pass: creature reactions**
+15. **Balance pass: creature reactions**
     - Trigger a bounce pad or spinner on a creature.
     - Drop a creature from a height and confirm a squish/landing reaction.
     - Poke a creature repeatedly and confirm an overreaction triggers but resets quickly.
@@ -107,6 +120,8 @@
    - Let the sim run for 60–120 seconds and confirm creatures remain alive during gentle play.
    - Observe at least one creature slow down to rest and another take multiple food bites.
    - Spawn two adults and confirm a short mating interaction can happen without runaway growth.
+   - Long-press the world to enter god mode and place a calm zone; confirm the overlay is touch-friendly.
+   - Exit god mode and confirm touch controls return to normal.
 
 3. **Help / hints lifecycle**
    - Trigger the spawn tool or open **⋯ More Actions** → **Help**.

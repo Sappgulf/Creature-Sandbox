@@ -98,10 +98,23 @@
         <div class="dropdown-item" data-prop="launch">🚀 Launch Button</div>
       </div>
     </div>
-    <button id="btn-god-heal" title="Heal (H)" aria-label="Heal selected creature" data-tooltip="Heal selected (H)">💚</button>
-    <button id="btn-god-boost" title="Boost Energy" aria-label="Boost energy" data-tooltip="Boost energy">⚡</button>
-    <button id="btn-god-kill" title="Kill" aria-label="Kill selected creature" data-tooltip="Remove selected">💀</button>
-    <button id="btn-god-clone" title="Clone" aria-label="Clone selected creature" data-tooltip="Clone selected">👯</button>
+  </div>
+  <div id="god-mode-indicator" class="god-mode-indicator hidden" aria-live="polite">
+    ✨ God Mode
+  </div>
+  <div id="god-mode-panel" class="god-mode-panel hidden" role="dialog" aria-label="God mode tools" aria-hidden="true">
+    <div class="god-mode-header">
+      <span class="god-mode-title">God Mode</span>
+      <button id="god-mode-exit" class="ghost-btn small" aria-label="Exit god mode">Done</button>
+    </div>
+    <div class="god-mode-tools" role="group" aria-label="God mode tools">
+      <button id="god-tool-food" data-god-tool="food" aria-label="Place food source">🍃 Food</button>
+      <button id="god-tool-calm" data-god-tool="calm" aria-label="Create calm zone">🌊 Calm</button>
+      <button id="god-tool-chaos" data-god-tool="chaos" aria-label="Chaos nudge">⚡ Chaos</button>
+      <button id="god-tool-spawn" data-god-tool="spawn" aria-label="Spawn creature">🧬 Spawn</button>
+      <button id="god-tool-remove" data-god-tool="remove" aria-label="Remove creature">🧹 Remove</button>
+    </div>
+    <div class="god-mode-hint">Tap the world to nudge. Tap Done to return.</div>
   </div>
   <div id="interaction-hint" class="interaction-hint" aria-live="polite" role="status">
     <span class="interaction-hint-text"></span>

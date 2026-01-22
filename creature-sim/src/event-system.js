@@ -347,6 +347,7 @@ export const GameEvents = {
 
   // God mode events
   GOD_MODE_ACTION: 'god:action',
+  GOD_MODE_TOGGLE: 'god:toggle',
 
   // Analytics events
   ANALYTICS_DATA_UPDATE: 'analytics:data_update',

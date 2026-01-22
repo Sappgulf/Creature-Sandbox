@@ -87,6 +87,7 @@ export class GameLoop {
       creatureCount: 0,
       foodCount: 0
     };
+    this.godModeTimeScale = 1;
 
     // Reusable render options object to reduce per-frame allocations
     this.renderOptions = {
@@ -107,7 +108,10 @@ export class GameLoop {
       heatmaps: null,
       showGoalDebug: false,
       showMemoryDebug: false,
-      showLifeStageDebug: false
+      showLifeStageDebug: false,
+      godModeActive: false,
+      godModeTool: null,
+      godModePointer: null
     };
 
     this.boundLoop = this.loop.bind(this);
@@ -291,7 +295,10 @@ export class GameLoop {
       this.lastNow = now;
 
       // Calculate time scale (pause/speed controls)
-      gameState.timeScale = gameState.paused ? 0 : gameState.fastForward;
+      const targetGodScale = gameState.godModeActive ? gameState.godModeTimeScale : 1;
+      const blend = Math.min(1, dt * 3);
+      this.godModeTimeScale += (targetGodScale - this.godModeTimeScale) * blend;
+      gameState.timeScale = gameState.paused ? 0 : gameState.fastForward * this.godModeTimeScale;
       gameState.accumulator += dt * gameState.timeScale;
 
       // Run physics steps
@@ -534,6 +541,9 @@ export class GameLoop {
     opts.showGoalDebug = gameState.showGoalDebug || gameState.showObserverDebug;
     opts.showMemoryDebug = gameState.showObserverDebug;
     opts.showLifeStageDebug = gameState.showObserverDebug;
+    opts.godModeActive = gameState.godModeActive;
+    opts.godModeTool = gameState.godModeTool;
+    opts.godModePointer = gameState.lastPointerWorld;
 
     this.renderer.drawWorld(this.world, opts);
 
@@ -760,7 +770,9 @@ export class GameLoop {
         brushSize: this.uiController?.tools?.brushSize,
         visionEnabled: this.renderer.enableVision,
         clusteringEnabled: this.renderer.enableClustering,
-        timeOfDay: this.world.timeOfDay
+        timeOfDay: this.world.timeOfDay,
+        godModeActive: gameState.godModeActive,
+        godModeTool: gameState.godModeTool
       });
     }
 

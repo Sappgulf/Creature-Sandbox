@@ -151,6 +151,13 @@ export class Renderer {
     // Sandbox props
     this.drawSandboxProps(world);
 
+    // Calm zones (subtle, ambient)
+    this.drawCalmZones(world, opts);
+
+    if (opts.godModeActive) {
+      this.drawFoodPatches(world);
+    }
+
     // Feature 1: Draw territories
     if (this.enableTerritories) {
       this.drawTerritories(world);
@@ -197,6 +204,10 @@ export class Renderer {
 
     if (opts.showGoalDebug) {
       this.drawGoalDebug(world);
+    }
+
+    if (opts.godModeActive) {
+      this.drawGodModePreview(opts);
     }
     if (opts.showMemoryDebug) {
       this.drawMemoryDebug(world);
@@ -487,6 +498,11 @@ export class Renderer {
     // NEW: Season visual overlay
     this._drawSeasonOverlay(world);
 
+    const mood = world.moodState || world.environment?.getMoodState?.();
+    if (mood?.type && mood.type !== 'neutral') {
+      this._drawMoodOverlay(world, mood.intensity, mood.type);
+    }
+
     // Weather effects
     if (this.enableWeather && this.weatherType) {
       this._drawWeatherEffects(world);
@@ -592,24 +608,10 @@ export class Renderer {
   _drawDayNightOverlay(world) {
     const ctx = this.ctx;
 
-    // FIX: Use world's time of day (0-24 hours) instead of internal clock
-    const hour = world.timeOfDay % 24;
-
-    // Calculate darkness (0=bright day, 1=dark night)
-    // Night: 20-6, Day: 6-20
-    let darkness = 0;
-    if (hour >= 20 || hour < 6) {
-      darkness = 0.5; // Full night
-    } else if (hour >= 6 && hour < 8) {
-      // Dawn (6-8am): darkness fades
-      darkness = 0.5 * (1 - (hour - 6) / 2);
-    } else if (hour >= 18 && hour < 20) {
-      // Dusk (6-8pm): darkness grows
-      darkness = 0.5 * ((hour - 18) / 2);
-    } else {
-      // Day (8am-6pm): no darkness
-      darkness = 0;
-    }
+    const dayNight = world.dayNightState || world.environment?.getDayNightState?.();
+    const light = dayNight?.light ?? 1;
+    const phase = dayNight?.phase ?? null;
+    const darkness = clamp(1 - light, 0, 0.75);
 
     if (darkness > 0.05) {
       // Fill entire visible area, not just world bounds
@@ -617,7 +619,26 @@ export class Renderer {
       const visibleWidth = bounds.x2 - bounds.x1;
       const visibleHeight = bounds.y2 - bounds.y1;
       const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
-      ctx.fillStyle = `rgba(0, 10, 30, ${darkness})`;
+      ctx.fillStyle = `rgba(5, 14, 34, ${darkness})`;
+      ctx.fillRect(
+        bounds.x1 - extendAmount,
+        bounds.y1 - extendAmount,
+        visibleWidth + extendAmount * 2,
+        visibleHeight + extendAmount * 2
+      );
+    }
+
+    if (phase === 'dawn' || phase === 'dusk' || phase === 'night') {
+      const tint = phase === 'dawn'
+        ? `rgba(255, 170, 120, ${0.12 * (1 - darkness * 0.5)})`
+        : phase === 'dusk'
+          ? `rgba(120, 110, 200, ${0.12 * (1 - darkness * 0.4)})`
+          : `rgba(35, 60, 120, ${0.08 + darkness * 0.15})`;
+      const bounds = this._viewBounds;
+      const visibleWidth = bounds.x2 - bounds.x1;
+      const visibleHeight = bounds.y2 - bounds.y1;
+      const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
+      ctx.fillStyle = tint;
       ctx.fillRect(
         bounds.x1 - extendAmount,
         bounds.y1 - extendAmount,
@@ -667,6 +688,118 @@ export class Renderer {
   _drawWeatherEffects(world) {
     // Placeholder for weather particles (rain, snow, dust)
     // Will be enhanced with particle system
+  }
+
+  _drawMoodOverlay(world, intensity, type) {
+    if (!type || intensity <= 0.05) return;
+    const bounds = this._viewBounds;
+    const visibleWidth = bounds.x2 - bounds.x1;
+    const visibleHeight = bounds.y2 - bounds.y1;
+    const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
+    const tint = type === 'wind'
+      ? `rgba(129, 167, 255, ${0.08 * intensity})`
+      : `rgba(110, 200, 180, ${0.08 * intensity})`;
+    this.ctx.fillStyle = tint;
+    this.ctx.fillRect(
+      bounds.x1 - extendAmount,
+      bounds.y1 - extendAmount,
+      visibleWidth + extendAmount * 2,
+      visibleHeight + extendAmount * 2
+    );
+
+    if (type === 'wind' && intensity > 0.12) {
+      this.drawWindStreaks(world, intensity);
+    }
+  }
+
+  drawWindStreaks(world, intensity) {
+    const ctx = this.ctx;
+    const bounds = this._viewBounds;
+    const streakCount = Math.floor(10 + intensity * 10);
+    const baseLength = 45 + intensity * 60;
+    ctx.save();
+    ctx.strokeStyle = `rgba(226, 240, 255, ${0.12 + intensity * 0.2})`;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < streakCount; i++) {
+      const seed = i * 73.1;
+      const x = bounds.x1 + ((seed * 31) % 1) * (bounds.x2 - bounds.x1);
+      const y = bounds.y1 + ((seed * 17) % 1) * (bounds.y2 - bounds.y1);
+      const offset = Math.sin((world.t * 0.6) + seed) * 12;
+      ctx.beginPath();
+      ctx.moveTo(x - baseLength * 0.4, y + offset);
+      ctx.lineTo(x + baseLength * 0.6, y + offset - baseLength * 0.2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  drawCalmZones(world) {
+    const zones = world.environment?.calmZones;
+    if (!zones || zones.length === 0) return;
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(160, 240, 220, 0.25)';
+    ctx.fillStyle = 'rgba(120, 220, 200, 0.08)';
+    ctx.lineWidth = 2;
+    for (const zone of zones) {
+      ctx.beginPath();
+      ctx.arc(zone.x, zone.y, zone.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  drawFoodPatches(world) {
+    const patches = world.ecosystem?.foodPatches;
+    if (!patches || patches.length === 0) return;
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(140, 255, 180, 0.22)';
+    ctx.lineWidth = 1.5;
+    for (const patch of patches) {
+      ctx.beginPath();
+      ctx.arc(patch.x, patch.y, patch.radius * 0.85, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  drawGodModePreview(opts) {
+    const pointer = opts.godModePointer;
+    if (!pointer) return;
+    const ctx = this.ctx;
+    const tool = opts.godModeTool || 'food';
+    let radius = 120;
+    let color = 'rgba(120, 255, 180, 0.35)';
+    let stroke = 'rgba(120, 255, 180, 0.6)';
+    if (tool === 'calm') {
+      radius = 140;
+      color = 'rgba(120, 210, 255, 0.25)';
+      stroke = 'rgba(120, 210, 255, 0.6)';
+    } else if (tool === 'chaos') {
+      radius = 160;
+      color = 'rgba(200, 120, 255, 0.2)';
+      stroke = 'rgba(200, 120, 255, 0.55)';
+    } else if (tool === 'spawn') {
+      radius = 26;
+      color = 'rgba(130, 200, 255, 0.25)';
+      stroke = 'rgba(130, 200, 255, 0.7)';
+    } else if (tool === 'remove') {
+      radius = 28;
+      color = 'rgba(255, 120, 120, 0.22)';
+      stroke = 'rgba(255, 120, 120, 0.7)';
+    }
+
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(pointer.x, pointer.y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
   }
 
   drawSandboxProps(world) {

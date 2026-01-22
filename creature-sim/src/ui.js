@@ -42,6 +42,19 @@ export function renderStats(el, world, fps, extra={}) {
     statParts.push(`<span class="stat-tool">${meta.icon} <span class="value">${toolLabel}</span></span>`);
   }
 
+  if (extra.godModeActive) {
+    const godLabels = {
+      food: 'Food',
+      calm: 'Calm',
+      chaos: 'Chaos',
+      spawn: 'Spawn',
+      remove: 'Remove'
+    };
+    const toolLabel = extra.godModeTool ? (godLabels[extra.godModeTool] || extra.godModeTool) : 'Mode';
+    const label = `God ${toolLabel}`;
+    statParts.push(`<span class="stat-tool">✨ <span class="value">${label}</span></span>`);
+  }
+
   // Season info - compact
   if (world.getSeasonInfo) {
     const seasonInfo = world.getSeasonInfo();

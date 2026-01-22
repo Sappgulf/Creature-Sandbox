@@ -531,8 +531,19 @@ export class Creature {
     const needs = this.needs;
     if (!needs) return;
 
-    needs.hunger = clamp(needs.hunger + CreatureAgentTuning.NEEDS.HUNGER_RATE * dt, 0, 100);
-    needs.socialDrive = clamp(needs.socialDrive + CreatureAgentTuning.NEEDS.SOCIAL_RATE * dt, 0, 100);
+    const dayNight = world?.dayNightState;
+    const dayFactor = dayNight ? clamp((dayNight.light - 0.2) / 0.8, 0, 1) : 1;
+    const hungerRate = CreatureAgentTuning.NEEDS.HUNGER_RATE * (
+      CreatureAgentTuning.DAY_NIGHT.HUNGER_NIGHT_MULT +
+      (CreatureAgentTuning.DAY_NIGHT.HUNGER_DAY_MULT - CreatureAgentTuning.DAY_NIGHT.HUNGER_NIGHT_MULT) * dayFactor
+    );
+    const socialRate = CreatureAgentTuning.NEEDS.SOCIAL_RATE * (
+      CreatureAgentTuning.DAY_NIGHT.SOCIAL_NIGHT_MULT +
+      (CreatureAgentTuning.DAY_NIGHT.SOCIAL_DAY_MULT - CreatureAgentTuning.DAY_NIGHT.SOCIAL_NIGHT_MULT) * dayFactor
+    );
+
+    needs.hunger = clamp(needs.hunger + hungerRate * dt, 0, 100);
+    needs.socialDrive = clamp(needs.socialDrive + socialRate * dt, 0, 100);
     needs.energy = clamp(this.energy ?? needs.energy, CreatureAgentTuning.NEEDS.MIN, CreatureAgentTuning.NEEDS.MAX);
 
     const ecoStress = this.ecosystem?.stress;
@@ -540,13 +551,25 @@ export class Creature {
       needs.stress = clamp(ecoStress, 0, 100);
     }
 
+    const overcrowdMult = CreatureAgentTuning.DAY_NIGHT.OVERCROWD_NIGHT_MULT +
+      (CreatureAgentTuning.DAY_NIGHT.OVERCROWD_DAY_MULT - CreatureAgentTuning.DAY_NIGHT.OVERCROWD_NIGHT_MULT) * dayFactor;
     const stressGainMultiplier = this.lifeStage === 'baby' ? 1.35 : this.lifeStage === 'elder' ? 1.15 : 1;
     if (this.senses?.overcrowded) {
-      needs.stress = clamp(needs.stress + CreatureAgentTuning.NEEDS.STRESS_OVERCROWD_GAIN * stressGainMultiplier * dt, 0, 100);
+      needs.stress = clamp(
+        needs.stress + CreatureAgentTuning.NEEDS.STRESS_OVERCROWD_GAIN * stressGainMultiplier * overcrowdMult * dt,
+        0,
+        100
+      );
     } else if (this.goal?.current === 'REST') {
       needs.stress = clamp(needs.stress - CreatureAgentTuning.NEEDS.STRESS_REST_DECAY * dt, 0, 100);
     } else {
       needs.stress = clamp(needs.stress - CreatureAgentTuning.NEEDS.STRESS_CALM_DECAY * dt, 0, 100);
+    }
+
+    const calmZone = world?.environment?.getCalmZoneAt?.(this.x, this.y);
+    const calmBoost = (world?.moodState?.calmBoost ?? 0) + (calmZone?.strength ?? 0);
+    if (calmBoost > 0) {
+      needs.stress = clamp(needs.stress - calmBoost * 6 * dt, 0, 100);
     }
 
     const prevStress = this._lastStressLevel ?? needs.stress;
@@ -571,14 +594,22 @@ export class Creature {
     const energyScore = clamp(1 - needs.energy / 100, 0, 1);
     const socialScore = clamp(needs.socialDrive / 100, 0, 1);
     const stressScore = clamp(needs.stress / 100, 0, 1);
+    const dayNight = world?.dayNightState;
+    const dayFactor = dayNight ? clamp((dayNight.light - 0.2) / 0.8, 0, 1) : 1;
+    const restBias = CreatureAgentTuning.DAY_NIGHT.REST_NIGHT_BIAS +
+      (CreatureAgentTuning.DAY_NIGHT.REST_DAY_BIAS - CreatureAgentTuning.DAY_NIGHT.REST_NIGHT_BIAS) * dayFactor;
+    const eatBias = CreatureAgentTuning.DAY_NIGHT.EAT_NIGHT_BIAS +
+      (CreatureAgentTuning.DAY_NIGHT.EAT_DAY_BIAS - CreatureAgentTuning.DAY_NIGHT.EAT_NIGHT_BIAS) * dayFactor;
+    const wanderBias = CreatureAgentTuning.DAY_NIGHT.WANDER_NIGHT_BIAS +
+      (CreatureAgentTuning.DAY_NIGHT.WANDER_DAY_BIAS - CreatureAgentTuning.DAY_NIGHT.WANDER_NIGHT_BIAS) * dayFactor;
 
     const memoryFood = !senses.food && this._selectMemory ? this._selectMemory('food', world) : null;
     const memoryCalm = !senses.restZone && this._selectMemory ? this._selectMemory('calm', world) : null;
     const eatSourceFactor = senses.food ? 1 : memoryFood ? 0.6 : 0.3;
     const restSourceFactor = senses.restZone ? 1 : memoryCalm ? 0.6 : 0.4;
-    const eatScore = hungerScore * eatSourceFactor * CreatureAgentTuning.GOALS.SCORE_BIAS.EAT;
+    const eatScore = hungerScore * eatSourceFactor * CreatureAgentTuning.GOALS.SCORE_BIAS.EAT * eatBias;
     let restScore = (energyScore * 0.9 + stressScore * 0.3) *
-      restSourceFactor * CreatureAgentTuning.GOALS.SCORE_BIAS.REST;
+      restSourceFactor * CreatureAgentTuning.GOALS.SCORE_BIAS.REST * restBias;
     let mateScore = socialScore * (senses.mate ? 1 : 0.2) * CreatureAgentTuning.GOALS.SCORE_BIAS.SEEK_MATE;
     if (needs.stress > CreatureAgentTuning.MATING.STRESS_MAX) {
       mateScore *= 0.1;
@@ -591,7 +622,7 @@ export class Creature {
       mateScore *= CreatureAgentTuning.MATING.ELDER_GOAL_MULT;
     }
 
-    const wanderScore = CreatureAgentTuning.GOALS.SCORE_BIAS.WANDER;
+    const wanderScore = CreatureAgentTuning.GOALS.SCORE_BIAS.WANDER * wanderBias;
 
     const scores = [
       { key: 'EAT', score: eatScore },

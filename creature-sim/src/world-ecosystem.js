@@ -41,6 +41,14 @@ export class WorldEcosystem {
 
     this.maxFood = Math.floor((this.world.width * this.world.height) / 180);
     this.foodGrowthMultiplier = 1.0;
+    this.minFoodReserve = Math.max(
+      40,
+      Math.round(this.maxFood * CreatureAgentTuning.FOOD_PATCHES.MIN_WORLD_FOOD_FRACTION)
+    );
+
+    this.foodPatches = [];
+    this.foodPatchIndex = new Map();
+    this.foodPatchId = 1;
 
     // Auto-balancing system
     this.balanceTimer = 0;
@@ -48,6 +56,7 @@ export class WorldEcosystem {
     this.lastEcoStats = null;
 
     this.seedRestZones();
+    this.seedFoodPatches();
 
     console.debug('🌱 World ecosystem system initialized');
   }
@@ -91,12 +100,24 @@ export class WorldEcosystem {
       this.world.environment.getSeasonModifier('food') : 1.0;
 
     const weatherMultiplier = 1.0 + (this.world.environment?.weatherIntensity || 0) * 0.2;
+    const dayNightMultiplier = this.world.environment?.getDayNightState?.().foodGrowthMult ?? 1.0;
 
-    return seasonMultiplier * weatherMultiplier * this.foodGrowthMultiplier;
+    const population = this.world.creatures?.length ?? 0;
+    const pressureStart = CreatureAgentTuning.FOOD_PATCHES.POP_PRESSURE_START;
+    const pressureRange = CreatureAgentTuning.FOOD_PATCHES.POP_PRESSURE_RANGE;
+    const pressureMax = CreatureAgentTuning.FOOD_PATCHES.POP_PRESSURE_MAX;
+    const pressure = clamp((population - pressureStart) / pressureRange, 0, 1);
+    const populationMultiplier = 1 - pressure * pressureMax;
+
+    return seasonMultiplier * weatherMultiplier * dayNightMultiplier * populationMultiplier * this.foodGrowthMultiplier;
   }
 
   // Add food to the world
-  addFood(x, y, r = 1.5, type = null) {
+  addFood(x, y, r = 1.5, type = null, options = {}) {
+    if (type && typeof type === 'object') {
+      options = type;
+      type = null;
+    }
     // Determine food type if not specified
     if (!type) {
       const roll = rand();
@@ -126,6 +147,9 @@ export class WorldEcosystem {
       color: config.color,
       size: config.size,
       respawnTime: config.respawnTime,
+      sourceId: options.sourceId ?? null,
+      sourceTag: options.sourceTag ?? null,
+      origin: options.origin ?? 'wild',
       t: 0 // Age timer
     };
 
@@ -163,6 +187,8 @@ export class WorldEcosystem {
           }
         }
 
+        this.registerFoodConsumption(food, consumedEnergy, food.bites <= 0);
+
         return {
           food,
           energy: consumedEnergy,
@@ -172,6 +198,161 @@ export class WorldEcosystem {
       }
     }
     return null;
+  }
+
+  seedFoodPatches() {
+    this.foodPatches = [];
+    this.foodPatchIndex = new Map();
+    this.foodPatchId = 1;
+    const count = CreatureAgentTuning.FOOD_PATCHES.COUNT;
+    for (let i = 0; i < count; i++) {
+      const radius = rand(
+        CreatureAgentTuning.FOOD_PATCHES.RADIUS_MIN,
+        CreatureAgentTuning.FOOD_PATCHES.RADIUS_MAX
+      );
+      const fertility = rand(
+        CreatureAgentTuning.FOOD_PATCHES.FERTILITY_MIN,
+        CreatureAgentTuning.FOOD_PATCHES.FERTILITY_MAX
+      );
+      const patch = {
+        id: this.foodPatchId++,
+        x: rand(80, this.world.width - 80),
+        y: rand(80, this.world.height - 80),
+        radius,
+        fertility,
+        maxStock: CreatureAgentTuning.FOOD_PATCHES.MAX_STOCK * fertility,
+        stock: CreatureAgentTuning.FOOD_PATCHES.START_STOCK * fertility,
+        pressure: 0,
+        depletedTimer: 0,
+        spawnCooldown: rand(0, 1.2)
+      };
+      this.foodPatches.push(patch);
+      this.foodPatchIndex.set(patch.id, patch);
+    }
+  }
+
+  addFoodPatch(x, y, options = {}) {
+    const radius = clamp(
+      options.radius ?? 120,
+      CreatureAgentTuning.FOOD_PATCHES.RADIUS_MIN,
+      CreatureAgentTuning.FOOD_PATCHES.RADIUS_MAX * 1.6
+    );
+    const fertility = clamp(options.fertility ?? 1.0, 0.6, 1.4);
+    const patch = {
+      id: this.foodPatchId++,
+      x,
+      y,
+      radius,
+      fertility,
+      maxStock: CreatureAgentTuning.FOOD_PATCHES.MAX_STOCK * fertility,
+      stock: (options.stock ?? CreatureAgentTuning.FOOD_PATCHES.START_STOCK) * fertility,
+      pressure: 0,
+      depletedTimer: 0,
+      spawnCooldown: rand(0, 0.8),
+      tag: options.tag ?? null
+    };
+    this.foodPatches.push(patch);
+    this.foodPatchIndex.set(patch.id, patch);
+    return patch;
+  }
+
+  updateFoodPatches(dt) {
+    if (!this.foodPatches.length) return;
+    const growthRate = this.foodGrowthRate();
+    const maxFood = this.maxFood;
+    for (const patch of this.foodPatches) {
+      patch.pressure = Math.max(0, patch.pressure - CreatureAgentTuning.FOOD_PATCHES.PRESSURE_DECAY * dt);
+      if (patch.depletedTimer > 0) {
+        patch.depletedTimer = Math.max(0, patch.depletedTimer - dt);
+      }
+
+      const pressureScalar = clamp(
+        1 - patch.pressure * CreatureAgentTuning.FOOD_PATCHES.PRESSURE_IMPACT,
+        0.35,
+        1
+      );
+      const depletionScalar = patch.depletedTimer > 0
+        ? CreatureAgentTuning.FOOD_PATCHES.DEPLETION_MULT
+        : 1;
+      const growth = CreatureAgentTuning.FOOD_PATCHES.REGROWTH_RATE *
+        growthRate * pressureScalar * depletionScalar * patch.fertility * dt;
+      patch.stock = clamp(patch.stock + growth, 0, patch.maxStock);
+
+      patch.spawnCooldown -= dt;
+      if (patch.spawnCooldown <= 0 && patch.stock >= 1 && this.world.food.length < maxFood) {
+        this.spawnFoodFromPatch(patch);
+        patch.stock -= 1;
+        patch.spawnCooldown = rand(
+          CreatureAgentTuning.FOOD_PATCHES.SPAWN_COOLDOWN_MIN,
+          CreatureAgentTuning.FOOD_PATCHES.SPAWN_COOLDOWN_MAX
+        );
+      }
+    }
+  }
+
+  spawnFoodFromPatch(patch) {
+    const angle = rand() * Math.PI * 2;
+    const distance = Math.sqrt(rand()) * patch.radius * 0.75;
+    const x = clamp(patch.x + Math.cos(angle) * distance, 0, this.world.width);
+    const y = clamp(patch.y + Math.sin(angle) * distance, 0, this.world.height);
+    this.addFood(x, y, 1.2, null, { sourceId: patch.id, sourceTag: patch.tag, origin: 'patch' });
+  }
+
+  registerFoodConsumption(food, energy, depleted) {
+    if (!food?.sourceId) return;
+    const patch = this.foodPatchIndex.get(food.sourceId);
+    if (!patch) return;
+    const pressureBoost = CreatureAgentTuning.FOOD_PATCHES.OVERCONSUME_PRESSURE;
+    patch.pressure = clamp(patch.pressure + pressureBoost * (depleted ? 1 : 0.5), 0, 1);
+    if (depleted) {
+      patch.depletedTimer = Math.max(patch.depletedTimer, CreatureAgentTuning.FOOD_PATCHES.DEPLETION_COOLDOWN);
+    }
+  }
+
+  restoreFoodPatches(patches = []) {
+    if (!Array.isArray(patches) || patches.length === 0) {
+      this.seedFoodPatches();
+      return;
+    }
+    this.foodPatches = [];
+    this.foodPatchIndex = new Map();
+    let maxId = 0;
+    for (const patch of patches) {
+      if (!patch) continue;
+      const restored = {
+        id: patch.id ?? this.foodPatchId++,
+        x: clamp(patch.x ?? rand(80, this.world.width - 80), 0, this.world.width),
+        y: clamp(patch.y ?? rand(80, this.world.height - 80), 0, this.world.height),
+        radius: clamp(
+          patch.radius ?? CreatureAgentTuning.FOOD_PATCHES.RADIUS_MIN,
+          CreatureAgentTuning.FOOD_PATCHES.RADIUS_MIN,
+          CreatureAgentTuning.FOOD_PATCHES.RADIUS_MAX * 1.6
+        ),
+        fertility: clamp(
+          patch.fertility ?? 1,
+          CreatureAgentTuning.FOOD_PATCHES.FERTILITY_MIN,
+          CreatureAgentTuning.FOOD_PATCHES.FERTILITY_MAX
+        ),
+        maxStock: clamp(
+          patch.maxStock ?? CreatureAgentTuning.FOOD_PATCHES.MAX_STOCK,
+          1,
+          CreatureAgentTuning.FOOD_PATCHES.MAX_STOCK * 2
+        ),
+        stock: clamp(
+          patch.stock ?? CreatureAgentTuning.FOOD_PATCHES.START_STOCK,
+          0,
+          CreatureAgentTuning.FOOD_PATCHES.MAX_STOCK * 2
+        ),
+        pressure: clamp(patch.pressure ?? 0, 0, 1),
+        depletedTimer: clamp(patch.depletedTimer ?? 0, 0, 30),
+        spawnCooldown: clamp(patch.spawnCooldown ?? 0, 0, 3),
+        tag: patch.tag ?? null
+      };
+      maxId = Math.max(maxId, restored.id);
+      this.foodPatches.push(restored);
+      this.foodPatchIndex.set(restored.id, restored);
+    }
+    this.foodPatchId = Math.max(this.foodPatchId, maxId + 1);
   }
 
   nearestRestZone(x, y, radius) {

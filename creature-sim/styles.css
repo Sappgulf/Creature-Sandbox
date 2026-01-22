@@ -815,6 +815,97 @@ input[type="range"]:focus-visible {
   box-shadow: var(--glow-primary);
 }
 
+/* God mode UI */
+.god-mode-indicator {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + var(--space-lg));
+  right: var(--space-lg);
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: rgba(20, 20, 36, 0.75);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  color: #f8fafc;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  z-index: 70;
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(10px);
+}
+
+.god-mode-panel {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 120px);
+  right: var(--space-lg);
+  width: min(320px, 90vw);
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  background: rgba(16, 20, 36, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: var(--shadow-medium);
+  z-index: 70;
+  backdrop-filter: blur(12px);
+}
+
+.god-mode-panel.hidden {
+  display: none;
+}
+
+.god-mode-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.god-mode-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.god-mode-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.god-mode-tools button {
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(30, 41, 59, 0.6);
+  color: #e2e8f0;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+
+.god-mode-tools button.active {
+  border-color: rgba(168, 85, 247, 0.55);
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.25);
+  background: rgba(88, 28, 135, 0.5);
+  color: #f8fafc;
+}
+
+.god-mode-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+  .god-mode-panel {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+  }
+}
+
 /* Contextual interaction hints */
 .interaction-hint {
   position: fixed;

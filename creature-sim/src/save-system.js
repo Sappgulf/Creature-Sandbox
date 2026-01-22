@@ -23,7 +23,7 @@ export class SaveSystem {
    */
   serialize(world, camera, analytics, lineageTracker, additionalData = {}) {
     const saveData = {
-      version: '2.3',
+      version: '2.4',
       timestamp: Date.now(),
       savedAt: new Date().toISOString(),
 
@@ -34,7 +34,7 @@ export class SaveSystem {
         t: world.t,
         seasonPhase: world.seasonPhase,
         _nextId: world.creatureManager?._nextId ?? world._nextId,
-        chaosLevel: world.chaos?.level ?? 0.5,
+        chaosLevel: world.chaosBaseLevel ?? world.chaos?.level ?? 0.5,
 
         // Time system
         timeOfDay: world.timeOfDay ?? 12,
@@ -53,7 +53,12 @@ export class SaveSystem {
           weatherType: world.environment.weatherType,
           weatherTransitionTime: world.environment.weatherTransitionTime,
           weatherTargetIntensity: world.environment.weatherTargetIntensity,
-          diseaseTimer: world.environment.diseaseTimer
+          diseaseTimer: world.environment.diseaseTimer,
+          moodType: world.environment.moodType,
+          moodIntensity: world.environment.moodIntensity,
+          moodTimer: world.environment.moodTimer,
+          moodDuration: world.environment.moodDuration,
+          windAngle: world.environment.windAngle
         } : null,
 
         // Creatures
@@ -125,8 +130,26 @@ export class SaveSystem {
           bites: f.bites,
           biteEnergy: f.biteEnergy,
           type: f.type,
-          scentRadius: f.scentRadius
+          scentRadius: f.scentRadius,
+          sourceId: f.sourceId ?? null,
+          sourceTag: f.sourceTag ?? null,
+          origin: f.origin ?? null
         })),
+        foodPatches: world.ecosystem?.foodPatches
+          ? world.ecosystem.foodPatches.map(patch => ({
+            id: patch.id,
+            x: patch.x,
+            y: patch.y,
+            radius: patch.radius,
+            fertility: patch.fertility,
+            maxStock: patch.maxStock,
+            stock: patch.stock,
+            pressure: patch.pressure,
+            depletedTimer: patch.depletedTimer,
+            spawnCooldown: patch.spawnCooldown,
+            tag: patch.tag ?? null
+          }))
+          : [],
         restZones: world.restZones ? world.restZones.map(z => ({
           id: z.id,
           x: z.x,
@@ -261,6 +284,15 @@ export class SaveSystem {
       world.environment.weatherTransitionTime = toNumber(envData?.weatherTransitionTime, world.environment.weatherTransitionTime);
       world.environment.weatherTargetIntensity = toNumber(envData?.weatherTargetIntensity, world.environment.weatherTargetIntensity);
       world.environment.diseaseTimer = toNumber(envData?.diseaseTimer, world.environment.diseaseTimer);
+      if (envData?.moodType) {
+        world.environment.moodType = envData.moodType;
+      }
+      world.environment.moodIntensity = toNumber(envData?.moodIntensity, world.environment.moodIntensity);
+      world.environment.moodTimer = toNumber(envData?.moodTimer, world.environment.moodTimer);
+      world.environment.moodDuration = toNumber(envData?.moodDuration, world.environment.moodDuration);
+      world.environment.windAngle = toNumber(envData?.windAngle, world.environment.windAngle);
+      world.environment.updateDayNightState?.();
+      world.environment.updateAmbientMood?.(0);
 
       const seasonKey = world.environment.currentSeason || world.environment.seasonCycle?.[world.environment.seasonIndex];
       if (seasonKey && world.environment.seasonConfigs?.[seasonKey]) {
@@ -279,6 +311,9 @@ export class SaveSystem {
 
     if (world.sandbox?.restore) {
       world.sandbox.restore(data.sandboxProps || data.sandbox?.props || []);
+    }
+    if (world.ecosystem?.restoreFoodPatches) {
+      world.ecosystem.restoreFoodPatches(data.foodPatches || []);
     }
 
     // Restore creatures
@@ -396,6 +431,9 @@ export class SaveSystem {
       biteEnergy: toNumber(f.biteEnergy, CreatureAgentTuning.FOOD.BITE_ENERGY),
       type: f.type ?? 'grass',
       scentRadius: toNumber(f.scentRadius, CreatureAgentTuning.FOOD.SCENT_RADIUS),
+      sourceId: f.sourceId ?? null,
+      sourceTag: f.sourceTag ?? null,
+      origin: f.origin ?? null,
       t: 0
     }));
     if (world.foodGrid) {
@@ -686,7 +724,7 @@ export class SaveSystem {
       return Number.isFinite(num) ? num : fallback;
     };
     // Current version - no migration needed
-    if (fromVersion === '2.3') {
+    if (fromVersion === '2.4') {
       return saveData;
     }
 
@@ -704,10 +742,18 @@ export class SaveSystem {
       }
     };
 
+    if (fromVersion === '2.3') {
+      if (!migrated.world?.foodPatches) migrated.world.foodPatches = [];
+      migrated.version = '2.4';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.4`);
+      return migrated;
+    }
+
     if (fromVersion === '2.2') {
       ensureMemoryDefaults();
-      migrated.version = '2.3';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.3`);
+      if (!migrated.world?.foodPatches) migrated.world.foodPatches = [];
+      migrated.version = '2.4';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.4`);
       return migrated;
     }
 
@@ -728,8 +774,9 @@ export class SaveSystem {
       }
       if (!migrated.world?.restZones) migrated.world.restZones = [];
       ensureMemoryDefaults();
-      migrated.version = '2.3';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.3`);
+      if (!migrated.world?.foodPatches) migrated.world.foodPatches = [];
+      migrated.version = '2.4';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.4`);
       return migrated;
     }
 
@@ -751,12 +798,13 @@ export class SaveSystem {
       }
       if (!migrated.world?.restZones) migrated.world.restZones = [];
       ensureMemoryDefaults();
-      migrated.version = '2.3';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.3`);
+      if (!migrated.world?.foodPatches) migrated.world.foodPatches = [];
+      migrated.version = '2.4';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.4`);
       return migrated;
     }
 
-    // Migration from 1.x to 2.0
+    // Migration from 1.x to 2.x
     if (fromVersion.startsWith('1.')) {
       // Ensure world structure exists
       if (!migrated.world) {
@@ -765,7 +813,7 @@ export class SaveSystem {
 
       // Add missing fields with defaults
       if (!migrated.world.timeOfDay) migrated.world.timeOfDay = 12;
-      if (!migrated.world.dayLength) migrated.world.dayLength = 120;
+      if (!migrated.world.dayLength) migrated.world.dayLength = 600;
       if (!migrated.world.corpses) migrated.world.corpses = [];
       if (!migrated.world.restZones) migrated.world.restZones = [];
 
@@ -791,8 +839,9 @@ export class SaveSystem {
         }
       }
       ensureMemoryDefaults();
-      migrated.version = '2.3';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.3`);
+      if (!migrated.world?.foodPatches) migrated.world.foodPatches = [];
+      migrated.version = '2.4';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.4`);
     }
 
     return migrated;

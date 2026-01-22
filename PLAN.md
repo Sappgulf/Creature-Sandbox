@@ -7,6 +7,29 @@
 - [ ] Expand sandbox interactions with props, drag/throw, and micro-goals
 - [ ] Balance pass: tune grab/throw, camera smoothing, prop forces, and mobile touch sensitivity
 
+## Session Audit (2026-02-04)
+
+### Focus
+1. Environmental rhythm (day/night + food cycles) with subtle behavior biasing.
+2. Lightweight weather mood (wind/calm) for ambient variation.
+3. Optional god mode tools with minimal UI + save/load safety.
+
+### Integration Points (pre-change)
+- World update loop: `World.step()` → `WorldEnvironment.update()` + `WorldEcosystem.update()` + `World.updateFood()` in `creature-sim/src/world-core.js`.
+- Creature needs + goals: `_updateNeeds()` and `_selectGoal()` in `creature-sim/src/creature.js`; movement speed in `creature-sim/src/creature-behavior.js`.
+- Rendering overlays: day/night + season tint in `creature-sim/src/renderer.js`.
+- UI toggle entry: HUD overflow menu (`creature-sim/src/menu-model.js`, `creature-sim/src/hud-menu.js`) and quick action area (`creature-sim/index.html`).
+- Save/load: environment fields in `creature-sim/src/save-system.js`.
+
+### Planned Actions
+- Add cached day/night phase + influence values in `WorldEnvironment`.
+- Wire day/night bias into needs decay, goal scoring, and movement speed.
+- Implement food regrowth patches with time-of-day + population pressure influences.
+- Add lightweight wind/calm mood loop with clear visual tint.
+- Add optional god mode toggle + minimal tool bar (food source, calm zone, chaos nudge, spawn/remove).
+- Persist time-of-day + environment state; god mode does not persist.
+- Update README, smoke tests, and changelog entries.
+
 ## Session Audit (2026-02-03)
 
 ### Focus

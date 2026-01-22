@@ -3,6 +3,7 @@
  */
 import { rand, clamp, dist2 } from './utils.js';
 import { CreatureConfig } from './creature-config.js';
+import { CreatureAgentTuning } from './creature-agent-constants.js';
 import { TempObjectPool } from './object-pool.js';
 
 export class CreatureBehaviorSystem {
@@ -370,11 +371,27 @@ export class CreatureBehaviorSystem {
     // Status modifiers
     baseSpeed *= this.getStatusSpeedMultiplier();
 
+    const dayNight = this.creature._lastWorld?.dayNightState;
+    if (dayNight) {
+      const dayFactor = clamp((dayNight.light - 0.2) / 0.8, 0, 1);
+      const nightMult = CreatureAgentTuning.DAY_NIGHT.MOVE_NIGHT_MULT;
+      const dayMult = CreatureAgentTuning.DAY_NIGHT.MOVE_DAY_MULT;
+      baseSpeed *= nightMult + (dayMult - nightMult) * dayFactor;
+    }
+
     // Apply movement (use cached trig calculations)
     const speed = baseSpeed * dt;
     const { cos: dirCos, sin: dirSin } = this.getCachedTrig(this.creature.dir);
     this.creature.x += dirCos * speed;
     this.creature.y += dirSin * speed;
+
+    const windX = this.creature._lastWorld?.moodState?.windX ?? 0;
+    const windY = this.creature._lastWorld?.moodState?.windY ?? 0;
+    if (windX || windY) {
+      const windScale = 18;
+      this.creature.x += windX * windScale * dt;
+      this.creature.y += windY * windScale * dt;
+    }
 
     // Update animation
     this.creature._updateAnimationState(speed, this.creature._lastWorld?.t || 0);

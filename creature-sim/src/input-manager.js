@@ -6,6 +6,7 @@ import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { clamp } from './utils.js';
+import { CreatureAgentTuning } from './creature-agent-constants.js';
 
 export class InputManager {
   constructor(canvas, camera, tools, world) {
@@ -48,6 +49,11 @@ export class InputManager {
       grabOffsetX: 0,
       grabOffsetY: 0
     };
+    this.godHoldTimeout = null;
+    this.godHoldPointerId = null;
+    this.godHoldTriggered = false;
+    this.godHoldStart = null;
+    this.godHoldThreshold = 14;
     this.grabActivateMs = 160;
     this.grabActivateMsTouch = 220;
     this.grabMoveThreshold = 7;
@@ -453,18 +459,23 @@ export class InputManager {
       return;
     }
 
+    if (e.pointerType === 'touch' && e.button === 0) {
+      this.scheduleGodHold(e);
+    }
+
     // Handle left click
     if (e.button === 0) {
       gameState.painting = true;
 
-      const dragCandidate = this._prepareCreatureDrag(worldPos.x, worldPos.y, e);
+      const allowDrag = !gameState.godModeActive;
+      const dragCandidate = allowDrag ? this._prepareCreatureDrag(worldPos.x, worldPos.y, e) : false;
       if (dragCandidate) {
         gameState.travelDrag = null;
         gameState.travelPreview = null;
       }
 
       // Set up travel drag for inspect mode
-      if (this.tools.mode === 'inspect' && !e.shiftKey && !dragCandidate) {
+      if (this.tools.mode === 'inspect' && !e.shiftKey && !dragCandidate && !gameState.godModeActive) {
         gameState.travelDrag = {
           startX: this.camera.targetX,
           startY: this.camera.targetY,
@@ -486,6 +497,14 @@ export class InputManager {
    * Handle pointer move events
    */
   onPointerMove(e) {
+    if (this.godHoldPointerId === e.pointerId && this.godHoldStart) {
+      const dx = e.clientX - this.godHoldStart.x;
+      const dy = e.clientY - this.godHoldStart.y;
+      if (Math.hypot(dx, dy) > this.godHoldThreshold) {
+        this.clearGodHold();
+      }
+    }
+
     if (this.dragState.active || this.dragState.pending) {
       this._updateCreatureDrag(e);
       return;
@@ -533,6 +552,7 @@ export class InputManager {
    */
   onPointerUp(e) {
     this.canvas.releasePointerCapture?.(e.pointerId);
+    this.clearGodHold();
 
     const wasDragging = this.dragState.active;
     if (this.dragState.active || this.dragState.pending) {
@@ -567,7 +587,7 @@ export class InputManager {
       } else {
         this.camera.focusOn(gameState.travelDrag.latest.x, gameState.travelDrag.latest.y);
       }
-    } else if (this.tools.mode === 'inspect' && e.button === 0 && !e.shiftKey) {
+    } else if (this.tools.mode === 'inspect' && e.button === 0 && !e.shiftKey && !gameState.godModeActive) {
       this.camera.focusOn(x, y);
     }
 
@@ -724,6 +744,15 @@ export class InputManager {
     const sy = canvasY - rect.height / 2;
     const { x, y } = this.camera.screenToWorld(sx, sy);
 
+    if (this.godHoldTriggered) {
+      return;
+    }
+
+    if (gameState.godModeActive) {
+      this.handleGodModeAction(x, y, isDrag);
+      return;
+    }
+
     // Handle different tool modes
     const mode = this.tools?.mode || 'inspect';
 
@@ -809,6 +838,101 @@ export class InputManager {
         }
         break;
       }
+    }
+  }
+
+  scheduleGodHold(e) {
+    this.clearGodHold();
+    this.godHoldPointerId = e.pointerId;
+    this.godHoldStart = { x: e.clientX, y: e.clientY };
+    this.godHoldTimeout = window.setTimeout(() => {
+      this.godHoldTriggered = true;
+      eventSystem.emit(GameEvents.GOD_MODE_TOGGLE, { source: 'gesture' });
+    }, 650);
+  }
+
+  clearGodHold() {
+    if (this.godHoldTimeout) {
+      window.clearTimeout(this.godHoldTimeout);
+      this.godHoldTimeout = null;
+    }
+    this.godHoldPointerId = null;
+    this.godHoldStart = null;
+    this.godHoldTriggered = false;
+  }
+
+  handleGodModeAction(x, y, isDrag) {
+    if (isDrag) return;
+    const tool = gameState.godModeTool || 'food';
+
+    switch (tool) {
+      case 'food': {
+        const patch = this.world.ecosystem?.addFoodPatch?.(x, y, {
+          radius: CreatureAgentTuning.GOD_MODE.FOOD_RADIUS,
+          fertility: 1.2,
+          stock: CreatureAgentTuning.FOOD_PATCHES.START_STOCK * 1.8,
+          tag: 'god'
+        });
+        if (patch && this.world.ecosystem?.spawnFoodFromPatch) {
+          for (let i = 0; i < 4; i++) {
+            this.world.ecosystem.spawnFoodFromPatch(patch);
+          }
+        }
+        eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'food', x, y });
+        break;
+      }
+      case 'calm': {
+        this.world.addCalmZone(
+          x,
+          y,
+          CreatureAgentTuning.GOD_MODE.CALM_RADIUS,
+          CreatureAgentTuning.GOD_MODE.CALM_DURATION,
+          CreatureAgentTuning.GOD_MODE.CALM_STRENGTH
+        );
+        eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'calm', x, y });
+        break;
+      }
+      case 'chaos': {
+        this.world.triggerChaosNudge(
+          CreatureAgentTuning.GOD_MODE.CHAOS_INTENSITY,
+          CreatureAgentTuning.GOD_MODE.CHAOS_DURATION
+        );
+        this.world.environment?.triggerWindBurst?.(
+          CreatureAgentTuning.GOD_MODE.CHAOS_INTENSITY,
+          CreatureAgentTuning.GOD_MODE.CHAOS_DURATION
+        );
+        eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'chaos', x, y });
+        break;
+      }
+      case 'spawn': {
+        const limit = CreatureAgentTuning.MATING.POPULATION_HARD_CAP;
+        if (this.world.creatures.length >= limit) {
+          eventSystem.emit(GameEvents.NOTIFICATION, {
+            message: 'Population at limit. Let them breathe.',
+            type: 'warning',
+            duration: 2000
+          });
+          break;
+        }
+        const type = gameState.selectedCreatureType || 'herbivore';
+        this.world.spawnCreatureType(type, x, y);
+        eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'spawn', x, y });
+        break;
+      }
+      case 'remove': {
+        const target = this._findCreatureAt(x, y, 34 / this.camera.zoom);
+        if (target) {
+          target.alive = false;
+          target.deathTime = this.world.t;
+          target.deathCause = 'god';
+          target.killedBy = 'god';
+          this.world.creatureManager.removeCreature(target);
+          eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'remove', id: target.id });
+        }
+        break;
+      }
+      default:
+        break;
     }
   }
 
