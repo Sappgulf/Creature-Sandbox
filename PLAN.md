@@ -5,12 +5,53 @@
 - [ ] Evaluate tool favorites / quick swap UX (post-brush-size update)
 - [ ] Audit save/load UX for surfaced feedback (non-intrusive)
 
+## Session Audit (2026-01-24)
+
+### 10 most visible rough edges (inspection)
+1. Overflow menu lacked in-context help after condensation.
+2. Save/load hotkeys documented but not implemented for file downloads.
+3. Selected creature card disappeared entirely when nothing was selected.
+4. Icon-only quick actions relied on hover tooltips (not visible on mobile).
+5. Mobile pan/zoom felt overly sensitive and jittery.
+6. Mobile keyboard could cover inputs in panels.
+7. Ecosystem health updated every frame (overkill on mobile).
+8. Pointer move path created new objects each event.
+9. Export actions had no confirmation feedback.
+10. Menu mapping for condensed HUD was not visible in-app.
+
+### Top 3 performance hotspots (inspection)
+1. Per-frame ecosystem health recalculation in `GameLoop.updateSubsystems`.
+2. Frequent UI updates for stats/selected info even when unchanged.
+3. Pointer move allocations during continuous panning.
+
 ## Next
 
 - [ ] Expand ECS stub for batch processing if needed
 - [ ] Prototype creature presets panel for sandbox quick starts
 
 ## Done
+
+### 2026-01-24
+
+**Changed:**
+- `creature-sim/src/hud-menu.js` — added Help section to overflow menu/sheet.
+- `creature-sim/src/ui.js` — added empty-state guidance for selected creature card.
+- `creature-sim/src/main.js` — implemented save/load hotkeys, dev-only FPS overlay/timing logs, load helpers.
+- `creature-sim/src/game-loop.js` — throttled eco-health updates and wired dev FPS/timing logs.
+- `creature-sim/src/mobile-support.js` — tuned gesture sensitivity + keyboard-safe padding updates.
+- `creature-sim/src/input-manager.js` — reduced pointer move allocations.
+- `creature-sim/src/ui-controller.js` — export toasts.
+- `creature-sim/index.html` — tooltip hints and accessibility labels for icon buttons.
+- `creature-sim/styles.css` — help/tooltip/keyboard/FPS overlay styles.
+- `docs/ROADMAP.md`, `docs/SMOKE_TESTS.md`, `docs/UI_NAVIGATION.md`, `docs/ACCESSIBILITY.md` — updated docs.
+- `README.md`, `CHANGELOG.md` — documented save/load hotkeys and help section.
+
+**Why:**
+- Improve UX clarity on mobile/desktop, add feedback for key actions, and tighten mobile performance.
+
+**Verified:**
+- `npm test`
+- `npm run lint`
 
 ### 2026-01-23
 

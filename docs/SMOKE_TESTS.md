@@ -30,6 +30,11 @@
    - Refresh the page.
    - Use **Ctrl+O** to load the save.
    - Confirm creatures, food counts, and time of day restore correctly.
+   - Optional: use **Ctrl/⌘ + S** to download a save file and **Ctrl/⌘ + O** to load it back.
+
+7. **Help section**
+   - Open **⋯ More Actions**.
+   - Confirm the Help section lists controls, shortcuts, and where features live.
 
 ## Mobile-Specific Checks
 

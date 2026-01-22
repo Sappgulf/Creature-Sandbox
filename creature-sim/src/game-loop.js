@@ -51,6 +51,7 @@ export class GameLoop {
     this.ecoHealth = subsystems.ecoHealth;
     this.gameplayModes = subsystems.gameplayModes;
     this.sessionGoals = subsystems.sessionGoals;
+    this.devTools = subsystems.devTools || {};
 
     this.lastNow = performance.now();
     this.fixedDt = configManager.get('performance', 'fixedTimeStep', 1 / 60);
@@ -64,6 +65,9 @@ export class GameLoop {
     this.lastAnalyticsUpdate = 0;
     this.lastUIUpdate = 0;
     this.lastDashboardUpdate = 0;
+    this.lastEcoHealthUpdate = 0;
+    this.lastTimingLog = 0;
+    this.timingLogInterval = Number(this.devTools.timingLogInterval || 5000) || 5000;
 
     // Track pause state for UI sync
     this._lastPausedState = false;
@@ -297,6 +301,14 @@ export class GameLoop {
 
       // Update performance monitor
       updatePerformanceMonitor();
+
+      if (this.devTools.timingLogs) {
+        const logNow = performance.now();
+        if (logNow - this.lastTimingLog >= this.timingLogInterval) {
+          this.lastTimingLog = logNow;
+          console.debug('⏱️ Loop timings', performanceProfiler.getScopeStats());
+        }
+      }
 
       // Optional performance report logging
       if (this.profileReportEnabled) {
@@ -607,7 +619,11 @@ export class GameLoop {
 
     // Update eco-health
     if (this.ecoHealth) {
-      this.ecoHealth.update(this.world);
+      this.lastEcoHealthUpdate += dt;
+      if (this.lastEcoHealthUpdate >= 0.5) {
+        this.ecoHealth.update(this.world);
+        this.lastEcoHealthUpdate = 0;
+      }
     }
 
     // Update gene editor
@@ -668,6 +684,12 @@ export class GameLoop {
         this.renderer.culledCount,
         (this.renderer.renderedCount || 0) + (this.world.food?.length || 0)
       );
+
+      const devFpsEl = domCache.get('devFps');
+      if (devFpsEl && this.devTools?.fpsOverlay) {
+        const stats = performanceProfiler.getStats();
+        devFpsEl.textContent = `FPS ${stats.current.fps.toFixed(0)} · ${stats.current.frameTime.toFixed(1)}ms`;
+      }
     }
   }
 

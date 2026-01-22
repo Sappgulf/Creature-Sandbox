@@ -85,12 +85,21 @@ export function renderStats(el, world, fps, extra={}) {
 export function renderSelectedInfo(el, creature, { world=null, lineageTracker=null }={}) {
   if (!el) return;
   if (!creature) {
-    el.classList.add('hidden');
-    el.innerHTML = '';
+    el.classList.remove('hidden');
+    el.classList.add('selected-empty');
+    el.innerHTML = `
+      <div class="empty-title">No creature selected</div>
+      <div class="muted">Tap a creature to inspect, or spawn one to get started.</div>
+      <ul class="empty-list">
+        <li>Use <strong>S</strong> or the spawn button to place creatures.</li>
+        <li>Shift+click sets a lineage root.</li>
+      </ul>
+    `;
     return;
   }
 
   el.classList.remove('hidden');
+  el.classList.remove('selected-empty');
 
   // Resolve lineage-friendly name if available
   let lineageName = null;

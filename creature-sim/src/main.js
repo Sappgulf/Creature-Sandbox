@@ -51,6 +51,32 @@ function isNotificationSystem(candidate) {
     typeof candidate.draw === 'function';
 }
 
+function getDevToolsConfig() {
+  if (typeof window === 'undefined') return { enabled: false, timingLogs: false, fpsOverlay: false };
+  const params = new URLSearchParams(window.location.search);
+  const enabled = params.has('devtools') || localStorage.getItem('creature-sim-devtools') === 'true';
+  const fpsOverlay = enabled && (params.has('fps') || localStorage.getItem('creature-sim-fps') === 'true' || params.has('devtools'));
+  const timingLogs = enabled && (params.has('timing') || localStorage.getItem('creature-sim-timing') === 'true');
+  const timingLogInterval = Number(params.get('timingInterval') || 5000) || 5000;
+  return {
+    enabled,
+    fpsOverlay,
+    timingLogs,
+    timingLogInterval
+  };
+}
+
+function createDevFpsOverlay(enabled) {
+  if (!enabled || typeof document === 'undefined') return null;
+  const overlay = document.createElement('div');
+  overlay.id = 'dev-fps';
+  overlay.className = 'dev-fps';
+  overlay.setAttribute('aria-live', 'polite');
+  overlay.textContent = 'FPS --';
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
 // ============================================================================
 // INITIALIZATION
 // ============================================================================
@@ -68,6 +94,16 @@ function initializeApp() {
     errorHandler.criticalError(new Error('Failed to initialize DOM cache'), 'DOM cache initialization');
     return;
   });
+
+  const devTools = getDevToolsConfig();
+  if (devTools.enabled) {
+    document.body.classList.add('dev-tools');
+  }
+
+  const devFpsOverlay = createDevFpsOverlay(devTools.fpsOverlay);
+  if (devFpsOverlay) {
+    domCache.add('devFps', devFpsOverlay);
+  }
 
   // Get core canvas element
   const canvas = errorHandler.safeExecute(() => {
@@ -299,6 +335,26 @@ function initializeApp() {
     return new AchievementSystem();
   }, 'Achievement system initialization', null);
 
+  const notifyUI = (message, type = 'info', duration = 2200) => {
+    eventSystem.emit(GameEvents.NOTIFICATION, { message, type, duration });
+  };
+
+  const applyLoadedState = (loaded, source = 'save') => {
+    if (!loaded) return false;
+    Object.assign(world, loaded.world);
+    Object.assign(camera, loaded.camera);
+    if (loaded.lineageNames && lineageTracker) {
+      lineageTracker.names = loaded.lineageNames;
+    }
+    if (tutorial) {
+      tutorial.loadProgress();
+    }
+    if (audio) {
+      audio.playUISound(source === 'autosave' ? 'success' : 'toggle');
+    }
+    return true;
+  };
+
   // Attach systems to world (with error handling)
   errorHandler.safeExecute(() => {
     if (lineageTracker) world.attachLineageTracker(lineageTracker);
@@ -362,7 +418,8 @@ function initializeApp() {
       geneEditor,
       ecoHealth,
       gameplayModes,
-      sessionGoals
+      sessionGoals,
+      devTools
     });
   }, 'Game loop initialization', null);
 
@@ -370,6 +427,64 @@ function initializeApp() {
     errorHandler.criticalError(new Error('Failed to create game loop'), 'Game loop initialization');
     throw new Error('Cannot continue without game loop');
   }
+
+  // Save/load hotkeys (Ctrl/⌘ + S / O)
+  const saveFileInput = document.createElement('input');
+  saveFileInput.type = 'file';
+  saveFileInput.accept = '.crsim,.json,application/json';
+  saveFileInput.className = 'hidden';
+  document.body.appendChild(saveFileInput);
+
+  const handleSaveToFile = () => {
+    if (!saveSystem) return;
+    try {
+      saveSystem.saveToFile(world, camera, analytics, lineageTracker);
+      notifyUI('💾 Save file downloaded', 'success');
+    } catch (err) {
+      console.error('Save failed:', err);
+      notifyUI('Save failed. Check console for details.', 'error', 3000);
+    }
+  };
+
+  const handleLoadFromFile = async (file) => {
+    if (!saveSystem || !file) return;
+    try {
+      const loaded = await saveSystem.loadFromFile(file, World, Creature, Camera, makeGenes, BiomeGenerator);
+      if (!applyLoadedState(loaded, 'file')) {
+        throw new Error('Invalid save file');
+      }
+      notifyUI('📂 Save loaded', 'success');
+    } catch (err) {
+      console.error('Load failed:', err);
+      notifyUI('Load failed. Verify the save file.', 'error', 3200);
+    }
+  };
+
+  saveFileInput.addEventListener('change', async () => {
+    const [file] = saveFileInput.files || [];
+    if (!file) return;
+    await handleLoadFromFile(file);
+    saveFileInput.value = '';
+  });
+
+  window.addEventListener('keydown', (event) => {
+    const target = event.target;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+    if (!saveSystem) return;
+    if ((event.ctrlKey || event.metaKey) && !event.altKey) {
+      const key = event.key.toLowerCase();
+      if (key === 's') {
+        event.preventDefault();
+        event.stopPropagation();
+        handleSaveToFile();
+      }
+      if (key === 'o') {
+        event.preventDefault();
+        event.stopPropagation();
+        saveFileInput.click();
+      }
+    }
+  }, { capture: true });
 
   // ============================================================================
   // ENHANCED SYSTEMS INITIALIZATION
@@ -640,12 +755,9 @@ function initializeApp() {
             initAudioOnInteraction();
             const loaded = saveSystem.loadAutoSave(World, Creature, Camera, makeGenes, BiomeGenerator);
             if (loaded) {
-              Object.assign(world, loaded.world);
-              Object.assign(camera, loaded.camera);
-              if (loaded.lineageNames && lineageTracker) {
-                lineageTracker.names = loaded.lineageNames;
-              }
+              applyLoadedState(loaded, 'autosave');
               console.log('✅ Auto-save loaded successfully!');
+              notifyUI('✅ Continue loaded', 'success');
               if (audio) audio.playUISound('success');
             }
           }, 'Auto-save loading', () => {

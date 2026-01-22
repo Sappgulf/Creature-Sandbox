@@ -134,6 +134,46 @@ export class HudMenu {
       groupWrapper.appendChild(groupItems);
       container.appendChild(groupWrapper);
     });
+
+    this.appendHelpSection(container, variant);
+  }
+
+  appendHelpSection(container, variant) {
+    if (!container) return;
+
+    const helpWrapper = document.createElement('div');
+    helpWrapper.className = `hud-help hud-help-${variant}`;
+    helpWrapper.setAttribute('role', 'note');
+    helpWrapper.setAttribute('aria-label', 'Help and controls');
+
+    helpWrapper.innerHTML = `
+      <div class="hud-help-title">Help</div>
+      <div class="hud-help-grid">
+        <div>
+          <div class="hud-help-subtitle">Controls</div>
+          <ul class="hud-help-list">
+            <li>Desktop: drag to pan, scroll to zoom, <span class="hud-help-key">Alt</span> + drag to glide.</li>
+            <li>Mobile: drag to pan, pinch to zoom, double-tap to zoom in.</li>
+            <li>Tap a creature to inspect; Shift+Click sets a lineage root.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="hud-help-subtitle">Shortcuts</div>
+          <ul class="hud-help-list">
+            <li><span class="hud-help-key">Space</span> pause, <span class="hud-help-key">F/S/E/X</span> tools.</li>
+            <li><span class="hud-help-key">[</span>/<span class="hud-help-key">]</span> brush size, <span class="hud-help-key">?</span> help overlay.</li>
+            <li><span class="hud-help-key">Ctrl/⌘ + S</span> save, <span class="hud-help-key">Ctrl/⌘ + O</span> load.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="hud-help-subtitle">Menu map</div>
+      <ul class="hud-help-list">
+        <li><strong>Modes &amp; Goals</strong> shows game mode + session goals.</li>
+        <li>Find Tools, Insights, and Progress in <strong>⋯ More Actions</strong>.</li>
+      </ul>
+    `;
+
+    container.appendChild(helpWrapper);
   }
 
   updateActionStates() {

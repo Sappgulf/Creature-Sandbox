@@ -1,5 +1,31 @@
 # Creature Sandbox Roadmap
 
+## Shipped (2026-01-24)
+
+1. **Help section + UX guidance**
+   - **Description:** Added an in-menu help section for controls, shortcuts, and menu mapping; added empty-state guidance in the selected creature card.
+   - **Likely files:** `creature-sim/src/hud-menu.js`, `creature-sim/src/ui.js`, `creature-sim/styles.css`
+   - **Risk level:** Low
+   - **Verification:** Open ⋯ menu, verify Help section appears, and confirm selected info shows guidance when nothing is selected.
+
+2. **Save/load hotkeys + export toasts**
+   - **Description:** Added Ctrl/⌘+S save to file, Ctrl/⌘+O load from file, and toast confirmations for export actions.
+   - **Likely files:** `creature-sim/src/main.js`, `creature-sim/src/ui-controller.js`
+   - **Risk level:** Low
+   - **Verification:** Press Ctrl/⌘+S to download, Ctrl/⌘+O to load, and export CSV/JSON to confirm toasts.
+
+3. **Mobile input polish + keyboard safety**
+   - **Description:** Tuned touch pan/zoom sensitivity, reduced jitter, and added keyboard-safe panel padding on mobile.
+   - **Likely files:** `creature-sim/src/mobile-support.js`, `creature-sim/styles.css`
+   - **Risk level:** Low
+   - **Verification:** On mobile, pan/zoom the camera and open an input to confirm panel stays visible.
+
+4. **Perf + dev instrumentation**
+   - **Description:** Throttled ecosystem health updates, reduced pointer allocations, and added dev-only FPS overlay/timing logs.
+   - **Likely files:** `creature-sim/src/game-loop.js`, `creature-sim/src/input-manager.js`, `creature-sim/src/main.js`
+   - **Risk level:** Low
+   - **Verification:** Run with `?devtools=1&fps=1` to see overlay and monitor smooth updates.
+
 ## Shipped (2026-01-22)
 
 1. **Gene code sharing + spawn mode feedback**

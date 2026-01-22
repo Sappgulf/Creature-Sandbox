@@ -379,7 +379,12 @@ export class InputManager {
 
     // Update pointer state
     this.canvas.setPointerCapture(e.pointerId);
-    gameState.lastPointer = { x: e.clientX, y: e.clientY };
+    if (gameState.lastPointer) {
+      gameState.lastPointer.x = e.clientX;
+      gameState.lastPointer.y = e.clientY;
+    } else {
+      gameState.lastPointer = { x: e.clientX, y: e.clientY };
+    }
 
     // Handle panning (middle mouse or alt key)
     if (e.button === 1 || e.button === 2 || e.altKey || e.metaKey) {
@@ -418,7 +423,12 @@ export class InputManager {
       const dx = e.clientX - gameState.lastPointer.x;
       const dy = e.clientY - gameState.lastPointer.y;
       this.camera.pan(-dx, -dy);
-      gameState.lastPointer = { x: e.clientX, y: e.clientY };
+      if (gameState.lastPointer) {
+        gameState.lastPointer.x = e.clientX;
+        gameState.lastPointer.y = e.clientY;
+      } else {
+        gameState.lastPointer = { x: e.clientX, y: e.clientY };
+      }
       return;
     }
 
