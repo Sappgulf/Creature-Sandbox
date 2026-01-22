@@ -138,6 +138,7 @@ export class Creature {
       recentDamage: 0,
       hitFlash: 0
     };
+    this._lastCollisionReactAt = -Infinity;
     this.statusTimers = {
       diseaseSpread: rand(0.6, 1.2),
       venomTick: 1.2
@@ -655,7 +656,7 @@ export class Creature {
     // boundaryMode 'none' = no restrictions (current behavior)
 
     // NEW: Update animation state based on movement
-    this._updateAnimationState(spd, world.t);
+    this._updateAnimationState(spd, world.t, dt);
     this._updateReaction(dt);
 
     this.updateTrail(dt);
@@ -1174,10 +1175,15 @@ export class Creature {
     if (!this.externalImpulse) {
       this.externalImpulse = { vx: 0, vy: 0, decay, cap };
     }
-    this.externalImpulse.vx = clamp(this.externalImpulse.vx + vx, -cap, cap);
-    this.externalImpulse.vy = clamp(this.externalImpulse.vy + vy, -cap, cap);
+    const baseSize = this.size ?? 4;
+    const weight = clamp(baseSize / 4, 0.7, 1.35);
+    const scaledVX = vx / weight;
+    const scaledVY = vy / weight;
+    const effectiveCap = clamp(cap / weight, 180, 420);
+    this.externalImpulse.vx = clamp(this.externalImpulse.vx + scaledVX, -effectiveCap, effectiveCap);
+    this.externalImpulse.vy = clamp(this.externalImpulse.vy + scaledVY, -effectiveCap, effectiveCap);
     this.externalImpulse.decay = decay;
-    this.externalImpulse.cap = cap;
+    this.externalImpulse.cap = effectiveCap;
   }
 
   _applyExternalImpulse(dt) {
@@ -1235,6 +1241,9 @@ export class Creature {
   }
 
   reactToCollision(amount = 0.5) {
+    const worldTime = this._lastWorld?.t ?? 0;
+    if (worldTime - this._lastCollisionReactAt < 0.25) return;
+    this._lastCollisionReactAt = worldTime;
     const intensity = clamp(0.25 + amount * 0.08 + this.personality.reactivity * 0.25, 0.2, 1.2);
     this._triggerReaction('collision', intensity, 0.25);
     if (this.emotions) {
@@ -1391,12 +1400,13 @@ export class Creature {
   }
 
   // NEW: Update animation state based on behavior
-  _updateAnimationState(speed, worldTime) {
+  _updateAnimationState(speed, worldTime, dt) {
     const anim = this.animation;
+    const step = clamp(dt || 0.016, 0.01, 0.05);
 
     // Update animation timer (used for bobbing/cycles)
-    anim.timer += 0.016; // ~60fps equivalent
-    anim.bobPhase += speed * 0.02; // Speed affects bob rate
+    anim.timer += step; // Frame-rate independent timing
+    anim.bobPhase += speed * 0.02 * (step / 0.016); // Speed affects bob rate
 
     // Check if eating animation is active
     if (worldTime - anim.lastEat < anim.eatDuration) {
@@ -1406,7 +1416,7 @@ export class Creature {
 
     // Check if sleeping (low energy and stationary)
     if (this.energy < 15 && speed < 5) {
-      anim.sleepTimer += 0.016;
+      anim.sleepTimer += step;
       if (anim.sleepTimer > 2.0) { // Sleep after 2 seconds of low energy
         anim.state = 'sleeping';
 

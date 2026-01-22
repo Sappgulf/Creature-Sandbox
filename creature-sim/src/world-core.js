@@ -215,9 +215,9 @@ export class World {
         const dist = Math.sqrt(distSq);
         const nx = dx / dist;
         const ny = dy / dist;
-        const force = 110;
-        a.applyImpulse?.(-nx * force, -ny * force, { decay: 7.5, cap: 220 });
-        b.applyImpulse?.(nx * force, ny * force, { decay: 7.5, cap: 220 });
+        const force = 90;
+        a.applyImpulse?.(-nx * force, -ny * force, { decay: 7, cap: 200 });
+        b.applyImpulse?.(nx * force, ny * force, { decay: 7, cap: 200 });
         a.reactToCollision?.(0.35);
         b.reactToCollision?.(0.35);
         eventSystem.emit(GameEvents.CREATURE_BUMPED, { aId: a.id, bId: b.id });

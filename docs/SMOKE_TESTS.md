@@ -46,6 +46,19 @@
    - Open **🎛️ Modes & Goals**.
    - Confirm a goal appears for manual creature spawns and progresses when you spawn creatures.
 
+9. **Balance pass: grab/throw consistency**
+   - Switch to **Inspect** mode and grab a creature with a short drag.
+   - Confirm gentle drags release without huge launches.
+   - Flick a longer drag and confirm throws feel capped and predictable (no extreme launches).
+
+10. **Balance pass: camera stability**
+    - Pan and zoom quickly, then release.
+    - Confirm the camera settles without lingering jitter and overlays reappear after it stops.
+
+11. **Balance pass: creature reactions**
+    - Trigger a bounce pad or spinner on a creature.
+    - Confirm collision reactions are readable but not rapid-fire flashing.
+
 ## Mobile-Specific Checks
 
 1. **Touch controls + safe areas**
@@ -77,6 +90,11 @@
    - Tap top HUD buttons and the **⋯ More Actions** sheet items.
    - Confirm no tiny targets block touch usage.
    - Confirm the sheet respects safe-area padding.
+
+7. **Balance pass: touch drag + throw**
+   - In Inspect mode, press-and-drag a creature slowly.
+   - Confirm the grab doesn’t trigger instantly and the creature follows smoothly.
+   - Release after a short drag and confirm it doesn’t rocket off-screen.
 
 ## Accessibility Checks
 

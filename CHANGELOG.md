@@ -33,12 +33,19 @@ All notable changes to this project will be documented in this file.
 - Home screen copy now highlights playful sandbox tone.
 - Selected creature outlines now glow and pulse on selection.
 - Added soft creature bump reactions and sandbox prop rendering layer.
+- Tuned grab/throw thresholds, impulse caps, prop forces, and camera smoothing for more predictable play.
 
 ### Notes
 - **WHAT:** Added hover/grab outlines and grab/drop reactions to clarify direct manipulation.
 - **WHY:** Make interactable creatures feel obvious and responsive during drag/throw play.
 - **RISK:** Low; visual-only feedback layered on existing input handling.
 - **VERIFY:** `npm test`, `npm run lint`, and manual hover/drag checks.
+
+### Notes (2026-01-29)
+- **WHAT:** Rebalanced grab/throw impulses, prop strengths, collision bumps, and camera/touch smoothing to reduce extreme launches and jitter.
+- **WHY:** Make interactions readable, weighty, and consistent across desktop and mobile.
+- **RISK:** Medium; gameplay feel changes in core manipulation and prop responses.
+- **VERIFY:** `npm test`, `npm run lint`, plus updated balance-focused smoke checks.
 
 ### Notes (2026-01-28)
 - **WHAT:** Added mobile spawn picker sheet and auto-dismissing, dismissible interaction hints.

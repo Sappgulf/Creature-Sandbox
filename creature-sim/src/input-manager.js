@@ -5,6 +5,7 @@
 import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
 import { eventSystem, GameEvents } from './event-system.js';
+import { clamp } from './utils.js';
 
 export class InputManager {
   constructor(canvas, camera, tools, world) {
@@ -47,8 +48,14 @@ export class InputManager {
       grabOffsetX: 0,
       grabOffsetY: 0
     };
-    this.grabActivateMs = 140;
-    this.grabMoveThreshold = 6;
+    this.grabActivateMs = 160;
+    this.grabActivateMsTouch = 220;
+    this.grabMoveThreshold = 7;
+    this.grabMoveThresholdTouch = 11;
+    this.throwSpeedMin = 55;
+    this.throwSpeedMax = 260;
+    this.throwImpulseScale = 0.36;
+    this.throwImpulseCap = 320;
 
     this.initialize();
   }
@@ -855,7 +862,9 @@ export class InputManager {
       const dy = event.clientY - this.dragState.startY;
       const dist = Math.hypot(dx, dy);
       const heldMs = performance.now() - this.dragState.startTime;
-      if (dist >= this.grabMoveThreshold || heldMs >= this.grabActivateMs) {
+      const moveThreshold = event.pointerType === 'touch' ? this.grabMoveThresholdTouch : this.grabMoveThreshold;
+      const activateMs = event.pointerType === 'touch' ? this.grabActivateMsTouch : this.grabActivateMs;
+      if (dist >= moveThreshold || heldMs >= activateMs) {
         this._activateCreatureDrag(worldX, worldY);
       } else {
         return;
@@ -890,12 +899,20 @@ export class InputManager {
       const throwVX = this.dragState.velocityX;
       const throwVY = this.dragState.velocityY;
       const throwSpeed = Math.hypot(throwVX, throwVY);
-      if (throwSpeed > 40) {
-        const scale = 0.45;
-        creature.applyImpulse?.(throwVX * scale, throwVY * scale, { decay: 5.2, cap: 420 });
-        creature.dir = Math.atan2(throwVY, throwVX);
-        eventSystem.emit(GameEvents.CREATURE_THROWN, { creatureId: creature.id, speed: throwSpeed });
-        this.world?.particles?.addImpactRing?.(creature.x, creature.y, { color: '#facc15', size: 10 });
+      if (throwSpeed >= this.throwSpeedMin) {
+        const clampedSpeed = Math.min(throwSpeed, this.throwSpeedMax);
+        const speedScale = clampedSpeed / Math.max(throwSpeed, 1);
+        const scaledVX = throwVX * speedScale;
+        const scaledVY = throwVY * speedScale;
+        creature.applyImpulse?.(scaledVX * this.throwImpulseScale, scaledVY * this.throwImpulseScale, {
+          decay: 5.4,
+          cap: this.throwImpulseCap
+        });
+        creature.dir = Math.atan2(scaledVY, scaledVX);
+        eventSystem.emit(GameEvents.CREATURE_THROWN, { creatureId: creature.id, speed: clampedSpeed });
+        const intensity = clamp((clampedSpeed - this.throwSpeedMin) / (this.throwSpeedMax - this.throwSpeedMin), 0, 1);
+        const ringSize = 6 + intensity * 12;
+        this.world?.particles?.addImpactRing?.(creature.x, creature.y, { color: '#facc15', size: ringSize });
       }
       if (typeof creature.reactToDrop === 'function') {
         creature.reactToDrop({ x: creature.x, y: creature.y });
