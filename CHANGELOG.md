@@ -25,6 +25,8 @@ All notable changes to this project will be documented in this file.
 - Creature polish: fall/landing reactions, poke overreactions, impact squeaks, and eye tracking toward the pointer.
 - Curiosity prompts + tiny win toasts for playful experimentation.
 - Mood icons, recovery poses, and silly-action badges.
+- Ecosystem internal states (stress/energy/curiosity/stability) with social contagion and crowd pressure.
+- Creature tuning constants for health and damage balance.
 
 ### Changed
 - Interaction hints now auto-dismiss, include a close button, and clear on mode/panel transitions.
@@ -39,6 +41,14 @@ All notable changes to this project will be documented in this file.
 - Selected creature outlines now glow and pulse on selection.
 - Added soft creature bump reactions and sandbox prop rendering layer.
 - Tuned grab/throw thresholds, impulse caps, prop forces, and camera smoothing for more predictable play.
+- Increased default creature health, added collision/fall damage thresholds, and applied short damage i-frames.
+- Smoothed combat damage with clamped hits and attack cooldowns for longer-lived creatures.
+
+### Notes (2026-01-30)
+- **WHAT:** Added lightweight ecosystem state updates and rebalanced health/damage to reduce accidental deaths.
+- **WHY:** Keep creatures alive longer for play, while making impacts readable and emergent behavior visible.
+- **RISK:** Medium; combat and impact tuning changes across core simulation loops.
+- **VERIFY:** `npm test`, `npm run lint`, plus updated smoke tests for survival and ecosystem settling.
 
 ### Notes
 - **WHAT:** Added hover/grab outlines and grab/drop reactions to clarify direct manipulation.

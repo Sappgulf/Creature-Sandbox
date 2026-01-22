@@ -22,6 +22,8 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Seasonal variations**: Environmental changes affect food availability
 - **Temperature zones**: Comfort-based energy penalties
 - **Pheromone trails**: Creatures leave chemical signals for food sources
+- **Internal state loop**: Stress, curiosity, energy, and stability shift with impacts, crowding, and rest
+- **Social contagion**: Calm and panicked states subtly influence nearby creatures
 
 ### 📊 Real-Time Analytics
 - **Population tracking**: Monitor herbivore/predator ratios
@@ -130,7 +132,8 @@ Adjust how creatures prioritize actions:
    - Herbivores eat food pellets (+6 energy)
    - Predators hunt herbivores (+18 energy)
 4. **Reproduction**: Herbivores reproduce at 36+ energy (costs 50%)
-5. **Death**: Starvation (0 energy) or old age (300s)
+5. **Damage & recovery**: Impacts use gentle thresholds + brief i-frames, so small bumps are safe
+6. **Death**: Starvation (0 energy) or old age (300s)
 
 ### Genetic Traits
 - **Speed** (0.2-2.0): Movement velocity

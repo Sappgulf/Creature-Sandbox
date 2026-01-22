@@ -3,6 +3,9 @@
 
 /** @typedef {import('./types.js').SaveData} SaveData */
 
+import { CreatureTuning } from './creature-tuning.js';
+import { createEcosystemState } from './creature-ecosystem.js';
+
 export class SaveSystem {
   constructor() {
     this.autoSaveEnabled = true;
@@ -18,7 +21,7 @@ export class SaveSystem {
    */
   serialize(world, camera, analytics, lineageTracker, additionalData = {}) {
     const saveData = {
-      version: '2.0',
+      version: '2.1',
       timestamp: Date.now(),
       savedAt: new Date().toISOString(),
 
@@ -70,6 +73,7 @@ export class SaveSystem {
           killedBy: c.killedBy ?? null,
           genes: { ...c.genes },
           stats: { ...c.stats },
+          ecosystem: c.ecosystem ? { ...c.ecosystem } : null,
           // Advanced features
           emotions: c.emotions ? { ...c.emotions } : null,
           intelligence: c.intelligence ? {
@@ -249,8 +253,13 @@ export class SaveSystem {
       creature.dir = toNumber(cData.dir, 0);
       creature.energy = toNumber(cData.energy, 24);
       creature.age = toNumber(cData.age, 0);
+      const baselineMaxHealth = (cData.genes?.predator ?? creature.genes?.predator)
+        ? CreatureTuning.DEFAULT_MAX_HEALTH * 1.25
+        : CreatureTuning.DEFAULT_MAX_HEALTH;
       creature.maxHealth = toNumber(cData.maxHealth, creature.maxHealth);
+      creature.maxHealth = Math.max(creature.maxHealth, baselineMaxHealth);
       creature.health = toNumber(cData.health, creature.maxHealth);
+      creature.health = Math.min(creature.health, creature.maxHealth);
       creature.alive = cData.alive ?? true;
       if (!creature.alive) {
         const deathTime = cData.deathTime;
@@ -281,6 +290,16 @@ export class SaveSystem {
         creature.migration.lastMigration = cData.migration.lastMigration;
         creature.migration.targetBiome = cData.migration.targetBiome;
         creature.migration.settled = cData.migration.settled;
+      }
+      if (creature.ecosystem) {
+        const ecoData = cData.ecosystem;
+        if (ecoData) {
+          creature.ecosystem.stress = toNumber(ecoData.stress, creature.ecosystem.stress);
+          creature.ecosystem.energy = toNumber(ecoData.energy, creature.ecosystem.energy);
+          creature.ecosystem.curiosity = toNumber(ecoData.curiosity, creature.ecosystem.curiosity);
+          creature.ecosystem.stability = toNumber(ecoData.stability, creature.ecosystem.stability);
+          creature.ecosystem.state = ecoData.state ?? creature.ecosystem.state;
+        }
       }
 
       world.creatures.push(creature);
@@ -552,12 +571,23 @@ export class SaveSystem {
    */
   _migrateSaveData(saveData, fromVersion) {
     // Current version - no migration needed
-    if (fromVersion === '2.0') {
+    if (fromVersion === '2.1') {
       return saveData;
     }
 
     // Clone to avoid mutating original
     const migrated = JSON.parse(JSON.stringify(saveData));
+
+    if (fromVersion === '2.0') {
+      if (migrated.world?.creatures) {
+        for (const c of migrated.world.creatures) {
+          if (!c.ecosystem) c.ecosystem = createEcosystemState();
+        }
+      }
+      migrated.version = '2.1';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.1`);
+      return migrated;
+    }
 
     // Migration from 1.x to 2.0
     if (fromVersion.startsWith('1.')) {
@@ -578,11 +608,12 @@ export class SaveSystem {
           if (!c.intelligence) c.intelligence = null;
           if (!c.sexuality) c.sexuality = null;
           if (!c.migration) c.migration = null;
+          if (!c.ecosystem) c.ecosystem = createEcosystemState();
         }
       }
 
-      migrated.version = '2.0';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.0`);
+      migrated.version = '2.1';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.1`);
     }
 
     return migrated;

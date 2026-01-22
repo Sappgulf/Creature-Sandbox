@@ -2,6 +2,7 @@
  * World Combat System - Handles predation, damage, and combat mechanics
  */
 import { rand, clamp, dist2 } from './utils.js';
+import { CreatureTuning } from './creature-tuning.js';
 import { eventSystem, GameEvents } from './event-system.js';
 
 export class WorldCombat {
@@ -79,15 +80,16 @@ export class WorldCombat {
     if (attackRoll < successChance) {
       // Attack succeeds
       const damage = this.calculateDamage(predator, prey);
-      this.applyDamage(prey, damage, { attacker: predator, attackType: 'predation' });
+      const appliedDamage = this.applyDamage(prey, damage, { attacker: predator, attackType: 'predation' });
 
-      predator.energy = Math.min(predator.energy + damage * 0.7, predator.energy * 1.2); // Energy gain
+      predator.energy = Math.min(predator.energy + appliedDamage * 0.7, predator.energy * 1.2); // Energy gain
       predator.stats.kills++;
+      this.setAttackCooldown(predator, 0.9);
 
       // Predator signals (pheromone communication)
-      this.registerPredatorSignal(predator.x, predator.y, damage * 0.1, 5, predator.id);
+      this.registerPredatorSignal(predator.x, predator.y, appliedDamage * 0.1, 5, predator.id);
 
-      return { success: true, damage, prey };
+      return { success: true, damage: appliedDamage, prey };
     } else {
       // Attack fails - possible counterattack
       if (rand() < 0.3) { // 30% chance of counterattack
@@ -95,35 +97,53 @@ export class WorldCombat {
         this.applyDamage(predator, counterDamage, { attacker: prey, attackType: 'counterattack' });
       }
 
+      this.setAttackCooldown(predator, 0.7);
       return { success: false, prey };
     }
   }
 
   // Calculate damage for attack
   calculateDamage(attacker, defender) {
-    const baseDamage = attacker.size * 2;
-    const strengthBonus = attacker.energy / attacker.maxHealth;
-    const defensePenalty = defender.health / defender.maxHealth;
+    const baseDamage = attacker.size * 1.6;
+    const strengthBonus = clamp(attacker.energy / attacker.maxHealth, 0.6, 1.35);
+    const defensePenalty = clamp(defender.health / defender.maxHealth, 0.2, 1);
 
-    return baseDamage * strengthBonus * (1 - defensePenalty * 0.5);
+    return baseDamage * strengthBonus * (1 - defensePenalty * 0.45);
   }
 
   // Apply damage to target
   applyDamage(target, amount, ctx = {}) {
-    if (!target.alive) return;
+    if (!target.alive) return 0;
 
-    target.health -= amount;
-    target.stats.damageTaken += amount;
+    const now = this.world.t;
+    const iframes = CreatureTuning.DAMAGE_IFRAMES_MS / 1000;
+    const bypassIframes = ctx.bypassIframes === true;
+    const iframesUntil = target.damageFx?.iframesUntil ?? -Infinity;
+    if (!bypassIframes && now < iframesUntil) {
+      return 0;
+    }
+
+    const clampedAmount = clamp(amount, 0, CreatureTuning.DAMAGE_CLAMP_MAX);
+    if (clampedAmount <= 0) return 0;
+
+    target.health = Math.max(0, target.health - clampedAmount);
+    target.stats.damageTaken += clampedAmount;
 
     if (ctx.attacker) {
-      ctx.attacker.stats.damageDealt += amount;
+      ctx.attacker.stats.damageDealt += clampedAmount;
     }
+
+    if (!target.damageFx) {
+      target.damageFx = { recentDamage: 0, hitFlash: 0, iframesUntil: -Infinity, lastDamageTime: -Infinity };
+    }
+    target.damageFx.iframesUntil = now + iframes;
+    target.damageFx.lastDamageTime = now;
 
     // Apply special effects based on attack type
     if (ctx.attackType === 'predation') {
-      this.applyPredatorEffects(ctx.attacker, target, amount);
+      this.applyPredatorEffects(ctx.attacker, target, clampedAmount);
     } else if (ctx.attackType === 'counterattack') {
-      this.applyHerdBuff(target, ctx.attacker, amount);
+      this.applyHerdBuff(target, ctx.attacker, clampedAmount);
     }
 
     // Check if target died
@@ -148,7 +168,16 @@ export class WorldCombat {
     }
 
     // Trigger damage effects
-    this.triggerDamageEffects(target, amount, ctx);
+    if (typeof target.recordDamage === 'function') {
+      target.recordDamage(clampedAmount);
+    }
+    this.triggerDamageEffects(target, clampedAmount, ctx);
+    return clampedAmount;
+  }
+
+  setAttackCooldown(creature, seconds) {
+    if (!creature?.personality) return;
+    creature.personality.attackCooldown = Math.max(creature.personality.attackCooldown ?? 0, seconds);
   }
 
   // Apply predator-specific effects

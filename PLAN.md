@@ -30,6 +30,19 @@
 - Camera smoothing and movement thresholds.
 - Touch thresholds for grab activation and pan sensitivity.
 
+## Session Audit (2026-01-30)
+
+### Focus
+1. Health/damage tuning pass to reduce accidental deaths.
+2. Ecosystem internal state loop (stress/energy/curiosity/stability) with emergent signals.
+3. Save/load migration support for new creature state fields.
+
+### Planned Actions
+- Add tuning constants for health + damage thresholds/i-frames.
+- Smooth combat damage and add attack cooldowns.
+- Implement lightweight ecosystem state updates with crowd pressure + social contagion.
+- Update save schema + smoke tests + docs.
+
 ## Session Audit (2026-01-26)
 
 ### Phase 1 Gameplay Audit (code inspection)

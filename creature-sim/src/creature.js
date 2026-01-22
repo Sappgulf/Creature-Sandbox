@@ -2,6 +2,8 @@ import { clamp, rand, randn, dist2 } from './utils.js';
 import { BehaviorConfig } from './behavior.js';
 import { getExpressedGenes, applyDisorderEffects } from './genetics.js';
 import { CreatureConfig } from './creature-config.js';
+import { CreatureTuning } from './creature-tuning.js';
+import { createEcosystemState, ECOSYSTEM_STATES } from './creature-ecosystem.js';
 import { CreatureStatusSystem } from './creature-status.js';
 import { CreatureBehaviorSystem } from './creature-behavior.js';
 
@@ -114,9 +116,10 @@ export class Creature {
     this.parents = [];
     this.currentBiomeType = null;
 
-    this.maxHealth = this.genes.predator ?
-      CreatureConfig.BASE_HEALTH.predator :
-      CreatureConfig.BASE_HEALTH.herbivore;
+    const baseMaxHealth = this.genes.predator ?
+      CreatureTuning.DEFAULT_MAX_HEALTH * 1.25 :
+      CreatureTuning.DEFAULT_MAX_HEALTH;
+    this.maxHealth = baseMaxHealth;
 
     // Apply disorder health modifiers
     if (this.genesRaw?.healthModifier) {
@@ -161,7 +164,9 @@ export class Creature {
     };
     this.damageFx = {
       recentDamage: 0,
-      hitFlash: 0
+      hitFlash: 0,
+      iframesUntil: -Infinity,
+      lastDamageTime: -Infinity
     };
     this._lastCollisionReactAt = -Infinity;
     this._lastPokeAt = -Infinity;
@@ -241,6 +246,13 @@ export class Creature {
       stress: 0,        // 0-1, accumulates from negative events
       contentment: CreatureConfig.EMOTIONS.DEFAULT_CONTENTMENT
     };
+
+    this.ecosystem = createEcosystemState({
+      stress: 16,
+      energy: clamp(68 + rand(-6, 8), 40, 90),
+      curiosity: clamp(45 + (genes.sense / 2), 30, 90),
+      stability: clamp(70 + rand(-8, 8), 45, 90)
+    });
 
     // FEATURE 6: Sensory Specialization
     this.senseType = this._determineSenseType(genes);
@@ -700,6 +712,14 @@ export class Creature {
           this._triggerReaction('oops', 1.1, 0.45);
           this.funStats.goofyFails += 1;
         }
+      }
+
+      const fallThreshold = CreatureTuning.FALL_DAMAGE_THRESHOLD;
+      if (prevExternalSpeed > fallThreshold) {
+        const excess = prevExternalSpeed - fallThreshold;
+        const normalized = clamp(excess / 180, 0, 1);
+        const damage = normalized * (CreatureTuning.DAMAGE_CLAMP_MAX * 0.55);
+        this.applyImpactDamage(damage, { cause: 'fall', intensity: normalized });
       }
     }
 
@@ -1233,11 +1253,47 @@ export class Creature {
   }
 
   recordDamage(amount) {
-    if (!this.damageFx) this.damageFx = { recentDamage: 0, hitFlash: 0 };
+    if (!this.damageFx) {
+      this.damageFx = { recentDamage: 0, hitFlash: 0, iframesUntil: -Infinity, lastDamageTime: -Infinity };
+    }
     const ratio = clamp(amount / 10, 0.05, 1);
     this.damageFx.recentDamage = Math.min(2.6, (this.damageFx.recentDamage ?? 0) + ratio * 1.5);
     this.damageFx.hitFlash = Math.max(this.damageFx.hitFlash ?? 0, 0.18 + ratio * 0.35);
-    this.reactToCollision(amount);
+    this.reactToCollision(amount, { skipDamage: true });
+  }
+
+  _calculateCollisionDamage(amount) {
+    const threshold = CreatureTuning.COLLISION_DAMAGE_THRESHOLD;
+    if (amount <= threshold) return 0;
+    const normalized = (amount - threshold) / (1 - threshold);
+    return normalized * (CreatureTuning.DAMAGE_CLAMP_MAX * 0.45);
+  }
+
+  applyImpactDamage(amount, { cause = 'impact', intensity = 0.4 } = {}) {
+    if (!this.alive || amount <= 0) return 0;
+    const worldTime = this._lastWorld?.t ?? 0;
+    const iframes = CreatureTuning.DAMAGE_IFRAMES_MS / 1000;
+    if (worldTime < (this.damageFx?.iframesUntil ?? -Infinity)) return 0;
+
+    const clamped = clamp(amount, 0, CreatureTuning.DAMAGE_CLAMP_MAX);
+    this.health = Math.max(0, this.health - clamped);
+    this.stats.damageTaken += clamped;
+    if (typeof this.recordDamage === 'function') {
+      this.recordDamage(clamped);
+    }
+
+    if (this.damageFx) {
+      this.damageFx.iframesUntil = worldTime + iframes;
+      this.damageFx.lastDamageTime = worldTime;
+    }
+
+    if (this.health <= 0) {
+      this.alive = false;
+      this.deathCause = cause;
+    }
+
+    this._lastWorld?.creatureEcosystem?.registerEvent?.(this, 'impact', { intensity });
+    return clamped;
   }
 
   applyImpulse(vx, vy, { decay = 6, cap = 360 } = {}) {
@@ -1307,6 +1363,7 @@ export class Creature {
     if (this._lastWorld) {
       this.logEvent('Poked', this._lastWorld.t, { source: 'player' });
     }
+    this._lastWorld?.creatureEcosystem?.registerEvent?.(this, 'poke', { intensity });
   }
 
   reactToGrab({ x = null, y = null } = {}) {
@@ -1334,7 +1391,7 @@ export class Creature {
     }
   }
 
-  reactToCollision(amount = 0.5) {
+  reactToCollision(amount = 0.5, { skipDamage = false } = {}) {
     const worldTime = this._lastWorld?.t ?? 0;
     if (worldTime - this._lastCollisionReactAt < 0.25) return;
     this._lastCollisionReactAt = worldTime;
@@ -1353,16 +1410,29 @@ export class Creature {
     if (amount > 0.9 && this._lastWorld?.particles?.triggerShake) {
       this._lastWorld.particles.triggerShake(2.5);
     }
+
+    if (!skipDamage) {
+      const damage = this._calculateCollisionDamage(amount);
+      if (damage > 0) {
+        this.applyImpactDamage(damage, { cause: 'collision', intensity: amount });
+      }
+    }
   }
 
   _triggerReaction(type, intensity = 0.5, duration = 0.35) {
     const reaction = this.animation?.reaction;
     if (!reaction) return;
     const chaosBoost = this._lastWorld?.chaos?.reactionBoost ?? 1;
+    const eco = this.ecosystem;
+    const stressBoost = eco ? clamp(eco.stress / 100, 0, 1) : 0;
+    const stabilityFactor = eco ? clamp(0.75 + (1 - eco.stability / 100) * 0.5, 0.6, 1.3) : 1;
+    const stateBoost = eco?.state === ECOSYSTEM_STATES.PANICKED ? 1.15
+      : eco?.state === ECOSYSTEM_STATES.STRESSED ? 1.08
+        : 1;
     reaction.type = type;
     reaction.timer = duration;
     reaction.duration = duration;
-    reaction.intensity = clamp(intensity * chaosBoost, 0.1, 1.6);
+    reaction.intensity = clamp(intensity * chaosBoost * stateBoost * (1 + stressBoost * 0.25) * stabilityFactor, 0.1, 1.8);
   }
 
   _updateReaction(dt) {
@@ -1399,7 +1469,8 @@ export class Creature {
     const dist = Math.hypot(dx, dy);
     if (dist < 4) return { x: 0, y: 0 };
     const influence = clamp(1 - dist / 240, 0, 1);
-    const maxOffset = 0.9 * influence;
+    const curiosity = this.ecosystem ? clamp(this.ecosystem.curiosity / 100, 0.3, 1.2) : 1;
+    const maxOffset = 0.9 * influence * curiosity;
     return {
       x: (dx / dist) * maxOffset,
       y: (dy / dist) * maxOffset
@@ -1465,6 +1536,7 @@ export class Creature {
     if (!anim) return;
     const reaction = anim.reaction;
     const chaosWobble = this._lastWorld?.chaos?.wobbleBoost ?? 1;
+    const eco = this.ecosystem;
     if (reaction && reaction.timer > 0) {
       const progress = reaction.duration > 0 ? reaction.timer / reaction.duration : 0;
       const pulse = Math.sin((1 - progress) * Math.PI);
@@ -1518,6 +1590,20 @@ export class Creature {
         }
         default:
           break;
+      }
+    }
+
+    if (eco) {
+      const stressRatio = clamp(eco.stress / 100, 0, 1);
+      if (stressRatio > 0.25) {
+        const jitter = Math.sin(anim.timer * 12) * 0.4 * stressRatio * chaosWobble;
+        ctx.translate(jitter, 0);
+      }
+      const energyRatio = clamp(eco.energy / 100, 0, 1);
+      if (energyRatio < 0.4) {
+        const slump = (0.4 - energyRatio) * 2.2;
+        ctx.translate(0, slump);
+        ctx.scale(1 - slump * 0.04, 1 + slump * 0.02);
       }
     }
 
@@ -1581,9 +1667,12 @@ export class Creature {
       return;
     }
 
-    // Check if sleeping (low energy and stationary)
-    if (this.energy < 15 && speed < 5) {
-      anim.sleepTimer += step;
+    const ecoState = this.ecosystem?.state;
+    const shouldRest = ecoState === ECOSYSTEM_STATES.RESTING || this.energy < 15;
+
+    // Check if sleeping (low energy or resting state, and stationary)
+    if (shouldRest && speed < 5) {
+      anim.sleepTimer += step * (ecoState === ECOSYSTEM_STATES.RESTING ? 1.3 : 1);
       if (anim.sleepTimer > 2.0) { // Sleep after 2 seconds of low energy
         anim.state = 'sleeping';
 
@@ -1773,7 +1862,10 @@ export class Creature {
 
     const baseLight = g.predator ? 45 : 60;
     const flash = damageFx ? damageFx.hitFlash : 0;
-    const lightness = Math.min(85, baseLight + flash * 90);
+    const eco = this.ecosystem;
+    const stressTint = eco ? clamp(eco.stress / 100, 0, 1) : 0;
+    const calmBoost = eco?.state === ECOSYSTEM_STATES.CALM ? 2 : 0;
+    const lightness = Math.min(85, baseLight + flash * 90 - stressTint * 6 + calmBoost);
     ctx.fillStyle = `hsl(${displayHue},85%,${lightness}%)`;
 
     // OPTIMIZATION: Only draw detailed traits when zoomed in significantly
