@@ -9,6 +9,7 @@ import { WorldEcosystem } from './world-ecosystem.js';
 import { WorldCreatureManager } from './world-creature-manager.js';
 import { WorldCombat } from './world-combat.js';
 import { WorldDisaster } from './world-disaster.js';
+import { CreatureEcosystemSystem } from './creature-ecosystem.js';
 import { BiomeGenerator } from './perlin-noise.js';
 import { SandboxProps } from './sandbox-props.js';
 import { clamp, dist2, rand } from './utils.js';
@@ -45,6 +46,7 @@ export class World {
     this.creatureManager = new WorldCreatureManager(this);
     this.combat = new WorldCombat(this);
     this.disaster = new WorldDisaster(this);
+    this.creatureEcosystem = new CreatureEcosystemSystem(this);
     this.sandbox = new SandboxProps(this);
 
     // World settings
@@ -104,6 +106,7 @@ export class World {
     try {
       this.environment?.update(dt);
       this.ecosystem?.update(dt);
+      this.creatureEcosystem?.update(dt);
       this.disaster?.update(dt);
       this.sandbox?.update(dt);
 

@@ -28,6 +28,10 @@
    - Toggle pause/resume with **Space** and confirm the sim halts/continues.
    - Tap or click a creature and confirm a glow outline + reaction animation plays.
    - Open **Features** and adjust the Chaos Dial; confirm bounce strength, wobble, and gravity drift change without breaking control.
+   - Let the simulation run for 60–120 seconds while occasionally bumping/throwing a creature.
+   - Confirm small bumps do not cause damage and creatures do not die accidentally.
+   - Confirm hard impacts cause small, readable damage spikes rather than instant deaths.
+   - Observe that creatures settle (less jitter) when left alone and show more wobble after repeated impacts.
 
 5. **Top menu navigation**
    - Click **🎛️ Modes & Goals** and confirm the Game Mode + Session Goals card toggles.
@@ -38,6 +42,7 @@
    - Refresh the page.
    - Use **Ctrl+O** to load the save.
    - Confirm creatures, food counts, sandbox props, and time of day restore correctly.
+   - Confirm loaded creatures retain reasonable ecosystem state (no immediate panic spiral, no zeroed energy).
    - Optional: use **Ctrl/⌘ + S** to download a save file and **Ctrl/⌘ + O** to load it back.
 
 7. **Help section**
@@ -77,6 +82,7 @@
    - Select **Herbivore**, then tap **Spawn Selected** and confirm a herbivore spawns.
    - Reopen the sheet, select **Predator**, spawn again, and confirm a predator spawns.
    - Tap **Food** and confirm nearby creatures react and move toward it.
+   - Let the sim run for 60–120 seconds and confirm creatures remain alive during gentle play.
 
 3. **Help / hints lifecycle**
    - Trigger the spawn tool or open **⋯ More Actions** → **Help**.

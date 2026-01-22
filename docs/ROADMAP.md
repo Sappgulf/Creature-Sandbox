@@ -15,6 +15,14 @@
    - **Risk level:** Medium
    - **Verification:** Use the Features panel to adjust Chaos; drop/throw creatures into props and confirm reactions, props, and prompts feel responsive.
 
+## Shipped (2026-01-30)
+
+1. **Ecosystem internal states + healthier damage tuning**
+   - **Description:** Added lightweight internal state updates (stress/energy/curiosity/stability) with social contagion + crowd pressure, plus higher baseline health and smoother damage intake with i-frames and impact thresholds.
+   - **Likely files:** `creature-sim/src/creature-ecosystem.js`, `creature-sim/src/creature.js`, `creature-sim/src/world-combat.js`, `creature-sim/src/save-system.js`
+   - **Risk level:** Medium
+   - **Verification:** Spawn creatures, play for 60–120s, confirm gentle bumps don’t kill, stress settles when idle, and impacts feel readable.
+
 ## Shipped (2026-01-28)
 
 1. **Mobile spawn picker + hint lifecycle**
@@ -150,6 +158,12 @@
    - **Likely files:** `creature-sim/src/save-system.js`, `creature-sim/src/ui-controller.js`, `creature-sim/src/sandbox-props.js`
    - **Risk level:** Medium
    - **Verification:** Save a prop-heavy sandbox and verify it restores with presets intact.
+
+4. **Ecosystem expansion: comfort actions + zones**
+   - **Description:** Add optional calm/rest actions (nesting, breathing) and map-based calm/chaos zones to deepen emergent behaviors without complex AI.
+   - **Likely files:** `creature-sim/src/creature-ecosystem.js`, `creature-sim/src/world-environment.js`, `creature-sim/src/renderer.js`
+   - **Risk level:** Medium
+   - **Verification:** Observe stress reduction in calm zones and faster recovery when resting.
 
 ## Big Rocks (Future Systems, Optional)
 

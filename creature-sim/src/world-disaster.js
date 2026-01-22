@@ -227,7 +227,8 @@ export class WorldDisaster {
 
       if (rand() < dt * 0.1 * intensity) { // 10% chance per second
         this.world.combat?.applyDamage(creature, damageRate, {
-          disaster: this.activeDisaster.type
+          disaster: this.activeDisaster.type,
+          bypassIframes: true
         });
       }
     }
