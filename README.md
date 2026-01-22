@@ -28,6 +28,8 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Rest zones**: Calm pockets where tired creatures recover energy and reduce stress
 - **Bite-based food**: Food patches deplete in bites with scent detection
 - **Population guardrails**: Mating slows down above soft caps to prevent runaway growth
+- **Place memory + learning**: Creatures remember food, calm, danger, and nest locations with reinforcement/decay
+- **Life stages**: Babies explore fast, adults stabilize, elders slow down and fade gently
 
 ### 📊 Real-Time Analytics
 - **Population tracking**: Monitor herbivore/predator ratios
@@ -119,6 +121,10 @@ open http://localhost:8000
 - **Parent links**: Navigate through ancestry
 - **Export button**: Download simulation data
 
+### Developer / Observer Tools (Optional)
+- **`debug.goals()`**: Show goal labels and target lines for creatures.
+- **`debug.observe()`**: Show life-stage labels and remembered locations (memory markers).
+
 ### Behavior Weights
 Adjust how creatures prioritize actions:
 - **Forage**: Tendency to seek food
@@ -133,13 +139,15 @@ Adjust how creatures prioritize actions:
 1. **Birth**: Spawned with parent's genes + random mutations
 2. **Needs update**: Hunger/energy/social/stress drift over time and impacts
 3. **Goals**: Utility picks eat/rest/mate/wander using local sensing
-4. **Feeding**:
+4. **Memory**: Creatures record food/calm/danger/nest locations with decay + reinforcement
+5. **Feeding**:
    - Herbivores and omnivores eat food bites (scent-based detection)
    - Predators hunt herbivores (+14 energy)
-5. **Rest**: Creatures slow down in rest zones to recover energy and calm stress
-6. **Reproduction**: Mate-ready creatures bond, then spawn offspring with guardrails
-7. **Damage & recovery**: Impacts use gentle thresholds + brief i-frames, so small bumps are safe
-8. **Death**: Starvation (0 energy) or old age (300s)
+6. **Rest**: Creatures slow down in rest zones to recover energy and calm stress
+7. **Reproduction**: Mate-ready creatures bond, then spawn offspring with guardrails
+8. **Damage & recovery**: Impacts use gentle thresholds + brief i-frames, so small bumps are safe
+9. **Life stages**: Baby → adult → elder with smooth size/speed shifts and elder fade-out
+10. **Death**: Starvation (0 energy) or elder fade (≈300s)
 
 ### Genetic Traits
 - **Speed** (0.2-2.0): Movement velocity
@@ -175,6 +183,10 @@ Creatures earn badges for achievements:
 - **Genetics** (`genetics.js`): Gene generation and mutation
 - **Renderer** (`renderer.js`): Canvas drawing with camera transforms
 - **Analytics** (`analytics.js`): Time-series data collection and aggregation
+
+### Creature State (Centralized)
+- **Memory + learning**: Stored on each creature (`creature.js` + `creature-features.js`) and persisted via `save-system.js`.
+- **Life stages**: Age + life-stage state tracked per creature (`creature.js`) and restored in save/load migration.
 
 ### Performance Features
 - **Spatial Grid**: O(1) average-case proximity queries

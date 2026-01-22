@@ -105,7 +105,9 @@ export class GameLoop {
       useBatchRendering: false,
       particleSystem: null,
       heatmaps: null,
-      showGoalDebug: false
+      showGoalDebug: false,
+      showMemoryDebug: false,
+      showLifeStageDebug: false
     };
 
     this.boundLoop = this.loop.bind(this);
@@ -529,7 +531,9 @@ export class GameLoop {
     opts.useBatchRendering = batchRendererReady && configManager.get('rendering', 'performance.batchRendering', true);
     opts.particleSystem = this.particles;
     opts.heatmaps = this.heatmaps;
-    opts.showGoalDebug = gameState.showGoalDebug;
+    opts.showGoalDebug = gameState.showGoalDebug || gameState.showObserverDebug;
+    opts.showMemoryDebug = gameState.showObserverDebug;
+    opts.showLifeStageDebug = gameState.showObserverDebug;
 
     this.renderer.drawWorld(this.world, opts);
 

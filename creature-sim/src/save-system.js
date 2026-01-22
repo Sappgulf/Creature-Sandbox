@@ -6,6 +6,7 @@
 import { CreatureTuning } from './creature-tuning.js';
 import { createEcosystemState } from './creature-ecosystem.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
+import { CreatureConfig } from './creature-config.js';
 
 export class SaveSystem {
   constructor() {
@@ -22,7 +23,7 @@ export class SaveSystem {
    */
   serialize(world, camera, analytics, lineageTracker, additionalData = {}) {
     const saveData = {
-      version: '2.2',
+      version: '2.3',
       timestamp: Date.now(),
       savedAt: new Date().toISOString(),
 
@@ -66,6 +67,8 @@ export class SaveSystem {
           dir: c.dir,
           energy: c.energy,
           age: c.age,
+          ageStage: c.ageStage ?? null,
+          lifeStage: c.lifeStage ?? null,
           health: c.health,
           maxHealth: c.maxHealth,
           alive: c.alive,
@@ -97,6 +100,20 @@ export class SaveSystem {
             lastMigration: c.migration.lastMigration,
             targetBiome: c.migration.targetBiome,
             settled: c.migration.settled
+          } : null,
+          memory: c.memory ? {
+            capacity: c.memory.capacity,
+            locations: Array.isArray(c.memory.locations)
+              ? c.memory.locations.map(mem => ({
+                id: mem.id ?? null,
+                x: mem.x,
+                y: mem.y,
+                tag: mem.tag ?? mem.type ?? null,
+                type: mem.type ?? mem.tag ?? null,
+                strength: mem.strength,
+                timestamp: mem.timestamp
+              }))
+              : []
           } : null
         })),
 
@@ -275,7 +292,8 @@ export class SaveSystem {
       creature.vy = toNumber(cData.vy, 0);
       creature.dir = toNumber(cData.dir, 0);
       creature.energy = toNumber(cData.energy, 24);
-      creature.age = toNumber(cData.age, 0);
+      creature.age = toNumber(cData.age, CreatureAgentTuning.LIFE_STAGE.DEFAULT_AGE);
+      creature._updateAgeStage?.();
       const baselineMaxHealth = (cData.genes?.predator ?? creature.genes?.predator)
         ? CreatureTuning.DEFAULT_MAX_HEALTH * 1.25
         : CreatureTuning.DEFAULT_MAX_HEALTH;
@@ -342,6 +360,27 @@ export class SaveSystem {
           creature.ecosystem.stability = toNumber(ecoData.stability, creature.ecosystem.stability);
           creature.ecosystem.state = ecoData.state ?? creature.ecosystem.state;
         }
+      }
+      if (creature.memory) {
+        const memoryData = cData.memory;
+        creature.memory.locations = [];
+        creature.memory.capacity = toNumber(memoryData?.capacity, creature.memory.capacity);
+        if (memoryData?.locations && Array.isArray(memoryData.locations)) {
+          for (const mem of memoryData.locations) {
+            if (!mem) continue;
+            creature.memory.locations.push({
+              id: mem.id ?? null,
+              x: toNumber(mem.x, creature.x),
+              y: toNumber(mem.y, creature.y),
+              tag: mem.tag ?? mem.type ?? null,
+              type: mem.type ?? mem.tag ?? null,
+              strength: toNumber(mem.strength, 0.4),
+              timestamp: toNumber(mem.timestamp, world.t)
+            });
+          }
+        }
+        const ids = creature.memory.locations.map(mem => mem.id).filter(id => typeof id === 'number');
+        creature.memory.nextId = ids.length ? Math.max(...ids) + 1 : 1;
       }
 
       world.creatures.push(creature);
@@ -647,8 +686,29 @@ export class SaveSystem {
       return Number.isFinite(num) ? num : fallback;
     };
     // Current version - no migration needed
-    if (fromVersion === '2.2') {
+    if (fromVersion === '2.3') {
       return saveData;
+    }
+
+    // Clone to avoid mutating original
+    const migrated = JSON.parse(JSON.stringify(saveData));
+
+    const ensureMemoryDefaults = () => {
+      if (migrated.world?.creatures) {
+        for (const c of migrated.world.creatures) {
+          if (c.age == null || !Number.isFinite(Number(c.age))) {
+            c.age = CreatureAgentTuning.LIFE_STAGE.DEFAULT_AGE;
+          }
+          if (!c.memory) c.memory = { capacity: CreatureConfig.MEMORY.SLOTS_MIN, locations: [] };
+        }
+      }
+    };
+
+    if (fromVersion === '2.2') {
+      ensureMemoryDefaults();
+      migrated.version = '2.3';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.3`);
+      return migrated;
     }
 
     if (fromVersion === '2.1') {
@@ -667,13 +727,11 @@ export class SaveSystem {
         }
       }
       if (!migrated.world?.restZones) migrated.world.restZones = [];
-      migrated.version = '2.2';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.2`);
+      ensureMemoryDefaults();
+      migrated.version = '2.3';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.3`);
       return migrated;
     }
-
-    // Clone to avoid mutating original
-    const migrated = JSON.parse(JSON.stringify(saveData));
 
     if (fromVersion === '2.0') {
       if (migrated.world?.creatures) {
@@ -692,8 +750,9 @@ export class SaveSystem {
         }
       }
       if (!migrated.world?.restZones) migrated.world.restZones = [];
-      migrated.version = '2.2';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.2`);
+      ensureMemoryDefaults();
+      migrated.version = '2.3';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.3`);
       return migrated;
     }
 
@@ -731,8 +790,9 @@ export class SaveSystem {
           food.scentRadius = CreatureAgentTuning.FOOD.SCENT_RADIUS;
         }
       }
-      migrated.version = '2.2';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.2`);
+      ensureMemoryDefaults();
+      migrated.version = '2.3';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.3`);
     }
 
     return migrated;

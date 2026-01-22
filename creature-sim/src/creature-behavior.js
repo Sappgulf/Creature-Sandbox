@@ -384,11 +384,14 @@ export class CreatureBehaviorSystem {
    * Get age-based speed multiplier
    */
   getAgeSpeedMultiplier() {
+    if (typeof this.creature._getAgeSpeedMultiplier === 'function') {
+      return this.creature._getAgeSpeedMultiplier();
+    }
     switch (this.creature.ageStage) {
-      case 'baby': return 0.7;
-      case 'juvenile': return 0.9;
+      case 'baby': return 1.0;
+      case 'juvenile': return 0.95;
       case 'adult': return 1.0;
-      case 'elder': return 0.8;
+      case 'elder': return 0.85;
       default: return 1.0;
     }
   }

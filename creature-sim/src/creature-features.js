@@ -2,13 +2,17 @@
 // These extend the Creature class functionality
 
 import { Creature } from './creature.js';
-import { clamp, rand } from './utils.js';
+import { clamp, rand, dist2 } from './utils.js';
+import { CreatureConfig } from './creature-config.js';
+import { CreatureAgentTuning } from './creature-agent-constants.js';
 
 // ============================================================================
 // FEATURE 2: LEARNING & MEMORY
 // ============================================================================
 
 Creature.prototype._updateMemory = function(dt, world) {
+  if (!this.memory) return;
+  const now = world?.t ?? 0;
   // Decay existing memories
   for (let i = this.memory.locations.length - 1; i >= 0; i--) {
     const mem = this.memory.locations[i];
@@ -17,23 +21,86 @@ Creature.prototype._updateMemory = function(dt, world) {
       this.memory.locations.splice(i, 1);
     }
   }
+
+  const focus = this.memory.focus;
+  if (!focus || !focus.entry) return;
+
+  if ((!this.target || !this.target.memory) && now - focus.startedAt > CreatureConfig.MEMORY.RECALL_PAUSE) {
+    this.memory.focus = null;
+    return;
+  }
+
+  if (now - focus.startedAt > CreatureConfig.MEMORY.FAILURE_TIMEOUT) {
+    this._decayMemory(focus.entry, CreatureConfig.MEMORY.FAILURE_DECAY);
+    this.memory.focus = null;
+    return;
+  }
+
+  if (now - (focus.lastCheckAt ?? 0) < CreatureConfig.MEMORY.LEARNING_INTERVAL) return;
+  focus.lastCheckAt = now;
+
+  const distToFocus = dist2(this.x, this.y, focus.entry.x, focus.entry.y);
+  const closeEnough = distToFocus <= CreatureAgentTuning.MOVEMENT.ARRIVE_RADIUS ** 2;
+
+  if (!closeEnough) return;
+
+  if (focus.tag === 'food' && !this.senses?.food) {
+    focus.failures = (focus.failures ?? 0) + 1;
+    if (focus.failures >= 2) {
+      this._decayMemory(focus.entry, CreatureConfig.MEMORY.FAILURE_DECAY);
+      this.memory.focus = null;
+    }
+  }
 };
 
-Creature.prototype.rememberLocation = function(x, y, type, strength, worldTime) {
+Creature.prototype._decayMemory = function(entry, amount) {
+  if (!entry) return;
+  entry.strength = clamp((entry.strength ?? 0) - amount, 0, 1);
+};
+
+Creature.prototype._reinforceMemory = function(entry, amount, worldTime) {
+  if (!entry) return;
+  entry.strength = clamp((entry.strength ?? 0) + amount, 0, 1);
+  entry.timestamp = worldTime;
+};
+
+Creature.prototype.rememberLocation = function(x, y, tag, strength, worldTime) {
+  if (!this.memory) return;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+  const type = tag;
+  const now = worldTime ?? this._lastWorld?.t ?? 0;
   // Add or update memory
   const existing = this.memory.locations.find(m =>
-    Math.abs(m.x - x) < 30 && Math.abs(m.y - y) < 30 && m.type === type
+    Math.abs(m.x - x) < CreatureConfig.MEMORY.MERGE_RADIUS &&
+    Math.abs(m.y - y) < CreatureConfig.MEMORY.MERGE_RADIUS &&
+    m.type === type
   );
 
   if (existing) {
-    existing.strength = Math.min(1, existing.strength + strength);
-    existing.timestamp = worldTime;
+    existing.strength = clamp((existing.strength ?? 0) + strength, 0, 1);
+    existing.timestamp = now;
   } else if (this.memory.locations.length < this.memory.capacity) {
-    this.memory.locations.push({ x, y, type, strength, timestamp: worldTime });
+    this.memory.locations.push({
+      id: this.memory.nextId++,
+      x,
+      y,
+      type,
+      tag,
+      strength,
+      timestamp: now
+    });
   } else {
     // Replace weakest memory
     this.memory.locations.sort((a, b) => a.strength - b.strength);
-    this.memory.locations[0] = { x, y, type, strength, timestamp: worldTime };
+    this.memory.locations[0] = {
+      id: this.memory.nextId++,
+      x,
+      y,
+      type,
+      tag,
+      strength,
+      timestamp: now
+    };
   }
 };
 
@@ -41,6 +108,77 @@ Creature.prototype.recallMemories = function(type) {
   return this.memory.locations
     .filter(m => m.type === type)
     .sort((a, b) => b.strength - a.strength);
+};
+
+Creature.prototype._selectMemory = function(tag, world) {
+  if (!this.memory?.locations?.length) return null;
+  const maxDistance = CreatureConfig.MEMORY.MAX_DISTANCE;
+  const maxDistance2 = maxDistance * maxDistance;
+  let best = null;
+  let bestScore = 0;
+  for (const mem of this.memory.locations) {
+    const memTag = mem.tag ?? mem.type;
+    if (memTag !== tag) continue;
+    if ((mem.strength ?? 0) < CreatureConfig.MEMORY.MIN_STRENGTH) continue;
+    const d2 = dist2(mem.x, mem.y, this.x, this.y);
+    if (d2 > maxDistance2) continue;
+    const distFactor = 1 - Math.min(1, Math.sqrt(d2) / maxDistance);
+    const score = (mem.strength ?? 0) * (0.6 + distFactor * 0.4);
+    if (score > bestScore) {
+      bestScore = score;
+      best = mem;
+    }
+  }
+
+  if (!best) return null;
+
+  return {
+    entry: best,
+    x: best.x,
+    y: best.y,
+    tag: best.tag ?? best.type,
+    strength: best.strength ?? 0
+  };
+};
+
+Creature.prototype._setMemoryFocus = function(memoryTarget, worldTime) {
+  if (!this.memory || !memoryTarget?.entry) return;
+  const now = worldTime ?? this._lastWorld?.t ?? 0;
+  this.memory.focus = {
+    entry: memoryTarget.entry,
+    tag: memoryTarget.tag,
+    startedAt: now,
+    lastCheckAt: now,
+    failures: 0,
+    recallUntil: now + CreatureConfig.MEMORY.RECALL_PAUSE
+  };
+};
+
+Creature.prototype._getMemoryAvoidance = function(tag) {
+  if (!this.memory?.locations?.length) return null;
+  const avoidRadius = CreatureConfig.MEMORY.AVOID_RADIUS;
+  const avoidRadius2 = avoidRadius * avoidRadius;
+  let ax = 0;
+  let ay = 0;
+  let count = 0;
+
+  for (const mem of this.memory.locations) {
+    const memTag = mem.tag ?? mem.type;
+    if (memTag !== tag) continue;
+    if ((mem.strength ?? 0) < CreatureConfig.MEMORY.MIN_STRENGTH) continue;
+    const dx = this.x - mem.x;
+    const dy = this.y - mem.y;
+    const d2 = dx * dx + dy * dy;
+    if (d2 > avoidRadius2 || d2 <= 0.01) continue;
+    const dist = Math.sqrt(d2);
+    const strength = (1 - dist / avoidRadius) * (mem.strength ?? 0);
+    ax += (dx / dist) * strength;
+    ay += (dy / dist) * strength;
+    count++;
+  }
+
+  if (!count) return null;
+  return { x: ax, y: ay };
 };
 
 // ============================================================================
@@ -172,7 +310,8 @@ Creature.prototype._updateEmotions = function(dt, world) {
   }
 
   // Stress accumulates from fear and hunger
-  em.stress = clamp(em.stress + (em.fear * 0.01 + em.hunger * 0.01) * dt, 0, 1);
+  const stageStressMult = this.lifeStage === 'baby' ? 1.35 : this.lifeStage === 'elder' ? 1.15 : 1;
+  em.stress = clamp(em.stress + (em.fear * 0.01 + em.hunger * 0.01) * stageStressMult * dt, 0, 1);
 
   // Contentment reduces stress
   if (this.energy > 25 && this.health > this.maxHealth * 0.7) {
@@ -183,7 +322,14 @@ Creature.prototype._updateEmotions = function(dt, world) {
   }
 
   // Curiosity drives exploration (decreases with stress)
-  em.curiosity = clamp(this.genes.sense / 150 - em.stress * 0.5, 0, 1);
+  const curiosityBoost = this.lifeStage === 'baby' ? 0.2 : 0;
+  em.curiosity = clamp(this.genes.sense / 150 - em.stress * 0.5 + curiosityBoost, 0, 1);
+
+  if (this.lifeStage === 'baby') {
+    em.confidence = clamp(em.confidence - 0.04 * dt, 0, 1);
+  } else if (this.lifeStage === 'elder') {
+    em.confidence = clamp(em.confidence - 0.02 * dt, 0, 1);
+  }
 
   // Decay fear over time
   em.fear = Math.max(0, em.fear - 0.05 * dt);

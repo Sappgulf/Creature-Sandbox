@@ -7,6 +7,20 @@
 - [ ] Expand sandbox interactions with props, drag/throw, and micro-goals
 - [ ] Balance pass: tune grab/throw, camera smoothing, prop forces, and mobile touch sensitivity
 
+## Session Audit (2026-02-03)
+
+### Focus
+1. Creature memory + place learning with lightweight reinforcement/decay.
+2. Life stages + elder fade-out tuning for smoother generational pacing.
+3. Save/load migration + observer debug overlays for validation.
+
+### Planned Actions
+- Add memory slots with decay, reinforcement, and danger/calm tagging.
+- Bias goals with remembered food/calm/nest locations and danger avoidance.
+- Add life-stage tuning (baby/adult/elder), elder fade, and reproduction throttles.
+- Extend save/load schema to v2.3 with backward-compatible defaults.
+- Update smoke tests, README, and changelog entries.
+
 ## Session Audit (2026-01-29)
 
 ### Phase 1 Gameplay Audit (code inspection)
