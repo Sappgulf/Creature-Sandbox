@@ -38,6 +38,7 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Camera controls**: Pan, zoom, and follow creatures
 - **Sandbox props**: Drop bounce pads, spinners, gravity wells, and food buttons
 - **Direct manipulation**: Drag, move, and throw creatures for playful experiments
+- **Grab affordances**: Hover creatures to see a grab outline and grabbed highlight
 - **Creature feedback**: Selection glow, success pulses, and friendly error shakes
 - **Gene sharing**: Copy/import gene codes from the Gene Editor
 - **Display toggles**: Nameplates and reduced-motion options in the Features panel
@@ -85,6 +86,7 @@ open http://localhost:8000
 - **Mouse Wheel**: Zoom camera
 - **Middle Click / Alt+Drag**: Pan camera
 - **Drag**: Grab, move, and throw creatures (mouse or touch)
+- **Hover (mouse/pen)**: See a grab outline on creatures in Inspect mode
 - **Ctrl/⌘ + S / Ctrl/⌘ + O**: Save to file / load from file
 
 ### Tool Modes (Keyboard Shortcuts)

@@ -1,5 +1,13 @@
 # Creature Sandbox Roadmap
 
+## Shipped (2026-01-27)
+
+1. **Grab affordance highlights + grab reaction**
+   - **Description:** Added hover outlines for grabbable creatures, stronger grabbed outlines, and a grab/drop reaction so direct manipulation feels responsive.
+   - **Likely files:** `creature-sim/src/input-manager.js`, `creature-sim/src/renderer.js`, `creature-sim/src/creature.js`, `creature-sim/src/game-loop.js`
+   - **Risk level:** Low
+   - **Verification:** Hover a creature in Inspect mode to see the outline; grab/drag/release to see the grab highlight and reaction pulse.
+
 ## Shipped (2026-01-26)
 
 1. **Sandbox props + drag/throw**

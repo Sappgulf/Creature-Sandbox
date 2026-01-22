@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Save/load hotkeys for file downloads (Ctrl/⌘ + S / Ctrl/⌘ + O).
 - Dev-only FPS overlay and timing logs behind `?devtools=1`.
 - Creature reactions to poke/drop/collision with subtle personality-driven animation.
+- Hover/grab outlines and grab reaction feedback for direct creature manipulation.
 - Session goal nudges for manual creature spawns.
 - Success pulse + error shake feedback for gene editor status messages.
 - Sandbox props: bounce pads, spinners, gravity wells, and food buttons.
@@ -30,6 +31,12 @@ All notable changes to this project will be documented in this file.
 - Home screen copy now highlights playful sandbox tone.
 - Selected creature outlines now glow and pulse on selection.
 - Added soft creature bump reactions and sandbox prop rendering layer.
+
+### Notes
+- **WHAT:** Added hover/grab outlines and grab/drop reactions to clarify direct manipulation.
+- **WHY:** Make interactable creatures feel obvious and responsive during drag/throw play.
+- **RISK:** Low; visual-only feedback layered on existing input handling.
+- **VERIFY:** `npm test`, `npm run lint`, and manual hover/drag checks.
 
 ## [2026-01-21]
 ### Added

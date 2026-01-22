@@ -473,6 +473,7 @@ export class GameLoop {
     opts.pinnedId = gameState.pinnedId;
     opts.lineageRootId = gameState.lineageRootId;
     opts.selectionPulseUntil = gameState.selectionPulseUntil;
+    opts.hoveredId = gameState.hoveredId;
     opts.worldTime = this.world.t;
     opts.lineageTracker = this.world.lineageTracker;
     opts.world = this.world;

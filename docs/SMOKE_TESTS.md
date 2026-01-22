@@ -21,7 +21,9 @@
    - Use **E** to erase a creature.
    - Press **P** to switch to Props and drop a bounce pad + gravity well.
    - Drag a creature onto a prop and confirm it reacts (bounce/spin/grav pull).
+   - Hover a creature in Inspect mode and confirm a subtle white outline appears to show it's grabbable.
    - Drag a creature quickly and release to throw it.
+   - Confirm grabbed creatures show a warm grab outline and a brief grab/drop reaction.
    - Toggle pause/resume with **Space** and confirm the sim halts/continues.
    - Tap or click a creature and confirm a glow outline + reaction animation plays.
 
