@@ -63,6 +63,19 @@ export function createHudMenuActions(handlers = {}) {
       risk: 'Low'
     },
     {
+      id: 'btn-watch-mode',
+      label: 'Watch Mode',
+      icon: '👁️',
+      group: 'simulation',
+      shortcut: '',
+      handler: handlers.onWatchModeToggle,
+      enabledWhen: () => true,
+      primary: false,
+      context: 'Global',
+      frequency: 'High',
+      risk: 'Low'
+    },
+    {
       id: 'btn-campaign',
       label: 'Campaign Mode',
       icon: '🏆',

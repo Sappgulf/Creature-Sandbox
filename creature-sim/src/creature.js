@@ -7,6 +7,7 @@ import { createEcosystemState, ECOSYSTEM_STATES } from './creature-ecosystem.js'
 import { CreatureStatusSystem } from './creature-status.js';
 import { CreatureBehaviorSystem } from './creature-behavior.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
+import { eventSystem, GameEvents } from './event-system.js';
 
 // Destructure commonly-used constants for cleaner code
 const { TRAIL_INTERVAL, TRAIL_MAX, LOG_MAX, TAU } = CreatureConfig;
@@ -159,15 +160,19 @@ export class Creature {
       reactivity: clamp(0.35 + rand(-0.1, 0.25) + (this.genes.sense / 200) * 0.25, 0.2, 1.2),
       playfulness: clamp(0.3 + rand(-0.2, 0.4) + (1 - this.genes.metabolism / 2) * 0.2, 0.1, 1.2)
     };
+    const dietRole = this._resolveDietRole(this.genes);
     this.traits = {
       bounce: clamp(0.95 + rand(-0.08, 0.08), 0.75, 1.25),
-      temperament: clamp(0.5 + rand(-0.18, 0.18), 0, 1)
+      temperament: clamp(0.5 + rand(-0.18, 0.18), 0, 1),
+      dietRole
     };
     this.statuses = new Map();
     this.cooldowns = {
       adrenaline: 0,
-      familyAid: 0
+      familyAid: 0,
+      predatorLite: 0
     };
+    this._wasOvercrowded = false;
     this.damageFx = {
       recentDamage: 0,
       hitFlash: 0,
@@ -276,13 +281,15 @@ export class Creature {
       mateCooldown: 0,
       bondingWith: null,
       bondTimer: 0,
+      bondAnnounced: false,
       score: 0
     };
     this.senses = {
       food: null,
       restZone: null,
       mate: null,
-      overcrowded: false
+      overcrowded: false,
+      corpse: null
     };
     this._needsTimer = rand(0, CreatureAgentTuning.NEEDS.UPDATE_INTERVAL);
     this._goalTimer = rand(0, CreatureAgentTuning.GOALS.UPDATE_INTERVAL);
@@ -332,6 +339,17 @@ export class Creature {
     if (r < CreatureConfig.GENETICS.SENSE_TYPE_THRESHOLDS.CHEMICAL_MAX) return 'chemical'; // better pheromone tracking
     if (r < CreatureConfig.GENETICS.SENSE_TYPE_THRESHOLDS.THERMAL_MAX) return 'thermal'; // see through obstacles
     return 'echolocation'; // wider detection
+  }
+
+  _resolveDietRole(genes) {
+    const diet = genes?.diet ?? (genes?.predator ? 1.0 : 0.0);
+    if (diet > 0.7) {
+      return 'predator-lite';
+    }
+    if (diet >= 0.3) {
+      return Math.random() < 0.55 ? 'scavenger' : 'herbivore';
+    }
+    return 'herbivore';
   }
 
   _calculateAttractiveness(genes) {
@@ -441,6 +459,82 @@ export class Creature {
     persona.currentTargetId = null;
   }
 
+  huntLite(world, dt) {
+    const persona = this.personality;
+    const tuning = CreatureAgentTuning.PREDATOR_LITE;
+    if (!tuning) return;
+    persona.huntCooldown = Math.max(0, persona.huntCooldown - dt);
+    if (persona.huntCooldown > 0) return;
+
+    const hunger = this.needs?.hunger ?? 0;
+    const stress = this.needs?.stress ?? 0;
+    if (hunger < tuning.HUNGER_TRIGGER && stress < tuning.STRESS_TRIGGER) return;
+    if (Math.random() > tuning.CHASE_CHANCE) return;
+
+    const detectionRadius = this.genes.sense * tuning.SENSE_MULT;
+    const prey = world.findPrey?.(this, detectionRadius);
+    if (prey && prey.alive) {
+      persona.currentTargetId = prey.id;
+      persona.ambushTimer = persona.ambushDelay;
+      this.target = { x: prey.x, y: prey.y, creatureId: prey.id, predatorLite: true };
+      persona.huntCooldown = tuning.CHASE_COOLDOWN;
+      return;
+    }
+
+    this.target = null;
+    persona.currentTargetId = null;
+  }
+
+  _applyPredatorLiteChase(world, dt) {
+    const tuning = CreatureAgentTuning.PREDATOR_LITE;
+    if (!tuning) return;
+    this.cooldowns.predatorLite = Math.max(0, this.cooldowns.predatorLite - dt);
+    if (this.cooldowns.predatorLite > 0) return;
+
+    const targetId = this.personality.currentTargetId;
+    if (!targetId) return;
+    const prey = world.getAnyCreatureById(targetId);
+    if (!prey || !prey.alive) {
+      this.personality.currentTargetId = null;
+      return;
+    }
+
+    const dx = prey.x - this.x;
+    const dy = prey.y - this.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > tuning.TAG_RANGE) return;
+    if (dist <= 0.001) return;
+
+    const nx = dx / dist;
+    const ny = dy / dist;
+    prey.applyImpulse?.(nx * tuning.SCATTER_IMPULSE, ny * tuning.SCATTER_IMPULSE, {
+      decay: 6,
+      cap: tuning.SCATTER_CAP
+    });
+    if (prey.needs) {
+      prey.needs.stress = clamp((prey.needs.stress ?? 0) + tuning.STRESS_BOOST, 0, 100);
+    }
+    if (prey.ecosystem) {
+      prey.ecosystem.stress = clamp((prey.ecosystem.stress ?? 0) + tuning.STRESS_BOOST * 0.6, 0, 100);
+    }
+    prey.setMood?.('😳', 0.6);
+    this.cooldowns.predatorLite = tuning.TAG_COOLDOWN;
+
+    try {
+      eventSystem.emit(GameEvents.PREDATOR_LITE_CHASE, {
+        predatorId: this.id,
+        preyId: prey.id,
+        x: (prey.x + this.x) * 0.5,
+        y: (prey.y + this.y) * 0.5,
+        worldTime: world.t
+      });
+    } catch (error) {
+      console.warn('Failed to emit predator-lite chase event:', error);
+    }
+
+    this.personality.currentTargetId = null;
+  }
+
   _updateAgentState(dt, world) {
     if (!this.needs || !this.goal || !this.senses) return;
 
@@ -475,6 +569,8 @@ export class Creature {
   _updateAgentSenses(world) {
     const senses = this.senses;
     if (!senses) return;
+    const dietRole = this.traits?.dietRole ?? 'herbivore';
+    const diet = this.genes.diet ?? (this.genes.predator ? 1.0 : 0.0);
 
     const foodRadius = clamp(
       this.genes.sense * CreatureAgentTuning.SENSES.FOOD_RADIUS_MULT,
@@ -520,11 +616,34 @@ export class Creature {
     }
     senses.mate = bestMate;
 
+    if (dietRole === 'scavenger' || diet >= 0.3) {
+      senses.corpse = world?.findNearbyCorpse
+        ? world.findNearbyCorpse(this.x, this.y, this.genes.sense * 0.9)
+        : null;
+    } else {
+      senses.corpse = null;
+    }
+
     const crowdRadius = CreatureAgentTuning.SENSES.OVERCROWD_RADIUS;
     const crowd = world?.creatureManager?.queryCreaturesFast
       ? world.creatureManager.queryCreaturesFast(this.x, this.y, crowdRadius)
       : world?.queryCreatures?.(this.x, this.y, crowdRadius) || [];
     senses.overcrowded = crowd.length > CreatureAgentTuning.SENSES.OVERCROWD_COUNT;
+    if (senses.overcrowded && !this._wasOvercrowded) {
+      this._wasOvercrowded = true;
+      try {
+        eventSystem.emit(GameEvents.CREATURE_OVERCROWD, {
+          x: this.x,
+          y: this.y,
+          count: crowd.length,
+          worldTime: world?.t ?? 0
+        });
+      } catch (error) {
+        console.warn('Failed to emit overcrowd event:', error);
+      }
+    } else if (!senses.overcrowded) {
+      this._wasOvercrowded = false;
+    }
   }
 
   _updateNeeds(dt, world) {
@@ -590,6 +709,9 @@ export class Creature {
     const goal = this.goal;
     if (!needs || !senses || !goal) return;
 
+    const dietRole = this.traits?.dietRole ?? 'herbivore';
+    const roleTuning = CreatureAgentTuning.ROLES?.[dietRole] ?? {};
+
     const hungerScore = clamp(needs.hunger / 100, 0, 1);
     const energyScore = clamp(1 - needs.energy / 100, 0, 1);
     const socialScore = clamp(needs.socialDrive / 100, 0, 1);
@@ -607,7 +729,7 @@ export class Creature {
     const memoryCalm = !senses.restZone && this._selectMemory ? this._selectMemory('calm', world) : null;
     const eatSourceFactor = senses.food ? 1 : memoryFood ? 0.6 : 0.3;
     const restSourceFactor = senses.restZone ? 1 : memoryCalm ? 0.6 : 0.4;
-    const eatScore = hungerScore * eatSourceFactor * CreatureAgentTuning.GOALS.SCORE_BIAS.EAT * eatBias;
+    let eatScore = hungerScore * eatSourceFactor * CreatureAgentTuning.GOALS.SCORE_BIAS.EAT * eatBias;
     let restScore = (energyScore * 0.9 + stressScore * 0.3) *
       restSourceFactor * CreatureAgentTuning.GOALS.SCORE_BIAS.REST * restBias;
     let mateScore = socialScore * (senses.mate ? 1 : 0.2) * CreatureAgentTuning.GOALS.SCORE_BIAS.SEEK_MATE;
@@ -622,7 +744,15 @@ export class Creature {
       mateScore *= CreatureAgentTuning.MATING.ELDER_GOAL_MULT;
     }
 
-    const wanderScore = CreatureAgentTuning.GOALS.SCORE_BIAS.WANDER * wanderBias;
+    let wanderScore = CreatureAgentTuning.GOALS.SCORE_BIAS.WANDER * wanderBias;
+
+    if (senses.corpse && dietRole === 'scavenger') {
+      eatScore *= roleTuning.corpseBias ?? 1.25;
+    }
+    eatScore *= roleTuning.eatBias ?? 1;
+    restScore *= roleTuning.restBias ?? 1;
+    mateScore *= roleTuning.mateBias ?? 1;
+    wanderScore *= roleTuning.wanderBias ?? 1;
 
     const scores = [
       { key: 'EAT', score: eatScore },
@@ -724,6 +854,19 @@ export class Creature {
     if (this.goal.bondingWith !== mate.id) {
       this.goal.bondingWith = mate.id;
       this.goal.bondTimer = 0;
+      this.goal.bondAnnounced = false;
+    }
+    if (!this.goal.bondAnnounced) {
+      this.goal.bondAnnounced = true;
+      try {
+        eventSystem.emit(GameEvents.CREATURE_BOND, {
+          creature: this,
+          mateId: mate.id,
+          worldTime: world?.t ?? 0
+        });
+      } catch (error) {
+        console.warn('Failed to emit bond event:', error);
+      }
     }
     this.goal.bondTimer += dt;
     if (mate.goal.bondingWith !== this.id) {
@@ -804,6 +947,9 @@ export class Creature {
 
     if (this.cooldowns.adrenaline > 0) {
       this.cooldowns.adrenaline = Math.max(0, this.cooldowns.adrenaline - dt);
+    }
+    if (this.cooldowns.predatorLite > 0) {
+      this.cooldowns.predatorLite = Math.max(0, this.cooldowns.predatorLite - dt);
     }
 
     if (this.damageFx.hitFlash > 0) {
@@ -894,6 +1040,7 @@ export class Creature {
     const temperament = this.traits?.temperament ?? 0.5;
     wanderScale *= clamp(0.65 + temperament * 0.7, 0.6, 1.4);
     const diet = this.genes.diet ?? (this.genes.predator ? 1.0 : 0.0);
+    const dietRole = this.traits?.dietRole ?? 'herbivore';
     const isOmnivore = diet > 0.3 && diet < 0.7;
     const canScavenge = diet >= 0.3; // Omnivores and carnivores can scavenge
     if (this.aquaticAffinity > 0.45 && (inWetland || inWater)) {
@@ -916,8 +1063,12 @@ export class Creature {
       this.personality.currentTargetId = null;
     } else if (goal === 'EAT') {
       if (this.genes.predator || diet > 0.7) {
-        // Carnivores: hunt or scavenge
-        this.hunt(world, dt);
+        if (dietRole === 'predator-lite') {
+          this.huntLite(world, dt);
+        } else {
+          // Carnivores: hunt or scavenge
+          this.hunt(world, dt);
+        }
         if (this.personality.currentTargetId) {
           const tracked = world.getAnyCreatureById(this.personality.currentTargetId);
           if (tracked && tracked.alive) {
@@ -926,8 +1077,8 @@ export class Creature {
         }
 
         // If no prey found and can scavenge, look for corpses
-        if (!this.target && canScavenge && this.energy < 30) {
-          const corpse = world.findNearbyCorpse(this.x, this.y, this.genes.sense * 0.8);
+        if (!this.target && canScavenge && (this.energy < 30 || this.senses?.corpse)) {
+          const corpse = this.senses?.corpse || world.findNearbyCorpse(this.x, this.y, this.genes.sense * 0.8);
           if (corpse) {
             this.target = { x: corpse.x, y: corpse.y, isCorpse: true, corpse };
           }
@@ -1218,34 +1369,52 @@ export class Creature {
     }
 
     if (this.genes.predator || diet > 0.7) {
-      // Carnivores: attack prey
-      this.personality.attackCooldown = Math.max(0, this.personality.attackCooldown - dt);
-      const attackResult = this.personality.attackCooldown <= 0 ? world.tryPredation(this) : null;
-      if (attackResult?.victim) {
-        if (attackResult.killed) {
-          this.energy += 14; // BALANCED: Less OP, need more strategic hunting
-          this._applyHungerRelief(14);
-          this.stats.kills += 1;
-          this.logEvent(attackResult.victim?.id != null ? `Claimed prey #${attackResult.victim.id}` : 'Claimed prey', world.t);
-          const victim = attackResult.victim;
-          if (victim && typeof victim.logEvent === 'function') {
-            victim.logEvent(this.id != null ? `Killed by predator #${this.id}` : 'Killed by predator', world.t);
+      if (dietRole !== 'predator-lite') {
+        // Carnivores: attack prey
+        this.personality.attackCooldown = Math.max(0, this.personality.attackCooldown - dt);
+        const attackResult = this.personality.attackCooldown <= 0 ? world.tryPredation(this) : null;
+        if (attackResult?.victim) {
+          if (attackResult.killed) {
+            this.energy += 14; // BALANCED: Less OP, need more strategic hunting
+            this._applyHungerRelief(14);
+            this.stats.kills += 1;
+            this.logEvent(attackResult.victim?.id != null ? `Claimed prey #${attackResult.victim.id}` : 'Claimed prey', world.t);
+            const victim = attackResult.victim;
+            if (victim && typeof victim.logEvent === 'function') {
+              victim.logEvent(this.id != null ? `Killed by predator #${this.id}` : 'Killed by predator', world.t);
+            }
+            if (this.stats.kills === 5) {
+              world.lineageTracker?.noteMilestone(world, this, 'claimed 5 hunts');
+            }
+            this.target = null;
+          } else if (attackResult.damage > 0) {
+            this.logEvent(`Bit prey for ${attackResult.damage.toFixed(1)}`, world.t);
           }
-          if (this.stats.kills === 5) {
-            world.lineageTracker?.noteMilestone(world, this, 'claimed 5 hunts');
-          }
-          this.target = null;
-        } else if (attackResult.damage > 0) {
-          this.logEvent(`Bit prey for ${attackResult.damage.toFixed(1)}`, world.t);
         }
+        if (!this.alive) return;
+      } else {
+        this._applyPredatorLiteChase(world, dt);
       }
-      if (!this.alive) return;
 
       // NEW: Try to scavenge corpse if nearby
       if (canScavenge && this.target?.isCorpse && this.target.corpse) {
         const eaten = world.tryEatCorpse(this, this.target.corpse);
         if (eaten) {
+          const wasHungry = (this.needs?.hunger ?? 0) >= CreatureConfig.MEMORY.HUNGER_THRESHOLD &&
+            (world.t - (this.needs?.lastEatAt ?? -Infinity) > 6);
           this._applyHungerRelief(eaten.energy);
+          if (wasHungry) {
+            try {
+              eventSystem.emit(GameEvents.CREATURE_EAT, {
+                creature: this,
+                hungry: true,
+                source: 'corpse',
+                worldTime: world.t
+              });
+            } catch (error) {
+              console.warn('Failed to emit eat event:', error);
+            }
+          }
           this.target = null;
         }
       }
@@ -1254,7 +1423,21 @@ export class Creature {
       if (this.target?.isCorpse && this.target.corpse) {
         const eaten = world.tryEatCorpse(this, this.target.corpse);
         if (eaten) {
+          const wasHungry = (this.needs?.hunger ?? 0) >= CreatureConfig.MEMORY.HUNGER_THRESHOLD &&
+            (world.t - (this.needs?.lastEatAt ?? -Infinity) > 6);
           this._applyHungerRelief(eaten.energy);
+          if (wasHungry) {
+            try {
+              eventSystem.emit(GameEvents.CREATURE_EAT, {
+                creature: this,
+                hungry: true,
+                source: 'corpse',
+                worldTime: world.t
+              });
+            } catch (error) {
+              console.warn('Failed to emit eat event:', error);
+            }
+          }
           this.target = null;
         }
       } else {
@@ -1264,6 +1447,8 @@ export class Creature {
           if (eaten) {
             const energyGain = eaten.energy || 0;
             const food = eaten.food;
+            const wasHungry = (this.needs?.hunger ?? 0) >= CreatureConfig.MEMORY.HUNGER_THRESHOLD &&
+              (world.t - (this.needs?.lastEatAt ?? -Infinity) > 6);
             this.energy += energyGain;
             this.health = Math.min(this.maxHealth, this.health + energyGain * 0.15);
             this.stats.food += 1;
@@ -1297,6 +1482,19 @@ export class Creature {
             if (this.stats.food === 20) {
               world.lineageTracker?.noteMilestone(world, this, 'foraged 20 meals');
             }
+
+            if (wasHungry) {
+              try {
+                eventSystem.emit(GameEvents.CREATURE_EAT, {
+                  creature: this,
+                  hungry: true,
+                  source: food?.type || 'food',
+                  worldTime: world.t
+                });
+              } catch (error) {
+                console.warn('Failed to emit eat event:', error);
+              }
+            }
           }
         }
       }
@@ -1308,6 +1506,8 @@ export class Creature {
         if (eaten) {
           const energyGain = eaten.energy || 0;
           const food = eaten.food;
+          const wasHungry = (this.needs?.hunger ?? 0) >= CreatureConfig.MEMORY.HUNGER_THRESHOLD &&
+            (world.t - (this.needs?.lastEatAt ?? -Infinity) > 6);
           this.energy += energyGain;
           this.health = Math.min(this.maxHealth, this.health + energyGain * 0.15);
           this.stats.food += 1;
@@ -1328,6 +1528,19 @@ export class Creature {
 
           if (this.stats.food === 20) {
             world.lineageTracker?.noteMilestone(world, this, 'foraged 20 meals');
+          }
+
+          if (wasHungry) {
+            try {
+              eventSystem.emit(GameEvents.CREATURE_EAT, {
+                creature: this,
+                hungry: true,
+                source: food?.type || 'food',
+                worldTime: world.t
+              });
+            } catch (error) {
+              console.warn('Failed to emit eat event:', error);
+            }
           }
         }
       }
@@ -1443,8 +1656,10 @@ export class Creature {
           mate.goal.mateCooldown = cooldown;
           this.goal.bondingWith = null;
           this.goal.bondTimer = 0;
+          this.goal.bondAnnounced = false;
           mate.goal.bondingWith = null;
           mate.goal.bondTimer = 0;
+          mate.goal.bondAnnounced = false;
 
           this.energy *= CreatureAgentTuning.MATING.ENERGY_COST_MULT;
           mate.energy *= CreatureAgentTuning.MATING.ENERGY_COST_MULT;
@@ -1460,6 +1675,7 @@ export class Creature {
     } else if (this.goal?.bondingWith && (!mate || mate.id !== this.goal.bondingWith)) {
       this.goal.bondingWith = null;
       this.goal.bondTimer = 0;
+      this.goal.bondAnnounced = false;
     }
 
     if (this.energy <= 0 || this.age > CreatureAgentTuning.LIFE_STAGE.ELDER_FADE_END) {

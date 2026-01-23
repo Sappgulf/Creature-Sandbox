@@ -21,6 +21,18 @@ export class DOMCache {
     this.cacheElement('hud-bottom-left', 'hudBottom');
     this.cacheElement('quick-actions', 'quickActions');
     this.cacheElement('mobile-quick-actions', 'mobileQuickActions');
+    this.cacheElement('watch-strip', 'watchStrip');
+    this.cacheElement('btn-watch-mode', 'watchModeBtn');
+    this.cacheElement('watch-pause', 'watchPauseBtn');
+    this.cacheElement('watch-follow', 'watchFollowBtn');
+    this.cacheElement('watch-speed', 'watchSpeedBtn');
+    this.cacheElement('watch-moments', 'watchMomentsBtn');
+    this.cacheElement('watch-god-mode', 'watchGodModeBtn');
+    this.cacheElement('watch-recenter', 'watchRecenterBtn');
+    this.cacheElement('moments-panel', 'momentsPanel');
+    this.cacheElement('moments-list', 'momentsList');
+    this.cacheElement('moments-summary', 'momentsSummary');
+    this.cacheElement('moments-close', 'momentsClose');
 
     // Inspector elements
     this.cacheElement('inspector', 'inspector');

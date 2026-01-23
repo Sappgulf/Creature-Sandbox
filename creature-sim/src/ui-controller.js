@@ -46,6 +46,8 @@ export class UIController {
     this.ecoHealth = subsystems.ecoHealth;
     this.gameplayModes = subsystems.gameplayModes;
     this.sessionGoals = subsystems.sessionGoals;
+    this.autoDirector = subsystems.autoDirector;
+    this.moments = subsystems.moments;
 
     this.boundHandlers = {
       onPause: this.onPause.bind(this),
@@ -75,7 +77,14 @@ export class UIController {
       onModeChange: this.onModeChange.bind(this),
       onModeCycle: this.onModeCycle.bind(this),
       onRefreshGoals: this.onRefreshGoals.bind(this),
-      onMobileSpawnConfirm: this.onMobileSpawnConfirm.bind(this)
+      onMobileSpawnConfirm: this.onMobileSpawnConfirm.bind(this),
+      onWatchModeToggle: this.onWatchModeToggle.bind(this),
+      onWatchPause: this.onWatchPause.bind(this),
+      onWatchSpeed: this.onWatchSpeed.bind(this),
+      onWatchFollow: this.onWatchFollow.bind(this),
+      onWatchMoments: this.onWatchMoments.bind(this),
+      onWatchGodMode: this.onWatchGodMode.bind(this),
+      onWatchRecenter: this.onWatchRecenter.bind(this)
     };
 
     // Setup event listeners for enhanced systems
@@ -182,6 +191,7 @@ export class UIController {
     this.bindChaosControls();
     this.bindGameplayModeControls();
     this.bindSessionGoalControls();
+    this.bindWatchControls();
     // Sync mobile UI state immediately
     this.updateMobileControls();
     this.updateSessionMetaVisibility();
@@ -189,6 +199,7 @@ export class UIController {
     this.setPropType(gameState.selectedPropType || 'bounce');
     this.updateSandboxUiVisibility();
     this.updateGodModeUI();
+    this.updateWatchModeUI();
   }
 
   setupHudMenu() {
@@ -417,6 +428,37 @@ export class UIController {
       refreshBtn.addEventListener('click', this.boundHandlers.onRefreshGoals);
     }
     this.renderSessionGoals();
+  }
+
+  bindWatchControls() {
+    const watchToggleBtn = domCache.get('watchModeBtn');
+    const watchPauseBtn = domCache.get('watchPauseBtn');
+    const watchSpeedBtn = domCache.get('watchSpeedBtn');
+    const watchFollowBtn = domCache.get('watchFollowBtn');
+    const watchMomentsBtn = domCache.get('watchMomentsBtn');
+    const watchGodModeBtn = domCache.get('watchGodModeBtn');
+    const watchRecenterBtn = domCache.get('watchRecenterBtn');
+    const momentsPanel = domCache.get('momentsPanel');
+    const momentsList = domCache.get('momentsList');
+    const momentsSummary = domCache.get('momentsSummary');
+    const momentsClose = domCache.get('momentsClose');
+
+    if (watchToggleBtn) watchToggleBtn.addEventListener('click', this.boundHandlers.onWatchModeToggle);
+    if (watchPauseBtn) watchPauseBtn.addEventListener('click', this.boundHandlers.onWatchPause);
+    if (watchSpeedBtn) watchSpeedBtn.addEventListener('click', this.boundHandlers.onWatchSpeed);
+    if (watchFollowBtn) watchFollowBtn.addEventListener('click', this.boundHandlers.onWatchFollow);
+    if (watchMomentsBtn) watchMomentsBtn.addEventListener('click', this.boundHandlers.onWatchMoments);
+    if (watchGodModeBtn) watchGodModeBtn.addEventListener('click', this.boundHandlers.onWatchGodMode);
+    if (watchRecenterBtn) watchRecenterBtn.addEventListener('click', this.boundHandlers.onWatchRecenter);
+
+    if (this.moments?.bindDom) {
+      this.moments.bindDom({
+        panel: momentsPanel,
+        listEl: momentsList,
+        summaryEl: momentsSummary,
+        closeBtn: momentsClose
+      });
+    }
   }
 
   onModeChange() {
@@ -699,6 +741,58 @@ export class UIController {
         pauseBtn.classList.remove('active');
       }
     }
+
+    const watchPauseBtn = domCache.get('watchPauseBtn');
+    if (watchPauseBtn) {
+      watchPauseBtn.textContent = gameState.paused ? '▶️' : '⏸️';
+      watchPauseBtn.setAttribute('aria-pressed', gameState.paused ? 'true' : 'false');
+      watchPauseBtn.setAttribute('aria-label', gameState.paused ? 'Resume simulation' : 'Pause simulation');
+      watchPauseBtn.classList.toggle('active', gameState.paused);
+    }
+  }
+
+  updateWatchModeUI() {
+    const watchStrip = domCache.get('watchStrip');
+    const watchToggleBtn = domCache.get('watchModeBtn');
+    const watchSpeedBtn = domCache.get('watchSpeedBtn');
+    const watchFollowBtn = domCache.get('watchFollowBtn');
+    const watchRecenterBtn = domCache.get('watchRecenterBtn');
+
+    document.body.classList.toggle('watch-mode', !!gameState.watchModeEnabled);
+
+    const watchSpeeds = [0.5, 1, 2];
+    const speedIndex = watchSpeeds.indexOf(gameState.fastForward);
+    if (speedIndex >= 0) {
+      gameState.watchSpeedIndex = speedIndex;
+    }
+
+    if (watchStrip) {
+      watchStrip.classList.toggle('hidden', !gameState.watchModeEnabled);
+      watchStrip.setAttribute('aria-hidden', gameState.watchModeEnabled ? 'false' : 'true');
+    }
+
+    if (watchToggleBtn) {
+      watchToggleBtn.setAttribute('aria-pressed', gameState.watchModeEnabled ? 'true' : 'false');
+      watchToggleBtn.textContent = gameState.watchModeEnabled ? '👁️ Watch' : '🧭 Watch';
+    }
+
+    if (watchSpeedBtn) {
+      const info = gameState.getWatchSpeedInfo();
+      watchSpeedBtn.textContent = info.label;
+      watchSpeedBtn.setAttribute('aria-label', `Watch speed ${info.label}`);
+    }
+
+    if (watchFollowBtn) {
+      const isFollowing = this.camera.followMode !== 'free';
+      watchFollowBtn.classList.toggle('active', isFollowing);
+      watchFollowBtn.setAttribute('aria-pressed', isFollowing ? 'true' : 'false');
+    }
+
+    if (watchRecenterBtn) {
+      const isSuspended = performance.now() < (gameState.autoDirectorOverrideUntil || 0);
+      watchRecenterBtn.classList.toggle('active', isSuspended);
+      watchRecenterBtn.setAttribute('aria-label', isSuspended ? 'Re-center to auto director' : 'Auto director active');
+    }
   }
 
   updateSessionMetaVisibility() {
@@ -726,12 +820,13 @@ export class UIController {
     const editorOpen = (scenarioPanel && !scenarioPanel.classList.contains('hidden')) ||
       (geneEditorPanel && !geneEditorPanel.classList.contains('hidden'));
     const godModeActive = gameState.godModeActive;
+    const watchMode = gameState.watchModeEnabled;
 
-    if (quickActions) quickActions.classList.toggle('hidden', editorOpen || godModeActive);
-    if (mobileQuickActions) mobileQuickActions.classList.toggle('hidden', editorOpen || godModeActive);
+    if (quickActions) quickActions.classList.toggle('hidden', editorOpen || godModeActive || watchMode);
+    if (mobileQuickActions) mobileQuickActions.classList.toggle('hidden', editorOpen || godModeActive || watchMode);
     if (interactionHint) {
-      interactionHint.classList.toggle('hidden', editorOpen || godModeActive);
-      interactionHint.setAttribute('aria-hidden', editorOpen || godModeActive ? 'true' : 'false');
+      interactionHint.classList.toggle('hidden', editorOpen || godModeActive || watchMode);
+      interactionHint.setAttribute('aria-hidden', editorOpen || godModeActive || watchMode ? 'true' : 'false');
     }
   }
 
@@ -1014,6 +1109,63 @@ export class UIController {
   onMobileSpeed() {
     gameState.cycleMobileSpeed();
     this.updateMobileControls();
+  }
+
+  onWatchModeToggle() {
+    gameState.watchModeEnabled = !gameState.watchModeEnabled;
+    if (gameState.watchModeEnabled) {
+      const speed = Math.min(2, Math.max(0.5, gameState.fastForward || 1));
+      gameState.setWatchSpeed(speed);
+    }
+    this.updateWatchModeUI();
+    this.updateSandboxUiVisibility();
+  }
+
+  onWatchPause() {
+    this.onPause();
+  }
+
+  onWatchSpeed() {
+    gameState.cycleWatchSpeed();
+    this.updateWatchModeUI();
+  }
+
+  onWatchFollow() {
+    const hasFollow = this.camera.followMode !== 'free';
+    if (hasFollow) {
+      this.camera.followMode = 'free';
+      this.camera.followTarget = null;
+      gameState.watchModeFollow = false;
+      this.updateWatchModeUI();
+      return;
+    }
+
+    const autoTarget = this.autoDirector?.getLastFocusTarget?.();
+    const targetId = gameState.selectedId ?? autoTarget?.creatureId ?? null;
+    if (!targetId) {
+      if (this.hasNotifications()) {
+        this.notifications.show('Select a creature to follow', 'info', 1800);
+      }
+      return;
+    }
+
+    this.camera.followMode = 'smooth-follow';
+    this.camera.followTarget = targetId;
+    gameState.watchModeFollow = true;
+    this.updateWatchModeUI();
+  }
+
+  onWatchMoments() {
+    this.moments?.togglePanel?.();
+  }
+
+  onWatchGodMode() {
+    this.onGodModeToggle();
+  }
+
+  onWatchRecenter() {
+    this.autoDirector?.recenter?.();
+    this.updateWatchModeUI();
   }
 
   onGodModeToggle() {

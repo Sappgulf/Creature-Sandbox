@@ -307,11 +307,15 @@ export const GameEvents = {
   CREATURE_EAT: 'creature:eat',
   CREATURE_MOVE: 'creature:move',
   CREATURE_REPRODUCE: 'creature:reproduce',
+  CREATURE_BOND: 'creature:bond',
+  CREATURE_PANIC: 'creature:panic',
+  CREATURE_OVERCROWD: 'creature:overcrowd',
   CREATURE_ATTACK: 'creature:attack',
   CREATURE_DEFEND: 'creature:defend',
   CREATURE_KILLED: 'creature:killed',
   CREATURE_THROWN: 'creature:thrown',
   CREATURE_BUMPED: 'creature:bumped',
+  PREDATOR_LITE_CHASE: 'creature:predator_lite_chase',
 
   // World events
   FRAME_UPDATE: 'frame:update',
@@ -320,6 +324,8 @@ export const GameEvents = {
   WORLD_WEATHER_CHANGE: 'world:weather_change',
   WORLD_DISASTER_START: 'world:disaster_start',
   WORLD_DISASTER_END: 'world:disaster_end',
+  WORLD_FOOD_SCARCITY: 'world:food_scarcity',
+  WORLD_MIGRATION_START: 'world:migration_start',
 
   // UI events
   UI_PANEL_OPEN: 'ui:panel_open',

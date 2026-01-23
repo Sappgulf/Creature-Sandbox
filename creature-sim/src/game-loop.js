@@ -793,6 +793,10 @@ export class GameLoop {
         hintDurationMs: gameState.curiosityPrompt?.durationMs || 4500
       });
     }
+
+    if (this.uiController?.updateWatchModeUI) {
+      this.uiController.updateWatchModeUI();
+    }
   }
 
   updateCuriosityPrompt() {

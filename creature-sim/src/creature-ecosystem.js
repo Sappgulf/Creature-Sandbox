@@ -3,6 +3,7 @@
  * Lightweight internal state updates for emergent behavior.
  */
 import { clamp } from './utils.js';
+import { eventSystem, GameEvents } from './event-system.js';
 
 export const ECOSYSTEM_STATES = Object.freeze({
   CALM: 'calm',
@@ -44,6 +45,7 @@ export class CreatureEcosystemSystem {
 
   updateCreature(creature, dt) {
     const eco = creature.ecosystem;
+    const prevState = eco.state;
     const speed = Math.hypot(creature.vx || 0, creature.vy || 0);
     const idle = speed < 6 && !creature.isGrabbed;
 
@@ -83,6 +85,18 @@ export class CreatureEcosystemSystem {
 
     this.applySocialContagion(eco, nearby, dt);
     eco.state = this._deriveState(eco);
+
+    if (eco.state !== prevState && eco.state === ECOSYSTEM_STATES.PANICKED) {
+      try {
+        eventSystem.emit(GameEvents.CREATURE_PANIC, {
+          creature,
+          stress: eco.stress,
+          worldTime: this.world?.t ?? 0
+        });
+      } catch (error) {
+        console.warn('Failed to emit panic event:', error);
+      }
+    }
   }
 
   registerEvent(creature, type, payload = {}) {
