@@ -56,6 +56,39 @@ export const CreatureAgentTuning = {
       WANDER: 0.2
     }
   },
+  ROLES: {
+    herbivore: {
+      eatBias: 1.05,
+      restBias: 1.0,
+      mateBias: 1.0,
+      wanderBias: 1.0
+    },
+    scavenger: {
+      eatBias: 1.15,
+      restBias: 0.95,
+      mateBias: 0.9,
+      wanderBias: 1.1,
+      corpseBias: 1.35
+    },
+    'predator-lite': {
+      eatBias: 0.95,
+      restBias: 1.05,
+      mateBias: 0.85,
+      wanderBias: 1.15
+    }
+  },
+  PREDATOR_LITE: {
+    CHASE_CHANCE: 0.22,
+    CHASE_COOLDOWN: 4.5,
+    HUNGER_TRIGGER: 45,
+    STRESS_TRIGGER: 55,
+    SENSE_MULT: 0.9,
+    TAG_RANGE: 22,
+    TAG_COOLDOWN: 6,
+    SCATTER_IMPULSE: 140,
+    SCATTER_CAP: 240,
+    STRESS_BOOST: 16
+  },
   MOVEMENT: {
     ARRIVE_RADIUS: 60,
     SLOW_RADIUS: 130,

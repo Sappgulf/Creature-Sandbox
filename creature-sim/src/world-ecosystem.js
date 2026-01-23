@@ -3,6 +3,7 @@
  */
 import { rand, clamp, dist2 } from './utils.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
+import { eventSystem, GameEvents } from './event-system.js';
 
 export class WorldEcosystem {
   constructor(world) {
@@ -224,7 +225,8 @@ export class WorldEcosystem {
         stock: CreatureAgentTuning.FOOD_PATCHES.START_STOCK * fertility,
         pressure: 0,
         depletedTimer: 0,
-        spawnCooldown: rand(0, 1.2)
+        spawnCooldown: rand(0, 1.2),
+        lastScarcityAt: -Infinity
       };
       this.foodPatches.push(patch);
       this.foodPatchIndex.set(patch.id, patch);
@@ -249,7 +251,8 @@ export class WorldEcosystem {
       pressure: 0,
       depletedTimer: 0,
       spawnCooldown: rand(0, 0.8),
-      tag: options.tag ?? null
+      tag: options.tag ?? null,
+      lastScarcityAt: -Infinity
     };
     this.foodPatches.push(patch);
     this.foodPatchIndex.set(patch.id, patch);
@@ -306,6 +309,20 @@ export class WorldEcosystem {
     patch.pressure = clamp(patch.pressure + pressureBoost * (depleted ? 1 : 0.5), 0, 1);
     if (depleted) {
       patch.depletedTimer = Math.max(patch.depletedTimer, CreatureAgentTuning.FOOD_PATCHES.DEPLETION_COOLDOWN);
+      const now = this.world?.t ?? 0;
+      if (now - (patch.lastScarcityAt ?? -Infinity) > 18) {
+        patch.lastScarcityAt = now;
+        try {
+          eventSystem.emit(GameEvents.WORLD_FOOD_SCARCITY, {
+            patchId: patch.id,
+            x: patch.x,
+            y: patch.y,
+            worldTime: now
+          });
+        } catch (error) {
+          console.warn('Failed to emit food scarcity event:', error);
+        }
+      }
     }
   }
 
@@ -346,7 +363,8 @@ export class WorldEcosystem {
         pressure: clamp(patch.pressure ?? 0, 0, 1),
         depletedTimer: clamp(patch.depletedTimer ?? 0, 0, 30),
         spawnCooldown: clamp(patch.spawnCooldown ?? 0, 0, 3),
-        tag: patch.tag ?? null
+        tag: patch.tag ?? null,
+        lastScarcityAt: clamp(patch.lastScarcityAt ?? -Infinity, -Infinity, Number.POSITIVE_INFINITY)
       };
       maxId = Math.max(maxId, restored.id);
       this.foodPatches.push(restored);

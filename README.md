@@ -47,6 +47,7 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Behavior tuning**: Adjust forage/wander/rest weights in real-time
 - **Tool modes**: Paint food, spawn creatures, or erase with mouse
 - **Camera controls**: Pan, zoom, and follow creatures
+- **Watch mode**: Observer-first control strip with auto-director camera and moments log
 - **Sandbox props**: Drop bounce pads, spinners, gravity wells, and food buttons
 - **Micro toys**: Spring pads, launch buttons, see-saws, conveyors, wind fans, sticky zones, and speed slopes
 - **Direct manipulation**: Drag, move, and throw creatures for playful experiments
@@ -57,6 +58,7 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Gene sharing**: Copy/import gene codes from the Gene Editor
 - **Display toggles**: Nameplates and reduced-motion options in the Features panel
 - **Condensed top HUD**: Primary controls plus a ⋯ overflow menu for all panels
+- **Moments log**: Tap a moment to jump the camera and review a session summary
 
 ### ⚡ Performance Optimized
 - **Spatial partitioning**: O(1) proximity queries with grid-based optimization
@@ -104,6 +106,7 @@ open http://localhost:8000
 - **Hover (mouse/pen)**: See a grab outline on creatures in Inspect mode
 - **Ctrl/⌘ + S / Ctrl/⌘ + O**: Save to file / load from file
 - **God Mode**: Open **⋯ More Actions** → **✨ God Mode** or long-press the world (touch)
+- **Watch Mode**: Use the bottom control strip for pause, follow, speed, moments, and re-center
 
 ### Tool Modes (Keyboard Shortcuts)
 - **X**: Inspect mode (default)
@@ -165,6 +168,7 @@ Adjust how creatures prioritize actions:
 - **Sense** (20-200px): Detection radius
 - **Metabolism** (0.4-2.0): Energy consumption rate
 - **Predator**: Binary trait (herbivore/predator)
+- **Diet roles**: Herbivore, scavenger, and predator-lite (stress + scatter without instant kills)
 
 ### Energy Economy
 - **Base cost**: Metabolism + movement + sensory processing

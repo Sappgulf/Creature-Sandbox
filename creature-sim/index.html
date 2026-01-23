@@ -44,6 +44,7 @@
     <button id="btn-mode" title="Game modes & goals" aria-label="Game modes and goals">🎛️ Mode</button>
     <button id="btn-pause" title="Pause/Resume (Space)" aria-label="Pause or resume">⏸️ Pause</button>
     <button id="btn-step" title="Single Step" aria-label="Single step">⏭️ Step</button>
+    <button id="btn-watch-mode" title="Watch mode" aria-label="Toggle watch mode">👁️ Watch</button>
     <button id="btn-campaign" title="Campaign Mode" aria-label="Open campaign mode">🏆 Campaign</button>
     <button id="btn-achievements" title="Achievements" aria-label="Open achievements">🏅 Achievements</button>
     <button id="btn-scenario" title="Scenario Lab" aria-label="Open scenario lab">🧪 Scenario</button>
@@ -97,6 +98,27 @@
         <div class="dropdown-item" data-prop="button">🔘 Food Button</div>
         <div class="dropdown-item" data-prop="launch">🚀 Launch Button</div>
       </div>
+    </div>
+  </div>
+
+  <div id="watch-strip" class="watch-strip hidden" role="toolbar" aria-label="Watch mode controls" aria-hidden="true">
+    <button id="watch-pause" class="watch-btn" aria-label="Pause or resume">⏸️</button>
+    <button id="watch-follow" class="watch-btn" aria-label="Toggle follow">🎯</button>
+    <button id="watch-speed" class="watch-btn" aria-label="Watch speed">1×</button>
+    <button id="watch-recenter" class="watch-btn" aria-label="Re-center to auto director">⟳</button>
+    <button id="watch-moments" class="watch-btn watch-btn-wide" aria-label="Open moments log">✨ Moments</button>
+    <button id="watch-god-mode" class="watch-btn watch-btn-wide" aria-label="Toggle god mode">✨ God</button>
+  </div>
+
+  <div id="moments-panel" class="moments-panel hidden" role="dialog" aria-label="Moments log" aria-hidden="true">
+    <div class="moments-header">
+      <span>Moments</span>
+      <button id="moments-close" class="ghost-btn small" aria-label="Close moments">Close</button>
+    </div>
+    <div id="moments-list" class="moments-list"></div>
+    <div class="moments-summary">
+      <div class="moments-summary-title">Session Summary</div>
+      <div id="moments-summary" class="moments-summary-grid"></div>
     </div>
   </div>
   <div id="god-mode-indicator" class="god-mode-indicator hidden" aria-live="polite">

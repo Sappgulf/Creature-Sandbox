@@ -25,13 +25,16 @@ export class CreatureBehaviorSystem {
    */
   update(dt, world) {
     this.creature._lastWorld = world;
+    const dietRole = this.creature.traits?.dietRole ?? 'herbivore';
 
     // Update target selection and behavior
     this.updateTargeting(world, dt);
     this.updateMovement(world, dt);
 
     // Handle specific behaviors based on type and state
-    if (this.creature.genes.predator) {
+    if (dietRole === 'predator-lite') {
+      this.updatePredatorLiteBehavior(world, dt);
+    } else if (this.creature.genes.predator) {
       this.updatePredatorBehavior(world, dt);
     } else {
       this.updateHerbivoreBehavior(world, dt);
@@ -72,9 +75,12 @@ export class CreatureBehaviorSystem {
    */
   selectNewTarget(world) {
     const diet = this.creature.genes.diet ?? (this.creature.genes.predator ? 1.0 : 0.0);
+    const dietRole = this.creature.traits?.dietRole ?? 'herbivore';
 
     // Predators prioritize hunting
-    if (diet > 0.7) {
+    if (dietRole === 'predator-lite') {
+      this.selectPredatorLiteTarget(world);
+    } else if (diet > 0.7) {
       this.selectHuntingTarget(world);
     }
     // Omnivores look for food first, then prey
@@ -87,7 +93,9 @@ export class CreatureBehaviorSystem {
     }
 
     // Scavenging as fallback
-    if (!this.creature.target && this.creature.energy < 30) {
+    if (dietRole === 'scavenger') {
+      this.selectScavengingTarget(world);
+    } else if (!this.creature.target && this.creature.energy < 30) {
       this.selectScavengingTarget(world);
     }
   }
@@ -105,6 +113,20 @@ export class CreatureBehaviorSystem {
         y: prey.y,
         creatureId: prey.id,
         priority: 1.0
+      };
+      this.creature.personality.currentTargetId = prey.id;
+    }
+  }
+
+  selectPredatorLiteTarget(world) {
+    const prey = world.findPrey?.(this.creature, 140);
+    if (prey) {
+      this.creature.target = {
+        x: prey.x,
+        y: prey.y,
+        creatureId: prey.id,
+        predatorLite: true,
+        priority: 0.75
       };
       this.creature.personality.currentTargetId = prey.id;
     }
@@ -151,11 +173,8 @@ export class CreatureBehaviorSystem {
    * Select scavenging target
    */
   selectScavengingTarget(world) {
-    if (!world.corpseSystem) return;
-
-    const corpse = world.corpseSystem.findNearbyCorpse(
-      this.creature.x, this.creature.y, 60
-    );
+    if (!world.findNearbyCorpse) return;
+    const corpse = world.findNearbyCorpse(this.creature.x, this.creature.y, 60);
 
     if (corpse) {
       this.creature.target = {
@@ -437,6 +456,7 @@ export class CreatureBehaviorSystem {
    * Update predator-specific behavior
    */
   updatePredatorBehavior(world, dt) {
+    if (this.creature.traits?.dietRole === 'predator-lite') return;
     // Update ambush timer
     if (this.creature.personality.ambushTimer > 0) {
       this.creature.personality.ambushTimer -= dt;
@@ -454,6 +474,18 @@ export class CreatureBehaviorSystem {
         this.creature.x, this.creature.y,
         0.5, 5, this.creature.id
       );
+    }
+  }
+
+  updatePredatorLiteBehavior(world, dt) {
+    if (this.creature.personality.ambushTimer > 0) {
+      this.creature.personality.ambushTimer -= dt;
+    }
+    if (this.creature.personality.currentTargetId && this.creature.personality.ambushTimer <= 0) {
+      const target = world.getAnyCreatureById?.(this.creature.personality.currentTargetId);
+      if (target && target.alive) {
+        this.creature.target = { x: target.x, y: target.y, creatureId: target.id, predatorLite: true };
+      }
     }
   }
 

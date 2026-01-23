@@ -26,6 +26,8 @@ import { BiomeGenerator } from './perlin-noise.js';
 import { GameplayModes } from './gameplay-modes.js';
 import { SessionGoals } from './session-goals.js';
 import { MobileSupport } from './mobile-support.js';
+import { AutoDirector } from './auto-director.js';
+import { MomentsSystem } from './moments-system.js';
 
 // Import new modular systems
 import { domCache } from './dom-cache.js';
@@ -288,6 +290,14 @@ function initializeApp() {
     return new HeatmapSystem(world);
   }, 'Heatmap system initialization', null);
 
+  const moments = errorHandler.safeExecute(() => {
+    return new MomentsSystem({ world, camera, notifications });
+  }, 'Moments system initialization', null);
+
+  const autoDirector = errorHandler.safeExecute(() => {
+    return new AutoDirector({ world, camera });
+  }, 'Auto-director initialization', null);
+
   // Game systems
   const saveSystem = errorHandler.safeExecute(() => {
     return new SaveSystem();
@@ -394,7 +404,9 @@ function initializeApp() {
       geneEditor,
       ecoHealth,
       gameplayModes,
-      sessionGoals
+      sessionGoals,
+      autoDirector,
+      moments
     });
   }, 'UI controller initialization', null);
 
@@ -419,6 +431,8 @@ function initializeApp() {
       ecoHealth,
       gameplayModes,
       sessionGoals,
+      autoDirector,
+      moments,
       devTools
     });
   }, 'Game loop initialization', null);

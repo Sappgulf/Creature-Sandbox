@@ -6,6 +6,8 @@
 - [ ] Audit save/load UX for surfaced feedback (non-intrusive)
 - [ ] Expand sandbox interactions with props, drag/throw, and micro-goals
 - [ ] Balance pass: tune grab/throw, camera smoothing, prop forces, and mobile touch sensitivity
+- [ ] Ship watch mode UI, auto-director, and moments log for observer-first sessions
+- [ ] Add lightweight ecosystem role tension + migration storytelling cues
 
 ## Session Audit (2026-02-04)
 
@@ -29,6 +31,27 @@
 - Add optional god mode toggle + minimal tool bar (food source, calm zone, chaos nudge, spawn/remove).
 - Persist time-of-day + environment state; god mode does not persist.
 - Update README, smoke tests, and changelog entries.
+
+## Session Audit (2026-02-05)
+
+### Focus
+1. Watch mode (observer-first UI + auto-camera) with minimal overlays.
+2. Moments log + session summary for emergent storytelling.
+3. Light ecosystem role tension (herbivore/scavenger/predator-lite) with migration cues.
+
+### Integration Points (pre-change)
+- Event hooks: `eventSystem` and existing creature/world emitters (`creature-sim/src/event-system.js`, `creature-sim/src/world-core.js`).
+- Camera follow + travel: `creature-sim/src/camera.js` with input overrides (`creature-sim/src/input-manager.js`).
+- UI overlays: HUD/menu in `creature-sim/index.html`, `creature-sim/styles.css`, `creature-sim/src/ui-controller.js`.
+- Save/load: `creature-sim/src/save-system.js` metadata for lightweight session summaries.
+
+### Planned Actions
+- Add watch mode control strip with follow toggle, speed, moments, and god mode shortcut.
+- Implement auto-director (event-driven) with smooth travel + user override.
+- Add moments log + session summary panel with camera jump targets.
+- Add diet roles + predator-lite chase behavior and soft crowd/stress catalysts.
+- Add migration detector + scarcity and predator-lite events for storytelling.
+- Update docs and smoke tests with watch mode + moments checks.
 
 ## Session Audit (2026-02-03)
 

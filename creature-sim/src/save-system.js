@@ -352,6 +352,9 @@ export class SaveSystem {
       if (cData.traits && creature.traits) {
         creature.traits.bounce = toNumber(cData.traits.bounce, creature.traits.bounce);
         creature.traits.temperament = toNumber(cData.traits.temperament, creature.traits.temperament);
+        if (cData.traits.dietRole) {
+          creature.traits.dietRole = cData.traits.dietRole;
+        }
       }
       if (creature.needs) {
         const needsData = cData.needs || {};

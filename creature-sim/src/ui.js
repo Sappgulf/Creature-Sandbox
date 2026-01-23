@@ -207,6 +207,12 @@ export function renderSelectedInfo(el, creature, { world=null, lineageTracker=nu
   } else if (rawDiet >= 0.3) {
     dietLabel = 'Omnivore';
   }
+  const dietRole = creature.traits?.dietRole;
+  if (dietRole === 'scavenger') {
+    dietLabel = 'Scavenger';
+  } else if (dietRole === 'predator-lite') {
+    dietLabel = 'Predator-lite';
+  }
 
   const statusClass = creature.alive ? 'alive' : 'dead';
   const sexEmoji = creature.sex === 'male' ? ' ♂️' : ' ♀️';

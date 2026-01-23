@@ -79,6 +79,7 @@
    - Confirm food patches keep remaining bites after reload.
    - With `debug.observe()` enabled, confirm life-stage labels and memory markers persist after reload.
    - Optional: use **Ctrl/⌘ + S** to download a save file and **Ctrl/⌘ + O** to load it back.
+   - Confirm diet roles and moments summary still load without errors.
 
 11. **Help section**
    - Open **⋯ More Actions**.
@@ -103,6 +104,24 @@
     - Poke a creature repeatedly and confirm an overreaction triggers but resets quickly.
     - Confirm collision reactions are readable but not rapid-fire flashing.
 
+16. **Watch mode + auto-director**
+    - Toggle **Watch Mode** from **⋯ More Actions**.
+    - Confirm the watch strip appears and quick actions hide.
+    - Use the watch strip to **Pause/Play**, **Follow**, and cycle speed **0.5×/1×/2×**.
+    - Trigger a birth/eat/mating interaction and confirm the camera gently recenters.
+    - Drag to pan; confirm auto-director pauses, then use **Re-center** to resume.
+
+17. **Moments log + session summary**
+    - Tap **Moments** in the watch strip to open the log.
+    - Confirm entries appear for birth/eat/panic/food scarcity.
+    - Tap a moment and confirm the camera jumps to that location.
+    - Confirm the session summary shows peak population, births, end-of-life count, stress peak, and biggest migration.
+
+18. **Ecosystem tension roles**
+    - Observe herbivore, scavenger, and predator-lite behaviors over 1–2 minutes.
+    - Confirm predator-lite chases cause stress + scattering without rapid deaths.
+    - Confirm food scarcity events nudge movement without collapsing the population.
+
 ## Mobile-Specific Checks
 
 1. **Touch controls + safe areas**
@@ -122,6 +141,7 @@
    - Spawn two adults and confirm a short mating interaction can happen without runaway growth.
    - Long-press the world to enter god mode and place a calm zone; confirm the overlay is touch-friendly.
    - Exit god mode and confirm touch controls return to normal.
+   - Toggle Watch Mode and confirm the watch strip respects safe areas and tap targets.
 
 3. **Help / hints lifecycle**
    - Trigger the spawn tool or open **⋯ More Actions** → **Help**.

@@ -3301,3 +3301,165 @@ select:focus,
     grid-template-columns: 1fr;
   }
 }
+
+/* Watch mode + moments log */
+.watch-mode #session-meta {
+  display: none;
+}
+
+.watch-strip {
+  position: fixed;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(12, 16, 24, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  z-index: 40;
+}
+
+.watch-btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.watch-btn-wide {
+  padding: 0 14px;
+  font-size: 0.82rem;
+}
+
+.watch-btn.active {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.watch-btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.moments-panel {
+  position: fixed;
+  right: 16px;
+  bottom: calc(78px + env(safe-area-inset-bottom));
+  width: min(320px, calc(100vw - 32px));
+  max-height: min(60vh, 520px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(12, 16, 24, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  backdrop-filter: blur(14px);
+  z-index: 45;
+}
+
+.moments-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.moments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.moment-row {
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.moment-icon {
+  font-size: 1rem;
+}
+
+.moment-text {
+  font-size: 0.82rem;
+}
+
+.moment-time {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.moments-summary {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 10px;
+}
+
+.moments-summary-title {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.summary-item span {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.summary-item strong {
+  font-size: 0.85rem;
+}
+
+@media (max-width: 700px) {
+  .watch-strip {
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .moments-panel {
+    right: 12px;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+}

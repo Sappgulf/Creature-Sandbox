@@ -399,6 +399,11 @@ export class InputManager {
     }
   }
 
+  noteCameraOverride(durationMs = 6000) {
+    const now = performance.now();
+    gameState.autoDirectorOverrideUntil = now + durationMs;
+  }
+
   /**
    * Update inspector visibility in UI
    */
@@ -456,6 +461,7 @@ export class InputManager {
     // Handle panning (middle mouse or alt key)
     if (e.button === 1 || e.button === 2 || e.altKey || e.metaKey) {
       gameState.panning = true;
+      this.noteCameraOverride();
       return;
     }
 
@@ -506,6 +512,7 @@ export class InputManager {
     }
 
     if (this.dragState.active || this.dragState.pending) {
+      this.noteCameraOverride();
       this._updateCreatureDrag(e);
       return;
     }
@@ -526,6 +533,7 @@ export class InputManager {
     }
 
     if (gameState.panning) {
+      this.noteCameraOverride();
       const dx = e.clientX - gameState.lastPointer.x;
       const dy = e.clientY - gameState.lastPointer.y;
       this.camera.pan(-dx, -dy);
@@ -610,6 +618,7 @@ export class InputManager {
    */
   onWheel(e) {
     e.preventDefault();
+    this.noteCameraOverride();
     this.camera.zoomBy(e.deltaY * 0.0015);
   }
 
