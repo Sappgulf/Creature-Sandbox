@@ -1,5 +1,6 @@
 import { eventSystem, GameEvents } from './event-system.js';
 import { clamp } from './utils.js';
+import { CreatureAgentTuning } from './creature-agent-constants.js';
 
 export class MomentsSystem {
   constructor({ world, camera, notifications } = {}) {
@@ -167,69 +168,47 @@ export class MomentsSystem {
   }
 
   _detectMigration(world) {
-    const patches = world.ecosystem?.foodPatches || [];
-    if (!patches.length) return;
+    const creatures = world.creatures || [];
+    if (!creatures.length || !world.getRegionId) return;
     const now = world.t ?? 0;
-    const minGroup = 5;
-    const minSpeed = 8;
-    const stockThreshold = 1.2;
-    const radiusMultiplier = 1.1;
+    const minGroup = CreatureAgentTuning.MIGRATION.FOCUS_GROUP_MIN;
+    const groups = new Map();
 
-    for (const patch of patches) {
-      if (!patch) continue;
-      if (patch.stock > Math.max(stockThreshold, patch.maxStock * 0.25)) continue;
-      if (patch.depletedTimer <= 0) continue;
+    for (const creature of creatures) {
+      if (!creature?.alive || !creature.migration?.active || creature.migration.settled) continue;
+      const regionId = world.getRegionId(creature.x, creature.y);
+      if (!groups.has(regionId)) {
+        groups.set(regionId, { count: 0, x: 0, y: 0 });
+      }
+      const group = groups.get(regionId);
+      group.count += 1;
+      group.x += creature.x;
+      group.y += creature.y;
+    }
 
-      const lastLogged = this._migrationCooldowns.get(patch.id) ?? -Infinity;
+    for (const [regionId, group] of groups) {
+      if (!group || group.count < minGroup) continue;
+      const lastLogged = this._migrationCooldowns.get(regionId) ?? -Infinity;
       if (now - lastLogged < 18) continue;
 
-      const crowd = world.creatureManager?.queryCreatures
-        ? world.creatureManager.queryCreatures(patch.x, patch.y, patch.radius * radiusMultiplier)
-        : [];
-      if (crowd.length < minGroup) continue;
-
-      let moving = 0;
-      let movingAway = 0;
-      let avgX = 0;
-      let avgY = 0;
-      for (const creature of crowd) {
-        if (!creature || !creature.alive) continue;
-        avgX += creature.x;
-        avgY += creature.y;
-        const vx = creature.vx ?? 0;
-        const vy = creature.vy ?? 0;
-        const speed = Math.hypot(vx, vy);
-        if (speed < minSpeed) continue;
-        moving++;
-        const dx = creature.x - patch.x;
-        const dy = creature.y - patch.y;
-        if (dx * vx + dy * vy > 0) {
-          movingAway++;
-        }
-      }
-
-      if (moving < minGroup) continue;
-      if (movingAway / moving < 0.6) continue;
-
-      avgX /= crowd.length;
-      avgY /= crowd.length;
-      const count = crowd.length;
-      this._migrationCooldowns.set(patch.id, now);
+      const avgX = group.x / group.count;
+      const avgY = group.y / group.count;
+      this._migrationCooldowns.set(regionId, now);
       this.summary.migrations += 1;
-      this.summary.largestMigration = Math.max(this.summary.largestMigration, count);
+      this.summary.largestMigration = Math.max(this.summary.largestMigration, group.count);
 
       const payload = {
         x: avgX,
         y: avgY,
-        count,
-        patchId: patch.id,
+        count: group.count,
+        regionId,
         worldTime: now
       };
       eventSystem.emit(GameEvents.WORLD_MIGRATION_START, payload);
       this.logMoment({
         type: GameEvents.WORLD_MIGRATION_START,
         icon: '🧭',
-        text: `A migration started (${count})`,
+        text: `A migration started (${group.count})`,
         x: avgX,
         y: avgY,
         worldTime: now
@@ -335,6 +314,66 @@ export class MomentsSystem {
       });
     });
 
+    eventSystem.on(GameEvents.NEST_ESTABLISHED, (data) => {
+      if (!data) return;
+      this.logMoment({
+        type: GameEvents.NEST_ESTABLISHED,
+        icon: '🪹',
+        text: 'A nest was established',
+        x: data.x,
+        y: data.y,
+        worldTime: data?.worldTime
+      });
+    });
+
+    eventSystem.on(GameEvents.NEST_OVERCROWDED, (data) => {
+      if (!data) return;
+      this.logMoment({
+        type: GameEvents.NEST_OVERCROWDED,
+        icon: '😵',
+        text: 'A nest grew overcrowded',
+        x: data.x,
+        y: data.y,
+        worldTime: data?.worldTime
+      });
+    });
+
+    eventSystem.on(GameEvents.WORLD_MIGRATION_SETTLED, (data) => {
+      if (!data) return;
+      this.logMoment({
+        type: GameEvents.WORLD_MIGRATION_SETTLED,
+        icon: '🏡',
+        text: 'A migration settled',
+        x: data.x,
+        y: data.y,
+        worldTime: data?.worldTime
+      });
+    });
+
+    eventSystem.on(GameEvents.WORLD_REGION_DEPLETED, (data) => {
+      if (!data) return;
+      this.logMoment({
+        type: GameEvents.WORLD_REGION_DEPLETED,
+        icon: '🥀',
+        text: 'A region was depleted',
+        x: data.x,
+        y: data.y,
+        worldTime: data?.worldTime
+      });
+    });
+
+    eventSystem.on(GameEvents.WORLD_REGION_THRIVING, (data) => {
+      if (!data) return;
+      this.logMoment({
+        type: GameEvents.WORLD_REGION_THRIVING,
+        icon: '🌿',
+        text: 'A region is thriving',
+        x: data.x,
+        y: data.y,
+        worldTime: data?.worldTime
+      });
+    });
+
     eventSystem.on(GameEvents.PREDATOR_LITE_CHASE, (data) => {
       if (!data) return;
       this.logMoment({
@@ -378,7 +417,17 @@ export class MomentsSystem {
         return 8;
       case GameEvents.WORLD_FOOD_SCARCITY:
         return 12;
+      case GameEvents.NEST_ESTABLISHED:
+        return 10;
+      case GameEvents.NEST_OVERCROWDED:
+        return 12;
       case GameEvents.WORLD_MIGRATION_START:
+        return 12;
+      case GameEvents.WORLD_MIGRATION_SETTLED:
+        return 12;
+      case GameEvents.WORLD_REGION_DEPLETED:
+        return 12;
+      case GameEvents.WORLD_REGION_THRIVING:
         return 12;
       case GameEvents.PREDATOR_LITE_CHASE:
         return 7;

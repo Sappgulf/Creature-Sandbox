@@ -82,6 +82,7 @@ export const RendererConfig = {
     MEMORY: false,
     SOCIAL: false,
     MIGRATION: false,
+    NESTS: false,
     EMOTIONS: false,
     SENSORY: false,
     INTELLIGENCE: false,

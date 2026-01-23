@@ -211,36 +211,44 @@ export class InputManager {
       // Feature toggles
       case 'v':
         if (renderer) {
-          renderer.enableVision = !renderer.enableVision;
-          const checkbox = domCache.get('toggle-vision');
+          renderer.setFeature?.('VISION', !renderer.enableVision);
+          const checkbox = domCache.get('toggleVision');
           if (checkbox) checkbox.checked = renderer.enableVision;
         }
         break;
       case 'c':
         if (renderer) {
-          renderer.enableClustering = !renderer.enableClustering;
-          const checkbox = domCache.get('toggle-clustering');
+          renderer.setFeature?.('CLUSTERING', !renderer.enableClustering);
+          const checkbox = domCache.get('toggleClustering');
           if (checkbox) checkbox.checked = renderer.enableClustering;
         }
         break;
       case 't':
         if (renderer) {
-          renderer.enableTerritories = !renderer.enableTerritories;
+          renderer.setFeature?.('TERRITORIES', !renderer.enableTerritories);
+          const checkbox = domCache.get('toggleTerritories');
+          if (checkbox) checkbox.checked = renderer.enableTerritories;
         }
         break;
       case 'm':
         if (renderer) {
-          renderer.enableMemory = !renderer.enableMemory;
+          renderer.setFeature?.('MEMORY', !renderer.enableMemory);
+          const checkbox = domCache.get('toggleMemory');
+          if (checkbox) checkbox.checked = renderer.enableMemory;
         }
         break;
       case 'b':
         if (renderer) {
-          renderer.enableSocialBonds = !renderer.enableSocialBonds;
+          renderer.setFeature?.('SOCIAL', !renderer.enableSocialBonds);
+          const checkbox = domCache.get('toggleSocial');
+          if (checkbox) checkbox.checked = renderer.enableSocialBonds;
         }
         break;
       case 'g':
         if (renderer) {
-          renderer.enableMigration = !renderer.enableMigration;
+          renderer.setFeature?.('MIGRATION', !renderer.enableMigration);
+          const checkbox = domCache.get('toggleMigration');
+          if (checkbox) checkbox.checked = renderer.enableMigration;
         }
         break;
 

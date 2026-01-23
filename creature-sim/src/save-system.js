@@ -7,6 +7,7 @@ import { CreatureTuning } from './creature-tuning.js';
 import { createEcosystemState } from './creature-ecosystem.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
 import { CreatureConfig } from './creature-config.js';
+import { clamp, rand } from './utils.js';
 
 export class SaveSystem {
   constructor() {
@@ -23,7 +24,7 @@ export class SaveSystem {
    */
   serialize(world, camera, analytics, lineageTracker, additionalData = {}) {
     const saveData = {
-      version: '2.4',
+      version: '2.5',
       timestamp: Date.now(),
       savedAt: new Date().toISOString(),
 
@@ -84,6 +85,9 @@ export class SaveSystem {
           stats: { ...c.stats },
           traits: c.traits ? { ...c.traits } : null,
           needs: c.needs ? { ...c.needs } : null,
+          homeNestId: c.homeNestId ?? null,
+          homeRegionId: c.homeRegionId ?? null,
+          territoryAffinity: c.territoryAffinity ?? null,
           goal: c.goal ? {
             current: c.goal.current,
             lastChange: c.goal.lastChange,
@@ -103,8 +107,12 @@ export class SaveSystem {
           } : null,
           migration: c.migration ? {
             lastMigration: c.migration.lastMigration,
-            targetBiome: c.migration.targetBiome,
-            settled: c.migration.settled
+            targetRegionId: c.migration.targetRegionId,
+            target: c.migration.target ? { ...c.migration.target } : null,
+            settled: c.migration.settled,
+            active: c.migration.active,
+            cooldownUntil: c.migration.cooldownUntil,
+            recentUntil: c.migration.recentUntil
           } : null,
           memory: c.memory ? {
             capacity: c.memory.capacity,
@@ -155,6 +163,16 @@ export class SaveSystem {
           x: z.x,
           y: z.y,
           radius: z.radius
+        })) : [],
+        nests: world.nests ? world.nests.map(nest => ({
+          id: nest.id,
+          x: nest.x,
+          y: nest.y,
+          radius: nest.radius,
+          capacity: nest.capacity,
+          comfort: nest.comfort,
+          createdAt: nest.createdAt ?? 0,
+          createdBy: nest.createdBy ?? null
         })) : [],
 
         // Corpses
@@ -316,6 +334,36 @@ export class SaveSystem {
       world.ecosystem.restoreFoodPatches(data.foodPatches || []);
     }
 
+    if (Array.isArray(data.nests) && data.nests.length > 0) {
+      let maxNestId = 0;
+      world.nests = data.nests.map(nest => {
+        const restored = {
+          id: nest.id ?? `nest-${maxNestId + 1}`,
+          x: clamp(nest.x ?? rand(80, world.width - 80), 0, world.width),
+          y: clamp(nest.y ?? rand(80, world.height - 80), 0, world.height),
+          radius: clamp(nest.radius ?? CreatureAgentTuning.NESTS.RADIUS, 20, CreatureAgentTuning.NESTS.RADIUS * 2),
+          capacity: clamp(nest.capacity ?? CreatureAgentTuning.NESTS.CAPACITY, 1, CreatureAgentTuning.NESTS.CAPACITY * 2),
+          comfort: clamp(nest.comfort ?? CreatureAgentTuning.NESTS.COMFORT, 0.2, 1),
+          comfortEffective: clamp(nest.comfort ?? CreatureAgentTuning.NESTS.COMFORT, 0.2, 1),
+          occupancy: 0,
+          overcrowded: false,
+          createdAt: toNumber(nest.createdAt, world.t),
+          createdBy: nest.createdBy ?? null,
+          regionId: world.getRegionId?.(nest.x ?? 0, nest.y ?? 0) ?? null,
+          lastOvercrowdedAt: -Infinity
+        };
+        const match = String(restored.id).match(/nest-(\d+)/);
+        if (match) {
+          maxNestId = Math.max(maxNestId, Number(match[1]));
+        }
+        return restored;
+      });
+      world.nestId = Math.max(world.nestId ?? 1, maxNestId + 1);
+      world.nestGridDirty = true;
+    } else {
+      world.nests = [];
+    }
+
     // Restore creatures
     world.creatures = [];
     world.registry.clear();
@@ -371,6 +419,13 @@ export class SaveSystem {
         creature.goal.cooldown = toNumber(goalData.cooldown, creature.goal.cooldown ?? 0);
         creature.goal.mateCooldown = toNumber(goalData.mateCooldown, creature.goal.mateCooldown ?? 0);
       }
+      creature.homeNestId = cData.homeNestId ?? creature.homeNestId ?? null;
+      const derivedHomeRegion = world.getRegionId?.(creature.x, creature.y);
+      creature.homeRegionId = cData.homeRegionId ?? derivedHomeRegion ?? creature.homeRegionId ?? null;
+      creature.territoryAffinity = toNumber(
+        cData.territoryAffinity,
+        creature.territoryAffinity ?? 0.4
+      );
 
       // Restore advanced features
       if (cData.emotions && creature.emotions) {
@@ -384,10 +439,26 @@ export class SaveSystem {
         creature.sexuality.lastMated = cData.sexuality.lastMated;
         creature.sexuality.attractiveness = cData.sexuality.attractiveness;
       }
-      if (cData.migration && creature.migration) {
-        creature.migration.lastMigration = cData.migration.lastMigration;
-        creature.migration.targetBiome = cData.migration.targetBiome;
-        creature.migration.settled = cData.migration.settled;
+      if (creature.migration) {
+        const migrationData = cData.migration || {};
+        creature.migration.lastMigration = toNumber(migrationData.lastMigration, creature.migration.lastMigration);
+        creature.migration.targetRegionId = migrationData.targetRegionId ?? creature.migration.targetRegionId ?? null;
+        creature.migration.target = migrationData.target
+          ? {
+            x: toNumber(migrationData.target.x, creature.x),
+            y: toNumber(migrationData.target.y, creature.y)
+          }
+          : null;
+        creature.migration.settled = migrationData.settled ?? creature.migration.settled ?? true;
+        creature.migration.active = migrationData.active ?? creature.migration.active ?? false;
+        creature.migration.cooldownUntil = toNumber(
+          migrationData.cooldownUntil,
+          creature.migration.cooldownUntil ?? -Infinity
+        );
+        creature.migration.recentUntil = toNumber(
+          migrationData.recentUntil,
+          creature.migration.recentUntil ?? -Infinity
+        );
       }
       if (creature.ecosystem) {
         const ecoData = cData.ecosystem;
@@ -727,7 +798,7 @@ export class SaveSystem {
       return Number.isFinite(num) ? num : fallback;
     };
     // Current version - no migration needed
-    if (fromVersion === '2.4') {
+    if (fromVersion === '2.5') {
       return saveData;
     }
 
@@ -744,19 +815,45 @@ export class SaveSystem {
         }
       }
     };
+    const ensureTerritoryDefaults = () => {
+      if (!migrated.world?.nests) migrated.world.nests = [];
+      if (migrated.world?.creatures) {
+        for (const c of migrated.world.creatures) {
+          if (c.homeNestId === undefined) c.homeNestId = null;
+          if (c.homeRegionId === undefined) c.homeRegionId = null;
+          if (c.territoryAffinity === undefined) c.territoryAffinity = null;
+          if (c.migration) {
+            if (c.migration.targetRegionId === undefined) c.migration.targetRegionId = null;
+            if (c.migration.target === undefined) c.migration.target = null;
+            if (c.migration.active === undefined) c.migration.active = false;
+            if (c.migration.cooldownUntil === undefined) c.migration.cooldownUntil = -Infinity;
+            if (c.migration.recentUntil === undefined) c.migration.recentUntil = -Infinity;
+          }
+        }
+      }
+    };
+
+    if (fromVersion === '2.4') {
+      ensureTerritoryDefaults();
+      migrated.version = '2.5';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
+      return migrated;
+    }
 
     if (fromVersion === '2.3') {
       if (!migrated.world?.foodPatches) migrated.world.foodPatches = [];
-      migrated.version = '2.4';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.4`);
+      ensureTerritoryDefaults();
+      migrated.version = '2.5';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
       return migrated;
     }
 
     if (fromVersion === '2.2') {
       ensureMemoryDefaults();
       if (!migrated.world?.foodPatches) migrated.world.foodPatches = [];
-      migrated.version = '2.4';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.4`);
+      ensureTerritoryDefaults();
+      migrated.version = '2.5';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
       return migrated;
     }
 
@@ -778,8 +875,9 @@ export class SaveSystem {
       if (!migrated.world?.restZones) migrated.world.restZones = [];
       ensureMemoryDefaults();
       if (!migrated.world?.foodPatches) migrated.world.foodPatches = [];
-      migrated.version = '2.4';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.4`);
+      ensureTerritoryDefaults();
+      migrated.version = '2.5';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
       return migrated;
     }
 
@@ -802,8 +900,9 @@ export class SaveSystem {
       if (!migrated.world?.restZones) migrated.world.restZones = [];
       ensureMemoryDefaults();
       if (!migrated.world?.foodPatches) migrated.world.foodPatches = [];
-      migrated.version = '2.4';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.4`);
+      ensureTerritoryDefaults();
+      migrated.version = '2.5';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
       return migrated;
     }
 
@@ -843,8 +942,9 @@ export class SaveSystem {
       }
       ensureMemoryDefaults();
       if (!migrated.world?.foodPatches) migrated.world.foodPatches = [];
-      migrated.version = '2.4';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.4`);
+      ensureTerritoryDefaults();
+      migrated.version = '2.5';
+      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
     }
 
     return migrated;

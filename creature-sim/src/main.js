@@ -235,6 +235,28 @@ function initializeApp() {
     }
   }, 'Nameplates toggle');
 
+  // Feature toggles (observer overlays)
+  errorHandler.safeExecute(() => {
+    if (!renderer) return;
+    const featureBindings = [
+      { id: 'toggle-vision', feature: 'VISION', prop: 'enableVision' },
+      { id: 'toggle-clustering', feature: 'CLUSTERING', prop: 'enableClustering' },
+      { id: 'toggle-territories', feature: 'TERRITORIES', prop: 'enableTerritories' },
+      { id: 'toggle-memory', feature: 'MEMORY', prop: 'enableMemory' },
+      { id: 'toggle-social', feature: 'SOCIAL', prop: 'enableSocialBonds' },
+      { id: 'toggle-migration', feature: 'MIGRATION', prop: 'enableMigration' },
+      { id: 'toggle-nests', feature: 'NESTS', prop: 'enableNests' }
+    ];
+    for (const binding of featureBindings) {
+      const toggle = document.getElementById(binding.id);
+      if (!toggle) continue;
+      toggle.checked = !!renderer[binding.prop];
+      toggle.addEventListener('change', () => {
+        renderer.setFeature?.(binding.feature, toggle.checked);
+      });
+    }
+  }, 'Feature toggles');
+
   // Initialize batch renderer once we have the 2D context
   errorHandler.safeExecute(() => {
     if (batchRenderer?.init) {

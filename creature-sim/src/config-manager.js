@@ -344,6 +344,7 @@ export class ConfigManager {
         memory: false,
         social: false,
         migration: false,
+        nests: false,
         emotions: false,
         sensory: false,
         intelligence: false,

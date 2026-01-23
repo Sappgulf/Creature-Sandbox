@@ -14,6 +14,7 @@ import { BiomeGenerator } from './perlin-noise.js';
 import { SandboxProps } from './sandbox-props.js';
 import { clamp, dist2, rand } from './utils.js';
 import { eventSystem, GameEvents } from './event-system.js';
+import { CreatureAgentTuning } from './creature-agent-constants.js';
 
 export class World {
   constructor(width, height) {
@@ -30,14 +31,17 @@ export class World {
     this.food = [];
     this.corpses = [];
     this.restZones = [];
+    this.nests = [];
 
     // Spatial grids for performance
     this.foodGrid = new SpatialGrid(36);
     this.corpseGrid = new SpatialGrid(40);
     this.restGrid = new SpatialGrid(120, width, height);
+    this.nestGrid = new SpatialGrid(140, width, height);
     this.foodGridDirty = true;
     this.corpseGridDirty = true;
     this.restGridDirty = true;
+    this.nestGridDirty = true;
 
     // External system attachments
     this.lineageTracker = null;
@@ -70,6 +74,11 @@ export class World {
     this.bumpIndex = 0;
     this.crowdCheckTimer = 0;
     this.lastPointerWorld = { x: width * 0.5, y: height * 0.5 };
+    this.regionUpdateTimer = 0;
+    this.nestUpdateTimer = 0;
+    this.nestId = 1;
+    this._initRegions();
+    this._migrationSettleCooldowns = new Map();
     this.chaos = {
       level: 0.5,
       gravity: 0,
@@ -140,6 +149,18 @@ export class World {
       if (this.crowdCheckTimer >= 0.6) {
         this.crowdCheckTimer = 0;
         this.applyCrowdJitter();
+      }
+
+      this.nestUpdateTimer += dt;
+      if (this.nestUpdateTimer >= 0.7) {
+        this.nestUpdateTimer = 0;
+        this.updateNests();
+      }
+
+      this.regionUpdateTimer += dt;
+      if (this.regionUpdateTimer >= CreatureAgentTuning.TERRITORY.UPDATE_INTERVAL) {
+        this.regionUpdateTimer = 0;
+        this.updateRegions();
       }
 
       // Update corpse system
@@ -358,6 +379,7 @@ export class World {
     this.food = [];
     this.corpses = [];
     this.restZones = [];
+    this.nests = [];
     this.t = 0;
 
     // Reset subsystems
@@ -378,8 +400,13 @@ export class World {
     this.creatureManager.creatureGrid.clear();
     this.foodGrid.clear();
     this.corpseGrid?.clear();
+    this.nestGrid?.clear();
     this.foodGridDirty = true;
     this.corpseGridDirty = true;
+    this.nestGridDirty = true;
+    this.nestId = 1;
+    this._initRegions();
+    this._migrationSettleCooldowns?.clear();
 
     console.debug('🔄 World reset to initial state');
   }
@@ -579,6 +606,243 @@ export class World {
     return { energy: eatAmount, corpse };
   }
 
+  _initRegions() {
+    const size = CreatureAgentTuning.TERRITORY.REGION_SIZE;
+    this.regionSize = size;
+    this.regionCols = Math.max(1, Math.ceil(this.width / size));
+    this.regionRows = Math.max(1, Math.ceil(this.height / size));
+    this.regions = new Array(this.regionCols * this.regionRows);
+
+    for (let row = 0; row < this.regionRows; row++) {
+      for (let col = 0; col < this.regionCols; col++) {
+        const id = row * this.regionCols + col;
+        const x1 = col * size;
+        const y1 = row * size;
+        const x2 = Math.min(this.width, x1 + size);
+        const y2 = Math.min(this.height, y1 + size);
+        this.regions[id] = {
+          id,
+          col,
+          row,
+          x: x1 + (x2 - x1) * 0.5,
+          y: y1 + (y2 - y1) * 0.5,
+          size,
+          bounds: { x1, y1, x2, y2 },
+          population: 0,
+          stressAvg: 0,
+          pressure: 0,
+          comfort: 1,
+          foodRatio: 0.5,
+          nestCount: 0,
+          nestComfort: 0,
+          lastDepletedAt: -Infinity,
+          lastThrivingAt: -Infinity
+        };
+      }
+    }
+  }
+
+  getRegionId(x, y) {
+    const size = this.regionSize || CreatureAgentTuning.TERRITORY.REGION_SIZE;
+    const col = clamp(Math.floor(x / size), 0, this.regionCols - 1);
+    const row = clamp(Math.floor(y / size), 0, this.regionRows - 1);
+    return row * this.regionCols + col;
+  }
+
+  getRegionAt(x, y) {
+    if (!this.regions) return null;
+    const id = this.getRegionId(x, y);
+    return this.regions[id] || null;
+  }
+
+  getRegionById(id) {
+    if (!this.regions) return null;
+    return this.regions[id] || null;
+  }
+
+  updateRegions() {
+    if (!this.regions?.length) return;
+    const regions = this.regions;
+    const now = this.t ?? 0;
+    const pressureStart = CreatureAgentTuning.TERRITORY.PRESSURE_START;
+    const pressureRange = CreatureAgentTuning.TERRITORY.PRESSURE_RANGE;
+    const pressureMax = CreatureAgentTuning.TERRITORY.PRESSURE_MAX;
+
+    for (const region of regions) {
+      region.population = 0;
+      region.stressAvg = 0;
+      region.pressure = 0;
+      region.comfort = 1;
+      region.foodRatio = 0.5;
+      region.foodStock = 0;
+      region.foodMax = 0;
+      region.nestCount = 0;
+      region.nestComfort = 0;
+    }
+
+    for (const creature of this.creatures) {
+      if (!creature || !creature.alive) continue;
+      const regionId = this.getRegionId(creature.x, creature.y);
+      const region = regions[regionId];
+      if (!region) continue;
+      region.population += 1;
+      region.stressAvg += creature.needs?.stress ?? 0;
+    }
+
+    const patches = this.ecosystem?.foodPatches || [];
+    for (const patch of patches) {
+      if (!patch) continue;
+      const regionId = this.getRegionId(patch.x, patch.y);
+      const region = regions[regionId];
+      if (!region) continue;
+      region.foodStock += patch.stock ?? 0;
+      region.foodMax += patch.maxStock ?? 0;
+    }
+
+    for (const nest of this.nests) {
+      if (!nest) continue;
+      nest.regionId = this.getRegionId(nest.x, nest.y);
+      const region = regions[nest.regionId];
+      if (!region) continue;
+      region.nestCount += 1;
+      region.nestComfort += nest.comfortEffective ?? nest.comfort ?? CreatureAgentTuning.NESTS.COMFORT;
+    }
+
+    for (const region of regions) {
+      const pop = region.population;
+      region.stressAvg = pop > 0 ? region.stressAvg / pop : 0;
+      const pressure = clamp((pop - pressureStart) / pressureRange, 0, 1);
+      region.pressure = pressure * pressureMax;
+      region.comfort = clamp(1 - region.pressure * CreatureAgentTuning.TERRITORY.COMFORT_DROP, 0.5, 1);
+      region.foodRatio = region.foodMax > 0 ? clamp(region.foodStock / region.foodMax, 0, 1) : 0.5;
+      region.nestComfort = region.nestCount > 0 ? region.nestComfort / region.nestCount : 0;
+
+      if (region.foodRatio <= CreatureAgentTuning.TERRITORY.FOOD_DEPLETION_THRESHOLD) {
+        if (now - (region.lastDepletedAt ?? -Infinity) > CreatureAgentTuning.TERRITORY.EVENT_COOLDOWN) {
+          region.lastDepletedAt = now;
+          eventSystem.emit(GameEvents.WORLD_REGION_DEPLETED, {
+            regionId: region.id,
+            x: region.x,
+            y: region.y,
+            worldTime: now
+          });
+        }
+      }
+      if (region.foodRatio >= CreatureAgentTuning.TERRITORY.FOOD_THRIVE_THRESHOLD) {
+        if (now - (region.lastThrivingAt ?? -Infinity) > CreatureAgentTuning.TERRITORY.EVENT_COOLDOWN) {
+          region.lastThrivingAt = now;
+          eventSystem.emit(GameEvents.WORLD_REGION_THRIVING, {
+            regionId: region.id,
+            x: region.x,
+            y: region.y,
+            worldTime: now
+          });
+        }
+      }
+    }
+  }
+
+  addNest(x, y, options = {}) {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    const nest = {
+      id: options.id ?? `nest-${this.nestId++}`,
+      x: clamp(x, 0, this.width),
+      y: clamp(y, 0, this.height),
+      radius: options.radius ?? CreatureAgentTuning.NESTS.RADIUS,
+      capacity: options.capacity ?? CreatureAgentTuning.NESTS.CAPACITY,
+      comfort: options.comfort ?? CreatureAgentTuning.NESTS.COMFORT,
+      comfortEffective: options.comfort ?? CreatureAgentTuning.NESTS.COMFORT,
+      occupancy: 0,
+      overcrowded: false,
+      createdAt: this.t ?? 0,
+      createdBy: options.createdBy ?? null,
+      regionId: this.getRegionId(x, y),
+      lastOvercrowdedAt: -Infinity
+    };
+
+    this.nests.push(nest);
+    this.nestGridDirty = true;
+    eventSystem.emit(GameEvents.NEST_ESTABLISHED, {
+      nest,
+      x: nest.x,
+      y: nest.y,
+      worldTime: this.t ?? 0
+    });
+    return nest;
+  }
+
+  getNestById(id) {
+    if (!id) return null;
+    return this.nests.find(nest => nest.id === id) || null;
+  }
+
+  getNearestNest(x, y, radius = CreatureAgentTuning.NESTS.DETECT_RADIUS) {
+    const source = this.nestGrid?.nearby ? this.nestGrid.nearby(x, y, radius) : this.nests;
+    if (!source || source.length === 0) return null;
+
+    let best = null;
+    let bestD2 = radius * radius;
+    for (const nest of source) {
+      if (!nest) continue;
+      const d2 = dist2(x, y, nest.x, nest.y);
+      if (d2 < bestD2) {
+        bestD2 = d2;
+        best = nest;
+      }
+    }
+    return best;
+  }
+
+  updateNests() {
+    if (!this.nests?.length) return;
+    const manager = this.creatureManager;
+    const now = this.t ?? 0;
+    const overcrowdCooldown = CreatureAgentTuning.TERRITORY.EVENT_COOLDOWN;
+
+    for (const nest of this.nests) {
+      if (!nest) continue;
+      const crowd = manager?.queryCreaturesFast
+        ? manager.queryCreaturesFast(nest.x, nest.y, nest.radius)
+        : manager?.queryCreatures?.(nest.x, nest.y, nest.radius) || [];
+      const occupancy = crowd.filter(c => c?.alive).length;
+      nest.occupancy = occupancy;
+      const over = occupancy - nest.capacity;
+      const overcrowded = over > 0;
+      nest.overcrowded = overcrowded;
+      const crowdRatio = overcrowded ? over / Math.max(1, nest.capacity) : 0;
+      nest.comfortEffective = clamp(
+        nest.comfort * (1 - crowdRatio * CreatureAgentTuning.NESTS.OVERCROWD_PENALTY),
+        0.2,
+        1
+      );
+
+      if (overcrowded && now - (nest.lastOvercrowdedAt ?? -Infinity) > overcrowdCooldown) {
+        nest.lastOvercrowdedAt = now;
+        eventSystem.emit(GameEvents.NEST_OVERCROWDED, {
+          nest,
+          x: nest.x,
+          y: nest.y,
+          count: occupancy,
+          worldTime: now
+        });
+      }
+    }
+  }
+
+  registerMigrationSettled(creature, region) {
+    const now = this.t ?? 0;
+    const regionId = region?.id ?? this.getRegionId(creature.x, creature.y);
+    const last = this._migrationSettleCooldowns.get(regionId) ?? -Infinity;
+    if (now - last < CreatureAgentTuning.TERRITORY.EVENT_COOLDOWN) return;
+    this._migrationSettleCooldowns.set(regionId, now);
+    eventSystem.emit(GameEvents.WORLD_MIGRATION_SETTLED, {
+      regionId,
+      x: creature.x,
+      y: creature.y,
+      worldTime: now
+    });
+  }
+
   // Biome helpers
   getBiomeAt(x, y) {
     const cacheKey = `${Math.floor(x / 50)},${Math.floor(y / 50)}`;
@@ -731,6 +995,14 @@ export class World {
       this.restGrid.buildIndex?.();
       this.restGridDirty = false;
     }
+    if (this.nestGridDirty && this.nestGrid) {
+      this.nestGrid.clear();
+      for (const nest of this.nests) {
+        this.nestGrid.add(nest);
+      }
+      this.nestGrid.buildIndex?.();
+      this.nestGridDirty = false;
+    }
   }
 
   // Get ecosystem statistics
@@ -756,6 +1028,7 @@ export class World {
       food: this.food,
       corpses: this.corpses,
       restZones: this.restZones,
+      nests: this.nests,
       environment: this.environment.exportState ? this.environment.exportState() : {},
       ecosystem: this.ecosystem.exportState ? this.ecosystem.exportState() : {},
       disaster: this.disaster.exportState ? this.disaster.exportState() : {}
@@ -774,6 +1047,16 @@ export class World {
     this.food = snapshot.food || [];
     this.corpses = snapshot.corpses || [];
     this.restZones = snapshot.restZones || this.restZones || [];
+    this.nests = snapshot.nests || [];
+    let maxNestId = 0;
+    for (const nest of this.nests) {
+      if (!nest?.id) continue;
+      const match = String(nest.id).match(/nest-(\d+)/);
+      if (match) {
+        maxNestId = Math.max(maxNestId, Number(match[1]));
+      }
+    }
+    this.nestId = Math.max(this.nestId, maxNestId + 1);
 
     // Rebuild spatial indices
     this.creatureManager.creatureGrid.clear();
@@ -796,6 +1079,13 @@ export class World {
     }
     this.restGrid?.buildIndex?.();
     this.restGridDirty = false;
+
+    this.nestGrid?.clear();
+    for (const nest of this.nests) {
+      this.nestGrid?.add(nest);
+    }
+    this.nestGrid?.buildIndex?.();
+    this.nestGridDirty = false;
 
     // Import subsystem states
     if (this.environment.importState) {

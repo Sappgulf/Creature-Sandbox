@@ -1,6 +1,7 @@
 import { eventSystem, GameEvents } from './event-system.js';
 import { gameState } from './game-state.js';
 import { clamp } from './utils.js';
+import { CreatureAgentTuning } from './creature-agent-constants.js';
 
 export class AutoDirector {
   constructor({ world, camera } = {}) {
@@ -19,6 +20,10 @@ export class AutoDirector {
       [GameEvents.CREATURE_OVERCROWD]: 3.0,
       [GameEvents.WORLD_FOOD_SCARCITY]: 4.5,
       [GameEvents.WORLD_MIGRATION_START]: 5.0,
+      [GameEvents.WORLD_MIGRATION_SETTLED]: 5.5,
+      [GameEvents.NEST_ESTABLISHED]: 4.5,
+      [GameEvents.WORLD_REGION_DEPLETED]: 5.5,
+      [GameEvents.WORLD_REGION_THRIVING]: 5.5,
       [GameEvents.PREDATOR_LITE_CHASE]: 3.2
     };
 
@@ -111,8 +116,37 @@ export class AutoDirector {
 
     eventSystem.on(GameEvents.WORLD_MIGRATION_START, (data) => {
       if (!data) return;
+      if (data.count != null && data.count < CreatureAgentTuning.MIGRATION.FOCUS_GROUP_MIN) return;
       this.focusOnEvent(GameEvents.WORLD_MIGRATION_START, data.x, data.y, {
         zoomMultiplier: 0.9
+      });
+    });
+
+    eventSystem.on(GameEvents.WORLD_MIGRATION_SETTLED, (data) => {
+      if (!data) return;
+      this.focusOnEvent(GameEvents.WORLD_MIGRATION_SETTLED, data.x, data.y, {
+        zoomMultiplier: 1.05
+      });
+    });
+
+    eventSystem.on(GameEvents.NEST_ESTABLISHED, (data) => {
+      if (!data) return;
+      this.focusOnEvent(GameEvents.NEST_ESTABLISHED, data.x, data.y, {
+        zoomMultiplier: 1.1
+      });
+    });
+
+    eventSystem.on(GameEvents.WORLD_REGION_DEPLETED, (data) => {
+      if (!data) return;
+      this.focusOnEvent(GameEvents.WORLD_REGION_DEPLETED, data.x, data.y, {
+        zoomMultiplier: 0.92
+      });
+    });
+
+    eventSystem.on(GameEvents.WORLD_REGION_THRIVING, (data) => {
+      if (!data) return;
+      this.focusOnEvent(GameEvents.WORLD_REGION_THRIVING, data.x, data.y, {
+        zoomMultiplier: 0.95
       });
     });
 

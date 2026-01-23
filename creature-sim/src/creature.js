@@ -251,10 +251,21 @@ export class Creature {
     // FEATURE 9: Migration
     this.migration = {
       instinct: clamp(genes.herdInstinct ?? 0.5, 0, 1), // how likely to migrate
-      targetBiome: null, // which biome to migrate to
+      targetRegionId: null,
+      target: null,
       lastMigration: -Infinity,
-      settled: false
+      settled: true,
+      active: false,
+      cooldownUntil: -Infinity,
+      recentUntil: -Infinity,
+      settleTimer: 0,
+      nextCheckAt: rand(0.4, 1.4)
     };
+    this.homeNestId = null;
+    this.homeRegionId = null;
+    this.territoryAffinity = clamp(0.25 + (genes.herdInstinct ?? 0.5) * 0.6, 0.1, 0.95);
+    this._restNestTimer = 0;
+    this._returnHomeUntil = -Infinity;
 
     // FEATURE 5: Emotional States
     this.emotions = {
@@ -287,6 +298,8 @@ export class Creature {
     this.senses = {
       food: null,
       restZone: null,
+      nest: null,
+      homeNest: null,
       mate: null,
       overcrowded: false,
       corpse: null
@@ -598,6 +611,15 @@ export class Creature {
     const restZone = world?.ecosystem?.nearestRestZone?.(this.x, this.y, CreatureAgentTuning.REST_ZONES.DETECT_RADIUS);
     senses.restZone = restZone || null;
 
+    const homeNest = this.homeNestId ? world?.getNestById?.(this.homeNestId) : null;
+    const nearbyNest = world?.getNearestNest?.(this.x, this.y, CreatureAgentTuning.NESTS.DETECT_RADIUS);
+    senses.homeNest = homeNest || null;
+    senses.nest = homeNest || nearbyNest || null;
+
+    if (this.homeRegionId == null && world?.getRegionId) {
+      this.homeRegionId = world.getRegionId(this.x, this.y);
+    }
+
     const mateRadius = this.genes.sense * CreatureAgentTuning.SENSES.MATE_RADIUS_MULT;
     const candidates = world?.creatureManager?.queryCreaturesFast
       ? world.creatureManager.queryCreaturesFast(this.x, this.y, mateRadius)
@@ -691,6 +713,12 @@ export class Creature {
       needs.stress = clamp(needs.stress - calmBoost * 6 * dt, 0, 100);
     }
 
+    const region = world?.getRegionAt?.(this.x, this.y);
+    if (region && region.pressure > 0) {
+      const pressureGain = CreatureAgentTuning.TERRITORY.STRESS_GAIN * region.pressure * stressGainMultiplier;
+      needs.stress = clamp(needs.stress + pressureGain * dt, 0, 100);
+    }
+
     const prevStress = this._lastStressLevel ?? needs.stress;
     const stressDelta = needs.stress - prevStress;
     this._lastStressLevel = needs.stress;
@@ -745,6 +773,22 @@ export class Creature {
     }
 
     let wanderScore = CreatureAgentTuning.GOALS.SCORE_BIAS.WANDER * wanderBias;
+
+    const nest = senses.homeNest || senses.nest;
+    if (nest) {
+      let nestBias = 1 + this.territoryAffinity * 0.3;
+      if (this.lifeStage === 'baby') {
+        nestBias += 0.35;
+      } else if (this.lifeStage === 'elder') {
+        nestBias += 0.25;
+      } else {
+        nestBias += 0.12;
+      }
+      restScore *= nestBias;
+      if (this.lifeStage === 'adult') {
+        mateScore *= 1.08;
+      }
+    }
 
     if (senses.corpse && dietRole === 'scavenger') {
       eatScore *= roleTuning.corpseBias ?? 1.25;
@@ -827,13 +871,23 @@ export class Creature {
     return true;
   }
 
-  _applyRestRecovery(dt, world, inRestZone) {
-    if (!inRestZone) return;
-    const energyGain = CreatureAgentTuning.REST_ZONES.ENERGY_RECOVERY * dt;
+  _applyRestRecovery(dt, world, { inRestZone = false, nest = null } = {}) {
+    if (!inRestZone && !nest) return;
+    const nestComfort = nest ? (nest.comfortEffective ?? nest.comfort ?? CreatureAgentTuning.NESTS.COMFORT) : 1;
+    const restBonus = nest ? CreatureAgentTuning.NESTS.REST_BONUS : 1;
+    const energyGain = CreatureAgentTuning.REST_ZONES.ENERGY_RECOVERY * restBonus * nestComfort * dt;
     this.energy = Math.min((this.energy ?? 0) + energyGain, CreatureAgentTuning.NEEDS.MAX);
     if (this.needs) {
       this.needs.energy = clamp(this.energy ?? this.needs.energy, 0, 100);
-      this.needs.stress = clamp(this.needs.stress - CreatureAgentTuning.REST_ZONES.STRESS_RECOVERY * dt, 0, 100);
+      const stressRecovery = CreatureAgentTuning.REST_ZONES.STRESS_RECOVERY * (nest ? 1 + nestComfort * 0.4 : 1);
+      this.needs.stress = clamp(this.needs.stress - stressRecovery * dt, 0, 100);
+      if (nest?.overcrowded) {
+        this.needs.stress = clamp(
+          this.needs.stress + CreatureAgentTuning.NESTS.OVERCROWD_PENALTY * dt,
+          0,
+          100
+        );
+      }
     }
     world?.creatureEcosystem?.registerEvent?.(this, 'rest');
     if (this.memory && this.needs?.stress <= CreatureConfig.MEMORY.CALM_STRESS_MAX) {
@@ -847,6 +901,83 @@ export class Creature {
         this.memory.focus = null;
       }
     }
+  }
+
+  _updateRestHome(dt, world, nest = null) {
+    if (!world) return;
+    const now = world.t ?? 0;
+    const region = world.getRegionAt?.(this.x, this.y);
+    if (region?.id != null) {
+      this.homeRegionId = region.id;
+    }
+
+    const shouldTrack = (this.needs?.stress ?? 100) <= CreatureAgentTuning.NESTS.CREATE_STRESS_MAX;
+    if (!shouldTrack) {
+      this._restNestTimer = 0;
+      return;
+    }
+    this._restNestTimer += dt;
+
+    if (nest && nest.id) {
+      this.homeNestId = nest.id;
+    }
+
+    if (this.migration?.active && this.migration.targetRegionId != null) {
+      if (region?.id === this.migration.targetRegionId) {
+        this.migration.settleTimer = (this.migration.settleTimer ?? 0) + dt;
+        if (this.migration.settleTimer >= CreatureAgentTuning.MIGRATION.SETTLE_REST_TIME &&
+          (this.needs?.stress ?? 100) < CreatureAgentTuning.MIGRATION.STRESS_TRIGGER) {
+          this.migration.active = false;
+          this.migration.settled = true;
+          this.migration.targetRegionId = region.id;
+          this.migration.recentUntil = now + CreatureAgentTuning.MIGRATION.RECENTLY_MIGRATED;
+          this.migration.settleTimer = 0;
+          this.migration.bias = null;
+          this.migration.target = null;
+          world.registerMigrationSettled?.(this, region);
+
+          if (!nest && world.addNest) {
+            const newNest = world.addNest(this.x, this.y, { createdBy: this.id });
+            if (newNest) {
+              this.homeNestId = newNest.id;
+              nest = newNest;
+            }
+          }
+          if (nest) {
+            this.rememberLocation?.(nest.x, nest.y, 'nest', CreatureAgentTuning.NESTS.MEMORY_STRENGTH, now);
+            if (this.memory) {
+              this.memory.lastNestAt = now;
+            }
+            this._restNestTimer = 0;
+          }
+        }
+      } else {
+        this.migration.settleTimer = 0;
+      }
+    }
+
+    if (this._restNestTimer < CreatureAgentTuning.NESTS.CREATE_MIN_REST) return;
+    if (this.lifeStage === 'baby') return;
+    if ((this.needs?.energy ?? 0) < CreatureAgentTuning.NESTS.CREATE_ENERGY_MIN) return;
+    if (now - (this.memory?.lastNestAt ?? -Infinity) < CreatureAgentTuning.NESTS.CREATE_COOLDOWN) return;
+
+    if (!nest && world.addNest) {
+      const newNest = world.addNest(this.x, this.y, { createdBy: this.id });
+      if (newNest) {
+        this.homeNestId = newNest.id;
+        nest = newNest;
+      }
+    }
+
+    if (nest) {
+      this.rememberLocation?.(nest.x, nest.y, 'nest', CreatureAgentTuning.NESTS.MEMORY_STRENGTH, now);
+      if (this.memory) {
+        this.memory.lastNestAt = now;
+      }
+      this.territoryAffinity = clamp(this.territoryAffinity + 0.05, 0.1, 1);
+    }
+
+    this._restNestTimer = 0;
   }
 
   _updateMatingBond(world, mate, dt, bondDuration) {
@@ -884,6 +1015,37 @@ export class Creature {
       100
     );
     this.needs.lastEatAt = this._lastWorld?.t ?? this.needs.lastEatAt;
+    if (this.needs.hunger < 45) {
+      this._returnHomeUntil = (this._lastWorld?.t ?? 0) + CreatureAgentTuning.TERRITORY.HOME_RETURN_DURATION;
+    }
+  }
+
+  _getHomeBias(world, goal) {
+    if (!world?.getRegionById || !this.homeRegionId) return null;
+    const affinity = this.territoryAffinity ?? 0;
+    if (affinity <= 0.05) return null;
+
+    const region = world.getRegionById(this.homeRegionId);
+    if (!region) return null;
+
+    const dx = region.x - this.x;
+    const dy = region.y - this.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist <= 0.01) return null;
+
+    const now = world.t ?? 0;
+    const returning = now < (this._returnHomeUntil ?? -Infinity);
+    const stressed = (this.needs?.stress ?? 0) >= CreatureAgentTuning.MIGRATION.STRESS_TRIGGER;
+    const goalAllows = goal === 'WANDER' || goal === 'REST' || goal === 'SEEK_MATE' || returning || stressed;
+    if (!goalAllows) return null;
+
+    const homeRadius = (region.size ?? CreatureAgentTuning.TERRITORY.REGION_SIZE) * 0.5 *
+      CreatureAgentTuning.TERRITORY.HOME_RADIUS_MULT;
+    if (dist < homeRadius * 0.6 && !returning && !stressed) return null;
+
+    const baseStrength = returning ? 0.55 : stressed ? 0.45 : 0.28;
+    const strength = baseStrength * affinity;
+    return { x: (dx / dist) * strength, y: (dy / dist) * strength };
   }
 
   /**
@@ -1054,11 +1216,19 @@ export class Creature {
       const mate = this.senses.mate;
       this.target = { x: mate.x, y: mate.y, creatureId: mate.id, mate: true };
       this.personality.currentTargetId = null;
-    } else if (goal === 'REST' && this.senses?.restZone) {
-      const zone = this.senses.restZone;
-      const distToZone = Math.hypot(zone.x - this.x, zone.y - this.y);
-      if (distToZone > zone.radius * 0.6) {
-        this.target = { x: zone.x, y: zone.y, restZone: true, zoneId: zone.id };
+    } else if (goal === 'REST' && (this.senses?.homeNest || this.senses?.nest || this.senses?.restZone)) {
+      const nest = this.senses?.homeNest || this.senses?.nest;
+      if (nest) {
+        const distToNest = Math.hypot(nest.x - this.x, nest.y - this.y);
+        if (distToNest > nest.radius * 0.55) {
+          this.target = { x: nest.x, y: nest.y, nest: true, nestId: nest.id };
+        }
+      } else if (this.senses?.restZone) {
+        const zone = this.senses.restZone;
+        const distToZone = Math.hypot(zone.x - this.x, zone.y - this.y);
+        if (distToZone > zone.radius * 0.6) {
+          this.target = { x: zone.x, y: zone.y, restZone: true, zoneId: zone.id };
+        }
       }
       this.personality.currentTargetId = null;
     } else if (goal === 'EAT') {
@@ -1178,15 +1348,21 @@ export class Creature {
     const memoryAvoid = (this.needs?.stress ?? 0) >= CreatureConfig.MEMORY.STRESS_THRESHOLD
       ? this._getMemoryAvoidance?.('danger')
       : null;
+    const homeBias = this._getHomeBias?.(world, goal);
+    const migrationBias = this.migration?.bias;
     const avoidScale = CreatureConfig.MEMORY.AVOID_STRENGTH;
     const steeringX = Math.cos(desiredAngle) +
       (this._separation?.x ?? 0) +
       (this._edgeAvoid?.x ?? 0) +
-      ((memoryAvoid?.x ?? 0) * avoidScale);
+      ((memoryAvoid?.x ?? 0) * avoidScale) +
+      (homeBias?.x ?? 0) +
+      (migrationBias?.x ?? 0);
     const steeringY = Math.sin(desiredAngle) +
       (this._separation?.y ?? 0) +
       (this._edgeAvoid?.y ?? 0) +
-      ((memoryAvoid?.y ?? 0) * avoidScale);
+      ((memoryAvoid?.y ?? 0) * avoidScale) +
+      (homeBias?.y ?? 0) +
+      (migrationBias?.y ?? 0);
     desiredAngle = Math.atan2(steeringY, steeringX);
 
     const aggressiveTurn = this.genes.predator && this.target && this.target.creatureId != null && this.personality.ambushTimer <= 0;
@@ -1345,11 +1521,16 @@ export class Creature {
     const inRestZone = restZone
       ? Math.hypot(restZone.x - this.x, restZone.y - this.y) <= restZone.radius
       : false;
-    if ((goal === 'REST' || (this.needs?.energy ?? 100) < 30) && inRestZone && spd < 12) {
-      this._applyRestRecovery(dt, world, true);
+    const nest = this.senses?.homeNest || this.senses?.nest;
+    const inNest = nest ? Math.hypot(nest.x - this.x, nest.y - this.y) <= nest.radius : false;
+    if ((goal === 'REST' || (this.needs?.energy ?? 100) < 30) && (inRestZone || inNest) && spd < 12) {
+      this._applyRestRecovery(dt, world, { inRestZone, nest: inNest ? nest : null });
+      this._updateRestHome(dt, world, inNest ? nest : null);
       if (Math.random() < 0.02) {
         this.setMood('💤', 0.5);
       }
+    } else if (this._restNestTimer) {
+      this._restNestTimer = Math.max(0, this._restNestTimer - dt * 2);
     }
 
     // NEW: Update animation state based on movement
