@@ -32,6 +32,28 @@
 - Persist time-of-day + environment state; god mode does not persist.
 - Update README, smoke tests, and changelog entries.
 
+## Session Audit (2026-02-06)
+
+### Focus
+1. Add nests, territory pressure, and home-region preference for creatures.
+2. Implement migration scoring + settlement with group bias and cooldowns.
+3. Integrate moments/auto-director hooks, save/load persistence, and observer UI toggles.
+
+### Integration Points (pre-change)
+- World state + spatial partitioning: `World` in `creature-sim/src/world-core.js`.
+- Creature needs, memory, and goals: `creature-sim/src/creature.js` + `creature-sim/src/creature-features.js`.
+- Ecosystem food patches/rest zones: `creature-sim/src/world-ecosystem.js`.
+- Moments + auto-director: `creature-sim/src/moments-system.js`, `creature-sim/src/auto-director.js`.
+- Rendering overlays + feature toggles: `creature-sim/src/renderer.js`, `creature-sim/src/renderer-features.js`, `creature-sim/index.html`.
+- Save/load migrations: `creature-sim/src/save-system.js`.
+
+### Planned Actions
+- Add region partitioning with pressure/food stats and nest tracking on a throttled cadence.
+- Introduce nest entities with comfort, occupancy, and overcrowding penalties.
+- Add home nest/region preferences, migration scoring, and settlement memory.
+- Hook nests/regions/migration into moments and auto-director (throttled).
+- Update save/load schema + docs/smoke tests for new behaviors.
+
 ## Session Audit (2026-02-05)
 
 ### Focus

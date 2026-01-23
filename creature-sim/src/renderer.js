@@ -48,6 +48,7 @@ export class Renderer {
     this.enableNameLabels = true;
     this.enableTraitVisualization = true;
     this.hoveredCreatureId = null;
+    this.enableNests = false;
 
     // Cache lineage computation
     this._lineageCache = { rootId: null, set: null, frame: 0 };
@@ -156,6 +157,10 @@ export class Renderer {
 
     if (opts.godModeActive) {
       this.drawFoodPatches(world);
+    }
+
+    if (this.enableNests) {
+      this.drawNests(world);
     }
 
     // Feature 1: Draw territories
@@ -1575,10 +1580,48 @@ export class Renderer {
   // FEATURE VISUALIZATIONS
   // ============================================================================
 
+  drawNests(world) {
+    if (!world?.nests?.length) return;
+    const ctx = this.ctx;
+    for (const nest of world.nests) {
+      if (!nest) continue;
+      const comfort = nest.comfortEffective ?? nest.comfort ?? 0.7;
+      const alpha = 0.1 + comfort * 0.25;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(nest.x, nest.y, nest.radius * 0.6, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(230, 200, 150, ${alpha})`;
+      ctx.fill();
+      ctx.strokeStyle = nest.overcrowded ? 'rgba(255, 140, 120, 0.55)' : 'rgba(240, 220, 170, 0.45)';
+      ctx.lineWidth = nest.overcrowded ? 2 : 1;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(nest.x, nest.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = nest.overcrowded ? 'rgba(255, 140, 120, 0.7)' : 'rgba(255, 230, 190, 0.75)';
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
   drawTerritories(world) {
     const ctx = this.ctx;
 
-    // Draw territory circles
+    if (world.regions?.length) {
+      ctx.save();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      for (const region of world.regions) {
+        if (!region?.bounds) continue;
+        const { x1, y1, x2, y2 } = region.bounds;
+        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+      }
+      ctx.restore();
+      return;
+    }
+
+    if (!world.territories?.entries) return;
+
+    // Draw territory circles (legacy)
     for (const [id, territory] of world.territories.entries()) {
       const owner = world.registry.get(id);
       if (!owner || !owner.alive) continue;
@@ -1610,7 +1653,7 @@ export class Renderer {
     }
 
     // Draw conflict zones
-    for (const conflict of world.territoryConflicts) {
+    for (const conflict of world.territoryConflicts || []) {
       ctx.save();
       ctx.beginPath();
       ctx.arc(conflict.x, conflict.y, 20 * conflict.intensity, 0, Math.PI * 2);
@@ -1750,12 +1793,12 @@ export class Renderer {
 
     for (const creature of world.creatures) {
       if (!creature.migration || !creature.alive) continue;
-      if (creature.migration.targetBiome === null || creature.migration.settled) continue;
-      if (!creature.target || !creature.target.migration) continue;
+      if (!creature.migration.active || creature.migration.settled) continue;
+      if (!creature.migration.target) continue;
 
       // Draw line to migration target
-      const targetX = creature.target.x;
-      const targetY = creature.target.y;
+      const targetX = creature.migration.target.x;
+      const targetY = creature.migration.target.y;
 
       ctx.save();
       ctx.strokeStyle = 'rgba(255, 200, 100, 0.4)';

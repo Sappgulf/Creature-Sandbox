@@ -52,24 +52,31 @@
    - Speed up the sim (`debug.speed(5)`), wait for baby → adult → elder transitions, and confirm elders move slower and begin to fade.
    - Confirm offspring inherit visible traits (color/size variance) with small mutations.
 
-7. **Environmental rhythm + food cycles**
+7. **Nest + territory + migration**
+   - Let a creature rest in a calm zone until a nest marker appears nearby.
+   - Confirm babies and elders bias toward the nest when resting.
+   - Crowd the nest with several creatures and watch stress rise slightly.
+   - Let a region become crowded and observe some creatures drift to calmer regions.
+   - Confirm “Nest established,” “Nest overcrowded,” “Migration started,” and “Migration settled” moments appear.
+
+8. **Environmental rhythm + food cycles**
    - Let the simulation run for at least 2–3 minutes.
    - Confirm the ambient lighting shifts (day → dusk → night → dawn).
    - Observe creature behavior: higher activity/exploration during day and more resting at night.
    - Watch food patches slowly regrow over time, even without player input.
    - Overconsume a local patch and confirm nearby food thins out temporarily before regrowing.
 
-8. **Top menu navigation**
+9. **Top menu navigation**
    - Click **🎛️ Modes & Goals** and confirm the Game Mode + Session Goals card toggles.
    - Open **⋯ More Actions** and verify every item opens its respective panel or toggle.
 
-9. **God mode (optional)**
+10. **God mode (optional)**
    - Open **⋯ More Actions** and toggle **✨ God Mode** (or long-press the world).
    - Place a food source, a calm zone, and a chaos nudge; confirm clear visual previews.
    - Spawn and remove a creature; confirm population guardrails prevent overpopulation.
    - Exit god mode and confirm creatures resume autonomous behavior with normal time flow.
 
-10. **Save/load roundtrip**
+11. **Save/load roundtrip**
    - Use **Ctrl+S** to save the game.
    - Refresh the page.
    - Use **Ctrl+O** to load the save.
@@ -81,43 +88,43 @@
    - Optional: use **Ctrl/⌘ + S** to download a save file and **Ctrl/⌘ + O** to load it back.
    - Confirm diet roles and moments summary still load without errors.
 
-11. **Help section**
+12. **Help section**
    - Open **⋯ More Actions**.
    - Confirm the Help section lists controls, shortcuts, and where features live.
 
-12. **Session goals**
+13. **Session goals**
    - Open **🎛️ Modes & Goals**.
    - Confirm a goal appears for manual creature spawns and progresses when you spawn creatures.
 
-13. **Balance pass: grab/throw consistency**
+14. **Balance pass: grab/throw consistency**
    - Switch to **Inspect** mode and grab a creature with a short drag.
    - Confirm gentle drags release without huge launches.
    - Flick a longer drag and confirm throws feel capped and predictable (no extreme launches).
 
-14. **Balance pass: camera stability**
+15. **Balance pass: camera stability**
     - Pan and zoom quickly, then release.
     - Confirm the camera settles without lingering jitter and overlays reappear after it stops.
 
-15. **Balance pass: creature reactions**
+16. **Balance pass: creature reactions**
     - Trigger a bounce pad or spinner on a creature.
     - Drop a creature from a height and confirm a squish/landing reaction.
     - Poke a creature repeatedly and confirm an overreaction triggers but resets quickly.
     - Confirm collision reactions are readable but not rapid-fire flashing.
 
-16. **Watch mode + auto-director**
+17. **Watch mode + auto-director**
     - Toggle **Watch Mode** from **⋯ More Actions**.
     - Confirm the watch strip appears and quick actions hide.
     - Use the watch strip to **Pause/Play**, **Follow**, and cycle speed **0.5×/1×/2×**.
     - Trigger a birth/eat/mating interaction and confirm the camera gently recenters.
     - Drag to pan; confirm auto-director pauses, then use **Re-center** to resume.
 
-17. **Moments log + session summary**
+18. **Moments log + session summary**
     - Tap **Moments** in the watch strip to open the log.
-    - Confirm entries appear for birth/eat/panic/food scarcity.
+    - Confirm entries appear for birth/eat/panic/food scarcity, nest creation, and migration.
     - Tap a moment and confirm the camera jumps to that location.
     - Confirm the session summary shows peak population, births, end-of-life count, stress peak, and biggest migration.
 
-18. **Ecosystem tension roles**
+19. **Ecosystem tension roles**
     - Observe herbivore, scavenger, and predator-lite behaviors over 1–2 minutes.
     - Confirm predator-lite chases cause stress + scattering without rapid deaths.
     - Confirm food scarcity events nudge movement without collapsing the population.
@@ -130,6 +137,7 @@
    - Tap **Props** in the mobile bar to cycle prop types, then tap the canvas to place one.
    - Confirm HUD and mobile quick actions clear the notch/home indicator areas.
    - Open **Features** and adjust the Chaos Dial slider to confirm it remains touch-friendly.
+   - Toggle **Regions** and **Nest Markers** in the Features panel and confirm overlays appear.
 
 2. **Spawn selection + play loop**
    - Tap **Spawn** in the mobile bar to open the creature sheet.

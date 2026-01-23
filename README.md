@@ -33,6 +33,9 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Population guardrails**: Mating slows down above soft caps to prevent runaway growth
 - **Place memory + learning**: Creatures remember food, calm, danger, and nest locations with reinforcement/decay
 - **Life stages**: Babies explore fast, adults stabilize, elders slow down and fade gently
+- **Nests + home regions**: Creatures establish homes, settle around nests, and build territory preference
+- **Territory pressure**: Crowded regions add stress, reduce comfort, and increase migration pull
+- **Migration flows**: Populations relocate based on food, pressure, and stress, then resettle
 
 ### 📊 Real-Time Analytics
 - **Population tracking**: Monitor herbivore/predator ratios
@@ -56,7 +59,7 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Chaos dial**: Tune physics wobble, bounce energy, and gravity drift from calm to silly
 - **God mode (optional)**: Enter a gentle intervention mode to place food, calm zones, or nudge chaos
 - **Gene sharing**: Copy/import gene codes from the Gene Editor
-- **Display toggles**: Nameplates and reduced-motion options in the Features panel
+- **Display toggles**: Nameplates, reduced motion, region boundaries, and nest markers in the Features panel
 - **Condensed top HUD**: Primary controls plus a ⋯ overflow menu for all panels
 - **Moments log**: Tap a moment to jump the camera and review a session summary
 

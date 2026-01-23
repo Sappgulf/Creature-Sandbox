@@ -240,50 +240,168 @@ Creature.prototype._updateSocialBehavior = function(world) {
 // ============================================================================
 
 Creature.prototype._updateMigration = function(world, dt) {
-  // Only migrate if have migration instinct
-  if (this.migration.instinct < 0.3) return;
+  if (!this.migration || this.migration.instinct < 0.25) return;
+  const now = world.t ?? 0;
+  if (now < (this.migration.nextCheckAt ?? 0)) return;
+  this.migration.nextCheckAt = now + CreatureAgentTuning.MIGRATION.CHECK_INTERVAL + rand(-0.2, 0.2);
 
-  // Check if it's time to consider migration
-  const timeSinceLastMigration = world.t - this.migration.lastMigration;
-  if (timeSinceLastMigration < 60) return; // wait at least 60s between migrations
+  if (this.migration.active && this.migration.targetRegionId != null && this.migration.target) {
+    const target = this.migration.target;
+    const dx = target.x - this.x;
+    const dy = target.y - this.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 0.01) {
+      const biasStrength = CreatureAgentTuning.MIGRATION.TARGET_BIAS;
+      this.migration.bias = { x: (dx / dist) * biasStrength, y: (dy / dist) * biasStrength };
+    }
 
-  // Determine current biome
-  const currentBiomeIdx = world.getBiomeIndexAt(this.x, this.y);
-  if (currentBiomeIdx === -1) return;
-
-  // Check if should migrate (based on food scarcity in current biome)
-  const localFood = world.nearbyFood(this.x, this.y, this.genes.sense * 2).length;
-  const foodScarcity = localFood < 3;
-
-  // Migration chance increases with scarcity and instinct
-  const migrationChance = foodScarcity ? this.migration.instinct * 0.01 : this.migration.instinct * 0.001;
-
-  if (Math.random() < migrationChance) {
-    // Pick target biome (prefer different from current, 0-5 = 6 biome types)
-    const targetIdx = (currentBiomeIdx + 1 + Math.floor(Math.random() * 2)) % 6;
-
-    // Set migration target to a random location in the world
-    // Since Perlin noise biomes are organic, we pick a random spot and hope it's the target biome type
-    this.migration.targetBiome = targetIdx;
-    this.migration.lastMigration = world.t;
-    this.migration.settled = false;
-
-    // Override current target with migration destination (random location)
-    this.target = {
-      x: rand(world.width * 0.2, world.width * 0.8),
-      y: rand(world.height * 0.2, world.height * 0.8),
-      migration: true
-    };
+    const neighbors = world.creatureManager?.queryCreaturesFast
+      ? world.creatureManager.queryCreaturesFast(this.x, this.y, CreatureAgentTuning.MIGRATION.COHESION_RADIUS)
+      : world.queryCreatures?.(this.x, this.y, CreatureAgentTuning.MIGRATION.COHESION_RADIUS) || [];
+    let vx = 0;
+    let vy = 0;
+    let count = 0;
+    for (const neighbor of neighbors) {
+      if (!neighbor || neighbor === this) continue;
+      if (!neighbor.migration?.active) continue;
+      if (neighbor.migration.targetRegionId !== this.migration.targetRegionId) continue;
+      vx += neighbor.vx ?? 0;
+      vy += neighbor.vy ?? 0;
+      count++;
+    }
+    if (count > 0) {
+      const speed = Math.hypot(vx, vy);
+      if (speed > 0.01) {
+        const cohesion = CreatureAgentTuning.MIGRATION.COHESION_STRENGTH;
+        this.migration.bias = {
+          x: (this.migration.bias?.x ?? 0) + (vx / speed) * cohesion,
+          y: (this.migration.bias?.y ?? 0) + (vy / speed) * cohesion
+        };
+      }
+    }
+    return;
   }
 
-  // Check if reached migration target (moved to target biome type)
-  if (this.migration.targetBiome !== null && !this.migration.settled) {
-    const currentBiome = world.getBiomeIndexAt(this.x, this.y);
-    if (currentBiome === this.migration.targetBiome) {
-      this.migration.settled = true;
-      if (this.target && this.target.migration) {
-        this.target = null; // Clear migration target
+  if (now < (this.migration.cooldownUntil ?? -Infinity)) return;
+  const region = world.getRegionAt?.(this.x, this.y);
+  if (!region) return;
+
+  const pressure = region.pressure ?? 0;
+  const foodRatio = region.foodRatio ?? 0.5;
+  const stress = this.needs?.stress ?? 0;
+  const nest = this.homeNestId ? world.getNestById?.(this.homeNestId) : null;
+  const nestOvercrowded = nest?.overcrowded;
+
+  const trigger = pressure >= CreatureAgentTuning.MIGRATION.PRESSURE_TRIGGER ||
+    foodRatio <= CreatureAgentTuning.MIGRATION.FOOD_TRIGGER ||
+    stress >= CreatureAgentTuning.MIGRATION.STRESS_TRIGGER ||
+    nestOvercrowded;
+  if (!trigger) {
+    this.migration.bias = null;
+    return;
+  }
+
+  const timeSinceLast = now - (this.migration.lastMigration ?? -Infinity);
+  if (timeSinceLast < CreatureAgentTuning.MIGRATION.COOLDOWN) return;
+
+  let desire = pressure * 0.55 + (1 - foodRatio) * 0.35 + (stress / 100) * 0.2;
+  if (nestOvercrowded) desire += 0.15;
+  desire *= 0.6 + this.migration.instinct * 0.8;
+  if (desire < 0.35) return;
+
+  const regions = world.regions || [];
+  if (!regions.length) return;
+
+  const scoreRegion = (candidate) => {
+    if (!candidate) return 0;
+    const foodScore = candidate.foodRatio ?? 0.5;
+    const pressureScore = 1 - (candidate.pressure ?? 0);
+    const nestScore = candidate.nestCount > 0 ? 0.15 + (candidate.nestComfort ?? 0) * 0.15 : 0;
+    let score = pressureScore * 0.55 + foodScore * 0.35 + nestScore;
+
+    if (candidate.id === this.homeRegionId) {
+      const homeBonus = now < (this.migration.recentUntil ?? -Infinity)
+        ? CreatureAgentTuning.MIGRATION.HOME_RETURN_BIAS * 0.4
+        : CreatureAgentTuning.MIGRATION.HOME_RETURN_BIAS;
+      score += homeBonus;
+    }
+
+    if (this.memory?.locations?.length) {
+      const bounds = candidate.bounds;
+      if (bounds) {
+        let memoryBoost = 0;
+        for (const mem of this.memory.locations) {
+          if (!mem) continue;
+          if (mem.x < bounds.x1 || mem.x > bounds.x2 || mem.y < bounds.y1 || mem.y > bounds.y2) continue;
+          const strength = mem.strength ?? 0;
+          const tag = mem.tag ?? mem.type;
+          if (tag === 'food') memoryBoost += strength * 0.12;
+          if (tag === 'calm' || tag === 'nest') memoryBoost += strength * 0.08;
+        }
+        score += Math.min(memoryBoost, 0.4);
       }
+    }
+
+    return score;
+  };
+
+  const currentScore = scoreRegion(region);
+  let bestRegion = null;
+  let bestScore = currentScore;
+  for (const candidate of regions) {
+    if (!candidate || candidate.id === region.id) continue;
+    const score = scoreRegion(candidate);
+    if (score > bestScore) {
+      bestScore = score;
+      bestRegion = candidate;
+    }
+  }
+
+  if (!bestRegion) return;
+  if (bestScore < currentScore + CreatureAgentTuning.MIGRATION.HYSTERESIS) return;
+
+  this.migration.targetRegionId = bestRegion.id;
+  this.migration.lastMigration = now;
+  this.migration.settled = false;
+  this.migration.active = true;
+  this.migration.cooldownUntil = now + CreatureAgentTuning.MIGRATION.COOLDOWN;
+  this.migration.settleTimer = 0;
+  this.migration.target = {
+    x: bestRegion.x + rand(-bestRegion.size * 0.2, bestRegion.size * 0.2),
+    y: bestRegion.y + rand(-bestRegion.size * 0.2, bestRegion.size * 0.2)
+  };
+
+  const target = this.migration.target;
+  const dx = target.x - this.x;
+  const dy = target.y - this.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist > 0.01) {
+    const biasStrength = CreatureAgentTuning.MIGRATION.TARGET_BIAS;
+    this.migration.bias = { x: (dx / dist) * biasStrength, y: (dy / dist) * biasStrength };
+  }
+
+  const neighbors = world.creatureManager?.queryCreaturesFast
+    ? world.creatureManager.queryCreaturesFast(this.x, this.y, CreatureAgentTuning.MIGRATION.COHESION_RADIUS)
+    : world.queryCreatures?.(this.x, this.y, CreatureAgentTuning.MIGRATION.COHESION_RADIUS) || [];
+  let vx = 0;
+  let vy = 0;
+  let count = 0;
+  for (const neighbor of neighbors) {
+    if (!neighbor || neighbor === this) continue;
+    if (!neighbor.migration?.active) continue;
+    if (neighbor.migration.targetRegionId !== this.migration.targetRegionId) continue;
+    vx += neighbor.vx ?? 0;
+    vy += neighbor.vy ?? 0;
+    count++;
+  }
+  if (count > 0) {
+    const speed = Math.hypot(vx, vy);
+    if (speed > 0.01) {
+      const cohesion = CreatureAgentTuning.MIGRATION.COHESION_STRENGTH;
+      this.migration.bias = {
+        x: (this.migration.bias?.x ?? 0) + (vx / speed) * cohesion,
+        y: (this.migration.bias?.y ?? 0) + (vy / speed) * cohesion
+      };
     }
   }
 };

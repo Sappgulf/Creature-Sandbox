@@ -88,6 +88,13 @@ export class DOMCache {
     this.cacheElement('btn-features-close', 'featuresCloseBtn');
     this.cacheElement('chaos-slider', 'chaosSlider');
     this.cacheElement('chaos-value', 'chaosValue');
+    this.cacheElement('toggle-vision', 'toggleVision');
+    this.cacheElement('toggle-clustering', 'toggleClustering');
+    this.cacheElement('toggle-territories', 'toggleTerritories');
+    this.cacheElement('toggle-memory', 'toggleMemory');
+    this.cacheElement('toggle-social', 'toggleSocial');
+    this.cacheElement('toggle-migration', 'toggleMigration');
+    this.cacheElement('toggle-nests', 'toggleNests');
 
     // Scenario panel
     this.cacheElement('btn-scenario', 'scenarioBtn');

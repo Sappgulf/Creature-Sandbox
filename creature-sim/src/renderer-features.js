@@ -99,6 +99,9 @@ export class RendererFeatureManager {
       case 'MIGRATION':
         this.renderer.enableMigration = enabled;
         break;
+      case 'NESTS':
+        this.renderer.enableNests = enabled;
+        break;
       case 'EMOTIONS':
         this.renderer.enableEmotions = enabled;
         break;
@@ -152,6 +155,7 @@ export class RendererFeatureManager {
     if (this.features.MEMORY) impact += 1;
     if (this.features.SOCIAL) impact += 1;
     if (this.features.MIGRATION) impact += 1;
+    if (this.features.NESTS) impact += 1;
     if (this.features.EMOTIONS) impact += 1;
     if (this.features.SENSORY) impact += 1;
     if (this.features.INTELLIGENCE) impact += 1;

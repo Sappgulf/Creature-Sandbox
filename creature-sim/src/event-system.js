@@ -316,6 +316,8 @@ export const GameEvents = {
   CREATURE_THROWN: 'creature:thrown',
   CREATURE_BUMPED: 'creature:bumped',
   PREDATOR_LITE_CHASE: 'creature:predator_lite_chase',
+  NEST_ESTABLISHED: 'nest:established',
+  NEST_OVERCROWDED: 'nest:overcrowded',
 
   // World events
   FRAME_UPDATE: 'frame:update',
@@ -326,6 +328,9 @@ export const GameEvents = {
   WORLD_DISASTER_END: 'world:disaster_end',
   WORLD_FOOD_SCARCITY: 'world:food_scarcity',
   WORLD_MIGRATION_START: 'world:migration_start',
+  WORLD_MIGRATION_SETTLED: 'world:migration_settled',
+  WORLD_REGION_DEPLETED: 'world:region_depleted',
+  WORLD_REGION_THRIVING: 'world:region_thriving',
 
   // UI events
   UI_PANEL_OPEN: 'ui:panel_open',
