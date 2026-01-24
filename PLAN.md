@@ -18,7 +18,7 @@
 
 ### Changed
 - `creature-sim/src/ui.js` — Fixed undefined `biome` variable in `renderSelectedInfo` by extracting biome from world at creature position.
-- `creature-sim/src/ui-controller.js` — Added `updateToolIndicator()` method to show active tool state on quick action buttons with visual feedback; added tool:changed event listener.
+- `creature-sim/src/ui-controller.js` — Added `updateToolIndicator()` method to show active tool state on quick action buttons with visual feedback; added tool:changed event listener. Fixed dropdown menus: removed auto-close timeouts that prevented item selection, converted buttons to toggle behavior, added `closeAllDropdowns()` helper, added global click handler to close dropdowns when clicking outside.
 - `creature-sim/src/input-manager.js` — Emit `tool:changed` events when tool modes change via keyboard shortcuts.
 - `creature-sim/styles.css` — Polished UI throughout:
   - Tool indicator label styling with pulse animation
