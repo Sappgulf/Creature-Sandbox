@@ -878,7 +878,7 @@ input[type="range"]:focus-visible {
    ============================================================================ */
 #quick-actions {
   position: fixed;
-  bottom: calc(var(--space-lg) + 48px);
+  bottom: calc(var(--space-xl) + 60px);
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -891,6 +891,24 @@ input[type="range"]:focus-visible {
   backdrop-filter: blur(12px);
   box-shadow: var(--shadow-medium);
   transition: all var(--transition-normal);
+}
+
+/* Dropdowns in quick-actions open upward */
+#quick-actions .dropdown-menu {
+  top: auto;
+  bottom: calc(100% + var(--space-sm));
+  animation: slideUp var(--transition-fast);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 #quick-actions {
@@ -939,7 +957,7 @@ input[type="range"]:focus-visible {
 /* Tool indicator label */
 #tool-indicator {
   position: fixed;
-  bottom: calc(var(--space-lg) + 100px);
+  bottom: calc(var(--space-xl) + 120px);
   left: 50%;
   transform: translateX(-50%);
   padding: 4px 12px;
@@ -970,7 +988,7 @@ input[type="range"]:focus-visible {
 }
 
 .mobile-device #tool-indicator {
-  bottom: calc(var(--space-lg) + 180px);
+  bottom: calc(env(safe-area-inset-bottom, 0) + var(--space-xl) + 180px);
 }
 
 /* Tool button pulse animation */
@@ -2791,8 +2809,7 @@ select:focus,
 /* Mobile Quick Actions */
 #mobile-quick-actions {
   position: fixed;
-  bottom: var(--space-lg);
-  bottom: calc(env(safe-area-inset-bottom, 0) + var(--space-lg));
+  bottom: calc(env(safe-area-inset-bottom, 0) + var(--space-xl) + 24px);
   left: 50%;
   transform: translateX(-50%);
   display: none;
