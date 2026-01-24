@@ -257,13 +257,18 @@ export class UIController {
     const propDropdown = domCache.get('propDropdown');
 
     if (propToolBtn && propDropdown) {
+      // Toggle dropdown on button click
       propToolBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.onPropTool();
-        propDropdown.classList.remove('hidden');
-        setTimeout(() => propDropdown.classList.add('hidden'), 1200);
+        const isOpen = !propDropdown.classList.contains('hidden');
+        // Close other dropdowns first
+        this.closeAllDropdowns();
+        if (!isOpen) {
+          propDropdown.classList.remove('hidden');
+        }
       });
 
+      // Handle dropdown item clicks
       const dropdownItems = propDropdown.querySelectorAll('.dropdown-item');
       dropdownItems.forEach(item => {
         item.addEventListener('click', (event) => {
@@ -274,9 +279,17 @@ export class UIController {
           propDropdown.classList.add('hidden');
         });
       });
-
-      document.addEventListener('click', () => propDropdown.classList.add('hidden'));
     }
+  }
+
+  /**
+   * Close all dropdown menus
+   */
+  closeAllDropdowns() {
+    const creatureDropdown = domCache.get('creatureDropdown');
+    const propDropdown = domCache.get('propDropdown');
+    if (creatureDropdown) creatureDropdown.classList.add('hidden');
+    if (propDropdown) propDropdown.classList.add('hidden');
   }
 
   setPropType(type) {
@@ -323,14 +336,15 @@ export class UIController {
     const creatureDropdown = domCache.get('creatureDropdown');
 
     if (spawnCreatureBtn && creatureDropdown) {
-      // Primary click spawns the last selected creature immediately (fast path)
+      // Toggle dropdown on button click
       spawnCreatureBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        // Quick spawn last selection
-        this.onSpawnCreature(this.lastSpawnType);
-        // Briefly show dropdown to hint other options
-        creatureDropdown.classList.remove('hidden');
-        setTimeout(() => creatureDropdown.classList.add('hidden'), 900);
+        const isOpen = !creatureDropdown.classList.contains('hidden');
+        // Close other dropdowns first
+        this.closeAllDropdowns();
+        if (!isOpen) {
+          creatureDropdown.classList.remove('hidden');
+        }
       });
 
       // Handle dropdown item clicks
@@ -339,18 +353,23 @@ export class UIController {
         item.addEventListener('click', (e) => {
           e.stopPropagation();
           const creatureType = item.dataset.creature;
+          this.applySpawnSelection(creatureType);
           this.onSpawnCreature(creatureType);
           creatureDropdown.classList.add('hidden');
         });
       });
 
-      // Close dropdown when clicking outside
-      document.addEventListener('click', () => {
-        creatureDropdown.classList.add('hidden');
-      });
-
       console.log('🦌 Spawn creature controls bound');
     }
+
+    // Global click handler to close dropdowns
+    document.addEventListener('click', (e) => {
+      // Don't close if clicking inside a dropdown
+      if (e.target.closest('.dropdown-menu') || e.target.closest('.spawn-dropdown')) {
+        return;
+      }
+      this.closeAllDropdowns();
+    });
   }
 
   bindMobileSpawnSheet() {
