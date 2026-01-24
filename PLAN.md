@@ -14,13 +14,18 @@
 ### Focus
 1. Bug check and polish pass across the codebase.
 2. Fix lint errors and ensure all systems initialize correctly.
+3. Polish controls for clearer tool state feedback.
 
 ### Changed
 - `creature-sim/src/ui.js` — Fixed undefined `biome` variable in `renderSelectedInfo` by extracting biome from world at creature position.
+- `creature-sim/src/ui-controller.js` — Added `updateToolIndicator()` method to show active tool state on quick action buttons with visual feedback; added tool:changed event listener.
+- `creature-sim/src/input-manager.js` — Emit `tool:changed` events when tool modes change via keyboard shortcuts.
+- `creature-sim/styles.css` — Added tool indicator label styling, tool button pulse animation, and mobile action ripple feedback.
+- `creature-sim/index.html` — Added tool indicator element for showing current tool mode.
 
 ### Verified
 - `npm test` — pass
-- `npm run lint` — 0 errors, 79 warnings (unused vars only)
+- `npm run lint` — 0 errors
 
 ## Session Audit (2026-02-04)
 

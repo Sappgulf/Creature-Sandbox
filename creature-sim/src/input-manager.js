@@ -179,19 +179,24 @@ export class InputManager {
           this.toggleFollowMode();
         } else {
           this.tools.setMode('food');
+          eventSystem.emit('tool:changed', { mode: 'food' });
         }
         break;
       case 's':
         this.tools.setMode('spawn');
+        eventSystem.emit('tool:changed', { mode: 'spawn' });
         break;
       case 'e':
         this.tools.setMode('erase');
+        eventSystem.emit('tool:changed', { mode: 'erase' });
         break;
       case 'x':
         this.tools.setMode('inspect');
+        eventSystem.emit('tool:changed', { mode: 'inspect' });
         break;
       case 'p':
         this.tools.setMode('prop');
+        eventSystem.emit('tool:changed', { mode: 'prop' });
         break;
       case '[':
         this.tools?.adjustBrushSize?.(-4);

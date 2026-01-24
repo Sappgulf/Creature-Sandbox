@@ -172,6 +172,13 @@ export class UIController {
       this.updatePauseButton();
       this.updateMobileControls();
     });
+
+    // Tool change events (from keyboard shortcuts)
+    eventSystem.on('tool:changed', (data) => {
+      if (data?.mode) {
+        this.updateToolIndicator(data.mode);
+      }
+    });
   }
 
   /**
@@ -1045,6 +1052,62 @@ export class UIController {
     if (!gameState.selectedPropType) {
       this.setPropType('bounce');
     }
+    this.updateToolIndicator('prop');
+  }
+
+  /**
+   * Update tool indicator and quick action button states
+   */
+  updateToolIndicator(mode) {
+    const toolMeta = {
+      food: { icon: '🌿', label: 'Food', hint: '[/] brush' },
+      spawn: { icon: '🧬', label: 'Spawn', hint: '' },
+      erase: { icon: '🧹', label: 'Erase', hint: '[/] brush' },
+      inspect: { icon: '🔍', label: 'Inspect', hint: '' },
+      prop: { icon: '🧱', label: 'Props', hint: '' }
+    };
+
+    // Update quick action button active states
+    const foodBtn = domCache.get('spawnFoodBtn');
+    const spawnBtn = domCache.get('spawnCreatureBtn');
+    const propBtn = domCache.get('propToolBtn');
+
+    foodBtn?.classList.toggle('active', mode === 'food');
+    spawnBtn?.classList.toggle('active', mode === 'spawn');
+    propBtn?.classList.toggle('active', mode === 'prop');
+
+    // Pulse the active button
+    const activeBtn = mode === 'food' ? foodBtn : mode === 'spawn' ? spawnBtn : mode === 'prop' ? propBtn : null;
+    if (activeBtn) {
+      activeBtn.classList.add('pulse');
+      setTimeout(() => activeBtn.classList.remove('pulse'), 250);
+    }
+
+    // Update tool indicator
+    const indicator = document.getElementById('tool-indicator');
+    if (!indicator) return;
+
+    const meta = toolMeta[mode];
+    if (!meta) {
+      indicator.classList.remove('visible');
+      return;
+    }
+
+    const iconEl = indicator.querySelector('.tool-icon');
+    const nameEl = indicator.querySelector('.tool-name');
+    const hintEl = indicator.querySelector('.tool-hint');
+
+    if (iconEl) iconEl.textContent = meta.icon;
+    if (nameEl) nameEl.textContent = meta.label;
+    if (hintEl) hintEl.textContent = meta.hint;
+
+    indicator.classList.add('visible');
+
+    // Hide indicator after brief display
+    clearTimeout(this._toolIndicatorTimeout);
+    this._toolIndicatorTimeout = setTimeout(() => {
+      indicator.classList.remove('visible');
+    }, 1800);
   }
 
   onBehaviorChange() {

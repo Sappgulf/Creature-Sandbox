@@ -827,6 +827,54 @@ input[type="range"]:focus-visible {
   box-shadow: var(--glow-primary);
 }
 
+/* Tool indicator label */
+#tool-indicator {
+  position: fixed;
+  bottom: calc(var(--space-lg) + 100px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(8px);
+  font-size: 11px;
+  color: var(--text-secondary);
+  z-index: 59;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  pointer-events: none;
+}
+
+#tool-indicator.visible {
+  opacity: 1;
+}
+
+#tool-indicator .tool-icon {
+  margin-right: 4px;
+}
+
+#tool-indicator .tool-hint {
+  color: var(--text-muted);
+  margin-left: 6px;
+  font-size: 10px;
+}
+
+.mobile-device #tool-indicator {
+  bottom: calc(var(--space-lg) + 180px);
+}
+
+/* Tool button pulse animation */
+@keyframes tool-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+#quick-actions button.pulse {
+  animation: tool-pulse 0.25s ease-out;
+}
+
 /* God mode UI */
 .god-mode-indicator {
   position: fixed;
@@ -2461,6 +2509,20 @@ select:focus,
   color: var(--accent-primary);
   border-color: rgba(0, 212, 255, 0.35);
   box-shadow: var(--glow-primary);
+}
+
+#mobile-quick-actions button.pulse {
+  animation: tool-pulse 0.25s ease-out;
+}
+
+/* Action feedback ripple */
+@keyframes action-ripple {
+  0% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.4); }
+  100% { box-shadow: 0 0 0 12px rgba(0, 212, 255, 0); }
+}
+
+#mobile-quick-actions button.ripple {
+  animation: action-ripple 0.4s ease-out;
 }
 
 /* Mobile spawn sheet */
