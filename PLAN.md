@@ -35,6 +35,10 @@
 - Inspector: custom scrollbar, section fade-in animation
 - Watch mode: slide-up animation, better button hover/active states, improved moments panel
 - Notifications: slide-in animation with fade, enhanced color palette
+- Feature toggles: custom switch-style checkboxes and radio buttons
+- Sliders: enhanced range inputs with filled track and glow effects
+- Gene editor: custom scrollbar, improved gene slider layout
+- Creature info card: improved metrics layout with borders, enhanced empty state
 
 ### Verified
 - `npm test` — pass
