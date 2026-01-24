@@ -28,6 +28,13 @@
   - Mobile spawn sheet slide-up animation and selected checkmarks
   - Mobile action ripple feedback
 - `creature-sim/index.html` — Added tool indicator element for showing current tool mode.
+- `creature-sim/src/notification-system.js` — Added slide-in animation and improved notification colors.
+
+### UI Polish Pass
+- Home screen: feature icons glow on hover, improved button hover states
+- Inspector: custom scrollbar, section fade-in animation
+- Watch mode: slide-up animation, better button hover/active states, improved moments panel
+- Notifications: slide-in animation with fade, enhanced color palette
 
 ### Verified
 - `npm test` — pass

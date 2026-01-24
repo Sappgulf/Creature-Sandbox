@@ -67,7 +67,8 @@ export class NotificationSystem {
       message,
       createdAt: performance.now(),
       duration: duration || this.defaultDuration,
-      opacity: 1.0
+      opacity: 0,
+      slideIn: 0
     };
 
     this.notifications.push(notification);
@@ -109,9 +110,18 @@ export class NotificationSystem {
       const notif = this.notifications[i];
       const age = now - notif.createdAt;
 
-      // Start fading in last 500ms
-      if (age >= notif.duration - 500) {
-        notif.opacity = (notif.duration - age) / 500;
+      // Slide in during first 200ms
+      if (age < 200) {
+        notif.slideIn = age / 200;
+        notif.opacity = notif.slideIn;
+      } else if (age < notif.duration - 400) {
+        // Fully visible
+        notif.slideIn = 1;
+        notif.opacity = 1;
+      } else if (age < notif.duration) {
+        // Fade out in last 400ms
+        notif.opacity = (notif.duration - age) / 400;
+        notif.slideIn = 1;
       }
 
       // Remove expired notifications
@@ -155,20 +165,24 @@ export class NotificationSystem {
     ctx.save();
     ctx.globalAlpha = notif.opacity * 0.95;
 
-    // Smaller, more compact design
-    const width = 240;
-    const height = 36;
-    const radius = 18;
+    // Apply slide-in animation (slide down from above)
+    const slideOffset = (1 - (notif.slideIn || 1)) * -20;
+    y += slideOffset;
 
-    // Color based on type - more subtle colors
+    // Compact pill design
+    const width = 260;
+    const height = 38;
+    const radius = 19;
+
+    // Enhanced colors with better contrast
     const colors = {
-      warning: { bg: 'rgba(251, 191, 36, 0.9)', text: '#1a1a1a' },
-      milestone: { bg: 'rgba(34, 197, 94, 0.9)', text: '#ffffff' },
-      achievement: { bg: 'rgba(139, 92, 246, 0.9)', text: '#ffffff' },
-      success: { bg: 'rgba(34, 197, 94, 0.9)', text: '#ffffff' },
-      error: { bg: 'rgba(239, 68, 68, 0.9)', text: '#ffffff' },
-      info: { bg: 'rgba(18, 21, 29, 0.92)', text: '#e4e7eb' },
-      performance: { bg: 'rgba(239, 68, 68, 0.85)', text: '#ffffff' }
+      warning: { bg: 'rgba(245, 158, 11, 0.92)', text: '#1a1a1a', glow: 'rgba(245, 158, 11, 0.3)' },
+      milestone: { bg: 'rgba(34, 197, 94, 0.92)', text: '#ffffff', glow: 'rgba(34, 197, 94, 0.3)' },
+      achievement: { bg: 'rgba(139, 92, 246, 0.92)', text: '#ffffff', glow: 'rgba(139, 92, 246, 0.3)' },
+      success: { bg: 'rgba(34, 197, 94, 0.92)', text: '#ffffff', glow: 'rgba(34, 197, 94, 0.3)' },
+      error: { bg: 'rgba(239, 68, 68, 0.92)', text: '#ffffff', glow: 'rgba(239, 68, 68, 0.3)' },
+      info: { bg: 'rgba(15, 23, 42, 0.94)', text: '#e2e8f0', glow: 'rgba(0, 212, 255, 0.15)' },
+      performance: { bg: 'rgba(220, 38, 38, 0.9)', text: '#ffffff', glow: 'rgba(220, 38, 38, 0.3)' }
     };
     const color = colors[notif.type] || colors.info;
 

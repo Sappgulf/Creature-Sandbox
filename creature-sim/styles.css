@@ -1645,9 +1645,29 @@ select:focus,
   flex-direction: column;
   gap: var(--space-md);
   overflow-y: auto;
+  overflow-x: hidden;
   transform: translateX(0);
   transition: transform var(--transition-slow);
   box-shadow: -8px 0 32px rgba(0, 0, 0, 0.3);
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-border) transparent;
+}
+
+#inspector::-webkit-scrollbar {
+  width: 6px;
+}
+
+#inspector::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#inspector::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 3px;
+}
+
+#inspector::-webkit-scrollbar-thumb:hover {
+  background: var(--glass-border-hover);
 }
 
 #inspector.hidden {
@@ -1687,6 +1707,18 @@ select:focus,
 .section {
   border-top: 1px solid var(--glass-border);
   padding-top: var(--space-md);
+  animation: sectionFadeIn var(--transition-normal) ease-out;
+}
+
+@keyframes sectionFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .section.hidden {
@@ -3200,6 +3232,13 @@ select:focus,
   font-size: 36px;
   display: block;
   margin-bottom: var(--space-sm);
+  filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.3));
+  transition: transform var(--transition-normal), filter var(--transition-normal);
+}
+
+.home-feature:hover .home-feature-icon {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 12px rgba(0, 212, 255, 0.5));
 }
 
 .home-feature h3 {
@@ -3241,8 +3280,13 @@ select:focus,
 }
 
 .home-btn:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
   box-shadow: var(--shadow-medium);
+  border-color: var(--glass-border-hover);
+}
+
+.home-btn:active {
+  transform: translateY(-1px);
 }
 
 .home-btn.hidden {
@@ -3509,60 +3553,101 @@ select:focus,
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+  padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(12, 16, 24, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
+  background: rgba(12, 16, 24, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
   z-index: 40;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  animation: watchStripSlideUp var(--transition-slow) ease-out;
+}
+
+.watch-strip.hidden {
+  display: none;
+}
+
+@keyframes watchStripSlideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .watch-btn {
   min-width: 44px;
   min-height: 44px;
-  padding: 0 10px;
+  padding: 0 12px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
   font-size: 0.9rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: background 0.15s ease, transform 0.15s ease;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.watch-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .watch-btn-wide {
-  padding: 0 14px;
+  padding: 0 16px;
   font-size: 0.82rem;
 }
 
 .watch-btn.active {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(0, 212, 255, 0.15);
+  border-color: rgba(0, 212, 255, 0.35);
+  color: var(--accent-primary);
 }
 
 .watch-btn:active {
-  transform: translateY(1px) scale(0.98);
+  transform: scale(0.96);
 }
 
 .moments-panel {
   position: fixed;
   right: 16px;
   bottom: calc(78px + env(safe-area-inset-bottom));
-  width: min(320px, calc(100vw - 32px));
+  width: min(340px, calc(100vw - 32px));
   max-height: min(60vh, 520px);
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 14px;
-  border-radius: 16px;
+  padding: 16px;
+  border-radius: var(--radius-lg);
   background: rgba(12, 16, 24, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(16px);
   z-index: 45;
+  box-shadow: var(--shadow-hard);
+  animation: momentsSlideIn var(--transition-slow) ease-out;
+}
+
+.moments-panel.hidden {
+  display: none;
+}
+
+@keyframes momentsSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .moments-header {
