@@ -75,6 +75,9 @@ export class GameState {
     this.showGoalDebug = false;
     this.showObserverDebug = false;
 
+    // Observer toggles
+    this.showQuirks = false;
+
     // Mobile state
     this.mobileSpeedIndex = 1; // 0=0.5x, 1=1x, 2=2x, 3=4x
 
@@ -102,6 +105,7 @@ export class GameState {
       selectedId: this.selectedId,
       pinnedId: this.pinnedId,
       lineageRootId: this.lineageRootId,
+      showQuirks: this.showQuirks,
       inspectorVisible: this.inspectorVisible,
       fps: this.fps,
       renderedCount: this.renderedCount,

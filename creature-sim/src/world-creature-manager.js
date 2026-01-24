@@ -6,6 +6,7 @@ import { makeGenes, mutateGenes, breedGenes } from './genetics.js';
 import { Creature } from './creature.js';
 import { SpatialGrid } from './spatial-grid.js';
 import { eventSystem, GameEvents } from './event-system.js';
+import { generateTemperament, blendTemperament, rollQuirks, inheritQuirks } from './creature-traits.js';
 
 export class WorldCreatureManager {
   constructor(world) {
@@ -120,6 +121,8 @@ export class WorldCreatureManager {
     }
 
     const child = new Creature(clampedX, clampedY, childGenes, true);
+    child.temperament = blendTemperament(parent1?.temperament, parent2?.temperament);
+    child.quirks = inheritQuirks(parent1, parent2);
 
     const parentTraits = parent1.traits || { bounce: 1, temperament: 0.5 };
     const mateTraits = parent2?.traits || parentTraits;
@@ -152,6 +155,8 @@ export class WorldCreatureManager {
   spawnManual(x, y, predator = false) {
     const genes = makeGenes(predator);
     const creature = new Creature(x, y, genes);
+    creature.temperament = generateTemperament();
+    creature.quirks = rollQuirks();
     return this.addCreature(creature);
   }
 
@@ -163,6 +168,8 @@ export class WorldCreatureManager {
     const clampedX = clamp(x, 0, this.world.width);
     const clampedY = clamp(y, 0, this.world.height);
     const creature = new Creature(clampedX, clampedY, safeGenes, true);
+    creature.temperament = generateTemperament();
+    creature.quirks = rollQuirks();
     return this.addCreature(creature);
   }
 
@@ -174,6 +181,8 @@ export class WorldCreatureManager {
     const nx = clamp(source.x + (Math.random() - 0.5) * offset, 0, this.world.width);
     const ny = clamp(source.y + (Math.random() - 0.5) * offset, 0, this.world.height);
     const clone = new Creature(nx, ny, genes, true);
+    clone.temperament = { ...(source.temperament || generateTemperament()) };
+    clone.quirks = source.quirks ? [...source.quirks] : rollQuirks();
     // Parent linkage for lineage
     clone.parents = [source.id];
     return this.addCreature(clone, source.id);
@@ -184,6 +193,8 @@ export class WorldCreatureManager {
     const genes = makeGenes(false);
     genes.diet = 0.5; // Omnivore diet
     const creature = new Creature(x, y, genes);
+    creature.temperament = generateTemperament();
+    creature.quirks = rollQuirks();
     return this.addCreature(creature);
   }
 

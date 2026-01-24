@@ -110,7 +110,9 @@ export class WorldEcosystem {
     const pressure = clamp((population - pressureStart) / pressureRange, 0, 1);
     const populationMultiplier = 1 - pressure * pressureMax;
 
-    return seasonMultiplier * weatherMultiplier * dayNightMultiplier * populationMultiplier * this.foodGrowthMultiplier;
+    const eventMultiplier = this.world.eventModifiers?.foodGrowth ?? 1;
+
+    return seasonMultiplier * weatherMultiplier * dayNightMultiplier * populationMultiplier * this.foodGrowthMultiplier * eventMultiplier;
   }
 
   // Add food to the world

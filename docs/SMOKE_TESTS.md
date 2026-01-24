@@ -71,35 +71,35 @@
    - Open **⋯ More Actions** and verify every item opens its respective panel or toggle.
 
 10. **God mode (optional)**
-   - Open **⋯ More Actions** and toggle **✨ God Mode** (or long-press the world).
-   - Place a food source, a calm zone, and a chaos nudge; confirm clear visual previews.
-   - Spawn and remove a creature; confirm population guardrails prevent overpopulation.
-   - Exit god mode and confirm creatures resume autonomous behavior with normal time flow.
+    - Open **⋯ More Actions** and toggle **✨ God Mode** (or long-press the world).
+    - Place a food source, a calm zone, and a chaos nudge; confirm clear visual previews.
+    - Spawn and remove a creature; confirm population guardrails prevent overpopulation.
+    - Exit god mode and confirm creatures resume autonomous behavior with normal time flow.
 
 11. **Save/load roundtrip**
-   - Use **Ctrl+S** to save the game.
-   - Refresh the page.
-   - Use **Ctrl+O** to load the save.
-   - Confirm creatures, food counts, sandbox props, and time of day restore correctly.
-   - Confirm loaded creatures retain reasonable ecosystem state (no immediate panic spiral, no zeroed energy).
-   - Confirm hunger/energy/social/stress values load without NaNs (inspect a creature).
-   - Confirm food patches keep remaining bites after reload.
-   - With `debug.observe()` enabled, confirm life-stage labels and memory markers persist after reload.
-   - Optional: use **Ctrl/⌘ + S** to download a save file and **Ctrl/⌘ + O** to load it back.
-   - Confirm diet roles and moments summary still load without errors.
+    - Use **Ctrl+S** to save the game.
+    - Refresh the page.
+    - Use **Ctrl+O** to load the save.
+    - Confirm creatures, food counts, sandbox props, and time of day restore correctly.
+    - Confirm loaded creatures retain reasonable ecosystem state (no immediate panic spiral, no zeroed energy).
+    - Confirm hunger/energy/social/stress values load without NaNs (inspect a creature).
+    - Confirm food patches keep remaining bites after reload.
+    - With `debug.observe()` enabled, confirm life-stage labels and memory markers persist after reload.
+    - Optional: use **Ctrl/⌘ + S** to download a save file and **Ctrl/⌘ + O** to load it back.
+    - Confirm diet roles and moments summary still load without errors.
 
 12. **Help section**
-   - Open **⋯ More Actions**.
-   - Confirm the Help section lists controls, shortcuts, and where features live.
+    - Open **⋯ More Actions**.
+    - Confirm the Help section lists controls, shortcuts, and where features live.
 
 13. **Session goals**
-   - Open **🎛️ Modes & Goals**.
-   - Confirm a goal appears for manual creature spawns and progresses when you spawn creatures.
+    - Open **🎛️ Modes & Goals**.
+    - Confirm a goal appears for manual creature spawns and progresses when you spawn creatures.
 
 14. **Balance pass: grab/throw consistency**
-   - Switch to **Inspect** mode and grab a creature with a short drag.
-   - Confirm gentle drags release without huge launches.
-   - Flick a longer drag and confirm throws feel capped and predictable (no extreme launches).
+    - Switch to **Inspect** mode and grab a creature with a short drag.
+    - Confirm gentle drags release without huge launches.
+    - Flick a longer drag and confirm throws feel capped and predictable (no extreme launches).
 
 15. **Balance pass: camera stability**
     - Pan and zoom quickly, then release.
@@ -128,6 +128,22 @@
     - Observe herbivore, scavenger, and predator-lite behaviors over 1–2 minutes.
     - Confirm predator-lite chases cause stress + scattering without rapid deaths.
     - Confirm food scarcity events nudge movement without collapsing the population.
+
+20. **Individuality (Temperaments + Quirks)**
+    - Spawn 5+ creatures; observe varied wander/approach speeds (bold/curious vs cautious).
+    - Toggle quirks display (press `Q`); selected creature shows quirks when enabled.
+    - Quirk effects are bounded: no runaway speed/stress; homebody stays near anchor; wanderer roams further.
+    - Offspring inherit blended temperaments; quirks carry over or roll new defaults.
+
+21. **Seasons + Events**
+    - Run through at least one season transition; food and reproduction stay stable (no collapse in winter).
+    - Seasonal tint/particle cues visible but not distracting.
+    - Rare event triggers (or manual wait): food bloom/dry spell/storm/calm night/migration wave adjusts biases then recovers.
+    - Event banner text appears in stats strip; timer counts down; state returns to baseline after end.
+
+22. **Persistence (Individuality)**
+    - Save/Load preserves temperament, quirks, and active event state (if mid-event).
+    - Old save (pre-2.0) loads with safe temperament defaults and empty quirks.
 
 ## Mobile-Specific Checks
 

@@ -309,6 +309,9 @@ export class InputManager {
       case '?':
         this.toggleShortcutsHelp();
         break;
+      case 'q':
+        gameState.showQuirks = !gameState.showQuirks;
+        break;
 
       // Escape key
       case 'escape':

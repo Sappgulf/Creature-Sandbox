@@ -7,10 +7,89 @@ import { CreatureConfig } from './creature-config.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
 
 // ============================================================================
+// QUIRKS (LIGHTWEIGHT BEHAVIORAL MODIFIERS)
+// ============================================================================
+
+export const QUIRK_LIBRARY = [
+  { id: 'wanderer', label: 'Wanderer' },
+  { id: 'homebody', label: 'Homebody' },
+  { id: 'squeamish', label: 'Squeamish' },
+  { id: 'sturdy', label: 'Sturdy' },
+  { id: 'bouncy', label: 'Bouncy' },
+  { id: 'dramatic', label: 'Dramatic' },
+  { id: 'greedy', label: 'Greedy' },
+  { id: 'night_owl', label: 'Night Owl' },
+  { id: 'social_butterfly', label: 'Social Butterfly' }
+];
+
+const QUIRK_WEIGHTS = {
+  wanderer: 1.1,
+  homebody: 1.0,
+  squeamish: 0.9,
+  sturdy: 0.9,
+  bouncy: 0.8,
+  dramatic: 0.7,
+  greedy: 1.0,
+  night_owl: 0.8,
+  social_butterfly: 1.0
+};
+
+export function rollQuirks(max = 2) {
+  const pool = [...QUIRK_LIBRARY];
+  const chosen = [];
+  const count = Math.random() < 0.25 ? 1 : 2; // 0–2 quirks, biased to 1
+  const target = Math.min(max, count);
+
+  for (let i = 0; i < target && pool.length; i++) {
+    const totalWeight = pool.reduce((sum, q) => sum + (QUIRK_WEIGHTS[q.id] ?? 1), 0);
+    let pick = Math.random() * totalWeight;
+    let selectedIndex = 0;
+    for (let j = 0; j < pool.length; j++) {
+      const weight = QUIRK_WEIGHTS[pool[j].id] ?? 1;
+      if (pick <= weight) {
+        selectedIndex = j;
+        break;
+      }
+      pick -= weight;
+    }
+    chosen.push(pool[selectedIndex].id);
+    pool.splice(selectedIndex, 1);
+  }
+
+  return chosen;
+}
+
+export function inheritQuirks(parentA, parentB) {
+  const inherited = [];
+  const addSafe = (id) => {
+    if (id && !inherited.includes(id) && inherited.length < 2) {
+      inherited.push(id);
+    }
+  };
+
+  if (parentA?.quirks?.length) {
+    addSafe(parentA.quirks[Math.floor(Math.random() * parentA.quirks.length)]);
+  }
+  if (parentB?.quirks?.length && Math.random() < 0.6) {
+    addSafe(parentB.quirks[Math.floor(Math.random() * parentB.quirks.length)]);
+  }
+
+  // Fill remaining slots with random rolls
+  while (inherited.length < 2) {
+    const roll = rollQuirks(1)[0];
+    addSafe(roll);
+    if (Math.random() < 0.4) break;
+  }
+
+  return inherited;
+}
+
+
+// ============================================================================
 // FEATURE 2: LEARNING & MEMORY
 // ============================================================================
 
-Creature.prototype._updateMemory = function(dt, world) {
+Creature.prototype._updateMemory = function (dt, world) {
   if (!this.memory) return;
   const now = world?.t ?? 0;
   // Decay existing memories
@@ -53,18 +132,18 @@ Creature.prototype._updateMemory = function(dt, world) {
   }
 };
 
-Creature.prototype._decayMemory = function(entry, amount) {
+Creature.prototype._decayMemory = function (entry, amount) {
   if (!entry) return;
   entry.strength = clamp((entry.strength ?? 0) - amount, 0, 1);
 };
 
-Creature.prototype._reinforceMemory = function(entry, amount, worldTime) {
+Creature.prototype._reinforceMemory = function (entry, amount, worldTime) {
   if (!entry) return;
   entry.strength = clamp((entry.strength ?? 0) + amount, 0, 1);
   entry.timestamp = worldTime;
 };
 
-Creature.prototype.rememberLocation = function(x, y, tag, strength, worldTime) {
+Creature.prototype.rememberLocation = function (x, y, tag, strength, worldTime) {
   if (!this.memory) return;
   if (!Number.isFinite(x) || !Number.isFinite(y)) return;
   const type = tag;
@@ -104,13 +183,13 @@ Creature.prototype.rememberLocation = function(x, y, tag, strength, worldTime) {
   }
 };
 
-Creature.prototype.recallMemories = function(type) {
+Creature.prototype.recallMemories = function (type) {
   return this.memory.locations
     .filter(m => m.type === type)
     .sort((a, b) => b.strength - a.strength);
 };
 
-Creature.prototype._selectMemory = function(tag, world) {
+Creature.prototype._selectMemory = function (tag, world) {
   if (!this.memory?.locations?.length) return null;
   const maxDistance = CreatureConfig.MEMORY.MAX_DISTANCE;
   const maxDistance2 = maxDistance * maxDistance;
@@ -141,7 +220,7 @@ Creature.prototype._selectMemory = function(tag, world) {
   };
 };
 
-Creature.prototype._setMemoryFocus = function(memoryTarget, worldTime) {
+Creature.prototype._setMemoryFocus = function (memoryTarget, worldTime) {
   if (!this.memory || !memoryTarget?.entry) return;
   const now = worldTime ?? this._lastWorld?.t ?? 0;
   this.memory.focus = {
@@ -154,7 +233,7 @@ Creature.prototype._setMemoryFocus = function(memoryTarget, worldTime) {
   };
 };
 
-Creature.prototype._getMemoryAvoidance = function(tag) {
+Creature.prototype._getMemoryAvoidance = function (tag) {
   if (!this.memory?.locations?.length) return null;
   const avoidRadius = CreatureConfig.MEMORY.AVOID_RADIUS;
   const avoidRadius2 = avoidRadius * avoidRadius;
@@ -185,7 +264,7 @@ Creature.prototype._getMemoryAvoidance = function(tag) {
 // FEATURE 4: ADVANCED SOCIAL BEHAVIORS
 // ============================================================================
 
-Creature.prototype._updateSocialBehavior = function(world) {
+Creature.prototype._updateSocialBehavior = function (world) {
   const socialRadius = this.genes.sense * 1.2;
   const nearby = world.queryCreatures(this.x, this.y, socialRadius);
 
@@ -239,7 +318,7 @@ Creature.prototype._updateSocialBehavior = function(world) {
 // FEATURE 9: MIGRATION PATTERNS
 // ============================================================================
 
-Creature.prototype._updateMigration = function(world, dt) {
+Creature.prototype._updateMigration = function (world, dt) {
   if (!this.migration || this.migration.instinct < 0.25) return;
   const now = world.t ?? 0;
   if (now < (this.migration.nextCheckAt ?? 0)) return;
@@ -255,6 +334,7 @@ Creature.prototype._updateMigration = function(world, dt) {
       this.migration.bias = { x: (dx / dist) * biasStrength, y: (dy / dist) * biasStrength };
     }
 
+    // Flock cohesion: align with nearby migrating creatures heading to same region
     const neighbors = world.creatureManager?.queryCreaturesFast
       ? world.creatureManager.queryCreaturesFast(this.x, this.y, CreatureAgentTuning.MIGRATION.COHESION_RADIUS)
       : world.queryCreatures?.(this.x, this.y, CreatureAgentTuning.MIGRATION.COHESION_RADIUS) || [];
@@ -410,11 +490,17 @@ Creature.prototype._updateMigration = function(world, dt) {
 // FEATURE 5: EMOTIONAL STATES & MOODS
 // ============================================================================
 
-Creature.prototype._updateEmotions = function(dt, world) {
+Creature.prototype._updateEmotions = function (dt, world) {
   const em = this.emotions;
+  const temperament = this.temperament || {};
+  const calmFactor = clamp(1 - (temperament.calmness ?? 0) * 0.35, 0.6, 1);
+  const eventStress = clamp(world?.eventModifiers?.stress ?? 1, 0.7, 1.25);
 
   // Update hunger based on energy
   em.hunger = clamp(1 - (this.energy / 30), 0, 1);
+  if (this.getQuirkMultiplier) {
+    em.hunger = clamp(em.hunger * this.getQuirkMultiplier('hunger_bias'), 0, 1);
+  }
 
   // Fear increases near predators (herbivores only)
   if (!this.genes.predator) {
@@ -429,12 +515,20 @@ Creature.prototype._updateEmotions = function(dt, world) {
 
   // Stress accumulates from fear and hunger
   const stageStressMult = this.lifeStage === 'baby' ? 1.35 : this.lifeStage === 'elder' ? 1.15 : 1;
-  em.stress = clamp(em.stress + (em.fear * 0.01 + em.hunger * 0.01) * stageStressMult * dt, 0, 1);
+  em.stress = clamp(em.stress + (em.fear * 0.01 + em.hunger * 0.01) * stageStressMult * dt * calmFactor * eventStress, 0, 1);
+  if (this.getQuirkMultiplier && world?.queryCreatures) {
+    const nearby = world.queryCreatures(this.x, this.y, 30).length;
+    if (nearby > 6) {
+      const crowdMult = this.getQuirkMultiplier('stress_crowd');
+      em.stress = clamp(em.stress + (nearby - 6) * 0.002 * crowdMult * dt * eventStress, 0, 1);
+    }
+  }
 
   // Contentment reduces stress
   if (this.energy > 25 && this.health > this.maxHealth * 0.7) {
     em.contentment = Math.min(1, em.contentment + 0.05 * dt);
-    em.stress = Math.max(0, em.stress - em.contentment * 0.03 * dt);
+    const calmRelief = 0.03 + (temperament.calmness ?? 0) * 0.015;
+    em.stress = Math.max(0, em.stress - em.contentment * calmRelief * dt);
   } else {
     em.contentment = Math.max(0, em.contentment - 0.02 * dt);
   }
@@ -453,10 +547,10 @@ Creature.prototype._updateEmotions = function(dt, world) {
   em.fear = Math.max(0, em.fear - 0.05 * dt);
 };
 
-Creature.prototype.getEmotionalMultiplier = function(action) {
+Creature.prototype.getEmotionalMultiplier = function (action) {
   const em = this.emotions;
 
-  switch(action) {
+  switch (action) {
     case 'speed':
       return 1 + em.fear * 0.3 - em.stress * 0.2;
     case 'aggression':
@@ -474,10 +568,10 @@ Creature.prototype.getEmotionalMultiplier = function(action) {
 // FEATURE 6: SENSORY SPECIALIZATIONS
 // ============================================================================
 
-Creature.prototype.getEnhancedSenseRadius = function() {
+Creature.prototype.getEnhancedSenseRadius = function () {
   const base = this.genes.sense;
 
-  switch(this.senseType) {
+  switch (this.senseType) {
     case 'echolocation':
       return base * 1.5;
     case 'chemical':
@@ -490,11 +584,11 @@ Creature.prototype.getEnhancedSenseRadius = function() {
   }
 };
 
-Creature.prototype.canDetectThroughObstacles = function() {
+Creature.prototype.canDetectThroughObstacles = function () {
   return this.senseType === 'thermal' || this.senseType === 'echolocation';
 };
 
-Creature.prototype.getPheromoneBonus = function() {
+Creature.prototype.getPheromoneBonus = function () {
   return this.senseType === 'chemical' ? 2.0 : 1.0;
 };
 
@@ -502,7 +596,7 @@ Creature.prototype.getPheromoneBonus = function() {
 // FEATURE 7: PROBLEM SOLVING & INTELLIGENCE
 // ============================================================================
 
-Creature.prototype._updateIntelligence = function(dt, world) {
+Creature.prototype._updateIntelligence = function (dt, world) {
   const intel = this.intelligence;
 
   // Gain experience from successful actions
@@ -535,7 +629,7 @@ Creature.prototype._updateIntelligence = function(dt, world) {
   intel.level = Math.min(2, intel.level + intel.learningRate * dt * 0.001);
 };
 
-Creature.prototype.getBestKnownFoodLocation = function() {
+Creature.prototype.getBestKnownFoodLocation = function () {
   if (this.intelligence.patterns.length === 0) return null;
 
   const foodPatterns = this.intelligence.patterns
@@ -545,7 +639,7 @@ Creature.prototype.getBestKnownFoodLocation = function() {
   return foodPatterns.length > 0 ? foodPatterns[0] : null;
 };
 
-Creature.prototype.getIntelligenceBonus = function() {
+Creature.prototype.getIntelligenceBonus = function () {
   return 1 + this.intelligence.level * 0.15;
 };
 
@@ -553,7 +647,7 @@ Creature.prototype.getIntelligenceBonus = function() {
 // FEATURE 8: SEXUAL SELECTION & MATING
 // ============================================================================
 
-Creature.prototype.evaluateMate = function(partner) {
+Creature.prototype.evaluateMate = function (partner) {
   if (!partner || !partner.alive) return 0;
   if (partner.genes.predator !== this.genes.predator) return 0;
   if (partner.id === this.id) return 0;
@@ -573,7 +667,7 @@ Creature.prototype.evaluateMate = function(partner) {
   return clamp(score, 0, 1);
 };
 
-Creature.prototype.shouldAcceptMate = function(partner, worldTime) {
+Creature.prototype.shouldAcceptMate = function (partner, worldTime) {
   const timeSinceLastMate = worldTime - this.sexuality.lastMated;
   if (timeSinceLastMate < 30) return false;
 
@@ -581,7 +675,7 @@ Creature.prototype.shouldAcceptMate = function(partner, worldTime) {
   return mateScore >= this.sexuality.choosiness;
 };
 
-Creature.prototype.performCourtship = function() {
+Creature.prototype.performCourtship = function () {
   return {
     style: this.sexuality.courtshipStyle,
     duration: 1.0,

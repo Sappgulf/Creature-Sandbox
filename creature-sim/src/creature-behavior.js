@@ -306,8 +306,23 @@ export class CreatureBehaviorSystem {
    */
   updateWandering(dt) {
     // Gentle random steering
-    const wanderStrength = CreatureConfig.MOVEMENT.WANDER_STRENGTH;
+    const temp = this.creature.temperament || {};
+    const curiosityBoost = 0.8 + (temp.curiosity ?? 0) * 0.7;
+    const quirkBoost = this.creature.getQuirkMultiplier?.('wander') ?? 1;
+    const wanderStrength = CreatureConfig.MOVEMENT.WANDER_STRENGTH * curiosityBoost * quirkBoost;
     this.creature.dir += (rand() - 0.5) * wanderStrength * dt;
+
+    // Homebody bias toward anchor
+    if (this.creature.getQuirkMultiplier && (this.creature.getQuirkMultiplier('home_pull') > 1.0)) {
+      const anchor = this.creature.homeAnchor;
+      if (anchor) {
+        const dx = anchor.x - this.creature.x;
+        const dy = anchor.y - this.creature.y;
+        const desired = Math.atan2(dy, dx);
+        const pull = 0.15 * dt * this.creature.getQuirkMultiplier('home_pull');
+        this.creature.dir += (desired - this.creature.dir) * pull;
+      }
+    }
   }
 
   /**
@@ -364,6 +379,7 @@ export class CreatureBehaviorSystem {
   applyMovement(dt) {
     const diet = this.creature.genes.diet ?? (this.creature.genes.predator ? 1.0 : 0.0);
     const aggressionFactor = this.creature.personality.aggression;
+    const temp = this.creature.temperament || {};
 
     let baseSpeed = CreatureConfig.MOVEMENT.BASE_SPEED;
 
@@ -388,7 +404,24 @@ export class CreatureBehaviorSystem {
     baseSpeed *= this.getAgeSpeedMultiplier();
 
     // Status modifiers
-    baseSpeed *= this.getStatusSpeedMultiplier();
+    baseSpeed *= this.getStatusSpeedMultiplier(temp);
+
+    const eventActivity = this.creature._lastWorld?.eventModifiers?.activity ?? 1;
+    baseSpeed *= clamp(eventActivity, 0.85, 1.2);
+
+    // Temperament-driven pacing (small)
+    baseSpeed *= clamp(0.92 + (temp.curiosity ?? 0) * 0.15 + (temp.boldness ?? 0) * 0.08, 0.85, 1.25);
+
+    // Quirk pacing (night owl)
+    if (this.creature.getQuirkMultiplier) {
+      const timeOfDay = this.creature._lastWorld?.environment?.timeOfDay ?? 12;
+      const isNight = timeOfDay >= 18 || timeOfDay <= 6;
+      if (isNight) {
+        baseSpeed *= this.creature.getQuirkMultiplier('night_speed');
+      } else {
+        baseSpeed *= this.creature.getQuirkMultiplier('day_speed');
+      }
+    }
 
     const dayNight = this.creature._lastWorld?.dayNightState;
     if (dayNight) {
@@ -435,7 +468,7 @@ export class CreatureBehaviorSystem {
   /**
    * Get status-based speed multiplier
    */
-  getStatusSpeedMultiplier() {
+  getStatusSpeedMultiplier(temp = null) {
     let multiplier = 1.0;
 
     // Adrenaline boost
@@ -446,7 +479,8 @@ export class CreatureBehaviorSystem {
 
     // Panic slowdown
     if (this.creature.hasStatus('panic')) {
-      multiplier *= 0.7;
+      const calmness = temp?.calmness ?? 0;
+      multiplier *= 0.7 + calmness * 0.2;
     }
 
     return multiplier;
@@ -521,6 +555,9 @@ export class CreatureBehaviorSystem {
    * Apply herding forces (separation, alignment, cohesion)
    */
   applyHerdForces(herdMembers, dt) {
+    const temp = this.creature.temperament || {};
+    const socialPull = 0.8 + (temp.sociability ?? 0) * 0.5;
+    const separationScale = 1 - Math.min(0.3, (temp.sociability ?? 0) * 0.25);
     const separationForce = { x: 0, y: 0 };
     const alignmentForce = { x: 0, y: 0 };
     const cohesionForce = { x: 0, y: 0 };
@@ -532,7 +569,7 @@ export class CreatureBehaviorSystem {
 
       if (dist > 0) {
         // Separation
-        if (dist < CreatureConfig.MOVEMENT.HERD_SEPARATION) {
+        if (dist < CreatureConfig.MOVEMENT.HERD_SEPARATION * separationScale) {
           separationForce.x -= dx / dist;
           separationForce.y -= dy / dist;
         }
@@ -551,9 +588,10 @@ export class CreatureBehaviorSystem {
 
     // Apply forces to direction
     const herdStrength = this.creature.genes.herdInstinct;
+    const quirkCohesion = this.creature.getQuirkMultiplier?.('cohesion') ?? 1;
     const totalForce = {
-      x: separationForce.x * 0.5 + alignmentForce.x * 0.3 + cohesionForce.x * 0.2,
-      y: separationForce.y * 0.5 + alignmentForce.y * 0.3 + cohesionForce.y * 0.2
+      x: separationForce.x * 0.5 + alignmentForce.x * 0.3 * quirkCohesion + cohesionForce.x * 0.2 * socialPull * quirkCohesion,
+      y: separationForce.y * 0.5 + alignmentForce.y * 0.3 * quirkCohesion + cohesionForce.y * 0.2 * socialPull * quirkCohesion
     };
 
     if (totalForce.x !== 0 || totalForce.y !== 0) {

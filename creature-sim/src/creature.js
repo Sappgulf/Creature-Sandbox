@@ -8,6 +8,7 @@ import { CreatureStatusSystem } from './creature-status.js';
 import { CreatureBehaviorSystem } from './creature-behavior.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
 import { eventSystem, GameEvents } from './event-system.js';
+import { generateTemperament } from './creature-traits.js';
 
 // Destructure commonly-used constants for cleaner code
 const { TRAIL_INTERVAL, TRAIL_MAX, LOG_MAX, TAU } = CreatureConfig;
@@ -50,6 +51,7 @@ export class Creature {
     // Core properties
     this.x = x;
     this.y = y;
+    this.homeAnchor = { x, y };
     this.vx = 0;
     this.vy = 0;
     this.dir = rand(0, CreatureConfig.TAU);
@@ -137,6 +139,7 @@ export class Creature {
     this.trailTimer = 0;
     this.log = [];
     this.logVersion = 0;
+    this.temperament = generateTemperament(genes.temperament || {});
     this.personality = {
       packInstinct: clamp(this.genes.packInstinct ??
         (this.genes.predator ?
@@ -166,6 +169,11 @@ export class Creature {
       temperament: clamp(0.5 + rand(-0.18, 0.18), 0, 1),
       dietRole
     };
+    this.temperamentTimers = {
+      stressEase: 0,
+      quirkCooldown: 0
+    };
+    this.quirks = [];
     this.statuses = new Map();
     this.cooldowns = {
       adrenaline: 0,
@@ -325,7 +333,7 @@ export class Creature {
     this.intelligence = {
       level: clamp((genes.sense / CreatureConfig.INTELLIGENCE.LEVEL_SENSE_RATIO) *
         (genes.metabolism ?? CreatureConfig.INTELLIGENCE.LEVEL_METABOLISM_MULTIPLIER),
-      0, CreatureConfig.INTELLIGENCE.LEVEL_MAX),
+        0, CreatureConfig.INTELLIGENCE.LEVEL_MAX),
       patterns: [], // learned successful strategies
       experiencePoints: 0,
       learningRate: CreatureConfig.INTELLIGENCE.PATTERN_LEARNING
@@ -392,6 +400,48 @@ export class Creature {
       this._cachedBaseBurn = (0.4 * g.metabolism) + moveCost + senseCost;
     }
     return this._cachedBaseBurn;
+  }
+
+  hasQuirk(id) {
+    return Array.isArray(this.quirks) && this.quirks.includes(id);
+  }
+
+  getQuirkMultiplier(kind) {
+    if (!this.quirks || !this.quirks.length) return 1;
+    let mult = 1;
+    for (const q of this.quirks) {
+      switch (kind) {
+        case 'wander':
+          if (q === 'wanderer') mult *= 1.25;
+          if (q === 'homebody') mult *= 0.85;
+          break;
+        case 'home_pull':
+          if (q === 'homebody') mult *= 1.35;
+          break;
+        case 'stress_crowd':
+          if (q === 'squeamish') mult *= 1.25;
+          if (q === 'social_butterfly') mult *= 0.85;
+          break;
+        case 'damage_resist':
+          if (q === 'sturdy') mult *= 0.9;
+          break;
+        case 'night_speed':
+          if (q === 'night_owl') mult *= 1.15;
+          break;
+        case 'day_speed':
+          if (q === 'night_owl') mult *= 0.92;
+          break;
+        case 'cohesion':
+          if (q === 'social_butterfly') mult *= 1.2;
+          break;
+        case 'hunger_bias':
+          if (q === 'greedy') mult *= 1.15;
+          break;
+        default:
+          break;
+      }
+    }
+    return mult;
   }
 
   seek(foodList, pheromone) {
@@ -1931,7 +1981,7 @@ export class Creature {
   _processStatusEffects(dt, world) {
     const disease = this.getStatus('disease');
     if (disease) {
-      const severity = clamp(disease.intensity ?? 0.6, 0.1, 2.2);
+      const severity = clamp(disease.intensity ?? 0.6, 0.1, 2.2) * (this.getQuirkMultiplier ? this.getQuirkMultiplier('damage_resist') : 1);
       // Increase stress and reduce energy
       this.energy = Math.max(0, this.energy - severity * 0.5 * dt);
       if (this.emotions) {

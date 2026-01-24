@@ -82,6 +82,8 @@ export class SaveSystem {
           deathCause: c.deathCause ?? null,
           killedBy: c.killedBy ?? null,
           genes: { ...c.genes },
+          temperament: c.temperament ? { ...c.temperament } : null,
+          quirks: Array.isArray(c.quirks) ? [...c.quirks] : [],
           stats: { ...c.stats },
           traits: c.traits ? { ...c.traits } : null,
           needs: c.needs ? { ...c.needs } : null,
@@ -206,6 +208,11 @@ export class SaveSystem {
             ? world.disaster.pendingDisasters.map(item => ({ ...item }))
             : [],
           cooldown: world.disaster.disasterCooldown ?? 0
+        } : null,
+        events: world.events ? {
+          active: world.events.activeEvent ? { ...world.events.activeEvent } : null,
+          cooldown: world.events.cooldown ?? 0,
+          modifiers: { ...(world.eventModifiers || {}) }
         } : null
       },
 
@@ -260,6 +267,17 @@ export class SaveSystem {
       const num = Number(value);
       return Number.isFinite(num) ? num : fallback;
     };
+    const clamp01 = (value, fallback = 0.5) => {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return fallback;
+      return Math.min(1, Math.max(0, num));
+    };
+    const restoreTemperament = (t) => ({
+      boldness: clamp01(t?.boldness, Math.random()),
+      sociability: clamp01(t?.sociability, Math.random()),
+      calmness: clamp01(t?.calmness, Math.random()),
+      curiosity: clamp01(t?.curiosity, Math.random())
+    });
 
     // Create new world
     const world = new World(data.width, data.height);
@@ -426,6 +444,8 @@ export class SaveSystem {
         cData.territoryAffinity,
         creature.territoryAffinity ?? 0.4
       );
+      creature.temperament = restoreTemperament(cData.temperament || null);
+      creature.quirks = Array.isArray(cData.quirks) ? [...cData.quirks] : [];
 
       // Restore advanced features
       if (cData.emotions && creature.emotions) {
@@ -569,6 +589,18 @@ export class SaveSystem {
         world.disaster.activeDisaster = (activeDisaster && typeof activeDisaster === 'object')
           ? activeDisaster
           : null;
+      }
+    }
+
+    // Restore world events
+    if (world.events) {
+      const eventData = data.events && typeof data.events === 'object' ? data.events : null;
+      if (eventData?.active) {
+        world.events.activeEvent = { ...eventData.active };
+        world.eventModifiers = { ...(eventData.modifiers || world.eventModifiers) };
+        world.events.cooldown = toNumber(eventData.cooldown, world.events.cooldown);
+      } else {
+        world.events.resetModifiers();
       }
     }
 
@@ -926,9 +958,23 @@ export class SaveSystem {
           if (!c.intelligence) c.intelligence = null;
           if (!c.sexuality) c.sexuality = null;
           if (!c.migration) c.migration = null;
+<<<<<<< HEAD
           if (!c.ecosystem) c.ecosystem = createEcosystemState();
           if (!c.needs) c.needs = { ...CreatureAgentTuning.NEEDS.START };
           if (!c.goal) c.goal = { current: 'WANDER', lastChange: 0, cooldown: 0, mateCooldown: 0 };
+=======
+          if (!c.temperament) {
+            c.temperament = {
+              boldness: Math.random(),
+              sociability: Math.random(),
+              calmness: Math.random(),
+              curiosity: Math.random()
+            };
+          }
+          if (!Array.isArray(c.quirks)) {
+            c.quirks = [];
+          }
+>>>>>>> 05bfe45 (feat: add individuality systems and seasonal events)
         }
       }
 

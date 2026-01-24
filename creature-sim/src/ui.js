@@ -1,11 +1,14 @@
+import { domCache } from './dom-cache.js';
+import { gameState } from './game-state.js';
+
 export function bindUI({ onPause, onStep, onFood }) {
   document.getElementById('btn-pause').onclick = onPause;
-  document.getElementById('btn-step').onclick  = onStep;
+  document.getElementById('btn-step').onclick = onStep;
   document.getElementById('btn-spawn-food').onclick = onFood;
   // Note: Creature spawning is now handled via dropdown in main.js
 }
 
-export function renderStats(el, world, fps, extra={}) {
+export function renderStats(el, world, fps, extra = {}) {
   if (!el) return;
 
   const n = world.creatures.length;
@@ -90,7 +93,9 @@ export function renderStats(el, world, fps, extra={}) {
   const events = typeof world.getActiveEvents === 'function' ? world.getActiveEvents() : [];
   if (events.length) {
     const evt = events[0];
-    statParts.push(`<span style="color: var(--accent-warning);">🌪️ ${Math.ceil(evt.remaining)}s</span>`);
+    const icon = evt.icon || '✦';
+    const label = evt.label || 'Event';
+    statParts.push(`<span style="color: var(--accent-warning);">${icon} ${label} · ${Math.ceil(evt.remaining)}s</span>`);
   }
 
   el.innerHTML = statParts.join('');
@@ -171,7 +176,7 @@ export function renderInteractionHint(el, {
   el.setAttribute('aria-hidden', shouldHide ? 'true' : 'false');
 }
 
-export function renderSelectedInfo(el, creature, { world=null, lineageTracker=null }={}) {
+export function renderSelectedInfo(el, creature, { world = null, lineageTracker = null } = {}) {
   if (!el) return;
   if (!creature) {
     el.classList.remove('hidden');
@@ -237,8 +242,22 @@ export function renderSelectedInfo(el, creature, { world=null, lineageTracker=nu
   const sense = creature.genes?.sense?.toFixed(0) ?? '0';
   const metabolism = creature.genes?.metabolism?.toFixed(2) ?? '0.00';
   const aquatic = (creature.genes?.aquatic ?? 0).toFixed(2);
-  const biome = creature.currentBiomeType ? creature.currentBiomeType : 'Unknown';
   const nameSuggestion = creature.nameSuggestion ? `💡 ${creature.nameSuggestion}` : null;
+  const quirks = Array.isArray(creature.quirks) ? creature.quirks : [];
+  const showQuirks = gameState.showQuirks && quirks.length > 0;
+  const quirkLabelMap = {
+    wanderer: 'Wanderer',
+    homebody: 'Homebody',
+    squeamish: 'Squeamish',
+    sturdy: 'Sturdy',
+    bouncy: 'Bouncy',
+    dramatic: 'Dramatic',
+    greedy: 'Greedy',
+    night_owl: 'Night Owl',
+    social_butterfly: 'Social Butterfly'
+  };
+  const quirkLine = showQuirks ? `<div class="subline quirks">Quirks: ${quirks.map(q => quirkLabelMap[q] || q).join(', ')}</div>` : '';
+  const quirkHint = quirks.length ? `<div class="hint">Press Q to toggle quirks</div>` : '';
 
   el.innerHTML = `
     <div class="headline">
@@ -247,6 +266,8 @@ export function renderSelectedInfo(el, creature, { world=null, lineageTracker=nu
     </div>
     <div class="subline">${sublineParts.join(' · ')}</div>
     ${nameSuggestion ? `<div class="muted tiny">${nameSuggestion}</div>` : ''}
+    ${quirkLine || ''}
+    ${quirkHint}
     <div class="metrics">
       <span><span>Energy</span><span>${energy}</span></span>
       <span><span>Health</span><span>${health}</span></span>
@@ -260,7 +281,7 @@ export function renderSelectedInfo(el, creature, { world=null, lineageTracker=nu
   `;
 }
 
-export function renderInspector(model={}, handlers={}) {
+export function renderInspector(model = {}, handlers = {}) {
   const body = document.getElementById('inspector-body');
   const badgesPanel = document.getElementById('badges-panel');
   const familyPanel = document.getElementById('family-panel');
@@ -285,7 +306,7 @@ export function renderInspector(model={}, handlers={}) {
   const worldRef = model.world ?? null;
   const badges = creature ? (model.badges ?? []) : [];
   const activity = creature ? (model.activity ?? []) : [];
-  const drawLineageSparkline = (canvas, series=[]) => {
+  const drawLineageSparkline = (canvas, series = []) => {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -358,7 +379,7 @@ export function renderInspector(model={}, handlers={}) {
       ` <span class="chip" style="font-size:9px;padding:2px 6px;">🧬 ${creature.mutations.length}</span>` : '';
 
     body.innerHTML = `
-      <div class="row"><div>ID</div><div>#${creature.id}${creature.alive? '' : ' †'}${mutationBadge}</div></div>
+      <div class="row"><div>ID</div><div>#${creature.id}${creature.alive ? '' : ' †'}${mutationBadge}</div></div>
       <div class="row"><div>Parent</div><div>${parentCell}</div></div>
       <div class="row"><div>Sex</div><div>${sexEmoji} ${sexLabel}</div></div>
       <div class="row"><div>Type</div><div><span class="tag">${creature.genes.predator ? 'Predator' : 'Herbivore'}</span></div></div>
@@ -436,7 +457,7 @@ export function renderInspector(model={}, handlers={}) {
       badgesPanel.classList.remove('hidden');
       badgesPanel.innerHTML = `
         <div class="section-title">Badges</div>
-        <div class="badge-list">${badges.map(b=>`<span class="badge">${b}</span>`).join('')}</div>
+        <div class="badge-list">${badges.map(b => `<span class="badge">${b}</span>`).join('')}</div>
       `;
     } else {
       badgesPanel.classList.add('hidden');
@@ -490,7 +511,7 @@ export function renderInspector(model={}, handlers={}) {
   if (lineageSummaryEl) {
     if (!model.lineageRootId) {
       const ancestorStr = creature && model.ancestors && model.ancestors.length
-        ? `Ancestors: ${model.ancestors.map(a=>formatId(a)).join(' ← ')}`
+        ? `Ancestors: ${model.ancestors.map(a => formatId(a)).join(' ← ')}`
         : 'Shift-click a creature to pick a lineage root.';
       lineageSummaryEl.innerHTML = ancestorStr;
     } else {
@@ -508,7 +529,7 @@ export function renderInspector(model={}, handlers={}) {
           html += '<div class="muted" style="margin-top:4px;">No descendants yet.</div>';
         }
         if (creature && model.ancestors && model.ancestors.length) {
-          html += `<div class="muted" style="margin-top:6px;">Ancestors: ${model.ancestors.map(a=>formatId(a)).join(' ← ')}</div>`;
+          html += `<div class="muted" style="margin-top:6px;">Ancestors: ${model.ancestors.map(a => formatId(a)).join(' ← ')}</div>`;
         }
         lineageSummaryEl.innerHTML = html;
       }
@@ -601,49 +622,49 @@ export function renderInspector(model={}, handlers={}) {
 
 export function renderAnalyticsCharts(ctxMap, data) {
   if (!data || !data.time || data.time.length < 2) {
-    Object.values(ctxMap).forEach(ctx => ctx && ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height));
+    Object.values(ctxMap).forEach(ctx => ctx && ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height));
     return;
   }
 
   drawChart(ctxMap.pop, [
-    { series: data.population, color:'#7fd36a', label:'Pop', decimals:0 },
-    { series: data.predators, color:'#f37f7f', label:'Pred', decimals:0 }
-  ], { min:0 });
+    { series: data.population, color: '#7fd36a', label: 'Pop', decimals: 0 },
+    { series: data.predators, color: '#f37f7f', label: 'Pred', decimals: 0 }
+  ], { min: 0 });
 
   drawChart(ctxMap.speed, [
-    { series: data.meanSpeed, color:'#76a9ff', label:'Speed', decimals:2 }
+    { series: data.meanSpeed, color: '#76a9ff', label: 'Speed', decimals: 2 }
   ]);
 
   drawChart(ctxMap.metabolism, [
-    { series: data.meanMetabolism, color:'#ffbd7a', label:'Metab', decimals:2 }
+    { series: data.meanMetabolism, color: '#ffbd7a', label: 'Metab', decimals: 2 }
   ]);
 
   drawChart(ctxMap.variance, [
-    { series: data.speedVar, color:'#8df0ff', label:'Speed σ²', decimals:3 },
-    { series: data.senseVar, color:'#d496ff', label:'Sense σ²', decimals:3 }
-  ], { min:0 });
+    { series: data.speedVar, color: '#8df0ff', label: 'Speed σ²', decimals: 3 },
+    { series: data.senseVar, color: '#d496ff', label: 'Sense σ²', decimals: 3 }
+  ], { min: 0 });
 
   drawChart(ctxMap.ratio, [
-    { series: data.predatorRatio, color:'#ff8888', label:'Pred %', decimals:2 }
-  ], { min:0, max:1 });
+    { series: data.predatorRatio, color: '#ff8888', label: 'Pred %', decimals: 2 }
+  ], { min: 0, max: 1 });
 
   drawChart(ctxMap.predators, [
-    { series: data.meanPackInstinct, color:'#5bdadf', label:'Pack', decimals:2 },
-    { series: data.meanAggression, color:'#ff9f6d', label:'Agg', decimals:2 },
-    { series: data.meanAmbushDelay, color:'#d5b4ff', label:'Amb', decimals:2 }
+    { series: data.meanPackInstinct, color: '#5bdadf', label: 'Pack', decimals: 2 },
+    { series: data.meanAggression, color: '#ff9f6d', label: 'Agg', decimals: 2 },
+    { series: data.meanAmbushDelay, color: '#d5b4ff', label: 'Amb', decimals: 2 }
   ]);
 
   drawChart(ctxMap.health, [
-    { series: data.meanHealth, color:'#7fe07f', label:'HP', decimals:1 },
-    { series: data.meanMaxHealth, color:'#a3b0ff', label:'HPmax', decimals:1 }
-  ], { min:0 });
+    { series: data.meanHealth, color: '#7fe07f', label: 'HP', decimals: 1 },
+    { series: data.meanMaxHealth, color: '#a3b0ff', label: 'HPmax', decimals: 1 }
+  ], { min: 0 });
 }
 
-function drawChart(ctx, lines, { min=null, max=null } = {}) {
+function drawChart(ctx, lines, { min = null, max = null } = {}) {
   if (!ctx || !lines || !lines.length) return;
   const len = lines[0].series.length;
   if (len < 2) {
-    ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     return;
   }
   const w = ctx.canvas.width;
@@ -654,7 +675,7 @@ function drawChart(ctx, lines, { min=null, max=null } = {}) {
 
   // OPTIMIZATION: Single clear/fill operation
   ctx.fillStyle = '#11131d';
-  ctx.fillRect(0,0,w,h);
+  ctx.fillRect(0, 0, w, h);
 
   // Optimize: avoid flatMap and spread operator for better performance
   let minVal = min != null ? min : Infinity;
@@ -680,8 +701,8 @@ function drawChart(ctx, lines, { min=null, max=null } = {}) {
   ctx.stroke();
 
   // OPTIMIZATION: Cache calculations and use for loops
-  const xStep = (w - pad*2) / (len-1);
-  const yScale = (h - pad*2) / range;
+  const xStep = (w - pad * 2) / (len - 1);
+  const yScale = (h - pad * 2) / range;
 
   ctx.lineWidth = 1.4;
   for (let i = 0; i < lines.length; i++) {
@@ -704,14 +725,14 @@ function drawChart(ctx, lines, { min=null, max=null } = {}) {
   let textY = pad + 10;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const last = line.series[len-1];
+    const last = line.series[len - 1];
     ctx.fillStyle = line.color;
     ctx.fillText(`${line.label ?? ''} ${formatNumber(last, line.decimals ?? 1)}`, pad, textY);
     textY += 12;
   }
 }
 
-function formatNumber(value, decimals=1) {
+function formatNumber(value, decimals = 1) {
   return Number.parseFloat(value).toFixed(decimals);
 }
 

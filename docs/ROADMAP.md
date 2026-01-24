@@ -21,7 +21,13 @@
    - **Description:** Added lightweight internal state updates (stress/energy/curiosity/stability) with social contagion + crowd pressure, plus higher baseline health and smoother damage intake with i-frames and impact thresholds.
    - **Likely files:** `creature-sim/src/creature-ecosystem.js`, `creature-sim/src/creature.js`, `creature-sim/src/world-combat.js`, `creature-sim/src/save-system.js`
    - **Risk level:** Medium
-   - **Verification:** Spawn creatures, play for 60–120s, confirm gentle bumps don’t kill, stress settles when idle, and impacts feel readable.
+   - **Verification:** Spawn creatures, play for 60–120s, confirm gentle bumps don't kill, stress settles when idle, and impacts feel readable.
+
+2. **Individuality systems + seasonal events**
+   - **Description:** Added temperament traits (boldness, sociability, calmness, curiosity), quirks system, and world events with seasonal modifiers.
+   - **Likely files:** `creature-sim/src/creature-traits.js`, `creature-sim/src/world-events.js`, `creature-sim/src/creature-features.js`
+   - **Risk level:** Medium
+   - **Verification:** Spawn creatures and observe varied behaviors; press Q to toggle quirks display; watch for event banners.
 
 ## Shipped (2026-01-28)
 
@@ -184,3 +190,17 @@
    - **Likely files:** `creature-sim/src/save-system.js`, `scripts/save-system.test.mjs`
    - **Risk level:** High
    - **Verification:** Run migration tests and load older saves without data loss.
+
+## Near-Term Tuning (Post-Individuality)
+
+- Temperament weights: adjust boldness/sociability bounds if jitter observed; tune calmness impact on stress decay.
+- Quirk balance: verify night_owl day slowdown not punitive; refine homebody pull vs wanderer push.
+- Event cadence: monitor average interval; tighten or loosen `triggerChance` and cooldowns as needed.
+- Winter stability: watch food floor (0.8×) with large populations; raise baseline if starvation spikes.
+
+## Optional Expansions
+
+- Regional events: localize blooms/dry spells to camera focus or biome tiles.
+- Visual polish: lightweight particles per event type with mobile density clamps.
+- Analytics hooks: log temperament/quirk distributions for balancing.
+- Player tools: minimal god-mode trigger for one-off event (respect cooldown).

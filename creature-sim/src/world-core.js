@@ -10,6 +10,7 @@ import { WorldCreatureManager } from './world-creature-manager.js';
 import { WorldCombat } from './world-combat.js';
 import { WorldDisaster } from './world-disaster.js';
 import { CreatureEcosystemSystem } from './creature-ecosystem.js';
+import { WorldEvents } from './world-events.js';
 import { BiomeGenerator } from './perlin-noise.js';
 import { SandboxProps } from './sandbox-props.js';
 import { clamp, dist2, rand } from './utils.js';
@@ -57,6 +58,7 @@ export class World {
     this.disaster = new WorldDisaster(this);
     this.creatureEcosystem = new CreatureEcosystemSystem(this);
     this.sandbox = new SandboxProps(this);
+    this.events = new WorldEvents(this);
 
     // World settings
     this.maxFood = Math.floor((width * height) / 180);
@@ -93,6 +95,12 @@ export class World {
       duration: 0
     };
     this._applyChaosLevel(this.chaosBaseLevel);
+    this.eventModifiers = {
+      foodGrowth: 1,
+      activity: 1,
+      stress: 1,
+      migration: 1
+    };
 
     // Auto-balance settings (used by gameplay-modes.js)
     this.autoBalanceSettings = {
@@ -125,6 +133,7 @@ export class World {
     // Update environmental systems (with guards)
     try {
       this.environment?.update(dt);
+      this.events?.update(dt);
       this.ecosystem?.update(dt);
       this.creatureEcosystem?.update(dt);
       this.updateChaosNudge(dt);
@@ -391,6 +400,11 @@ export class World {
     this.sandbox?.clear();
     this.chaosNudge = { timer: 0, intensity: 0, duration: 0 };
     this._applyChaosLevel(this.chaosBaseLevel);
+    this.events?.resetModifiers();
+    if (this.events) {
+      this.events.activeEvent = null;
+      this.events.cooldown = 30;
+    }
 
     // Clear scalar fields
     this.pheromone.grid.fill(0);
@@ -517,6 +531,10 @@ export class World {
 
   queryCreatures(x, y, radius) {
     return this.creatureManager.queryCreatures(x, y, radius);
+  }
+
+  getActiveEvents() {
+    return this.events?.activeEvent ? [this.events.activeEvent] : [];
   }
 
   // Food helpers (proxy to ecosystem)

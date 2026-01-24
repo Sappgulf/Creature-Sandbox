@@ -33,7 +33,7 @@ export class WorldEnvironment {
 
     // Four Seasons System
     this.seasonTime = 0; // Time counter for seasons
-    this.seasonDuration = 120; // Real seconds per season (2 minutes each)
+    this.seasonDuration = 480; // Real seconds per season (8 minutes each)
     this.currentSeason = 'spring'; // spring, summer, autumn, winter
     this.seasonCycle = ['spring', 'summer', 'autumn', 'winter'];
     this.seasonIndex = 0;
@@ -43,12 +43,12 @@ export class WorldEnvironment {
     this.seasonConfigs = {
       spring: {
         label: 'Spring Bloom',
-        foodMultiplier: 1.4,
-        reproductionMultiplier: 1.25,
-        metabolismScalar: 0.92,
+        foodMultiplier: 1.25,
+        reproductionMultiplier: 1.15,
+        metabolismScalar: 0.95,
         environment: {
           tempOffset: 0.08,
-          foodRateMultiplier: 1.3
+          foodRateMultiplier: 1.18
         },
         weather: {
           type: 'rain',
@@ -60,9 +60,9 @@ export class WorldEnvironment {
       },
       summer: {
         label: 'Golden Summer',
-        foodMultiplier: 1.15,
-        reproductionMultiplier: 1.0,
-        metabolismScalar: 1.02,
+        foodMultiplier: 1.08,
+        reproductionMultiplier: 0.98,
+        metabolismScalar: 1.05,
         environment: {
           tempOffset: 0.12,
           tempPenaltyAdd: 0.04,
@@ -78,9 +78,9 @@ export class WorldEnvironment {
       },
       autumn: {
         label: 'Harvest Fall',
-        foodMultiplier: 0.85,
-        reproductionMultiplier: 0.8,
-        metabolismScalar: 1.08,
+        foodMultiplier: 0.95,
+        reproductionMultiplier: 0.9,
+        metabolismScalar: 1.05,
         environment: {
           tempOffset: -0.06,
           tempPenaltyAdd: -0.02,
@@ -96,9 +96,9 @@ export class WorldEnvironment {
       },
       winter: {
         label: 'Frozen Winter',
-        foodMultiplier: 0.6,
-        reproductionMultiplier: 0.3,
-        metabolismScalar: 1.25,
+        foodMultiplier: 0.8,
+        reproductionMultiplier: 0.6,
+        metabolismScalar: 1.15,
         environment: {
           tempOffset: -0.15,
           tempPenaltyAdd: -0.08,
@@ -192,7 +192,7 @@ export class WorldEnvironment {
       }
       if (config.environment.foodRateMultiplier !== undefined) {
         // This will affect food growth rates
-        this.world.foodGrowthMultiplier = config.environment.foodRateMultiplier;
+        this.world.foodGrowthMultiplier = clamp(config.environment.foodRateMultiplier, 0.7, 1.4);
       }
     }
 
@@ -412,9 +412,9 @@ export class WorldEnvironment {
     if (!config) return 1.0;
 
     switch (kind) {
-      case 'food': return config.foodMultiplier;
-      case 'reproduction': return config.reproductionMultiplier;
-      case 'metabolism': return config.metabolismScalar;
+      case 'food': return clamp(config.foodMultiplier, 0.7, 1.35);
+      case 'reproduction': return clamp(config.reproductionMultiplier, 0.5, 1.2);
+      case 'metabolism': return clamp(config.metabolismScalar, 0.85, 1.25);
       default: return 1.0;
     }
   }
