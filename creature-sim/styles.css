@@ -127,24 +127,59 @@ body.reduced-motion * {
 }
 
 @media (hover: hover) {
+  [data-tooltip]::after,
+  [data-tooltip]::before {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
+  }
 
   [data-tooltip]:hover::after,
   [data-tooltip]:focus-visible::after {
     content: attr(data-tooltip);
     position: absolute;
-    bottom: calc(100% + 8px);
+    bottom: calc(100% + 10px);
     left: 50%;
-    transform: translateX(-50%);
-    background: rgba(15, 18, 26, 0.95);
+    transform: translateX(-50%) translateY(0);
+    background: rgba(15, 23, 42, 0.96);
     color: var(--text-primary);
-    padding: 6px 10px;
+    padding: 8px 12px;
     border-radius: var(--radius-sm);
     font-size: 11px;
+    font-weight: 500;
     white-space: nowrap;
-    box-shadow: var(--shadow-soft);
+    box-shadow: var(--shadow-medium);
     border: 1px solid var(--glass-border);
     z-index: 2000;
     pointer-events: none;
+    opacity: 1;
+    visibility: visible;
+    animation: tooltipFadeIn var(--transition-fast) ease-out;
+  }
+
+  [data-tooltip]:hover::before,
+  [data-tooltip]:focus-visible::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: rgba(15, 23, 42, 0.96);
+    z-index: 2001;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  @keyframes tooltipFadeIn {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
   }
 }
 
@@ -2065,6 +2100,11 @@ select:focus,
   box-shadow: 0 6px 28px rgba(0, 212, 255, 0.4);
 }
 
+.modal-btn.primary:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}
+
 .modal-btn.secondary {
   background: var(--bg-elevated);
   color: var(--text-secondary);
@@ -2075,6 +2115,28 @@ select:focus,
   background: var(--bg-hover);
   color: var(--text-primary);
   border-color: var(--glass-border-hover);
+}
+
+.modal-btn.secondary:active {
+  transform: scale(0.98);
+}
+
+/* Modal icon/emoji header */
+.modal-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-md);
+  display: block;
+  filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.3));
+}
+
+.modal-content.danger h2 {
+  color: var(--accent-danger);
+  text-shadow: 0 0 30px rgba(239, 68, 68, 0.4);
+}
+
+.modal-content.success h2 {
+  color: var(--accent-success);
+  text-shadow: 0 0 30px rgba(34, 197, 94, 0.4);
 }
 
 /* ============================================================================
@@ -2153,7 +2215,7 @@ select:focus,
   background: var(--bg-elevated);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
-  padding: var(--space-md);
+  padding: var(--space-lg);
   cursor: pointer;
   transition: all var(--transition-normal);
   position: relative;
@@ -2166,10 +2228,14 @@ select:focus,
   box-shadow: 0 8px 24px rgba(0, 212, 255, 0.15);
 }
 
+.campaign-level-card:active:not(.locked) {
+  transform: translateY(-2px);
+}
+
 .campaign-level-card.locked {
-  opacity: 0.4;
+  opacity: 0.5;
   cursor: not-allowed;
-  filter: grayscale(0.4);
+  filter: grayscale(0.5);
 }
 
 .campaign-level-card.locked::after {
@@ -2178,12 +2244,31 @@ select:focus,
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 28px;
-  opacity: 0.7;
+  font-size: 32px;
+  opacity: 0.6;
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.5));
 }
 
 .campaign-level-card.completed {
   border-color: var(--accent-success);
+  background: linear-gradient(135deg, var(--bg-elevated) 0%, rgba(34, 197, 94, 0.08) 100%);
+}
+
+.campaign-level-card.completed::before {
+  content: '✓';
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  width: 24px;
+  height: 24px;
+  background: var(--accent-success);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 .campaign-level-card.completed::before {
@@ -3601,13 +3686,14 @@ select:focus,
 .shortcuts-modal {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  max-width: 720px;
+  border-radius: var(--radius-lg);
+  max-width: 780px;
   max-height: 85vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-hard), var(--glow-primary);
+  animation: modalSlideUp var(--transition-slow) ease-out;
 }
 
 .shortcuts-header {
@@ -3667,15 +3753,24 @@ select:focus,
 }
 
 .shortcut-row kbd {
-  background: var(--bg-elevated);
+  background: linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-deep) 100%);
   border: 1px solid var(--glass-border);
-  border-radius: 4px;
-  padding: 2px 8px;
-  font-family: ui-monospace, monospace;
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--accent-gold);
-  min-width: 24px;
+  min-width: 28px;
   text-align: center;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+  transition: all var(--transition-fast);
+}
+
+.shortcut-row:hover kbd {
+  background: linear-gradient(180deg, var(--bg-hover) 0%, var(--bg-elevated) 100%);
+  border-color: var(--accent-gold);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2), 0 0 8px rgba(250, 204, 21, 0.2);
 }
 
 .shortcut-row span {

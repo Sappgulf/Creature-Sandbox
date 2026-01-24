@@ -39,6 +39,10 @@
 - Sliders: enhanced range inputs with filled track and glow effects
 - Gene editor: custom scrollbar, improved gene slider layout
 - Creature info card: improved metrics layout with borders, enhanced empty state
+- Tooltips: fade-in animation, arrow pointer, better styling
+- Modal dialogs: improved button active states, icon support, danger/success variants
+- Campaign panel: better level card states (completed checkmark, locked overlay)
+- Keyboard shortcuts: slide-up animation, 3D kbd key styling with hover glow
 
 ### Verified
 - `npm test` — pass
