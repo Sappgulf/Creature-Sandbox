@@ -923,8 +923,20 @@ export class World {
     return this.environment.dayLength;
   }
 
+  set dayLength(value) {
+    if (this.environment) {
+      this.environment.dayLength = value;
+    }
+  }
+
   get dayNightEnabled() {
     return this.environment.dayNightEnabled;
+  }
+
+  set dayNightEnabled(value) {
+    if (this.environment) {
+      this.environment.dayNightEnabled = value;
+    }
   }
 
   get dayNightState() {
@@ -941,6 +953,12 @@ export class World {
 
   get seasonSpeed() {
     return this.environment.seasonSpeed;
+  }
+
+  set seasonSpeed(value) {
+    if (this.environment) {
+      this.environment.seasonSpeed = value;
+    }
   }
 
   get currentSeason() {

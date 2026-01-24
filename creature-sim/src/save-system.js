@@ -958,11 +958,9 @@ export class SaveSystem {
           if (!c.intelligence) c.intelligence = null;
           if (!c.sexuality) c.sexuality = null;
           if (!c.migration) c.migration = null;
-<<<<<<< HEAD
           if (!c.ecosystem) c.ecosystem = createEcosystemState();
           if (!c.needs) c.needs = { ...CreatureAgentTuning.NEEDS.START };
           if (!c.goal) c.goal = { current: 'WANDER', lastChange: 0, cooldown: 0, mateCooldown: 0 };
-=======
           if (!c.temperament) {
             c.temperament = {
               boldness: Math.random(),
@@ -974,7 +972,6 @@ export class SaveSystem {
           if (!Array.isArray(c.quirks)) {
             c.quirks = [];
           }
->>>>>>> 05bfe45 (feat: add individuality systems and seasonal events)
         }
       }
 
