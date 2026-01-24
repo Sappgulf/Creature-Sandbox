@@ -538,12 +538,13 @@ input[type="range"]:focus-visible {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
-  min-width: 160px;
+  min-width: 180px;
   box-shadow: var(--shadow-medium);
   backdrop-filter: blur(12px);
   z-index: 1000;
   overflow: hidden;
   animation: slideDown var(--transition-fast);
+  padding: var(--space-xs) 0;
 }
 
 @keyframes slideDown {
@@ -559,16 +560,15 @@ input[type="range"]:focus-visible {
 }
 
 .dropdown-item {
-  padding: var(--space-sm) var(--space-md);
+  padding: 10px var(--space-md);
   cursor: pointer;
-  transition: background var(--transition-fast);
+  transition: all var(--transition-fast);
   font-size: 13px;
   color: var(--text-secondary);
-  border-bottom: 1px solid var(--glass-border);
-}
-
-.dropdown-item:last-child {
-  border-bottom: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
 }
 
 .dropdown-item:hover {
@@ -576,8 +576,20 @@ input[type="range"]:focus-visible {
   color: var(--text-primary);
 }
 
+.dropdown-item:active {
+  background: var(--accent-primary-dim);
+}
+
 .dropdown-item.selected {
   background: var(--accent-primary-dim);
+  color: var(--accent-primary);
+}
+
+.dropdown-item.selected::after {
+  content: '✓';
+  position: absolute;
+  right: var(--space-md);
+  font-size: 12px;
   color: var(--accent-primary);
 }
 
@@ -634,11 +646,20 @@ input[type="range"]:focus-visible {
 }
 
 #stats .stat-tool {
-  background: rgba(110, 168, 255, 0.12);
-  border: 1px solid rgba(110, 168, 255, 0.3);
+  background: rgba(0, 212, 255, 0.12);
+  border: 1px solid rgba(0, 212, 255, 0.3);
   border-radius: var(--radius-pill);
-  padding: 2px 8px;
-  color: var(--text-primary);
+  padding: 2px 10px;
+  color: var(--accent-primary);
+  font-weight: 500;
+  margin-left: var(--space-xs);
+}
+
+#stats .stat-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--glass-border);
+  margin: 0 var(--space-xs);
 }
 
 /* ============================================================================
@@ -1042,6 +1063,18 @@ input[type="range"]:focus-visible {
   flex-direction: column;
   gap: var(--space-md);
   animation: panelSlideIn var(--transition-slow);
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.panel.hidden {
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+  pointer-events: none;
+  display: none;
+}
+
+.panel.closing {
+  animation: panelSlideOut var(--transition-fast) forwards;
 }
 
 @keyframes panelSlideIn {
@@ -1053,6 +1086,18 @@ input[type="range"]:focus-visible {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes panelSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
   }
 }
 
@@ -1090,20 +1135,30 @@ input[type="range"]:focus-visible {
 }
 
 .panel-close {
-  background: transparent;
-  border: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid transparent;
   color: var(--text-muted);
-  font-size: 18px;
+  font-size: 16px;
   cursor: pointer;
   padding: var(--space-xs);
   border-radius: var(--radius-sm);
   transition: all var(--transition-fast);
   line-height: 1;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: 36px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.panel-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--glass-border);
+  color: var(--text-primary);
+}
+
+.panel-close:active {
+  transform: scale(0.95);
 }
 
 .panel-close:hover {
@@ -2549,6 +2604,36 @@ select:focus,
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  animation: sheetSlideUp var(--transition-slow);
+}
+
+.mobile-sheet.hidden {
+  display: none;
+}
+
+@keyframes sheetSlideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.mobile-sheet-backdrop {
+  animation: fadeIn var(--transition-fast);
+}
+
+.mobile-sheet-backdrop.hidden {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .mobile-sheet-header {
@@ -2604,8 +2689,24 @@ select:focus,
   background: rgba(0, 212, 255, 0.12);
 }
 
+.mobile-spawn-option.selected::after {
+  content: '✓';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: var(--accent-primary);
+  font-weight: bold;
+}
+
+.mobile-spawn-option {
+  position: relative;
+}
+
 .mobile-spawn-icon {
-  font-size: 24px;
+  font-size: 28px;
+  grid-row: span 2;
 }
 
 .mobile-spawn-label {
