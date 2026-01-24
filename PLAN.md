@@ -9,6 +9,19 @@
 - [ ] Ship watch mode UI, auto-director, and moments log for observer-first sessions
 - [ ] Add lightweight ecosystem role tension + migration storytelling cues
 
+## Session Audit (2026-01-24)
+
+### Focus
+1. Bug check and polish pass across the codebase.
+2. Fix lint errors and ensure all systems initialize correctly.
+
+### Changed
+- `creature-sim/src/ui.js` — Fixed undefined `biome` variable in `renderSelectedInfo` by extracting biome from world at creature position.
+
+### Verified
+- `npm test` — pass
+- `npm run lint` — 0 errors, 79 warnings (unused vars only)
+
 ## Session Audit (2026-02-04)
 
 ### Focus
