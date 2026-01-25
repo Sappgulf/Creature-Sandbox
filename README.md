@@ -1,6 +1,8 @@
 # 🧬 Creature Sandbox
 
-An advanced evolutionary simulation featuring autonomous creatures with genetic inheritance, predator-prey dynamics, spatial optimization, and real-time analytics.
+**A massively expanded evolution simulator with advanced AI, personality system, family bonds, seasonal events, and god powers!**
+
+An advanced evolutionary simulation featuring autonomous creatures with genetic inheritance, deep personalities, sophisticated AI, memory & learning, family relationships, and emergent behaviors in a living, breathing ecosystem.
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Sappgulf/Creature-Sandbox)
 
@@ -9,7 +11,41 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 
 ---
 
-## ✨ Features
+## ✨ What's New in v3.0
+
+### 🎭 **Advanced Systems**
+- **Personality System**: 7 core traits (boldness, curiosity, sociability, etc.), 15+ unique quirks, 5 temperaments
+- **Advanced Genetics**: 15 rare mutations (bioluminescence, regeneration, chameleon, etc.) with 5 rarity tiers
+- **Family Bonds**: Track parents, siblings, mates, friends, and rivals with bond strength and behaviors
+- **Memory & Learning**: Creatures remember food locations, danger zones, learn from experience, and observe others
+- **Seasonal Events**: 4 seasons (Spring→Summer→Autumn→Winter) with 10+ dynamic events and migrations
+- **God Powers**: 13 powers across 4 tiers (bless, lightning, time warp, apocalypse, etc.)
+
+### 🧠 **Sophisticated AI**
+- **5 Hunting Strategies**: Ambush, chase, intercept, herd, patience
+- **5 Evasion Tactics**: Zigzag, hide, group flee, freeze
+- **Dynamic Strategy Selection**: AI adapts based on creature stats and situation
+- **Hunt Success Probability**: Realistic calculation based on speed, sense, defenses, and fatigue
+
+### 🎵 **Immersive Audio**
+- **Procedural Sound System**: Web Audio API with tone/sweep/noise generators
+- **ADSR Envelopes**: Natural attack, decay, sustain, release for every sound
+- **10+ Sound Events**: Birth, death, eating, mating, attack, movement, biome ambience, weather
+
+### 🌍 **Rich Environments**
+- **8 Unique Biomes**: Forest, desert, tundra, swamp, ocean, mountain, jungle, savanna
+- **Biome Adaptation System**: Creatures adapt over time, unlocking special bonuses
+- **Biome-Specific Effects**: Energy costs, stress levels, movement, detection, food preferences
+
+### 🏆 **Progression Systems**
+- **30+ Achievements**: Unlock new biomes, creatures, tools, features, challenges, skins, particles, sounds
+- **8 Achievement Categories**: Population, genetics, survival, ecosystem, behavior, biome, special, mastery
+- **Campaign Mode**: Structured challenges with star ratings and progression
+- **Session Goals**: Dynamic micro-challenges that encourage experimentation
+
+---
+
+## ✨ Core Features
 
 ### 🧬 Genetic Evolution
 - **Hereditary traits**: Speed, field of view, sense radius, metabolism
