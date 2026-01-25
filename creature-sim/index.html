@@ -22,24 +22,121 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Top HUD - Condensed Primary Controls -->
-  <div id="hud">
-    <div id="hud-primary" class="hud-primary" role="toolbar" aria-label="Primary actions"></div>
-    <button
-      id="hud-overflow-trigger"
-      class="hud-overflow-trigger"
-      title="More actions"
-      aria-label="Open more actions"
-      data-tooltip="More actions"
-      aria-haspopup="menu"
-      aria-expanded="false"
-      aria-controls="hud-overflow-menu"
-    >
-      ⋯
-    </button>
-    <div id="hud-overflow-menu" class="hud-overflow-menu hidden" role="menu" aria-label="More actions"></div>
+  <!-- UNIFIED CONTROL STRIP - Bottom Center (Thumb Zone) -->
+  <div id="control-strip" class="control-strip" role="toolbar" aria-label="Main controls">
+    <!-- Primary Controls (Always Visible) -->
+    <div class="control-strip-primary">
+      <button id="ctrl-pause" class="ctrl-btn" title="Pause/Resume (Space)" aria-label="Pause or resume">
+        <span class="ctrl-icon">⏸️</span>
+      </button>
+      <button id="ctrl-speed" class="ctrl-btn" title="Simulation speed" aria-label="Change speed">
+        <span class="ctrl-icon">1×</span>
+      </button>
+      <div class="ctrl-divider"></div>
+      <button id="ctrl-food" class="ctrl-btn" title="Spawn Food (F)" aria-label="Spawn food">
+        <span class="ctrl-icon">🌿</span>
+      </button>
+      <button id="ctrl-spawn" class="ctrl-btn ctrl-spawn-btn" title="Spawn Creature" aria-label="Spawn creature" aria-haspopup="true">
+        <span class="ctrl-icon">🦌</span>
+        <span class="ctrl-caret">▾</span>
+      </button>
+      <div class="ctrl-divider"></div>
+      <button id="ctrl-watch" class="ctrl-btn" title="Watch Mode" aria-label="Toggle watch mode">
+        <span class="ctrl-icon">👁️</span>
+      </button>
+      <button id="ctrl-god" class="ctrl-btn" title="God Mode" aria-label="Toggle god mode">
+        <span class="ctrl-icon">✨</span>
+      </button>
+      <button id="ctrl-more" class="ctrl-btn" title="More options" aria-label="Open menu" aria-haspopup="menu" aria-expanded="false">
+        <span class="ctrl-icon">⋯</span>
+      </button>
+    </div>
   </div>
 
+  <!-- Spawn Creature Drawer (Bottom Sheet) -->
+  <div id="spawn-drawer" class="bottom-drawer hidden" role="dialog" aria-modal="true" aria-label="Choose creature to spawn" aria-hidden="true">
+    <div class="drawer-backdrop"></div>
+    <div class="drawer-content">
+      <div class="drawer-handle"></div>
+      <div class="drawer-header">
+        <span class="drawer-title">Spawn Creature</span>
+        <button id="spawn-drawer-close" class="drawer-close" aria-label="Close">×</button>
+      </div>
+      <div class="drawer-body">
+        <button class="spawn-card" data-creature="herbivore" role="option">
+          <span class="spawn-card-icon">🦌</span>
+          <span class="spawn-card-info">
+            <span class="spawn-card-name">Herbivore</span>
+            <span class="spawn-card-desc">Balanced grazer</span>
+          </span>
+          <span class="spawn-card-check">✓</span>
+        </button>
+        <button class="spawn-card" data-creature="omnivore" role="option">
+          <span class="spawn-card-icon">🦡</span>
+          <span class="spawn-card-info">
+            <span class="spawn-card-name">Omnivore</span>
+            <span class="spawn-card-desc">Adaptable eater</span>
+          </span>
+          <span class="spawn-card-check">✓</span>
+        </button>
+        <button class="spawn-card" data-creature="predator" role="option">
+          <span class="spawn-card-icon">🦁</span>
+          <span class="spawn-card-info">
+            <span class="spawn-card-name">Predator</span>
+            <span class="spawn-card-desc">Fast hunter</span>
+          </span>
+          <span class="spawn-card-check">✓</span>
+        </button>
+      </div>
+      <div class="drawer-footer">
+        <button id="spawn-drawer-confirm" class="drawer-action-btn">Tap World to Spawn</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overflow Menu (Bottom Sheet) -->
+  <div id="overflow-drawer" class="bottom-drawer hidden" role="dialog" aria-modal="true" aria-label="More options" aria-hidden="true">
+    <div class="drawer-backdrop"></div>
+    <div class="drawer-content">
+      <div class="drawer-handle"></div>
+      <div class="drawer-header">
+        <span class="drawer-title">Menu</span>
+        <button id="overflow-drawer-close" class="drawer-close" aria-label="Close">×</button>
+      </div>
+      <div class="drawer-body drawer-menu">
+        <div class="menu-section">
+          <div class="menu-section-title">Simulation</div>
+          <button class="menu-item" data-action="step">⏭️ Single Step</button>
+          <button class="menu-item" data-action="props">🟣 Sandbox Props</button>
+        </div>
+        <div class="menu-section">
+          <div class="menu-section-title">Gameplay</div>
+          <button class="menu-item" id="menu-mode" data-action="mode">🎛️ Game Mode</button>
+          <button class="menu-item" id="menu-campaign" data-action="campaign">🏆 Campaign</button>
+          <button class="menu-item" id="menu-achievements" data-action="achievements">🏅 Achievements</button>
+        </div>
+        <div class="menu-section">
+          <div class="menu-section-title">Tools</div>
+          <button class="menu-item" id="menu-gene-editor" data-action="gene-editor">🧬 Gene Editor</button>
+          <button class="menu-item" id="menu-scenario" data-action="scenario">🧪 Scenario Lab</button>
+          <button class="menu-item" id="menu-features" data-action="features">🎨 Features</button>
+        </div>
+        <div class="menu-section">
+          <div class="menu-section-title">Insights</div>
+          <button class="menu-item" id="menu-eco-health" data-action="eco-health">🌍 Ecosystem Health</button>
+          <button class="menu-item" id="menu-analytics" data-action="analytics">📊 Analytics</button>
+        </div>
+        <div class="menu-section">
+          <div class="menu-section-title">System</div>
+          <button class="menu-item" data-action="save">💾 Save Game</button>
+          <button class="menu-item" data-action="load">📂 Load Game</button>
+          <button class="menu-item" data-action="help">❓ Help & Shortcuts</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legacy HUD action bank (hidden, for JS compatibility) -->
   <div id="hud-action-bank" class="hidden" aria-hidden="true">
     <button id="btn-mode" title="Game modes & goals" aria-label="Game modes and goals">🎛️ Mode</button>
     <button id="btn-pause" title="Pause/Resume (Space)" aria-label="Pause or resume">⏸️ Pause</button>
@@ -54,51 +151,9 @@
     <button id="analytics-dashboard-toggle" title="Analytics" aria-label="Toggle analytics dashboard">📊 Analytics</button>
     <button id="debug-console-toggle" title="Debug Console" aria-label="Toggle debug console">🔧 Debug</button>
     <button id="performance-monitor-toggle" title="Performance" aria-label="Toggle performance monitor">⚡ Performance</button>
-  </div>
-
-  <div id="hud-overflow-backdrop" class="hud-overflow-backdrop hidden" tabindex="-1" aria-hidden="true"></div>
-  <div
-    id="hud-overflow-sheet"
-    class="hud-overflow-sheet hidden"
-    role="dialog"
-    aria-modal="true"
-    aria-label="More actions"
-    aria-hidden="true"
-  >
-    <div class="hud-overflow-sheet-header">
-      <span>More Actions</span>
-      <button id="hud-overflow-close" class="hud-overflow-close" aria-label="Close menu">Close</button>
-    </div>
-    <div id="hud-overflow-sheet-content" class="hud-overflow-sheet-content" role="menu" aria-label="More actions"></div>
-  </div>
-
-  <!-- Floating Quick Actions - Center Bottom -->
-  <div id="quick-actions">
-    <button id="btn-spawn-food" title="Spawn Food (F)" aria-label="Spawn food" data-tooltip="Spawn food (F)">🌿</button>
-    <div class="spawn-dropdown">
-      <button id="btn-spawn-creature" title="Spawn Creature" aria-label="Spawn creature" data-tooltip="Spawn creature">🦌</button>
-      <div id="creature-dropdown" class="dropdown-menu hidden">
-        <div class="dropdown-item" data-creature="herbivore">🦌 Herbivore</div>
-        <div class="dropdown-item" data-creature="omnivore">🦡 Omnivore</div>
-        <div class="dropdown-item" data-creature="predator">🦁 Predator</div>
-      </div>
-    </div>
-    <div class="spawn-dropdown prop-dropdown">
-      <button id="btn-prop-tool" title="Sandbox Props (P)" aria-label="Sandbox props" data-tooltip="Sandbox props (P)">🟣</button>
-      <div id="prop-dropdown" class="dropdown-menu hidden">
-        <div class="dropdown-item" data-prop="bounce">🟣 Bounce Pad</div>
-        <div class="dropdown-item" data-prop="spring">🟢 Spring Pad</div>
-        <div class="dropdown-item" data-prop="spinner">🌀 Spinner</div>
-        <div class="dropdown-item" data-prop="seesaw">🪜 See-Saw</div>
-        <div class="dropdown-item" data-prop="conveyor">➡️ Conveyor Belt</div>
-        <div class="dropdown-item" data-prop="slope">⛰️ Speed Slope</div>
-        <div class="dropdown-item" data-prop="fan">🪭 Wind Fan</div>
-        <div class="dropdown-item" data-prop="sticky">🫧 Sticky Zone</div>
-        <div class="dropdown-item" data-prop="gravity">🕳️ Gravity Well</div>
-        <div class="dropdown-item" data-prop="button">🔘 Food Button</div>
-        <div class="dropdown-item" data-prop="launch">🚀 Launch Button</div>
-      </div>
-    </div>
+    <button id="btn-spawn-food" title="Spawn Food (F)" aria-label="Spawn food">🌿</button>
+    <button id="btn-spawn-creature" title="Spawn Creature" aria-label="Spawn creature">🦌</button>
+    <button id="btn-prop-tool" title="Sandbox Props (P)" aria-label="Sandbox props">🟣</button>
   </div>
 
   <!-- Tool indicator label -->
@@ -108,13 +163,14 @@
     <span class="tool-hint"></span>
   </div>
 
+  <!-- Watch Mode Strip (replaces control strip when in watch mode) -->
   <div id="watch-strip" class="watch-strip hidden" role="toolbar" aria-label="Watch mode controls" aria-hidden="true">
     <button id="watch-pause" class="watch-btn" aria-label="Pause or resume">⏸️</button>
-    <button id="watch-follow" class="watch-btn" aria-label="Toggle follow">🎯</button>
     <button id="watch-speed" class="watch-btn" aria-label="Watch speed">1×</button>
-    <button id="watch-recenter" class="watch-btn" aria-label="Re-center to auto director">⟳</button>
+    <button id="watch-follow" class="watch-btn" aria-label="Toggle follow">🎯</button>
     <button id="watch-moments" class="watch-btn watch-btn-wide" aria-label="Open moments log">✨ Moments</button>
-    <button id="watch-god-mode" class="watch-btn watch-btn-wide" aria-label="Toggle god mode">✨ God</button>
+    <button id="watch-god-mode" class="watch-btn" aria-label="Toggle god mode">✨</button>
+    <button id="watch-exit" class="watch-btn watch-btn-exit" aria-label="Exit watch mode">✕</button>
   </div>
 
   <div id="moments-panel" class="moments-panel hidden" role="dialog" aria-label="Moments log" aria-hidden="true">

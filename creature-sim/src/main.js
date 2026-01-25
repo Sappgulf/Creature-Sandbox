@@ -28,6 +28,7 @@ import { SessionGoals } from './session-goals.js';
 import { MobileSupport } from './mobile-support.js';
 import { AutoDirector } from './auto-director.js';
 import { MomentsSystem } from './moments-system.js';
+import { ControlStripController } from './control-strip.js';
 
 // Import new modular systems
 import { domCache } from './dom-cache.js';
@@ -434,6 +435,20 @@ function initializeApp() {
 
   if (!uiController) {
     console.warn('⚠️ UI controller failed to initialize, UI may not work');
+  }
+
+  // Control strip controller (new mobile-first bottom control bar)
+  const controlStrip = errorHandler.safeExecute(() => {
+    return new ControlStripController({
+      world,
+      camera,
+      tools,
+      uiController
+    });
+  }, 'Control strip initialization', null);
+
+  if (controlStrip) {
+    console.log('🎮 Control strip initialized (new bottom UI)');
   }
 
   // Game loop (handles main simulation loop and rendering)
