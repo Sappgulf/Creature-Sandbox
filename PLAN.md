@@ -2,12 +2,11 @@
 
 ## Active
 
-- [ ] Evaluate tool favorites / quick swap UX (post-brush-size update)
-- [ ] Audit save/load UX for surfaced feedback (non-intrusive)
-- [ ] Expand sandbox interactions with props, drag/throw, and micro-goals
-- [ ] Balance pass: tune grab/throw, camera smoothing, prop forces, and mobile touch sensitivity
-- [ ] Ship watch mode UI, auto-director, and moments log for observer-first sessions
-- [ ] Add lightweight ecosystem role tension + migration storytelling cues
+- [x] **RECOVERY MISSION**: Fix syntax error breaking app boot
+- [ ] Complete smoke test verification in browser
+- [ ] Fix any P0/P1 issues discovered during testing
+- [ ] Verify core loop: spawn → select → interact → save/load
+- [ ] Verify mobile touch controls work correctly
 
 ## Session Audit (2026-01-24)
 
@@ -237,6 +236,29 @@
 - [ ] Prototype creature presets panel for sandbox quick starts
 
 ## Done
+
+### 2026-01-25
+
+**Changed:**
+- `creature-sim/src/main.js` — Removed stray '1' character on line 1163 that caused syntax error
+- `creature-sim/docs/RECOVERY_REPORT.md` — Created recovery report documenting baseline assessment and fixes
+- `creature-sim/docs/SMOKE_TESTS.md` — Updated with comprehensive critical tests and recovery status
+
+**Why:**
+- Fix P0 blocker preventing app from booting (syntax error)
+- Establish recovery baseline and test plan
+- Simplest change: remove single typo character
+
+**Verified:**
+- `node -c creature-sim/src/main.js` — syntax check passed
+- `node -c creature-sim/src/ui-controller.js` — syntax check passed
+- Button handlers confirmed present in showHomePage() function
+- No missing imports detected
+
+**Notes:**
+- Recovery mission in progress
+- Manual browser testing required for full verification
+- All critical smoke tests pending execution
 
 ### 2026-01-29
 
