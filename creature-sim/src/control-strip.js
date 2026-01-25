@@ -135,7 +135,7 @@ export class ControlStripController {
     // === SPEED ===
     cycleSpeed() {
         this.speedIndex = (this.speedIndex + 1) % SPEED_OPTIONS.length;
-        gameState.speedMultiplier = SPEED_OPTIONS[this.speedIndex];
+        gameState.fastForward = SPEED_OPTIONS[this.speedIndex];
         this.updateSpeedButton();
     }
 
@@ -193,11 +193,12 @@ export class ControlStripController {
     }
 
     confirmSpawn() {
-        // Set the spawn tool with the selected type
+        // Set the spawn tool with the selected type using proper gameState method
         if (this.tools) {
             this.tools.setTool('spawn');
-            gameState.pendingSpawnType = this.currentSpawnType;
         }
+        // Use gameState.setSpawnMode which properly sets selectedCreatureType and spawnMode
+        gameState.setSpawnMode(this.currentSpawnType);
         this.closeSpawnDrawer();
     }
 
