@@ -183,7 +183,9 @@ function initializeApp() {
   // World and core entities
   const world = errorHandler.safeExecute(() => {
     const w = new World(4000, 2800);
-    w.seed(70, 6, 200);
+    // Enhanced starting population: more creatures, better balance
+    // 50 herbivores, 20 omnivores, 8 predators, 250 food
+    w.seed(50, 8, 250);
     return w;
   }, 'World initialization', null);
 

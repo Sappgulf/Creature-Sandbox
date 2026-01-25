@@ -72,49 +72,153 @@ export class CreatureBehaviorSystem {
 
   /**
    * Select a new target based on creature type and needs
+   * Enhanced with priority-based decision making and context awareness
    */
   selectNewTarget(world) {
     const diet = this.creature.genes.diet ?? (this.creature.genes.predator ? 1.0 : 0.0);
     const dietRole = this.creature.traits?.dietRole ?? 'herbivore';
-
-    // Predators prioritize hunting
+    const energy = this.creature.energy;
+    const maxEnergy = this.creature.maxEnergy;
+    const energyRatio = energy / maxEnergy;
+    
+    // Critical energy - prioritize any food source
+    if (energyRatio < 0.2) {
+      // Try food first
+      this.selectForagingTarget(world);
+      
+      // If no food, try scavenging
+      if (!this.creature.target) {
+        this.selectScavengingTarget(world);
+      }
+      
+      // Last resort: hunt only if creature is a predator/omnivore and desperate
+      if (!this.creature.target && diet > 0.3) {
+        this.selectHuntingTarget(world);
+      }
+      return;
+    }
+    
+    // Low energy - cautious decisions
+    if (energyRatio < 0.4) {
+      if (dietRole === 'predator-lite' || diet > 0.7) {
+        // Predators prefer hunting but will scavenge if safer
+        if (rand() < 0.4) {
+          this.selectScavengingTarget(world);
+        }
+        if (!this.creature.target) {
+          this.selectPredatorLiteTarget(world);
+        }
+        if (!this.creature.target) {
+          this.selectHuntingTarget(world);
+        }
+      } else if (diet > 0.3) {
+        // Omnivores prioritize safe food
+        this.selectOmnivoreTarget(world);
+      } else {
+        // Herbivores only forage
+        this.selectForagingTarget(world);
+      }
+      return;
+    }
+    
+    // Normal energy - follow natural behavior patterns
     if (dietRole === 'predator-lite') {
       this.selectPredatorLiteTarget(world);
     } else if (diet > 0.7) {
+      // Pure predators hunt
       this.selectHuntingTarget(world);
-    }
-    // Omnivores look for food first, then prey
-    else if (diet > 0.3) {
+    } else if (diet > 0.3) {
+      // Omnivores use intelligent mixed strategy
       this.selectOmnivoreTarget(world);
-    }
-    // Herbivores look for food
-    else {
+    } else {
+      // Herbivores forage
       this.selectForagingTarget(world);
     }
 
-    // Scavenging as fallback
+    // Scavenging as fallback or primary strategy
     if (dietRole === 'scavenger') {
       this.selectScavengingTarget(world);
-    } else if (!this.creature.target && this.creature.energy < 30) {
+    } else if (!this.creature.target && energy < maxEnergy * 0.5) {
+      // No target found and energy below half - try scavenging
       this.selectScavengingTarget(world);
     }
   }
 
   /**
    * Select hunting target for predators
+   * Enhanced with memory, learning, and strategic thinking
    */
   selectHuntingTarget(world) {
     if (!world.combat) return;
 
-    const prey = world.combat.findPrey(this.creature, 120);
+    // Check memory for successful hunting locations
+    let searchRadius = 120;
+    let preferredLocation = null;
+    
+    if (world.memoryLearning && this.creature.id) {
+      const memory = world.memoryLearning.getMemory(this.creature.id);
+      if (memory?.successfulHunts > 3) {
+        // Experienced hunter - check remembered hunting grounds
+        const huntingSpots = memory.foodLocations.filter(loc => loc.quality > 0.7);
+        if (huntingSpots.length > 0) {
+          huntingSpots.sort((a, b) => b.quality - a.quality);
+          preferredLocation = huntingSpots[0];
+          searchRadius = 180; // Expand search if going to known spot
+        }
+      }
+      
+      // Avoid danger zones
+      if (memory?.dangerZones && memory.dangerZones.length > 0) {
+        const now = Date.now();
+        const recentDangers = memory.dangerZones.filter(zone => 
+          now - zone.lastEncounter < 60000 && // Last 60s
+          Math.hypot(zone.x - this.creature.x, zone.y - this.creature.y) < 100
+        );
+        
+        // If in danger zone, flee instead of hunting
+        if (recentDangers.length > 0) {
+          return; // Skip hunting, prioritize safety
+        }
+      }
+    }
+
+    // Find prey, preferring weak or isolated targets
+    const prey = world.combat.findPrey(this.creature, searchRadius);
+    
     if (prey) {
+      // Assess prey difficulty
+      const preyEnergy = prey.energy ?? 50;
+      const preySpeed = prey.genes?.speed ?? 1.0;
+      const mySpeed = this.creature.genes?.speed ?? 1.0;
+      
+      // Experienced hunters are more selective
+      if (world.memoryLearning && this.creature.id) {
+        const memory = world.memoryLearning.getMemory(this.creature.id);
+        if (memory?.successfulHunts > 5) {
+          // Prefer weak or slow prey
+          const isFastPrey = preySpeed > mySpeed * 1.2;
+          const isHealthyPrey = preyEnergy > 70;
+          
+          if (isFastPrey && isHealthyPrey && rand() < 0.7) {
+            return; // Skip difficult prey, look for easier target
+          }
+        }
+      }
+      
       this.creature.target = {
         x: prey.x,
         y: prey.y,
         creatureId: prey.id,
-        priority: 1.0
+        priority: 1.0,
+        preyEnergy: preyEnergy,
+        preySpeed: preySpeed
       };
       this.creature.personality.currentTargetId = prey.id;
+      
+      // Remember this hunting location
+      if (world.memoryLearning) {
+        world.memoryLearning.rememberFood(this.creature, this.creature.x, this.creature.y, 0.5);
+      }
     }
   }
 
@@ -134,23 +238,77 @@ export class CreatureBehaviorSystem {
 
   /**
    * Select target for omnivores (food first, then prey)
+   * Enhanced with intelligent decision-making based on energy levels and environment
    */
   selectOmnivoreTarget(world) {
-    // Try food first
-    const food = this.seekFood(world);
-    if (food) {
-      this.creature.target = {
-        x: food.x,
-        y: food.y,
-        food: food,
-        priority: 0.8
-      };
-      return;
+    const energy = this.creature.energy;
+    const maxEnergy = this.creature.maxEnergy;
+    const energyRatio = energy / maxEnergy;
+    
+    // Smart decision-making based on creature state
+    let shouldHunt = false;
+    
+    // High energy and confident → more likely to hunt
+    if (energyRatio > 0.7 && this.creature.stats.kills > 2) {
+      shouldHunt = rand() < 0.6; // 60% chance to hunt
     }
-
-    // Then try hunting (less aggressively than pure predators)
-    if (rand() < 0.3) { // 30% chance to hunt
+    // Medium energy → balanced approach
+    else if (energyRatio > 0.4) {
+      shouldHunt = rand() < 0.35; // 35% chance to hunt
+    }
+    // Low energy → prioritize safe food
+    else if (energyRatio > 0.25) {
+      shouldHunt = rand() < 0.15; // 15% chance to hunt, mostly forage
+    }
+    // Critical energy → only forage for safety
+    else {
+      shouldHunt = false;
+    }
+    
+    // Check personality - cautious creatures hunt less
+    if (this.creature.temperament?.cautiousness > 0.7) {
+      shouldHunt = shouldHunt && rand() < 0.5; // 50% reduction
+    }
+    
+    // Aggressive creatures hunt more
+    if (this.creature.temperament?.aggression > 0.7) {
+      shouldHunt = shouldHunt || rand() < 0.25; // Boost hunting instinct
+    }
+    
+    // Execute decision
+    if (shouldHunt) {
+      // Try hunting first
       this.selectHuntingTarget(world);
+      
+      // If no prey found, fall back to food
+      if (!this.creature.target) {
+        const food = this.seekFood(world);
+        if (food) {
+          this.creature.target = {
+            x: food.x,
+            y: food.y,
+            food: food,
+            priority: 0.85
+          };
+        }
+      }
+    } else {
+      // Try food first
+      const food = this.seekFood(world);
+      if (food) {
+        this.creature.target = {
+          x: food.x,
+          y: food.y,
+          food: food,
+          priority: 0.9
+        };
+        return;
+      }
+      
+      // If no food found and energy not critical, can consider hunting
+      if (energyRatio > 0.35) {
+        this.selectHuntingTarget(world);
+      }
     }
   }
 
@@ -188,15 +346,73 @@ export class CreatureBehaviorSystem {
   }
 
   /**
-   * Seek food using vision and pheromones
+   * Seek food using vision, pheromones, and memory
+   * Enhanced with memory of previous food locations
    */
   seekFood(world) {
     if (!world.ecosystem) return null;
 
+    // Check memory for known food locations
+    if (world.memoryLearning && this.creature.id) {
+      const memory = world.memoryLearning.getMemory(this.creature.id);
+      if (memory?.foodLocations && memory.foodLocations.length > 0) {
+        // Filter recent and nearby food memories
+        const now = Date.now();
+        const recentFoodMemories = memory.foodLocations.filter(loc => {
+          const age = now - loc.lastSeen;
+          const dist = Math.hypot(loc.x - this.creature.x, loc.y - this.creature.y);
+          return age < 30000 && dist < 150 && loc.quality > 0.4; // Within 30s and 150px
+        });
+        
+        if (recentFoodMemories.length > 0) {
+          // Sort by quality and distance
+          recentFoodMemories.sort((a, b) => {
+            const distA = Math.hypot(a.x - this.creature.x, a.y - this.creature.y);
+            const distB = Math.hypot(b.x - this.creature.x, b.y - this.creature.y);
+            const scoreA = a.quality / (distA + 1);
+            const scoreB = b.quality / (distB + 1);
+            return scoreB - scoreA;
+          });
+          
+          // Try remembered location
+          const remembered = recentFoodMemories[0];
+          const nearbyFood = world.ecosystem.nearbyFood(remembered.x, remembered.y, 40);
+          if (nearbyFood.length > 0) {
+            // Remember this food again (reinforcement)
+            if (world.memoryLearning) {
+              world.memoryLearning.rememberFood(this.creature, remembered.x, remembered.y, 0.7);
+            }
+            return nearbyFood[0];
+          }
+        }
+      }
+    }
+
+    // Standard vision-based food search
     const foodList = world.ecosystem.nearbyFood(this.creature.x, this.creature.y, this.creature.genes.sense);
     const pheromone = world.pheromone.getAtWorld(this.creature.x, this.creature.y);
 
     if (!foodList.length && !pheromone) return null;
+
+    // Find closest food
+    let bestFood = null;
+    let bestDist = Infinity;
+
+    for (const food of foodList) {
+      const dist = Math.hypot(food.x - this.creature.x, food.y - this.creature.y);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestFood = food;
+      }
+    }
+
+    // Remember found food location
+    if (bestFood && world.memoryLearning) {
+      world.memoryLearning.rememberFood(this.creature, bestFood.x, bestFood.y, 0.6);
+    }
+
+    return bestFood;
+  }
 
     const senseRadius = this.creature.genes.sense;
     const senseRadius2 = senseRadius * senseRadius;

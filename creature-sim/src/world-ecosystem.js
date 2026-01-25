@@ -15,28 +15,28 @@ export class WorldEcosystem {
     // Vegetation diversity system
     this.vegetationTypes = {
       grass: {
-        energy: 3,
+        energy: 4, // Increased from 3
         color: '#7FDB6A',
         size: 2,
-        growthRate: 1.0, // Base growth rate
+        growthRate: 1.2, // Increased from 1.0
         spawnChance: 0.6, // 60% of food is grass
-        respawnTime: 5 // Seconds to respawn
+        respawnTime: 4.5 // Reduced from 5 seconds
       },
       berries: {
-        energy: 8,
+        energy: 10, // Increased from 8
         color: '#FF6B9D',
         size: 3,
-        growthRate: 0.3, // Slower growth
+        growthRate: 0.35, // Increased from 0.3
         spawnChance: 0.3, // 30% berries
-        respawnTime: 15
+        respawnTime: 13 // Reduced from 15
       },
       fruit: {
-        energy: 15,
+        energy: 18, // Increased from 15
         color: '#FFA500',
         size: 4,
-        growthRate: 0.1, // Rare
+        growthRate: 0.12, // Increased from 0.1
         spawnChance: 0.1, // 10% fruit trees
-        respawnTime: 30
+        respawnTime: 25 // Reduced from 30
       }
     };
 

@@ -18,13 +18,13 @@ export const CreatureConfig = {
   },
 
   // Energy and health
-  STARTING_ENERGY: { baby: 28, adult: 40 },
-  BASE_HEALTH: { herbivore: 24, predator: 36 },
+  STARTING_ENERGY: { baby: 32, adult: 45 },
+  BASE_HEALTH: { herbivore: 28, predator: 38 },
   ENERGY_DRAIN: {
-    BASE: 0.8,
-    ADRENALINE_MULTIPLIER: 2.6,
-    BLEED_BASE: 0.35,
-    PLAY_BURST: 0.45
+    BASE: 0.65, // Reduced from 0.8 for better survival
+    ADRENALINE_MULTIPLIER: 2.4, // Slightly reduced from 2.6
+    BLEED_BASE: 0.3, // Reduced from 0.35
+    PLAY_BURST: 0.4 // Reduced from 0.45
   },
 
   // Movement and behavior
@@ -38,11 +38,11 @@ export const CreatureConfig = {
 
   // Reproduction
   REPRODUCTION: {
-    ENERGY_THRESHOLD: 36,
-    AGE_MIN: 45,
-    AGE_MAX: 180,
-    COOLDOWN: 25,
-    SUCCESS_CHANCE: 0.15
+    ENERGY_THRESHOLD: 38, // Increased from 36
+    AGE_MIN: 40, // Reduced from 45 for faster reproduction
+    AGE_MAX: 200, // Increased from 180
+    COOLDOWN: 22, // Reduced from 25
+    SUCCESS_CHANCE: 0.18 // Increased from 0.15
   },
 
   // Combat

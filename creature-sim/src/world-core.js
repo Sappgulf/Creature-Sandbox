@@ -354,32 +354,63 @@ export class World {
     }
   }
 
-  // Seed initial world state
+  // Seed initial world state with diverse creature types
   seed(nHerb = 60, nPred = 6, nFood = 180) {
     // Clear existing state
     this.reset();
 
-    // Spawn creatures
-    for (let i = 0; i < nHerb; i++) {
-      const x = Math.random() * this.width;
-      const y = Math.random() * this.height;
-      this.creatureManager.spawnManual(x, y, false); // Herbivore
+    // Calculate diverse creature distribution
+    // Split herbivores into pure herbivores (70%) and omnivores (30%)
+    const nOmnivores = Math.floor(nHerb * 0.35);
+    const nPureHerbivores = nHerb - nOmnivores;
+
+    // Spawn pure herbivores in clusters (natural herding)
+    const herbivoreClusterCount = Math.max(3, Math.floor(nPureHerbivores / 12));
+    for (let cluster = 0; cluster < herbivoreClusterCount; cluster++) {
+      const clusterX = Math.random() * this.width;
+      const clusterY = Math.random() * this.height;
+      const clusterSize = Math.floor(nPureHerbivores / herbivoreClusterCount);
+      
+      for (let i = 0; i < clusterSize; i++) {
+        const offsetX = (Math.random() - 0.5) * 200;
+        const offsetY = (Math.random() - 0.5) * 200;
+        const x = clamp(clusterX + offsetX, 50, this.width - 50);
+        const y = clamp(clusterY + offsetY, 50, this.height - 50);
+        this.creatureManager.spawnManual(x, y, false); // Herbivore
+      }
     }
 
+    // Spawn omnivores scattered (more solitary)
+    for (let i = 0; i < nOmnivores; i++) {
+      const x = Math.random() * this.width;
+      const y = Math.random() * this.height;
+      this.creatureManager.spawnOmnivore(x, y);
+    }
+
+    // Spawn predators strategically (not too close to start)
     for (let i = 0; i < nPred; i++) {
       const x = Math.random() * this.width;
       const y = Math.random() * this.height;
       this.creatureManager.spawnManual(x, y, true); // Predator
     }
 
-    // Spawn food
-    for (let i = 0; i < nFood; i++) {
-      const x = Math.random() * this.width;
-      const y = Math.random() * this.height;
-      this.ecosystem.addFood(x, y);
+    // Spawn food in patches (more realistic distribution)
+    const foodPatchCount = Math.max(8, Math.floor(nFood / 25));
+    for (let patch = 0; patch < foodPatchCount; patch++) {
+      const patchX = Math.random() * this.width;
+      const patchY = Math.random() * this.height;
+      const patchSize = Math.floor(nFood / foodPatchCount);
+      
+      for (let i = 0; i < patchSize; i++) {
+        const offsetX = (Math.random() - 0.5) * 120;
+        const offsetY = (Math.random() - 0.5) * 120;
+        const x = clamp(patchX + offsetX, 0, this.width);
+        const y = clamp(patchY + offsetY, 0, this.height);
+        this.ecosystem.addFood(x, y);
+      }
     }
 
-    console.log(`🌱 Seeded world: ${nHerb} herbivores, ${nPred} predators, ${nFood} food`);
+    console.log(`🌱 Seeded diverse world: ${nPureHerbivores} herbivores, ${nOmnivores} omnivores, ${nPred} predators, ${nFood} food`);
   }
 
   // Reset world to empty state
