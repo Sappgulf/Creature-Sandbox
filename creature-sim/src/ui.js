@@ -1,12 +1,7 @@
 import { domCache } from './dom-cache.js';
 import { gameState } from './game-state.js';
 
-export function bindUI({ onPause, onStep, onFood }) {
-  document.getElementById('btn-pause').onclick = onPause;
-  document.getElementById('btn-step').onclick = onStep;
-  document.getElementById('btn-spawn-food').onclick = onFood;
-  // Note: Creature spawning is now handled via dropdown in main.js
-}
+
 
 export function renderStats(el, world, fps, extra = {}) {
   if (!el) return;

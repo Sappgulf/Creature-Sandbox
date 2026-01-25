@@ -20,16 +20,7 @@ export class DOMCache {
     this.cacheElement('selected-info', 'selectedInfo');
     this.cacheElement('hud-bottom-left', 'hudBottom');
     this.cacheElement('watch-strip', 'watchStrip');
-    this.cacheElement('btn-watch-mode', 'watchModeBtn');
-    this.cacheElement('watch-pause', 'watchPauseBtn');
-    this.cacheElement('watch-follow', 'watchFollowBtn');
-    this.cacheElement('watch-speed', 'watchSpeedBtn');
-    this.cacheElement('watch-moments', 'watchMomentsBtn');
-    this.cacheElement('watch-god-mode', 'watchGodModeBtn');
-    this.cacheElement('watch-recenter', 'watchRecenterBtn');
-    this.cacheElement('moments-panel', 'momentsPanel');
-    this.cacheElement('moments-list', 'momentsList');
-    this.cacheElement('moments-summary', 'momentsSummary');
+
     this.cacheElement('moments-close', 'momentsClose');
 
     // Inspector elements
@@ -38,12 +29,7 @@ export class DOMCache {
     this.cacheElement('btn-close-inspector', 'closeInspectorBtn');
 
     // UI controls
-    this.cacheElement('btn-mode', 'modeBtn');
-    this.cacheElement('btn-pause', 'pauseBtn');
-    this.cacheElement('btn-step', 'stepBtn');
-    this.cacheElement('btn-export', 'exportBtn');
-    this.cacheElement('btn-export-csv', 'exportCSVBtn');
-    this.cacheElement('btn-export-genes', 'exportGenesBtn');
+
 
     // Behavior sliders
     this.cacheElement('slider-forage', 'forageSlider');
@@ -51,11 +37,7 @@ export class DOMCache {
     this.cacheElement('slider-rest', 'restSlider');
 
     // Spawn controls
-    this.cacheElement('btn-spawn-food', 'spawnFoodBtn');
-    this.cacheElement('btn-spawn-creature', 'spawnCreatureBtn');
-    this.cacheElement('creature-dropdown', 'creatureDropdown');
-    this.cacheElement('btn-prop-tool', 'propToolBtn');
-    this.cacheElement('prop-dropdown', 'propDropdown');
+
     this.cacheElement('interaction-hint', 'interactionHint');
     this.cacheElement('interaction-hint-close', 'interactionHintClose');
 
@@ -69,62 +51,13 @@ export class DOMCache {
     this.cacheElement('god-tool-spawn', 'godToolSpawn');
     this.cacheElement('god-tool-remove', 'godToolRemove');
 
-    // Mobile controls
-    this.cacheElement('mobile-btn-spawn', 'mobileSpawnBtn');
-    this.cacheElement('mobile-btn-food', 'mobileFoodBtn');
-    this.cacheElement('mobile-btn-prop', 'mobilePropBtn');
-    this.cacheElement('mobile-btn-pause', 'mobilePauseBtn');
-    this.cacheElement('mobile-btn-speed', 'mobileSpeedBtn');
-    this.cacheElement('mobile-spawn-sheet', 'mobileSpawnSheet');
-    this.cacheElement('mobile-spawn-backdrop', 'mobileSpawnBackdrop');
-    this.cacheElement('mobile-spawn-close', 'mobileSpawnClose');
-    this.cacheElement('mobile-spawn-confirm', 'mobileSpawnConfirm');
+
 
     // Feature panel
-    this.cacheElement('btn-features', 'featuresBtn');
-    this.cacheElement('features-panel', 'featuresPanel');
-    this.cacheElement('btn-features-close', 'featuresCloseBtn');
-    this.cacheElement('chaos-slider', 'chaosSlider');
-    this.cacheElement('chaos-value', 'chaosValue');
-    this.cacheElement('toggle-vision', 'toggleVision');
-    this.cacheElement('toggle-clustering', 'toggleClustering');
-    this.cacheElement('toggle-territories', 'toggleTerritories');
-    this.cacheElement('toggle-memory', 'toggleMemory');
-    this.cacheElement('toggle-social', 'toggleSocial');
-    this.cacheElement('toggle-migration', 'toggleMigration');
-    this.cacheElement('toggle-nests', 'toggleNests');
 
-    // Scenario panel
-    this.cacheElement('btn-scenario', 'scenarioBtn');
-    this.cacheElement('scenario-panel', 'scenarioPanel');
-    this.cacheElement('btn-scenario-close', 'scenarioCloseBtn');
 
     // Achievements panel
-    this.cacheElement('btn-achievements', 'achievementsBtn');
-    this.cacheElement('achievements-panel', 'achievementsPanel');
-    this.cacheElement('btn-achievements-close', 'achievementsCloseBtn');
 
-    // Gene editor
-    this.cacheElement('btn-gene-editor', 'geneEditorBtn');
-    this.cacheElement('gene-editor-panel', 'geneEditorPanel');
-    this.cacheElement('btn-gene-editor-close', 'geneEditorCloseBtn');
-
-    // Ecosystem health
-    this.cacheElement('btn-eco-health', 'ecoHealthBtn');
-    this.cacheElement('btn-eco-health-close', 'ecoHealthCloseBtn');
-
-    // Enhanced systems toggles
-    this.cacheElement('analytics-dashboard-toggle', 'analyticsDashboardToggle');
-    this.cacheElement('debug-console-toggle', 'debugConsoleToggle');
-    this.cacheElement('performance-monitor-toggle', 'performanceMonitorToggle');
-
-    // HUD overflow menu
-    this.cacheElement('hud-overflow-trigger', 'hudOverflowTrigger');
-    this.cacheElement('hud-overflow-menu', 'hudOverflowMenu');
-    this.cacheElement('hud-overflow-backdrop', 'hudOverflowBackdrop');
-    this.cacheElement('hud-overflow-sheet', 'hudOverflowSheet');
-    this.cacheElement('hud-overflow-sheet-content', 'hudOverflowSheetContent');
-    this.cacheElement('hud-overflow-close', 'hudOverflowClose');
 
     // Gameplay modes + goals
     this.cacheElement('session-meta', 'sessionMeta');

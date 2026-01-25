@@ -159,12 +159,28 @@ function initializeApp() {
   // Set initial canvas size
   function setCanvasSize() {
     errorHandler.safeExecute(() => {
-      const rect = canvas.getBoundingClientRect();
+      let rect = canvas.getBoundingClientRect();
       const dpr = 1.0; // Performance optimization: 1x DPR for max FPS
 
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
+      // Fallback if clientRect is zero or suspicious (e.g. before layout)
+      if (rect.width < 100 || rect.height < 100) {
+        rect = {
+          width: window.innerWidth,
+          height: window.innerHeight
+        };
+      }
+
+      // Ensure even dimensions to avoid subpixel artifacts
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform before scaling
       ctx.scale(dpr, dpr);
+
+      // Update camera viewport if it exists
+      if (window.camera) {
+        window.camera.viewportWidth = rect.width;
+        window.camera.viewportHeight = rect.height;
+      }
 
       console.log(`🖼️ Canvas: ${rect.width}x${rect.height} (${canvas.width}x${canvas.height} internal @ ${dpr}x DPI)`);
     }, 'Canvas resize');
@@ -173,7 +189,12 @@ function initializeApp() {
   errorHandler.safeExecute(() => {
     setCanvasSize();
     // Handle window resize
-    window.addEventListener('resize', setCanvasSize);
+    window.addEventListener('resize', () => {
+      requestAnimationFrame(setCanvasSize);
+    });
+    // Double-check size after a short delay to catch layout shifts
+    setTimeout(setCanvasSize, 100);
+    setTimeout(setCanvasSize, 500);
   }, 'Canvas setup');
 
   // ============================================================================
@@ -809,7 +830,7 @@ function initializeApp() {
 
   // Home page initialization
   function showHomePage() {
-    console.log('🏠 showHomePage() called');
+
 
     const homePage = domCache.get('homePage') || document.getElementById('home-page');
     const homeBg = domCache.get('homeBg') || document.getElementById('home-bg');
@@ -818,12 +839,7 @@ function initializeApp() {
     const newGameBtn = domCache.get('newGameBtn') || document.getElementById('btn-new-game');
     const campaignBtn = domCache.get('campaignBtn') || document.getElementById('btn-campaign');
 
-    console.log('🔍 Button elements found:', {
-      homePage: !!homePage,
-      continueBtn: !!continueBtn,
-      newGameBtn: !!newGameBtn,
-      campaignBtn: !!campaignBtn
-    });
+
 
     // Show home page
     errorHandler.safeExecute(() => {

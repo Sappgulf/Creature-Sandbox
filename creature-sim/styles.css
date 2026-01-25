@@ -4404,15 +4404,7 @@ body:not(.legacy-ui) #hud {
   display: none;
 }
 
-/* Hide legacy quick actions */
-#quick-actions {
-  display: none;
-}
 
-/* Hide legacy mobile quick actions when new control strip is active */
-body:not(.legacy-ui) #mobile-quick-actions {
-  display: none;
-}
 
 /* Mobile responsive adjustments */
 @media (max-width: 600px) {

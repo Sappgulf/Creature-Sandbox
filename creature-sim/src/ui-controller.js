@@ -54,11 +54,7 @@ export class UIController {
       onStep: this.onStep.bind(this),
       onFood: this.onFood.bind(this),
       onBehaviorChange: this.onBehaviorChange.bind(this),
-      onMobileSpawn: this.onMobileSpawn.bind(this),
-      onMobileFood: this.onMobileFood.bind(this),
-      onMobileProp: this.onMobileProp.bind(this),
-      onMobilePause: this.onMobilePause.bind(this),
-      onMobileSpeed: this.onMobileSpeed.bind(this),
+
       onPropTool: this.onPropTool.bind(this),
       onGodModeToggle: this.onGodModeToggle.bind(this),
       onGodModeExit: this.onGodModeExit.bind(this),
@@ -77,7 +73,7 @@ export class UIController {
       onModeChange: this.onModeChange.bind(this),
       onModeCycle: this.onModeCycle.bind(this),
       onRefreshGoals: this.onRefreshGoals.bind(this),
-      onMobileSpawnConfirm: this.onMobileSpawnConfirm.bind(this),
+
       onWatchModeToggle: this.onWatchModeToggle.bind(this),
       onWatchPause: this.onWatchPause.bind(this),
       onWatchSpeed: this.onWatchSpeed.bind(this),
@@ -165,12 +161,12 @@ export class UIController {
     // Listen for game pause/resume events (from blur/focus)
     eventSystem.on('game:paused', () => {
       this.updatePauseButton();
-      this.updateMobileControls();
+
     });
 
     eventSystem.on('game:resumed', () => {
       this.updatePauseButton();
-      this.updateMobileControls();
+
     });
 
     // Tool change events (from keyboard shortcuts)
@@ -187,8 +183,7 @@ export class UIController {
   initialize() {
     this.setupHudMenu();
     this.bindCoreControls();
-    this.bindMobileControls();
-    this.bindMobileSpawnSheet();
+
     this.bindPropControls();
     this.bindGodModeControls();
     this.bindPanelControls();
@@ -200,7 +195,7 @@ export class UIController {
     this.bindSessionGoalControls();
     this.bindWatchControls();
     // Sync mobile UI state immediately
-    this.updateMobileControls();
+
     this.updateSessionMetaVisibility();
     this.applySpawnSelection(gameState.selectedCreatureType || this.lastSpawnType, { silent: true });
     this.setPropType(gameState.selectedPropType || 'bounce');
@@ -245,7 +240,7 @@ export class UIController {
     const spawnFoodBtn = domCache.get('spawnFoodBtn');
     if (spawnFoodBtn) {
       spawnFoodBtn.addEventListener('click', this.boundHandlers.onFood);
-      console.log('🌿 Spawn food button bound');
+
     }
 
     // Spawn creature button and dropdown
@@ -316,16 +311,13 @@ export class UIController {
 
   updatePropButton(type) {
     const propToolBtn = domCache.get('propToolBtn');
-    const mobilePropBtn = domCache.get('mobilePropBtn');
+
     const meta = SANDBOX_PROP_TYPES[type] || SANDBOX_PROP_TYPES.bounce;
     if (propToolBtn) {
       propToolBtn.textContent = meta.icon;
       propToolBtn.title = `${meta.label} (P)`;
     }
-    if (mobilePropBtn) {
-      mobilePropBtn.textContent = meta.icon;
-      mobilePropBtn.dataset.label = 'Props';
-    }
+
   }
 
   /**
@@ -359,7 +351,7 @@ export class UIController {
         });
       });
 
-      console.log('🦌 Spawn creature controls bound');
+
     }
 
     // Global click handler to close dropdowns
@@ -372,39 +364,7 @@ export class UIController {
     });
   }
 
-  bindMobileSpawnSheet() {
-    const mobileSpawnBtn = domCache.get('mobileSpawnBtn');
-    const mobileSpawnSheet = domCache.get('mobileSpawnSheet');
-    const mobileSpawnBackdrop = domCache.get('mobileSpawnBackdrop');
-    const mobileSpawnClose = domCache.get('mobileSpawnClose');
-    const mobileSpawnConfirm = domCache.get('mobileSpawnConfirm');
 
-    if (mobileSpawnBtn) {
-      mobileSpawnBtn.addEventListener('click', this.boundHandlers.onMobileSpawn);
-    }
-
-    if (mobileSpawnClose) {
-      mobileSpawnClose.addEventListener('click', () => this.closeMobileSpawnSheet());
-    }
-
-    if (mobileSpawnBackdrop) {
-      mobileSpawnBackdrop.addEventListener('click', () => this.closeMobileSpawnSheet());
-    }
-
-    if (mobileSpawnConfirm) {
-      mobileSpawnConfirm.addEventListener('click', this.boundHandlers.onMobileSpawnConfirm);
-    }
-
-    if (mobileSpawnSheet) {
-      mobileSpawnSheet.addEventListener('click', (event) => {
-        const option = event.target.closest('.mobile-spawn-option');
-        if (!option) return;
-        event.stopPropagation();
-        const creatureType = option.dataset.creature;
-        this.applySpawnSelection(creatureType);
-      });
-    }
-  }
 
   bindInteractionHintControls() {
     const hint = domCache.get('interactionHint');
@@ -551,24 +511,9 @@ export class UIController {
     });
   }
 
-  updateMobileSpawnButton(type) {
-    const mobileSpawnBtn = domCache.get('mobileSpawnBtn');
-    if (!mobileSpawnBtn) return;
-    const meta = CREATURE_SPAWN_TYPES[type] || CREATURE_SPAWN_TYPES[DEFAULT_SPAWN_TYPE];
-    mobileSpawnBtn.textContent = meta.icon;
-    mobileSpawnBtn.dataset.label = 'Spawn';
-  }
 
-  updateMobileSpawnSelection(type) {
-    const mobileSpawnSheet = domCache.get('mobileSpawnSheet');
-    if (!mobileSpawnSheet) return;
-    const options = mobileSpawnSheet.querySelectorAll('.mobile-spawn-option');
-    options.forEach(option => {
-      const isSelected = option.dataset.creature === type;
-      option.classList.toggle('selected', isSelected);
-      option.setAttribute('aria-selected', isSelected ? 'true' : 'false');
-    });
-  }
+
+
 
   applySpawnSelection(type, { silent = false } = {}) {
     const safeType = CREATURE_SPAWN_TYPES[type] ? type : DEFAULT_SPAWN_TYPE;
@@ -579,8 +524,7 @@ export class UIController {
     gameState.selectedCreatureType = safeType;
     this.updateSpawnButton(safeType);
     this.updateSpawnDropdownSelection(safeType);
-    this.updateMobileSpawnButton(safeType);
-    this.updateMobileSpawnSelection(safeType);
+
     return safeType;
   }
 
@@ -601,47 +545,9 @@ export class UIController {
     return fallback;
   }
 
-  openMobileSpawnSheet() {
-    const mobileSpawnSheet = domCache.get('mobileSpawnSheet');
-    const mobileSpawnBackdrop = domCache.get('mobileSpawnBackdrop');
-    if (!mobileSpawnSheet || !mobileSpawnBackdrop) {
-      this.onSpawnCreature(this.resolveSpawnType(gameState.selectedCreatureType, { notifyOnFallback: true }));
-      return;
-    }
-    this.applySpawnSelection(gameState.selectedCreatureType || this.lastSpawnType, { silent: true });
-    mobileSpawnSheet.classList.remove('hidden');
-    mobileSpawnSheet.setAttribute('aria-hidden', 'false');
-    mobileSpawnBackdrop.classList.remove('hidden');
-    mobileSpawnBackdrop.setAttribute('aria-hidden', 'false');
-  }
 
-  closeMobileSpawnSheet() {
-    const mobileSpawnSheet = domCache.get('mobileSpawnSheet');
-    const mobileSpawnBackdrop = domCache.get('mobileSpawnBackdrop');
-    if (mobileSpawnSheet) {
-      mobileSpawnSheet.classList.add('hidden');
-      mobileSpawnSheet.setAttribute('aria-hidden', 'true');
-    }
-    if (mobileSpawnBackdrop) {
-      mobileSpawnBackdrop.classList.add('hidden');
-      mobileSpawnBackdrop.setAttribute('aria-hidden', 'true');
-    }
-  }
 
-  /**
-   * Bind mobile quick action controls
-   */
-  bindMobileControls() {
-    const mobileFoodBtn = domCache.get('mobileFoodBtn');
-    const mobilePropBtn = domCache.get('mobilePropBtn');
-    const mobilePauseBtn = domCache.get('mobilePauseBtn');
-    const mobileSpeedBtn = domCache.get('mobileSpeedBtn');
 
-    if (mobileFoodBtn) mobileFoodBtn.addEventListener('click', this.boundHandlers.onMobileFood);
-    if (mobilePropBtn) mobilePropBtn.addEventListener('click', this.boundHandlers.onMobileProp);
-    if (mobilePauseBtn) mobilePauseBtn.addEventListener('click', this.boundHandlers.onMobilePause);
-    if (mobileSpeedBtn) mobileSpeedBtn.addEventListener('click', this.boundHandlers.onMobileSpeed);
-  }
 
   /**
    * Bind god mode controls
@@ -882,35 +788,7 @@ export class UIController {
     }
   }
 
-  /**
-   * Update mobile controls
-   */
-  updateMobileControls() {
-    const mobilePauseBtn = domCache.get('mobilePauseBtn');
-    const mobileSpeedBtn = domCache.get('mobileSpeedBtn');
-    const mobilePropBtn = domCache.get('mobilePropBtn');
 
-    if (mobilePauseBtn) {
-      const isPaused = gameState.paused;
-      mobilePauseBtn.classList.toggle('active', isPaused);
-      mobilePauseBtn.textContent = isPaused ? '▶️' : '⏸️';
-      mobilePauseBtn.dataset.label = isPaused ? 'Play' : 'Pause';
-    }
-
-    if (mobilePropBtn) {
-      mobilePropBtn.classList.toggle('active', this.tools?.mode === 'prop');
-    }
-
-    if (mobileSpeedBtn) {
-      const speedInfo = gameState.getMobileSpeedInfo();
-      mobileSpeedBtn.textContent = speedInfo.emoji;
-      if (speedInfo.label) {
-        mobileSpeedBtn.dataset.label = speedInfo.label;
-      }
-    }
-
-    this.updateMobileSpawnButton(gameState.selectedCreatureType || this.lastSpawnType);
-  }
 
   dismissInteractionHint() {
     const hint = domCache.get('interactionHint');
@@ -1144,54 +1022,7 @@ export class UIController {
     });
   }
 
-  onMobileSpawn() {
-    this.openMobileSpawnSheet();
-  }
 
-  onMobileSpawnConfirm() {
-    const selectedType = CREATURE_SPAWN_TYPES[gameState.selectedCreatureType]
-      ? gameState.selectedCreatureType
-      : null;
-    const safeType = this.resolveSpawnType(selectedType, { notifyOnFallback: true });
-    if (!safeType) return;
-    this.onSpawnCreature(safeType);
-    this.closeMobileSpawnSheet();
-  }
-
-  onMobileFood() {
-    // Spawn food at center of view
-    const centerX = this.camera.targetX;
-    const centerY = this.camera.targetY;
-
-    for (let i = 0; i < 20; i++) {
-      const offsetX = (Math.random() - 0.5) * 200;
-      const offsetY = (Math.random() - 0.5) * 200;
-      this.world.addFood(centerX + offsetX, centerY + offsetY);
-    }
-    const nearby = this.world.queryCreatures?.(centerX, centerY, 200) || [];
-    let reacted = 0;
-    for (const creature of nearby) {
-      if (reacted >= 3) break;
-      if (typeof creature.reactToDrop === 'function') {
-        creature.reactToDrop({ x: centerX, y: centerY });
-        reacted += 1;
-      }
-    }
-  }
-
-  onMobileProp() {
-    this.cyclePropType(1);
-    this.onPropTool();
-  }
-
-  onMobilePause() {
-    this.onPause();
-  }
-
-  onMobileSpeed() {
-    gameState.cycleMobileSpeed();
-    this.updateMobileControls();
-  }
 
   onWatchModeToggle() {
     gameState.watchModeEnabled = !gameState.watchModeEnabled;

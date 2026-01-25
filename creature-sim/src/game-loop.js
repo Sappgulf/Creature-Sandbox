@@ -759,9 +759,7 @@ export class GameLoop {
       if (this.uiController?.updatePauseButton) {
         this.uiController.updatePauseButton();
       }
-      if (this.uiController?.updateMobileControls) {
-        this.uiController.updateMobileControls();
-      }
+
     }
 
     // Update stats UI every 5 frames (~12Hz)
