@@ -652,9 +652,16 @@ export class CreatureBehaviorSystem {
 
   /**
    * Update predator-specific behavior
+   * Enhanced with pack coordination
    */
   updatePredatorBehavior(world, dt) {
     if (this.creature.traits?.dietRole === 'predator-lite') return;
+    
+    // Pack hunting coordination
+    if (this.creature.genes.packInstinct > 0.5 && this.creature.personality.currentTargetId) {
+      this.updatePackHunting(world, dt);
+    }
+    
     // Update ambush timer
     if (this.creature.personality.ambushTimer > 0) {
       this.creature.personality.ambushTimer -= dt;
@@ -672,6 +679,63 @@ export class CreatureBehaviorSystem {
         this.creature.x, this.creature.y,
         0.5, 5, this.creature.id
       );
+    }
+  }
+
+  /**
+   * Pack hunting coordination - predators work together
+   */
+  updatePackHunting(world, dt) {
+    const prey = world.getAnyCreatureById?.(this.creature.personality.currentTargetId);
+    if (!prey || !prey.alive) return;
+
+    // Find nearby pack members
+    const packRadius = 150;
+    const packMembers = world.creatureManager?.queryCreaturesFast(
+      this.creature.x,
+      this.creature.y,
+      packRadius
+    ).filter(c =>
+      c !== this.creature &&
+      c.alive &&
+      c.genes.predator &&
+      c.genes.packInstinct > 0.5 &&
+      Math.abs((c.genes.hue || 0) - (this.creature.genes.hue || 0)) < 0.2
+    ) || [];
+
+    if (packMembers.length > 0) {
+      // Coordinate attack - surround prey
+      const distToPrey = Math.hypot(prey.x - this.creature.x, prey.y - this.creature.y);
+
+      // Check if we're the closest - lead the chase
+      const isClosest = packMembers.every(p => {
+        const distOther = Math.hypot(prey.x - p.x, prey.y - p.y);
+        return distToPrey <= distOther;
+      });
+
+      if (!isClosest) {
+        // Flanking predator - cut off escape routes
+        const closestPack = packMembers.reduce((closest, p) => {
+          const d = Math.hypot(prey.x - p.x, prey.y - p.y);
+          return !closest || d < Math.hypot(prey.x - closest.x, prey.y - closest.y) ? p : closest;
+        }, this.creature);
+
+        const escapeAngle = Math.atan2(prey.y - closestPack.y, prey.x - closestPack.x);
+        const interceptDistance = 60;
+        const interceptX = prey.x + Math.cos(escapeAngle) * interceptDistance;
+        const interceptY = prey.y + Math.sin(escapeAngle) * interceptDistance;
+        
+        // Move to intercept position
+        if (this.creature.target) {
+          this.creature.target.x = interceptX;
+          this.creature.target.y = interceptY;
+        }
+      }
+
+      // Boost confidence when hunting in pack
+      if (packMembers.length >= 2 && this.creature.emotions) {
+        this.creature.emotions.confidence = Math.min(1.0, this.creature.emotions.confidence + 0.1 * dt);
+      }
     }
   }
 

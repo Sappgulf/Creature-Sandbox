@@ -33,26 +33,64 @@ export class ParticleSystem {
     };
   }
 
-  // Add birth sparkles
-  addBirthEffect(x, y) {
-    const sparkleCount = 8;
+  // Add birth sparkles with color variation based on creature type
+  addBirthEffect(x, y, diet = 0) {
+    const sparkleCount = 12; // Increased from 8
+    const hueBase = diet > 0.7 ? 0 : diet > 0.3 ? 45 : 120; // Red for predators, yellow for omnivores, green for herbivores
+    
     for (let i = 0; i < sparkleCount; i++) {
+      const angle = (i / sparkleCount) * Math.PI * 2;
+      const speed = 40 + Math.random() * 20;
       this.particles.push({
         type: 'sparkle',
         x,
         y,
-        vx: (Math.random() - 0.5) * 60,
-        vy: (Math.random() - 0.5) * 60 - 20, // Upward bias
-        life: 0.8,
-        maxLife: 0.8,
-        size: 2 + Math.random() * 2,
-        color: `hsl(${Math.random() * 60 + 45}, 100%, 70%)` // Gold/yellow sparkles
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 15, // Upward bias
+        life: 1.0 + Math.random() * 0.3,
+        maxLife: 1.3,
+        size: 2 + Math.random() * 3,
+        color: `hsl(${hueBase + Math.random() * 30}, 100%, 70%)`,
+        twinkle: true // Add twinkle effect
       });
     }
+    
+    // Add burst ring
+    this.particles.push({
+      type: 'ring',
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      life: 0.5,
+      maxLife: 0.5,
+      size: 5,
+      expandRate: 80, // Expands 80 units per second
+      color: `hsl(${hueBase}, 80%, 60%)`,
+      opacity: 0.8
+    });
   }
 
-  // Add death gravestone marker
-  addDeathMarker(x, y, creatureName) {
+  // Add death gravestone marker with enhanced visuals
+  addDeathMarker(x, y, creatureName, diet = 0) {
+    // Dust cloud on death
+    for (let i = 0; i < 12; i++) {
+      const angle = (i / 12) * Math.PI * 2;
+      this.particles.push({
+        type: 'dust',
+        x,
+        y,
+        vx: Math.cos(angle) * (20 + Math.random() * 15),
+        vy: Math.sin(angle) * (20 + Math.random() * 15) - 10,
+        life: 0.6 + Math.random() * 0.4,
+        maxLife: 1.0,
+        size: 3 + Math.random() * 4,
+        color: diet > 0.7 ? '#aa4444' : diet > 0.3 ? '#88aa44' : '#88aa88',
+        opacity: 0.8
+      });
+    }
+    
+    // Gravestone marker
     this.particles.push({
       type: 'gravestone',
       x,
@@ -63,7 +101,8 @@ export class ParticleSystem {
       maxLife: 5.0,
       size: 12,
       opacity: 1.0,
-      name: creatureName
+      name: creatureName,
+      fadeInTime: 0.3 // Fade in over 0.3 seconds
     });
   }
 
@@ -362,13 +401,31 @@ export class ParticleSystem {
     switch (p.type) {
       case 'sparkle':
         p.opacity = lifeRatio;
+        if (p.twinkle) {
+          p.opacity *= 0.5 + 0.5 * Math.sin(p.life * 20); // Twinkle effect
+        }
         p.vy += 80 * dt;
         p.vx *= 0.95;
         p.vy *= 0.95;
         break;
 
+      case 'ring':
+        p.size += p.expandRate * dt;
+        p.opacity = lifeRatio * 0.6;
+        break;
+
+      case 'dust':
+        p.opacity = lifeRatio * 0.7;
+        p.vy += 60 * dt; // Gravity
+        p.vx *= 0.88;
+        p.vy *= 0.88;
+        break;
+
       case 'gravestone':
-        if (p.life < 2.0) {
+        // Fade in effect
+        if (p.fadeInTime && (p.maxLife - p.life) < p.fadeInTime) {
+          p.opacity = (p.maxLife - p.life) / p.fadeInTime;
+        } else if (p.life < 2.0) {
           p.opacity = p.life / 2.0;
         }
         break;
@@ -562,6 +619,19 @@ export class ParticleSystem {
       ctx.globalAlpha = p.opacity || 1.0;
 
       if (p.type === 'sparkle') {
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.type === 'ring') {
+        // Expanding ring
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (p.type === 'dust') {
+        // Dust cloud particles
         ctx.fillStyle = p.color;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);

@@ -5,26 +5,32 @@ export class AudioSystem {
   constructor() {
     // Initialize AudioContext (requires user interaction first)
     this.ctx = null;
-    this.masterVolume = 0.3;
+    this.masterVolume = 0.25; // Reduced from 0.3 for better balance
     this.soundsEnabled = true;
     this.musicEnabled = true;
 
-    // Volume settings per category
+    // Volume settings per category (better balanced)
     this.volumes = {
-      ui: 0.4,
-      creatures: 0.3,
-      ambient: 0.2,
-      music: 0.25
+      ui: 0.35, // Reduced from 0.4
+      creatures: 0.25, // Reduced from 0.3
+      ambient: 0.15, // Reduced from 0.2
+      music: 0.18, // Reduced from 0.25
+      effects: 0.30 // New category for special effects
     };
 
     // Sound queues (limit simultaneous sounds)
     this.playingSounds = new Set();
-    this.maxConcurrent = 20;
+    this.maxConcurrent = 15; // Reduced from 20 to prevent audio chaos
 
     // Music state
     this.currentMusicType = null;
     this.musicOscillator = null;
     this.musicGain = null;
+
+    // Ambient sound state
+    this.ambientTimer = 0;
+    this.ambientInterval = 8; // Play ambient sound every 8 seconds
+    this.lastAmbientTime = 0;
 
     // Cache for common sounds
     this.soundCache = new Map();
@@ -359,6 +365,76 @@ export class AudioSystem {
         break;
       default:
         this.playUISound('click');
+    }
+  }
+
+  // Play ambient environmental sounds
+  playAmbientSound(biome = 'forest', intensity = 0.5) {
+    if (!this.soundsEnabled || !this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    
+    // Limit ambient sound frequency
+    if (now - this.lastAmbientTime < this.ambientInterval) return;
+    this.lastAmbientTime = now;
+
+    try {
+      const baseVolume = intensity * 0.4;
+
+      switch (biome) {
+        case 'forest':
+          // Bird chirp
+          this.playTone(800 + Math.random() * 400, 0.15, 'sine', baseVolume * 0.7, 'ambient');
+          setTimeout(() => {
+            if (this.soundsEnabled && this.ctx) {
+              this.playTone(900 + Math.random() * 400, 0.12, 'sine', baseVolume * 0.5, 'ambient');
+            }
+          }, 150);
+          break;
+
+        case 'wetland':
+          // Water ripple / frog croak
+          this.playTone(220 + Math.random() * 80, 0.25, 'square', baseVolume * 0.6, 'ambient');
+          break;
+
+        case 'desert':
+          // Wind whistle
+          this.playTone(150 + Math.random() * 100, 0.4, 'sine', baseVolume * 0.4, 'ambient');
+          break;
+
+        case 'mountain':
+          // Wind howl
+          this.playTone(100 + Math.random() * 50, 0.5, 'sawtooth', baseVolume * 0.35, 'ambient');
+          break;
+
+        default:
+          // Generic nature sound
+          this.playTone(400 + Math.random() * 400, 0.2, 'sine', baseVolume * 0.5, 'ambient');
+      }
+    } catch (e) {
+      console.warn('Ambient sound error:', e);
+    }
+  }
+
+  // Update method - call this regularly to trigger ambient sounds
+  update(dt, world) {
+    if (!this.soundsEnabled || !this.ctx) return;
+
+    this.ambientTimer += dt;
+
+    // Play ambient sounds periodically
+    if (this.ambientTimer >= this.ambientInterval) {
+      this.ambientTimer = 0;
+
+      // Determine biome based on world state (simplified)
+      const biomes = ['forest', 'wetland', 'desert', 'mountain'];
+      const randomBiome = biomes[Math.floor(Math.random() * biomes.length)];
+      
+      // Vary intensity based on population and activity
+      const population = world?.creatures?.length || 0;
+      const intensity = Math.min(1.0, 0.3 + population / 200);
+
+      this.playAmbientSound(randomBiome, intensity);
     }
   }
 
