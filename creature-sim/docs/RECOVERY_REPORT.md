@@ -59,6 +59,19 @@
 - **Result:** Button handlers are correctly attached in showHomePage() function (lines 839-948)
 - **Additional:** Robust fallback handler (window.handleNewGame) also exists at line 1086
 
+### Fix 3: Remove duplicate New Game button handler
+- **Status:** COMPLETED
+- **File:** `creature-sim/src/main.js` lines 1086-1115
+- **Issue:** Duplicate button handler (onclick assignment) was conflicting with addEventListener in showHomePage()
+- **Change:** Removed duplicate `window.handleNewGame` and `explicitNewGameBtn.onclick` assignment
+- **Verification:** Only one handler remains (in showHomePage), preventing conflicts
+
+### Fix 4: Update Node.js version
+- **Status:** COMPLETED
+- **File:** `package.json` line 33
+- **Change:** Updated Node.js requirement from >=14.0.0 to >=18.0.0
+- **Reason:** Node 14 is EOL, Node 18 is current LTS
+
 ---
 
 ## Systematic Code Scan
@@ -106,10 +119,11 @@
 1. ✅ Fix syntax error in main.js - COMPLETED
 2. ✅ Verify button handlers - COMPLETED
 3. ✅ Static code scan - COMPLETED
-4. ⏳ Run app in browser and execute smoke tests
-5. ⏳ Document any runtime P0/P1 issues discovered
-6. ⏳ Fix discovered issues incrementally
-7. ⏳ Verify all smoke tests pass
+4. ✅ Fix duplicate New Game button handlers - COMPLETED
+5. ⏳ Run app in browser and execute smoke tests
+6. ⏳ Document any runtime P0/P1 issues discovered
+7. ⏳ Fix discovered issues incrementally
+8. ⏳ Verify all smoke tests pass
 
 ---
 

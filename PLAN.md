@@ -237,7 +237,29 @@
 
 ## Done
 
-### 2026-01-25
+### 2026-01-25 (Session 2: Button Handler Fix)
+
+**Changed:**
+- `creature-sim/src/main.js` — Removed duplicate New Game button handler (lines 1086-1115)
+- `package.json` — Updated Node.js requirement from >=14.0.0 to >=18.0.0
+- `creature-sim/docs/RECOVERY_REPORT.md` — Documented button handler fix
+
+**Why:**
+- Duplicate button handlers (onclick + addEventListener) caused conflicts
+- Single handler in showHomePage() is correct approach
+- Node 14 is EOL, 18 is current LTS
+
+**Verified:**
+- Removed conflicting onclick assignment
+- Single addEventListener remains in showHomePage()
+- Console logging present for debugging
+- Syntax check passed
+
+**Notes:**
+- New Game button should now work correctly
+- Manual browser testing required to confirm fix
+
+### 2026-01-25 (Session 1: Syntax Fix)
 
 **Changed:**
 - `creature-sim/src/main.js` — Removed stray '1' character on line 1163 that caused syntax error
@@ -254,11 +276,6 @@
 - `node -c creature-sim/src/ui-controller.js` — syntax check passed
 - Button handlers confirmed present in showHomePage() function
 - No missing imports detected
-
-**Notes:**
-- Recovery mission in progress
-- Manual browser testing required for full verification
-- All critical smoke tests pending execution
 
 ### 2026-01-29
 

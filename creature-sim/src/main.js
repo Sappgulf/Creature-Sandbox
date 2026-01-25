@@ -1079,40 +1079,8 @@ function initializeApp() {
     }, 'New game initialization');
   }
 
-  // Expose startNewGame globally so fallback handlers can use it
+  // Expose startNewGame globally for fallback usage
   window.startNewGame = startNewGame;
-
-  // ROBUST GLOBAL HANDLER: Self-contained handler for HTML onclick
-  window.handleNewGame = function () {
-    console.log('⚡ Global handleNewGame triggered');
-    const homePage = document.getElementById('home-page');
-
-    // 1. Hide UI immediately for feedback
-    if (homePage) homePage.classList.add('hidden');
-
-    // 2. Start game
-    if (typeof startNewGame === 'function') {
-      startNewGame();
-    } else {
-      console.error('CRITICAL: startNewGame function missing!');
-      alert('Game loading... please wait a moment and try again.');
-      if (homePage) homePage.classList.remove('hidden'); // Show menu again if failed
-    }
-
-    // 3. Play sound if audio system ready
-    try {
-      if (window.audio && window.audio.playUISound) {
-        window.audio.playUISound('click');
-      }
-    } catch (e) { /* ignore audio errors */ }
-  };
-
-  // Bind immediately if element exists (handles reloads/hot-module-replacement)
-  const explicitNewGameBtn = document.getElementById('btn-new-game');
-  if (explicitNewGameBtn) {
-    explicitNewGameBtn.onclick = window.handleNewGame;
-    console.log('✅ New Game button bound via robust handler');
-  }
 
   // ============================================================================
   // START GAME LOOP

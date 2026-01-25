@@ -19,7 +19,11 @@
       "Bash(do if grep -q \"id=\"\"$id\"\"\" creature-sim/index.html)",
       "Bash(then echo \"✓ $id\")",
       "Bash(else echo \"✗ MISSING: $id\")",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(tasklist:*)",
+      "Bash(git push:*)"
     ]
   }
 }
