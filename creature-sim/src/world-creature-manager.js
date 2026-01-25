@@ -153,7 +153,8 @@ export class WorldCreatureManager {
 
   // Spawn manual creature (for testing/debugging)
   spawnManual(x, y, predator = false) {
-    const genes = makeGenes(predator);
+    // Pass predator as object property, not boolean
+    const genes = makeGenes({ predator: predator ? 1 : 0 });
     const creature = new Creature(x, y, genes);
     creature.temperament = generateTemperament();
     creature.quirks = rollQuirks();
