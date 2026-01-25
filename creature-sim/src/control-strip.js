@@ -222,35 +222,65 @@ export class ControlStripController {
     handleMenuAction(action) {
         this.closeOverflowDrawer();
 
-        // Trigger the corresponding legacy button if it exists
-        const legacyButtons = {
-            'step': 'btn-step',
-            'props': 'btn-prop-tool',
-            'mode': 'btn-mode',
-            'campaign': 'btn-campaign',
-            'achievements': 'btn-achievements',
-            'gene-editor': 'btn-gene-editor',
-            'scenario': 'btn-scenario',
-            'features': 'btn-features',
-            'eco-health': 'btn-eco-health',
-            'analytics': 'analytics-dashboard-toggle',
-            'help': null, // Will open shortcuts overlay
-            'save': null,
-            'load': null
-        };
-
-        const buttonId = legacyButtons[action];
-        if (buttonId) {
-            const btn = document.getElementById(buttonId);
-            btn?.click();
-        } else if (action === 'help') {
+        if (action === 'help') {
             const shortcutsOverlay = document.getElementById('shortcuts-overlay');
             shortcutsOverlay?.classList.remove('hidden');
-        } else if (action === 'save') {
-            // Trigger save via keyboard shortcut simulation
+            return;
+        }
+
+        if (action === 'save') {
+            // Simulate save shortcut
             document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true }));
-        } else if (action === 'load') {
+            return;
+        }
+
+        if (action === 'load') {
+            // Simulate load shortcut
             document.dispatchEvent(new KeyboardEvent('keydown', { key: 'o', ctrlKey: true }));
+            return;
+        }
+
+        // Direct controller actions
+        switch (action) {
+            case 'step':
+                this.uiController?.onStep();
+                break;
+            case 'props':
+                this.uiController?.onPropTool();
+                break;
+            case 'mode':
+                // Toggle session meta visibility which contains mode selection
+                this.uiController?.onSessionMetaToggle();
+                break;
+            case 'campaign':
+                // Campaign toggle is handled by ID in main currently, but we can try generic event or check controller
+                // If ui-controller doesn't implement onCampaignToggle fully, we might need to rely on event system
+                // But looking at UI controller, onCampaignToggle is empty/commented "handled in main". 
+                // Let's trigger the event system or keep the button click for JUST campaign if needed, 
+                // OR better, emit the event directly.
+                // However, the legacy button click works because main.js binds it.
+                // Let's perform a check for specific complex ones.
+                const btnCampaign = document.getElementById('btn-campaign');
+                if (btnCampaign) btnCampaign.click();
+                break;
+            case 'achievements':
+                this.uiController?.onAchievementsToggle();
+                break;
+            case 'gene-editor':
+                this.uiController?.onGeneEditorToggle();
+                break;
+            case 'scenario':
+                this.uiController?.onScenarioToggle();
+                break;
+            case 'features':
+                this.uiController?.onFeaturesToggle();
+                break;
+            case 'eco-health':
+                this.uiController?.onEcoHealthToggle();
+                break;
+            case 'analytics':
+                this.uiController?.onAnalyticsToggle();
+                break;
         }
     }
 

@@ -19,8 +19,6 @@ export class DOMCache {
     this.cacheElement('stats', 'stats');
     this.cacheElement('selected-info', 'selectedInfo');
     this.cacheElement('hud-bottom-left', 'hudBottom');
-    this.cacheElement('quick-actions', 'quickActions');
-    this.cacheElement('mobile-quick-actions', 'mobileQuickActions');
     this.cacheElement('watch-strip', 'watchStrip');
     this.cacheElement('btn-watch-mode', 'watchModeBtn');
     this.cacheElement('watch-pause', 'watchPauseBtn');

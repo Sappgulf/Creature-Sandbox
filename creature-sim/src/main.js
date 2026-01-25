@@ -1081,17 +1081,14 @@ function initializeApp() {
   errorHandler.safeExecute(() => {
     const hud = document.getElementById('hud');
     const stats = document.getElementById('stats');
-    const quickActions = document.getElementById('quick-actions');
 
     let lastInteractionTime = Date.now();
-    let lastCameraMoving = false;
 
     // Track user interactions
     const updateInteraction = () => {
       lastInteractionTime = Date.now();
       // Remove auto-hidden state on interaction
       if (hud) hud.classList.remove('auto-hidden');
-      if (quickActions) quickActions.classList.remove('hidden');
     };
 
     document.addEventListener('mousemove', updateInteraction);
@@ -1120,16 +1117,6 @@ function initializeApp() {
         } else {
           stats.classList.remove('faded');
         }
-      }
-
-      // Hide quick actions when camera moving rapidly
-      if (quickActions && cameraMoving !== lastCameraMoving) {
-        if (cameraMoving) {
-          quickActions.classList.add('hidden');
-        } else {
-          quickActions.classList.remove('hidden');
-        }
-        lastCameraMoving = cameraMoving;
       }
     }, 500);
 
