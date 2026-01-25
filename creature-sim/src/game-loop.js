@@ -52,6 +52,15 @@ export class GameLoop {
     this.gameplayModes = subsystems.gameplayModes;
     this.sessionGoals = subsystems.sessionGoals;
     this.devTools = subsystems.devTools || {};
+    
+    // New advanced systems
+    this.proceduralSounds = subsystems.proceduralSounds;
+    this.unlockableAchievements = subsystems.unlockableAchievements;
+    this.familyBonds = subsystems.familyBonds;
+    this.memoryLearning = subsystems.memoryLearning;
+    this.seasonalEvents = subsystems.seasonalEvents;
+    this.advancedAI = subsystems.advancedAI;
+    this.godPowers = subsystems.godPowers;
 
     this.lastNow = performance.now();
     this.fixedDt = configManager.get('performance', 'fixedTimeStep', 1 / 60);
@@ -475,6 +484,27 @@ export class GameLoop {
 
     // Update achievement system
     // Achievements are now event-driven via WORLD_UPDATE / kill / god action events.
+    
+    // Update new advanced systems
+    if (this.seasonalEvents?.update) {
+      this.seasonalEvents.update(this.world, dt);
+    }
+    
+    if (this.familyBonds?.update) {
+      this.familyBonds.update(this.world, dt);
+    }
+    
+    if (this.memoryLearning?.update) {
+      this.memoryLearning.update(this.world, dt);
+    }
+    
+    if (this.unlockableAchievements?.update) {
+      this.unlockableAchievements.update(this.world, {
+        analytics: this.analytics,
+        sessionGoals: this.sessionGoals,
+        achievements: this.achievements
+      });
+    }
   }
 
   /**

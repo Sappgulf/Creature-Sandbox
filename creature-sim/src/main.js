@@ -47,6 +47,18 @@ import { diseaseSystem } from './disease-system.js';
 import { campaignSystem, CAMPAIGN_LEVELS } from './campaign-system.js';
 import { assetLoader } from './asset-loader.js';
 
+// Import newly added systems
+import { seasonalEventsSystem } from './seasonal-events.js';
+import { advancedAI } from './advanced-predator-prey-ai.js';
+import { godPowers } from './god-powers.js';
+import { PersonalitySystem } from './personality-system.js';
+import { AdvancedGenetics } from './advanced-genetics.js';
+import { BiomeInteractions } from './biome-interactions.js';
+import { ProceduralSounds } from './procedural-sounds.js';
+import { UnlockableAchievements } from './unlockable-achievements.js';
+import { FamilyBondsSystem } from './family-bonds.js';
+import { MemoryLearningSystem } from './memory-learning.js';
+
 // Local helper to validate notification subsystem shape
 function isNotificationSystem(candidate) {
   return !!candidate &&
@@ -384,6 +396,25 @@ function initializeApp() {
     return new AchievementSystem();
   }, 'Achievement system initialization', null);
 
+  // Initialize new advanced systems
+  const proceduralSounds = errorHandler.safeExecute(() => {
+    const ps = new ProceduralSounds();
+    ps.init();
+    return ps;
+  }, 'Procedural sounds initialization', null);
+
+  const unlockableAchievements = errorHandler.safeExecute(() => {
+    return new UnlockableAchievements();
+  }, 'Unlockable achievements initialization', null);
+
+  const familyBonds = errorHandler.safeExecute(() => {
+    return new FamilyBondsSystem();
+  }, 'Family bonds system initialization', null);
+
+  const memoryLearning = errorHandler.safeExecute(() => {
+    return new MemoryLearningSystem();
+  }, 'Memory learning system initialization', null);
+
   const notifyUI = (message, type = 'info', duration = 2200) => {
     eventSystem.emit(GameEvents.NOTIFICATION, { message, type, duration });
   };
@@ -410,6 +441,11 @@ function initializeApp() {
     if (particles) world.attachParticleSystem(particles);
     if (heatmaps) world.attachHeatmapSystem(heatmaps);
     if (audio) world.attachAudioSystem(audio);
+    if (notifications) world.attachNotificationSystem(notifications);
+    if (proceduralSounds) world.attachProceduralSounds(proceduralSounds);
+    if (unlockableAchievements) world.attachUnlockableAchievements(unlockableAchievements);
+    if (familyBonds) world.attachFamilyBonds(familyBonds);
+    if (memoryLearning) world.attachMemoryLearning(memoryLearning);
   }, 'System attachment to world');
 
   // Ensure lineage names are set
@@ -486,7 +522,15 @@ function initializeApp() {
       sessionGoals,
       autoDirector,
       moments,
-      devTools
+      devTools,
+      // New advanced systems
+      proceduralSounds,
+      unlockableAchievements,
+      familyBonds,
+      memoryLearning,
+      seasonalEvents: seasonalEventsSystem,
+      advancedAI,
+      godPowers
     });
   }, 'Game loop initialization', null);
 

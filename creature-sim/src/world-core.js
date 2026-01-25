@@ -443,6 +443,26 @@ export class World {
     this.audio = audio;
   }
 
+  attachNotificationSystem(notifications) {
+    this.notificationSystem = notifications;
+  }
+
+  attachProceduralSounds(proceduralSounds) {
+    this.proceduralSounds = proceduralSounds;
+  }
+
+  attachUnlockableAchievements(unlockableAchievements) {
+    this.unlockableAchievements = unlockableAchievements;
+  }
+
+  attachFamilyBonds(familyBonds) {
+    this.familyBonds = familyBonds;
+  }
+
+  attachMemoryLearning(memoryLearning) {
+    this.memoryLearning = memoryLearning;
+  }
+
   setChaosLevel(level = 0.5) {
     const safeLevel = clamp(level, 0, 1);
     this.chaosBaseLevel = safeLevel;
