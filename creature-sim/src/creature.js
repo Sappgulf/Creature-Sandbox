@@ -3045,14 +3045,30 @@ export class Creature {
     // OPTIMIZATION: Only draw detailed traits when zoomed in significantly
     const showTraitDetails = opts.showTraitVisualization !== false && (isSelected || isPinned || (opts.zoom && opts.zoom > 1.0));
 
-    // NEW: SVG-based body rendering with dynamic tinting
+    // NEW: SVG-based body rendering with dynamic tinting and variant selection
     const diet = g.diet ?? (g.predator ? 1.0 : 0.0);
     let assetType = 'creature_herbivore'; // default
     
-    if (diet > 0.7) {
-      assetType = 'creature_predator';
-    } else if (diet > 0.3) {
-      assetType = 'creature_omnivore';
+    // Select asset based on creature characteristics
+    if (this.ageStage === 'baby') {
+      // Babies use special baby sprite
+      assetType = 'creature_baby';
+    } else if (this.ageStage === 'elder') {
+      // Elders use special elder sprite
+      assetType = 'creature_elder';
+    } else if (this.aquaticAffinity && this.aquaticAffinity > 0.6) {
+      // Highly aquatic creatures get aquatic sprite
+      assetType = 'creature_aquatic';
+    } else if (this.socialRank && this.socialRank === 'alpha') {
+      // Alpha creatures get special alpha sprite
+      assetType = 'creature_alpha';
+    } else {
+      // Adults use diet-based sprites
+      if (diet > 0.7) {
+        assetType = 'creature_predator';
+      } else if (diet > 0.3) {
+        assetType = 'creature_omnivore';
+      }
     }
     
     const colorStr = `hsl(${displayHue},85%,${lightness}%)`;

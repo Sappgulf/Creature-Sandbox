@@ -92,6 +92,10 @@ console.log('🎨 Loading creature assets...');
 assetLoader.loadSVG('creature_herbivore', './assets/creature_herbivore.svg');
 assetLoader.loadSVG('creature_predator', './assets/creature_predator.svg');
 assetLoader.loadSVG('creature_omnivore', './assets/creature_omnivore.svg');
+assetLoader.loadSVG('creature_baby', './assets/creature_baby.svg');
+assetLoader.loadSVG('creature_elder', './assets/creature_elder.svg');
+assetLoader.loadSVG('creature_alpha', './assets/creature_alpha.svg');
+assetLoader.loadSVG('creature_aquatic', './assets/creature_aquatic.svg');
 assetLoader.loadAll().then(() => {
   console.log('✅ Creature assets loaded successfully');
 }).catch(error => {

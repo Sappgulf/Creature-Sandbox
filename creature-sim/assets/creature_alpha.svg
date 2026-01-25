@@ -1,0 +1,25 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+      <feFlood flood-color="#ffff00" flood-opacity="0.3" />
+      <feComposite in2="blur" operator="in" result="glow" />
+      <feMerge>
+        <feMergeNode in="glow" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Glowing body for alpha/leader -->
+  <ellipse cx="45" cy="50" rx="32" ry="26" fill="currentColor" filter="url(#glow)" />
+  <!-- Strong, confident eye -->
+  <circle cx="56" cy="42" r="6" fill="white" />
+  <circle cx="58" cy="42" r="3.5" fill="black" />
+  <circle cx="57" cy="40" r="1.5" fill="white" />
+  <!-- Crown/crest marking -->
+  <path d="M45,30 L42,35 L45,33 L48,35 Z" fill="white" opacity="0.6" />
+  <path d="M48,32 L46,36 L48,34 L50,36 Z" fill="white" opacity="0.5" />
+  <!-- Powerful tail -->
+  <path d="M18,50 Q8,45 12,50 Q8,55 18,50" fill="currentColor" opacity="0.8" />
+  <path d="M18,48 Q8,44 12,48" fill="white" opacity="0.2" />
+</svg>
