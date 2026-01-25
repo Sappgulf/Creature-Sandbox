@@ -190,7 +190,8 @@ export class WorldCreatureManager {
 
   // Spawn omnivore creature
   spawnOmnivore(x, y) {
-    const genes = makeGenes(false);
+    // Create herbivore genes as base (predator: false)
+    const genes = makeGenes({ predator: 0 });
     // Set omnivore diet using diploid gene structure
     if (genes.diet && typeof genes.diet === 'object') {
       genes.diet.allele1 = 0.5;
