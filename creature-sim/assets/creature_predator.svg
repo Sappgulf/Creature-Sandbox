@@ -1,0 +1,26 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
+      <feOffset dx="1" dy="1" result="offsetblur" />
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.4" />
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Body - angular and predatory -->
+  <path d="M80,50 L50,25 L25,35 L35,50 L25,65 L50,75 Z" fill="currentColor" filter="url(#shadow)" />
+  <!-- Eye - menacing -->
+  <ellipse cx="60" cy="42" rx="8" ry="6" fill="white" />
+  <ellipse cx="62" cy="42" rx="4" ry="3" fill="red" />
+  <circle cx="61" cy="41" r="1.5" fill="black" />
+  <!-- Dorsal fins -->
+  <path d="M45,28 L40,15 L35,28 Z" fill="currentColor" opacity="0.6" />
+  <path d="M45,72 L40,85 L35,72 Z" fill="currentColor" opacity="0.6" />
+  <!-- Teeth indication -->
+  <path d="M75,48 L70,52 M72,50 L67,54" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.8" />
+</svg>

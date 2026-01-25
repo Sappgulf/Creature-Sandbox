@@ -9,6 +9,7 @@ import { CreatureBehaviorSystem } from './creature-behavior.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { generateTemperament } from './creature-traits.js';
+import { assetLoader } from './asset-loader.js';
 
 // Destructure commonly-used constants for cleaner code
 const { TRAIL_INTERVAL, TRAIL_MAX, LOG_MAX, TAU } = CreatureConfig;
@@ -120,6 +121,11 @@ export class Creature {
     this.parentId = null; // set by World.addCreature
     this.parents = [];
     this.currentBiomeType = null;
+    
+    // NEW: SVG asset rendering cache
+    this._cachedCanvas = null;
+    this._cachedColor = null;
+    this._cachedAssetType = null;
 
     const baseMaxHealth = this.genes.predator ?
       CreatureTuning.DEFAULT_MAX_HEALTH * 1.25 :
@@ -3039,17 +3045,40 @@ export class Creature {
     // OPTIMIZATION: Only draw detailed traits when zoomed in significantly
     const showTraitDetails = opts.showTraitVisualization !== false && (isSelected || isPinned || (opts.zoom && opts.zoom > 1.0));
 
-    // NEW: Trait visualization - body shape based on metabolism
-    const bodyScale = 0.8 + (2 - g.metabolism) * 0.3; // Low metabolism = chunkier
-    ctx.save();
-    ctx.scale(1, bodyScale);
-    ctx.beginPath();
-    ctx.moveTo(6, 0);
-    ctx.lineTo(-4, 3.5 / bodyScale);
-    ctx.lineTo(-4, -3.5 / bodyScale);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
+    // NEW: SVG-based body rendering with dynamic tinting
+    const diet = g.diet ?? (g.predator ? 1.0 : 0.0);
+    let assetType = 'creature_herbivore'; // default
+    
+    if (diet > 0.7) {
+      assetType = 'creature_predator';
+    } else if (diet > 0.3) {
+      assetType = 'creature_omnivore';
+    }
+    
+    const colorStr = `hsl(${displayHue},85%,${lightness}%)`;
+    
+    // Check if we need to update the cached canvas
+    if (assetLoader.isReady() && (this._cachedColor !== colorStr || this._cachedAssetType !== assetType)) {
+      this._updateCachedCanvas(assetType, colorStr);
+    }
+
+    // Render using cached canvas if available, otherwise fallback to triangle
+    if (this._cachedCanvas) {
+      const renderSize = r * 4; // Scale factor for good appearance
+      ctx.drawImage(this._cachedCanvas, -renderSize/2, -renderSize/2, renderSize, renderSize);
+    } else {
+      // Fallback to original triangle rendering
+      const bodyScale = 0.8 + (2 - g.metabolism) * 0.3; // Low metabolism = chunkier
+      ctx.save();
+      ctx.scale(1, bodyScale);
+      ctx.beginPath();
+      ctx.moveTo(6, 0);
+      ctx.lineTo(-4, 3.5 / bodyScale);
+      ctx.lineTo(-4, -3.5 / bodyScale);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
 
     ctx.strokeStyle = `hsla(${displayHue},90%,80%,${0.65 + flash * 0.4})`;
     ctx.lineWidth = 1;
@@ -3098,6 +3127,25 @@ export class Creature {
     if (opts.showBehaviorState !== false && (isSelected || isPinned || (opts.zoom && opts.zoom > 0.8))) {
       this._drawBehaviorState(ctx);
     }
+  }
+
+  /**
+   * Update the cached canvas for this creature's appearance
+   * @private
+   */
+  _updateCachedCanvas(assetType, colorStr) {
+    this._cachedColor = colorStr;
+    this._cachedAssetType = assetType;
+    
+    // Create tinted canvas asynchronously
+    assetLoader.createTintedCanvas(assetType, colorStr, 64).then(canvas => {
+      // Only update if color/type hasn't changed in the meantime
+      if (this._cachedColor === colorStr && this._cachedAssetType === assetType) {
+        this._cachedCanvas = canvas;
+      }
+    }).catch(error => {
+      console.error(`Failed to create cached canvas for ${assetType}:`, error);
+    });
   }
 
   /**

@@ -45,6 +45,7 @@ import { performanceProfiler, initializePerformanceMonitor } from './performance
 import { scenarioEditor } from './scenario-editor.js';
 import { diseaseSystem } from './disease-system.js';
 import { campaignSystem, CAMPAIGN_LEVELS } from './campaign-system.js';
+import { assetLoader } from './asset-loader.js';
 
 // Local helper to validate notification subsystem shape
 function isNotificationSystem(candidate) {
@@ -85,6 +86,17 @@ function createDevFpsOverlay(enabled) {
 // ============================================================================
 
 console.log('🚀 Starting Creature Sandbox...');
+
+// Preload creature assets
+console.log('🎨 Loading creature assets...');
+assetLoader.loadSVG('creature_herbivore', './assets/creature_herbivore.svg');
+assetLoader.loadSVG('creature_predator', './assets/creature_predator.svg');
+assetLoader.loadSVG('creature_omnivore', './assets/creature_omnivore.svg');
+assetLoader.loadAll().then(() => {
+  console.log('✅ Creature assets loaded successfully');
+}).catch(error => {
+  console.warn('⚠️ Some creature assets failed to load, falling back to shapes:', error);
+});
 
 // Wait for DOM to be ready before initializing
 function initializeApp() {
