@@ -181,13 +181,20 @@ export class GameLoop {
     eventSystem.on(GameEvents.CREATURE_BORN, (data) => {
       if (this.lineageTracker) this.lineageTracker.onCreatureBorn(data.creature, this.world);
       if (this.audio) this.audio.playSound('creatureBorn');
-      if (this.particles) this.particles.emit(data.x, data.y, 'birth');
+      if (this.particles && data.creature) {
+        const diet = data.creature.genes?.diet ?? (data.creature.genes?.predator ? 1.0 : 0.0);
+        this.particles.emit(data.creature.x, data.creature.y, 'birth', { diet });
+      }
     });
 
     eventSystem.on(GameEvents.CREATURE_DIED, (data) => {
       if (this.lineageTracker) this.lineageTracker.onCreatureDied(data.creature);
       if (this.audio) this.audio.playSound('creatureDied');
-      if (this.particles) this.particles.emit(data.x, data.y, 'death');
+      if (this.particles && data.creature) {
+        const diet = data.creature.genes?.diet ?? (data.creature.genes?.predator ? 1.0 : 0.0);
+        const name = data.creature.name || data.creature.id || 'Unknown';
+        this.particles.emit(data.creature.x, data.creature.y, 'death', { diet, name });
+      }
     });
 
     // Achievement events
@@ -689,7 +696,7 @@ export class GameLoop {
 
     // Update audio system
     if (this.audio) {
-      this.audio.update(dt);
+      this.audio.update(dt, this.world);
     }
 
     // Update particles

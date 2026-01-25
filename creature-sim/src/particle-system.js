@@ -301,10 +301,10 @@ export class ParticleSystem {
   emit(x, y, type, options = {}) {
     switch (type) {
       case 'birth':
-        this.addBirthEffect(x, y);
+        this.addBirthEffect(x, y, options.diet || 0);
         break;
       case 'death':
-        this.addDeathMarker(x, y, options.name || 'Unknown');
+        this.addDeathMarker(x, y, options.name || 'Unknown', options.diet || 0);
         break;
       case 'combat':
       case 'hit':
@@ -333,7 +333,7 @@ export class ParticleSystem {
         break;
       default:
         // Default to sparkle effect for unknown types
-        this.addBirthEffect(x, y);
+        this.addBirthEffect(x, y, options.diet || 0);
     }
   }
 

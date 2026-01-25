@@ -191,7 +191,15 @@ export class WorldCreatureManager {
   // Spawn omnivore creature
   spawnOmnivore(x, y) {
     const genes = makeGenes(false);
-    genes.diet = 0.5; // Omnivore diet
+    // Set omnivore diet using diploid gene structure
+    if (genes.diet && typeof genes.diet === 'object') {
+      genes.diet.allele1 = 0.5;
+      genes.diet.allele2 = 0.5;
+      genes.diet.expressed = 0.5;
+    } else {
+      // Fallback for old gene format
+      genes.diet = 0.5;
+    }
     const creature = new Creature(x, y, genes);
     creature.temperament = generateTemperament();
     creature.quirks = rollQuirks();
