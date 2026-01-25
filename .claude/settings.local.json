@@ -14,7 +14,12 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: remove stray character in main.js\n\nRemoved stray ''1'' on line 1163 that would cause syntax error.\nVerified button handlers are properly attached in showHomePage\\(\\).\n\nThanks for the help.\nEOF\n\\)\")",
       "Bash(while read f)",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\ndocs: create recovery report and update smoke tests\n\nCreated comprehensive recovery documentation:\n- RECOVERY_REPORT.md: baseline assessment and fix tracking\n- SMOKE_TESTS.md: updated with critical test suite\n- PLAN.md: added 2026-01-25 session audit\n\nAll critical tests pending manual browser verification.\n\nThanks for the help.\nEOF\n\\)\")"
+      "Bash(git commit -m \"$\\(cat <<''EOF''\ndocs: create recovery report and update smoke tests\n\nCreated comprehensive recovery documentation:\n- RECOVERY_REPORT.md: baseline assessment and fix tracking\n- SMOKE_TESTS.md: updated with critical test suite\n- PLAN.md: added 2026-01-25 session audit\n\nAll critical tests pending manual browser verification.\n\nThanks for the help.\nEOF\n\\)\")",
+      "Bash(for id in \"home-page\" \"btn-new-game\" \"btn-continue\" \"btn-campaign\" \"campaign-panel\" \"shortcuts-overlay\")",
+      "Bash(do if grep -q \"id=\"\"$id\"\"\" creature-sim/index.html)",
+      "Bash(then echo \"✓ $id\")",
+      "Bash(else echo \"✗ MISSING: $id\")",
+      "Bash(git commit:*)"
     ]
   }
 }
