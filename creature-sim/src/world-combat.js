@@ -41,8 +41,8 @@ export class WorldCombat {
       // Omnivores can eat herbivores and small creatures
       // Herbivores can't eat other creatures
       const canEat = (predatorDiet > 0.7) || // Predator
-                     (predatorDiet > 0.3 && predatorDiet < 0.7 && preyDiet < 0.3) || // Omnivore eating herbivore
-                     (predatorDiet > 0.3 && predatorDiet < 0.7 && c.size < predator.size * 0.8); // Omnivore eating smaller creature
+        (predatorDiet > 0.3 && predatorDiet < 0.7 && preyDiet < 0.3) || // Omnivore eating herbivore
+        (predatorDiet > 0.3 && predatorDiet < 0.7 && c.size < predator.size * 0.8); // Omnivore eating smaller creature
 
       if (canEat) {
         candidates.push(c);
@@ -115,43 +115,26 @@ export class WorldCombat {
   applyDamage(target, amount, ctx = {}) {
     if (!target.alive) return 0;
 
-    const now = this.world.t;
-    const iframes = CreatureTuning.DAMAGE_IFRAMES_MS / 1000;
-    const bypassIframes = ctx.bypassIframes === true;
-    const iframesUntil = target.damageFx?.iframesUntil ?? -Infinity;
-    if (!bypassIframes && now < iframesUntil) {
-      return 0;
-    }
-
-    const clampedAmount = clamp(amount, 0, CreatureTuning.DAMAGE_CLAMP_MAX);
-    if (clampedAmount <= 0) return 0;
-
-    target.health = Math.max(0, target.health - clampedAmount);
-    target.stats.damageTaken += clampedAmount;
+    // Use the target's recordDamage method to handle scaling, caps, and I-frames
+    const actualDamage = target.recordDamage(amount, ctx);
+    if (actualDamage <= 0) return 0;
 
     if (ctx.attacker) {
-      ctx.attacker.stats.damageDealt += clampedAmount;
+      ctx.attacker.stats.damageDealt += actualDamage;
     }
-
-    if (!target.damageFx) {
-      target.damageFx = { recentDamage: 0, hitFlash: 0, iframesUntil: -Infinity, lastDamageTime: -Infinity };
-    }
-    target.damageFx.iframesUntil = now + iframes;
-    target.damageFx.lastDamageTime = now;
 
     // Apply special effects based on attack type
     if (ctx.attackType === 'predation') {
-      this.applyPredatorEffects(ctx.attacker, target, clampedAmount);
+      this.applyPredatorEffects(ctx.attacker, target, actualDamage);
     } else if (ctx.attackType === 'counterattack') {
-      this.applyHerdBuff(target, ctx.attacker, clampedAmount);
+      this.applyHerdBuff(target, ctx.attacker, actualDamage);
     }
 
-    // Check if target died
-    if (target.health <= 0) {
-      target.alive = false;
-      target.deathCause = ctx.attackType || 'combat';
-      target.killedBy = ctx.attacker?.id || null;
+    // Trigger visual damage effects
+    this.triggerDamageEffects(target, actualDamage, ctx);
 
+    // Check if target died (recordDamage sets alive=false)
+    if (!target.alive) {
       if (ctx.attacker) {
         try {
           eventSystem.emit(GameEvents.CREATURE_KILLED, {
@@ -167,12 +150,7 @@ export class WorldCombat {
       this.handleCreatureDeath(target, ctx);
     }
 
-    // Trigger damage effects
-    if (typeof target.recordDamage === 'function') {
-      target.recordDamage(clampedAmount);
-    }
-    this.triggerDamageEffects(target, clampedAmount, ctx);
-    return clampedAmount;
+    return actualDamage;
   }
 
   setAttackCooldown(creature, seconds) {

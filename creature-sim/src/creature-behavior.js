@@ -377,66 +377,14 @@ export class CreatureBehaviorSystem {
    * Apply movement physics
    */
   applyMovement(dt) {
-    const diet = this.creature.genes.diet ?? (this.creature.genes.predator ? 1.0 : 0.0);
-    const aggressionFactor = this.creature.personality.aggression;
-    const temp = this.creature.temperament || {};
-
-    let baseSpeed = CreatureConfig.MOVEMENT.BASE_SPEED;
-
-    // Predator speed modifiers
-    if (this.creature.genes.predator) {
-      baseSpeed *= 0.85 + aggressionFactor * 0.25;
-    }
-
-    // Environmental modifiers
-    const inWetland = this.creature._lastWorld?.getBiomeAt ?
-      this.creature._lastWorld.getBiomeAt(this.creature.x, this.creature.y)?.type === 'wetland' : false;
-
-    if (inWetland) {
-      if (this.creature.aquaticAffinity > 0.1) {
-        baseSpeed *= CreatureConfig.ENVIRONMENT.WETLAND_SPEED_MULTIPLIER;
-      } else {
-        baseSpeed *= 0.5; // Penalty for non-aquatic creatures
-      }
-    }
-
-    // Age modifiers
-    baseSpeed *= this.getAgeSpeedMultiplier();
-
-    // Status modifiers
-    baseSpeed *= this.getStatusSpeedMultiplier(temp);
-
-    const eventActivity = this.creature._lastWorld?.eventModifiers?.activity ?? 1;
-    baseSpeed *= clamp(eventActivity, 0.85, 1.2);
-
-    // Temperament-driven pacing (small)
-    baseSpeed *= clamp(0.92 + (temp.curiosity ?? 0) * 0.15 + (temp.boldness ?? 0) * 0.08, 0.85, 1.25);
-
-    // Quirk pacing (night owl)
-    if (this.creature.getQuirkMultiplier) {
-      const timeOfDay = this.creature._lastWorld?.environment?.timeOfDay ?? 12;
-      const isNight = timeOfDay >= 18 || timeOfDay <= 6;
-      if (isNight) {
-        baseSpeed *= this.creature.getQuirkMultiplier('night_speed');
-      } else {
-        baseSpeed *= this.creature.getQuirkMultiplier('day_speed');
-      }
-    }
-
-    const dayNight = this.creature._lastWorld?.dayNightState;
-    if (dayNight) {
-      const dayFactor = clamp((dayNight.light - 0.2) / 0.8, 0, 1);
-      const nightMult = CreatureAgentTuning.DAY_NIGHT.MOVE_NIGHT_MULT;
-      const dayMult = CreatureAgentTuning.DAY_NIGHT.MOVE_DAY_MULT;
-      baseSpeed *= nightMult + (dayMult - nightMult) * dayFactor;
-    }
-
-    // Apply movement (use cached trig calculations)
-    const speed = baseSpeed * dt;
+    // UNIFIED: Use the definitive speed calculation from the creature instance
+    const spd = this.creature.calculateCurrentSpeed(dt, this.creature._lastWorld);
     const { cos: dirCos, sin: dirSin } = this.getCachedTrig(this.creature.dir);
-    this.creature.x += dirCos * speed;
-    this.creature.y += dirSin * speed;
 
+    this.creature.x += dirCos * spd * dt;
+    this.creature.y += dirSin * spd * dt;
+
+    // Wind effects
     const windX = this.creature._lastWorld?.moodState?.windX ?? 0;
     const windY = this.creature._lastWorld?.moodState?.windY ?? 0;
     if (windX || windY) {
@@ -445,8 +393,8 @@ export class CreatureBehaviorSystem {
       this.creature.y += windY * windScale * dt;
     }
 
-    // Update animation
-    this.creature._updateAnimationState(speed, this.creature._lastWorld?.t || 0);
+    // Update animation state based on movement speed
+    this.creature._updateAnimationState(spd, this.creature._lastWorld?.t || 0);
   }
 
   /**

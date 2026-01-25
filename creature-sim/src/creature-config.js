@@ -19,7 +19,7 @@ export const CreatureConfig = {
 
   // Energy and health
   STARTING_ENERGY: { baby: 28, adult: 40 },
-  BASE_HEALTH: { herbivore: 12, predator: 18 },
+  BASE_HEALTH: { herbivore: 24, predator: 36 },
   ENERGY_DRAIN: {
     BASE: 0.8,
     ADRENALINE_MULTIPLIER: 2.6,
@@ -49,7 +49,9 @@ export const CreatureConfig = {
   COMBAT: {
     ATTACK_RANGE: 8,
     DAMAGE_MULTIPLIER: 2.0,
-    COUNTER_ATTACK_CHANCE: 0.3
+    COUNTER_ATTACK_CHANCE: 0.3,
+    MAX_DAMAGE_PERCENT: 0.35,
+    INVINCIBILITY_DURATION: 0.8
   },
 
   // Status effects

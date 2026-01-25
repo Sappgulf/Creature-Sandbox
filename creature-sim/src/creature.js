@@ -1505,15 +1505,14 @@ export class Creature {
       }
     }
 
-    const spd = baseSpeed * speedScalar;
+    const spd = this.calculateCurrentSpeed(dt, world);
     const chaosGravity = world?.chaos?.gravity ?? 0;
     if (Math.abs(chaosGravity) > 0.1) {
       this.applyImpulse(0, chaosGravity * dt * 60, { decay: 10, cap: 200 });
     }
     this.vx = Math.cos(this.dir) * spd;
     this.vy = Math.sin(this.dir) * spd;
-    this.x = this.x + this.vx * dt;
-    this.y = this.y + this.vy * dt;
+    // MOVEMENT: position update is handled by behaviorSystem.applyMovement
     this._applyExternalImpulse(dt);
     const impulse = this.externalImpulse;
     const externalSpeed = impulse ? Math.hypot(impulse.vx, impulse.vy) : 0;
@@ -2204,14 +2203,160 @@ export class Creature {
     }
   }
 
-  recordDamage(amount) {
+  /**
+   * Records damage taken by the creature, applying health reduction, 
+   * damage caps, and invincibility frames.
+   * @param {number} amount - Initial damage amount
+   * @param {Object} ctx - Damage context (attacker, type, etc.)
+   */
+  recordDamage(amount, ctx = {}) {
+    if (!this.alive) return 0;
+
+    // Safety check for invincibility frames
+    const now = this._lastWorld?.t ?? 0;
+    if (now < (this.damageFx?.iframesUntil ?? -Infinity) && !ctx.ignoreIframes) {
+      return 0;
+    }
+
+    // Unify visual feedback block
     if (!this.damageFx) {
       this.damageFx = { recentDamage: 0, hitFlash: 0, iframesUntil: -Infinity, lastDamageTime: -Infinity };
     }
     const ratio = clamp(amount / 10, 0.05, 1);
     this.damageFx.recentDamage = Math.min(2.6, (this.damageFx.recentDamage ?? 0) + ratio * 1.5);
     this.damageFx.hitFlash = Math.max(this.damageFx.hitFlash ?? 0, 0.18 + ratio * 0.35);
-    this.reactToCollision(amount, { skipDamage: true });
+
+    // Apply global damage cap (Max 35% of max health per hit)
+    const maxDamage = this.maxHealth * (CreatureConfig.COMBAT.MAX_DAMAGE_PERCENT || 0.35);
+    const finalDamage = Math.min(amount, maxDamage);
+
+    // Apply health reduction
+    this.health = Math.max(0, this.health - finalDamage);
+    this.stats.damageTaken += finalDamage;
+
+    if (ctx.attacker) {
+      this.killedBy = ctx.attacker.id;
+    }
+
+    // Set invincibility frames
+    if (!ctx.ignoreIframes) {
+      const iframes = CreatureConfig.COMBAT.INVINCIBILITY_DURATION || 0.8;
+      this.damageFx.iframesUntil = now + iframes;
+    }
+    this.damageFx.lastDamageTime = now;
+
+    // Trigger visual/collision reaction
+    this.reactToCollision(finalDamage, { skipDamage: true });
+
+    // Handle memory of danger
+    if (this.memory && finalDamage > 0.6 &&
+      now - (this.memory.lastDangerAt ?? -Infinity) >= CreatureConfig.MEMORY.DANGER_COOLDOWN) {
+      const strength = clamp(0.3 + (finalDamage / 12) * 0.6, 0.3, 0.9);
+      this.rememberLocation?.(this.x, this.y, 'danger', strength, now);
+      this.memory.lastDangerAt = now;
+    }
+
+    // Check for death
+    if (this.health <= 0) {
+      this.alive = false;
+      this.deathCause = ctx.type || 'combat';
+    } else {
+      // "Second Wind" - Adrenaline surge at critical health
+      const healthRatio = this.health / this.maxHealth;
+      if (healthRatio < 0.15 && (this.cooldowns.adrenaline ?? 0) <= 0) {
+        this.applyStatus('adrenaline', {
+          duration: 3.5,
+          intensity: 0.6,
+          metadata: { boost: 0.6, source: 'second_wind' }
+        });
+        this.cooldowns.adrenaline = 15;
+        this.logEvent('Unleashed Second Wind!', now);
+      }
+    }
+
+    return finalDamage;
+  }
+
+  /**
+   * Calculates the current speed of the creature based on genes, biome, state, and boosters.
+   * @param {number} dt - Time delta
+   * @param {Object} world - Simulation world
+   * @returns {number} The current speed in px/s
+   */
+  calculateCurrentSpeed(dt, world) {
+    const biome = world.getBiomeAt ? world.getBiomeAt(this.x, this.y) : null;
+    const inWater = biome?.type === 'water';
+    const inWetland = biome?.type === 'wetland';
+    const goal = this.goal?.current || 'WANDER';
+
+    const restFactor = BehaviorConfig.restWeight * clamp(1 - this.energy / 36, 0, 1);
+    const aggressionFactor = this.genes.predator ? clamp(this.personality.aggression, 0.4, 2.2) : 1;
+
+    // Scale genes.speed to baseline simulation speeds
+    let baseSpeed = this.genes.speed * (this.genes.predator ? 46 : 40);
+    if (this.genes.predator) baseSpeed *= 0.85 + aggressionFactor * 0.25;
+
+    // Environmental/Biome modifiers
+    if (inWater) {
+      if (this.aquaticAffinity > 0.5) {
+        baseSpeed *= biome.aquaticSpeed || (1.2 + this.aquaticAffinity * 0.3);
+      } else if (this.aquaticAffinity > 0.2) {
+        baseSpeed *= 0.7 + this.aquaticAffinity * 0.5;
+      } else {
+        baseSpeed *= biome.movementSpeed || 0.3;
+      }
+    } else if (inWetland) {
+      if (this.aquaticAffinity > 0.1) {
+        baseSpeed *= 1 + this.aquaticAffinity * 0.32;
+      } else {
+        baseSpeed *= 0.88;
+      }
+    } else if (this.aquaticAffinity > 0.5) {
+      baseSpeed *= 0.9 - Math.min(0.2, (this.aquaticAffinity - 0.5) * 0.25);
+    }
+
+    // Age stage speed modifiers
+    baseSpeed *= this._getAgeSpeedMultiplier();
+
+    let speedBoost = 1;
+    const herdBuff = this.getStatus('herd-buff');
+    const adrenaline = this.getStatus('adrenaline');
+    const playBurst = this.getStatus('play-burst');
+    const elderAid = this.getStatus('elder-aid');
+    const bleed = this.getStatus('bleeding');
+
+    if (herdBuff && !this.genes.predator) speedBoost += herdBuff.intensity ?? 0;
+    if (adrenaline) speedBoost += adrenaline.metadata?.boost ?? adrenaline.intensity ?? 0;
+    if (playBurst) speedBoost += playBurst.intensity ?? 0.25;
+    if (elderAid) speedBoost += (elderAid.intensity ?? 0) * 0.08;
+    if (bleed) speedBoost -= Math.min(0.3, 0.08 * (bleed.stacks ?? 1));
+
+    // Arrive/Target factor
+    let arriveFactor = 1;
+    if (this.target) {
+      const dist = Math.hypot(this.target.x - this.x, this.target.y - this.y);
+      if (dist < CreatureAgentTuning.MOVEMENT.SLOW_RADIUS) {
+        arriveFactor = clamp(dist / CreatureAgentTuning.MOVEMENT.SLOW_RADIUS, CreatureAgentTuning.MOVEMENT.MIN_ARRIVE_SPEED, 1);
+      }
+    }
+
+    const goalSpeedFactor = goal === 'REST' ? 0.4 : goal === 'SEEK_MATE' ? 1.15 : 1;
+    let speedScalar = clamp(1 - restFactor * 0.6, 0.15, 1) * clamp(speedBoost, 0.6, 1.9) * arriveFactor * goalSpeedFactor;
+
+    if (this.genes.predator) {
+      if (this.personality.ambushTimer > 0 && this.target && this.target.creatureId != null) {
+        speedScalar *= 0.25 + 0.15 * aggressionFactor;
+      } else if (this.target && this.target.creatureId != null) {
+        speedScalar *= 1.05 + aggressionFactor * 0.15;
+      } else if (this.target && this.target.signal) {
+        speedScalar *= 0.9 + this.personality.packInstinct * 0.35;
+      }
+    }
+
+    const recallUntil = this.memory?.focus?.recallUntil ?? -Infinity;
+    if (world.t < recallUntil) speedScalar *= CreatureConfig.MEMORY.RECALL_SLOW;
+
+    return baseSpeed * speedScalar;
   }
 
   _calculateCollisionDamage(amount) {
