@@ -579,12 +579,17 @@ export class UIController {
     const achievementsCloseBtn = domCache.get('achievementsCloseBtn');
     const geneEditorCloseBtn = domCache.get('geneEditorCloseBtn');
     const ecoHealthCloseBtn = domCache.get('ecoHealthCloseBtn');
+    const shortcutsCloseBtn = document.getElementById('btn-shortcuts-close');
 
     if (featuresCloseBtn) featuresCloseBtn.addEventListener('click', this.boundHandlers.onFeaturesToggle);
 
     if (scenarioCloseBtn) scenarioCloseBtn.addEventListener('click', this.boundHandlers.onScenarioToggle);
 
     if (achievementsCloseBtn) achievementsCloseBtn.addEventListener('click', this.boundHandlers.onAchievementsToggle);
+
+    if (shortcutsCloseBtn) {
+      shortcutsCloseBtn.addEventListener('click', () => this.toggleShortcutsHelp());
+    }
 
     if (geneEditorCloseBtn) geneEditorCloseBtn.addEventListener('click', this.boundHandlers.onGeneEditorToggle);
 

@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(curl:*)",
+      "Bash(for f in world-core.js creature.js genetics.js camera.js renderer.js tools.js analytics.js)",
+      "Bash(do if [ ! -f \"creature-sim/src/$f\" ])",
+      "Bash(then echo \"MISSING: $f\")",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(grep:*)",
+      "Bash(node -c:*)",
+      "Bash(ls:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: remove stray character in main.js\n\nRemoved stray ''1'' on line 1163 that would cause syntax error.\nVerified button handlers are properly attached in showHomePage\\(\\).\n\nThanks for the help.\nEOF\n\\)\")"
+    ]
+  }
+}
