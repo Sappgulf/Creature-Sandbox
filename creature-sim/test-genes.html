@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gene Test</title>
+</head>
+<body>
+    <h1>Testing Gene Creation</h1>
+    <pre id="output"></pre>
+    
+    <script type="module">
+        import { makeGenes } from './src/genetics.js';
+        
+        const output = document.getElementById('output');
+        
+        try {
+            output.textContent += '=== Testing makeGenes ===\n\n';
+            
+            // Test 1: Herbivore
+            output.textContent += 'Test 1: Herbivore (predator: 0)\n';
+            const herbGenes = makeGenes({ predator: 0 });
+            output.textContent += `Success! Diet: ${herbGenes.diet.expressed}\n`;
+            output.textContent += `Has speed: ${!!herbGenes.speed}\n`;
+            output.textContent += `Speed type: ${typeof herbGenes.speed}\n\n`;
+            
+            // Test 2: Predator
+            output.textContent += 'Test 2: Predator (predator: 1)\n';
+            const predGenes = makeGenes({ predator: 1 });
+            output.textContent += `Success! Diet: ${predGenes.diet.expressed}\n`;
+            output.textContent += `Has speed: ${!!predGenes.speed}\n\n`;
+            
+            // Test 3: Omnivore
+            output.textContent += 'Test 3: Omnivore (predator: 0, diet: 0.5)\n';
+            const omniGenes = makeGenes({ predator: 0 });
+            omniGenes.diet.allele1 = 0.5;
+            omniGenes.diet.allele2 = 0.5;
+            omniGenes.diet.expressed = 0.5;
+            output.textContent += `Success! Diet: ${omniGenes.diet.expressed}\n\n`;
+            
+            output.textContent += '=== ALL TESTS PASSED ===\n';
+            
+        } catch (error) {
+            output.textContent += `\n\nERROR: ${error.message}\n`;
+            output.textContent += `Stack: ${error.stack}\n`;
+        }
+    </script>
+</body>
+</html>

@@ -1024,7 +1024,36 @@ function initializeApp() {
   // Start new game
   function startNewGame() {
     errorHandler.safeExecute(() => {
+      console.log('🔄 Resetting world for new game...');
+      
+      // Reset the world with fresh creatures
+      if (world && world.seed) {
+        world.seed(50, 8, 250); // Re-seed with diverse population
+      }
+      
+      // Reset camera to center
+      if (camera) {
+        camera.focusOn(world.width * 0.5, world.height * 0.5);
+        camera.setZoom(0.25);
+        camera.clearUserOverride();
+      }
+      
+      // Reset game state
       gameState.startGame();
+      gameState.selectedId = null;
+      gameState.paused = false;
+      
+      // Reset analytics
+      if (analytics) {
+        analytics.reset();
+      }
+      
+      // Reset lineage tracker
+      if (lineageTracker) {
+        lineageTracker.reset();
+      }
+
+      console.log('✅ New game started successfully!');
 
       // Start tutorial for new players
       if (tutorial && tutorial.shouldShow()) {
