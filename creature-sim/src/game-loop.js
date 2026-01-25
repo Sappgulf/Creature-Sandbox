@@ -11,7 +11,7 @@ import { performanceProfiler, updatePerformanceMonitor, profile } from './perfor
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
 import { poolManager } from './object-pool.js';
-import { batchRenderer } from './batch-renderer.js';
+// batchRenderer removed
 import { ecsWorld } from './ecs.js';
 import { analyticsDashboard, advancedStatsCalculator } from './enhanced-analytics.js';
 // STATIC UI IMPORTS - avoids dynamic import() latency in hot path
@@ -52,7 +52,7 @@ export class GameLoop {
     this.gameplayModes = subsystems.gameplayModes;
     this.sessionGoals = subsystems.sessionGoals;
     this.devTools = subsystems.devTools || {};
-    
+
     // New advanced systems
     this.proceduralSounds = subsystems.proceduralSounds;
     this.unlockableAchievements = subsystems.unlockableAchievements;
@@ -491,20 +491,20 @@ export class GameLoop {
 
     // Update achievement system
     // Achievements are now event-driven via WORLD_UPDATE / kill / god action events.
-    
+
     // Update new advanced systems
     if (this.seasonalEvents?.update) {
       this.seasonalEvents.update(this.world, dt);
     }
-    
+
     if (this.familyBonds?.update) {
       this.familyBonds.update(this.world, dt);
     }
-    
+
     if (this.memoryLearning?.update) {
       this.memoryLearning.update(this.world, dt);
     }
-    
+
     if (this.unlockableAchievements?.update) {
       this.unlockableAchievements.update(this.world, {
         analytics: this.analytics,
@@ -561,7 +561,7 @@ export class GameLoop {
       : null;
 
     // Update reusable render options (reduces per-frame allocations)
-    const batchRendererReady = Boolean(batchRenderer?.isReady?.());
+    const batchRendererReady = false;
     const opts = this.renderOptions;
     opts.selectedId = gameState.selectedId;
     opts.pinnedId = gameState.pinnedId;
@@ -601,10 +601,10 @@ export class GameLoop {
     // Update FPS calculation
     gameState.fps = 0.9 * gameState.fps + 0.1 * (1 / Math.max(dt, 0.0001));
 
-    // Flush batch renderer if enabled
-    if (opts.useBatchRendering) {
-      batchRenderer.flush?.();
-    }
+    // Flush batch renderer (removed)
+    // if (opts.useBatchRendering) {
+    //   batchRenderer.flush?.();
+    // }
 
     // Render heatmaps (if active)
     if (this.world.heatmaps?.activeType) {

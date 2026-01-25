@@ -378,7 +378,7 @@ export class InputManager {
       gameState.setInspectorVisible(true);
     }
 
-    // TODO: Update inspector display
+
   }
 
   /**
@@ -519,7 +519,7 @@ export class InputManager {
         gameState.travelPreview = null;
       }
 
-      // TODO: Handle pointer action
+
       this.handlePointerAction(e, false);
     }
   }
@@ -718,12 +718,12 @@ export class InputManager {
 
     if (nearest) {
       gameState.selectCreature(nearest.id);
-      
+
       // Enable camera follow mode automatically
       this.camera.followMode = 'smooth-follow';
       this.camera.followTarget = nearest.id;
       this.camera.clearUserOverride(); // Allow camera to follow
-      
+
       gameState.setInspectorVisible(true);
       const inspector = domCache.get('inspector');
       if (inspector) inspector.classList.remove('minimized');
@@ -860,12 +860,12 @@ export class InputManager {
           const creature = this._findCreatureAt(x, y);
           if (creature) {
             gameState.selectCreature(creature.id);
-            
+
             // Enable camera follow mode automatically when clicking a creature
             this.camera.followMode = 'smooth-follow';
             this.camera.followTarget = creature.id;
             this.camera.clearUserOverride(); // Allow camera to follow
-            
+
             // Show selected info
             const selectedInfo = document.getElementById('selected-info');
             if (selectedInfo) selectedInfo.classList.remove('hidden');

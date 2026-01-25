@@ -40,7 +40,7 @@ import { errorHandler } from './error-handler.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
 import { poolManager } from './object-pool.js';
-import { batchRenderer } from './batch-renderer.js';
+// batchRenderer removed (stub)
 import { performanceProfiler, initializePerformanceMonitor } from './performance-profiler.js';
 import { scenarioEditor } from './scenario-editor.js';
 import { diseaseSystem } from './disease-system.js';
@@ -1041,29 +1041,29 @@ function initializeApp() {
   function startNewGame() {
     errorHandler.safeExecute(() => {
       console.log('🔄 Resetting world for new game...');
-      
+
       // Reset the world with fresh creatures
       if (world && world.seed) {
         world.seed(50, 8, 250); // Re-seed with diverse population
       }
-      
+
       // Reset camera to center
       if (camera) {
         camera.focusOn(world.width * 0.5, world.height * 0.5);
         camera.setZoom(0.25);
         camera.clearUserOverride();
       }
-      
+
       // Reset game state
       gameState.startGame();
       gameState.selectedId = null;
       gameState.paused = false;
-      
+
       // Reset analytics
       if (analytics) {
         analytics.reset();
       }
-      
+
       // Reset lineage tracker
       if (lineageTracker) {
         lineageTracker.reset();
@@ -1077,6 +1077,41 @@ function initializeApp() {
         setTimeout(() => tutorial.start(), 1000);
       }
     }, 'New game initialization');
+  }
+
+  // Expose startNewGame globally so fallback handlers can use it
+  window.startNewGame = startNewGame;
+
+  // ROBUST GLOBAL HANDLER: Self-contained handler for HTML onclick
+  window.handleNewGame = function () {
+    console.log('⚡ Global handleNewGame triggered');
+    const homePage = document.getElementById('home-page');
+
+    // 1. Hide UI immediately for feedback
+    if (homePage) homePage.classList.add('hidden');
+
+    // 2. Start game
+    if (typeof startNewGame === 'function') {
+      startNewGame();
+    } else {
+      console.error('CRITICAL: startNewGame function missing!');
+      alert('Game loading... please wait a moment and try again.');
+      if (homePage) homePage.classList.remove('hidden'); // Show menu again if failed
+    }
+
+    // 3. Play sound if audio system ready
+    try {
+      if (window.audio && window.audio.playUISound) {
+        window.audio.playUISound('click');
+      }
+    } catch (e) { /* ignore audio errors */ }
+  };
+
+  // Bind immediately if element exists (handles reloads/hot-module-replacement)
+  const explicitNewGameBtn = document.getElementById('btn-new-game');
+  if (explicitNewGameBtn) {
+    explicitNewGameBtn.onclick = window.handleNewGame;
+    console.log('✅ New Game button bound via robust handler');
   }
 
   // ============================================================================
@@ -1201,7 +1236,16 @@ document.addEventListener('DOMContentLoaded', () => {
   if (newGameBtn) {
     newGameBtn.onclick = () => {
       console.log('🆕 New Game clicked (fallback handler)');
-      if (homePage) homePage.classList.add('hidden');
+
+      if (typeof window.startNewGame === 'function') {
+        window.startNewGame();
+        if (homePage) homePage.classList.add('hidden');
+      } else {
+        console.error('❌ startNewGame not ready yet');
+        // If we can't start the game, don't hide the menu!
+        // Optionally show an alert:
+        // alert('Game initialization not complete. Please wait or reload.');
+      }
     };
   }
 
