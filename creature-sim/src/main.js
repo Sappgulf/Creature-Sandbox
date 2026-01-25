@@ -309,13 +309,7 @@ function initializeApp() {
     }
   }, 'Feature toggles');
 
-  // Initialize batch renderer once we have the 2D context
-  errorHandler.safeExecute(() => {
-    if (batchRenderer?.init) {
-      const result = batchRenderer.init(ctx);
-      console.log('🎨 Batch renderer initialized:', !!result);
-    }
-  }, 'Batch renderer initialization');
+  // Batch renderer removed - using direct canvas rendering for better performance
 
   // Tools system
   const tools = errorHandler.safeExecute(() => {
@@ -1039,6 +1033,13 @@ function initializeApp() {
 
   // Start new game
   function startNewGame() {
+    // CRITICAL: Always set game state to ready FIRST
+    // This ensures the game loop renders even if initialization has errors
+    gameState.startGame();
+    gameState.selectedId = null;
+    gameState.paused = false;
+
+    // Remaining initialization - errors here won't block gameplay
     errorHandler.safeExecute(() => {
       console.log('🔄 Resetting world for new game...');
 
@@ -1053,11 +1054,6 @@ function initializeApp() {
         camera.setZoom(0.25);
         camera.clearUserOverride();
       }
-
-      // Reset game state
-      gameState.startGame();
-      gameState.selectedId = null;
-      gameState.paused = false;
 
       // Reset analytics
       if (analytics) {

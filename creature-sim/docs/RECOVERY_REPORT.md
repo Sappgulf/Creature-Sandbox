@@ -72,6 +72,16 @@
 - **Change:** Updated Node.js requirement from >=14.0.0 to >=18.0.0
 - **Reason:** Node 14 is EOL, Node 18 is current LTS
 
+### Fix 5: New Sandbox flow stuck on start page
+- **Status:** COMPLETED
+- **File:** `creature-sim/src/main.js`
+- **Root Cause:** `gameState.startGame()` was inside `errorHandler.safeExecute()` wrapper. If any error occurred before line 1058, the game never entered ready state and the game loop rendered nothing.
+- **Secondary Issue:** Line 314 referenced undefined `batchRenderer` variable
+- **Changes:**
+  1. Moved `gameState.startGame()` BEFORE the error-catching wrapper to guarantee game always enters ready state
+  2. Removed undefined `batchRenderer` reference (batch renderer was previously removed)
+- **Verification:** Syntax check passed
+
 ---
 
 ## Systematic Code Scan
