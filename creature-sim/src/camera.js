@@ -1,19 +1,23 @@
 import { clamp } from './utils.js';
 
+// Debug flag for camera movement logging
+const DEBUG_CAMERA = false;
+
 /**
  * Simple 2D camera with smooth pan/zoom controls.
+ * Includes ownership model to prevent unwanted automatic movement.
  */
 export class Camera {
   constructor({
-    x=0,
-    y=0,
-    zoom=1,
-    minZoom=0.4,
-    maxZoom=3,
-    worldWidth=1000,
-    worldHeight=700,
-    viewportWidth=1000,
-    viewportHeight=700
+    x = 0,
+    y = 0,
+    zoom = 1,
+    minZoom = 0.4,
+    maxZoom = 3,
+    worldWidth = 1000,
+    worldHeight = 700,
+    viewportWidth = 1000,
+    viewportHeight = 700
   } = {}) {
     this.x = x;
     this.y = y;
@@ -36,6 +40,11 @@ export class Camera {
     this.followSmoothing = 0.12; // smoother than normal pan
     this.followZoomAdjust = true; // auto-zoom based on creature speed
 
+    // Camera ownership model - prevents unwanted automatic movement
+    this.userPermanentOverride = false; // User has taken control, no auto until re-enabled
+    this.userOverrideUntil = 0; // Timestamp-based temporary override
+    this.lastMoveSource = 'init'; // Track what moved the camera last
+
     // Movement tracking for auto-hide overlays
     this.isMoving = false;
     this.movementThreshold = 0.8; // Distance threshold to consider "moving"
@@ -44,10 +53,51 @@ export class Camera {
     this._clampTargets();
   }
 
+  /**
+   * Check if automatic camera systems (auto-director, follow) can move the camera.
+   * Returns false if user has taken permanent control.
+   */
+  canAutoMove() {
+    if (this.userPermanentOverride) {
+      if (DEBUG_CAMERA) console.log('[CAM] canAutoMove=false (userPermanentOverride)');
+      return false;
+    }
+    const now = performance.now();
+    if (now < this.userOverrideUntil) {
+      if (DEBUG_CAMERA) console.log('[CAM] canAutoMove=false (temporary override)');
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Mark that user has taken manual control of the camera.
+   * Blocks all automatic movement until clearUserOverride() is called.
+   */
+  setUserOverride(permanent = true) {
+    if (permanent) {
+      this.userPermanentOverride = true;
+      this.lastMoveSource = 'user';
+      if (DEBUG_CAMERA) console.log('[CAM] User permanent override set');
+    } else {
+      this.userOverrideUntil = performance.now() + 6000; // 6 second temporary override
+      if (DEBUG_CAMERA) console.log('[CAM] User temporary override set (6s)');
+    }
+  }
+
+  /**
+   * Clear user override, allowing automatic camera movement again.
+   */
+  clearUserOverride() {
+    this.userPermanentOverride = false;
+    this.userOverrideUntil = 0;
+    if (DEBUG_CAMERA) console.log('[CAM] User override cleared');
+  }
+
   /** Apply smooth interpolation toward target pan/zoom each frame. */
   update(dt) {
-    const lerp = (a,b,t)=>a+(b-a)*t;
-    const t = 1 - Math.pow(1 - this.smooth, Math.min(dt*60, 1));
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const t = 1 - Math.pow(1 - this.smooth, Math.min(dt * 60, 1));
     if (this.travel) {
       this._updateTravel(dt);
     }
@@ -90,7 +140,7 @@ export class Camera {
     this.travel = null;
   }
 
-  startTravel(x, y, duration=1.5) {
+  startTravel(x, y, duration = 1.5) {
     const clamped = this._clampPoint(x, y, this.targetZoom);
     const safeDuration = Math.max(0.2, duration);
     this.travel = {
@@ -171,7 +221,7 @@ export class Camera {
     };
   }
 
-  _clampPoint(x, y, zoom=this.targetZoom) {
+  _clampPoint(x, y, zoom = this.targetZoom) {
     // REMOVED: No boundaries - return point as-is
     return { x, y };
   }

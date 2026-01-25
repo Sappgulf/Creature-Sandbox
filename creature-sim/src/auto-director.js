@@ -8,23 +8,24 @@ export class AutoDirector {
     this.world = world;
     this.camera = camera;
     this.enabled = true;
-    this.cooldownSeconds = 2.4;
+    this.cooldownSeconds = 4.0; // Increased from 2.4 to reduce frequency
     this.lastFocusAt = -Infinity;
     this.lastFocus = null;
     this.eventCooldowns = new Map();
+    // Per-event cooldowns - increased across the board
     this.eventCooldownSeconds = {
-      [GameEvents.CREATURE_BORN]: 1.6,
-      [GameEvents.CREATURE_EAT]: 1.8,
-      [GameEvents.CREATURE_BOND]: 2.2,
-      [GameEvents.CREATURE_PANIC]: 3.0,
-      [GameEvents.CREATURE_OVERCROWD]: 3.0,
-      [GameEvents.WORLD_FOOD_SCARCITY]: 4.5,
-      [GameEvents.WORLD_MIGRATION_START]: 5.0,
-      [GameEvents.WORLD_MIGRATION_SETTLED]: 5.5,
-      [GameEvents.NEST_ESTABLISHED]: 4.5,
-      [GameEvents.WORLD_REGION_DEPLETED]: 5.5,
-      [GameEvents.WORLD_REGION_THRIVING]: 5.5,
-      [GameEvents.PREDATOR_LITE_CHASE]: 3.2
+      [GameEvents.CREATURE_BORN]: 2.5,
+      [GameEvents.CREATURE_EAT]: 3.0,
+      [GameEvents.CREATURE_BOND]: 3.5,
+      [GameEvents.CREATURE_PANIC]: 4.5,
+      [GameEvents.CREATURE_OVERCROWD]: 5.0,
+      [GameEvents.WORLD_FOOD_SCARCITY]: 6.0,
+      [GameEvents.WORLD_MIGRATION_START]: 7.0,
+      [GameEvents.WORLD_MIGRATION_SETTLED]: 7.0,
+      [GameEvents.NEST_ESTABLISHED]: 6.0,
+      [GameEvents.WORLD_REGION_DEPLETED]: 7.0,
+      [GameEvents.WORLD_REGION_THRIVING]: 7.0,
+      [GameEvents.PREDATOR_LITE_CHASE]: 5.0
     };
 
     this._bindEvents();
@@ -36,6 +37,10 @@ export class AutoDirector {
 
   clearOverride() {
     gameState.autoDirectorOverrideUntil = 0;
+    // Also clear camera permanent override when user explicitly re-enables
+    if (this.camera?.clearUserOverride) {
+      this.camera.clearUserOverride();
+    }
   }
 
   recenter() {
@@ -52,9 +57,17 @@ export class AutoDirector {
   }
 
   canDirect() {
+    // First check: is auto-director properly enabled?
     if (!this.enabled || !gameState.watchModeEnabled || !gameState.autoDirectorEnabled) return false;
     if (!this.camera || !this.world) return false;
+
+    // Second check: is camera in follow mode? (follow takes priority)
     if (this.camera.followMode !== 'free') return false;
+
+    // Third check: has user taken manual control of camera?
+    if (this.camera.canAutoMove && !this.camera.canAutoMove()) return false;
+
+    // Fourth check: temporary override from gameState
     const now = performance.now();
     return now >= (gameState.autoDirectorOverrideUntil || 0);
   }

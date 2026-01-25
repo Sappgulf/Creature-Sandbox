@@ -4195,6 +4195,9 @@ select:focus,
   box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
   animation: slideUp var(--transition-slow);
   padding-bottom: env(safe-area-inset-bottom, 16px);
+  /* Prevent drawer interactions from panning the world */
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes slideUp {

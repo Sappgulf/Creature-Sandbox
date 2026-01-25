@@ -415,9 +415,18 @@ export class InputManager {
     }
   }
 
+  /**
+   * Mark that user has taken control of the camera.
+   * Sets PERMANENT override - auto-director won't move camera until user re-enables.
+   */
   noteCameraOverride(durationMs = 6000) {
     const now = performance.now();
     gameState.autoDirectorOverrideUntil = now + durationMs;
+
+    // Set permanent override on camera - user has taken control
+    if (this.camera?.setUserOverride) {
+      this.camera.setUserOverride(true);
+    }
   }
 
   /**

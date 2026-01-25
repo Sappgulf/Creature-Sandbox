@@ -59,6 +59,7 @@ export class ControlStripController {
         this.watchPause = document.getElementById('watch-pause');
         this.watchSpeed = document.getElementById('watch-speed');
         this.watchFollow = document.getElementById('watch-follow');
+        this.watchRecenter = document.getElementById('watch-recenter');
         this.watchMoments = document.getElementById('watch-moments');
         this.watchGodMode = document.getElementById('watch-god-mode');
         this.watchExit = document.getElementById('watch-exit');
@@ -101,6 +102,7 @@ export class ControlStripController {
         this.watchPause?.addEventListener('click', () => this.togglePause());
         this.watchSpeed?.addEventListener('click', () => this.cycleSpeed());
         this.watchFollow?.addEventListener('click', () => this.toggleFollow());
+        this.watchRecenter?.addEventListener('click', () => this.recenterCamera());
         this.watchMoments?.addEventListener('click', () => this.openMoments());
         this.watchGodMode?.addEventListener('click', () => this.toggleGodMode());
         this.watchExit?.addEventListener('click', () => this.exitWatchMode());
@@ -268,11 +270,24 @@ export class ControlStripController {
             this.controlStrip?.classList.add('hidden');
             this.watchStrip?.classList.remove('hidden');
             this.watchStrip?.setAttribute('aria-hidden', 'false');
+
+            // Enable watch mode in game state - this allows auto-director to work
+            gameState.watchModeEnabled = true;
+            gameState.autoDirectorEnabled = true;
             gameState.watchMode = true;
+
+            // Clear camera user override so auto-director can take over
+            if (this.camera?.clearUserOverride) {
+                this.camera.clearUserOverride();
+            }
         } else {
             this.controlStrip?.classList.remove('hidden');
             this.watchStrip?.classList.add('hidden');
             this.watchStrip?.setAttribute('aria-hidden', 'true');
+
+            // Disable watch mode and auto-director
+            gameState.watchModeEnabled = false;
+            gameState.autoDirectorEnabled = false;
             gameState.watchMode = false;
         }
 
@@ -289,6 +304,28 @@ export class ControlStripController {
     openMoments() {
         const momentsPanel = document.getElementById('moments-panel');
         momentsPanel?.classList.toggle('hidden');
+    }
+
+    /**
+     * Re-enable auto-director camera control.
+     * Clears user permanent override so auto-director can move camera again.
+     */
+    recenterCamera() {
+        // Clear camera user override
+        if (this.camera?.clearUserOverride) {
+            this.camera.clearUserOverride();
+        }
+
+        // Clear gameState override
+        gameState.autoDirectorOverrideUntil = 0;
+
+        // Visual feedback
+        this.watchRecenter?.classList.add('active');
+        setTimeout(() => {
+            this.watchRecenter?.classList.remove('active');
+        }, 300);
+
+        console.log('🎥 Camera control returned to auto-director');
     }
 
     // === GOD MODE ===

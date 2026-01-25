@@ -86,11 +86,12 @@ export class GameState {
     this.godModeTool = 'food';
     this.godModeTimeScale = 0.65;
 
-    // Watch mode state
-    this.watchModeEnabled = true;
+    // Watch mode state - DISABLED BY DEFAULT to prevent random camera movement
+    // User must explicitly enter watch mode for auto-director to work
+    this.watchModeEnabled = false;
     this.watchModeFollow = false;
     this.watchSpeedIndex = 1; // 0=0.5x, 1=1x, 2=2x
-    this.autoDirectorEnabled = true;
+    this.autoDirectorEnabled = false; // Must be explicitly enabled
     this.autoDirectorOverrideUntil = 0;
   }
 

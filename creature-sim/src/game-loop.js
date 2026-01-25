@@ -481,6 +481,11 @@ export class GameLoop {
    * Handle camera follow mode
    */
   updateCameraFollow() {
+    // Don't update follow if user has taken manual control
+    if (this.camera.canAutoMove && !this.camera.canAutoMove()) {
+      return;
+    }
+
     if (this.camera.followMode !== 'free' && this.camera.followTarget) {
       const target = this.world.getAnyCreatureById(this.camera.followTarget);
       if (target && target.alive) {

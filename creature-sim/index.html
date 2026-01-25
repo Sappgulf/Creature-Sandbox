@@ -1,26 +1,34 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <title>Creature Sandbox - Evolution Simulator</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <meta name="description" content="Watch creatures evolve in real-time. Genetic inheritance, predator-prey dynamics, and evolutionary adaptation in an interactive ecosystem simulation." />
-  <meta name="keywords" content="evolution simulator, genetic algorithm, creatures, ecosystem simulation, predator prey" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="description"
+    content="Watch creatures evolve in real-time. Genetic inheritance, predator-prey dynamics, and evolutionary adaptation in an interactive ecosystem simulation." />
+  <meta name="keywords"
+    content="evolution simulator, genetic algorithm, creatures, ecosystem simulation, predator prey" />
   <meta name="author" content="Sappgulf" />
-  
+
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Creature Sandbox - Evolution Simulator" />
-  <meta property="og:description" content="Watch creatures evolve in real-time with genetic inheritance and natural selection" />
-  
+  <meta property="og:description"
+    content="Watch creatures evolve in real-time with genetic inheritance and natural selection" />
+
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Creature Sandbox - Evolution Simulator" />
-  <meta name="twitter:description" content="Watch creatures evolve in real-time with genetic inheritance and natural selection" />
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2064%2064%27%3E%3Crect%20width=%2764%27%20height=%2764%27%20rx=%2714%27%20ry=%2714%27%20fill=%27%230a0f1e%27/%3E%3Cpath%20d=%27M16%2020h32M16%2032h32M24%2044h24%27%20stroke=%27%23a5f3fc%27%20stroke-width=%276%27%20stroke-linecap=%27round%27/%3E%3Ccircle%20cx=%2720%27%20cy=%2744%27%20r=%274%27%20fill=%27%23facc15%27/%3E%3C/svg%3E" />
-  
+  <meta name="twitter:description"
+    content="Watch creatures evolve in real-time with genetic inheritance and natural selection" />
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2064%2064%27%3E%3Crect%20width=%2764%27%20height=%2764%27%20rx=%2714%27%20ry=%2714%27%20fill=%27%230a0f1e%27/%3E%3Cpath%20d=%27M16%2020h32M16%2032h32M24%2044h24%27%20stroke=%27%23a5f3fc%27%20stroke-width=%276%27%20stroke-linecap=%27round%27/%3E%3Ccircle%20cx=%2720%27%20cy=%2744%27%20r=%274%27%20fill=%27%23facc15%27/%3E%3C/svg%3E" />
+
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
   <!-- UNIFIED CONTROL STRIP - Bottom Center (Thumb Zone) -->
   <div id="control-strip" class="control-strip" role="toolbar" aria-label="Main controls">
@@ -36,7 +44,8 @@
       <button id="ctrl-food" class="ctrl-btn" title="Spawn Food (F)" aria-label="Spawn food">
         <span class="ctrl-icon">🌿</span>
       </button>
-      <button id="ctrl-spawn" class="ctrl-btn ctrl-spawn-btn" title="Spawn Creature" aria-label="Spawn creature" aria-haspopup="true">
+      <button id="ctrl-spawn" class="ctrl-btn ctrl-spawn-btn" title="Spawn Creature" aria-label="Spawn creature"
+        aria-haspopup="true">
         <span class="ctrl-icon">🦌</span>
         <span class="ctrl-caret">▾</span>
       </button>
@@ -47,14 +56,16 @@
       <button id="ctrl-god" class="ctrl-btn" title="God Mode" aria-label="Toggle god mode">
         <span class="ctrl-icon">✨</span>
       </button>
-      <button id="ctrl-more" class="ctrl-btn" title="More options" aria-label="Open menu" aria-haspopup="menu" aria-expanded="false">
+      <button id="ctrl-more" class="ctrl-btn" title="More options" aria-label="Open menu" aria-haspopup="menu"
+        aria-expanded="false">
         <span class="ctrl-icon">⋯</span>
       </button>
     </div>
   </div>
 
   <!-- Spawn Creature Drawer (Bottom Sheet) -->
-  <div id="spawn-drawer" class="bottom-drawer hidden" role="dialog" aria-modal="true" aria-label="Choose creature to spawn" aria-hidden="true">
+  <div id="spawn-drawer" class="bottom-drawer hidden" role="dialog" aria-modal="true"
+    aria-label="Choose creature to spawn" aria-hidden="true">
     <div class="drawer-backdrop"></div>
     <div class="drawer-content">
       <div class="drawer-handle"></div>
@@ -95,7 +106,8 @@
   </div>
 
   <!-- Overflow Menu (Bottom Sheet) -->
-  <div id="overflow-drawer" class="bottom-drawer hidden" role="dialog" aria-modal="true" aria-label="More options" aria-hidden="true">
+  <div id="overflow-drawer" class="bottom-drawer hidden" role="dialog" aria-modal="true" aria-label="More options"
+    aria-hidden="true">
     <div class="drawer-backdrop"></div>
     <div class="drawer-content">
       <div class="drawer-handle"></div>
@@ -148,9 +160,11 @@
     <button id="btn-gene-editor" title="Gene Editor" aria-label="Open gene editor">🧬 Gene Editor</button>
     <button id="btn-eco-health" title="Ecosystem Health" aria-label="Open ecosystem health">🌍 Eco Health</button>
     <button id="btn-features" title="Features" aria-label="Open features panel">🎨 Features</button>
-    <button id="analytics-dashboard-toggle" title="Analytics" aria-label="Toggle analytics dashboard">📊 Analytics</button>
+    <button id="analytics-dashboard-toggle" title="Analytics" aria-label="Toggle analytics dashboard">📊
+      Analytics</button>
     <button id="debug-console-toggle" title="Debug Console" aria-label="Toggle debug console">🔧 Debug</button>
-    <button id="performance-monitor-toggle" title="Performance" aria-label="Toggle performance monitor">⚡ Performance</button>
+    <button id="performance-monitor-toggle" title="Performance" aria-label="Toggle performance monitor">⚡
+      Performance</button>
     <button id="btn-spawn-food" title="Spawn Food (F)" aria-label="Spawn food">🌿</button>
     <button id="btn-spawn-creature" title="Spawn Creature" aria-label="Spawn creature">🦌</button>
     <button id="btn-prop-tool" title="Sandbox Props (P)" aria-label="Sandbox props">🟣</button>
@@ -168,6 +182,8 @@
     <button id="watch-pause" class="watch-btn" aria-label="Pause or resume">⏸️</button>
     <button id="watch-speed" class="watch-btn" aria-label="Watch speed">1×</button>
     <button id="watch-follow" class="watch-btn" aria-label="Toggle follow">🎯</button>
+    <button id="watch-recenter" class="watch-btn" aria-label="Recenter camera"
+      title="Re-enable auto-director">⟳</button>
     <button id="watch-moments" class="watch-btn watch-btn-wide" aria-label="Open moments log">✨ Moments</button>
     <button id="watch-god-mode" class="watch-btn" aria-label="Toggle god mode">✨</button>
     <button id="watch-exit" class="watch-btn watch-btn-exit" aria-label="Exit watch mode">✕</button>
@@ -235,7 +251,8 @@
           <div class="meta-title">Chase micro-challenges</div>
         </div>
         <div class="meta-actions">
-          <button id="refresh-goals" class="ghost-btn" title="Refresh goals" aria-label="Refresh session goals">↻</button>
+          <button id="refresh-goals" class="ghost-btn" title="Refresh goals"
+            aria-label="Refresh session goals">↻</button>
         </div>
       </div>
       <div id="session-goal-list" class="goal-list muted tiny">
@@ -258,7 +275,7 @@
   <div id="home-page" class="home-page">
     <!-- Animated background canvas -->
     <canvas id="home-bg" class="home-bg"></canvas>
-    
+
     <!-- Main content -->
     <div class="home-content">
       <!-- Hero Section -->
@@ -267,7 +284,7 @@
         <h1 class="home-title">Creature Sandbox</h1>
         <p class="home-tagline">Build playful critters, drop them in, and watch the sandbox come alive.</p>
       </header>
-      
+
       <!-- Feature Highlights -->
       <div class="home-features">
         <div class="home-feature">
@@ -286,7 +303,7 @@
           <p>Friendly goals that nudge new experiments</p>
         </div>
       </div>
-      
+
       <!-- Action Buttons -->
       <div class="home-actions">
         <button id="btn-continue" class="home-btn home-btn-primary hidden">
@@ -299,7 +316,7 @@
           <span class="home-btn-text">New Sandbox</span>
         </button>
       </div>
-      
+
       <!-- Footer -->
       <footer class="home-footer">
         <span class="home-version">v2.0.0</span>
@@ -316,13 +333,13 @@
         <h2>🏆 Campaign Mode</h2>
         <button id="btn-campaign-close" class="campaign-close-btn" aria-label="Close campaign panel">×</button>
       </div>
-      
+
       <p class="campaign-subtitle">Complete challenges to unlock new levels and earn rewards!</p>
-      
+
       <div id="campaign-levels" class="campaign-levels-grid">
         <!-- Levels will be populated by JavaScript -->
       </div>
-      
+
       <!-- Campaign Progress HUD (shown during active campaign) -->
       <div id="campaign-progress" class="campaign-progress hidden">
         <div class="campaign-progress-header">
@@ -347,7 +364,8 @@
         <span class="panel-collapse-icon">▼</span>
         🧪 Scenario Lab
       </span>
-      <button id="btn-scenario-close" class="panel-close" title="Close" aria-label="Close scenario panel" onclick="event.stopPropagation()">×</button>
+      <button id="btn-scenario-close" class="panel-close" title="Close" aria-label="Close scenario panel"
+        onclick="event.stopPropagation()">×</button>
     </div>
     <div class="panel-body">
       <label class="scenario-field">
@@ -396,7 +414,8 @@
       <div id="scenario-status" class="scenario-status">No active disaster.</div>
       <div class="scenario-queue-header">
         <span class="scenario-queue-title">Queued Scenarios</span>
-        <button id="btn-scenario-clear" class="scenario-btn ghost small" title="Clear pending scenarios" aria-label="Clear pending scenarios">Clear All</button>
+        <button id="btn-scenario-clear" class="scenario-btn ghost small" title="Clear pending scenarios"
+          aria-label="Clear pending scenarios">Clear All</button>
       </div>
       <div id="scenario-queue" class="scenario-queue">
         <div class="scenario-queue-empty muted">No queued scenarios.</div>
@@ -411,7 +430,8 @@
         <span class="panel-collapse-icon">▼</span>
         🧬 Gene Editor
       </span>
-      <button id="btn-gene-editor-close" class="panel-close" title="Close" aria-label="Close gene editor" onclick="event.stopPropagation()">×</button>
+      <button id="btn-gene-editor-close" class="panel-close" title="Close" aria-label="Close gene editor"
+        onclick="event.stopPropagation()">×</button>
     </div>
     <div class="panel-body">
       <!-- Presets -->
@@ -429,7 +449,7 @@
         </select>
         <button id="btn-gene-randomize" class="gene-btn">🎲 Randomize</button>
       </div>
-      
+
       <!-- Core Stats -->
       <div class="gene-section">
         <div class="gene-section-title">Core Stats</div>
@@ -454,7 +474,7 @@
           <input type="range" id="gene-hue" min="0" max="359" step="1" value="120" />
         </label>
       </div>
-      
+
       <!-- Diet & Type -->
       <div class="gene-section">
         <div class="gene-section-title">Diet & Type</div>
@@ -467,7 +487,7 @@
           <input type="range" id="gene-predator" min="0" max="1" step="1" value="0" />
         </label>
       </div>
-      
+
       <!-- Personality -->
       <div class="gene-section">
         <div class="gene-section-title">Personality Traits</div>
@@ -492,7 +512,7 @@
           <input type="range" id="gene-nocturnal" min="0" max="1" step="0.01" value="0.0" />
         </label>
       </div>
-      
+
       <!-- Predator Traits -->
       <div class="gene-section">
         <div class="gene-section-title">Predator Traits</div>
@@ -509,7 +529,7 @@
           <input type="range" id="gene-aggression" min="0.4" max="2.2" step="0.05" value="1.0" />
         </label>
       </div>
-      
+
       <!-- Spawn Controls -->
       <div class="gene-section">
         <div class="gene-section-title">Spawn Settings</div>
@@ -530,7 +550,8 @@
 
       <div class="gene-section">
         <div class="gene-section-title">Share Codes</div>
-        <textarea id="gene-code-input" class="gene-code-input" aria-label="Gene code JSON" placeholder="Paste gene code JSON here..."></textarea>
+        <textarea id="gene-code-input" class="gene-code-input" aria-label="Gene code JSON"
+          placeholder="Paste gene code JSON here..."></textarea>
         <div class="gene-actions">
           <button id="btn-gene-import" class="gene-btn">📥 Import Code</button>
         </div>
@@ -539,14 +560,15 @@
     </div>
   </div>
 
-	  <!-- Ecosystem Health Panel -->
-	  <div id="eco-health-panel" class="panel hidden">
-	    <div class="panel-header" data-panel="eco-health">
+  <!-- Ecosystem Health Panel -->
+  <div id="eco-health-panel" class="panel hidden">
+    <div class="panel-header" data-panel="eco-health">
       <span class="panel-title">
         <span class="panel-collapse-icon">▼</span>
         🌍 Ecosystem Health
       </span>
-      <button id="btn-eco-health-close" class="panel-close" title="Close" aria-label="Close ecosystem health panel" onclick="event.stopPropagation()">×</button>
+      <button id="btn-eco-health-close" class="panel-close" title="Close" aria-label="Close ecosystem health panel"
+        onclick="event.stopPropagation()">×</button>
     </div>
     <div class="panel-body">
       <!-- Overall Score -->
@@ -561,7 +583,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- Metrics -->
       <div class="health-metrics">
         <div class="health-metric">
@@ -573,7 +595,7 @@
             <div id="health-biodiversity-fill" class="health-metric-fill" style="width: 0%"></div>
           </div>
         </div>
-        
+
         <div class="health-metric">
           <div class="health-metric-header">
             <span>⚖️ Stability</span>
@@ -583,7 +605,7 @@
             <div id="health-stability-fill" class="health-metric-fill" style="width: 0%"></div>
           </div>
         </div>
-        
+
         <div class="health-metric">
           <div class="health-metric-header">
             <span>♻️ Sustainability</span>
@@ -594,7 +616,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- Recommendations -->
       <div class="health-recommendations">
         <div class="health-recommendations-title">📋 Recommendations</div>
@@ -602,53 +624,56 @@
           <div class="muted">Analyzing ecosystem...</div>
         </div>
       </div>
-	    </div>
-	  </div>
+    </div>
+  </div>
 
-	  <!-- Achievements Panel -->
-	  <div id="achievements-panel" class="panel hidden">
-	    <div class="panel-header" data-panel="achievements">
-	      <span class="panel-title">
-	        <span class="panel-collapse-icon">▼</span>
-	        🏅 Achievements
-	      </span>
-	      <button id="btn-achievements-close" class="panel-close" title="Close" aria-label="Close achievements panel" onclick="event.stopPropagation()">×</button>
-	    </div>
-	    <div class="panel-body">
-	      <div class="achievements-controls">
-	        <label class="achievements-control">
-	          <span class="muted tiny">Filter</span>
-	          <select id="achievements-filter" class="achievements-select">
-	            <option value="all">All</option>
-	            <option value="discovery">Discovery</option>
-	            <option value="milestone">Milestone</option>
-	            <option value="challenge">Challenge</option>
-	          </select>
-	        </label>
-	        <label class="achievements-control">
-	          <span class="muted tiny">Sort</span>
-	          <select id="achievements-sort" class="achievements-select">
-	            <option value="locked">Locked First</option>
-	            <option value="unlocked">Unlocked First</option>
-	            <option value="recent">Most Recent</option>
-	            <option value="name">Name</option>
-	          </select>
-	        </label>
-        <button id="btn-achievements-reset" class="achievements-btn ghost" title="Reset achievements" aria-label="Reset achievements">Reset</button>
-	      </div>
-	      <div id="achievements-summary" class="achievements-summary muted tiny">Loading…</div>
-	      <div id="achievements-list" class="achievements-list"></div>
-	    </div>
-	  </div>
+  <!-- Achievements Panel -->
+  <div id="achievements-panel" class="panel hidden">
+    <div class="panel-header" data-panel="achievements">
+      <span class="panel-title">
+        <span class="panel-collapse-icon">▼</span>
+        🏅 Achievements
+      </span>
+      <button id="btn-achievements-close" class="panel-close" title="Close" aria-label="Close achievements panel"
+        onclick="event.stopPropagation()">×</button>
+    </div>
+    <div class="panel-body">
+      <div class="achievements-controls">
+        <label class="achievements-control">
+          <span class="muted tiny">Filter</span>
+          <select id="achievements-filter" class="achievements-select">
+            <option value="all">All</option>
+            <option value="discovery">Discovery</option>
+            <option value="milestone">Milestone</option>
+            <option value="challenge">Challenge</option>
+          </select>
+        </label>
+        <label class="achievements-control">
+          <span class="muted tiny">Sort</span>
+          <select id="achievements-sort" class="achievements-select">
+            <option value="locked">Locked First</option>
+            <option value="unlocked">Unlocked First</option>
+            <option value="recent">Most Recent</option>
+            <option value="name">Name</option>
+          </select>
+        </label>
+        <button id="btn-achievements-reset" class="achievements-btn ghost" title="Reset achievements"
+          aria-label="Reset achievements">Reset</button>
+      </div>
+      <div id="achievements-summary" class="achievements-summary muted tiny">Loading…</div>
+      <div id="achievements-list" class="achievements-list"></div>
+    </div>
+  </div>
 
-	  <!-- Features Panel -->
-	  <div id="features-panel" class="panel hidden">
+  <!-- Features Panel -->
+  <div id="features-panel" class="panel hidden">
     <div class="panel-header" data-panel="features">
       <span class="panel-title">
         <span class="panel-collapse-icon">▼</span>
         🎨 Features
       </span>
-        <button id="btn-features-close" class="panel-close" title="Close" aria-label="Close features panel" onclick="event.stopPropagation()">×</button>
+      <button id="btn-features-close" class="panel-close" title="Close" aria-label="Close features panel"
+        onclick="event.stopPropagation()">×</button>
     </div>
     <div class="panel-body">
       <div class="features-section">
@@ -686,7 +711,7 @@
           <span>🪹 Nest Markers</span>
         </label>
       </div>
-      
+
       <div class="features-section">
         <div class="features-section-title">Advanced Features</div>
         <label class="feature-toggle">
@@ -714,7 +739,7 @@
           <span>🧘 Reduced Motion</span>
         </label>
       </div>
-      
+
       <div class="features-section">
         <div class="features-section-title">Heatmaps</div>
         <label class="feature-toggle">
@@ -738,7 +763,7 @@
           <span>❌ Off</span>
         </label>
       </div>
-      
+
       <div class="features-section">
         <div class="features-section-title">Other</div>
         <div class="feature-slider">
@@ -762,12 +787,14 @@
       <div class="title-actions">
         <button id="btn-pin" class="chip">Pin</button>
         <button id="btn-root" class="chip">Set Root</button>
-        <button id="btn-minimize-inspector" class="chip ghost" title="Minimize" aria-label="Minimize inspector">−</button>
-        <button id="btn-close-inspector" class="chip ghost" title="Hide inspector" aria-label="Hide inspector">✕</button>
+        <button id="btn-minimize-inspector" class="chip ghost" title="Minimize"
+          aria-label="Minimize inspector">−</button>
+        <button id="btn-close-inspector" class="chip ghost" title="Hide inspector"
+          aria-label="Hide inspector">✕</button>
       </div>
     </div>
     <div id="inspector-body">
-      <div class="muted">Click a creature to inspect.<br/>Shift-click to set lineage root.</div>
+      <div class="muted">Click a creature to inspect.<br />Shift-click to set lineage root.</div>
     </div>
     <div id="badges-panel" class="section hidden"></div>
     <div id="family-panel" class="section hidden">
@@ -794,9 +821,12 @@
     </div>
     <div id="behavior-panel" class="section">
       <div class="section-title">Behavior Weights</div>
-      <label class="slider-row">Forage<input type="range" id="slider-forage" min="0" max="2" step="0.05" value="1"/></label>
-      <label class="slider-row">Wander<input type="range" id="slider-wander" min="0" max="2" step="0.05" value="1"/></label>
-      <label class="slider-row">Rest<input type="range" id="slider-rest" min="0" max="2" step="0.05" value="0.6"/></label>
+      <label class="slider-row">Forage<input type="range" id="slider-forage" min="0" max="2" step="0.05"
+          value="1" /></label>
+      <label class="slider-row">Wander<input type="range" id="slider-wander" min="0" max="2" step="0.05"
+          value="1" /></label>
+      <label class="slider-row">Rest<input type="range" id="slider-rest" min="0" max="2" step="0.05"
+          value="0.6" /></label>
     </div>
     <div id="analytics-panel" class="section">
       <div class="section-title">
@@ -847,7 +877,8 @@
   </div>
 
   <canvas id="view"></canvas>
-  <button id="btn-show-inspector" class="chip floating hidden" title="Show inspector" aria-label="Show inspector">Show Panel</button>
+  <button id="btn-show-inspector" class="chip floating hidden" title="Show inspector" aria-label="Show inspector">Show
+    Panel</button>
 
   <!-- Keyboard Shortcuts Help Overlay -->
   <div id="shortcuts-overlay" class="shortcuts-overlay hidden">
@@ -914,7 +945,7 @@
       </div>
     </div>
   </div>
-  
+
   <!-- Mobile Quick Actions -->
   <div id="mobile-quick-actions" class="mobile-only">
     <button id="mobile-btn-spawn" title="Spawn Creature" aria-label="Spawn creature" data-label="Spawn">🐾</button>
@@ -925,14 +956,8 @@
   </div>
 
   <div id="mobile-spawn-backdrop" class="mobile-sheet-backdrop hidden" aria-hidden="true"></div>
-  <div
-    id="mobile-spawn-sheet"
-    class="mobile-sheet hidden"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Choose creature to spawn"
-    aria-hidden="true"
-  >
+  <div id="mobile-spawn-sheet" class="mobile-sheet hidden" role="dialog" aria-modal="true"
+    aria-label="Choose creature to spawn" aria-hidden="true">
     <div class="mobile-sheet-header">
       <span>Choose Creature</span>
       <button id="mobile-spawn-close" class="mobile-sheet-close" aria-label="Close spawn menu">Close</button>
@@ -958,7 +983,8 @@
       <button id="mobile-spawn-confirm" class="primary-btn">Spawn Selected</button>
     </div>
   </div>
-  
+
   <script type="module" src="./src/main.js"></script>
 </body>
+
 </html>
