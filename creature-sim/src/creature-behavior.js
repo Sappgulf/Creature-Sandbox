@@ -394,32 +394,9 @@ export class CreatureBehaviorSystem {
 
     if (!foodList.length && !pheromone) return null;
 
-    // Find closest food
-    let bestFood = null;
-    let bestDist = Infinity;
-
-    for (const food of foodList) {
-      const dist = Math.hypot(food.x - this.creature.x, food.y - this.creature.y);
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestFood = food;
-      }
-    }
-
-    // Remember found food location
-    if (bestFood && world.memoryLearning) {
-      world.memoryLearning.rememberFood(this.creature, bestFood.x, bestFood.y, 0.6);
-    }
-
-    return bestFood;
-  }
-
     const senseRadius = this.creature.genes.sense;
     const senseRadius2 = senseRadius * senseRadius;
     const halfFov = this.creature._halfFovRad;
-
-    // Cache trig values for vision cone calculations
-    const { cos: dirCos, sin: dirSin } = this.getCachedTrig(this.creature.dir);
 
     let best = null;
     let bestD2 = Infinity;
@@ -449,6 +426,11 @@ export class CreatureBehaviorSystem {
     // Follow pheromone trails if no food found
     if (!best && pheromone > 0.1) {
       return this.followPheromoneTrail(world, senseRadius);
+    }
+
+    // Remember found food location
+    if (best && world.memoryLearning) {
+      world.memoryLearning.rememberFood(this.creature, best.x, best.y, 0.6);
     }
 
     return best;

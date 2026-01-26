@@ -237,6 +237,12 @@
 
 ## Done
 
+### 2026-01-26
+
+- Changed: `creature-sim/src/creature-behavior.js` — kept vision-cone food selection inside `seekFood()` and removed stray code that caused a syntax error.
+- Verified: `npm test` (pass; npm env warning about http-proxy), `npm run lint` (fails with 3 errors, 1040 warnings pre-existing).
+- Notes: Lint errors persist in existing files (e.g., `creature-sim/src/biome-interactions.js`) and need a separate cleanup pass.
+
 ### 2026-01-25 (Session 2: Button Handler Fix)
 
 **Changed:**
