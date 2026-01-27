@@ -31,6 +31,7 @@
    - Let the simulation run for 60–120 seconds while occasionally bumping/throwing a creature.
    - Confirm small bumps do not cause damage and creatures do not die accidentally.
    - Confirm hard impacts cause small, readable damage spikes rather than instant deaths.
+   - Confirm repeated rapid impacts respect brief i-frames (no rapid multi-hit damage).
    - Observe that creatures settle (less jitter) when left alone and show more wobble after repeated impacts.
 
 5. **Ecosystem agent loop**
