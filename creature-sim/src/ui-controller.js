@@ -9,6 +9,7 @@ import { analyticsDashboard } from './enhanced-analytics.js';
 import { HudMenu } from './hud-menu.js';
 import { SANDBOX_PROP_TYPES } from './sandbox-props.js';
 import { clamp } from './utils.js';
+import { getDebugFlags } from './debug-flags.js';
 
 const CREATURE_SPAWN_TYPES = {
   herbivore: { icon: '🦌', label: 'Herbivore' },
@@ -483,6 +484,15 @@ export class UIController {
     const y = this.world.height / 2 + (Math.random() - 0.5) * 200;
 
     // Use world helper so genetics and bookkeeping stay centralized
+    const debugFlags = getDebugFlags();
+    if (debugFlags.spawnDebug) {
+      console.log('[Spawn][ui]', {
+        requestedType: type,
+        resolvedType: safeType,
+        x: Number(x.toFixed(2)),
+        y: Number(y.toFixed(2))
+      });
+    }
     const creature = this.world.spawnCreatureType(safeType, x, y);
     this.applySpawnSelection(safeType, { silent: true });
     this.dismissInteractionHint();

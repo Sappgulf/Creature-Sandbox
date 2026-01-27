@@ -2,6 +2,7 @@ import { clamp } from './utils.js';
 import { RendererConfig } from './renderer-config.js';
 import { RendererFeatureManager } from './renderer-features.js';
 import { RendererPerformanceMonitor } from './renderer-performance.js';
+import { getDebugFlags } from './debug-flags.js';
 
 export class Renderer {
   constructor(ctx, camera) {
@@ -127,6 +128,8 @@ export class Renderer {
     } = opts;
     const camera = this.camera;
     const ctx = this.ctx;
+    const debugFlags = getDebugFlags();
+    const spawnDebug = debugFlags.spawnDebug;
 
     ctx.save();
 
@@ -145,6 +148,10 @@ export class Renderer {
     this._viewBounds.y1 = camera.y - opts.viewportHeight / (2 * camera.zoom) - margin;
     this._viewBounds.x2 = camera.x + opts.viewportWidth / (2 * camera.zoom) + margin;
     this._viewBounds.y2 = camera.y + opts.viewportHeight / (2 * camera.zoom) + margin;
+    if (spawnDebug && world._debugSpawn && world._debugSpawn.version !== this._lastDebugSpawnVersion) {
+      this._pendingDebugSpawn = world._debugSpawn;
+      this._lastDebugSpawnVersion = world._debugSpawn.version;
+    }
 
     // Draw biomes
     this.drawBiomes(world);
@@ -206,6 +213,44 @@ export class Renderer {
     }
 
     this.drawCreatures(world.creatures, { selectedId, pinnedId, hoveredId, lineageSet, worldTime, selectionPulseUntil: opts.selectionPulseUntil });
+    if (spawnDebug && this._pendingDebugSpawn) {
+      const spawnInfo = this._pendingDebugSpawn;
+      const creature = world.getAnyCreatureById?.(spawnInfo.creatureId);
+      const bounds = this._viewBounds;
+      const inView = creature
+        ? creature.x >= bounds.x1 && creature.x <= bounds.x2 && creature.y >= bounds.y1 && creature.y <= bounds.y2
+        : false;
+      const alpha = creature ? clamp(creature.energy / 40, 0.25, 1) : null;
+      console.log('[Spawn][render]', {
+        spawn: spawnInfo,
+        camera: {
+          x: Number(camera.x.toFixed(2)),
+          y: Number(camera.y.toFixed(2)),
+          zoom: Number(camera.zoom.toFixed(3))
+        },
+        bounds: {
+          x1: Number(bounds.x1.toFixed(2)),
+          y1: Number(bounds.y1.toFixed(2)),
+          x2: Number(bounds.x2.toFixed(2)),
+          y2: Number(bounds.y2.toFixed(2))
+        },
+        creature: creature
+          ? {
+            id: creature.id,
+            x: Number(creature.x.toFixed(2)),
+            y: Number(creature.y.toFixed(2)),
+            size: creature.size,
+            energy: Number(creature.energy?.toFixed?.(2) ?? creature.energy),
+            alpha,
+            inView,
+            visible: creature.visible !== false
+          }
+          : null,
+        renderedCount: this.renderedCount,
+        culledCount: this.culledCount
+      });
+      this._pendingDebugSpawn = null;
+    }
 
     if (opts.showGoalDebug) {
       this.drawGoalDebug(world);

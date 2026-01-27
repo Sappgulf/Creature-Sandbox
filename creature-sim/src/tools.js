@@ -283,11 +283,14 @@ export class ToolController {
   }
 
   spawnCreature(x, y, options = {}) {
+    const normalizedOptions = (options && typeof options === 'object')
+      ? options
+      : { predator: Boolean(options) };
     const {
       type = 'herbivore',
       predator = false,
       genes = null
-    } = options;
+    } = normalizedOptions;
 
     const creature = this._spawnForAction({
       x,
