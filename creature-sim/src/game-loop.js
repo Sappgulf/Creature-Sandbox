@@ -552,6 +552,13 @@ export class GameLoop {
   render(dt) {
     const canvas = domCache.get('canvas');
 
+    // DEBUG: Log creature count on first few renders
+    if (!this._debugRenderCount) this._debugRenderCount = 0;
+    if (this._debugRenderCount < 3) {
+      console.log(`🎬 Render #${this._debugRenderCount}: ${this.world.creatures?.length || 0} creatures, canvas: ${canvas?.width}x${canvas?.height}`);
+      this._debugRenderCount++;
+    }
+
     // Clear canvas
     this.renderer.clear(canvas.width, canvas.height);
 

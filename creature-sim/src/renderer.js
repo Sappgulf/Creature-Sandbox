@@ -1144,6 +1144,13 @@ export class Renderer {
     const ctx = this.ctx;
     const { worldTime = 0 } = opts;
 
+    // DEBUG: Log creature count on first few calls
+    if (!this._debugCreatureCount) this._debugCreatureCount = 0;
+    if (this._debugCreatureCount < 3) {
+      console.log(`🦎 drawCreatures: ${creatures?.length || 0} creatures passed, bounds: ${JSON.stringify(this._viewBounds)}`);
+      this._debugCreatureCount++;
+    }
+
     // Reset performance metrics
     this.renderedCount = 0;
     this.culledCount = 0;
@@ -1247,6 +1254,11 @@ export class Renderer {
       if (alpha < 0.99) {
         ctx.restore();
       }
+    }
+
+    // DEBUG: Log rendered vs culled on first few calls
+    if (this._debugCreatureCount && this._debugCreatureCount <= 3) {
+      console.log(`🦎 Result: rendered=${this.renderedCount}, culled=${this.culledCount}`);
     }
   }
 
