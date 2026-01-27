@@ -15,6 +15,11 @@
    - Press **S** to enable the spawn tool.
    - Click on the canvas to spawn a creature.
    - Verify the creature appears and begins moving.
+   - Confirm the spawned creature is visible within 1 second.
+   - Confirm the world creature count increments (via debug console or spawn debug logs).
+   - Confirm render-layer counts match the world creature count (spawn debug logs).
+   - Confirm the camera bounds include the spawned creature (spawn debug logs).
+   - Confirm mobile spawn works using the spawn drawer (see mobile checks).
 
 4. **Interact/play**
    - Press **F** and paint food into the world.

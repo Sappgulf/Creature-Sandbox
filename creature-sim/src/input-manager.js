@@ -7,6 +7,7 @@ import { domCache } from './dom-cache.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { clamp } from './utils.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
+import { getDebugFlags } from './debug-flags.js';
 
 export class InputManager {
   constructor(canvas, camera, tools, world) {
@@ -819,6 +820,16 @@ export class InputManager {
         }
 
         const selectedType = gameState.selectedCreatureType || 'herbivore';
+        const debugFlags = getDebugFlags();
+        if (debugFlags.spawnDebug) {
+          console.log('[Spawn][input]', {
+            mode,
+            selectedType,
+            x: Number(x.toFixed(2)),
+            y: Number(y.toFixed(2)),
+            hasToolSpawner: Boolean(this.tools?.spawnCreature)
+          });
+        }
         if (this.tools?.spawnCreature) {
           this.tools.spawnCreature(x, y, { type: selectedType });
         } else {

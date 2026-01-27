@@ -16,6 +16,7 @@ import { SandboxProps } from './sandbox-props.js';
 import { clamp, dist2, rand } from './utils.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
+import { getDebugFlags } from './debug-flags.js';
 
 export class World {
   constructor(width, height) {
@@ -118,6 +119,31 @@ export class World {
     this.disasterIntensity = 1.0;
 
     console.debug('🌍 World core initialized with subsystems');
+  }
+
+  _sanitizeSpawnPoint(x, y) {
+    const safeX = Number.isFinite(x) ? x : this.width * 0.5;
+    const safeY = Number.isFinite(y) ? y : this.height * 0.5;
+    return {
+      x: clamp(safeX, 0, this.width),
+      y: clamp(safeY, 0, this.height)
+    };
+  }
+
+  _recordSpawnDebug({ source, type, x, y, creature }) {
+    const debugFlags = getDebugFlags();
+    if (!debugFlags.spawnDebug) return;
+    const previousVersion = this._debugSpawn?.version || 0;
+    this._debugSpawn = {
+      version: previousVersion + 1,
+      source,
+      type,
+      x,
+      y,
+      creatureId: creature?.id ?? null,
+      worldCount: this.creatures?.length || 0,
+      time: this.t
+    };
   }
 
   // Main simulation step
@@ -554,11 +580,45 @@ export class World {
   }
 
   spawnManual(x, y, predator = false) {
-    return this.creatureManager.spawnManual(x, y, predator);
+    const debugFlags = getDebugFlags();
+    const sanitized = this._sanitizeSpawnPoint(x, y);
+    if (debugFlags.spawnDebug) {
+      console.log('[Spawn][world] manual:start', {
+        predator,
+        x: Number(sanitized.x.toFixed(2)),
+        y: Number(sanitized.y.toFixed(2))
+      });
+    }
+    const creature = this.creatureManager.spawnManual(sanitized.x, sanitized.y, predator);
+    if (debugFlags.spawnDebug) {
+      console.log('[Spawn][world] manual:end', {
+        id: creature?.id ?? null,
+        worldCount: this.creatures.length
+      });
+    }
+    this._recordSpawnDebug({ source: 'manual', type: predator ? 'predator' : 'herbivore', x: sanitized.x, y: sanitized.y, creature });
+    return creature;
   }
 
   spawnManualWithGenes(x, y, genes) {
-    return this.creatureManager.spawnManualWithGenes(x, y, genes);
+    const debugFlags = getDebugFlags();
+    const sanitized = this._sanitizeSpawnPoint(x, y);
+    if (debugFlags.spawnDebug) {
+      console.log('[Spawn][world] genes:start', {
+        x: Number(sanitized.x.toFixed(2)),
+        y: Number(sanitized.y.toFixed(2)),
+        hasGenes: Boolean(genes)
+      });
+    }
+    const creature = this.creatureManager.spawnManualWithGenes(sanitized.x, sanitized.y, genes);
+    if (debugFlags.spawnDebug) {
+      console.log('[Spawn][world] genes:end', {
+        id: creature?.id ?? null,
+        worldCount: this.creatures.length
+      });
+    }
+    this._recordSpawnDebug({ source: 'genes', type: 'custom', x: sanitized.x, y: sanitized.y, creature });
+    return creature;
   }
 
   /**
@@ -566,17 +626,39 @@ export class World {
    * Supports herbivores, predators, and omnivores while clamping to world bounds.
    */
   spawnCreatureType(type = 'herbivore', x = this.width * 0.5, y = this.height * 0.5) {
-    const clampedX = clamp(x, 0, this.width);
-    const clampedY = clamp(y, 0, this.height);
+    const debugFlags = getDebugFlags();
+    const sanitized = this._sanitizeSpawnPoint(x, y);
+    if (debugFlags.spawnDebug) {
+      console.log('[Spawn][world] type:start', {
+        type,
+        x: Number(sanitized.x.toFixed(2)),
+        y: Number(sanitized.y.toFixed(2))
+      });
+    }
 
     switch (type) {
       case 'predator':
-        return this.creatureManager.spawnManual(clampedX, clampedY, true);
+        const predator = this.creatureManager.spawnManual(sanitized.x, sanitized.y, true);
+        if (debugFlags.spawnDebug) {
+          console.log('[Spawn][world] type:end', { id: predator?.id ?? null, worldCount: this.creatures.length });
+        }
+        this._recordSpawnDebug({ source: 'type', type, x: sanitized.x, y: sanitized.y, creature: predator });
+        return predator;
       case 'omnivore':
-        return this.creatureManager.spawnOmnivore(clampedX, clampedY);
+        const omnivore = this.creatureManager.spawnOmnivore(sanitized.x, sanitized.y);
+        if (debugFlags.spawnDebug) {
+          console.log('[Spawn][world] type:end', { id: omnivore?.id ?? null, worldCount: this.creatures.length });
+        }
+        this._recordSpawnDebug({ source: 'type', type, x: sanitized.x, y: sanitized.y, creature: omnivore });
+        return omnivore;
       case 'herbivore':
       default:
-        return this.creatureManager.spawnManual(clampedX, clampedY, false);
+        const herbivore = this.creatureManager.spawnManual(sanitized.x, sanitized.y, false);
+        if (debugFlags.spawnDebug) {
+          console.log('[Spawn][world] type:end', { id: herbivore?.id ?? null, worldCount: this.creatures.length });
+        }
+        this._recordSpawnDebug({ source: 'type', type: 'herbivore', x: sanitized.x, y: sanitized.y, creature: herbivore });
+        return herbivore;
     }
   }
 

@@ -9,6 +9,13 @@
 - [ ] Verify mobile touch controls work correctly
 - [ ] Run final polish + balance pass for survivability, impacts, and recovery tuning
 
+## Session Audit (2026-02-08)
+
+### Focus
+1. Reproduce the spawn/visibility regression with instrumentation.
+2. Trace spawn → store → render pipeline and fix root cause.
+3. Update smoke tests + recovery report after verification.
+
 ## Session Audit (2026-02-07)
 
 ### Focus

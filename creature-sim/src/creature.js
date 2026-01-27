@@ -10,6 +10,7 @@ import { CreatureAgentTuning } from './creature-agent-constants.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { generateTemperament } from './creature-traits.js';
 import { assetLoader } from './asset-loader.js';
+import { getDebugFlags } from './debug-flags.js';
 
 // Destructure commonly-used constants for cleaner code
 const { TRAIL_INTERVAL, TRAIL_MAX, LOG_MAX, TAU } = CreatureConfig;
@@ -3088,6 +3089,15 @@ export class Creature {
       ctx.closePath();
       ctx.fill();
       ctx.restore();
+      const debugFlags = getDebugFlags();
+      if (debugFlags.spawnDebug) {
+        ctx.save();
+        ctx.font = '9px sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.65)';
+        const label = this.id ? `id:${this.id}` : 'spawn';
+        ctx.fillText(label, -r, -r - 6);
+        ctx.restore();
+      }
     }
 
     ctx.strokeStyle = `hsla(${displayHue},90%,80%,${0.65 + flash * 0.4})`;

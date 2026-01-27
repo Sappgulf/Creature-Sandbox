@@ -4,6 +4,7 @@
  */
 import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
+import { eventSystem } from './event-system.js';
 
 // Speed multipliers for cycling
 const SPEED_OPTIONS = [0.5, 1, 2, 4];
@@ -152,7 +153,8 @@ export class ControlStripController {
     // === FOOD TOOL ===
     activateFoodTool() {
         if (this.tools) {
-            this.tools.setTool('food');
+            this.tools.setMode('food');
+            eventSystem.emit('tool:changed', { mode: 'food' });
             this.ctrlFood?.classList.add('active');
         }
     }
@@ -195,7 +197,8 @@ export class ControlStripController {
     confirmSpawn() {
         // Set the spawn tool with the selected type using proper gameState method
         if (this.tools) {
-            this.tools.setTool('spawn');
+            this.tools.setMode('spawn');
+            eventSystem.emit('tool:changed', { mode: 'spawn' });
         }
         // Use gameState.setSpawnMode which properly sets selectedCreatureType and spawnMode
         gameState.setSpawnMode(this.currentSpawnType);

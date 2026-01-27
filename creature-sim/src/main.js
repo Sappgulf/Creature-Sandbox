@@ -58,6 +58,7 @@ import { ProceduralSounds } from './procedural-sounds.js';
 import { UnlockableAchievements } from './unlockable-achievements.js';
 import { FamilyBondsSystem } from './family-bonds.js';
 import { MemoryLearningSystem } from './memory-learning.js';
+import { getDebugFlags } from './debug-flags.js';
 
 // Local helper to validate notification subsystem shape
 function isNotificationSystem(candidate) {
@@ -69,8 +70,9 @@ function isNotificationSystem(candidate) {
 
 function getDevToolsConfig() {
   if (typeof window === 'undefined') return { enabled: false, timingLogs: false, fpsOverlay: false };
+  const debugFlags = getDebugFlags();
   const params = new URLSearchParams(window.location.search);
-  const enabled = params.has('devtools') || localStorage.getItem('creature-sim-devtools') === 'true';
+  const enabled = debugFlags.enabled;
   const fpsOverlay = enabled && (params.has('fps') || localStorage.getItem('creature-sim-fps') === 'true' || params.has('devtools'));
   const timingLogs = enabled && (params.has('timing') || localStorage.getItem('creature-sim-timing') === 'true');
   const timingLogInterval = Number(params.get('timingInterval') || 5000) || 5000;
@@ -78,7 +80,9 @@ function getDevToolsConfig() {
     enabled,
     fpsOverlay,
     timingLogs,
-    timingLogInterval
+    timingLogInterval,
+    spawnDebug: debugFlags.spawnDebug,
+    renderDebug: debugFlags.renderDebug
   };
 }
 
