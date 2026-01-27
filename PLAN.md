@@ -2,11 +2,31 @@
 
 ## Active
 
-- [x] **RECOVERY MISSION**: Fix syntax error breaking app boot
+- [ ] **DEBUG**: Investigate creature visibility issue after "New Game"
 - [ ] Complete smoke test verification in browser
 - [ ] Fix any P0/P1 issues discovered during testing
 - [ ] Verify core loop: spawn → select → interact → save/load
 - [ ] Verify mobile touch controls work correctly
+
+## Session Debug (2026-01-26)
+
+### Issue
+Creatures not showing after clicking "New Game".
+
+### Investigation
+- Verified creature spawning works correctly (76 creatures created via `world.seed()`)
+- Verified world initialization sequence is correct
+- Verified renderer receives correct world reference
+- No syntax errors in any JS files
+- Save system tests pass
+
+### Debug Logging Added
+- `game-loop.js`: Log creature count and canvas size on first renders
+- `renderer.js`: Log creatures passed to drawCreatures, view bounds, rendered vs culled counts
+
+### Next Steps
+- Check browser console for debug output after clicking "New Game"
+- Identify if issue is: no creatures, all culled, or drawing failure
 
 ## Session Audit (2026-01-24)
 
