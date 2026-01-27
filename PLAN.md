@@ -7,6 +7,15 @@
 - [ ] Fix any P0/P1 issues discovered during testing
 - [ ] Verify core loop: spawn → select → interact → save/load
 - [ ] Verify mobile touch controls work correctly
+- [ ] Run final polish + balance pass for survivability, impacts, and recovery tuning
+
+## Session Audit (2026-02-07)
+
+### Focus
+1. Verify baseline app behavior (home screen, New Sandbox, core loop) in browser.
+2. Tune health, damage, and recovery for calmer, longer-lived creatures.
+3. Reduce abrupt failures (impact/fall damage, hunger/stress spikes) and document balance values.
+4. Update smoke tests and documentation after tuning.
 
 ## Session Debug (2026-01-26)
 
