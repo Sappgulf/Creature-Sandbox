@@ -126,10 +126,14 @@ export class ControlStripController {
         if (this.ctrlPause) {
             this.ctrlPause.querySelector('.ctrl-icon').textContent = icon;
             this.ctrlPause.classList.toggle('active', isPaused);
+            this.ctrlPause.setAttribute('aria-pressed', isPaused ? 'true' : 'false');
+            this.ctrlPause.setAttribute('aria-label', isPaused ? 'Resume simulation' : 'Pause simulation');
         }
         if (this.watchPause) {
             this.watchPause.textContent = icon;
             this.watchPause.classList.toggle('active', isPaused);
+            this.watchPause.setAttribute('aria-pressed', isPaused ? 'true' : 'false');
+            this.watchPause.setAttribute('aria-label', isPaused ? 'Resume simulation' : 'Pause simulation');
         }
     }
 
@@ -152,10 +156,18 @@ export class ControlStripController {
 
     // === FOOD TOOL ===
     activateFoodTool() {
+        if (this.uiController?.onFood) {
+            this.uiController.onFood();
+            if (this.ctrlFood) {
+                this.ctrlFood.classList.add('pulse');
+                setTimeout(() => this.ctrlFood?.classList.remove('pulse'), 250);
+            }
+            return;
+        }
+
         if (this.tools) {
             this.tools.setMode('food');
             eventSystem.emit('tool:changed', { mode: 'food' });
-            this.ctrlFood?.classList.add('active');
         }
     }
 
@@ -165,6 +177,7 @@ export class ControlStripController {
         this.spawnDrawer.classList.remove('hidden');
         this.spawnDrawer.setAttribute('aria-hidden', 'false');
         this.spawnDrawerOpen = true;
+        this.ctrlSpawn?.setAttribute('aria-expanded', 'true');
         this.updateSpawnSelection();
     }
 
@@ -173,6 +186,7 @@ export class ControlStripController {
         this.spawnDrawer.classList.add('hidden');
         this.spawnDrawer.setAttribute('aria-hidden', 'true');
         this.spawnDrawerOpen = false;
+        this.ctrlSpawn?.setAttribute('aria-expanded', 'false');
     }
 
     selectSpawnType(type) {
@@ -326,6 +340,7 @@ export class ControlStripController {
         }
 
         this.ctrlWatch?.classList.toggle('active', this.isWatchMode);
+        this.ctrlWatch?.setAttribute('aria-pressed', this.isWatchMode ? 'true' : 'false');
     }
 
     toggleFollow() {
@@ -381,6 +396,8 @@ export class ControlStripController {
 
         this.ctrlGod?.classList.toggle('active', this.isGodMode);
         this.watchGodMode?.classList.toggle('active', this.isGodMode);
+        this.ctrlGod?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
+        this.watchGodMode?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
     }
 
     // === KEYBOARD SHORTCUTS ===

@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### Notes (2026-02-09)
+- Planned (frontend): Audit control strip quick actions and day/night toggle edge cases, then polish accessibility state. Why: quick actions should match documented behavior and environment toggles shouldn't halt seasons. Verification: `npm test` (pass; npm warning about unknown `http-proxy` setting).
+- Implemented (frontend): Ensured seasons continue when day/night is disabled, aligned the control strip food button with documented quick food drops, and added aria pressed/expanded updates for watch/god/pause controls. Why: fix toggles that stalled season progression and improve quick action feedback/accessibility. Verification: `npm test` (pass; npm warning about unknown `http-proxy` setting); `npm run lint` (fails with 3 errors and 1586 warnings: pre-existing).
+
 ### Notes (2026-01-29)
 - Planned (frontend): Fold mobile side panels into a bottom-sheet layout and collapse inspector/session meta on load to keep the playfield tappable. Why: mobile side menus currently crowd the simulation view. Verification: `npm test` (pass; npm warning about unknown `http-proxy` setting).
 - Implemented (frontend): Defaulted mobile inspector/session meta visibility to hidden and forced side panels into bottom-sheet placement with a shorter max height for more playable space. Why: prevent mobile side menus from covering the game view. Verification: `npm test` (pass; npm warning about unknown `http-proxy` setting).
