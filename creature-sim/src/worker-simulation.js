@@ -104,7 +104,17 @@ function sendSnapshot() {
         count: count,
         creatureBuffer: buffer, // This will be "Transferred"
         food: world.food.map(f => ({ id: f.id, x: f.x, y: f.y, type: f.type, r: f.size || 1.5 })),
-        corpses: world.corpses.map(c => ({ x: c.x, y: c.y, age: c.age }))
+        corpses: world.corpses.map(c => ({ x: c.x, y: c.y, age: c.age })),
+        environment: {
+            dayLight: world.environment.dayLight,
+            dayPhase: world.environment.dayPhase,
+            currentSeason: world.environment.currentSeason,
+            seasonPhase: world.environment.seasonPhase,
+            weatherIntensity: world.environment.weatherIntensity,
+            weatherType: world.environment.weatherType,
+            moodState: world.environment.moodState,
+            timeOfDay: world.environment.timeOfDay
+        }
     };
 
     // Transfer the buffer to avoid copying memory
@@ -115,11 +125,11 @@ function sendSnapshot() {
  * Helper to set deep properties like 'autoBalanceSettings.enabled'
  */
 function setDeepProp(obj, path, value) {
-  const parts = path.split('.');
-  let current = obj;
-  for (let i = 0; i < parts.length - 1; i++) {
-    if (!current[parts[i]]) current[parts[i]] = {};
-    current = current[parts[i]];
-  }
-  current[parts[parts.length - 1]] = value;
+    const parts = path.split('.');
+    let current = obj;
+    for (let i = 0; i < parts.length - 1; i++) {
+        if (!current[parts[i]]) current[parts[i]] = {};
+        current = current[parts[i]];
+    }
+    current[parts[parts.length - 1]] = value;
 }

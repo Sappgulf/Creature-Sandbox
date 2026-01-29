@@ -26,6 +26,7 @@ export class SimulationProxy {
             disasterIntensity: 1.0,
             seasonSpeed: 0.015,
             dayLength: 120,
+            regions: [],
             autoBalanceSettings: {
                 enabled: true,
                 minPopulation: 36,
@@ -78,11 +79,35 @@ export class SimulationProxy {
     }
 
     updateSnapshot(payload) {
-        const { t, count, creatureBuffer, food, corpses } = payload;
+        const { t, count, creatureBuffer, food, corpses, environment } = payload;
 
         this.worldSnapshot.t = t;
         this.worldSnapshot.food = food;
         this.worldSnapshot.corpses = corpses;
+
+        if (environment) {
+            this.worldSnapshot.dayPhase = environment.dayPhase;
+            this.worldSnapshot.dayLight = environment.dayLight;
+            this.worldSnapshot.currentSeason = environment.currentSeason;
+            this.worldSnapshot.weatherType = environment.weatherType;
+            this.worldSnapshot.moodState = environment.moodState;
+            this.worldSnapshot.environment = {
+                ...environment,
+                getMoodState: () => environment.moodState,
+                getDayNightState: () => ({ phase: environment.dayPhase, light: environment.dayLight }),
+                getSeasonInfo: () => ({
+                    name: environment.currentSeason,
+                    progress: environment.seasonPhase,
+                    label: environment.currentSeason.charAt(0).toUpperCase() + environment.currentSeason.slice(1)
+                }),
+                getWeatherState: () => ({
+                    type: environment.weatherType,
+                    intensity: environment.weatherIntensity,
+                    timeOfDay: environment.timeOfDay,
+                    season: environment.currentSeason
+                })
+            };
+        }
 
         // Unpack binary buffer into renderable objects
         const creatures = new Array(count);
@@ -125,9 +150,8 @@ export class SimulationProxy {
     }
 
     getBiomeAt(x, y) {
-        if (!this.biomeGenerator) return 'plain';
-        const biome = this.biomeGenerator.getBiomeAt(x, y, this.worldSnapshot.width, this.worldSnapshot.height);
-        return biome?.type || 'plain';
+        if (!this.biomeGenerator) return { type: 'plain' };
+        return this.biomeGenerator.getBiomeAt(x, y, this.worldSnapshot.width, this.worldSnapshot.height);
     }
 
     _send(type, data) {
@@ -177,6 +201,13 @@ export class SimulationProxy {
         this.worldSnapshot.dayLength = val;
         this._send('SET_PROP', { path: 'dayLength', value: val });
     }
+
+    get dayPhase() { return this.worldSnapshot.dayPhase || 'day'; }
+    get dayLight() { return this.worldSnapshot.dayLight ?? 1; }
+    get currentSeason() { return this.worldSnapshot.currentSeason || 'spring'; }
+    get moodState() { return this.worldSnapshot.moodState; }
+    get weatherType() { return this.worldSnapshot.weatherType; }
+    get regions() { return this.worldSnapshot.regions; }
 
     // Search helper
     getAnyCreatureById(id) {
