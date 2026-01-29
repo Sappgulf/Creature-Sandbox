@@ -212,7 +212,7 @@ export class Renderer {
       this.drawMatingDisplays(world);
     }
 
-    this.drawCreatures(world.creatures, { selectedId, pinnedId, hoveredId, lineageSet, worldTime, selectionPulseUntil: opts.selectionPulseUntil });
+    this.drawCreatures(world, { selectedId, pinnedId, hoveredId, lineageSet, worldTime, selectionPulseUntil: opts.selectionPulseUntil });
     if (spawnDebug && this._pendingDebugSpawn) {
       const spawnInfo = this._pendingDebugSpawn;
       const creature = world.getAnyCreatureById?.(spawnInfo.creatureId);
@@ -1078,7 +1078,7 @@ export class Renderer {
   }
 
   drawFood(world) {
-    if (!world.food || world.food.length === 0) return;
+    if (!world || !world.food || world.food.length === 0 || !world.foodGrid) return;
     const ctx = this.ctx;
     const bounds = this._viewBounds;
 
@@ -1145,7 +1145,7 @@ export class Renderer {
 
   // NEW: Draw corpses for scavengers to find
   drawCorpses(world) {
-    if (!world.corpses || world.corpses.length === 0) return;
+    if (!world || !world.corpses || world.corpses.length === 0 || !world.corpseGrid) return;
     const ctx = this.ctx;
     const bounds = this._viewBounds;
 
@@ -1188,6 +1188,7 @@ export class Renderer {
   }
 
   drawCreatures(world, opts) {
+    if (!world || !world.creatures || !world.creatureManager?.creatureGrid) return;
     const ctx = this.ctx;
     const { worldTime = 0 } = opts;
     const creatures = world.creatures;
