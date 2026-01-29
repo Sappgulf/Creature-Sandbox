@@ -99,6 +99,13 @@ self.onmessage = function (e) {
             }
             break;
 
+        case 'TRIGGER_DISASTER':
+            if (world) {
+                world.triggerDisaster(data.type, data.options);
+                sendSnapshot();
+            }
+            break;
+
         case 'PAUSE':
             isPaused = data.paused;
             break;
@@ -165,7 +172,8 @@ function sendSnapshot() {
             weatherType: world.environment.weatherType,
             moodState: world.environment.moodState,
             timeOfDay: world.environment.timeOfDay
-        }
+        },
+        activeDisaster: world.getActiveDisaster ? world.getActiveDisaster() : null
     };
 
     // Transfer the buffer to avoid copying memory

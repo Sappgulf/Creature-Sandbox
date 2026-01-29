@@ -150,6 +150,16 @@ export class SimulationProxy {
             if (id) this._send('REMOVE_FOOD', { id });
         };
 
+        // Disaster Stubs
+        this.getActiveDisaster = () => {
+            // TODO: Sync disaster state from worker
+            return this.worldSnapshot.activeDisaster || null;
+        };
+
+        this.triggerDisaster = (type, options = {}) => {
+            this._send('TRIGGER_DISASTER', { type, options });
+        };
+
         // Initialize biome generator with a fixed seed if possible, or random
         this.biomeGenerator = new BiomeGenerator(0.123);
 
@@ -215,7 +225,7 @@ export class SimulationProxy {
     }
 
     updateSnapshot(payload) {
-        const { t, count, creatureBuffer, food, corpses, environment } = payload;
+        const { t, count, creatureBuffer, food, corpses, environment, activeDisaster } = payload;
 
         // Flag this as an internal update to prevent Proxies from echoing back to worker
         this._isInternalUpdate = true;
@@ -224,6 +234,7 @@ export class SimulationProxy {
             this.worldSnapshot.t = t;
             this.worldSnapshot.food = food;
             this.worldSnapshot.corpses = corpses;
+            this.worldSnapshot.activeDisaster = activeDisaster;
 
             if (environment) {
                 // Update base properties
