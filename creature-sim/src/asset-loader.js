@@ -17,6 +17,8 @@ export class AssetLoader {
    * @param {string} path - Path to SVG file
    */
   loadSVG(name, path) {
+    if (typeof fetch === 'undefined') return Promise.resolve(null);
+
     const promise = fetch(path)
       .then(response => {
         if (!response.ok) {
@@ -34,7 +36,7 @@ export class AssetLoader {
         this.assets.set(name, null);
         return null;
       });
-    
+
     this.promises.push(promise);
     return promise;
   }
@@ -53,7 +55,7 @@ export class AssetLoader {
     await Promise.all(this.promises);
     this.isLoaded = true;
     this.isLoading = false;
-    
+
     console.log(`✅ Loaded ${this.assets.size} creature assets`);
     return this.assets;
   }
@@ -75,6 +77,11 @@ export class AssetLoader {
    * @returns {Promise<HTMLCanvasElement|null>}
    */
   async createTintedCanvas(name, color, size = 64) {
+    // Worker safety check
+    if (typeof document === 'undefined' || typeof Image === 'undefined') {
+      return null;
+    }
+
     const svgText = this.getSVG(name);
     if (!svgText) {
       console.warn(`SVG asset '${name}' not found`);
@@ -84,32 +91,32 @@ export class AssetLoader {
     try {
       // Replace currentColor with the target color
       const tintedSvg = svgText.replace(/currentColor/g, color);
-      
+
       const blob = new Blob([tintedSvg], { type: 'image/svg+xml' });
       const url = URL.createObjectURL(blob);
-      
+
       return new Promise((resolve, reject) => {
         const img = new Image();
-        
+
         img.onload = () => {
           const canvas = document.createElement('canvas');
           canvas.width = size;
           canvas.height = size;
           const ctx = canvas.getContext('2d');
-          
+
           // Draw with centered positioning
           ctx.drawImage(img, 0, 0, size, size);
-          
+
           URL.revokeObjectURL(url);
           resolve(canvas);
         };
-        
+
         img.onerror = (error) => {
           console.error(`Failed to load image for ${name}:`, error);
           URL.revokeObjectURL(url);
           reject(error);
         };
-        
+
         img.src = url;
       });
     } catch (error) {
