@@ -2689,7 +2689,9 @@ select:focus,
     width: calc(100% - var(--space-lg) * 2) !important;
     left: var(--space-lg) !important;
     right: var(--space-lg) !important;
-    max-height: calc(var(--vh, 1vh) * 70);
+    top: auto !important;
+    bottom: calc(var(--mobile-action-bar-height) + var(--space-lg));
+    max-height: calc(var(--vh, 1vh) * 60);
   }
 
   .campaign-levels-grid {

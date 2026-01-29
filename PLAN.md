@@ -7,6 +7,14 @@
 - [ ] Verify core loop: spawn → select → interact → save/load
 - [ ] Verify mobile touch controls work correctly
 - [ ] Run final polish + balance pass for survivability, impacts, and recovery tuning
+- [ ] Polish mobile panels so side menus stop blocking the playfield
+
+## Session Audit (2026-01-29)
+
+### Focus
+1. Confirm mobile side panels no longer cover the playfield on load.
+2. Ensure panels open as bottom sheets on small screens.
+3. Update docs + changelog entries after verification.
 
 ## Session Audit (2026-02-08)
 

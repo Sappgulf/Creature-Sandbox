@@ -195,7 +195,8 @@ export class UIController {
     this.bindGameplayModeControls();
     this.bindSessionGoalControls();
     this.bindWatchControls();
-    // Sync mobile UI state immediately
+    this.applyMobileDefaults();
+    this.updateInspectorVisibility();
 
     this.updateSessionMetaVisibility();
     this.applySpawnSelection(gameState.selectedCreatureType || this.lastSpawnType, { silent: true });
@@ -203,6 +204,31 @@ export class UIController {
     this.updateSandboxUiVisibility();
     this.updateGodModeUI();
     this.updateWatchModeUI();
+  }
+
+  applyMobileDefaults() {
+    if (this.mobileDefaultsApplied) return;
+    const isMobile = document.body.classList.contains('mobile-device') ||
+      (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+    if (!isMobile) return;
+
+    this.mobileDefaultsApplied = true;
+    gameState.inspectorVisible = false;
+    gameState.sessionMetaVisible = false;
+
+    const panels = [
+      document.getElementById('scenario-panel'),
+      document.getElementById('gene-editor-panel'),
+      document.getElementById('eco-health-panel'),
+      document.getElementById('achievements-panel'),
+      document.getElementById('features-panel')
+    ];
+
+    for (const panel of panels) {
+      if (!panel) continue;
+      panel.classList.add('hidden');
+      panel.setAttribute('aria-hidden', 'true');
+    }
   }
 
   setupHudMenu() {
