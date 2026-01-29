@@ -58,6 +58,20 @@ export class AnalyticsTracker {
     this._workerQueued = null;
   }
 
+  reset() {
+    this.samples = [];
+    this.geneHistory = [];
+    this.speciesGroups = [];
+    this.phylogenyData = null;
+    this._accum = 0;
+    this._geneHistoryAccum = 0;
+    this.version += 1;
+    this._cachedData = null;
+    if (this.worker) {
+      this.worker.postMessage({ type: 'RESET' });
+    }
+  }
+
   update(world, dt) {
     this._accum += dt;
     if (this._accum >= this.sampleInterval) {
@@ -412,7 +426,7 @@ export class AnalyticsTracker {
     return this.phylogenyData;
   }
 
-  snapshot(extra={}) {
+  snapshot(extra = {}) {
     return {
       generatedAt: new Date().toISOString(),
       sampleInterval: this.sampleInterval,

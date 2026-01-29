@@ -1,5 +1,7 @@
 self.onmessage = (event) => {
   const data = event?.data;
+  if (data?.type === 'RESET') return;
+
   const creatures = data?.creatures;
   if (!Array.isArray(creatures)) return;
 

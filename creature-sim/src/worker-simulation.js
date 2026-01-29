@@ -63,6 +63,12 @@ self.onmessage = function (e) {
             }
             break;
 
+        case 'SET_PROP':
+            if (world) {
+                setDeepProp(world, data.path, data.value);
+            }
+            break;
+
         case 'STEP_AND_SYNC':
             step(data.dt);
             break;
@@ -103,4 +109,17 @@ function sendSnapshot() {
 
     // Transfer the buffer to avoid copying memory
     self.postMessage(snapshot, [buffer.buffer]);
+}
+
+/**
+ * Helper to set deep properties like 'autoBalanceSettings.enabled'
+ */
+function setDeepProp(obj, path, value) {
+  const parts = path.split('.');
+  let current = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (!current[parts[i]]) current[parts[i]] = {};
+    current = current[parts[i]];
+  }
+  current[parts[parts.length - 1]] = value;
 }

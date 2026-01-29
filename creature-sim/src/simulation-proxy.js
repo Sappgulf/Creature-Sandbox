@@ -1,9 +1,6 @@
-/**
- * Simulation Proxy - Handles worker communication and state mirroring.
- */
-
 import { eventSystem, GameEvents } from './event-system.js';
 import { unpackCreature } from './simulation-state.js';
+import { BiomeGenerator } from './perlin-noise.js';
 
 export class SimulationProxy {
     constructor(workerPath) {
@@ -24,10 +21,25 @@ export class SimulationProxy {
             corpseGridDirty: false,
             restGridDirty: false,
             nestGridDirty: false,
+            randomDisasters: true,
+            disasterCooldown: 40,
+            disasterIntensity: 1.0,
+            seasonSpeed: 0.015,
+            dayLength: 120,
+            autoBalanceSettings: {
+                enabled: true,
+                minPopulation: 36,
+                maxPredators: 16,
+                targetPredatorRatio: 0.24,
+                targetFoodFraction: 0.5,
+                minFoodAbsolute: 180
+            },
+            environment: {
+                foodRateMultiplier: 1.0
+            },
             creatureManager: {
                 creatureGrid: {
                     queryRect: (x1, y1, x2, y2) => {
-                        // Basic filtering for now, we could use a local grid if performance demands it
                         return this.worldSnapshot.creatures.filter(c =>
                             c.x >= x1 && c.x <= x2 && c.y >= y1 && c.y <= y2
                         );
@@ -35,6 +47,9 @@ export class SimulationProxy {
                 }
             }
         };
+
+        // Initialize biome generator with a fixed seed if possible, or random
+        this.biomeGenerator = new BiomeGenerator(0.123);
 
         this.worker.onmessage = (e) => this.handleMessage(e);
 
@@ -109,6 +124,12 @@ export class SimulationProxy {
         this._send('RESET', {});
     }
 
+    getBiomeAt(x, y) {
+        if (!this.biomeGenerator) return 'plain';
+        const biome = this.biomeGenerator.getBiomeAt(x, y, this.worldSnapshot.width, this.worldSnapshot.height);
+        return biome?.type || 'plain';
+    }
+
     _send(type, data) {
         if (this.isReady) {
             this.worker.postMessage({ type, data });
@@ -129,6 +150,33 @@ export class SimulationProxy {
     get creatureManager() { return this.worldSnapshot.creatureManager; }
     get foodGridDirty() { return this.worldSnapshot.foodGridDirty; }
     get corpseGridDirty() { return this.worldSnapshot.corpseGridDirty; }
+
+    get randomDisasters() { return this.worldSnapshot.randomDisasters; }
+    set randomDisasters(val) {
+        this.worldSnapshot.randomDisasters = val;
+        this._send('SET_PROP', { path: 'randomDisasters', value: val });
+    }
+
+    get disasterCooldown() { return this.worldSnapshot.disasterCooldown; }
+    set disasterCooldown(val) {
+        this.worldSnapshot.disasterCooldown = val;
+        this._send('SET_PROP', { path: 'disasterCooldown', value: val });
+    }
+
+    get autoBalanceSettings() { return this.worldSnapshot.autoBalanceSettings; }
+    get environment() { return this.worldSnapshot.environment; }
+
+    get seasonSpeed() { return this.worldSnapshot.seasonSpeed; }
+    set seasonSpeed(val) {
+        this.worldSnapshot.seasonSpeed = val;
+        this._send('SET_PROP', { path: 'seasonSpeed', value: val });
+    }
+
+    get dayLength() { return this.worldSnapshot.dayLength; }
+    set dayLength(val) {
+        this.worldSnapshot.dayLength = val;
+        this._send('SET_PROP', { path: 'dayLength', value: val });
+    }
 
     // Search helper
     getAnyCreatureById(id) {
