@@ -37,6 +37,14 @@ export class WorldEcosystem {
         growthRate: 0.12, // Increased from 0.1
         spawnChance: 0.1, // 10% fruit trees
         respawnTime: 25 // Reduced from 30
+      },
+      golden_fruit: {
+        energy: 60,
+        color: '#FFD700',
+        size: 5,
+        growthRate: 0.015,
+        spawnChance: 0.005, // Very rare
+        respawnTime: 120
       }
     };
 
@@ -301,6 +309,13 @@ export class WorldEcosystem {
     const x = clamp(patch.x + Math.cos(angle) * distance, 0, this.world.width);
     const y = clamp(patch.y + Math.sin(angle) * distance, 0, this.world.height);
     this.addFood(x, y, 1.2, null, { sourceId: patch.id, sourceTag: patch.tag, origin: 'patch' });
+
+    // Rare Golden Fruit spawning
+    if (Math.random() < (CreatureAgentTuning.FOOD_PATCHES.GOLDEN_FRUIT_SPAWN_CHANCE || 0.005) * patch.fertility) {
+      const gx = clamp(x + rand(-30, 30), 0, this.world.width);
+      const gy = clamp(y + rand(-30, 30), 0, this.world.height);
+      this.addFood(gx, gy, 2.5, 'golden_fruit', { sourceId: patch.id, sourceTag: patch.tag, origin: 'patch_rare' });
+    }
   }
 
   registerFoodConsumption(food, energy, depleted) {

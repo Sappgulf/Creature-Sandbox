@@ -122,7 +122,7 @@ export class Creature {
     this.parentId = null; // set by World.addCreature
     this.parents = [];
     this.currentBiomeType = null;
-    
+
     // NEW: SVG asset rendering cache
     this._cachedCanvas = null;
     this._cachedColor = null;
@@ -453,25 +453,31 @@ export class Creature {
 
   seek(foodList, pheromone) {
     let best = null, bestD2 = Infinity;
-    const senseRadius = this.genes.sense * (0.7 + BehaviorConfig.forageWeight * 0.6);
+    const senseRadius = this.genes.sense * (0.7 + (BehaviorConfig.forageWeight || 1) * 0.6);
     const senseRadius2 = senseRadius * senseRadius;
 
-    // Optimize: pre-compute values outside loop
     const myX = this.x, myY = this.y, myDir = this.dir;
-    const halfFov = this._halfFovRad; // Use cached FOV
-    const forageWeight = BehaviorConfig.forageWeight;
+    const halfFov = this._halfFovRad;
+    const forageWeight = BehaviorConfig.forageWeight || 1;
 
-    for (let i = 0; i < foodList.length; i++) {
+    const count = foodList.length;
+
+    for (let i = 0; i < count; i++) {
       const f = foodList[i];
       const dx = f.x - myX, dy = f.y - myY;
-      const d2 = dx * dx + dy * dy; // Inline dist2 to avoid function call
+
+      // Fast distance threshold check before expensive math
+      if (Math.abs(dx) > senseRadius || Math.abs(dy) > senseRadius) continue;
+
+      const d2 = dx * dx + dy * dy;
       if (d2 > senseRadius2) continue;
 
+      // Only calculate atan2 if the food is a candidate for FOV check
       const ang = Math.atan2(dy, dx);
       const delta = Math.atan2(Math.sin(ang - myDir), Math.cos(ang - myDir));
       if (Math.abs(delta) > halfFov) continue;
 
-      const bias = forageWeight > 0 ? d2 / forageWeight : d2;
+      const bias = d2 / forageWeight;
       if (bias < bestD2) { bestD2 = bias; best = f; }
     }
 
@@ -1915,10 +1921,22 @@ export class Creature {
       this.goal.bondAnnounced = false;
     }
 
-    if (this.energy <= 0 || this.age > CreatureAgentTuning.LIFE_STAGE.ELDER_FADE_END) {
+    this.energy -= energyDrain * dt;
+
+    // Starvation mechanic: loss of health when energy is empty
+    if (this.energy <= 0) {
+      this.energy = 0;
+      const starvationRate = CreatureAgentTuning.NEEDS.STARVATION_DAMAGE_RATE || 2.5;
+      this.health -= starvationRate * dt;
+      if (Math.random() < 0.05) this.setMood('💀', 0.5);
+    }
+
+    if (this.health <= 0 || this.age > CreatureAgentTuning.LIFE_STAGE.ELDER_FADE_END) {
       this.alive = false;
-      const cause = this.energy <= 0 ? 'Energy collapse' : 'Faded peacefully';
-      this.deathCause = this.energy <= 0 ? 'energy' : 'elder';
+      const cause = this.health <= 0
+        ? (this.energy <= 0 ? 'Starved' : 'Fatigued')
+        : 'Faded peacefully';
+      this.deathCause = this.health <= 0 ? (this.energy <= 0 ? 'starvation' : 'health') : 'elder';
       this.logEvent(cause, world.t);
       if (!this.genes.predator) world.addFood(this.x, this.y, 1.5);
     }
@@ -3043,7 +3061,7 @@ export class Creature {
     // NEW: SVG-based body rendering with dynamic tinting and variant selection
     const diet = g.diet ?? (g.predator ? 1.0 : 0.0);
     let assetType = 'creature_herbivore'; // default
-    
+
     // Select asset based on creature characteristics
     if (this.ageStage === 'baby') {
       // Babies use special baby sprite
@@ -3065,9 +3083,9 @@ export class Creature {
         assetType = 'creature_omnivore';
       }
     }
-    
+
     const colorStr = `hsl(${displayHue},85%,${lightness}%)`;
-    
+
     // Check if we need to update the cached canvas
     if (assetLoader.isReady() && (this._cachedColor !== colorStr || this._cachedAssetType !== assetType)) {
       this._updateCachedCanvas(assetType, colorStr);
@@ -3076,7 +3094,7 @@ export class Creature {
     // Render using cached canvas if available, otherwise fallback to triangle
     if (this._cachedCanvas) {
       const renderSize = r * 4; // Scale factor for good appearance
-      ctx.drawImage(this._cachedCanvas, -renderSize/2, -renderSize/2, renderSize, renderSize);
+      ctx.drawImage(this._cachedCanvas, -renderSize / 2, -renderSize / 2, renderSize, renderSize);
     } else {
       // Fallback to original triangle rendering
       const bodyScale = 0.8 + (2 - g.metabolism) * 0.3; // Low metabolism = chunkier
@@ -3156,7 +3174,7 @@ export class Creature {
   _updateCachedCanvas(assetType, colorStr) {
     this._cachedColor = colorStr;
     this._cachedAssetType = assetType;
-    
+
     // Create tinted canvas asynchronously
     assetLoader.createTintedCanvas(assetType, colorStr, 64).then(canvas => {
       // Only update if color/type hasn't changed in the meantime

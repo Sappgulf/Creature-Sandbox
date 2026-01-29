@@ -18,7 +18,8 @@ export const CreatureAgentTuning = {
       socialDrive: 35,
       stress: 18
     },
-    HUNGER_RELIEF_PER_ENERGY: 1.6
+    HUNGER_RELIEF_PER_ENERGY: 1.6,
+    STARVATION_DAMAGE_RATE: 2.5 // Damage per second when at 0 energy
   },
   DAY_NIGHT: {
     HUNGER_DAY_MULT: 1.08,
@@ -126,7 +127,9 @@ export const CreatureAgentTuning = {
     POP_PRESSURE_START: 45,
     POP_PRESSURE_RANGE: 80,
     POP_PRESSURE_MAX: 0.35,
-    MIN_WORLD_FOOD_FRACTION: 0.18
+    POP_PRESSURE_MAX: 0.35,
+    MIN_WORLD_FOOD_FRACTION: 0.18,
+    GOLDEN_FRUIT_SPAWN_CHANCE: 0.005 // Rarely spawns in patches
   },
   REST_ZONES: {
     COUNT: 5,

@@ -1093,11 +1093,12 @@ export class Renderer {
     if (visibleFood.length === 0) return;
 
     // OPTIMIZATION: Reuse type grouping to avoid allocations
-    if (!this._foodByType) this._foodByType = { grass: [], berries: [], fruit: [] };
+    if (!this._foodByType) this._foodByType = { grass: [], berries: [], fruit: [], golden_fruit: [] };
     const byType = this._foodByType;
     byType.grass.length = 0;
     byType.berries.length = 0;
     byType.fruit.length = 0;
+    byType.golden_fruit.length = 0;
 
     for (let i = 0; i < visibleFood.length; i++) {
       const f = visibleFood[i];
@@ -1111,7 +1112,8 @@ export class Renderer {
     const defaultColors = {
       grass: 'rgba(126,210,120,0.85)',
       berries: 'rgba(200,100,150,0.85)',
-      fruit: 'rgba(255,180,80,0.85)'
+      fruit: 'rgba(255,180,80,0.85)',
+      golden_fruit: 'rgba(255,215,0,0.95)'
     };
 
     for (const [type, items] of Object.entries(byType)) {
@@ -1139,6 +1141,23 @@ export class Renderer {
           ctx.lineTo(f.x, f.y + f.r + 2);
         }
         ctx.stroke();
+      }
+
+      // Special handling for Golden Fruit (rare)
+      if (type === 'golden_fruit') {
+        ctx.save();
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = 'gold';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < items.length; i++) {
+          const f = items[i];
+          ctx.moveTo(f.x + f.r + 1, f.y);
+          ctx.arc(f.x, f.y, f.r + 1, 0, Math.PI * 2);
+        }
+        ctx.stroke();
+        ctx.restore();
       }
     }
   }
