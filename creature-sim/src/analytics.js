@@ -19,7 +19,25 @@ export class AnalyticsTracker {
     this._geneHistoryAccum = 0;
 
     this._initializeWorker();
-    console.log('✅ AnalyticsTracker Instance Created');
+
+    // NUCLEAR FIX: Define reset directly on 'this' to ensure it's always found
+    this.reset = () => {
+      console.log('📊 Analytics Tracker Resetting...');
+      this.samples = [];
+      this.geneHistory = [];
+      this.speciesGroups = [];
+      this.phylogenyData = null;
+      this._accum = 0;
+      this._geneHistoryAccum = 0;
+      this.version += 1;
+      this._cachedData = null;
+      if (this.worker) {
+        this.worker.postMessage({ type: 'RESET' });
+      }
+      return this;
+    };
+
+    console.log('✅ AnalyticsTracker [v2] Hard-Initialized');
   }
 
   _initializeWorker() {
@@ -59,21 +77,6 @@ export class AnalyticsTracker {
     this._workerQueued = null;
   }
 
-  reset() {
-    console.log('📊 Analytics Tracker Resetting...');
-    this.samples = [];
-    this.geneHistory = [];
-    this.speciesGroups = [];
-    this.phylogenyData = null;
-    this._accum = 0;
-    this._geneHistoryAccum = 0;
-    this.version += 1;
-    this._cachedData = null;
-    if (this.worker) {
-      this.worker.postMessage({ type: 'RESET' });
-    }
-    return this;
-  }
 
   update(world, dt) {
     this._accum += dt;

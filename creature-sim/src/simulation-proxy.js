@@ -57,22 +57,45 @@ export class SimulationProxy {
             }
         };
 
-        // Explicitly bind methods to instance to ensure they aren't lost in proxying/wrapping
-        this.getBiomeAt = this.getBiomeAt.bind(this);
-        this.reset = this.reset.bind(this);
-        this.init = this.init.bind(this);
-        this.seed = this.seed.bind(this);
+        // NUCLEAR FIX: Define methods directly on 'this' to prevent "not a function" errors
+        this.getBiomeAt = (x, y) => {
+            if (!this.biomeGenerator) return { type: 'plain', color: '#4d7c0f' };
+            const biome = this.biomeGenerator.getBiomeAt(x, y, this.worldSnapshot.width, this.worldSnapshot.height);
+            return biome || { type: 'plain', color: '#4d7c0f' };
+        };
+
+        this.reset = () => {
+            console.log('📡 SimProxy: Reset Command Sent [v3]');
+            this._send('RESET', {});
+        };
+
+        this.init = (width, height) => {
+            this.worldSnapshot.width = width;
+            this.worldSnapshot.height = height;
+            this._send('INIT', { width, height });
+        };
+
+        this.seed = (nHerb, nPred, nFood) => {
+            this._send('SEED', { nHerb, nPred, nFood });
+        };
 
         // Initialize biome generator with a fixed seed if possible, or random
         this.biomeGenerator = new BiomeGenerator(0.123);
 
         const self = this;
+        this._isInternalUpdate = false;
+
         // Make autoBalanceSettings reactive so UI changes propagate to worker
         this.worldSnapshot.autoBalanceSettings = new Proxy(this.worldSnapshot.autoBalanceSettings, {
             set(target, prop, value) {
-                console.log(`📡 SimProxy: Syncing autoBalanceSettings.${prop} = ${value}`);
+                if (target[prop] === value) return true;
                 target[prop] = value;
-                self._send('SET_PROP', { path: `autoBalanceSettings.${prop}`, value });
+
+                // Only send to worker if it's NOT an update coming FROM the worker
+                if (!self._isInternalUpdate) {
+                    console.log(`📡 SimProxy: Syncing autoBalanceSettings.${prop} = ${value}`);
+                    self._send('SET_PROP', { path: `autoBalanceSettings.${prop}`, value });
+                }
                 return true;
             }
         });
@@ -80,8 +103,11 @@ export class SimulationProxy {
         // Make environment reactive for simple props
         this.worldSnapshot.environment = new Proxy(this.worldSnapshot.environment, {
             set(target, prop, value) {
+                if (target[prop] === value) return true;
                 target[prop] = value;
-                if (typeof value !== 'function') {
+
+                // Only send to worker if it's NOT an update coming FROM the worker
+                if (!self._isInternalUpdate && typeof value !== 'function') {
                     console.log(`📡 SimProxy: Syncing environment.${prop} = ${value}`);
                     self._send('SET_PROP', { path: `environment.${prop}`, value });
                 }
@@ -90,7 +116,8 @@ export class SimulationProxy {
         });
 
         this.worker.onmessage = (e) => this.handleMessage(e);
-        console.log('✅ SimulationProxy Instance Created');
+        console.log('✅ SimulationProxy [v3] Hard-Initialized');
+        window.__SIM_PROXY_VERSION = '2.0.1';
 
         // Command queue for initial calls before ready
         this.queue = [];
@@ -119,89 +146,57 @@ export class SimulationProxy {
     updateSnapshot(payload) {
         const { t, count, creatureBuffer, food, corpses, environment } = payload;
 
-        this.worldSnapshot.t = t;
-        this.worldSnapshot.food = food;
-        this.worldSnapshot.corpses = corpses;
+        // Flag this as an internal update to prevent Proxies from echoing back to worker
+        this._isInternalUpdate = true;
 
-        if (environment) {
-            // Update base properties
-            this.worldSnapshot.dayPhase = environment.dayPhase;
-            this.worldSnapshot.dayLight = environment.dayLight;
-            this.worldSnapshot.currentSeason = environment.currentSeason;
-            this.worldSnapshot.weatherType = environment.weatherType;
-            this.worldSnapshot.moodState = environment.moodState;
+        try {
+            this.worldSnapshot.t = t;
+            this.worldSnapshot.food = food;
+            this.worldSnapshot.corpses = corpses;
 
-            // Merge values into the EXISTING (potentially proxied) environment object
-            // to avoid breaking references held by other systems
-            if (this.worldSnapshot.environment) {
-                const target = this.worldSnapshot.environment;
-                Object.keys(environment).forEach(key => {
-                    if (typeof environment[key] !== 'function') {
-                        target[key] = environment[key];
-                    }
-                });
+            if (environment) {
+                // Update base properties
+                this.worldSnapshot.dayPhase = environment.dayPhase;
+                this.worldSnapshot.dayLight = environment.dayLight;
+                this.worldSnapshot.currentSeason = environment.currentSeason;
+                this.worldSnapshot.weatherType = environment.weatherType;
+                this.worldSnapshot.moodState = environment.moodState;
 
-                // Ensure method stubs remain
-                target.getMoodState = () => environment.moodState;
-                target.getDayNightState = () => ({ phase: environment.dayPhase, light: environment.dayLight });
-                target.getSeasonInfo = () => ({
-                    name: environment.currentSeason,
-                    progress: environment.seasonPhase,
-                    label: environment.currentSeason.charAt(0).toUpperCase() + environment.currentSeason.slice(1)
-                });
-                target.getWeatherState = () => ({
-                    type: environment.weatherType,
-                    intensity: environment.weatherIntensity,
-                    timeOfDay: environment.timeOfDay,
-                    season: environment.currentSeason
-                });
+                // Merge values into the EXISTING (potentially proxied) environment object
+                if (this.worldSnapshot.environment) {
+                    const target = this.worldSnapshot.environment;
+                    Object.keys(environment).forEach(key => {
+                        if (typeof environment[key] !== 'function') {
+                            target[key] = environment[key];
+                        }
+                    });
+
+                    // Ensure method stubs remain
+                    target.getMoodState = () => environment.moodState;
+                    target.getDayNightState = () => ({ phase: environment.dayPhase, light: environment.dayLight });
+                    target.getSeasonInfo = () => ({
+                        name: environment.currentSeason,
+                        progress: environment.seasonPhase,
+                        label: environment.currentSeason ? (environment.currentSeason.charAt(0).toUpperCase() + environment.currentSeason.slice(1)) : 'Unknown'
+                    });
+                    target.getWeatherState = () => ({
+                        type: environment.weatherType,
+                        intensity: environment.weatherIntensity,
+                        timeOfDay: environment.timeOfDay,
+                        season: environment.currentSeason
+                    });
+                }
             }
+
+            // Unpack binary buffer into renderable objects
+            const creatures = new Array(count);
+            for (let i = 0; i < count; i++) {
+                creatures[i] = unpackCreature(creatureBuffer, i);
+            }
+            this.worldSnapshot.creatures = creatures;
+        } finally {
+            this._isInternalUpdate = false;
         }
-
-        // Unpack binary buffer into renderable objects
-        const creatures = new Array(count);
-        for (let i = 0; i < count; i++) {
-            creatures[i] = unpackCreature(creatureBuffer, i);
-        }
-        this.worldSnapshot.creatures = creatures;
-    }
-
-    // Implementation of World methods
-    init(width, height) {
-        this.worldSnapshot.width = width;
-        this.worldSnapshot.height = height;
-        this._send('INIT', { width, height });
-    }
-
-    seed(nHerb, nPred, nFood) {
-        this._send('SEED', { nHerb, nPred, nFood });
-    }
-
-    step(dt) {
-        // Tell worker to step and sync back
-        this._send('STEP_AND_SYNC', { dt });
-    }
-
-    spawnManual(x, y, predator) {
-        this._send('SPAWN_MANUAL', { x, y, predator });
-    }
-
-    pause(paused) {
-        this._send('PAUSE', { paused });
-    }
-
-    setTimeScale(scale) {
-        this._send('SET_TIME_SCALE', { scale });
-    }
-
-    reset() {
-        this._send('RESET', {});
-    }
-
-    getBiomeAt(x, y) {
-        if (!this.biomeGenerator) return { type: 'plain', color: '#4d7c0f' };
-        const biome = this.biomeGenerator.getBiomeAt(x, y, this.worldSnapshot.width, this.worldSnapshot.height);
-        return biome || { type: 'plain', color: '#4d7c0f' };
     }
 
     _send(type, data) {
