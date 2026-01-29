@@ -5,6 +5,10 @@ import { BiomeGenerator } from './perlin-noise.js';
 export class SimulationProxy {
     constructor(workerPath) {
         this.worker = new Worker(workerPath, { type: 'module' });
+        this.worker.onerror = (e) => {
+            console.error('🚨 SimulationProxy: Worker Error', e.message, e.filename, e.lineno);
+            eventSystem.emit(GameEvents.ERROR_CRITICAL, { message: 'Simulation Worker Crashed: ' + e.message });
+        };
         this.isReady = false;
 
         this.worldSnapshot = {
@@ -209,6 +213,7 @@ export class SimulationProxy {
 
         switch (type) {
             case 'READY':
+                console.log('📡 SimProxy: Worker READY received');
                 this.isReady = true;
                 this.queue.forEach(q => this.worker.postMessage(q));
                 this.queue = [];
@@ -226,6 +231,11 @@ export class SimulationProxy {
 
     updateSnapshot(payload) {
         const { t, count, creatureBuffer, food, corpses, environment, activeDisaster } = payload;
+
+        // Debug first few updates or if count changes
+        if (Math.random() < 0.01 || count !== this.worldSnapshot.creatures.length) {
+            console.log(`📡 SimProxy: Snapshot t=${t.toFixed(2)} count=${count} buffer=${creatureBuffer.byteLength}`);
+        }
 
         // Flag this as an internal update to prevent Proxies from echoing back to worker
         this._isInternalUpdate = true;
@@ -282,7 +292,8 @@ export class SimulationProxy {
     }
 
     _send(type, data) {
-        if (this.isReady) {
+        // INIT must be sent immediately to start the worker
+        if (this.isReady || type === 'INIT') {
             this.worker.postMessage({ type, data });
         } else {
             this.queue.push({ type, data });

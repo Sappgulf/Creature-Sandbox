@@ -2,6 +2,16 @@
  * Simulation Worker - Enhanced version with binary state transfer
  */
 
+console.log('👷 Worker: Simulation script loaded');
+
+self.onerror = function (message, source, lineno, colno, error) {
+    console.error('👷 Worker Global Error:', message, error);
+    self.postMessage({
+        type: 'ERROR',
+        data: { message, stack: error?.stack }
+    });
+};
+
 import { World } from './world-core.js';
 import { packCreature, createCreatureBuffer } from './simulation-state.js';
 import { eventSystem } from './event-system.js';
@@ -21,115 +31,124 @@ const BRIDGE_EVENTS = [
 ];
 
 self.onmessage = function (e) {
-    const { type, data } = e.data;
+    try {
+        const { type, data } = e.data;
+        // console.log('👷 Worker received:', type); 
 
-    switch (type) {
-        case 'INIT':
-            world = new World(data.width, data.height);
-            // Bridge events back to main thread
-            BRIDGE_EVENTS.forEach(evType => {
-                eventSystem.on(evType, (payload) => {
-                    self.postMessage({ type: 'EVENT', eventType: evType, data: payload });
+        switch (type) {
+            case 'INIT':
+                world = new World(data.width, data.height);
+                // Bridge events back to main thread
+                BRIDGE_EVENTS.forEach(evType => {
+                    eventSystem.on(evType, (payload) => {
+                        self.postMessage({ type: 'EVENT', eventType: evType, data: payload });
+                    });
                 });
-            });
-            self.postMessage({ type: 'READY' });
-            break;
+                self.postMessage({ type: 'READY' });
+                break;
 
-        case 'SEED':
-            if (world) {
-                world.seed(data.nHerb, data.nPred, data.nFood);
-                sendSnapshot();
-            }
-            break;
-
-        case 'SPAWN_MANUAL':
-            if (world) {
-                world.spawnManual(data.x, data.y, data.predator);
-                sendSnapshot();
-            }
-            break;
-
-        case 'SPAWN_GENES':
-            if (world) {
-                world.spawnManualWithGenes(data.x, data.y, data.genes);
-                sendSnapshot();
-            }
-            break;
-
-        case 'SPAWN_TYPE':
-            if (world) {
-                world.spawnCreatureType(data.type, data.x, data.y);
-                sendSnapshot();
-            }
-            break;
-
-        case 'KILL_CREATURE':
-            if (world) {
-                const c = world.getCreatureById(data.id);
-                if (c) {
-                    c.alive = false;
-                    world.creatureManager.removeCreature(c);
+            case 'SEED':
+                if (world) {
+                    world.seed(data.nHerb, data.nPred, data.nFood);
                     sendSnapshot();
                 }
-            }
-            break;
+                break;
 
-        case 'ADD_FOOD':
-            if (world) {
-                world.addFood(data.x, data.y, data.r, data.type);
-                sendSnapshot(); // Update food list immediately
-            }
-            break;
+            case 'SPAWN_MANUAL':
+                if (world) {
+                    world.spawnManual(data.x, data.y, data.predator);
+                    sendSnapshot();
+                }
+                break;
 
-        case 'REMOVE_FOOD':
-            if (world) {
-                // Find food by ID (or approximate location if ID not shared?)
-                // world.food is array.
-                // Snapshot sends {id, ...}.
-                // We assume data.id is passed.
-                const f = world.food.find(item => item.id === data.id);
-                if (f) {
-                    const idx = world.food.indexOf(f);
-                    if (idx !== -1) {
-                        world.food.splice(idx, 1);
-                        world.foodGrid.remove(f);
+            case 'SPAWN_GENES':
+                if (world) {
+                    world.spawnManualWithGenes(data.x, data.y, data.genes);
+                    sendSnapshot();
+                }
+                break;
+
+            case 'SPAWN_TYPE':
+                if (world) {
+                    world.spawnCreatureType(data.type, data.x, data.y);
+                    sendSnapshot();
+                }
+                break;
+
+            case 'KILL_CREATURE':
+                if (world) {
+                    const c = world.getCreatureById(data.id);
+                    if (c) {
+                        c.alive = false;
+                        world.creatureManager.removeCreature(c);
                         sendSnapshot();
                     }
                 }
-            }
-            break;
+                break;
 
-        case 'TRIGGER_DISASTER':
-            if (world) {
-                world.triggerDisaster(data.type, data.options);
-                sendSnapshot();
-            }
-            break;
+            case 'ADD_FOOD':
+                if (world) {
+                    world.addFood(data.x, data.y, data.r, data.type);
+                    sendSnapshot(); // Update food list immediately
+                }
+                break;
 
-        case 'PAUSE':
-            isPaused = data.paused;
-            break;
+            case 'REMOVE_FOOD':
+                if (world) {
+                    // Find food by ID (or approximate location if ID not shared?)
+                    // world.food is array.
+                    // Snapshot sends {id, ...}.
+                    // We assume data.id is passed.
+                    const f = world.food.find(item => item.id === data.id);
+                    if (f) {
+                        const idx = world.food.indexOf(f);
+                        if (idx !== -1) {
+                            world.food.splice(idx, 1);
+                            world.foodGrid.remove(f);
+                            sendSnapshot();
+                        }
+                    }
+                }
+                break;
 
-        case 'SET_TIME_SCALE':
-            timeScale = data.scale;
-            break;
+            case 'TRIGGER_DISASTER':
+                if (world) {
+                    world.triggerDisaster(data.type, data.options);
+                    sendSnapshot();
+                }
+                break;
 
-        case 'RESET':
-            if (world) {
-                world.reset();
-                sendSnapshot();
-            }
-            break;
+            case 'PAUSE':
+                isPaused = data.paused;
+                break;
 
-        case 'SET_PROP':
-            if (world) {
-                setDeepProp(world, data.path, data.value);
-            }
-            break;
+            case 'SET_TIME_SCALE':
+                timeScale = data.scale;
+                break;
 
-        case 'STEP_AND_SYNC':
-            step(data.dt);
-            break;
+            case 'RESET':
+                if (world) {
+                    world.reset();
+                    sendSnapshot();
+                }
+                break;
+
+            case 'SET_PROP':
+                if (world) {
+                    setDeepProp(world, data.path, data.value);
+                }
+                break;
+
+            case 'STEP_AND_SYNC':
+                step(data.dt);
+                break;
+            default:
+                console.warn('Unknown message type:', type);
+                break;
+        }
+    } catch (err) {
+        console.error('👷 Worker Message Error:', err);
+        self.postMessage({ type: 'ERROR', data: { message: err.message, stack: err.stack } });
     }
 };
 
