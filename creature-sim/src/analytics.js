@@ -59,6 +59,7 @@ export class AnalyticsTracker {
   }
 
   reset() {
+    console.log('📊 Analytics Tracker Resetting...');
     this.samples = [];
     this.geneHistory = [];
     this.speciesGroups = [];
@@ -70,6 +71,7 @@ export class AnalyticsTracker {
     if (this.worker) {
       this.worker.postMessage({ type: 'RESET' });
     }
+    return this;
   }
 
   update(world, dt) {

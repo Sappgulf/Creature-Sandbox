@@ -1071,7 +1071,11 @@ function initializeApp() {
 
       // Reset analytics
       if (analytics) {
-        analytics.reset();
+        try {
+          analytics.reset();
+        } catch (e) {
+          console.warn('⚠️ Analytics reset failed:', e);
+        }
       }
 
       // Reset lineage tracker

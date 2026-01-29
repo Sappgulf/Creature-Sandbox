@@ -14,7 +14,7 @@ export class SimulationProxy {
             creatures: [],
             food: [],
             corpses: [],
-            // Necessary for systems that expect these properties
+            regions: [],
             pheromone: { grid: new Float32Array(0), cell: 20 },
             temperature: { grid: new Float32Array(0), cell: 40 },
             foodGridDirty: false,
@@ -26,7 +26,6 @@ export class SimulationProxy {
             disasterIntensity: 1.0,
             seasonSpeed: 0.015,
             dayLength: 120,
-            regions: [],
             autoBalanceSettings: {
                 enabled: true,
                 minPopulation: 36,
@@ -36,7 +35,16 @@ export class SimulationProxy {
                 minFoodAbsolute: 180
             },
             environment: {
-                foodRateMultiplier: 1.0
+                foodRateMultiplier: 1.0,
+                dayPhase: 'day',
+                dayLight: 1.0,
+                currentSeason: 'spring',
+                weatherType: null,
+                weatherIntensity: 0,
+                getMoodState: () => ({ type: 'neutral', intensity: 0 }),
+                getDayNightState: () => ({ phase: 'day', light: 1 }),
+                getSeasonInfo: () => ({ name: 'spring', progress: 0, label: 'Spring' }),
+                getWeatherState: () => ({ type: null, intensity: 0, timeOfDay: 12 })
             },
             creatureManager: {
                 creatureGrid: {
@@ -51,6 +59,27 @@ export class SimulationProxy {
 
         // Initialize biome generator with a fixed seed if possible, or random
         this.biomeGenerator = new BiomeGenerator(0.123);
+
+        const self = this;
+        // Make autoBalanceSettings reactive so UI changes propagate to worker
+        this.worldSnapshot.autoBalanceSettings = new Proxy(this.worldSnapshot.autoBalanceSettings, {
+            set(target, prop, value) {
+                target[prop] = value;
+                self._send('SET_PROP', { path: `autoBalanceSettings.${prop}`, value });
+                return true;
+            }
+        });
+
+        // Make environment reactive for simple props
+        this.worldSnapshot.environment = new Proxy(this.worldSnapshot.environment, {
+            set(target, prop, value) {
+                target[prop] = value;
+                if (typeof value !== 'function') {
+                    self._send('SET_PROP', { path: `environment.${prop}`, value });
+                }
+                return true;
+            }
+        });
 
         this.worker.onmessage = (e) => this.handleMessage(e);
 
@@ -150,8 +179,9 @@ export class SimulationProxy {
     }
 
     getBiomeAt(x, y) {
-        if (!this.biomeGenerator) return { type: 'plain' };
-        return this.biomeGenerator.getBiomeAt(x, y, this.worldSnapshot.width, this.worldSnapshot.height);
+        if (!this.biomeGenerator) return { type: 'plain', color: '#4d7c0f' };
+        const biome = this.biomeGenerator.getBiomeAt(x, y, this.worldSnapshot.width, this.worldSnapshot.height);
+        return biome || { type: 'plain', color: '#4d7c0f' };
     }
 
     _send(type, data) {
