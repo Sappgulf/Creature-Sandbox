@@ -158,8 +158,6 @@ export class WorldEnvironment {
   }
 
   updateSeasons(dt) {
-    if (!this.dayNightEnabled) return;
-
     // Update season progression
     this.seasonTime += dt;
     this.seasonPhase += this.seasonSpeed * dt;
@@ -170,8 +168,12 @@ export class WorldEnvironment {
     }
 
     // Update day/night cycle
-    this.timeOfDay = (this.timeOfDay + (24 * dt / this.dayLength)) % 24;
-    this.updateDayNightState();
+    if (this.dayNightEnabled) {
+      this.timeOfDay = (this.timeOfDay + (24 * dt / this.dayLength)) % 24;
+      this.updateDayNightState();
+    } else {
+      this.applyStaticDayNightState();
+    }
   }
 
   transitionToNextSeason() {
@@ -283,6 +285,23 @@ export class WorldEnvironment {
     this.dayNightState.overcrowdStressMult = overcrowdStressMult;
     this.dayNightState.movementSpeedMult = movementSpeedMult;
     this.dayNightState.foodGrowthMult = foodGrowthMult;
+  }
+
+  applyStaticDayNightState() {
+    this.dayPhase = 'day';
+    this.dayLight = 1;
+
+    this.dayNightState.phase = 'day';
+    this.dayNightState.light = 1;
+    this.dayNightState.activityBias = 1.2;
+    this.dayNightState.restBias = 0.9;
+    this.dayNightState.eatBias = 1.15;
+    this.dayNightState.wanderBias = 1.2;
+    this.dayNightState.hungerRateMult = 1.1;
+    this.dayNightState.socialRateMult = 1.05;
+    this.dayNightState.overcrowdStressMult = 0.95;
+    this.dayNightState.movementSpeedMult = 1.05;
+    this.dayNightState.foodGrowthMult = 1.1;
   }
 
   updateAmbientMood(dt) {

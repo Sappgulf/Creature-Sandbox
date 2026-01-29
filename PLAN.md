@@ -23,6 +23,13 @@
 2. Trace spawn → store → render pipeline and fix root cause.
 3. Update smoke tests + recovery report after verification.
 
+## Session Audit (2026-02-09)
+
+### Focus
+1. Verify quick action controls behave as documented (food drop, spawn drawer toggles).
+2. Fix season progression when day/night is toggled off.
+3. Polish control strip accessibility state (pressed/expanded).
+
 ## Session Audit (2026-02-07)
 
 ### Focus
