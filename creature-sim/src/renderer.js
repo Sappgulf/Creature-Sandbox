@@ -11,7 +11,7 @@ export class Renderer {
 
     // Detect mobile for performance optimizations
     this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                    (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+      (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
 
     // Setup image smoothing based on device
     ctx.imageSmoothingEnabled = true;
@@ -81,9 +81,9 @@ export class Renderer {
 
   clear(width, height) {
     this.ctx.save();
-    this.ctx.setTransform(1,0,0,1,0,0);
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.fillStyle = this.background;
-    this.ctx.fillRect(0,0,width,height);
+    this.ctx.fillRect(0, 0, width, height);
     this.ctx.restore();
   }
 
@@ -113,18 +113,18 @@ export class Renderer {
     };
   }
 
-  drawWorld(world, opts={}) {
+  drawWorld(world, opts = {}) {
     // Performance monitoring
     this.performance.beginFrame();
 
     const {
-      selectedId=null,
-      pinnedId=null,
-      lineageRootId=null,
-      hoveredId=null,
-      worldTime=0,
-      travelPreview=null,
-      cameraTravel=null
+      selectedId = null,
+      pinnedId = null,
+      lineageRootId = null,
+      hoveredId = null,
+      worldTime = 0,
+      travelPreview = null,
+      cameraTravel = null
     } = opts;
     const camera = this.camera;
     const ctx = this.ctx;
@@ -138,7 +138,7 @@ export class Renderer {
       ? world.particles.getShakeOffset()
       : { x: 0, y: 0 };
 
-    ctx.translate(opts.viewportWidth/2 + shakeOffset.x, opts.viewportHeight/2 + shakeOffset.y);
+    ctx.translate(opts.viewportWidth / 2 + shakeOffset.x, opts.viewportHeight / 2 + shakeOffset.y);
     ctx.scale(camera.zoom, camera.zoom);
     ctx.translate(-camera.x, -camera.y);
 
@@ -175,8 +175,8 @@ export class Renderer {
       this.drawTerritories(world);
     }
 
-    this.drawFood(world.food);
-    this.drawCorpses(world.corpses); // NEW: Draw corpses for scavengers
+    this.drawFood(world);
+    this.drawCorpses(world); // NEW: Draw corpses for scavengers
 
     // Feature 2: Draw memory for selected creature
     if (this.enableMemory && selectedId) {
@@ -385,7 +385,7 @@ export class Renderer {
     }
   }
 
-  drawTravelIndicator(segment, { preview=false }={}) {
+  drawTravelIndicator(segment, { preview = false } = {}) {
     if (!segment?.from || !segment?.to) return;
     const ctx = this.ctx;
     const from = segment.from;
@@ -444,7 +444,7 @@ export class Renderer {
     ctx.translate(dec.x, dec.y);
     ctx.globalAlpha = 0.4;
 
-    switch(dec.type) {
+    switch (dec.type) {
       case 'tree':
         // Simple tree silhouette
         ctx.fillStyle = `hsl(${dec.hue}, 45%, 25%)`;
@@ -561,7 +561,7 @@ export class Renderer {
 
   _getBiomeTint(biomeType) {
     // Subtle color tints (not overpowering!)
-    switch(biomeType) {
+    switch (biomeType) {
       case 'forest': return 'rgba(34, 139, 34, 0.6)'; // Gentle green
       case 'desert': return 'rgba(218, 165, 32, 0.5)'; // Warm gold
       case 'mountain': return 'rgba(105, 105, 105, 0.4)'; // Cool gray
@@ -704,7 +704,7 @@ export class Renderer {
     const season = world.currentSeason || 'spring';
 
     let tint = null;
-    switch(season) {
+    switch (season) {
       case 'spring':
         tint = 'rgba(127, 219, 106, 0.08)'; // Fresh green tint
         break;
@@ -1077,26 +1077,28 @@ export class Renderer {
     ctx.restore();
   }
 
-  drawFood(food) {
-    if (food.length === 0) return;
+  drawFood(world) {
+    if (!world.food || world.food.length === 0) return;
     const ctx = this.ctx;
     const bounds = this._viewBounds;
 
-    // OPTIMIZATION: Frustum cull food items
-    const visibleFood = [];
-    for (let i = 0; i < food.length; i++) {
-      const f = food[i];
-      const margin = f.r || 5;
-      if (f.x + margin >= bounds.x1 && f.x - margin <= bounds.x2 &&
-          f.y + margin >= bounds.y1 && f.y - margin <= bounds.y2) {
-        visibleFood.push(f);
-      }
-    }
+    // OPTIMIZATION: Use spatial grid for frustum culling
+    const visibleFood = world.foodGrid.queryRect(bounds.x1, bounds.y1, bounds.x2, bounds.y2);
+
+    // Update performance stats
+    this.performance.stats.totalObjects += world.food.length;
+    this.performance.stats.rendered += visibleFood.length;
+    this.performance.stats.culled += (world.food.length - visibleFood.length);
 
     if (visibleFood.length === 0) return;
 
-    // OPTIMIZATION: Group food by type for batched rendering
-    const byType = { grass: [], berries: [], fruit: [] };
+    // OPTIMIZATION: Reuse type grouping to avoid allocations
+    if (!this._foodByType) this._foodByType = { grass: [], berries: [], fruit: [] };
+    const byType = this._foodByType;
+    byType.grass.length = 0;
+    byType.berries.length = 0;
+    byType.fruit.length = 0;
+
     for (let i = 0; i < visibleFood.length; i++) {
       const f = visibleFood[i];
       const type = f.type || 'grass';
@@ -1106,15 +1108,15 @@ export class Renderer {
     }
 
     // Draw each vegetation type with its color
+    const defaultColors = {
+      grass: 'rgba(126,210,120,0.85)',
+      berries: 'rgba(200,100,150,0.85)',
+      fruit: 'rgba(255,180,80,0.85)'
+    };
+
     for (const [type, items] of Object.entries(byType)) {
       if (items.length === 0) continue;
 
-      // OPTIMIZATION: Use cached color
-      const defaultColors = {
-        grass: 'rgba(126,210,120,0.85)',
-        berries: 'rgba(200,100,150,0.85)',
-        fruit: 'rgba(255,180,80,0.85)'
-      };
       ctx.fillStyle = items[0].color || defaultColors[type] || defaultColors.grass;
 
       // OPTIMIZATION: Batch draw all items of this type
@@ -1122,13 +1124,12 @@ export class Renderer {
       for (let i = 0; i < items.length; i++) {
         const f = items[i];
         ctx.moveTo(f.x + f.r, f.y);
-        ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
+        ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
       }
       ctx.fill();
 
       // OPTIMIZATION: Only draw stems when zoomed in enough
       if (type === 'fruit' && this.camera.zoom > 0.5) {
-        // Draw stem/leaf for fruit trees
         ctx.strokeStyle = '#8B4513';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -1143,19 +1144,20 @@ export class Renderer {
   }
 
   // NEW: Draw corpses for scavengers to find
-  drawCorpses(corpses) {
-    if (!corpses || corpses.length === 0) return;
+  drawCorpses(world) {
+    if (!world.corpses || world.corpses.length === 0) return;
     const ctx = this.ctx;
     const bounds = this._viewBounds;
 
-    for (const corpse of corpses) {
-      // Frustum culling: skip corpses outside view
-      const margin = corpse.size * 3;
-      if (corpse.x + margin < bounds.x1 || corpse.x - margin > bounds.x2 ||
-          corpse.y + margin < bounds.y1 || corpse.y - margin > bounds.y2) {
-        continue;
-      }
+    // OPTIMIZATION: Use spatial grid for frustum culling
+    const visibleCorpses = world.corpseGrid.queryRect(bounds.x1, bounds.y1, bounds.x2, bounds.y2);
 
+    // Update performance stats
+    this.performance.stats.totalObjects += world.corpses.length;
+    this.performance.stats.rendered += visibleCorpses.length;
+    this.performance.stats.culled += (world.corpses.length - visibleCorpses.length);
+
+    for (const corpse of visibleCorpses) {
       const decayAlpha = 1 - corpse.decay;
       const energyRatio = corpse.energy / corpse.maxEnergy;
 
@@ -1185,102 +1187,99 @@ export class Renderer {
     }
   }
 
-  drawCreatures(creatures, opts) {
+  drawCreatures(world, opts) {
     const ctx = this.ctx;
     const { worldTime = 0 } = opts;
+    const creatures = world.creatures;
 
-    // DEBUG: Log creature count on first few calls
-    if (!this._debugCreatureCount) this._debugCreatureCount = 0;
-    if (this._debugCreatureCount < 3) {
-      console.log(`🦎 drawCreatures: ${creatures?.length || 0} creatures passed, bounds: ${JSON.stringify(this._viewBounds)}`);
-      this._debugCreatureCount++;
-    }
-
-    // Reset performance metrics
+    // Reset local counts (for legacy debug or internal tracking)
     this.renderedCount = 0;
     this.culledCount = 0;
 
     // OPTIMIZATION: Cache zoom first (used by multiple checks below)
     const zoom = this.camera.zoom;
 
+    // OPTIMIZATION: Use spatial grid for frustum culling
+    const bounds = this._viewBounds;
+    const visibleCreatures = world.creatureManager.creatureGrid.queryRect(bounds.x1, bounds.y1, bounds.x2, bounds.y2);
+
+    // Update performance stats
+    this.performance.stats.totalObjects += creatures.length;
+    // (Actual rendered/culled will be updated in the loop below)
+
+    // Ensure selected/pinned creatures are rendered even if results are truncated or edge-cases
+    // (queryRect usually handles this but we want to be safe for UI consistency)
+    const renderSet = new Set(visibleCreatures);
+    if (opts.selectedId) {
+      const selected = world.getAnyCreatureById(opts.selectedId);
+      if (selected && selected.alive) renderSet.add(selected);
+    }
+    if (opts.pinnedId) {
+      const pinned = world.getAnyCreatureById(opts.pinnedId);
+      if (pinned && pinned.alive) renderSet.add(pinned);
+    }
+    const finalRenderList = Array.from(renderSet);
+
     // OPTIMIZATION: Throttle clustering - only compute every 60 frames (~1Hz)
-    // Also skip clustering when zoomed out (not useful to see)
     let clusterMap = null;
     if (this.enableClustering && zoom > 0.3) {
-      const currentFrame = Math.floor(worldTime * 0.25); // Update ~4x per second max
+      const currentFrame = Math.floor(worldTime * 0.25);
       if (this._clusterCache.frame !== currentFrame) {
-        // Only compute clustering when needed and visible
         this._clusterCache.clusters = this._computeClusters(creatures);
         this._clusterCache.frame = currentFrame;
       }
       clusterMap = this._clusterCache.clusters;
     }
 
-    // OPTIMIZATION: Cache other expensive checks
-    const showShadows = zoom > 0.4; // Only show shadows when zoomed in
+    const showShadows = zoom > 0.4;
     const showOutlines = zoom > 0.5;
-    const showTrails = this.enableTrails && zoom > 0.6; // Only show trails when zoomed in
-    const showNames = this.enableNameLabels && zoom > 0.5; // Higher threshold for names
+    const showTrails = this.enableTrails && zoom > 0.6;
+    const showNames = this.enableNameLabels && zoom > 0.5;
 
-    // OPTIMIZATION: Cache name lookups (only recompute when selection/zoom changes significantly)
     const nameCacheKey = `${opts.selectedId}-${opts.pinnedId}-${Math.floor(zoom * 10)}`;
     if (!this._nameCache || this._nameCache.key !== nameCacheKey) {
       this._nameCache = { key: nameCacheKey, map: new Map() };
     }
     const nameCache = this._nameCache.map;
 
-    // OPTIMIZATION: Frustum cull creatures outside view
-    const bounds = this._viewBounds;
-    for (let i = 0; i < creatures.length; i++) {
-      const c = creatures[i];
+    for (let i = 0; i < finalRenderList.length; i++) {
+      const c = finalRenderList[i];
 
-      // Skip creatures outside view (unless selected/pinned)
       const isSelected = opts.selectedId === c.id;
       const isPinned = opts.pinnedId === c.id;
       const isHovered = opts.hoveredId === c.id;
       const isGrabbed = Boolean(c.isGrabbed);
-      if (!isSelected && !isPinned) {
-        if (c.x < bounds.x1 || c.x > bounds.x2 || c.y < bounds.y1 || c.y > bounds.y2) {
-          this.culledCount++;
-          continue; // Culled!
-        }
-      }
 
       this.renderedCount++;
 
       const inLineage = opts.lineageSet ? opts.lineageSet.has(c.id) : false;
       const alpha = clamp(c.energy / 40, 0.25, 1);
 
-      // OPTIMIZATION: Only save/restore when alpha changes
       if (alpha < 0.99) {
         ctx.save();
         ctx.globalAlpha = alpha;
       }
 
-      // OPTIMIZATION: Only draw shadows when zoomed in and for visible creatures
       if (showShadows && (isSelected || isPinned || zoom > 0.6)) {
         this._drawCreatureShadow(c);
       }
 
-      // Override hue if clustering is enabled
       const clusterHue = clusterMap ? clusterMap.get(c.id) : null;
 
       c.draw(ctx, {
         isSelected,
         isPinned,
         inLineage,
-        showTrail: showTrails, // Use throttled value
+        showTrail: showTrails,
         showVision: this.enableVision,
         clusterHue,
-        zoom // Pass zoom for optimization decisions in creature.draw()
+        zoom
       });
 
-      // Draw disease visual effects for sick creatures
       if (c.statuses?.has('disease') && zoom > 0.3) {
         this._drawDiseaseEffect(c, worldTime);
       }
 
-      // OPTIMIZATION: Only draw outlines when zoomed in enough
       if (showOutlines && (isSelected || isPinned || isHovered || isGrabbed)) {
         if (isSelected || isPinned) {
           this._drawCreatureOutline(c, isSelected, opts.selectionPulseUntil);
@@ -1291,7 +1290,6 @@ export class Renderer {
         }
       }
 
-      // OPTIMIZATION: Only draw names for selected/pinned or when zoomed in significantly
       if (showNames && (isSelected || isPinned || zoom > 1.2)) {
         this._drawCreatureName(c, isSelected, isPinned, opts, nameCache);
       }
@@ -1301,10 +1299,9 @@ export class Renderer {
       }
     }
 
-    // DEBUG: Log rendered vs culled on first few calls
-    if (this._debugCreatureCount && this._debugCreatureCount <= 3) {
-      console.log(`🦎 Result: rendered=${this.renderedCount}, culled=${this.culledCount}`);
-    }
+    this.culledCount = creatures.length - this.renderedCount;
+    this.performance.stats.rendered += this.renderedCount;
+    this.performance.stats.culled += this.culledCount;
   }
 
   _drawCreatureShadow(creature) {
@@ -1453,7 +1450,7 @@ export class Renderer {
     ctx.restore();
   }
 
-  _drawCreatureName(creature, isSelected, isPinned, opts, nameCache=null) {
+  _drawCreatureName(creature, isSelected, isPinned, opts, nameCache = null) {
     // Draw creature name/ID above it
     const ctx = this.ctx;
     const zoom = this.camera.zoom;
@@ -1517,7 +1514,7 @@ export class Renderer {
     ctx.restore();
   }
 
-  _computeClusters(creatures, k=5) {
+  _computeClusters(creatures, k = 5) {
     if (creatures.length < k) return new Map();
 
     // OPTIMIZATION: Aggressive sampling for large populations
@@ -1604,7 +1601,7 @@ export class Renderer {
           for (let j = 0; j < sampleCreatures.length; j++) {
             const sc = sampleCreatures[j];
             const dist = Math.abs(c.genes.speed - sc.genes.speed) +
-                        Math.abs(c.genes.metabolism - sc.genes.metabolism);
+              Math.abs(c.genes.metabolism - sc.genes.metabolism);
             if (dist < nearestDist) {
               nearestDist = dist;
               nearestId = sc.id;
@@ -1638,9 +1635,14 @@ export class Renderer {
   // ============================================================================
 
   drawNests(world) {
-    if (!world?.nests?.length) return;
+    if (!world.nestGrid || world.nests.length === 0) return;
     const ctx = this.ctx;
-    for (const nest of world.nests) {
+    const bounds = this._viewBounds;
+
+    // OPTIMIZATION: Use spatial grid for frustum culling
+    const visibleNests = world.nestGrid.queryRect(bounds.x1, bounds.y1, bounds.x2, bounds.y2);
+
+    for (const nest of visibleNests) {
       if (!nest) continue;
       const comfort = nest.comfortEffective ?? nest.comfort ?? 0.7;
       const alpha = 0.1 + comfort * 0.25;
@@ -1729,7 +1731,7 @@ export class Renderer {
       let color;
 
       const tag = mem.tag ?? mem.type;
-      switch(tag) {
+      switch (tag) {
         case 'food':
           color = `rgba(100, 255, 100, ${alpha})`;
           break;
@@ -1763,10 +1765,15 @@ export class Renderer {
   drawMemoryDebug(world) {
     const ctx = this.ctx;
     const view = this._viewBounds;
+
+    // OPTIMIZATION: Only process visible creatures to find memory points
+    const visibleCreatures = world.creatureManager.creatureGrid.queryRect(view.x1, view.y1, view.x2, view.y2);
+
     ctx.save();
-    for (const creature of world.creatures) {
+    for (const creature of visibleCreatures) {
       if (!creature?.alive || !creature.memory?.locations) continue;
       for (const mem of creature.memory.locations) {
+        // Double check bounds for precise culling of memory points
         if (mem.x < view.x1 || mem.x > view.x2 || mem.y < view.y1 || mem.y > view.y2) continue;
         const alpha = clamp((mem.strength ?? 0) * 0.35, 0.08, 0.35);
         const tag = mem.tag ?? mem.type;
@@ -1958,7 +1965,7 @@ export class Renderer {
       ctx.arc(creature.x, creature.y, radius, 0, Math.PI * 2);
 
       let color;
-      switch(creature.senseType) {
+      switch (creature.senseType) {
         case 'echolocation':
           color = 'rgba(200, 100, 255, 0.1)';
           break;
@@ -2196,9 +2203,9 @@ export class Renderer {
       const cache = this._heatmapCache;
       this.performance.frameCount = (this.performance.frameCount || 0) + 1;
       const shouldUpdate = !cache.data ||
-                          cache.width !== heatmapW ||
-                          cache.height !== heatmapH ||
-                          (this.performance.frameCount - cache.lastUpdate) >= cache.updateInterval;
+        cache.width !== heatmapW ||
+        cache.height !== heatmapH ||
+        (this.performance.frameCount - cache.lastUpdate) >= cache.updateInterval;
 
       if (shouldUpdate) {
         // Reuse or create heatmap array
@@ -2280,7 +2287,7 @@ export class Renderer {
       viewH * scaleY * dpr
     );
 
-    const drawCreatureMarker = (id, fillStyle, strokeStyle, icon=null) => {
+    const drawCreatureMarker = (id, fillStyle, strokeStyle, icon = null) => {
       if (!id) return;
       const creature = typeof world.getAnyCreatureById === 'function' ? world.getAnyCreatureById(id) : null;
       if (!creature) return;
@@ -2324,7 +2331,7 @@ export class Renderer {
     ctx.shadowBlur = 4;
     ctx.strokeStyle = 'rgba(123, 183, 255, 0.6)';
     ctx.lineWidth = 2;
-    ctx.strokeRect(mapX - dpr, mapY - dpr, mapWCanvas + 2*dpr, mapHCanvas + 2*dpr);
+    ctx.strokeRect(mapX - dpr, mapY - dpr, mapWCanvas + 2 * dpr, mapHCanvas + 2 * dpr);
     ctx.shadowBlur = 0;
 
     // Label
@@ -2339,7 +2346,7 @@ export class Renderer {
   }
 
   // NEW: Draw biome labels on mini-map
-  _drawBiomeLabels(world, mapX, mapY, scaleX, scaleY, dpr=1) {
+  _drawBiomeLabels(world, mapX, mapY, scaleX, scaleY, dpr = 1) {
     const ctx = this.ctx;
     const scaleXPx = scaleX * dpr;
     const scaleYPx = scaleY * dpr;

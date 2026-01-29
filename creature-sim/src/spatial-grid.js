@@ -42,6 +42,10 @@ export class SpatialGrid {
     // Temporary result array to avoid allocations
     this.tempResults = new Array(256);
 
+    // OPTIMIZATION: Reusable arrays for buildIndex to avoid GC pressure
+    this.tempItems = new Array(1024);
+    this.tempCounts = new Uint16Array(this.totalCells);
+
     // Spatial grid created silently - use getStats() for debug info
   }
 
@@ -85,10 +89,13 @@ export class SpatialGrid {
     if (requiredSize >= this.itemArray.length) {
       const newSize = Math.max(requiredSize * 2, this.itemArray.length * 1.5);
       const newArray = new Array(newSize);
+      const newTempItems = new Array(newSize);
       for (let i = 0; i < this.itemCount; i++) {
         newArray[i] = this.itemArray[i];
+        newTempItems[i] = this.tempItems[i];
       }
       this.itemArray = newArray;
+      this.tempItems = newTempItems;
     }
   }
 
@@ -145,9 +152,10 @@ export class SpatialGrid {
     }
     this.cellOffsets[this.totalCells] = offset;
 
-    // Sort items into cells (stable sort to maintain insertion order)
-    const tempItems = new Array(this.itemCount);
-    const tempCounts = new Uint16Array(this.totalCells);
+    // Use pre-allocated temp items array
+    const tempItems = this.tempItems;
+    const tempCounts = this.tempCounts;
+    tempCounts.fill(0);
 
     // Copy items to temporary array
     for (let i = 0; i < this.itemCount; i++) {
@@ -221,6 +229,52 @@ export class SpatialGrid {
     }
 
     // Trim result array to actual size
+    if (result !== outArray) {
+      result.length = resultCount;
+    }
+
+    return result;
+  }
+
+  /**
+   * Find all items within a rectangular area (optimized for rendering culling)
+   * @param {number} x1 - Min X
+   * @param {number} y1 - Min Y
+   * @param {number} x2 - Max X
+   * @param {number} y2 - Max Y
+   * @param {Array} [outArray] - Optional output array to avoid allocation
+   * @returns {Array} Array of items in the rectangle
+   */
+  queryRect(x1, y1, x2, y2, outArray = null) {
+    const minGX = Math.max(0, Math.floor(x1 / this.cellSize));
+    const maxGX = Math.min(this.gridWidth - 1, Math.floor(x2 / this.cellSize));
+    const minGY = Math.max(0, Math.floor(y1 / this.cellSize));
+    const maxGY = Math.min(this.gridHeight - 1, Math.floor(y2 / this.cellSize));
+
+    const result = outArray || this.tempResults;
+    result.length = 0;
+    let resultCount = 0;
+
+    // Iterate over cells in the rectangle
+    for (let cellGY = minGY; cellGY <= maxGY; cellGY++) {
+      for (let cellGX = minGX; cellGX <= maxGX; cellGX++) {
+        const cellIndex = this.getCellIndex(cellGX, cellGY);
+        const cellStart = this.cellOffsets[cellIndex];
+        const cellCount = this.cellCounts[cellIndex];
+
+        // Add all items in these cells (broad-phase culling)
+        // Note: For precise culling, a per-item check could be added here,
+        // but for rendering, broad-phase is usually sufficient and faster.
+        for (let i = 0; i < cellCount; i++) {
+          const item = this.itemArray[cellStart + i];
+          // Precise per-item frustum culling
+          if (item.x >= x1 && item.x <= x2 && item.y >= y1 && item.y <= y2) {
+            result[resultCount++] = item;
+          }
+        }
+      }
+    }
+
     if (result !== outArray) {
       result.length = resultCount;
     }
