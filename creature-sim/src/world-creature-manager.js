@@ -7,6 +7,7 @@ import { Creature } from './creature.js';
 import { SpatialGrid } from './spatial-grid.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { generateTemperament, blendTemperament, rollQuirks, inheritQuirks } from './creature-traits.js';
+import { getDebugFlags } from './debug-flags.js';
 
 export class WorldCreatureManager {
   constructor(world) {
@@ -28,6 +29,33 @@ export class WorldCreatureManager {
 
   // Add creature to world
   addCreature(creature, parentId = null) {
+    const debugFlags = getDebugFlags();
+    const safeX = Number.isFinite(creature.x) ? creature.x : this.world.width * 0.5;
+    const safeY = Number.isFinite(creature.y) ? creature.y : this.world.height * 0.5;
+    creature.x = clamp(safeX, 0, this.world.width);
+    creature.y = clamp(safeY, 0, this.world.height);
+    if (!Number.isFinite(creature.size) || creature.size <= 0) {
+      if (debugFlags.spawnDebug) {
+        console.warn('[Spawn][sanitize] Invalid creature size; resetting.', { id: creature.id, size: creature.size });
+      }
+      creature.size = 4;
+    }
+    if (creature.visible === undefined) {
+      creature.visible = true;
+    }
+    if (debugFlags.spawnDebug) {
+      if (!creature.genes) {
+        console.warn('[Spawn][sanitize] Creature missing genes.', { id: creature.id });
+      }
+      if (!Number.isFinite(creature.x) || !Number.isFinite(creature.y)) {
+        console.warn('[Spawn][sanitize] Creature position invalid after clamp.', {
+          id: creature.id,
+          x: creature.x,
+          y: creature.y
+        });
+      }
+    }
+
     creature.id = this._nextId++;
     this.world.creatures.push(creature);
     this.registry.set(creature.id, creature);

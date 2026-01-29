@@ -10,6 +10,7 @@ import { CreatureAgentTuning } from './creature-agent-constants.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { generateTemperament } from './creature-traits.js';
 import { assetLoader } from './asset-loader.js';
+import { getDebugFlags } from './debug-flags.js';
 
 // Destructure commonly-used constants for cleaner code
 const { TRAIL_INTERVAL, TRAIL_MAX, LOG_MAX, TAU } = CreatureConfig;
@@ -1232,7 +1233,7 @@ export class Creature {
     // Drowning mechanic for non-aquatic creatures in water
     if (inWater && this.aquaticAffinity < 0.4) {
       // Non-aquatic creatures struggle in water
-      const drowningRate = (0.4 - this.aquaticAffinity) * waterDepth * 3; // 0-3 damage/sec in deep water
+      const drowningRate = (0.4 - this.aquaticAffinity) * waterDepth * 2.2; // 0-2.2 damage/sec in deep water
       this.health -= drowningRate * dt;
 
       // Add drowning visual feedback periodically
@@ -2379,31 +2380,25 @@ export class Creature {
     if (worldTime < (this.damageFx?.iframesUntil ?? -Infinity)) return 0;
 
     const clamped = clamp(amount, 0, CreatureTuning.DAMAGE_CLAMP_MAX);
-    this.health = Math.max(0, this.health - clamped);
-    this.stats.damageTaken += clamped;
-    if (typeof this.recordDamage === 'function') {
-      this.recordDamage(clamped);
-    }
+    const finalDamage = typeof this.recordDamage === 'function'
+      ? this.recordDamage(clamped, { type: cause, ignoreIframes: true })
+      : 0;
+    if (finalDamage <= 0) return 0;
 
     if (this.damageFx) {
       this.damageFx.iframesUntil = worldTime + iframes;
       this.damageFx.lastDamageTime = worldTime;
     }
 
-    if (this.memory && clamped > 0.6 &&
+    if (this.memory && finalDamage > 0.6 &&
       worldTime - (this.memory.lastDangerAt ?? -Infinity) >= CreatureConfig.MEMORY.DANGER_COOLDOWN) {
-      const strength = clamp(0.3 + (clamped / CreatureTuning.DAMAGE_CLAMP_MAX) * 0.6, 0.3, 0.9);
+      const strength = clamp(0.3 + (finalDamage / CreatureTuning.DAMAGE_CLAMP_MAX) * 0.6, 0.3, 0.9);
       this.rememberLocation?.(this.x, this.y, 'danger', strength, worldTime);
       this.memory.lastDangerAt = worldTime;
     }
 
-    if (this.health <= 0) {
-      this.alive = false;
-      this.deathCause = cause;
-    }
-
     this._lastWorld?.creatureEcosystem?.registerEvent?.(this, 'impact', { intensity });
-    return clamped;
+    return finalDamage;
   }
 
   applyImpulse(vx, vy, { decay = 6, cap = 360 } = {}) {
@@ -3094,6 +3089,15 @@ export class Creature {
       ctx.closePath();
       ctx.fill();
       ctx.restore();
+      const debugFlags = getDebugFlags();
+      if (debugFlags.spawnDebug) {
+        ctx.save();
+        ctx.font = '9px sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.65)';
+        const label = this.id ? `id:${this.id}` : 'spawn';
+        ctx.fillText(label, -r, -r - 6);
+        ctx.restore();
+      }
     }
 
     ctx.strokeStyle = `hsla(${displayHue},90%,80%,${0.65 + flash * 0.4})`;

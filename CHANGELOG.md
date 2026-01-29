@@ -73,6 +73,14 @@ All notable changes to this project will be documented in this file.
 - **Planned:** Add nests, region-based territory pressure, and migration behaviors with moments + auto-director hooks, save/load support, and UI toggles; baseline `npm test` ran (npm env warning about http-proxy). 
 - **Implemented:** Added nest entities with comfort/overcrowding, region pressure + home preference, migration scoring/settlement, new moments + auto-director hooks, UI overlays, and save/load updates. Verified `npm test` (npm env warning about http-proxy) and `npm run lint` (warnings pre-existing). 
 
+### Notes (2026-02-07)
+- **Planned:** Run polish/balance pass for survivability, interaction damage, and recovery tuning; baseline `npm test` passed (npm env warning about http-proxy) and `npm run lint` failed with 3 errors and 1040 warnings (pre-existing). Browser smoke attempt via Playwright returned a "Not Found" page, so manual visual validation is pending.
+- **Implemented:** Rebalanced creature survivability (higher max health, lower impact caps, longer i-frames), fixed impact damage double-counting, and tuned hunger/stress recovery to favor calmer long-lived play. Added balance documentation, updated smoke checks, and refreshed README tuning pointers. Verified `npm test` (npm env warning about http-proxy) and `npm run lint` (3 errors, 1040 warnings pre-existing).
+
+### Notes (2026-02-08)
+- **Planned:** Reproduce and fix creature spawn/visibility regression with dev-only instrumentation, update smoke tests + recovery report, and verify core loop; baseline `npm test` ran (npm env warning about http-proxy).
+- **Implemented:** Restored mobile spawn tool activation, added dev-only spawn/render instrumentation with sanitization + fallback labels, and documented updated smoke tests + recovery report. Verified `npm test` (npm env warning about http-proxy).
+
 ### Notes (2026-01-26)
 - **Planned:** Investigate syntax error breaking creature behavior boot; baseline `npm test` failed with `SyntaxError: Unexpected identifier 'senseRadius'` in `creature-behavior.js`.
 - **Implemented:** Repaired `seekFood()` so vision-cone selection lives inside the method and removed the stray block that caused the syntax error. Verified `npm test` (npm env warning about http-proxy) and `npm run lint` (3 errors, 1040 warnings pre-existing).

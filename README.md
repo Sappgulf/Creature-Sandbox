@@ -280,10 +280,11 @@ const childGenes = mutateGenes(parent.genes, 0.05);  // Mutation amount
 ### Tune Energy Values
 Edit `creature.js`:
 ```javascript
-this.energy = isChild ? 18 : 24;  // Starting energy
-// In update():
-this.energy += 6;  // Food reward
-this.energy += 18;  // Predation reward
+this.energy = isChild ? 36 : 52;  // Starting energy
+```
+Edit `creature-agent-constants.js` for food bite rewards:
+```javascript
+BITE_ENERGY: 4.5, // Energy gained per food bite
 ```
 
 ---

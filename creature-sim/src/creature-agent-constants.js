@@ -7,18 +7,18 @@ export const CreatureAgentTuning = {
     MIN: 0,
     MAX: 100,
     UPDATE_INTERVAL: 0.25,
-    HUNGER_RATE: 1.2,
-    SOCIAL_RATE: 0.6,
-    STRESS_REST_DECAY: 6,
-    STRESS_CALM_DECAY: 2.5,
-    STRESS_OVERCROWD_GAIN: 4.5,
+    HUNGER_RATE: 1.0,
+    SOCIAL_RATE: 0.55,
+    STRESS_REST_DECAY: 7,
+    STRESS_CALM_DECAY: 3.2,
+    STRESS_OVERCROWD_GAIN: 3.8,
     START: {
       hunger: 22,
       energy: 65,
       socialDrive: 35,
       stress: 18
     },
-    HUNGER_RELIEF_PER_ENERGY: 1.4
+    HUNGER_RELIEF_PER_ENERGY: 1.6
   },
   DAY_NIGHT: {
     HUNGER_DAY_MULT: 1.08,
@@ -50,10 +50,10 @@ export const CreatureAgentTuning = {
     MIN_DURATION: 1.2,
     SWITCH_HYSTERESIS: 0.12,
     SCORE_BIAS: {
-      EAT: 1.0,
-      REST: 0.95,
-      SEEK_MATE: 0.85,
-      WANDER: 0.2
+      EAT: 1.1,
+      REST: 1.05,
+      SEEK_MATE: 0.8,
+      WANDER: 0.15
     }
   },
   ROLES: {
@@ -103,7 +103,7 @@ export const CreatureAgentTuning = {
   },
   FOOD: {
     BITE_INTERVAL: 0.6,
-    BITE_ENERGY: 4,
+    BITE_ENERGY: 4.5,
     SCENT_RADIUS: 180,
     CONSUME_RANGE: 8
   },
@@ -132,8 +132,8 @@ export const CreatureAgentTuning = {
     COUNT: 5,
     RADIUS: 90,
     DETECT_RADIUS: 200,
-    ENERGY_RECOVERY: 6,
-    STRESS_RECOVERY: 4.5
+    ENERGY_RECOVERY: 7.5,
+    STRESS_RECOVERY: 5.5
   },
   NESTS: {
     RADIUS: 70,
@@ -165,7 +165,7 @@ export const CreatureAgentTuning = {
   MATING: {
     SOCIAL_THRESHOLD: 65,
     STRESS_MAX: 45,
-    COOLDOWN: 32,
+    COOLDOWN: 36,
     RANGE: 18,
     BOND_TIME: 1.15,
     ENERGY_COST_MULT: 0.7,
