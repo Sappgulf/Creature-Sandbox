@@ -19,6 +19,7 @@ export class AnalyticsTracker {
     this._geneHistoryAccum = 0;
 
     this._initializeWorker();
+    console.log('✅ AnalyticsTracker Instance Created');
   }
 
   _initializeWorker() {

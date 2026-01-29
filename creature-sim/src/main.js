@@ -213,7 +213,7 @@ function initializeApp() {
   const world = errorHandler.safeExecute(() => {
     if (USE_SIM_WORKER) {
       console.log('🚀 Initializing Simulation Worker...');
-      const w = new SimulationProxy('./src/worker-simulation.js');
+      const w = new SimulationProxy(new URL('./worker-simulation.js', import.meta.url));
       w.init(4000, 2800);
       w.seed(50, 8, 250);
       return w;

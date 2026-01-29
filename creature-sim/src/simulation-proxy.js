@@ -57,6 +57,12 @@ export class SimulationProxy {
             }
         };
 
+        // Explicitly bind methods to instance to ensure they aren't lost in proxying/wrapping
+        this.getBiomeAt = this.getBiomeAt.bind(this);
+        this.reset = this.reset.bind(this);
+        this.init = this.init.bind(this);
+        this.seed = this.seed.bind(this);
+
         // Initialize biome generator with a fixed seed if possible, or random
         this.biomeGenerator = new BiomeGenerator(0.123);
 
@@ -64,6 +70,7 @@ export class SimulationProxy {
         // Make autoBalanceSettings reactive so UI changes propagate to worker
         this.worldSnapshot.autoBalanceSettings = new Proxy(this.worldSnapshot.autoBalanceSettings, {
             set(target, prop, value) {
+                console.log(`📡 SimProxy: Syncing autoBalanceSettings.${prop} = ${value}`);
                 target[prop] = value;
                 self._send('SET_PROP', { path: `autoBalanceSettings.${prop}`, value });
                 return true;
@@ -75,6 +82,7 @@ export class SimulationProxy {
             set(target, prop, value) {
                 target[prop] = value;
                 if (typeof value !== 'function') {
+                    console.log(`📡 SimProxy: Syncing environment.${prop} = ${value}`);
                     self._send('SET_PROP', { path: `environment.${prop}`, value });
                 }
                 return true;
@@ -82,6 +90,7 @@ export class SimulationProxy {
         });
 
         this.worker.onmessage = (e) => this.handleMessage(e);
+        console.log('✅ SimulationProxy Instance Created');
 
         // Command queue for initial calls before ready
         this.queue = [];
@@ -115,27 +124,38 @@ export class SimulationProxy {
         this.worldSnapshot.corpses = corpses;
 
         if (environment) {
+            // Update base properties
             this.worldSnapshot.dayPhase = environment.dayPhase;
             this.worldSnapshot.dayLight = environment.dayLight;
             this.worldSnapshot.currentSeason = environment.currentSeason;
             this.worldSnapshot.weatherType = environment.weatherType;
             this.worldSnapshot.moodState = environment.moodState;
-            this.worldSnapshot.environment = {
-                ...environment,
-                getMoodState: () => environment.moodState,
-                getDayNightState: () => ({ phase: environment.dayPhase, light: environment.dayLight }),
-                getSeasonInfo: () => ({
+
+            // Merge values into the EXISTING (potentially proxied) environment object
+            // to avoid breaking references held by other systems
+            if (this.worldSnapshot.environment) {
+                const target = this.worldSnapshot.environment;
+                Object.keys(environment).forEach(key => {
+                    if (typeof environment[key] !== 'function') {
+                        target[key] = environment[key];
+                    }
+                });
+
+                // Ensure method stubs remain
+                target.getMoodState = () => environment.moodState;
+                target.getDayNightState = () => ({ phase: environment.dayPhase, light: environment.dayLight });
+                target.getSeasonInfo = () => ({
                     name: environment.currentSeason,
                     progress: environment.seasonPhase,
                     label: environment.currentSeason.charAt(0).toUpperCase() + environment.currentSeason.slice(1)
-                }),
-                getWeatherState: () => ({
+                });
+                target.getWeatherState = () => ({
                     type: environment.weatherType,
                     intensity: environment.weatherIntensity,
                     timeOfDay: environment.timeOfDay,
                     season: environment.currentSeason
-                })
-            };
+                });
+            }
         }
 
         // Unpack binary buffer into renderable objects
