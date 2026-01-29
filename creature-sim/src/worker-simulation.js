@@ -45,6 +45,57 @@ self.onmessage = function (e) {
         case 'SPAWN_MANUAL':
             if (world) {
                 world.spawnManual(data.x, data.y, data.predator);
+                sendSnapshot();
+            }
+            break;
+
+        case 'SPAWN_GENES':
+            if (world) {
+                world.spawnManualWithGenes(data.x, data.y, data.genes);
+                sendSnapshot();
+            }
+            break;
+
+        case 'SPAWN_TYPE':
+            if (world) {
+                world.spawnCreatureType(data.type, data.x, data.y);
+                sendSnapshot();
+            }
+            break;
+
+        case 'KILL_CREATURE':
+            if (world) {
+                const c = world.getCreatureById(data.id);
+                if (c) {
+                    c.alive = false;
+                    world.creatureManager.removeCreature(c);
+                    sendSnapshot();
+                }
+            }
+            break;
+
+        case 'ADD_FOOD':
+            if (world) {
+                world.addFood(data.x, data.y, data.r, data.type);
+                sendSnapshot(); // Update food list immediately
+            }
+            break;
+
+        case 'REMOVE_FOOD':
+            if (world) {
+                // Find food by ID (or approximate location if ID not shared?)
+                // world.food is array.
+                // Snapshot sends {id, ...}.
+                // We assume data.id is passed.
+                const f = world.food.find(item => item.id === data.id);
+                if (f) {
+                    const idx = world.food.indexOf(f);
+                    if (idx !== -1) {
+                        world.food.splice(idx, 1);
+                        world.foodGrid.remove(f);
+                        sendSnapshot();
+                    }
+                }
             }
             break;
 

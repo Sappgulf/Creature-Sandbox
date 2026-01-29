@@ -15,8 +15,18 @@ export class SimulationProxy {
             food: [],
             corpses: [],
             regions: [],
-            pheromone: { grid: new Float32Array(0), cell: 20 },
-            temperature: { grid: new Float32Array(0), cell: 40 },
+            pheromone: {
+                grid: new Float32Array(0),
+                cell: 20,
+                getAtWorld: () => 0,
+                get: () => 0
+            },
+            temperature: {
+                grid: new Float32Array(0),
+                cell: 40,
+                getAtWorld: () => 0,
+                get: () => 0
+            },
             foodGridDirty: false,
             corpseGridDirty: false,
             restGridDirty: false,
@@ -44,7 +54,12 @@ export class SimulationProxy {
                 getMoodState: () => ({ type: 'neutral', intensity: 0 }),
                 getDayNightState: () => ({ phase: 'day', light: 1 }),
                 getSeasonInfo: () => ({ name: 'spring', progress: 0, label: 'Spring' }),
-                getWeatherState: () => ({ type: null, intensity: 0, timeOfDay: 12 })
+                getWeatherState: () => ({ type: null, intensity: 0, timeOfDay: 12 }),
+                getBiomeAt: (x, y) => this.getBiomeAt(x, y)
+            },
+            ecosystem: {
+                foodPatches: [],
+                getBiomeAt: (x, y) => this.getBiomeAt(x, y)
             },
             creatureManager: {
                 creatureGrid: {
@@ -53,6 +68,20 @@ export class SimulationProxy {
                             c.x >= x1 && c.x <= x2 && c.y >= y1 && c.y <= y2
                         );
                     }
+                }
+            },
+            foodGrid: {
+                queryRect: (x1, y1, x2, y2) => {
+                    return this.worldSnapshot.food.filter(f =>
+                        f.x >= x1 && f.x <= x2 && f.y >= y1 && f.y <= y2
+                    );
+                }
+            },
+            corpseGrid: {
+                queryRect: (x1, y1, x2, y2) => {
+                    return this.worldSnapshot.corpses.filter(c =>
+                        c.x >= x1 && c.x <= x2 && c.y >= y1 && c.y <= y2
+                    );
                 }
             }
         };
@@ -77,6 +106,48 @@ export class SimulationProxy {
 
         this.seed = (nHerb, nPred, nFood) => {
             this._send('SEED', { nHerb, nPred, nFood });
+        };
+
+        this.step = (dt) => {
+            this._send('STEP_AND_SYNC', { dt });
+        };
+
+        this.spawnManual = (x, y, predator) => {
+            this._send('SPAWN_MANUAL', { x, y, predator });
+        };
+
+        this.pause = (paused) => {
+            this._send('PAUSE', { paused });
+        };
+
+        this.setTimeScale = (scale) => {
+            this._send('SET_TIME_SCALE', { scale });
+        };
+
+        this.spawnManualWithGenes = (x, y, genes) => {
+            this._send('SPAWN_GENES', { x, y, genes });
+            return null; // Async, cannot return object
+        };
+
+        this.spawnCreatureType = (type, x, y) => {
+            this._send('SPAWN_TYPE', { type, x, y });
+            return null;
+        };
+
+        this.killCreature = (id) => {
+            this._send('KILL_CREATURE', { id });
+        };
+
+        // Alias for compatibility
+        this.removeCreature = this.killCreature;
+
+        this.addFood = (x, y, r, type) => {
+            this._send('ADD_FOOD', { x, y, r, type });
+            return null;
+        };
+
+        this.removeFood = (id) => {
+            if (id) this._send('REMOVE_FOOD', { id });
         };
 
         // Initialize biome generator with a fixed seed if possible, or random
@@ -217,6 +288,9 @@ export class SimulationProxy {
     get pheromone() { return this.worldSnapshot.pheromone; }
     get temperature() { return this.worldSnapshot.temperature; }
     get creatureManager() { return this.worldSnapshot.creatureManager; }
+    get foodGrid() { return this.worldSnapshot.foodGrid; }
+    get corpseGrid() { return this.worldSnapshot.corpseGrid; }
+    get ecosystem() { return this.worldSnapshot.ecosystem; }
     get foodGridDirty() { return this.worldSnapshot.foodGridDirty; }
     get corpseGridDirty() { return this.worldSnapshot.corpseGridDirty; }
 
@@ -257,6 +331,10 @@ export class SimulationProxy {
     // Search helper
     getAnyCreatureById(id) {
         return this.worldSnapshot.creatures.find(c => c.id === id);
+    }
+
+    getCreatureById(id) {
+        return this.getAnyCreatureById(id);
     }
 
     // Stubs for World attachment methods

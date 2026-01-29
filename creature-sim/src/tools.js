@@ -55,8 +55,8 @@ export class ToolController {
     return this.setBrushSize(this.brushSize + delta);
   }
 
-  apply(localX, localY, opts={}) {
-    const { shiftKey=false } = opts;
+  apply(localX, localY, opts = {}) {
+    const { shiftKey = false } = opts;
     const { x, y } = this.camera.screenToWorld(localX, localY);
     switch (this.mode) {
       case ToolModes.FOOD:
@@ -168,7 +168,7 @@ export class ToolController {
     return this.redoStack.length > 0;
   }
 
-  scatterFood(x, y, amount=10) {
+  scatterFood(x, y, amount = 10) {
     const addedFood = [];
     for (let i = 0; i < amount; i++) {
       const fx = x + (Math.random() - 0.5) * this.brushSize;
@@ -190,6 +190,11 @@ export class ToolController {
 
   undoAddFood(action) {
     for (const food of action.food) {
+      if (typeof this.world.removeFood === 'function') {
+        this.world.removeFood(food.id);
+        continue;
+      }
+
       const idx = this.world.food.indexOf(food);
       if (idx !== -1) {
         this.world.food.splice(idx, 1);
@@ -314,6 +319,11 @@ export class ToolController {
   }
 
   undoSpawnCreature(action) {
+    if (typeof this.world.killCreature === 'function') {
+      this.world.killCreature(action.creatureId);
+      return;
+    }
+
     const creature = this.world.getAnyCreatureById(action.creatureId);
     if (creature) {
       creature.alive = false;
@@ -348,8 +358,19 @@ export class ToolController {
     }));
 
     // Erase creatures
-    candidates.forEach(c => c.alive = false);
-    this.world.gridDirty = true;
+    candidates.forEach(c => {
+      if (typeof this.world.killCreature === 'function') {
+        this.world.killCreature(c.id);
+        // Visually hide immediately to feel responsive
+        c.alive = false;
+      } else {
+        c.alive = false;
+      }
+    });
+
+    if (this.world.gridDirty !== undefined) {
+      this.world.gridDirty = true;
+    }
 
     this.pushAction({
       type: ActionType.ERASE_CREATURES,
@@ -376,6 +397,12 @@ export class ToolController {
     // Re-erase by finding creatures from restored ids or nearby positions
     for (const data of action.creatures) {
       const targetId = data.restoredId ?? data.id;
+
+      if (typeof this.world.killCreature === 'function' && targetId) {
+        this.world.killCreature(targetId);
+        continue;
+      }
+
       let creature = targetId ? this.world.getAnyCreatureById(targetId) : null;
 
       if (!creature) {
