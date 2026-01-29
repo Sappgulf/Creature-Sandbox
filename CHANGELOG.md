@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### Notes (2026-01-29)
+- Planned (frontend): Fold mobile side panels into a bottom-sheet layout and collapse inspector/session meta on load to keep the playfield tappable. Why: mobile side menus currently crowd the simulation view. Verification: `npm test` (pass; npm warning about unknown `http-proxy` setting).
+- Implemented (frontend): Defaulted mobile inspector/session meta visibility to hidden and forced side panels into bottom-sheet placement with a shorter max height for more playable space. Why: prevent mobile side menus from covering the game view. Verification: `npm test` (pass; npm warning about unknown `http-proxy` setting).
+
 ### Added
 - Mobile spawn picker sheet with large tap targets and explicit spawn confirmation.
 - Gene editor share codes (copy/import) and spawn-mode feedback.

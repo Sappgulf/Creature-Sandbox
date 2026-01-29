@@ -160,6 +160,7 @@ open http://localhost:8000
 - **Food**: Drops food clusters near the camera center.
 - **Props**: Cycles props, then tap the canvas to place.
 - **Pause / Speed**: Toggle pause and cycle simulation speed.
+- **Panels**: Side panels start collapsed on mobile; reopen them from the ⋯ menu or the **Show inspector** button.
 
 ### God Mode (Optional)
 - **Enter/Exit**: Toggle via **⋯ More Actions** or long-press the world.
