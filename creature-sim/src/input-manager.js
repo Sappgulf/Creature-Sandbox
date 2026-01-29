@@ -279,6 +279,12 @@ export class InputManager {
         }
         break;
 
+      // Debug overlay toggle
+      case 'd':
+        gameState.showDebugOverlay = !gameState.showDebugOverlay;
+        console.log(`🔧 Debug overlay: ${gameState.showDebugOverlay ? 'ON' : 'OFF'}`);
+        break;
+
       // UI toggles
       case 'h':
         const statsEl = domCache.get('stats');

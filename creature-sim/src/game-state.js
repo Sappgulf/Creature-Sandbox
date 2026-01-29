@@ -74,6 +74,7 @@ export class GameState {
     this.hudBottomMeasuredAt = 0;
     this.showGoalDebug = false;
     this.showObserverDebug = false;
+    this.showDebugOverlay = false; // Toggle with 'D' key
 
     // Observer toggles
     this.showQuirks = false;

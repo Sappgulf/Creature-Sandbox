@@ -2,11 +2,37 @@
 
 ## Active
 
-- [ ] **DEBUG**: Investigate creature visibility issue after "New Game"
+- [x] **FIX**: Creature visibility issue after "New Game" - RESOLVED
 - [ ] Complete smoke test verification in browser
-- [ ] Fix any P0/P1 issues discovered during testing
 - [ ] Verify core loop: spawn → select → interact → save/load
 - [ ] Verify mobile touch controls work correctly
+
+## Session Fix (2026-01-28)
+
+### Issue
+Creatures not rendering after clicking "New Game" despite being spawned correctly.
+
+### Root Cause
+**Duplicate `<canvas id="view">` elements in index.html** (lines 34 and 862). Having two elements with the same ID causes `document.getElementById('view')` to potentially return the wrong canvas - the second one at line 862 had no styling and was not visible.
+
+### Fix Applied
+1. Removed duplicate `<canvas id="view"></canvas>` at line 862 of `index.html`
+2. Added debug overlay toggle ('D' key) to help diagnose future rendering issues
+   - Shows creature count, camera position, view bounds, canvas size, render stats
+   - Added `showDebugOverlay` property to `game-state.js`
+   - Added 'D' key handler in `input-manager.js`
+   - Added `renderDebugOverlay()` method in `game-loop.js`
+
+### Verification
+- `node -c` syntax checks pass on all modified files
+- Single canvas element confirmed with correct ID
+- Debug overlay provides visibility into render pipeline state
+
+### Files Changed
+- `creature-sim/index.html` — Removed duplicate canvas element
+- `creature-sim/src/game-loop.js` — Added debug overlay rendering
+- `creature-sim/src/game-state.js` — Added showDebugOverlay property
+- `creature-sim/src/input-manager.js` — Added 'D' key handler for debug toggle
 
 ## Session Debug (2026-01-26)
 

@@ -620,6 +620,45 @@ export class GameLoop {
 
     // Render overlays (mini-graphs, notifications, enhanced analytics)
     this.renderOverlays(dt);
+
+    // DEBUG OVERLAY - toggled with 'D' key (set gameState.showDebugOverlay = true)
+    if (gameState.showDebugOverlay) {
+      this.renderDebugOverlay(canvas);
+    }
+  }
+
+  /**
+   * Render debug overlay showing creature counts, camera state, and render stats
+   */
+  renderDebugOverlay(canvas) {
+    const ctx = canvas.getContext('2d');
+    const cam = this.camera;
+    const bounds = this.renderer._viewBounds;
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform for screen-space drawing
+    ctx.font = '12px monospace';
+    ctx.textBaseline = 'top';
+
+    // Semi-transparent background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(8, 8, 280, 130);
+
+    // Text content
+    ctx.fillStyle = '#0f0';
+    let y = 14;
+    const line = (text) => { ctx.fillText(text, 14, y); y += 14; };
+
+    line(`Creatures: ${this.world.creatures?.length || 0} in world`);
+    line(`Rendered: ${this.renderer.renderedCount || 0} | Culled: ${this.renderer.culledCount || 0}`);
+    line(`Camera: (${cam.x.toFixed(0)}, ${cam.y.toFixed(0)}) zoom=${cam.zoom.toFixed(2)}`);
+    line(`ViewBounds: (${bounds?.x1?.toFixed(0) || '?'}, ${bounds?.y1?.toFixed(0) || '?'}) to (${bounds?.x2?.toFixed(0) || '?'}, ${bounds?.y2?.toFixed(0) || '?'})`);
+    line(`Canvas: ${canvas.width}x${canvas.height}`);
+    line(`World: ${this.world.width}x${this.world.height}`);
+    line(`FPS: ${gameState.fps.toFixed(1)} | gameStarted: ${gameState.gameStarted}`);
+    line(`Food: ${this.world.food?.length || 0} | Corpses: ${this.world.corpses?.length || 0}`);
+
+    ctx.restore();
   }
 
   /**
