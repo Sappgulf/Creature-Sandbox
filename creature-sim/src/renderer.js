@@ -1207,10 +1207,22 @@ export class Renderer {
   }
 
   drawCreatures(world, opts) {
-    if (!world || !world.creatures || !world.creatureManager?.creatureGrid) return;
+    if (!world || !world.creatures) return;
     const ctx = this.ctx;
     const { worldTime = 0 } = opts;
     const creatures = world.creatures;
+
+    // Support either spatial grid query or direct array access (fallback)
+    let visibleCreatures;
+    if (world.creatureManager?.creatureGrid) {
+      visibleCreatures = world.creatureManager.creatureGrid.queryRect(this._viewBounds.x1, this._viewBounds.y1, this._viewBounds.x2, this._viewBounds.y2);
+    } else {
+      // Proxy mode or world without grid
+      visibleCreatures = creatures.filter(c =>
+        c.x >= this._viewBounds.x1 && c.x <= this._viewBounds.x2 &&
+        c.y >= this._viewBounds.y1 && c.y <= this._viewBounds.y2
+      );
+    }
 
     // Reset local counts (for legacy debug or internal tracking)
     this.renderedCount = 0;
@@ -1218,10 +1230,6 @@ export class Renderer {
 
     // OPTIMIZATION: Cache zoom first (used by multiple checks below)
     const zoom = this.camera.zoom;
-
-    // OPTIMIZATION: Use spatial grid for frustum culling
-    const bounds = this._viewBounds;
-    const visibleCreatures = world.creatureManager.creatureGrid.queryRect(bounds.x1, bounds.y1, bounds.x2, bounds.y2);
 
     // Update performance stats
     this.performance.stats.totalObjects += creatures.length;
@@ -1273,20 +1281,16 @@ export class Renderer {
       this.renderedCount++;
 
       const inLineage = opts.lineageSet ? opts.lineageSet.has(c.id) : false;
-      const alpha = clamp(c.energy / 40, 0.25, 1);
+      const alpha = clamp((c.energy || 40) / 40, 0.25, 1);
 
       if (alpha < 0.99) {
         ctx.save();
         ctx.globalAlpha = alpha;
       }
 
-      if (showShadows && (isSelected || isPinned || zoom > 0.6)) {
-        this._drawCreatureShadow(c);
-      }
-
       const clusterHue = clusterMap ? clusterMap.get(c.id) : null;
 
-      c.draw(ctx, {
+      const renderOpts = {
         isSelected,
         isPinned,
         inLineage,
@@ -1294,10 +1298,44 @@ export class Renderer {
         showVision: this.enableVision,
         clusterHue,
         zoom
-      });
+      };
 
-      if (c.statuses?.has('disease') && zoom > 0.3) {
-        this._drawDiseaseEffect(c, worldTime);
+      // PERFORMANCE: Level of Detail (LOD) handling
+      if (zoom < 0.25 && !isSelected && !isPinned) {
+        // ULTRA LOW LOD: Just a tiny dot
+        ctx.fillStyle = `hsl(${clusterHue ?? c.genes?.hue ?? 0}, 80%, 60%)`;
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (zoom < 0.6 && !isSelected && !isPinned) {
+        // MEDIUM LOD: Simplified shape (Triangle)
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.rotate(c.dir || 0);
+        ctx.fillStyle = `hsl(${clusterHue ?? c.genes?.hue ?? 0}, 85%, 60%)`;
+        ctx.beginPath();
+        ctx.moveTo(6, 0);
+        ctx.lineTo(-4, 3.5);
+        ctx.lineTo(-4, -3.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      } else {
+        // HIGH LOD: Full rendering
+        if (showShadows && (isSelected || isPinned || zoom > 0.6)) {
+          this._drawCreatureShadow(c);
+        }
+
+        if (c.draw) {
+          c.draw(ctx, renderOpts);
+        } else {
+          // Fallback if creature is just a data object (Proxy Mode)
+          this._drawExplicit(ctx, c, renderOpts);
+        }
+
+        if (c.statuses?.has?.('disease') && zoom > 0.3) {
+          this._drawDiseaseEffect(c, worldTime);
+        }
       }
 
       if (showOutlines && (isSelected || isPinned || isHovered || isGrabbed)) {
@@ -1322,6 +1360,40 @@ export class Renderer {
     this.culledCount = creatures.length - this.renderedCount;
     this.performance.stats.rendered += this.renderedCount;
     this.performance.stats.culled += this.culledCount;
+  }
+
+  /**
+   * Data-driven creature drawing for Proxy Mode / Fallback
+   */
+  _drawExplicit(ctx, c, opts) {
+    const { isSelected, isPinned, clusterHue, zoom } = opts;
+    const g = c.genes || {};
+    const hue = clusterHue !== null ? clusterHue : g.hue || 0;
+
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.dir || 0);
+
+    const r = ((c.energy || 40) / 40) * (3 + (c.size || 5));
+
+    // Draw simple triangle as high-detail fallback
+    ctx.fillStyle = `hsl(${hue}, 85%, ${g.predator ? 45 : 60}%)`;
+    ctx.beginPath();
+    ctx.moveTo(r, 0);
+    ctx.lineTo(-r * 0.8, r * 0.6);
+    ctx.lineTo(-r * 0.8, -r * 0.6);
+    ctx.closePath();
+    ctx.fill();
+
+    if (isSelected || isPinned) {
+      ctx.strokeStyle = isSelected ? 'white' : 'skyblue';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, r + 4, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    ctx.restore();
   }
 
   _drawCreatureShadow(creature) {

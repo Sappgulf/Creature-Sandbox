@@ -3,6 +3,7 @@
  * This replaces the massive 2000+ line main.js with clean, focused modules
  */
 import { World } from './world-core.js';
+import { SimulationProxy } from './simulation-proxy.js';
 import { Creature } from './creature.js';
 import './creature-features.js'; // Load feature extensions
 import { makeGenes } from './genetics.js';
@@ -205,13 +206,22 @@ function initializeApp() {
   // CORE SYSTEMS INITIALIZATION
   // ============================================================================
 
+  // Performance Settings
+  const USE_SIM_WORKER = true;
+
   // World and core entities
   const world = errorHandler.safeExecute(() => {
-    const w = new World(4000, 2800);
-    // Enhanced starting population: more creatures, better balance
-    // 50 herbivores, 20 omnivores, 8 predators, 250 food
-    w.seed(50, 8, 250);
-    return w;
+    if (USE_SIM_WORKER) {
+      console.log('🚀 Initializing Simulation Worker...');
+      const w = new SimulationProxy('./src/worker-simulation.js');
+      w.init(4000, 2800);
+      w.seed(50, 8, 250);
+      return w;
+    } else {
+      const w = new World(4000, 2800);
+      w.seed(50, 8, 250);
+      return w;
+    }
   }, 'World initialization', null);
 
   if (!world) {
