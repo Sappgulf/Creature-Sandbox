@@ -1,5 +1,39 @@
 # Changelog
 
+## Rules
+- Every entry must include **Issues → Root Causes → Fixes → Verification**.
+- No vague entries. If it cannot be verified, it must say so.
+- Performance changes require before/after metrics.
+- Breaking changes must be explicitly labeled.
+- Every work session must add **Planned** and **Implemented** entries.
+
+## Entry Template
+- **Date:** YYYY-MM-DD
+- **Scope:** frontend | backend | simulation | render | ui | docs | devops
+- **Type:** Planned | Implemented | Breaking
+- **Issues:**
+- **Root Causes:**
+- **Fixes:**
+- **Verification:**
+
+## [UNRELEASED]
+### 2026-02-04 — docs — Planned
+- **Issues:** Missing governance, architecture, debugging, and performance documentation for mandatory onboarding.
+- **Root Causes:** No formal, centralized documentation defining standards and workflows.
+- **Fixes:** Draft AGENT.md, MEMORY.md, ARCHITECTURE.md, DEBUGGING.md, PERFORMANCE.md, and a structured CHANGELOG.md.
+- **Verification:** Not run (documentation-only changes).
+
+### 2026-02-04 — docs — Implemented
+- **Issues:** Missing governance, architecture, debugging, and performance documentation for mandatory onboarding.
+- **Root Causes:** No formal, centralized documentation defining standards and workflows.
+- **Fixes:** Added AGENT.md, MEMORY.md, ARCHITECTURE.md, DEBUGGING.md, PERFORMANCE.md, and restructured CHANGELOG.md with enforced entry format.
+- **Verification:** Not run (documentation-only changes).
+
+## Legacy (Pre-Structured History)
+Entries below predate the enforced format. Do not add new items here.
+
+# Changelog
+
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
