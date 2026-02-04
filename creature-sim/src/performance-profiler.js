@@ -622,6 +622,7 @@ export class PerformanceMonitor {
       <div id="perf-metrics" style="margin-bottom: 10px;">
         <div>FPS: <span id="perf-fps">--</span> (avg: <span id="perf-fps-avg">--</span>)</div>
         <div>Frame Time: <span id="perf-frame-time">--</span>ms (avg: <span id="perf-frame-time-avg">--</span>ms)</div>
+        <div>Update: <span id="perf-update">--</span>ms · Render: <span id="perf-render">--</span>ms</div>
         <div>Memory: <span id="perf-memory">--</span>MB (avg: <span id="perf-memory-avg">--</span>MB)</div>
         <div>Draw Calls: <span id="perf-draw-calls">--</span></div>
         <div>Creatures: <span id="perf-creatures">--</span></div>
@@ -650,6 +651,8 @@ export class PerformanceMonitor {
     this.fpsAvgElement = this.overlay.querySelector('#perf-fps-avg');
     this.frameTimeElement = this.overlay.querySelector('#perf-frame-time');
     this.frameTimeAvgElement = this.overlay.querySelector('#perf-frame-time-avg');
+    this.updateElement = this.overlay.querySelector('#perf-update');
+    this.renderElement = this.overlay.querySelector('#perf-render');
     this.memoryElement = this.overlay.querySelector('#perf-memory');
     this.memoryAvgElement = this.overlay.querySelector('#perf-memory-avg');
     this.drawCallsElement = this.overlay.querySelector('#perf-draw-calls');
@@ -717,12 +720,17 @@ export class PerformanceMonitor {
     this.lastUpdate = now;
 
     const stats = this.profiler.getStats();
+    const scopes = this.profiler.getScopeStats();
 
     // Update metrics
     this.fpsElement.textContent = stats.current.fps.toFixed(1);
     this.fpsAvgElement.textContent = stats.averages.fps.toFixed(1);
     this.frameTimeElement.textContent = stats.current.frameTime.toFixed(2);
     this.frameTimeAvgElement.textContent = stats.averages.frameTime.toFixed(2);
+    const updateMs = scopes['world-step']?.avgDuration;
+    const renderMs = scopes.render?.avgDuration;
+    this.updateElement.textContent = Number.isFinite(updateMs) ? updateMs.toFixed(2) : '--';
+    this.renderElement.textContent = Number.isFinite(renderMs) ? renderMs.toFixed(2) : '--';
     this.memoryElement.textContent = stats.current.memoryUsage.toFixed(1);
     this.memoryAvgElement.textContent = stats.averages.memoryMB.toFixed(1);
     this.drawCallsElement.textContent = stats.current.drawCalls;

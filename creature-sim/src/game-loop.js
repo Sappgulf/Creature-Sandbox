@@ -307,7 +307,8 @@ export class GameLoop {
         now = performance.now();
       }
 
-      const dt = Math.min(0.25, (now - this.lastNow) / 1000);
+      const rawDt = (now - this.lastNow) / 1000;
+      const dt = Math.min(0.05, Math.max(0, rawDt));
       this.lastNow = now;
 
       // Calculate time scale (pause/speed controls)

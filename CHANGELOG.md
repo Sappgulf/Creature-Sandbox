@@ -17,6 +17,23 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-02-04 — simulation/ui/perf — Planned
+- **Issues:** Run Phase 0-4 polish sprint (baseline metrics, bug sweep, perf pass, AAA polish, regression) with verified dev/preview builds.
+- **Root Causes:** Planned maintenance and polish sprint per ship checklist.
+- **Fixes:** Pending results from baseline measurements, bug fixes, perf improvements, and UI polish.
+- **Verification:** Dev/preview builds and baseline performance captures to be run in this session.
+
+### 2026-02-04 — simulation/perf — Implemented
+- **Issues:** Capture Phase 0 baseline metrics (dev + preview runs, FPS/frame timings, memory trend).
+- **Root Causes:** Baseline required before making changes.
+- **Fixes:** Ran dev and preview server startup checks; attempted Playwright-driven baseline capture (normal + stress + 2-minute memory trend) but browser container returned 404 responses and Chromium crashes, so metrics could not be captured in this environment.
+- **Verification:** `npm run dev` (server started, manual stop); `npm run preview` (server started, timeout stop); Playwright browser runs failed to reach local server (Not Found) and crashed on Chromium launch.
+
+### 2026-02-04 — simulation/render/ui — Implemented
+- **Issues:** Large dt spikes caused simulation jumps after tab/background pauses; render path allocated per-frame arrays/sets when culling without a grid; performance monitor omitted update/render timing; debug stats reported NaN when world population was zero.
+- **Root Causes:** Game loop allowed up to 250ms delta time; render fallback used `filter()` + `Set`/`Array.from` allocations; perf overlay only surfaced FPS/frame/memory; debug console averaged over zero-length arrays.
+- **Fixes:** Clamp dt to 50ms and guard against negative deltas; reuse arrays in render fallback and avoid per-frame Set allocations when ensuring selected/pinned creatures render; add update/render timing to the performance monitor overlay using scope stats; guard debug stats averages when no creatures exist.
+- **Verification:** `npm test`.
 ### 2026-02-04 — docs — Planned
 - **Issues:** Missing governance, architecture, debugging, and performance documentation for mandatory onboarding.
 - **Root Causes:** No formal, centralized documentation defining standards and workflows.

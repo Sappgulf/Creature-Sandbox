@@ -149,8 +149,11 @@ export class DebugConsole {
     console.log(`  Herbivores: ${herbs}`);
     console.log(`  Omnivores: ${omnis}`);
     console.log(`  Predators: ${preds}`);
-    console.log(`  Avg Energy: ${(totalEnergy / this.world.creatures.length).toFixed(1)}`);
-    console.log(`  Avg Health: ${(totalHealth / this.world.creatures.length).toFixed(1)}`);
+    const creatureCount = this.world.creatures.length;
+    const avgEnergy = creatureCount ? (totalEnergy / creatureCount).toFixed(1) : '0.0';
+    const avgHealth = creatureCount ? (totalHealth / creatureCount).toFixed(1) : '0.0';
+    console.log(`  Avg Energy: ${avgEnergy}`);
+    console.log(`  Avg Health: ${avgHealth}`);
   }
 
   exportState() {
