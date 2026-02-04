@@ -1,21 +1,46 @@
-# Creature Sandbox Agent Rules
+# Agent Rules of Engagement
 
-## Mission
-- Prefer additive improvements over rewrites.
-- Preserve the core loop: load → create/edit → spawn → interact → save/load.
-- Ship small, verifiable changes.
+## Project Purpose and Scope
+Creature Sandbox is an interactive, real-time creature simulation and sandbox game. The codebase must remain stable, understandable, and performant across simulation, rendering, UI, and persistence layers.
 
-## Safety & Quality
-- Avoid heavy per-frame allocations and work.
-- If unsure about unused code, deprecate with comments instead of deleting.
-- Do not introduce new dependencies unless necessary.
-- Never commit secrets.
+## Core Principles
+- **Stability first.** No changes that compromise determinism, simulation integrity, or user-facing reliability.
+- **No silent failure.** Errors must surface clearly and recover safely.
+- **Measurable changes.** Every behavioral or performance change requires verification evidence.
+- **Minimum change surface.** Avoid collateral edits; change only what is required.
 
-## Workflow Expectations
-- Update `PLAN.md` every session.
-- Update `README.md` and `CHANGELOG.md` when behavior changes.
-- Provide explicit verification steps for every change.
+## Non-Negotiable Guarantees
+- The simulation loop must run without uncaught exceptions or hidden error suppression.
+- Rendering must not depend on simulation side effects beyond documented data flow.
+- Input handling must be deterministic and idempotent per frame.
+- Save/load (if used) must preserve compatibility or be explicitly versioned.
+- Performance regressions are unacceptable without documented, measured justification.
 
-## Verification
-- Run existing scripts where possible (`npm test`, `npm run lint`).
-- If a script cannot run, document the blocker and next action.
+## Required Workflow (Reproduce → Instrument → Fix → Verify → Document)
+1. **Reproduce** the issue or requirement with the smallest reliable steps.
+2. **Instrument** with explicit logs/metrics or a debug overlay to isolate cause.
+3. **Fix** with the smallest change that addresses the root cause.
+4. **Verify** via tests, smoke checks, or manual steps with documented results.
+5. **Document** in CHANGELOG.md and any affected docs.
+
+## Debugging Expectations
+- Never guess. Confirm root cause before editing.
+- Add temporary, toggleable diagnostics rather than permanent noise.
+- All debug output must be gated behind an explicit flag or dev-only switch.
+- Invariants must be checked (NaN, Infinity, invalid positions, negative sizes).
+
+## Performance Expectations
+- Preserve smooth frame pacing over peak FPS.
+- Avoid per-frame allocations or deep clones in hot paths.
+- Measure before/after for any performance-related change.
+
+## Forbidden Actions
+- Engine swaps or framework rewrites.
+- Speculative refactors without verified impact.
+- Broad dependency changes without explicit justification.
+- Silent behavior changes or undocumented fixes.
+
+## Required Outputs for Any Agent Session
+- A concise summary of changes with file references.
+- Verification results (or explicit note if not run).
+- Updated CHANGELOG.md entries for planned and implemented work.
