@@ -55,6 +55,8 @@ export class Renderer {
     this._lineageCache = { rootId: null, set: null, frame: 0 };
     this._clusterCache = { clusters: null, frame: -1 };
     this._nameCache = null; // Cache for creature names to avoid repeated lookups
+    this._visibleCreatures = [];
+    this._renderList = [];
 
     // OPTIMIZATION: Mini-map heatmap cache
     this._heatmapCache = {
@@ -1215,13 +1217,23 @@ export class Renderer {
     // Support either spatial grid query or direct array access (fallback)
     let visibleCreatures;
     if (world.creatureManager?.creatureGrid) {
-      visibleCreatures = world.creatureManager.creatureGrid.queryRect(this._viewBounds.x1, this._viewBounds.y1, this._viewBounds.x2, this._viewBounds.y2);
+      visibleCreatures = world.creatureManager.creatureGrid.queryRect(
+        this._viewBounds.x1,
+        this._viewBounds.y1,
+        this._viewBounds.x2,
+        this._viewBounds.y2
+      );
     } else {
       // Proxy mode or world without grid
-      visibleCreatures = creatures.filter(c =>
-        c.x >= this._viewBounds.x1 && c.x <= this._viewBounds.x2 &&
-        c.y >= this._viewBounds.y1 && c.y <= this._viewBounds.y2
-      );
+      visibleCreatures = this._visibleCreatures;
+      visibleCreatures.length = 0;
+      for (let i = 0; i < creatures.length; i++) {
+        const c = creatures[i];
+        if (c.x >= this._viewBounds.x1 && c.x <= this._viewBounds.x2 &&
+            c.y >= this._viewBounds.y1 && c.y <= this._viewBounds.y2) {
+          visibleCreatures.push(c);
+        }
+      }
     }
 
     // Reset local counts (for legacy debug or internal tracking)
@@ -1237,16 +1249,31 @@ export class Renderer {
 
     // Ensure selected/pinned creatures are rendered even if results are truncated or edge-cases
     // (queryRect usually handles this but we want to be safe for UI consistency)
-    const renderSet = new Set(visibleCreatures);
-    if (opts.selectedId) {
-      const selected = world.getAnyCreatureById(opts.selectedId);
-      if (selected && selected.alive) renderSet.add(selected);
+    let finalRenderList = visibleCreatures;
+    if (opts.selectedId || opts.pinnedId) {
+      const renderList = this._renderList;
+      renderList.length = 0;
+      for (let i = 0; i < visibleCreatures.length; i++) {
+        renderList.push(visibleCreatures[i]);
+      }
+
+      const appendIfMissing = (candidate) => {
+        if (!candidate || !candidate.alive) return;
+        for (let i = 0; i < renderList.length; i++) {
+          if (renderList[i].id === candidate.id) return;
+        }
+        renderList.push(candidate);
+      };
+
+      if (opts.selectedId) {
+        appendIfMissing(world.getAnyCreatureById(opts.selectedId));
+      }
+      if (opts.pinnedId) {
+        appendIfMissing(world.getAnyCreatureById(opts.pinnedId));
+      }
+
+      finalRenderList = renderList;
     }
-    if (opts.pinnedId) {
-      const pinned = world.getAnyCreatureById(opts.pinnedId);
-      if (pinned && pinned.alive) renderSet.add(pinned);
-    }
-    const finalRenderList = Array.from(renderSet);
 
     // OPTIMIZATION: Throttle clustering - only compute every 60 frames (~1Hz)
     let clusterMap = null;
