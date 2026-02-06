@@ -1,4 +1,3 @@
-import { domCache } from './dom-cache.js';
 import { gameState } from './game-state.js';
 
 
@@ -46,6 +45,7 @@ export function renderStats(el, world, fps, extra = {}) {
       calm: 'Calm',
       chaos: 'Chaos',
       spawn: 'Spawn',
+      prop: 'Prop',
       remove: 'Remove'
     };
     const toolLabel = extra.godModeTool ? (godLabels[extra.godModeTool] || extra.godModeTool) : 'Mode';
@@ -254,7 +254,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     social_butterfly: 'Social Butterfly'
   };
   const quirkLine = showQuirks ? `<div class="subline quirks">Quirks: ${quirks.map(q => quirkLabelMap[q] || q).join(', ')}</div>` : '';
-  const quirkHint = quirks.length ? `<div class="hint">Press Q to toggle quirks</div>` : '';
+  const quirkHint = quirks.length ? '<div class="hint">Press Q to toggle quirks</div>' : '';
 
   el.innerHTML = `
     <div class="headline">

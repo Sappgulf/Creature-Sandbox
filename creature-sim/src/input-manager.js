@@ -63,6 +63,16 @@ export class InputManager {
     this.throwSpeedMax = 260;
     this.throwImpulseScale = 0.36;
     this.throwImpulseCap = 320;
+    this.godActionIntervals = {
+      ...(CreatureAgentTuning.GOD_MODE?.ACTION_INTERVAL_MS || {})
+    };
+    this.godDragDistanceBase = CreatureAgentTuning.GOD_MODE?.DRAG_DISTANCE_BASE || 14;
+    this.godActionState = {
+      lastTool: null,
+      nextAt: 0,
+      lastX: 0,
+      lastY: 0
+    };
 
     this.initialize();
   }
@@ -162,6 +172,22 @@ export class InputManager {
     const renderer = this.world?.renderer;
     const analytics = this.world?.analytics;
     const miniGraphs = this.world?.miniGraphs;
+    const godToolHotkeys = {
+      '1': 'food',
+      '2': 'calm',
+      '3': 'chaos',
+      '4': 'spawn',
+      '5': 'prop',
+      '6': 'remove'
+    };
+    if (gameState.godModeActive) {
+      const hotTool = godToolHotkeys[e.key];
+      if (hotTool) {
+        this._setGodTool(hotTool, 'hotkey');
+        e.preventDefault();
+        return;
+      }
+    }
 
     switch (e.key.toLowerCase()) {
       // Core controls
@@ -175,6 +201,7 @@ export class InputManager {
         break;
       case 'i':
         gameState.toggleInspector();
+        gameState.setInspectorAutoOpen(gameState.inspectorVisible);
         this.updateInspectorVisibility();
         break;
 
@@ -372,6 +399,25 @@ export class InputManager {
       return;
     }
 
+    const closeablePanels = [
+      'features-panel',
+      'scenario-panel',
+      'achievements-panel',
+      'gene-editor-panel',
+      'eco-health-panel',
+      'moments-panel',
+      'campaign-panel'
+    ];
+    for (const panelId of closeablePanels) {
+      const panel = document.getElementById(panelId);
+      if (!panel || panel.classList.contains('hidden')) continue;
+      panel.classList.add('hidden');
+      panel.setAttribute('aria-hidden', 'true');
+      if (panelId === 'features-panel') gameState.featuresPanelVisible = false;
+      if (panelId === 'scenario-panel') gameState.scenarioPanelVisible = false;
+      return;
+    }
+
     // Cancel spawn mode first
     if (gameState.spawnMode) {
       this.cancelSpawnMode();
@@ -385,13 +431,11 @@ export class InputManager {
       gameState.pinnedId = null;
     } else if (gameState.selectedId !== null) {
       gameState.selectedId = null;
+    } else if (gameState.inspectorVisible) {
+      gameState.setInspectorVisible(false);
+      gameState.setInspectorAutoOpen(false);
+      this.updateInspectorVisibility();
     }
-
-    // Show inspector if not visible
-    if (!gameState.inspectorVisible) {
-      gameState.setInspectorVisible(true);
-    }
-
 
   }
 
@@ -452,10 +496,18 @@ export class InputManager {
 
     if (gameState.inspectorVisible) {
       if (inspector) inspector.classList.remove('hidden');
-      if (showBtn) showBtn.classList.add('hidden');
+      if (inspector) inspector.setAttribute('aria-hidden', 'false');
+      if (showBtn) {
+        showBtn.classList.add('hidden');
+        showBtn.setAttribute('aria-hidden', 'true');
+      }
     } else {
       if (inspector) inspector.classList.add('hidden');
-      if (showBtn) showBtn.classList.remove('hidden');
+      if (inspector) inspector.setAttribute('aria-hidden', 'true');
+      if (showBtn) {
+        showBtn.classList.remove('hidden');
+        showBtn.setAttribute('aria-hidden', 'false');
+      }
     }
   }
 
@@ -755,16 +807,7 @@ export class InputManager {
     }
 
     if (nearest) {
-      gameState.selectCreature(nearest.id);
-
-      // Enable camera follow mode automatically
-      this.camera.followMode = 'smooth-follow';
-      this.camera.followTarget = nearest.id;
-      this.camera.clearUserOverride(); // Allow camera to follow
-
-      gameState.setInspectorVisible(true);
-      const inspector = domCache.get('inspector');
-      if (inspector) inspector.classList.remove('minimized');
+      this._selectCreatureWithCamera(nearest, { preferZoom: 1.02 });
       if (typeof nearest.reactToPoke === 'function') {
         nearest.reactToPoke({ x, y });
       }
@@ -907,12 +950,7 @@ export class InputManager {
         if (!isDrag) {
           const creature = this._findCreatureAt(x, y);
           if (creature) {
-            gameState.selectCreature(creature.id);
-
-            // Enable camera follow mode automatically when clicking a creature
-            this.camera.followMode = 'smooth-follow';
-            this.camera.followTarget = creature.id;
-            this.camera.clearUserOverride(); // Allow camera to follow
+            this._selectCreatureWithCamera(creature, { preferZoom: 0.92 });
 
             // Show selected info
             const selectedInfo = document.getElementById('selected-info');
@@ -957,20 +995,26 @@ export class InputManager {
   }
 
   handleGodModeAction(x, y, isDrag) {
-    if (isDrag) return;
     const tool = gameState.godModeTool || 'food';
+    const dragEnabled = tool === 'food' || tool === 'calm' || tool === 'prop' || tool === 'remove';
+    if (isDrag && !dragEnabled) return;
+    if (!this._allowGodAction(tool, x, y, isDrag)) return;
 
     switch (tool) {
       case 'food': {
-        const patch = this.world.ecosystem?.addFoodPatch?.(x, y, {
-          radius: CreatureAgentTuning.GOD_MODE.FOOD_RADIUS,
-          fertility: 1.2,
-          stock: CreatureAgentTuning.FOOD_PATCHES.START_STOCK * 1.8,
-          tag: 'god'
-        });
-        if (patch && this.world.ecosystem?.spawnFoodFromPatch) {
-          for (let i = 0; i < 4; i++) {
-            this.world.ecosystem.spawnFoodFromPatch(patch);
+        if (isDrag) {
+          this.world.addFood?.(x, y, 2.2, 'grass');
+        } else {
+          const patch = this.world.ecosystem?.addFoodPatch?.(x, y, {
+            radius: CreatureAgentTuning.GOD_MODE.FOOD_RADIUS,
+            fertility: 1.2,
+            stock: CreatureAgentTuning.FOOD_PATCHES.START_STOCK * 1.8,
+            tag: 'god'
+          });
+          if (patch && this.world.ecosystem?.spawnFoodFromPatch) {
+            for (let i = 0; i < 4; i++) {
+              this.world.ecosystem.spawnFoodFromPatch(patch);
+            }
           }
         }
         eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'food', x, y });
@@ -980,8 +1024,8 @@ export class InputManager {
         this.world.addCalmZone(
           x,
           y,
-          CreatureAgentTuning.GOD_MODE.CALM_RADIUS,
-          CreatureAgentTuning.GOD_MODE.CALM_DURATION,
+          CreatureAgentTuning.GOD_MODE.CALM_RADIUS * (isDrag ? 0.72 : 1),
+          CreatureAgentTuning.GOD_MODE.CALM_DURATION * (isDrag ? 0.55 : 1),
           CreatureAgentTuning.GOD_MODE.CALM_STRENGTH
         );
         eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'calm', x, y });
@@ -1014,6 +1058,14 @@ export class InputManager {
         eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'spawn', x, y });
         break;
       }
+      case 'prop': {
+        const propType = gameState.selectedPropType || this.tools?.propType || 'bounce';
+        const prop = this.tools?.placeProp?.(x, y, { type: propType });
+        if (prop) {
+          eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'prop', x, y, propType });
+        }
+        break;
+      }
       case 'remove': {
         const target = this._findCreatureAt(x, y, 34 / this.camera.zoom);
         if (target) {
@@ -1023,6 +1075,11 @@ export class InputManager {
           target.killedBy = 'god';
           this.world.creatureManager.removeCreature(target);
           eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'remove', id: target.id });
+          break;
+        }
+        const removedProp = this.world.sandbox?.removeNearestProp?.(x, y, 48 / this.camera.zoom);
+        if (removedProp) {
+          eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'remove-prop', id: removedProp.id, propType: removedProp.type });
         }
         break;
       }
@@ -1048,6 +1105,64 @@ export class InputManager {
     }
 
     return nearest;
+  }
+
+  _selectCreatureWithCamera(creature, { preferZoom = 0.9 } = {}) {
+    if (!creature) return;
+    gameState.selectCreature(creature.id);
+
+    this.camera.followMode = 'smooth-follow';
+    this.camera.followTarget = creature.id;
+    this.camera.clearUserOverride();
+    this.camera.focusOn(creature.x, creature.y);
+
+    const targetZoom = clamp(
+      Math.max(this.camera.targetZoom || this.camera.zoom || 0.8, preferZoom),
+      this.camera.minZoom,
+      Math.min(this.camera.maxZoom, 1.35)
+    );
+    this.camera.setZoom(targetZoom);
+
+    if (gameState.inspectorAutoOpen !== false) {
+      gameState.setInspectorVisible(true);
+      const inspector = domCache.get('inspector');
+      if (inspector) inspector.classList.remove('minimized');
+      this.updateInspectorVisibility();
+    }
+  }
+
+  _setGodTool(tool, source = 'hotkey') {
+    if (!tool) return;
+    eventSystem.emit('god:tool-changed', { tool, source });
+    if (gameState.godModeTool !== tool) {
+      gameState.godModeTool = tool;
+    }
+  }
+
+  _allowGodAction(tool, x, y, isDrag) {
+    const now = performance.now();
+    const interval = this.godActionIntervals[tool] ?? 120;
+    const state = this.godActionState;
+    if (state.lastTool !== tool) {
+      state.lastTool = tool;
+      state.nextAt = 0;
+      state.lastX = x;
+      state.lastY = y;
+    }
+    if (now < state.nextAt) {
+      return false;
+    }
+    if (isDrag) {
+      const minDistance = this.godDragDistanceBase / Math.max(0.6, this.camera.zoom || 1);
+      const distance = Math.hypot(x - state.lastX, y - state.lastY);
+      if (distance < minDistance) {
+        return false;
+      }
+    }
+    state.nextAt = now + interval;
+    state.lastX = x;
+    state.lastY = y;
+    return true;
   }
 
   _prepareCreatureDrag(x, y, event) {

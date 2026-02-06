@@ -32,6 +32,8 @@
    - Confirm grabbed creatures show a warm grab outline and a brief grab/drop reaction.
    - Toggle pause/resume with **Space** and confirm the sim halts/continues.
    - Tap or click a creature and confirm a glow outline + reaction animation plays.
+   - Confirm camera recenters and zooms closer on the selected creature for a clearer view.
+   - Close the Inspector panel (✕) and confirm it stays closed until manually reopened.
    - Open **Features** and adjust the Chaos Dial; confirm bounce strength, wobble, and gravity drift change without breaking control.
    - Let the simulation run for 60–120 seconds while occasionally bumping/throwing a creature.
    - Confirm small bumps do not cause damage and creatures do not die accidentally.
@@ -78,7 +80,10 @@
 
 10. **God mode (optional)**
     - Open **⋯ More Actions** and toggle **✨ God Mode** (or long-press the world).
+    - Press **1-6** to switch god tools and confirm the active tool updates in the panel/hud.
     - Place a food source, a calm zone, and a chaos nudge; confirm clear visual previews.
+    - Drag with **Food**, **Calm**, **Prop**, and **Remove** tools to confirm paint-style application works smoothly.
+    - Select **🧱 Prop** in god mode and place at least one sandbox prop directly from god tools.
     - Spawn and remove a creature; confirm population guardrails prevent overpopulation.
     - Exit god mode and confirm creatures resume autonomous behavior with normal time flow.
 

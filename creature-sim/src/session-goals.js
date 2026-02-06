@@ -1,6 +1,13 @@
 import { clamp } from './utils.js';
 import { eventSystem, GameEvents } from './event-system.js';
 
+function geneValue(genes, key, fallback = 0) {
+  const value = genes?.[key];
+  if (typeof value === 'number') return value;
+  if (value && typeof value === 'object' && Number.isFinite(value.expressed)) return value.expressed;
+  return fallback;
+}
+
 const GOAL_POOL = [
   {
     id: 'population_push',
@@ -57,6 +64,27 @@ const GOAL_POOL = [
     icon: '🧩',
     makeTarget: () => 4 + Math.floor(Math.random() * 4),
     getDescription: (target) => `Trigger sandbox props ${target} times`
+  },
+  {
+    id: 'prop_builder',
+    type: 'prop_places',
+    icon: '🧱',
+    makeTarget: () => 4 + Math.floor(Math.random() * 5),
+    getDescription: (target) => `Place ${target} sandbox props`
+  },
+  {
+    id: 'divine_intervention',
+    type: 'god_actions',
+    icon: '✨',
+    makeTarget: () => 5 + Math.floor(Math.random() * 5),
+    getDescription: (target) => `Use god powers ${target} times`
+  },
+  {
+    id: 'wetland_watch',
+    type: 'aquatic_alive',
+    icon: '🐠',
+    makeTarget: () => 6 + Math.floor(Math.random() * 6),
+    getDescription: (target) => `Keep ${target} aquatic creatures alive at once`
   }
 ];
 
@@ -70,6 +98,7 @@ export class SessionGoals {
     this.creatureThrows = 0;
     this.propTriggers = 0;
     this.propPlacements = 0;
+    this.godActions = 0;
     eventSystem.on(GameEvents.CREATURE_BORN, (event) => {
       if (!event || event.parentId !== null) return;
       this.manualSpawns += 1;
@@ -82,6 +111,9 @@ export class SessionGoals {
     });
     eventSystem.on(GameEvents.SANDBOX_PROP_PLACED, () => {
       this.propPlacements += 1;
+    });
+    eventSystem.on(GameEvents.GOD_MODE_ACTION, () => {
+      this.godActions += 1;
     });
     this.generateGoals();
   }
@@ -167,12 +199,17 @@ export class SessionGoals {
       manualSpawns: this.manualSpawns,
       creatureThrows: this.creatureThrows,
       propTriggers: this.propTriggers,
-      propPlacements: this.propPlacements
+      propPlacements: this.propPlacements,
+      godActions: this.godActions,
+      aquaticAlive: 0
     };
 
     for (const creature of world.creatures || []) {
       if (!creature) continue;
       if (creature.alive) metrics.population += 1;
+      if (creature.alive && geneValue(creature.genes, 'aquatic', 0) >= 0.6) {
+        metrics.aquaticAlive += 1;
+      }
       const stats = creature.stats || {};
       if (creature.genes?.predator) metrics.predatorKills += stats.kills || 0;
       metrics.foodCollected += stats.food || 0;
@@ -202,6 +239,10 @@ export class SessionGoals {
         return metrics.propTriggers / goal.target;
       case 'prop_places':
         return metrics.propPlacements / goal.target;
+      case 'god_actions':
+        return metrics.godActions / goal.target;
+      case 'aquatic_alive':
+        return metrics.aquaticAlive / goal.target;
       default:
         return 0;
     }

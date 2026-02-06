@@ -837,6 +837,10 @@ export class Renderer {
       radius = 26;
       color = 'rgba(130, 200, 255, 0.25)';
       stroke = 'rgba(130, 200, 255, 0.7)';
+    } else if (tool === 'prop') {
+      radius = 58;
+      color = 'rgba(180, 140, 255, 0.2)';
+      stroke = 'rgba(180, 140, 255, 0.62)';
     } else if (tool === 'remove') {
       radius = 28;
       color = 'rgba(255, 120, 120, 0.22)';

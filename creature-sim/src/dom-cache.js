@@ -27,6 +27,7 @@ export class DOMCache {
     this.cacheElement('inspector', 'inspector');
     this.cacheElement('btn-show-inspector', 'showInspectorBtn');
     this.cacheElement('btn-close-inspector', 'closeInspectorBtn');
+    this.cacheElement('btn-minimize-inspector', 'minimizeInspectorBtn');
 
     // UI controls
 
@@ -49,6 +50,7 @@ export class DOMCache {
     this.cacheElement('god-tool-calm', 'godToolCalm');
     this.cacheElement('god-tool-chaos', 'godToolChaos');
     this.cacheElement('god-tool-spawn', 'godToolSpawn');
+    this.cacheElement('god-tool-prop', 'godToolProp');
     this.cacheElement('god-tool-remove', 'godToolRemove');
 
 

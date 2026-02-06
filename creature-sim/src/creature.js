@@ -1429,7 +1429,8 @@ export class Creature {
     desiredAngle = Math.atan2(steeringY, steeringX);
 
     const aggressiveTurn = this.genes.predator && this.target && this.target.creatureId != null && this.personality.ambushTimer <= 0;
-    const turnClamp = aggressiveTurn ? 0.22 : 0.15;
+    const turnRate = aggressiveTurn ? 0.22 : 0.15;
+    const turnClamp = clamp(turnRate * (dt / 0.016), 0.08, aggressiveTurn ? 0.34 : 0.24);
     const delta = Math.atan2(Math.sin(desiredAngle - this.dir), Math.cos(desiredAngle - this.dir));
     this.dir += clamp(delta, -turnClamp, turnClamp);
 
@@ -2435,7 +2436,8 @@ export class Creature {
     this.externalImpulse.cap = effectiveCap;
 
     const projected = Math.hypot(this.externalImpulse.vx, this.externalImpulse.vy);
-    if (projected > 140 && this._ragdollCooldown <= 0) {
+    const ragdollThreshold = 165 + Math.max(0, (this._lastWorld?.chaos?.reactionBoost ?? 1) - 1) * 20;
+    if (projected > ragdollThreshold && this._ragdollCooldown <= 0) {
       this._ragdollCooldown = 0.6;
       this._triggerReaction('ragdoll', clamp(projected / 220, 0.6, 1.4), 0.5);
       this.setMood('😵', 0.9);
@@ -2517,7 +2519,7 @@ export class Creature {
 
   reactToCollision(amount = 0.5, { skipDamage = false } = {}) {
     const worldTime = this._lastWorld?.t ?? 0;
-    if (worldTime - this._lastCollisionReactAt < 0.25) return;
+    if (worldTime - this._lastCollisionReactAt < 0.33) return;
     this._lastCollisionReactAt = worldTime;
     const intensity = clamp(0.25 + amount * 0.08 + this.personality.reactivity * 0.25, 0.2, 1.2);
     this._triggerReaction('collision', intensity, 0.25);
@@ -2780,7 +2782,7 @@ export class Creature {
     if (eco) {
       const stressRatio = clamp(eco.stress / 100, 0, 1);
       if (stressRatio > 0.25) {
-        const jitter = Math.sin(anim.timer * 12) * 0.4 * stressRatio * chaosWobble;
+        const jitter = Math.sin(anim.timer * 12) * 0.28 * stressRatio * chaosWobble;
         ctx.translate(jitter, 0);
       }
       const energyRatio = clamp(eco.energy / 100, 0, 1);
@@ -2800,7 +2802,7 @@ export class Creature {
 
       case 'running':
         // Faster, more exaggerated bobbing
-        const runBob = Math.sin(anim.bobPhase * 1.5) * 1.5;
+        const runBob = Math.sin(anim.bobPhase * 1.5) * 1.3;
         const runTilt = Math.sin(anim.bobPhase * 1.5) * 0.05; // Slight tilt
         ctx.translate(0, runBob);
         ctx.rotate(runTilt);
@@ -2863,7 +2865,7 @@ export class Creature {
         anim.state = 'sleeping';
 
         // Emit Zzz particles occasionally
-        if (Math.random() < 0.02) { // 2% chance per frame
+        if (Math.random() < 0.008) { // Throttled to reduce visual spam
           const world = this._lastWorld; // Will be set in update()
           if (world && world.particles) {
             world.particles.addSleepParticle(this.x, this.y + this.size);

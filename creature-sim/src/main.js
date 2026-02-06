@@ -1091,6 +1091,65 @@ function initializeApp() {
     animate();
   }
 
+  function applyReplayKickoff() {
+    if (!world) return;
+    const startX = world.width * 0.5;
+    const startY = world.height * 0.5;
+    const roll = Math.floor(Math.random() * 4);
+    let label = 'Balanced opener';
+
+    if (roll === 0) {
+      label = 'Bloom opener';
+      for (let i = 0; i < 3; i++) {
+        const x = startX + (Math.random() - 0.5) * 520;
+        const y = startY + (Math.random() - 0.5) * 420;
+        const patch = world.ecosystem?.addFoodPatch?.(x, y, {
+          radius: 95 + Math.random() * 55,
+          fertility: 1.15,
+          stock: 7
+        });
+        if (patch && world.ecosystem?.spawnFoodFromPatch) {
+          for (let j = 0; j < 3; j++) {
+            world.ecosystem.spawnFoodFromPatch(patch);
+          }
+        } else if (typeof world.addFood === 'function') {
+          world.addFood(x, y, 36, 'grass');
+        }
+      }
+    } else if (roll === 1) {
+      label = 'Wildfront opener';
+      const offsets = [
+        [-210, -120, 'predator'],
+        [220, -30, 'omnivore'],
+        [120, 170, 'aquatic'],
+        [-150, 140, 'herbivore']
+      ];
+      for (const [dx, dy, type] of offsets) {
+        world.spawnCreatureType?.(type, startX + dx, startY + dy);
+      }
+      world.addCalmZone?.(startX, startY, 120, 14, 0.5);
+    } else if (roll === 2) {
+      label = 'Toybox opener';
+      const props = ['bounce', 'spinner', 'spring', 'fan', 'button'];
+      for (let i = 0; i < props.length; i++) {
+        const theta = (Math.PI * 2 * i) / props.length;
+        const radius = 180 + Math.random() * 60;
+        const x = startX + Math.cos(theta) * radius;
+        const y = startY + Math.sin(theta) * radius;
+        world.sandbox?.addProp?.(props[i], x, y);
+      }
+    } else {
+      label = 'Storm opener';
+      world.triggerChaosNudge?.(0.22, 4.5);
+      world.environment?.triggerWindBurst?.(0.26, 5.5);
+      for (let i = 0; i < 2; i++) {
+        world.spawnCreatureType?.('aquatic', startX + (Math.random() - 0.5) * 420, startY + (Math.random() - 0.5) * 320);
+      }
+    }
+
+    notifications?.show?.(`🎲 ${label}`, 'info', 2000);
+  }
+
   // Start new game
   function startNewGame() {
     // CRITICAL: Always set game state to ready FIRST
@@ -1107,6 +1166,8 @@ function initializeApp() {
       if (world && world.seed) {
         world.seed(STARTUP_SEED.herbivores, STARTUP_SEED.predators, STARTUP_SEED.food);
       }
+
+      applyReplayKickoff();
 
       // Reset camera to center
       if (camera) {

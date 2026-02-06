@@ -116,6 +116,15 @@ export class UIController {
       this.setGodModeActive(!gameState.godModeActive, { source: data?.source || 'gesture' });
     });
 
+    eventSystem.on('god:tool-changed', (data) => {
+      const tool = data?.tool;
+      if (!tool) return;
+      this.setGodTool(tool, {
+        source: data?.source || 'event',
+        announce: data?.source === 'hotkey'
+      });
+    });
+
     // Listen for achievement unlocks
     eventSystem.on(GameEvents.ACHIEVEMENT_UNLOCKED, (data) => {
       const notificationsEnabled = this.achievements?.notificationsEnabled !== false;
@@ -215,6 +224,7 @@ export class UIController {
 
     this.mobileDefaultsApplied = true;
     gameState.inspectorVisible = false;
+    gameState.inspectorAutoOpen = false;
     gameState.sessionMetaVisible = false;
 
     const panels = [
@@ -298,9 +308,23 @@ export class UIController {
     // Inspector controls
     const showInspectorBtn = domCache.get('showInspectorBtn');
     const closeInspectorBtn = domCache.get('closeInspectorBtn');
+    const minimizeInspectorBtn = domCache.get('minimizeInspectorBtn');
+    const inspector = domCache.get('inspector');
 
-    if (showInspectorBtn) showInspectorBtn.addEventListener('click', () => gameState.setInspectorVisible(true));
-    if (closeInspectorBtn) closeInspectorBtn.addEventListener('click', () => gameState.setInspectorVisible(false));
+    if (showInspectorBtn) {
+      showInspectorBtn.addEventListener('click', () => {
+        if (inspector) inspector.classList.remove('minimized');
+        this.setInspectorVisibility(true, true);
+      });
+    }
+    if (closeInspectorBtn) {
+      closeInspectorBtn.addEventListener('click', () => this.setInspectorVisibility(false, false));
+    }
+    if (minimizeInspectorBtn && inspector) {
+      minimizeInspectorBtn.addEventListener('click', () => {
+        inspector.classList.toggle('minimized');
+      });
+    }
 
     // Quick action buttons (spawn food)
     const spawnFoodBtn = domCache.get('spawnFoodBtn');
@@ -634,7 +658,8 @@ export class UIController {
       domCache.get('godToolCalm'),
       domCache.get('godToolChaos'),
       domCache.get('godToolSpawn'),
-      domCache.get('godToolRemove')
+      domCache.get('godToolRemove'),
+      domCache.get('godToolProp')
     ];
 
     if (godExitBtn) godExitBtn.addEventListener('click', this.boundHandlers.onGodModeExit);
@@ -866,7 +891,8 @@ export class UIController {
       domCache.get('godToolCalm'),
       domCache.get('godToolChaos'),
       domCache.get('godToolSpawn'),
-      domCache.get('godToolRemove')
+      domCache.get('godToolRemove'),
+      domCache.get('godToolProp')
     ];
 
     if (panel) {
@@ -881,6 +907,21 @@ export class UIController {
       if (!btn) continue;
       const tool = btn.dataset.godTool;
       btn.classList.toggle('active', gameState.godModeTool === tool);
+    }
+
+    if (panel) {
+      const hint = panel.querySelector('.god-mode-hint');
+      if (hint) {
+        const hints = {
+          food: '1 Food: paint nourishment into the world.',
+          calm: '2 Calm: paint soothing zones.',
+          chaos: '3 Chaos: pulse the ecosystem.',
+          spawn: '4 Spawn: place selected creature type.',
+          prop: '5 Prop: place selected sandbox prop.',
+          remove: '6 Remove: erase creature or nearby prop.'
+        };
+        hint.textContent = hints[gameState.godModeTool] || 'Tap world to use selected tool. Tap Done to return.';
+      }
     }
   }
 
@@ -924,11 +965,25 @@ export class UIController {
 
     if (gameState.inspectorVisible) {
       if (inspector) inspector.classList.remove('hidden');
-      if (showBtn) showBtn.classList.add('hidden');
+      if (inspector) inspector.setAttribute('aria-hidden', 'false');
+      if (showBtn) {
+        showBtn.classList.add('hidden');
+        showBtn.setAttribute('aria-hidden', 'true');
+      }
     } else {
       if (inspector) inspector.classList.add('hidden');
-      if (showBtn) showBtn.classList.remove('hidden');
+      if (inspector) inspector.setAttribute('aria-hidden', 'true');
+      if (showBtn) {
+        showBtn.classList.remove('hidden');
+        showBtn.setAttribute('aria-hidden', 'false');
+      }
     }
+  }
+
+  setInspectorVisibility(visible, autoOpen = visible) {
+    gameState.setInspectorVisible(visible);
+    gameState.setInspectorAutoOpen(autoOpen);
+    this.updateInspectorVisibility();
   }
 
   /**
@@ -1193,8 +1248,7 @@ export class UIController {
   onGodToolSelect(event) {
     const tool = event?.currentTarget?.dataset?.godTool;
     if (!tool) return;
-    gameState.godModeTool = tool;
-    this.updateGodModeUI();
+    this.setGodTool(tool, { source: 'panel', announce: false });
   }
 
   setGodModeActive(active, { source = 'menu' } = {}) {
@@ -1206,6 +1260,7 @@ export class UIController {
       if (!gameState.godModeTool) {
         gameState.godModeTool = 'food';
       }
+      this.updateGodModeUI();
       if (this.hasNotifications() && source !== 'gesture') {
         this.notifications.show('✨ God mode on', 'info', 1400);
       }
@@ -1214,6 +1269,24 @@ export class UIController {
     }
     this.updateGodModeUI();
     this.updateSandboxUiVisibility();
+  }
+
+  setGodTool(tool, { source = 'panel', announce = false } = {}) {
+    if (!tool) return;
+    const changed = gameState.godModeTool !== tool;
+    gameState.godModeTool = tool;
+    this.updateGodModeUI();
+    if (!announce || !this.hasNotifications()) return;
+    const labels = {
+      food: 'Food',
+      calm: 'Calm',
+      chaos: 'Chaos',
+      spawn: 'Spawn',
+      prop: 'Prop',
+      remove: 'Remove'
+    };
+    const via = source === 'hotkey' ? ' (hotkey)' : '';
+    this.notifications.show(`✨ ${labels[tool] || tool}${via}`, 'info', changed ? 900 : 700);
   }
 
   onFeaturesToggle() {

@@ -185,7 +185,16 @@ export const CreatureAgentTuning = {
     CALM_DURATION: 18,
     CALM_STRENGTH: 0.65,
     CHAOS_INTENSITY: 0.35,
-    CHAOS_DURATION: 6
+    CHAOS_DURATION: 6,
+    ACTION_INTERVAL_MS: {
+      food: 95,
+      calm: 230,
+      chaos: 520,
+      spawn: 240,
+      prop: 130,
+      remove: 85
+    },
+    DRAG_DISTANCE_BASE: 14
   },
   MIGRATION: {
     CHECK_INTERVAL: 1.4,

@@ -54,6 +54,7 @@ export class GameState {
 
     // UI state
     this.inspectorVisible = true;
+    this.inspectorAutoOpen = true;
     this.scenarioPanelVisible = false;
     this.featuresPanelVisible = false;
     this.sessionMetaVisible = true;
@@ -208,6 +209,13 @@ export class GameState {
    */
   setInspectorVisible(visible) {
     this.inspectorVisible = visible;
+  }
+
+  /**
+   * Control whether selecting creatures should auto-open inspector
+   */
+  setInspectorAutoOpen(enabled) {
+    this.inspectorAutoOpen = !!enabled;
   }
 
   /**

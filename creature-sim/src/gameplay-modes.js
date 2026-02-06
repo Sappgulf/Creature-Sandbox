@@ -45,6 +45,28 @@ export const GAMEPLAY_MODES = [
     }
   },
   {
+    id: 'frontier',
+    name: 'Frontier Rush',
+    icon: '🧭',
+    description: 'A volatile frontier with bigger populations, denser props pressure, and faster day/night cycles for high-replay runs.',
+    tags: ['Population+', 'Tempo+', 'Disasters medium'],
+    apply(world) {
+      if (!world) return;
+      world.randomDisasters = true;
+      world.disasterCooldown = 24;
+      world.disasterIntensity = 1.1;
+      world.autoBalanceSettings.enabled = true;
+      world.autoBalanceSettings.minPopulation = 54;
+      world.autoBalanceSettings.maxPredators = 22;
+      world.autoBalanceSettings.targetPredatorRatio = 0.27;
+      world.autoBalanceSettings.targetFoodFraction = 0.44;
+      world.autoBalanceSettings.minFoodAbsolute = 220;
+      world.environment.foodRateMultiplier = clamp(world.environment.foodRateMultiplier * 1.05, 0.5, 2.2);
+      world.seasonSpeed = 0.02;
+      world.dayLength = 100;
+    }
+  },
+  {
     id: 'mayhem',
     name: 'Cataclysm',
     icon: '🔥',
