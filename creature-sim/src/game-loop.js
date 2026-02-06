@@ -524,19 +524,23 @@ export class GameLoop {
       return;
     }
 
+    if (this.camera.followMode !== 'free' && !this.camera.followTarget && gameState.selectedId) {
+      this.camera.followTarget = gameState.selectedId;
+    }
+
     if (this.camera.followMode !== 'free' && this.camera.followTarget) {
       const target = this.world.getAnyCreatureById(this.camera.followTarget);
       if (target && target.alive) {
-        // Smooth follow
-        const smoothing = this.camera.followSmoothing || 0.12;
-        this.camera.targetX = target.x;
-        this.camera.targetY = target.y;
+        // Smooth follow toward target to reduce camera snap/jitter.
+        const smoothing = Math.min(0.45, Math.max(0.04, this.camera.followSmoothing || 0.12));
+        this.camera.targetX += (target.x - this.camera.targetX) * smoothing;
+        this.camera.targetY += (target.y - this.camera.targetY) * smoothing;
 
         // Optional auto-zoom based on creature speed
         if (this.camera.followZoomAdjust) {
-          const speed = target.genes.speed || 1;
-          const targetZoom = Math.max(0.3, Math.min(1.5, 1.0 / speed));
-          this.camera.targetZoom = targetZoom;
+          const speed = Math.min(2, Math.max(0.55, Number(target.genes.speed) || 1));
+          const desiredZoom = Math.min(this.camera.maxZoom, Math.max(this.camera.minZoom, 1 / speed));
+          this.camera.targetZoom += (desiredZoom - this.camera.targetZoom) * Math.min(0.2, smoothing * 0.7);
         }
       } else {
         // Target died or lost, return to free mode

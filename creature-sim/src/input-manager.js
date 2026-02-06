@@ -667,8 +667,21 @@ export class InputManager {
    */
   onWheel(e) {
     e.preventDefault();
-    this.noteCameraOverride();
-    this.camera.zoomBy(e.deltaY * 0.0015);
+    // Wheel zoom should not permanently disable follow/auto-director.
+    const now = performance.now();
+    gameState.autoDirectorOverrideUntil = now + 2000;
+    if (this.camera?.setUserOverride) {
+      this.camera.setUserOverride(false);
+    }
+    const rect = this.canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left - rect.width / 2;
+    const sy = e.clientY - rect.top - rect.height / 2;
+    const normalizedDelta = clamp(e.deltaY, -120, 120) * 0.0012;
+    if (typeof this.camera.zoomByAt === 'function') {
+      this.camera.zoomByAt(normalizedDelta, sx, sy);
+    } else {
+      this.camera.zoomBy(normalizedDelta);
+    }
   }
 
   /**
@@ -1203,6 +1216,8 @@ export class InputManager {
         return { diet: 1.0, aggression: 1.5, speed: 1.3, isPredator: 1 };
       case 'omnivore':
         return { diet: 0.5, aggression: 0.8, speed: 1.0, isPredator: 0 };
+      case 'aquatic':
+        return { diet: 0.42, aggression: 0.55, speed: 1.05, aquatic: 0.9, isPredator: 0 };
       case 'herbivore':
       default:
         return { diet: 0.0, aggression: 0.3, speed: 1.0, isPredator: 0 };

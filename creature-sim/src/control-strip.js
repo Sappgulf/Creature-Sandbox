@@ -216,7 +216,7 @@ export class ControlStripController {
         });
 
         // Update spawn button icon
-        const icons = { herbivore: '🦌', omnivore: '🦡', predator: '🦁' };
+        const icons = { herbivore: '🦌', omnivore: '🦡', predator: '🦁', aquatic: '🐠' };
         if (this.ctrlSpawn) {
             this.ctrlSpawn.querySelector('.ctrl-icon').textContent = icons[this.currentSpawnType] || '🦌';
         }
@@ -353,10 +353,18 @@ export class ControlStripController {
     }
 
     toggleFollow() {
-        if (this.camera && typeof this.camera.toggleFollow === 'function') {
-            this.camera.toggleFollow();
+        if (this.uiController?.onWatchFollow) {
+            this.uiController.onWatchFollow();
+        } else if (this.camera) {
+            const hasFollow = this.camera.followMode !== 'free';
+            this.camera.followMode = hasFollow ? 'free' : 'smooth-follow';
+            if (hasFollow) {
+                this.camera.followTarget = null;
+            } else if (gameState.selectedId) {
+                this.camera.followTarget = gameState.selectedId;
+            }
         }
-        this.watchFollow?.classList.toggle('active');
+        this.watchFollow?.classList.toggle('active', this.camera?.followMode !== 'free');
     }
 
     openMoments() {
@@ -424,12 +432,16 @@ export class ControlStripController {
 
     // === UI UPDATE ===
     updateUI() {
+        if (gameState.selectedCreatureType) {
+            this.currentSpawnType = gameState.selectedCreatureType;
+        }
         this.syncSpeedIndexFromState();
         this.isGodMode = !!gameState.godModeActive;
         this.updatePauseButton();
         this.updateSpeedButton();
         this.updateWatchMode();
         this.updateSpawnSelection();
+        this.watchFollow?.classList.toggle('active', this.camera?.followMode !== 'free');
         this.ctrlGod?.classList.toggle('active', this.isGodMode);
         this.watchGodMode?.classList.toggle('active', this.isGodMode);
         this.ctrlGod?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');

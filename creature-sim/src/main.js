@@ -211,6 +211,7 @@ function initializeApp() {
   // Opt in to worker mode with ?worker=1.
   const workerParam = new URLSearchParams(window.location.search).get('worker');
   const USE_SIM_WORKER = workerParam === '1' || workerParam === 'true';
+  const STARTUP_SEED = { herbivores: 72, predators: 10, food: 320 };
 
   // World and core entities
   const world = errorHandler.safeExecute(() => {
@@ -218,11 +219,11 @@ function initializeApp() {
       console.log('🚀 Initializing Simulation Worker...');
       const w = new SimulationProxy(new URL('./worker-simulation.js', import.meta.url));
       w.init(4000, 2800);
-      w.seed(50, 8, 250);
+      w.seed(STARTUP_SEED.herbivores, STARTUP_SEED.predators, STARTUP_SEED.food);
       return w;
     } else {
       const w = new World(4000, 2800);
-      w.seed(50, 8, 250);
+      w.seed(STARTUP_SEED.herbivores, STARTUP_SEED.predators, STARTUP_SEED.food);
       return w;
     }
   }, 'World initialization', null);
@@ -451,6 +452,12 @@ function initializeApp() {
 
   const notifyUI = (message, type = 'info', duration = 2200) => {
     eventSystem.emit(GameEvents.NOTIFICATION, { message, type, duration });
+  };
+
+  const setElementHidden = (element, hidden) => {
+    if (!element) return;
+    element.classList.toggle('hidden', !!hidden);
+    element.setAttribute('aria-hidden', hidden ? 'true' : 'false');
   };
 
   const applyLoadedState = (loaded, source = 'save') => {
@@ -758,8 +765,8 @@ function initializeApp() {
       camera.zoom = 0.3;
 
       // Hide campaign panel, show progress HUD
-      if (campaignPanel) campaignPanel.classList.add('hidden');
-      if (campaignProgress) campaignProgress.classList.remove('hidden');
+      setElementHidden(campaignPanel, true);
+      setElementHidden(campaignProgress, false);
 
       // Unpause
       gameState.setPaused(false);
@@ -819,7 +826,7 @@ function initializeApp() {
     if (campaignBtn) {
       campaignBtn.addEventListener('click', () => {
         renderCampaignLevels();
-        if (campaignPanel) campaignPanel.classList.remove('hidden');
+        setElementHidden(campaignPanel, false);
         if (audio) audio.playUISound('click');
       });
     }
@@ -827,7 +834,7 @@ function initializeApp() {
     // Close campaign panel
     if (campaignCloseBtn) {
       campaignCloseBtn.addEventListener('click', () => {
-        if (campaignPanel) campaignPanel.classList.add('hidden');
+        setElementHidden(campaignPanel, true);
       });
     }
 
@@ -835,7 +842,7 @@ function initializeApp() {
     if (campaignExitBtn) {
       campaignExitBtn.addEventListener('click', () => {
         campaignSystem.exitCampaign();
-        if (campaignProgress) campaignProgress.classList.add('hidden');
+        setElementHidden(campaignProgress, true);
         if (audio) audio.playUISound('click');
       });
     }
@@ -850,7 +857,7 @@ function initializeApp() {
 
         // Check if level completed or failed
         if (!campaignSystem.isActive) {
-          if (campaignProgress) campaignProgress.classList.add('hidden');
+          setElementHidden(campaignProgress, true);
         }
       }
     });
@@ -883,11 +890,11 @@ function initializeApp() {
 
     // Show home page
     errorHandler.safeExecute(() => {
-      if (homePage) homePage.classList.remove('hidden');
+      setElementHidden(homePage, false);
 
       // Show continue button if save exists
       if (saveSystem && saveSystem.hasAutoSave()) {
-        if (continueBtn) continueBtn.classList.remove('hidden');
+        setElementHidden(continueBtn, false);
         // Show save timestamp
         if (continueHint) {
           try {
@@ -943,7 +950,7 @@ function initializeApp() {
           });
 
           errorHandler.safeExecute(() => {
-            if (homePage) homePage.classList.add('hidden');
+            setElementHidden(homePage, true);
             gameState.startGame();
 
             // Start tutorial for new players
@@ -968,7 +975,7 @@ function initializeApp() {
             if (saveSystem) saveSystem.clearAutoSave();
             console.log('🆕 Starting new game...');
 
-            if (homePage) homePage.classList.add('hidden');
+            setElementHidden(homePage, true);
             startNewGame();
           }, 'New game setup');
         });
@@ -982,11 +989,11 @@ function initializeApp() {
           errorHandler.safeExecute(() => {
             initAudioOnInteraction();
             if (audio) audio.playUISound('click');
-            if (homePage) homePage.classList.add('hidden');
+            setElementHidden(homePage, true);
 
             // Trigger campaign panel open
             const campaignPanel = document.getElementById('campaign-panel');
-            if (campaignPanel) campaignPanel.classList.remove('hidden');
+            setElementHidden(campaignPanel, false);
 
             // Start new game in background
             startNewGame();
@@ -1098,7 +1105,7 @@ function initializeApp() {
 
       // Reset the world with fresh creatures
       if (world && world.seed) {
-        world.seed(50, 8, 250); // Re-seed with diverse population
+        world.seed(STARTUP_SEED.herbivores, STARTUP_SEED.predators, STARTUP_SEED.food);
       }
 
       // Reset camera to center

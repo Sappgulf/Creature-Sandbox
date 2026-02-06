@@ -165,6 +165,7 @@
    - Tap **Spawn** in the mobile bar to open the creature sheet.
    - Select **Herbivore**, then tap **Spawn Selected** and confirm a herbivore spawns.
    - Reopen the sheet, select **Predator**, spawn again, and confirm a predator spawns.
+   - Reopen once more, select **Aquatic**, spawn, and confirm a fish-like wetland scavenger appears.
    - Tap **Food** and confirm nearby creatures react and move toward it.
    - Let the sim run for 60–120 seconds and confirm creatures remain alive during gentle play.
    - Observe at least one creature slow down to rest and another take multiple food bites.

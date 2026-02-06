@@ -38,7 +38,7 @@ export class Camera {
     this.followMode = 'free'; // 'free', 'follow', 'smooth-follow'
     this.followTarget = null; // creature ID
     this.followSmoothing = 0.12; // smoother than normal pan
-    this.followZoomAdjust = true; // auto-zoom based on creature speed
+    this.followZoomAdjust = false; // keep follow framing stable unless explicitly enabled
 
     // Camera ownership model - prevents unwanted automatic movement
     this.userPermanentOverride = false; // User has taken control, no auto until re-enabled
@@ -190,9 +190,28 @@ export class Camera {
       this.viewportWidth / this.worldWidth,
       this.viewportHeight / this.worldHeight
     );
-    const clampedFit = Math.min(fitZoom * 0.9, this.maxZoom);
+    const clampedFit = Math.min(fitZoom * 0.75, this.maxZoom);
     this.minZoom = clampedFit;
     this._clampZoom();
+  }
+
+  zoomByAt(delta, screenX = 0, screenY = 0) {
+    const clampedDelta = clamp(delta, -0.45, 0.45);
+    const target = clamp(this.targetZoom * (1 - clampedDelta), this.minZoom, this.maxZoom);
+    if (!Number.isFinite(target) || target === this.targetZoom) return;
+
+    // Keep the world point under cursor stable while zooming.
+    const beforeX = screenX / this.targetZoom + this.targetX;
+    const beforeY = screenY / this.targetZoom + this.targetY;
+
+    this.targetZoom = target;
+
+    const afterX = screenX / this.targetZoom + this.targetX;
+    const afterY = screenY / this.targetZoom + this.targetY;
+
+    this.targetX += beforeX - afterX;
+    this.targetY += beforeY - afterY;
+    this._clampTargets();
   }
 
   _clampZoom() {

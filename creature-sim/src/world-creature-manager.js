@@ -236,6 +236,39 @@ export class WorldCreatureManager {
     return this.addCreature(creature);
   }
 
+  // Spawn aquatic scavenger creature
+  spawnAquatic(x, y) {
+    const genes = makeGenes({
+      predator: 0,
+      diet: 0.42,
+      aquatic: 0.9,
+      speed: 1.05,
+      sense: 125,
+      metabolism: 0.9,
+      hue: 190
+    });
+
+    // Lock expressed profile for reliable role identity.
+    if (genes.diet && typeof genes.diet === 'object') {
+      genes.diet.allele1 = 0.42;
+      genes.diet.allele2 = 0.42;
+      genes.diet.expressed = 0.42;
+    }
+    if (genes.aquatic && typeof genes.aquatic === 'object') {
+      genes.aquatic.allele1 = 0.9;
+      genes.aquatic.allele2 = 0.9;
+      genes.aquatic.expressed = 0.9;
+    }
+
+    const creature = new Creature(x, y, genes);
+    creature.temperament = generateTemperament();
+    creature.quirks = rollQuirks();
+    if (creature.traits) {
+      creature.traits.dietRole = 'scavenger';
+    }
+    return this.addCreature(creature);
+  }
+
   // Find nearest creature
   nearestCreature(x, y, maxDistPx = 30) {
     let nearest = null;

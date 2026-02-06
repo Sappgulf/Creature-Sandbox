@@ -14,7 +14,8 @@ import { getDebugFlags } from './debug-flags.js';
 const CREATURE_SPAWN_TYPES = {
   herbivore: { icon: '🦌', label: 'Herbivore' },
   omnivore: { icon: '🦡', label: 'Omnivore' },
-  predator: { icon: '🦁', label: 'Predator' }
+  predator: { icon: '🦁', label: 'Predator' },
+  aquatic: { icon: '🐠', label: 'Aquatic' }
 };
 const DEFAULT_SPAWN_TYPE = 'herbivore';
 
@@ -249,6 +250,30 @@ export class UIController {
     panel.classList.toggle('hidden', !isVisible);
     panel.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
     return isVisible;
+  }
+
+  closeMajorPanels(exceptPanelId = null) {
+    const panelIds = [
+      'features-panel',
+      'scenario-panel',
+      'achievements-panel',
+      'gene-editor-panel',
+      'eco-health-panel'
+    ];
+
+    for (const panelId of panelIds) {
+      if (panelId === exceptPanelId) continue;
+      const panel = document.getElementById(panelId);
+      if (!panel) continue;
+      this.setPanelVisibility(panel, false);
+    }
+
+    if (exceptPanelId !== 'features-panel') {
+      gameState.featuresPanelVisible = false;
+    }
+    if (exceptPanelId !== 'scenario-panel') {
+      gameState.scenarioPanelVisible = false;
+    }
   }
 
   togglePanelVisibility(panel) {
@@ -1194,7 +1219,11 @@ export class UIController {
   onFeaturesToggle() {
     const featuresPanel = domCache.get('featuresPanel');
     if (featuresPanel) {
-      gameState.featuresPanelVisible = !gameState.featuresPanelVisible;
+      const willShow = featuresPanel.classList.contains('hidden');
+      if (willShow) {
+        this.closeMajorPanels('features-panel');
+      }
+      gameState.featuresPanelVisible = willShow;
       this.setPanelVisibility(featuresPanel, gameState.featuresPanelVisible);
     }
     this.dismissInteractionHint();
@@ -1203,7 +1232,11 @@ export class UIController {
   onScenarioToggle() {
     const scenarioPanel = domCache.get('scenarioPanel');
     if (scenarioPanel) {
-      gameState.scenarioPanelVisible = !gameState.scenarioPanelVisible;
+      const willShow = scenarioPanel.classList.contains('hidden');
+      if (willShow) {
+        this.closeMajorPanels('scenario-panel');
+      }
+      gameState.scenarioPanelVisible = willShow;
       this.setPanelVisibility(scenarioPanel, gameState.scenarioPanelVisible);
     }
     this.updateSandboxUiVisibility();
@@ -1213,6 +1246,9 @@ export class UIController {
   onAchievementsToggle() {
     const panel = domCache.get('achievementsPanel') || document.getElementById('achievements-panel');
     if (panel) {
+      if (panel.classList.contains('hidden')) {
+        this.closeMajorPanels('achievements-panel');
+      }
       const isVisible = this.togglePanelVisibility(panel);
       if (isVisible) {
         this.renderAchievementsPanel();
@@ -1336,6 +1372,9 @@ export class UIController {
   onGeneEditorToggle() {
     const panel = domCache.get('geneEditorPanel') || document.getElementById('gene-editor-panel');
     if (panel) {
+      if (panel.classList.contains('hidden')) {
+        this.closeMajorPanels('gene-editor-panel');
+      }
       this.togglePanelVisibility(panel);
     }
     this.updateSandboxUiVisibility();
@@ -1345,6 +1384,9 @@ export class UIController {
   onEcoHealthToggle() {
     const panel = document.getElementById('eco-health-panel');
     if (panel) {
+      if (panel.classList.contains('hidden')) {
+        this.closeMajorPanels('eco-health-panel');
+      }
       this.togglePanelVisibility(panel);
     }
     this.dismissInteractionHint();

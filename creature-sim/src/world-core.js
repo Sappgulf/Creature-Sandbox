@@ -385,10 +385,12 @@ export class World {
     // Clear existing state
     this.reset();
 
-    // Calculate diverse creature distribution
-    // Split herbivores into pure herbivores (70%) and omnivores (30%)
-    const nOmnivores = Math.floor(nHerb * 0.35);
-    const nPureHerbivores = nHerb - nOmnivores;
+    // Calculate diverse creature distribution.
+    // Non-predator pool now includes herbivores, omnivores, and aquatic scavengers.
+    const nAquatic = Math.max(1, Math.floor(nHerb * 0.12));
+    const remainingLand = Math.max(0, nHerb - nAquatic);
+    const nOmnivores = Math.floor(remainingLand * 0.35);
+    const nPureHerbivores = Math.max(0, remainingLand - nOmnivores);
 
     // Spawn pure herbivores in clusters (natural herding)
     const herbivoreClusterCount = Math.max(3, Math.floor(nPureHerbivores / 12));
@@ -396,7 +398,7 @@ export class World {
       const clusterX = Math.random() * this.width;
       const clusterY = Math.random() * this.height;
       const clusterSize = Math.floor(nPureHerbivores / herbivoreClusterCount);
-      
+
       for (let i = 0; i < clusterSize; i++) {
         const offsetX = (Math.random() - 0.5) * 200;
         const offsetY = (Math.random() - 0.5) * 200;
@@ -413,6 +415,14 @@ export class World {
       this.creatureManager.spawnOmnivore(x, y);
     }
 
+    // Spawn aquatic scavengers near wetland/water-biased regions.
+    for (let i = 0; i < nAquatic; i++) {
+      const spot = this.findBiomeSpot('wetland', 8);
+      const x = clamp(spot.x + rand(-80, 80), 30, this.width - 30);
+      const y = clamp(spot.y + rand(-80, 80), 30, this.height - 30);
+      this.creatureManager.spawnAquatic(x, y);
+    }
+
     // Spawn predators strategically (not too close to start)
     for (let i = 0; i < nPred; i++) {
       const x = Math.random() * this.width;
@@ -426,7 +436,7 @@ export class World {
       const patchX = Math.random() * this.width;
       const patchY = Math.random() * this.height;
       const patchSize = Math.floor(nFood / foodPatchCount);
-      
+
       for (let i = 0; i < patchSize; i++) {
         const offsetX = (Math.random() - 0.5) * 120;
         const offsetY = (Math.random() - 0.5) * 120;
@@ -436,7 +446,7 @@ export class World {
       }
     }
 
-    console.log(`🌱 Seeded diverse world: ${nPureHerbivores} herbivores, ${nOmnivores} omnivores, ${nPred} predators, ${nFood} food`);
+    console.log(`🌱 Seeded diverse world: ${nPureHerbivores} herbivores, ${nOmnivores} omnivores, ${nAquatic} aquatic, ${nPred} predators, ${nFood} food`);
   }
 
   // Reset world to empty state
@@ -623,7 +633,7 @@ export class World {
 
   /**
    * Spawn a creature of a specific type at the given coordinates.
-   * Supports herbivores, predators, and omnivores while clamping to world bounds.
+   * Supports herbivores, predators, omnivores, and aquatic while clamping to world bounds.
    */
   spawnCreatureType(type = 'herbivore', x = this.width * 0.5, y = this.height * 0.5) {
     const debugFlags = getDebugFlags();
@@ -651,6 +661,13 @@ export class World {
         }
         this._recordSpawnDebug({ source: 'type', type, x: sanitized.x, y: sanitized.y, creature: omnivore });
         return omnivore;
+      case 'aquatic':
+        const aquatic = this.creatureManager.spawnAquatic(sanitized.x, sanitized.y);
+        if (debugFlags.spawnDebug) {
+          console.log('[Spawn][world] type:end', { id: aquatic?.id ?? null, worldCount: this.creatures.length });
+        }
+        this._recordSpawnDebug({ source: 'type', type, x: sanitized.x, y: sanitized.y, creature: aquatic });
+        return aquatic;
       case 'herbivore':
       default:
         const herbivore = this.creatureManager.spawnManual(sanitized.x, sanitized.y, false);

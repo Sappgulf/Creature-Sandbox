@@ -17,6 +17,18 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-02-06 — ui/simulation/perf — Planned
+- **Issues:** Camera zoom/follow felt abrupt and could desync from selected creature, startup population was light for immediate ecosystem activity, spawn UI lacked an aquatic role, and major panel tabs could stack visually while accessibility state drifted.
+- **Root Causes:** Zoom was center-biased with permanent override behavior, follow logic relied on hard target state without reacquire/smoothing, seed defaults were conservative, creature-type plumbing excluded aquatic options, and panel toggles lacked a shared close-sibling policy.
+- **Fixes:** Plan to implement pointer-centered zoom with clamped wheel input and temporary camera override, smooth follow with selected-target reacquire, raise startup seed counts, add a new aquatic spawnable creature path across world/UI/input layers, and normalize major panel visibility and `aria-hidden` synchronization.
+- **Verification:** `npm test`; targeted `eslint` over edited simulation/UI files; manual code-path checks for camera follow, spawn type wiring, and panel toggles.
+
+### 2026-02-06 — ui/simulation/perf — Implemented
+- **Issues:** Manual zooming could feel jumpy and break follow rhythm, follow state could lose target continuity, early simulation density was low, aquatic creature spawn type was missing, and top-level tabs/panels could overlap.
+- **Root Causes:** Wheel handling used broad delta variance and static-center zoom, follow camera updates used direct snapping and brittle target references, seed counts were tuned low, spawn-type handling omitted aquatic in UI/world/input routes, and panel toggles did not close sibling major panels consistently.
+- **Fixes:** Added pointer-centered camera zoom (`zoomByAt`) with clamped wheel scaling and temporary override timing; smoothed follow camera updates with selected-target reacquire; increased startup seeding to `72` herbivores, `10` predators, `320` food; added aquatic spawning support in `world-core`, `world-creature-manager`, spawn controls, and input fallback genes; added aquatic spawn card to UI; added `closeMajorPanels` behavior and reused visibility helpers to keep `aria-hidden` consistent.
+- **Verification:** `npm test` (pass); `npx eslint creature-sim/src/camera.js creature-sim/src/world-core.js creature-sim/src/world-creature-manager.js creature-sim/src/ui-controller.js creature-sim/src/input-manager.js creature-sim/src/control-strip.js creature-sim/src/game-loop.js creature-sim/src/main.js` (0 errors; warnings remain in repository baseline).
+
 ### 2026-02-06 — ui/perf/gameplay — Planned
 - **Issues:** Pause/watch/god/menu flows had state desync risks, keyboard overlap risked double-handling, and overlay offset measurements could jitter; requested focus was FPS, gameplay reliability, and UI/menu correctness.
 - **Root Causes:** Duplicate control paths (`InputManager` + `ControlStripController`), missing UI controller methods (`updateMobileControls`, `toggleShortcutsHelp`), inconsistent `aria-hidden` synchronization, and non-persistent HUD-bottom measurement cache usage.
