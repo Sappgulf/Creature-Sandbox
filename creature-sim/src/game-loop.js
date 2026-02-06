@@ -584,7 +584,7 @@ export class GameLoop {
     opts.cameraMoving = this.camera.isMoving;
     opts.viewportWidth = canvas.width;
     opts.viewportHeight = canvas.height;
-    opts.batchRenderer = batchRendererReady ? batchRenderer : null;
+    opts.batchRenderer = null;
     opts.useBatchRendering = batchRendererReady && configManager.get('rendering', 'performance.batchRendering', true);
     opts.particleSystem = this.particles;
     opts.heatmaps = this.heatmaps;

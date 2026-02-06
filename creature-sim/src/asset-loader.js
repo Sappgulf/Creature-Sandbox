@@ -9,6 +9,10 @@ export class AssetLoader {
     this.promises = [];
     this.isLoading = false;
     this.isLoaded = false;
+    this.tintedCanvasCache = new Map();
+    this.tintedCanvasInFlight = new Map();
+    this.maxTintedCanvases = 256;
+    this._missingAssetWarnings = new Set();
   }
 
   /**
@@ -69,6 +73,23 @@ export class AssetLoader {
     return this.assets.get(name) || null;
   }
 
+  _getTintKey(name, color, size) {
+    return `${name}|${color}|${size}`;
+  }
+
+  _rememberTintedCanvas(key, canvas) {
+    if (!canvas) return;
+    if (this.tintedCanvasCache.has(key)) {
+      this.tintedCanvasCache.delete(key);
+    }
+    this.tintedCanvasCache.set(key, canvas);
+
+    if (this.tintedCanvasCache.size > this.maxTintedCanvases) {
+      const oldestKey = this.tintedCanvasCache.keys().next().value;
+      this.tintedCanvasCache.delete(oldestKey);
+    }
+  }
+
   /**
    * Creates a tinted canvas from an SVG
    * @param {string} name - Asset name
@@ -82,47 +103,72 @@ export class AssetLoader {
       return null;
     }
 
+    const cacheKey = this._getTintKey(name, color, size);
+    if (this.tintedCanvasCache.has(cacheKey)) {
+      const cached = this.tintedCanvasCache.get(cacheKey);
+      // Touch key for simple LRU behavior
+      this.tintedCanvasCache.delete(cacheKey);
+      this.tintedCanvasCache.set(cacheKey, cached);
+      return cached;
+    }
+    if (this.tintedCanvasInFlight.has(cacheKey)) {
+      return this.tintedCanvasInFlight.get(cacheKey);
+    }
+
     const svgText = this.getSVG(name);
     if (!svgText) {
-      console.warn(`SVG asset '${name}' not found`);
+      if (!this._missingAssetWarnings.has(name)) {
+        this._missingAssetWarnings.add(name);
+        console.warn(`SVG asset '${name}' not found`);
+      }
       return null;
     }
 
-    try {
+    const createPromise = (async () => {
+      try {
       // Replace currentColor with the target color
-      const tintedSvg = svgText.replace(/currentColor/g, color);
+        const tintedSvg = svgText.replace(/currentColor/g, color);
 
-      const blob = new Blob([tintedSvg], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(blob);
+        const blob = new Blob([tintedSvg], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
 
-      return new Promise((resolve, reject) => {
-        const img = new Image();
+        const canvas = await new Promise((resolve, reject) => {
+          const img = new Image();
 
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = size;
-          canvas.height = size;
-          const ctx = canvas.getContext('2d');
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
 
-          // Draw with centered positioning
-          ctx.drawImage(img, 0, 0, size, size);
+            // Draw with centered positioning
+            ctx.drawImage(img, 0, 0, size, size);
 
-          URL.revokeObjectURL(url);
-          resolve(canvas);
-        };
+            URL.revokeObjectURL(url);
+            resolve(canvas);
+          };
 
-        img.onerror = (error) => {
-          console.error(`Failed to load image for ${name}:`, error);
-          URL.revokeObjectURL(url);
-          reject(error);
-        };
+          img.onerror = (error) => {
+            console.error(`Failed to load image for ${name}:`, error);
+            URL.revokeObjectURL(url);
+            reject(error);
+          };
 
-        img.src = url;
-      });
-    } catch (error) {
-      console.error(`Error creating tinted canvas for ${name}:`, error);
-      return null;
-    }
+          img.src = url;
+        });
+
+        this._rememberTintedCanvas(cacheKey, canvas);
+        return canvas;
+      } catch (error) {
+        console.error(`Error creating tinted canvas for ${name}:`, error);
+        return null;
+      } finally {
+        this.tintedCanvasInFlight.delete(cacheKey);
+      }
+    })();
+
+    this.tintedCanvasInFlight.set(cacheKey, createPromise);
+    return createPromise;
   }
 
   /**

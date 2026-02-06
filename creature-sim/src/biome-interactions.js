@@ -40,7 +40,7 @@ export class BiomeInteractions {
         this.applyJungleEffects(creature, biome, dt);
         break;
       case 'savanna':
-        this.applySavannaEffects(creature, biome, dt);
+        this.applySavannaEffects(creature, biome, world, dt);
         break;
     }
     
@@ -69,7 +69,7 @@ export class BiomeInteractions {
     creature.energy -= 0.5 * dt;
     
     // Heat stress
-    if (creature.needs?.stress) {
+    if (Number.isFinite(creature.needs?.stress)) {
       creature.needs.stress = Math.min(100, creature.needs.stress + 1 * dt);
     }
     
@@ -173,7 +173,7 @@ export class BiomeInteractions {
   /**
    * Savanna biome effects - open plains
    */
-  static applySavannaEffects(creature, biome, dt) {
+  static applySavannaEffects(creature, biome, world, dt) {
     // Increased visibility
     creature.detectionModifier = 1.3;
     
@@ -184,8 +184,9 @@ export class BiomeInteractions {
     }
     
     // Heat during day
-    if (world?.dayNightEnabled) {
-      const hour = world.timeOfDay % 24;
+    const env = world?.environment || world;
+    if (env?.dayNightEnabled) {
+      const hour = (env.timeOfDay ?? 12) % 24;
       if (hour >= 10 && hour < 16) {
         creature.energy -= 0.2 * dt;
       }

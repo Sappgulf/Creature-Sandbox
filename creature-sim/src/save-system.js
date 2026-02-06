@@ -23,6 +23,10 @@ export class SaveSystem {
    * @returns {SaveData}
    */
   serialize(world, camera, analytics, lineageTracker, additionalData = {}) {
+    const childrenOfMap = world.childrenOf instanceof Map
+      ? world.childrenOf
+      : (world.creatureManager?.childrenOf instanceof Map ? world.creatureManager.childrenOf : new Map());
+
     const saveData = {
       version: '2.5',
       timestamp: Date.now(),
@@ -82,6 +86,7 @@ export class SaveSystem {
           deathCause: c.deathCause ?? null,
           killedBy: c.killedBy ?? null,
           genes: { ...c.genes },
+          personality: c.personality ? { ...c.personality } : null,
           temperament: c.temperament ? { ...c.temperament } : null,
           quirks: Array.isArray(c.quirks) ? [...c.quirks] : [],
           stats: { ...c.stats },
@@ -190,7 +195,7 @@ export class SaveSystem {
         sandboxProps: world.sandbox?.serialize?.() ?? [],
 
         // Lineage tracking
-        childrenOf: Array.from(world.childrenOf.entries()).map(([parentId, childIds]) => ({
+        childrenOf: Array.from(childrenOfMap.entries()).map(([parentId, childIds]) => ({
           parentId,
           childIds: Array.from(childIds)
         })),
@@ -252,7 +257,7 @@ export class SaveSystem {
    * Deserialize JSON to world state
    * Supports migration from older save versions
    */
-  deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator) {
+  deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld = null) {
     if (!saveData) {
       throw new Error('Save file is empty or corrupted');
     }
@@ -278,9 +283,39 @@ export class SaveSystem {
       calmness: clamp01(t?.calmness, Math.random()),
       curiosity: clamp01(t?.curiosity, Math.random())
     });
+    const restorePersonality = (personalityData, fallback) => {
+      if (!fallback) return fallback;
+      if (!personalityData || typeof personalityData !== 'object') {
+        return fallback;
+      }
+
+      return {
+        ...fallback,
+        packInstinct: clamp01(personalityData.packInstinct, fallback.packInstinct),
+        ambushDelay: Math.max(0, toNumber(personalityData.ambushDelay, fallback.ambushDelay)),
+        aggression: Math.min(2.2, Math.max(0.4, toNumber(personalityData.aggression, fallback.aggression))),
+        ambushTimer: Math.max(0, toNumber(personalityData.ambushTimer, fallback.ambushTimer)),
+        huntCooldown: Math.max(0, toNumber(personalityData.huntCooldown, fallback.huntCooldown)),
+        lastSignalAt: toNumber(personalityData.lastSignalAt, fallback.lastSignalAt),
+        currentTargetId: personalityData.currentTargetId ?? fallback.currentTargetId,
+        attackCooldown: Math.max(0, toNumber(personalityData.attackCooldown, fallback.attackCooldown)),
+        idleTempo: Math.min(2.5, Math.max(0.2, toNumber(personalityData.idleTempo, fallback.idleTempo))),
+        idleSway: Math.min(2.5, Math.max(0.2, toNumber(personalityData.idleSway, fallback.idleSway))),
+        reactivity: Math.min(2.0, Math.max(0.1, toNumber(personalityData.reactivity, fallback.reactivity))),
+        playfulness: Math.min(2.0, Math.max(0.05, toNumber(personalityData.playfulness, fallback.playfulness)))
+      };
+    };
 
     // Create new world
-    const world = new World(data.width, data.height);
+    const canReuseWorld = !!existingWorld &&
+      typeof existingWorld.reset === 'function' &&
+      existingWorld.creatureManager &&
+      existingWorld.registry &&
+      existingWorld.width === data.width &&
+      existingWorld.height === data.height;
+    const world = canReuseWorld ? existingWorld : new World(data.width, data.height);
+    world.width = data.width;
+    world.height = data.height;
     world.reset();
 
     // Restore basic state
@@ -445,6 +480,7 @@ export class SaveSystem {
         creature.territoryAffinity ?? 0.4
       );
       creature.temperament = restoreTemperament(cData.temperament || null);
+      creature.personality = restorePersonality(cData.personality, creature.personality);
       creature.quirks = Array.isArray(cData.quirks) ? [...cData.quirks] : [];
 
       // Restore advanced features
@@ -670,7 +706,7 @@ export class SaveSystem {
   /**
    * Load from file (upload)
    */
-  async loadFromFile(file, World, Creature, Camera, makeGenes, BiomeGenerator) {
+  async loadFromFile(file, World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld = null) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
@@ -678,7 +714,7 @@ export class SaveSystem {
         try {
           const json = e.target.result;
           const saveData = JSON.parse(json);
-          const result = this.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator);
+          const result = this.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld);
           resolve(result);
         } catch (err) {
           console.error('Failed to load save file:', err);
@@ -729,13 +765,13 @@ export class SaveSystem {
   /**
    * Load from localStorage
    */
-  loadAutoSave(World, Creature, Camera, makeGenes, BiomeGenerator) {
+  loadAutoSave(World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld = null) {
     try {
       const json = localStorage.getItem('creature-sim-autosave');
       if (!json) return null;
 
       const saveData = JSON.parse(json);
-      const result = this.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator);
+      const result = this.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld);
       return result;
     } catch (err) {
       console.error('Failed to load auto-save:', err);
@@ -778,7 +814,7 @@ export class SaveSystem {
   /**
    * Load from slot
    */
-  loadFromSlot(slotNumber, World, Creature, Camera, makeGenes, BiomeGenerator) {
+  loadFromSlot(slotNumber, World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld = null) {
     if (slotNumber < 1 || slotNumber > this.saveSlots) {
       throw new Error(`Invalid slot number: ${slotNumber}`);
     }
@@ -787,7 +823,7 @@ export class SaveSystem {
     if (!json) return null;
 
     const saveData = JSON.parse(json);
-    const result = this.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator);
+    const result = this.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld);
     return result;
   }
 

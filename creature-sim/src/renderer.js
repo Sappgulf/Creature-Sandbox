@@ -1426,7 +1426,7 @@ export class Renderer {
   _drawCreatureShadow(creature) {
     // Soft drop shadow for depth (makes creatures pop!)
     const ctx = this.ctx;
-    const r = creature.genes.size;
+    const r = creature.size || creature.genes?.size || 5;
 
     ctx.save();
     ctx.globalAlpha = 0.3;
@@ -1453,7 +1453,7 @@ export class Renderer {
   _drawCreatureOutline(creature, isSelected, selectionPulseUntil = null) {
     // Subtle outline for contrast (not too thick!)
     const ctx = this.ctx;
-    const r = creature.genes.size;
+    const r = creature.size || creature.genes?.size || 5;
     const now = performance.now();
     const pulseActive = isSelected && typeof selectionPulseUntil === 'number' && now < selectionPulseUntil;
     const pulseProgress = pulseActive
@@ -1476,7 +1476,7 @@ export class Renderer {
 
   _drawCreatureHoverOutline(creature) {
     const ctx = this.ctx;
-    const r = creature.genes.size;
+    const r = creature.size || creature.genes?.size || 5;
     const now = performance.now();
     const pulse = 0.6 + Math.sin(now * 0.006) * 0.15;
 
@@ -1493,7 +1493,7 @@ export class Renderer {
 
   _drawCreatureGrabbedOutline(creature) {
     const ctx = this.ctx;
-    const r = creature.genes.size;
+    const r = creature.size || creature.genes?.size || 5;
     const now = performance.now();
     const pulse = 0.7 + Math.sin(now * 0.01) * 0.2;
 

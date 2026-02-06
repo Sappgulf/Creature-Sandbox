@@ -45,6 +45,15 @@ function buildWorldWithZeroes() {
   creature.deathTime = 1;
   creature.deathCause = 'test';
   creature.killedBy = 99;
+  creature.personality = {
+    ...creature.personality,
+    packInstinct: 0.91,
+    ambushDelay: 3.3,
+    aggression: 1.8,
+    attackCooldown: 0.7,
+    idleTempo: 1.25,
+    playfulness: 0.88
+  };
 
   world.creatures = [creature];
   world.registry.clear();
@@ -68,7 +77,11 @@ function buildWorldWithZeroes() {
   return { world, camera };
 }
 
-function assertZeroPreservation(result, { expectedNextId = 0, expectedDayNightEnabled = true } = {}) {
+function assertZeroPreservation(result, {
+  expectedNextId = 0,
+  expectedDayNightEnabled = true,
+  expectedPersonality = null
+} = {}) {
   assert.equal(result.world.timeOfDay, 0, 'timeOfDay should preserve 0');
   assert.equal(result.world.dayLength, 0, 'dayLength should preserve 0');
   assert.equal(result.world.environment.timeOfDay, 0, 'environment timeOfDay should preserve 0');
@@ -87,6 +100,14 @@ function assertZeroPreservation(result, { expectedNextId = 0, expectedDayNightEn
   assert.equal(creature.dir, 0, 'dir should preserve 0');
   assert.equal(creature.alive, false, 'alive should preserve false');
   assert.equal(creature.deathTime, 1, 'deathTime should preserve value');
+  if (expectedPersonality) {
+    assert.equal(creature.personality.packInstinct, expectedPersonality.packInstinct, 'personality packInstinct should round-trip');
+    assert.equal(creature.personality.ambushDelay, expectedPersonality.ambushDelay, 'personality ambushDelay should round-trip');
+    assert.equal(creature.personality.aggression, expectedPersonality.aggression, 'personality aggression should round-trip');
+    assert.equal(creature.personality.attackCooldown, expectedPersonality.attackCooldown, 'personality attackCooldown should round-trip');
+    assert.equal(creature.personality.idleTempo, expectedPersonality.idleTempo, 'personality idleTempo should round-trip');
+    assert.equal(creature.personality.playfulness, expectedPersonality.playfulness, 'personality playfulness should round-trip');
+  }
 
   assert.equal(result.world.food[0].energy, 0, 'food energy should preserve 0');
   assert.equal(result.world.corpses[0].energy, 0, 'corpse energy should preserve 0');
@@ -98,7 +119,18 @@ assert.equal(saveData.world.timeOfDay, 0, 'serialized timeOfDay should be 0');
 assert.equal(saveData.world.dayLength, 0, 'serialized dayLength should be 0');
 
 const roundTrip = saveSystem.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator);
-assertZeroPreservation(roundTrip, { expectedNextId: 0, expectedDayNightEnabled: true });
+assertZeroPreservation(roundTrip, {
+  expectedNextId: 0,
+  expectedDayNightEnabled: true,
+  expectedPersonality: {
+    packInstinct: 0.91,
+    ambushDelay: 3.3,
+    aggression: 1.8,
+    attackCooldown: 0.7,
+    idleTempo: 1.25,
+    playfulness: 0.88
+  }
+});
 
 const fixturePath = path.join(__dirname, 'fixtures', 'save-v2.json');
 const fixtureRaw = await fs.readFile(fixturePath, 'utf8');

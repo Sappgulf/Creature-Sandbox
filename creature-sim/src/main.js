@@ -207,7 +207,10 @@ function initializeApp() {
   // ============================================================================
 
   // Performance Settings
-  const USE_SIM_WORKER = true;
+  // Default to in-thread simulation for full feature compatibility (save/load, personality state).
+  // Opt in to worker mode with ?worker=1.
+  const workerParam = new URLSearchParams(window.location.search).get('worker');
+  const USE_SIM_WORKER = workerParam === '1' || workerParam === 'true';
 
   // World and core entities
   const world = errorHandler.safeExecute(() => {
@@ -452,8 +455,20 @@ function initializeApp() {
 
   const applyLoadedState = (loaded, source = 'save') => {
     if (!loaded) return false;
-    Object.assign(world, loaded.world);
-    Object.assign(camera, loaded.camera);
+
+    if (loaded.world && loaded.world !== world) {
+      if (typeof world.importState === 'function' && typeof loaded.world.exportState === 'function') {
+        world.importState(loaded.world.exportState());
+      } else {
+        console.warn('⚠️ Loaded world is incompatible with active simulation mode');
+        return false;
+      }
+    }
+
+    if (loaded.camera) {
+      Object.assign(camera, loaded.camera);
+    }
+
     if (loaded.lineageNames && lineageTracker) {
       lineageTracker.names = loaded.lineageNames;
     }
@@ -591,7 +606,15 @@ function initializeApp() {
   const handleLoadFromFile = async (file) => {
     if (!saveSystem || !file) return;
     try {
-      const loaded = await saveSystem.loadFromFile(file, World, Creature, Camera, makeGenes, BiomeGenerator);
+      const loaded = await saveSystem.loadFromFile(
+        file,
+        World,
+        Creature,
+        Camera,
+        makeGenes,
+        BiomeGenerator,
+        typeof world.importState === 'function' ? world : null
+      );
       if (!applyLoadedState(loaded, 'file')) {
         throw new Error('Invalid save file');
       }
@@ -890,7 +913,14 @@ function initializeApp() {
         continueBtn.addEventListener('click', () => {
           errorHandler.safeExecute(() => {
             initAudioOnInteraction();
-            const loaded = saveSystem.loadAutoSave(World, Creature, Camera, makeGenes, BiomeGenerator);
+            const loaded = saveSystem.loadAutoSave(
+              World,
+              Creature,
+              Camera,
+              makeGenes,
+              BiomeGenerator,
+              typeof world.importState === 'function' ? world : null
+            );
             if (loaded) {
               applyLoadedState(loaded, 'autosave');
               console.log('✅ Auto-save loaded successfully!');
