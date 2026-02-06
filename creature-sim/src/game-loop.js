@@ -683,11 +683,16 @@ export class GameLoop {
     const hudBottomEl = domCache.get('hudBottom');
 
     // Calculate bottom offset for mini-graphs
-    let hudBottomHeight = 0;
-    if (hudBottomEl && (performance.now() - gameState.hudBottomMeasuredAt > 200)) {
-      hudBottomHeight = hudBottomEl.getBoundingClientRect().height;
-      gameState.hudBottomMeasuredAt = performance.now();
+    const now = performance.now();
+    if (!Number.isFinite(gameState.hudBottomHeight)) {
+      gameState.hudBottomHeight = 0;
     }
+    if (hudBottomEl && (now - gameState.hudBottomMeasuredAt > 200 || gameState.hudBottomHeight <= 0)) {
+      const measuredHeight = hudBottomEl.getBoundingClientRect().height;
+      gameState.hudBottomHeight = Number.isFinite(measuredHeight) ? measuredHeight : 0;
+      gameState.hudBottomMeasuredAt = now;
+    }
+    const hudBottomHeight = gameState.hudBottomHeight || 0;
 
     // Render mini-graphs
     if (this.miniGraphs) {

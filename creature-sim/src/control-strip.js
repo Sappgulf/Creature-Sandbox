@@ -3,7 +3,6 @@
  * Replaces the legacy top HUD with a thumb-friendly bottom control strip
  */
 import { gameState } from './game-state.js';
-import { domCache } from './dom-cache.js';
 import { eventSystem } from './event-system.js';
 
 // Speed multipliers for cycling
@@ -20,8 +19,8 @@ export class ControlStripController {
         // State
         this.currentSpawnType = 'herbivore';
         this.speedIndex = 1; // Default to 1×
-        this.isWatchMode = false;
-        this.isGodMode = false;
+        this.isWatchMode = !!gameState.watchModeEnabled;
+        this.isGodMode = !!gameState.godModeActive;
 
         // Drawer states
         this.spawnDrawerOpen = false;
@@ -108,14 +107,23 @@ export class ControlStripController {
         this.watchGodMode?.addEventListener('click', () => this.toggleGodMode());
         this.watchExit?.addEventListener('click', () => this.exitWatchMode());
 
-        // Keyboard shortcuts
+        // Keyboard shortcuts (only actions not handled by InputManager)
         document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+
+        // Keep control strip state synced with global events
+        eventSystem.on('game:paused', () => this.updatePauseButton());
+        eventSystem.on('game:resumed', () => this.updatePauseButton());
     }
 
     // === PAUSE / PLAY ===
     togglePause() {
-        if (!this.world) return;
-        gameState.paused = !gameState.paused;
+        if (this.uiController?.onPause) {
+            this.uiController.onPause();
+            this.updatePauseButton();
+            return;
+        }
+        const paused = gameState.togglePause();
+        eventSystem.emit(paused ? 'game:paused' : 'game:resumed', { reason: 'control-strip' });
         this.updatePauseButton();
     }
 
@@ -138,7 +146,13 @@ export class ControlStripController {
     }
 
     // === SPEED ===
+    syncSpeedIndexFromState() {
+        const idx = SPEED_OPTIONS.indexOf(gameState.fastForward);
+        this.speedIndex = idx >= 0 ? idx : 1;
+    }
+
     cycleSpeed() {
+        this.syncSpeedIndexFromState();
         this.speedIndex = (this.speedIndex + 1) % SPEED_OPTIONS.length;
         gameState.fastForward = SPEED_OPTIONS[this.speedIndex];
         this.updateSpeedButton();
@@ -242,18 +256,19 @@ export class ControlStripController {
         if (action === 'help') {
             const shortcutsOverlay = document.getElementById('shortcuts-overlay');
             shortcutsOverlay?.classList.remove('hidden');
+            shortcutsOverlay?.setAttribute('aria-hidden', 'false');
             return;
         }
 
         if (action === 'save') {
             // Simulate save shortcut
-            document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true }));
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true }));
             return;
         }
 
         if (action === 'load') {
             // Simulate load shortcut
-            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'o', ctrlKey: true }));
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'o', ctrlKey: true }));
             return;
         }
 
@@ -303,40 +318,34 @@ export class ControlStripController {
 
     // === WATCH MODE ===
     toggleWatchMode() {
-        this.isWatchMode = !this.isWatchMode;
+        if (this.uiController?.onWatchModeToggle) {
+            this.uiController.onWatchModeToggle();
+        } else {
+            gameState.watchModeEnabled = !gameState.watchModeEnabled;
+        }
         this.updateWatchMode();
     }
 
     exitWatchMode() {
-        this.isWatchMode = false;
+        if (gameState.watchModeEnabled && this.uiController?.onWatchModeToggle) {
+            this.uiController.onWatchModeToggle();
+        } else {
+            gameState.watchModeEnabled = false;
+        }
         this.updateWatchMode();
     }
 
     updateWatchMode() {
+        this.isWatchMode = !!gameState.watchModeEnabled;
         // Toggle control strip vs watch strip visibility
         if (this.isWatchMode) {
             this.controlStrip?.classList.add('hidden');
             this.watchStrip?.classList.remove('hidden');
             this.watchStrip?.setAttribute('aria-hidden', 'false');
-
-            // Enable watch mode in game state - this allows auto-director to work
-            gameState.watchModeEnabled = true;
-            gameState.autoDirectorEnabled = true;
-            gameState.watchMode = true;
-
-            // Clear camera user override so auto-director can take over
-            if (this.camera?.clearUserOverride) {
-                this.camera.clearUserOverride();
-            }
         } else {
             this.controlStrip?.classList.remove('hidden');
             this.watchStrip?.classList.add('hidden');
             this.watchStrip?.setAttribute('aria-hidden', 'true');
-
-            // Disable watch mode and auto-director
-            gameState.watchModeEnabled = false;
-            gameState.autoDirectorEnabled = false;
-            gameState.watchMode = false;
         }
 
         this.ctrlWatch?.classList.toggle('active', this.isWatchMode);
@@ -352,7 +361,10 @@ export class ControlStripController {
 
     openMoments() {
         const momentsPanel = document.getElementById('moments-panel');
-        momentsPanel?.classList.toggle('hidden');
+        if (!momentsPanel) return;
+        const visible = momentsPanel.classList.contains('hidden');
+        momentsPanel.classList.toggle('hidden', !visible);
+        momentsPanel.setAttribute('aria-hidden', visible ? 'false' : 'true');
     }
 
     /**
@@ -379,20 +391,12 @@ export class ControlStripController {
 
     // === GOD MODE ===
     toggleGodMode() {
-        this.isGodMode = !this.isGodMode;
-
-        const godModePanel = document.getElementById('god-mode-panel');
-        const godModeIndicator = document.getElementById('god-mode-indicator');
-
-        if (this.isGodMode) {
-            godModePanel?.classList.remove('hidden');
-            godModeIndicator?.classList.remove('hidden');
-            gameState.godMode = true;
+        if (this.uiController?.setGodModeActive) {
+            this.uiController.setGodModeActive(!gameState.godModeActive, { source: 'control-strip' });
         } else {
-            godModePanel?.classList.add('hidden');
-            godModeIndicator?.classList.add('hidden');
-            gameState.godMode = false;
+            gameState.godModeActive = !gameState.godModeActive;
         }
+        this.isGodMode = !!gameState.godModeActive;
 
         this.ctrlGod?.classList.toggle('active', this.isGodMode);
         this.watchGodMode?.classList.toggle('active', this.isGodMode);
@@ -406,44 +410,35 @@ export class ControlStripController {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
         switch (e.key.toLowerCase()) {
-            case ' ':
-                e.preventDefault();
-                this.togglePause();
-                break;
-            case 'f':
-                if (!e.ctrlKey && !e.metaKey) {
-                    this.activateFoodTool();
-                }
-                break;
             case 'w':
+                if (e.ctrlKey || e.metaKey || e.altKey) return;
                 this.toggleWatchMode();
                 break;
             case 'escape':
                 this.closeSpawnDrawer();
                 this.closeOverflowDrawer();
-                if (this.isGodMode) this.toggleGodMode();
+                if (gameState.godModeActive) this.toggleGodMode();
                 break;
         }
     }
 
     // === UI UPDATE ===
     updateUI() {
+        this.syncSpeedIndexFromState();
+        this.isGodMode = !!gameState.godModeActive;
         this.updatePauseButton();
         this.updateSpeedButton();
+        this.updateWatchMode();
         this.updateSpawnSelection();
+        this.ctrlGod?.classList.toggle('active', this.isGodMode);
+        this.watchGodMode?.classList.toggle('active', this.isGodMode);
+        this.ctrlGod?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
+        this.watchGodMode?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
     }
 
     // Called by main loop to sync state
     update() {
-        // Sync pause state if changed externally
-        if (this.ctrlPause) {
-            const isPaused = gameState.paused;
-            const currentIcon = this.ctrlPause.querySelector('.ctrl-icon')?.textContent;
-            const expectedIcon = isPaused ? '▶️' : '⏸️';
-            if (currentIcon !== expectedIcon) {
-                this.updatePauseButton();
-            }
-        }
+        this.updateUI();
     }
 }
 

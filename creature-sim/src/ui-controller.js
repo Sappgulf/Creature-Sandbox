@@ -243,6 +243,20 @@ export class UIController {
     return isNotificationSystem(this.notifications);
   }
 
+  setPanelVisibility(panel, visible) {
+    if (!panel) return false;
+    const isVisible = !!visible;
+    panel.classList.toggle('hidden', !isVisible);
+    panel.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
+    return isVisible;
+  }
+
+  togglePanelVisibility(panel) {
+    if (!panel) return false;
+    const nextVisible = panel.classList.contains('hidden');
+    return this.setPanelVisibility(panel, nextVisible);
+  }
+
   /**
    * Bind core game controls
    */
@@ -632,6 +646,16 @@ export class UIController {
     if (ecoHealthCloseBtn) ecoHealthCloseBtn.addEventListener('click', this.boundHandlers.onEcoHealthToggle);
   }
 
+  toggleShortcutsHelp(forceVisible = null) {
+    const overlay = document.getElementById('shortcuts-overlay');
+    if (!overlay) return;
+    const shouldShow = forceVisible === null
+      ? overlay.classList.contains('hidden')
+      : !!forceVisible;
+    overlay.classList.toggle('hidden', !shouldShow);
+    overlay.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+  }
+
   /**
    * Bind behavior weight controls
    */
@@ -730,6 +754,7 @@ export class UIController {
     const watchSpeedBtn = domCache.get('watchSpeedBtn');
     const watchFollowBtn = domCache.get('watchFollowBtn');
     const watchRecenterBtn = domCache.get('watchRecenterBtn');
+    const controlStrip = document.getElementById('control-strip');
 
     document.body.classList.toggle('watch-mode', !!gameState.watchModeEnabled);
 
@@ -742,6 +767,11 @@ export class UIController {
     if (watchStrip) {
       watchStrip.classList.toggle('hidden', !gameState.watchModeEnabled);
       watchStrip.setAttribute('aria-hidden', gameState.watchModeEnabled ? 'false' : 'true');
+    }
+
+    if (controlStrip) {
+      controlStrip.classList.toggle('hidden', !!gameState.watchModeEnabled);
+      controlStrip.setAttribute('aria-hidden', gameState.watchModeEnabled ? 'true' : 'false');
     }
 
     if (watchToggleBtn) {
@@ -948,13 +978,18 @@ export class UIController {
    * Event handlers
    */
   onPause() {
-    gameState.togglePause();
+    const paused = gameState.togglePause();
+    eventSystem.emit(paused ? 'game:paused' : 'game:resumed', { reason: 'ui' });
     this.updatePauseButton();
     this.updateMobileControls();
   }
 
   onStep() {
+    const wasPaused = gameState.paused;
     gameState.paused = true;
+    if (!wasPaused) {
+      eventSystem.emit('game:paused', { reason: 'step' });
+    }
     this.updatePauseButton();
     this.updateMobileControls();
     // Single step handled by game loop's step mode
@@ -1160,11 +1195,7 @@ export class UIController {
     const featuresPanel = domCache.get('featuresPanel');
     if (featuresPanel) {
       gameState.featuresPanelVisible = !gameState.featuresPanelVisible;
-      if (gameState.featuresPanelVisible) {
-        featuresPanel.classList.remove('hidden');
-      } else {
-        featuresPanel.classList.add('hidden');
-      }
+      this.setPanelVisibility(featuresPanel, gameState.featuresPanelVisible);
     }
     this.dismissInteractionHint();
   }
@@ -1173,11 +1204,7 @@ export class UIController {
     const scenarioPanel = domCache.get('scenarioPanel');
     if (scenarioPanel) {
       gameState.scenarioPanelVisible = !gameState.scenarioPanelVisible;
-      if (gameState.scenarioPanelVisible) {
-        scenarioPanel.classList.remove('hidden');
-      } else {
-        scenarioPanel.classList.add('hidden');
-      }
+      this.setPanelVisibility(scenarioPanel, gameState.scenarioPanelVisible);
     }
     this.updateSandboxUiVisibility();
     this.dismissInteractionHint();
@@ -1186,8 +1213,8 @@ export class UIController {
   onAchievementsToggle() {
     const panel = domCache.get('achievementsPanel') || document.getElementById('achievements-panel');
     if (panel) {
-      panel.classList.toggle('hidden');
-      if (!panel.classList.contains('hidden')) {
+      const isVisible = this.togglePanelVisibility(panel);
+      if (isVisible) {
         this.renderAchievementsPanel();
         this.bindAchievementsControls();
       }
@@ -1309,7 +1336,7 @@ export class UIController {
   onGeneEditorToggle() {
     const panel = domCache.get('geneEditorPanel') || document.getElementById('gene-editor-panel');
     if (panel) {
-      panel.classList.toggle('hidden');
+      this.togglePanelVisibility(panel);
     }
     this.updateSandboxUiVisibility();
     this.dismissInteractionHint();
@@ -1318,9 +1345,28 @@ export class UIController {
   onEcoHealthToggle() {
     const panel = document.getElementById('eco-health-panel');
     if (panel) {
-      panel.classList.toggle('hidden');
+      this.togglePanelVisibility(panel);
     }
     this.dismissInteractionHint();
+  }
+
+  updateMobileControls() {
+    const ctrlPauseIcon = document.querySelector('#ctrl-pause .ctrl-icon');
+    const ctrlPauseBtn = document.getElementById('ctrl-pause');
+    const ctrlSpeedIcon = document.querySelector('#ctrl-speed .ctrl-icon');
+
+    if (ctrlPauseIcon) {
+      ctrlPauseIcon.textContent = gameState.paused ? '▶️' : '⏸️';
+    }
+    if (ctrlPauseBtn) {
+      ctrlPauseBtn.classList.toggle('active', gameState.paused);
+      ctrlPauseBtn.setAttribute('aria-pressed', gameState.paused ? 'true' : 'false');
+      ctrlPauseBtn.setAttribute('aria-label', gameState.paused ? 'Resume simulation' : 'Pause simulation');
+    }
+
+    if (ctrlSpeedIcon) {
+      ctrlSpeedIcon.textContent = `${gameState.fastForward}×`;
+    }
   }
 
   /**

@@ -547,6 +547,13 @@ function initializeApp() {
 
   if (controlStrip) {
     console.log('🎮 Control strip initialized (new bottom UI)');
+    let lastControlStripSync = 0;
+    eventSystem.on(GameEvents.FRAME_UPDATE, (data) => {
+      const now = Number(data?.now) || performance.now();
+      if (now - lastControlStripSync < 150) return;
+      lastControlStripSync = now;
+      controlStrip.update();
+    });
   }
 
   // Game loop (handles main simulation loop and rendering)
@@ -725,6 +732,7 @@ function initializeApp() {
     function startCampaignLevel(levelId) {
       // Pause game and reset world for campaign
       gameState.setPaused(true);
+      eventSystem.emit('game:paused', { reason: 'campaign-start' });
 
       // Get level config
       const level = campaignSystem.getLevel(levelId);
@@ -755,6 +763,7 @@ function initializeApp() {
 
       // Unpause
       gameState.setPaused(false);
+      eventSystem.emit('game:resumed', { reason: 'campaign-start' });
 
       // Update progress display
       updateCampaignProgressUI();

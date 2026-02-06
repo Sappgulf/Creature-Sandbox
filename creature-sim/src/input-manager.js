@@ -166,7 +166,11 @@ export class InputManager {
     switch (e.key.toLowerCase()) {
       // Core controls
       case ' ':
-        gameState.togglePause();
+        if (gameState.togglePause()) {
+          eventSystem.emit('game:paused', { reason: 'keyboard' });
+        } else {
+          eventSystem.emit('game:resumed', { reason: 'keyboard' });
+        }
         e.preventDefault();
         break;
       case 'i':
@@ -338,7 +342,9 @@ export class InputManager {
   toggleShortcutsHelp() {
     const overlay = document.getElementById('shortcuts-overlay');
     if (overlay) {
-      overlay.classList.toggle('hidden');
+      const shouldShow = overlay.classList.contains('hidden');
+      overlay.classList.toggle('hidden', !shouldShow);
+      overlay.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
     }
   }
 
@@ -350,6 +356,7 @@ export class InputManager {
     const shortcutsOverlay = document.getElementById('shortcuts-overlay');
     if (shortcutsOverlay && !shortcutsOverlay.classList.contains('hidden')) {
       shortcutsOverlay.classList.add('hidden');
+      shortcutsOverlay.setAttribute('aria-hidden', 'true');
       return;
     }
 
@@ -483,7 +490,12 @@ export class InputManager {
       gameState.lastPointerWorld = { x: worldPos.x, y: worldPos.y };
     }
     if (this.world) {
-      this.world.lastPointerWorld = { x: worldPos.x, y: worldPos.y };
+      if (this.world.lastPointerWorld) {
+        this.world.lastPointerWorld.x = worldPos.x;
+        this.world.lastPointerWorld.y = worldPos.y;
+      } else {
+        this.world.lastPointerWorld = { x: worldPos.x, y: worldPos.y };
+      }
     }
 
     if (this.tools.mode !== 'inspect') {
@@ -561,7 +573,12 @@ export class InputManager {
       gameState.lastPointerWorld = { x: worldPos.x, y: worldPos.y };
     }
     if (this.world) {
-      this.world.lastPointerWorld = { x: worldPos.x, y: worldPos.y };
+      if (this.world.lastPointerWorld) {
+        this.world.lastPointerWorld.x = worldPos.x;
+        this.world.lastPointerWorld.y = worldPos.y;
+      } else {
+        this.world.lastPointerWorld = { x: worldPos.x, y: worldPos.y };
+      }
     }
 
     if (gameState.panning) {
@@ -706,9 +723,10 @@ export class InputManager {
    */
   onMobileTap(e) {
     const detail = e.detail;
+    if (!detail) return;
     const rect = this.canvas.getBoundingClientRect();
-    const sx = detail.x - rect.left - this.canvas.width / 2;
-    const sy = detail.y - rect.top - this.canvas.height / 2;
+    const sx = detail.x - rect.left - rect.width / 2;
+    const sy = detail.y - rect.top - rect.height / 2;
     const { x, y } = this.camera.screenToWorld(sx, sy);
 
     // Find nearest creature

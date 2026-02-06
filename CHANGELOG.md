@@ -17,6 +17,18 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-02-06 — ui/perf/gameplay — Planned
+- **Issues:** Pause/watch/god/menu flows had state desync risks, keyboard overlap risked double-handling, and overlay offset measurements could jitter; requested focus was FPS, gameplay reliability, and UI/menu correctness.
+- **Root Causes:** Duplicate control paths (`InputManager` + `ControlStripController`), missing UI controller methods (`updateMobileControls`, `toggleShortcutsHelp`), inconsistent `aria-hidden` synchronization, and non-persistent HUD-bottom measurement cache usage.
+- **Fixes:** Plan to unify pause/watch/god control behavior around shared state, restore missing UI controller handlers, sync panel/menu accessibility state, and cache HUD-bottom overlay measurements for stable per-frame offsets.
+- **Verification:** `npm test`; targeted `eslint` on edited files; manual code-path verification for pause/watch/god/menu handlers.
+
+### 2026-02-06 — ui/perf/gameplay — Implemented
+- **Issues:** UI pause actions called missing methods; campaign start flow called missing `gameState.setPaused`; control-strip keyboard shortcuts overlapped centralized input handling; watch/god state could desync across UI entry points; shortcuts/panels had incomplete accessibility state sync; mobile tap world conversion used internal canvas dimensions; overlay bottom offset cache reset to zero between measurements.
+- **Root Causes:** Incomplete `GameState`/UI controller API surface, duplicated shortcut handling across controllers, legacy control-strip state fields diverging from `gameState`, and render overlay offset not using persisted cached height.
+- **Fixes:** Added `setPaused` to `GameState`; emitted pause/resume events for campaign transitions; added `toggleShortcutsHelp` and `updateMobileControls` to `UIController`; synchronized panel visibility and `aria-hidden` in panel toggles; updated watch UI to hide/show control strip consistently; adjusted control-strip watch/god toggles to use canonical `gameState`/UI controller paths and reduced keyboard handling to non-overlapping keys; changed control-strip save/load shortcut dispatch to `window`; added throttled control-strip sync from `GameEvents.FRAME_UPDATE`; fixed mobile tap coordinate mapping to use `getBoundingClientRect`; reused pointer-world objects to reduce pointer-move allocations; persisted and reused `hudBottomHeight` cache in `GameLoop.renderOverlays`.
+- **Verification:** `npm test` (pass); `npx eslint creature-sim/src/game-state.js creature-sim/src/main.js creature-sim/src/control-strip.js creature-sim/src/ui-controller.js creature-sim/src/input-manager.js creature-sim/src/game-loop.js` (0 errors, warnings remain pre-existing in repository style baseline).
+
 ### 2026-02-04 — simulation/ui/perf — Planned
 - **Issues:** Run Phase 0-4 polish sprint (baseline metrics, bug sweep, perf pass, AAA polish, regression) with verified dev/preview builds.
 - **Root Causes:** Planned maintenance and polish sprint per ship checklist.

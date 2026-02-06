@@ -131,6 +131,14 @@ export class GameState {
   }
 
   /**
+   * Set pause state explicitly
+   */
+  setPaused(paused) {
+    this.paused = !!paused;
+    return this.paused;
+  }
+
+  /**
    * Select a creature
    */
   selectCreature(id) {
