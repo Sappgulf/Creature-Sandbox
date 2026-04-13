@@ -2775,6 +2775,16 @@ select:focus-visible,
   display: flex;
 }
 
+.mobile-device.mobile-compact-ui {
+  --mobile-action-size: 56px;
+  --mobile-action-bar-height: 104px;
+}
+
+.mobile-device.mobile-compact-ui #mobile-quick-actions {
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+}
+
 #mobile-quick-actions button {
   flex: 1 1 0;
   min-width: calc(var(--mobile-action-size) + 8px);
@@ -2802,6 +2812,18 @@ select:focus-visible,
   font-size: 11px;
   color: var(--text-secondary);
   display: block;
+}
+
+.mobile-device.mobile-compact-ui #mobile-quick-actions button {
+  height: calc(var(--mobile-action-size) + 6px);
+  min-width: var(--mobile-action-size);
+  font-size: 24px;
+  gap: 3px;
+}
+
+.mobile-device.mobile-compact-ui #mobile-quick-actions button::after {
+  font-size: 9px;
+  letter-spacing: 0.15px;
 }
 
 #mobile-quick-actions button:active {
@@ -3031,6 +3053,10 @@ select:focus-visible,
 
 .mobile-device.keyboard-open .panel {
   padding-bottom: calc(var(--space-lg) + var(--keyboard-offset, 0px));
+}
+
+.mobile-device.mobile-landscape-ui .panel {
+  max-height: calc((var(--vh, 1vh) * 100) - 132px);
 }
 
 .mobile-device.keyboard-open #scenario-panel,

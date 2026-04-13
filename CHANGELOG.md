@@ -17,6 +17,18 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-04-13 — ui/mobile — Planned
+- **Issues:** Mobile layouts on very narrow and landscape screens still felt cramped, with dense quick-action controls competing with panel space and no profile-specific UI tuning.
+- **Root Causes:** Mobile styling used one-size-fits-all quick-action dimensions, and viewport handling did not apply semantic compact/landscape state classes for responsive behavior branching.
+- **Fixes:** Add viewport-profile detection (`mobile-compact-ui` / `mobile-landscape-ui`) in mobile support, wire listeners through a cleanup-safe registry, and tune compact/landscape CSS for action bar density and panel height.
+- **Verification:** `npm test`; targeted `eslint` for edited JS files.
+
+### 2026-04-13 — ui/mobile — Implemented
+- **Issues:** Mobile layouts on very narrow and landscape screens still felt cramped, with dense quick-action controls competing with panel space and no profile-specific UI tuning.
+- **Root Causes:** Mobile styling used one-size-fits-all quick-action dimensions, and viewport handling did not apply semantic compact/landscape state classes for responsive behavior branching.
+- **Fixes:** Added mobile viewport profile syncing in `MobileSupport` to toggle `mobile-compact-ui` and `mobile-landscape-ui`; switched listener setup to a tracked `registerListener` pattern and added `destroy()` cleanup support; updated viewport meta sync to include `interactive-widget=resizes-content`; added compact quick-action sizing and landscape panel height caps in CSS for cleaner small-screen ergonomics.
+- **Verification:** `npm test` (pass); `npx eslint creature-sim/src/mobile-support.js` (pass).
+
 ### 2026-04-13 — ui/docs/accessibility — Planned
 - **Issues:** Mobile browser zoom was disabled, the app had no skip path into the main experience, and custom select/range controls removed native keyboard focus cues.
 - **Root Causes:** The viewport meta and mobile viewport sync forced `user-scalable=no`; the document had no top-level skip link/main landmark; select and slider styles used `outline: none` without an equivalent focus-visible treatment.
