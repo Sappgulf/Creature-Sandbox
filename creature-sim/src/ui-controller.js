@@ -140,9 +140,21 @@ export class UIController {
     // XP grants (campaign rewards, etc.)
     eventSystem.on(GameEvents.ACHIEVEMENT_XP, (data) => {
       const amount = Number(data?.amount) || 0;
+      const levelUp = !!data?.levelUp;
       const notificationsEnabled = this.achievements?.notificationsEnabled !== false;
-      if (amount > 0 && this.hasNotifications() && notificationsEnabled) {
-        this.notifications.show(`+${amount} XP`, 'achievement', 2200);
+      if (this.hasNotifications() && notificationsEnabled && (amount > 0 || levelUp)) {
+        const message = levelUp
+          ? `Level ${Number(data?.level) || this.achievements?.level || 1} reached`
+          : `+${amount} XP`;
+        if (message) {
+          this.notifications.show(message, 'achievement', levelUp ? 2600 : 2200);
+        }
+      }
+      if (levelUp && this.world?.particles) {
+        const fxX = this.camera?.x ?? this.world.width * 0.5;
+        const fxY = this.camera?.y ?? this.world.height * 0.5;
+        this.world.particles.emit(fxX, fxY, 'levelup');
+        this.world.particles.triggerShake?.(3.5);
       }
       this.renderAchievementsPanel();
     });
@@ -160,7 +172,7 @@ export class UIController {
       this.renderSessionGoals(goals);
     });
 
-    eventSystem.on(GameEvents.SESSION_GOAL_COMPLETED, (goal) => {
+    eventSystem.on(GameEvents.SESSION_GOAL_COMPLETED, (_goal) => {
       const card = domCache.get('goalCard');
       if (card) {
         card.classList.add('pulse');
@@ -1049,7 +1061,7 @@ export class UIController {
   /**
    * Update performance metrics display
    */
-  updatePerformanceMetrics(rendered, culled, draws) {
+  updatePerformanceMetrics(_rendered, _culled, _draws) {
     // Note: Performance metrics are now handled by the performance profiler overlay
     // This method is kept for compatibility but metrics are displayed in the profiler UI
   }
@@ -1093,7 +1105,6 @@ export class UIController {
       const x = Math.random() * this.world.width;
       const y = Math.random() * this.world.height;
       // Let addFood determine the type based on spawn chances
-      const beforeLen = this.world.food.length;
       this.world.addFood(x, y);
       const added = this.world.food[this.world.food.length - 1];
       stats[added.type]++;

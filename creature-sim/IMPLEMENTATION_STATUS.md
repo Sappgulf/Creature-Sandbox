@@ -1,11 +1,11 @@
-# Implementation Status - Top 5 Features
+# Implementation Status - Current Surface
 
-## ✅ **Audio System** - IN PROGRESS (80% complete)
+## ✅ Audio System - IN PROGRESS (85% complete)
 
 **Created**: `audio-system.js`
 **Features**:
-- ✅ Procedural creature sounds (birth, death, attack, eat, mating)
-- ✅ UI feedback sounds (click, toggle, success, error)
+- ✅ Procedural creature sounds for birth, death, attack, eating, mating, and movement
+- ✅ UI feedback sounds for clicks, toggles, success, and errors
 - ✅ Biome ambient sounds
 - ✅ Adaptive music system
 - ✅ Volume controls per category
@@ -14,77 +14,75 @@
 **Hooked Into**:
 - ✅ Creature birth
 - ✅ Creature death
-- ✅ Attack events
-- ⏳ Eating food (needs hook in creature.js)
-- ⏳ Eating corpse (needs hook)
-- ✅ UI button clicks (partially)
+- ✅ Creature attack/combat
+- ✅ Creature eating
+- ✅ UI button clicks and toggles
+- ⏳ More god-mode tools and settings polish
 
 **Remaining**:
-- Hook into food eating events
-- Hook into UI buttons (spawn, god mode tools)
-- Add volume controls to settings UI
-- Add mute button to HUD
+- Add dedicated volume controls to the settings UI
+- Add a mute button to the HUD
+- Tidy up any remaining edge-case audio hooks
 
 ---
 
-## ⏳ **Visual Effects & Polish** - NOT STARTED
+## ✅ Visual Effects & Polish - IMPLEMENTED
 
-**Expand**: `particle-system.js`
-**Features Needed**:
-- [ ] Combat hit particles (blood splatter)
-- [ ] Food absorption particles (green particles)
-- [ ] Screen shake on dramatic events
-- [ ] Enhanced death effects
-- [ ] UI animations (smooth transitions, number counting)
-
-**Current**: Basic particle system exists (birth sparkles, death markers, sleep particles)
-
----
-
-## ⏳ **Tutorial System** - NOT STARTED
-
-**Create**: `tutorial-system.js`
+**Expanded**: `particle-system.js`
 **Features**:
-- [ ] Step-by-step guided tour (5-7 steps)
-- [ ] Animated highlights pointing to UI elements
-- [ ] Context-sensitive tooltips
-- [ ] Achievement unlocks when discovering features
-- [ ] "Skip Tutorial" option
+- ✅ Birth sparkles and death markers
+- ✅ Food absorption and combat hit particles
+- ✅ Migration, nest, scarcity, and region-state effects
+- ✅ Mutation, level-up, healing, and territory markers
+- ✅ Screen shake on dramatic events
+- ✅ UI accessibility polish such as skip link, focus states, and restored zoom
+
+**Current**: Visual effects now respond to the main creature lifecycle, social events, and ecosystem pressure.
 
 ---
 
-## ⏳ **Achievements & Challenges** - NOT STARTED
+## ✅ Tutorial System - IMPLEMENTED
 
-**Create**: `achievement-system.js`
+**Implemented**: `tutorial-system.js`
 **Features**:
-- [ ] Achievement definitions (discovery, milestone, challenge)
-- [ ] XP system with leveling
-- [ ] Achievement popup notifications
-- [ ] Progress tracker UI
-- [ ] Leaderboards (localStorage)
-- [ ] Challenge modes
+- ✅ Five-step first-run onboarding flow
+- ✅ Animated highlights for camera, selection, pause, and god mode
+- ✅ Persistent progress and skip flow
+- ✅ Auto-advance and event-driven completion tracking
+- ✅ Resume support for partially completed sessions
 
 ---
 
-## ⏳ **Age Stages Enhancement** - PARTIAL
+## ✅ Achievements & Challenges - IMPLEMENTED
+
+**Implemented**: `achievement-system.js`
+**Features**:
+- ✅ Achievement definitions for discovery, milestones, and special goals
+- ✅ XP system with leveling
+- ✅ Achievement popup notifications
+- ✅ Progress tracker UI
+- ✅ Level-up feedback tied into the UI and particles
+
+**Current**: Achievements now feed visible XP grants and level-up feedback instead of only saving hidden counters.
+
+---
+
+## ⏳ Age Stages Enhancement - PARTIAL
 
 **Modify**: `creature.js`
-**Current**: Basic `isChild` flag exists
+**Current**: Basic `isChild` flag exists, plus smoother aging behavior
 
 **Enhancements Needed**:
 - [ ] Baby → Juvenile → Adult → Elder stages
-- [ ] Visual size changes (20% → 100% → 80%)
-- [ ] Behavioral differences per stage
-- [ ] Menopause system (can't reproduce after age)
-- [ ] Parental care (parents protect babies)
+- [ ] Visual size changes across life stages
+- [ ] Behavior differences per stage
+- [ ] Menopause system
+- [ ] Parental care
 
 ---
 
 ## Next Steps
 
-1. Complete audio hooks (food eating events)
-2. Create tutorial system
-3. Create achievement system
-4. Expand particle system
-5. Enhance age stages
-
+1. Finish any remaining audio/settings polish.
+2. Expand age-stage behavior if we want a deeper life-cycle system.
+3. Add more challenge and leaderboard surfaces only if they prove useful.

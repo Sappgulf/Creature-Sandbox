@@ -37,7 +37,7 @@ export class ParticleSystem {
   addBirthEffect(x, y, diet = 0) {
     const sparkleCount = 12; // Increased from 8
     const hueBase = diet > 0.7 ? 0 : diet > 0.3 ? 45 : 120; // Red for predators, yellow for omnivores, green for herbivores
-    
+
     for (let i = 0; i < sparkleCount; i++) {
       const angle = (i / sparkleCount) * Math.PI * 2;
       const speed = 40 + Math.random() * 20;
@@ -54,7 +54,7 @@ export class ParticleSystem {
         twinkle: true // Add twinkle effect
       });
     }
-    
+
     // Add burst ring
     this.particles.push({
       type: 'ring',
@@ -89,7 +89,7 @@ export class ParticleSystem {
         opacity: 0.8
       });
     }
-    
+
     // Gravestone marker
     this.particles.push({
       type: 'gravestone',
@@ -205,7 +205,7 @@ export class ParticleSystem {
   }
 
   // Season transition shimmer
-  addSeasonShift(label, config) {
+  addSeasonShift(label, _config) {
     const palette = {
       spring: '#7FDB6A',
       summer: '#FFD56A',
@@ -219,7 +219,6 @@ export class ParticleSystem {
           : palette.spring;
     for (let i = 0; i < 24; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const radius = 60 + Math.random() * 40;
       this.particles.push({
         type: 'season',
         x: (Math.random() - 0.5) * 400,
@@ -290,6 +289,277 @@ export class ParticleSystem {
     }
   }
 
+  addEatEffect(x, y, color = '#88ff88') {
+    this.particles.push({
+      type: 'ring',
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      life: 0.45,
+      maxLife: 0.45,
+      size: 5,
+      expandRate: 70,
+      color,
+      opacity: 0.75
+    });
+
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2 + (Math.random() - 0.5) * 0.35;
+      const speed = 24 + Math.random() * 18;
+      this.particles.push({
+        type: 'sparkle',
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 8,
+        life: 0.55 + Math.random() * 0.15,
+        maxLife: 0.7,
+        size: 1.6 + Math.random() * 1.8,
+        color,
+        opacity: 1,
+        twinkle: true
+      });
+    }
+  }
+
+  addBondEffect(x, y, color = '#ff9ad5') {
+    this.particles.push({
+      type: 'ring',
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      life: 0.6,
+      maxLife: 0.6,
+      size: 6,
+      expandRate: 60,
+      color,
+      opacity: 0.7
+    });
+
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const speed = 18 + Math.random() * 16;
+      this.particles.push({
+        type: 'sparkle',
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 6,
+        life: 0.75 + Math.random() * 0.2,
+        maxLife: 0.95,
+        size: 1.5 + Math.random() * 1.5,
+        color,
+        opacity: 1
+      });
+    }
+  }
+
+  addPanicEffect(x, y, color = '#ffb347') {
+    this.particles.push({
+      type: 'ring',
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      life: 0.35,
+      maxLife: 0.35,
+      size: 8,
+      expandRate: 90,
+      color,
+      opacity: 0.9
+    });
+
+    for (let i = 0; i < 10; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 35 + Math.random() * 45;
+      this.particles.push({
+        type: 'dust',
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 14,
+        life: 0.65 + Math.random() * 0.25,
+        maxLife: 0.9,
+        size: 1.8 + Math.random() * 2.2,
+        color,
+        opacity: 0.85
+      });
+    }
+  }
+
+  addMigrationEffect(x, y, color = '#9ad9ff') {
+    this.particles.push({
+      type: 'ring',
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      life: 0.7,
+      maxLife: 0.7,
+      size: 10,
+      expandRate: 50,
+      color,
+      opacity: 0.6
+    });
+
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const speed = 22 + Math.random() * 20;
+      this.particles.push({
+        type: 'play',
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 6,
+        life: 0.8 + Math.random() * 0.2,
+        maxLife: 1,
+        size: 1.8 + Math.random() * 1.6,
+        color,
+        opacity: 1
+      });
+    }
+  }
+
+  addNestEffect(x, y, color = '#7FDB6A') {
+    this.particles.push({
+      type: 'ring',
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      life: 0.65,
+      maxLife: 0.65,
+      size: 7,
+      expandRate: 55,
+      color,
+      opacity: 0.75
+    });
+
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2 + 0.2;
+      const speed = 16 + Math.random() * 12;
+      this.particles.push({
+        type: 'sparkle',
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 5,
+        life: 0.7 + Math.random() * 0.25,
+        maxLife: 0.95,
+        size: 1.6 + Math.random() * 1.4,
+        color,
+        opacity: 1,
+        twinkle: true
+      });
+    }
+  }
+
+  addScarcityEffect(x, y, color = '#9ca3af') {
+    this.particles.push({
+      type: 'ring',
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      life: 0.75,
+      maxLife: 0.75,
+      size: 9,
+      expandRate: 45,
+      color,
+      opacity: 0.5
+    });
+
+    for (let i = 0; i < 8; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 18 + Math.random() * 18;
+      this.particles.push({
+        type: 'dust',
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 4,
+        life: 0.8 + Math.random() * 0.25,
+        maxLife: 1,
+        size: 1.7 + Math.random() * 1.8,
+        color,
+        opacity: 0.7
+      });
+    }
+  }
+
+  addMutationEffect(x, y, color = '#c084fc') {
+    this.particles.push({
+      type: 'ring',
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      life: 0.5,
+      maxLife: 0.5,
+      size: 4,
+      expandRate: 85,
+      color,
+      opacity: 0.8
+    });
+
+    for (let i = 0; i < 10; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 26 + Math.random() * 22;
+      this.particles.push({
+        type: 'sparkle',
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 10,
+        life: 0.7 + Math.random() * 0.2,
+        maxLife: 0.95,
+        size: 1.8 + Math.random() * 1.8,
+        color,
+        opacity: 1,
+        twinkle: true
+      });
+    }
+  }
+
+  addLevelUpEffect(x, y) {
+    this.addEvolutionEffect(x, y, 45);
+  }
+
+  addHealingEffect(x, y) {
+    this.addHealEffect(x, y);
+  }
+
+  addTerritoryMarker(x, y, color = '#ff6b6b') {
+    this.particles.push({
+      type: 'territory',
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      life: 1.1,
+      maxLife: 1.1,
+      size: 14,
+      color,
+      opacity: 0.9
+    });
+    for (let i = 0; i < 4; i++) {
+      this.particles.push({
+        type: 'sparkle',
+        x,
+        y,
+        vx: (Math.random() - 0.5) * 30,
+        vy: -10 - Math.random() * 15,
+        life: 0.6 + Math.random() * 0.2,
+        maxLife: 0.8,
+        size: 1.4 + Math.random() * 1.2,
+        color,
+        opacity: 1
+      });
+    }
+  }
+
   /**
    * Generic emit method for game-loop compatibility
    * Maps event types to specific particle effects
@@ -313,6 +583,8 @@ export class ParticleSystem {
       case 'food':
         if (options.targetX !== undefined && options.targetY !== undefined) {
           this.addFoodAbsorption(x, y, options.targetX, options.targetY);
+        } else {
+          this.addEatEffect(x, y, options.color || '#88ff88');
         }
         break;
       case 'sleep':
@@ -330,6 +602,30 @@ export class ParticleSystem {
         break;
       case 'territory':
         this.addTerritoryMarker(x, y, options.color || '#ff0000');
+        break;
+      case 'eat':
+        this.addEatEffect(x, y, options.color || '#88ff88');
+        break;
+      case 'bond':
+        this.addBondEffect(x, y, options.color || '#ff9ad5');
+        break;
+      case 'panic':
+        this.addPanicEffect(x, y, options.color || '#ffb347');
+        break;
+      case 'migration':
+        this.addMigrationEffect(x, y, options.color || '#9ad9ff');
+        break;
+      case 'nest':
+        this.addNestEffect(x, y, options.color || '#7FDB6A');
+        break;
+      case 'scarcity':
+        this.addScarcityEffect(x, y, options.color || '#9ca3af');
+        break;
+      case 'region-thriving':
+        this.addNestEffect(x, y, options.color || '#34d399');
+        break;
+      case 'region-depleted':
+        this.addScarcityEffect(x, y, options.color || '#a3a3a3');
         break;
       default:
         // Default to sparkle effect for unknown types
@@ -611,7 +907,7 @@ export class ParticleSystem {
     });
   }
 
-  draw(ctx, camera = null) {
+  draw(ctx, _camera = null) {
     // Camera parameter is optional - particles are drawn in world space
     // If camera transform is needed, it should be applied before calling draw
     for (const p of this.particles) {

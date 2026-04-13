@@ -345,16 +345,34 @@ export class AchievementSystem {
     return Math.floor(base * Math.pow(level - 1, 1.35));
   }
 
-  awardXP(amount, { save = true } = {}) {
+  awardXP(amount, { save = true, world = null, event = null } = {}) {
     if (!this.enabled) return;
     const value = Number(amount);
     if (!Number.isFinite(value) || value <= 0) return;
+    const previousLevel = this.level;
     this.xp += value * this.xpMultiplier;
 
     const newLevel = this.getLevelFromXP(this.xp);
-    if (newLevel > this.level) {
+    const levelUp = newLevel > previousLevel;
+    if (levelUp) {
       this.level = newLevel;
       console.log(`🎉 Level Up! Now level ${this.level}`);
+    }
+
+    try {
+      eventSystem.emit(GameEvents.ACHIEVEMENT_XP, {
+        amount: value,
+        totalXP: this.xp,
+        level: this.level,
+        previousLevel,
+        levelUp,
+        nextLevelXP: this.xpForLevel(this.level + 1),
+        worldTime: world?.t,
+        world,
+        event
+      });
+    } catch (e) {
+      console.warn('Failed to emit XP event:', e);
     }
 
     if (save && this.autoSaveEnabled) {
@@ -411,6 +429,7 @@ export class AchievementSystem {
     if (!this.enabled) return;
     const achievement = this.achievements.get(id);
     if (!achievement) return;
+    const world = context.world || null;
 
     const prog = this.progress.get(id);
 
@@ -429,9 +448,7 @@ export class AchievementSystem {
     }
 
     const xpGained = Number(achievement.xp) || 0;
-    this.awardXP(xpGained, { save: false });
-
-    const world = context.world;
+    this.awardXP(xpGained, { save: false, world, event: context.event });
 
     try {
       eventSystem.emit(GameEvents.ACHIEVEMENT_UNLOCKED, {

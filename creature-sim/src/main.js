@@ -484,6 +484,13 @@ function initializeApp() {
     return true;
   };
 
+  const startTutorialIfNeeded = (delay = 1000) => {
+    if (!tutorial || !tutorial.shouldShow?.()) return;
+    window.setTimeout(() => {
+      tutorial.start();
+    }, delay);
+  };
+
   // Attach systems to world (with error handling)
   errorHandler.safeExecute(() => {
     if (lineageTracker) world.attachLineageTracker(lineageTracker);
@@ -515,6 +522,8 @@ function initializeApp() {
 
   if (!inputManager) {
     console.warn('⚠️ Input manager failed to initialize, controls may not work');
+  } else {
+    inputManager.tutorial = tutorial;
   }
 
   // UI controller (handles all UI state and DOM manipulation)
@@ -948,12 +957,7 @@ function initializeApp() {
           errorHandler.safeExecute(() => {
             setElementHidden(homePage, true);
             gameState.startGame();
-
-            // Start tutorial for new players
-            if (tutorial && tutorial.shouldShow()) {
-              tutorial.loadProgress();
-              setTimeout(() => tutorial.start(), 1000);
-            }
+            startTutorialIfNeeded();
           }, 'Post-load setup');
         });
       }
@@ -1189,10 +1193,7 @@ function initializeApp() {
       console.log('✅ New game started successfully!');
 
       // Start tutorial for new players
-      if (tutorial && tutorial.shouldShow()) {
-        tutorial.loadProgress();
-        setTimeout(() => tutorial.start(), 1000);
-      }
+      startTutorialIfNeeded();
     }, 'New game initialization');
   }
 

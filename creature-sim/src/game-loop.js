@@ -172,6 +172,36 @@ export class GameLoop {
    * Setup event listeners for subsystem communication
    */
   setupEventListeners() {
+    const resolveEventPoint = (data, fallbackCreature = null) => {
+      const creature = data?.creature || data?.prey || data?.attacker || data?.nest || data?.region || fallbackCreature || null;
+      const x = Number.isFinite(data?.x)
+        ? data.x
+        : Number.isFinite(creature?.x)
+          ? creature.x
+          : Number.isFinite(this.camera?.x)
+            ? this.camera.x
+            : Number.isFinite(this.world?.width)
+              ? this.world.width * 0.5
+              : 0;
+      const y = Number.isFinite(data?.y)
+        ? data.y
+        : Number.isFinite(creature?.y)
+          ? creature.y
+          : Number.isFinite(this.camera?.y)
+            ? this.camera.y
+            : Number.isFinite(this.world?.height)
+              ? this.world.height * 0.5
+              : 0;
+      return { x, y, creature };
+    };
+
+    const emitParticleEffect = (type, data, options = {}, fallbackCreature = null) => {
+      if (!this.particles) return null;
+      const point = resolveEventPoint(data, fallbackCreature);
+      this.particles.emit(point.x, point.y, type, options);
+      return point;
+    };
+
     // World events
     eventSystem.on(GameEvents.WORLD_UPDATE, () => {
       if (this.ecoHealth) this.ecoHealth.update(this.world);
@@ -195,6 +225,64 @@ export class GameLoop {
         const name = data.creature.name || data.creature.id || 'Unknown';
         this.particles.emit(data.creature.x, data.creature.y, 'death', { diet, name });
       }
+    });
+
+    eventSystem.on(GameEvents.CREATURE_EAT, (data) => {
+      const point = emitParticleEffect('eat', data, {
+        color: data?.source === 'corpse' ? '#f59e0b' : '#88ff88'
+      });
+      if (point && data?.hungry) {
+        this.particles?.triggerShake?.(0.7);
+      }
+    });
+
+    eventSystem.on(GameEvents.CREATURE_BOND, (data) => {
+      emitParticleEffect('bond', data, { color: '#ff9ad5' });
+    });
+
+    eventSystem.on(GameEvents.CREATURE_PANIC, (data) => {
+      emitParticleEffect('panic', data, { color: '#ffb347' });
+      this.particles?.triggerShake?.(2.4);
+    });
+
+    eventSystem.on(GameEvents.CREATURE_KILLED, (data) => {
+      const point = emitParticleEffect('combat', data, {
+        damage: Math.max(6, Number(data?.damage || data?.prey?.size || 0) * 1.5),
+        isKill: true
+      }, data?.prey || data?.attacker || null);
+      if (point) {
+        this.particles?.triggerShake?.(1.6);
+      }
+    });
+
+    eventSystem.on(GameEvents.WORLD_MIGRATION_START, (data) => {
+      const point = emitParticleEffect('migration', data, { color: '#9ad9ff' });
+      if (point) {
+        this.particles?.triggerShake?.(Math.min(3.0, 1 + (Number(data?.count) || 0) * 0.12));
+      }
+    });
+
+    eventSystem.on(GameEvents.WORLD_MIGRATION_SETTLED, (data) => {
+      emitParticleEffect('nest', data, { color: '#7FDB6A' });
+    });
+
+    eventSystem.on(GameEvents.NEST_ESTABLISHED, (data) => {
+      emitParticleEffect('nest', data, { color: '#7FDB6A' });
+      this.particles?.triggerShake?.(0.6);
+    });
+
+    eventSystem.on(GameEvents.NEST_OVERCROWDED, (data) => {
+      emitParticleEffect('scarcity', data, { color: '#f59e0b' });
+      this.particles?.triggerShake?.(1.1);
+    });
+
+    eventSystem.on(GameEvents.WORLD_REGION_DEPLETED, (data) => {
+      emitParticleEffect('region-depleted', data, { color: '#9ca3af' });
+      this.particles?.triggerShake?.(1.0);
+    });
+
+    eventSystem.on(GameEvents.WORLD_REGION_THRIVING, (data) => {
+      emitParticleEffect('region-thriving', data, { color: '#34d399' });
     });
 
     // Achievement events
@@ -682,7 +770,7 @@ export class GameLoop {
   /**
    * Render UI overlays
    */
-  renderOverlays(dt) {
+  renderOverlays(_dt) {
     const ctx = domCache.get('canvas').getContext('2d');
     const hudBottomEl = domCache.get('hudBottom');
 
@@ -803,7 +891,7 @@ export class GameLoop {
   /**
    * Update UI elements (throttled)
    */
-  updateUI(dt) {
+  updateUI(_dt) {
     this.frameCount++;
     this.statsUpdateCounter++;
     this.chartUpdateCounter++;

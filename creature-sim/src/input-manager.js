@@ -15,6 +15,7 @@ export class InputManager {
     this.camera = camera;
     this.tools = tools;
     this.world = world;
+    this.tutorial = null;
 
     this.boundHandlers = {
       onKeyDown: this.onKeyDown.bind(this),
@@ -170,7 +171,6 @@ export class InputManager {
    */
   handleRegularKey(e) {
     const renderer = this.world?.renderer;
-    const analytics = this.world?.analytics;
     const miniGraphs = this.world?.miniGraphs;
     const godToolHotkeys = {
       '1': 'food',
@@ -1110,6 +1110,7 @@ export class InputManager {
   _selectCreatureWithCamera(creature, { preferZoom = 0.9 } = {}) {
     if (!creature) return;
     gameState.selectCreature(creature.id);
+    this.tutorial?.trackSelection?.();
 
     this.camera.followMode = 'smooth-follow';
     this.camera.followTarget = creature.id;

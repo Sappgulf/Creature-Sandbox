@@ -20,6 +20,7 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Memory & Learning**: Creatures remember food locations, danger zones, learn from experience, and observe others
 - **Seasonal Events**: 4 seasons (Spring→Summer→Autumn→Winter) with 10+ dynamic events and migrations
 - **God Powers**: 13 powers across 4 tiers (bless, lightning, time warp, apocalypse, etc.)
+- **First-Run Tutorial**: A five-step onboarding flow highlights the camera, creature selection, pause, and god mode controls
 
 ### 🧠 **Sophisticated AI**
 - **5 Hunting Strategies**: Ambush, chase, intercept, herd, patience
@@ -40,6 +41,7 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 ### 🏆 **Progression Systems**
 - **30+ Achievements**: Unlock new biomes, creatures, tools, features, challenges, skins, particles, sounds
 - **8 Achievement Categories**: Population, genetics, survival, ecosystem, behavior, biome, special, mastery
+- **XP & Levels**: Achievement rewards now feed visible XP grants and level-up feedback
 - **Campaign Mode**: Structured challenges with star ratings and progression
 - **Session Goals**: Dynamic micro-challenges that encourage experimentation
 
@@ -77,6 +79,7 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Population tracking**: Monitor herbivore/predator ratios
 - **Trait evolution**: Watch speed, metabolism, and sense evolve over time
 - **Variance analysis**: Track genetic diversity
+- **Insight narratives**: The analytics dashboard explains whether the sim is growing, stabilizing, or under strain
 - **Responsive dashboard**: Scales analytics panels to fit the viewport
 - **Export data**: Download simulation snapshots as JSON
 
@@ -84,6 +87,7 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Inspector panel**: Examine individual creatures in detail
 - **Lineage view**: Explore family trees and descendants
 - **Behavior tuning**: Adjust forage/wander/rest weights in real-time
+- **Guided onboarding**: First-run highlights and persistent progress help new players get oriented quickly
 - **Tool modes**: Paint food, spawn creatures, or erase with mouse
 - **Camera controls**: Pan, zoom, and follow creatures
 - **Watch mode**: Observer-first control strip with auto-director camera and moments log
@@ -98,6 +102,7 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Display toggles**: Nameplates, reduced motion, region boundaries, and nest markers in the Features panel
 - **Condensed top HUD**: Primary controls plus a ⋯ overflow menu for all panels
 - **Moments log**: Tap a moment to jump the camera and review a session summary
+- **Narrative summaries**: The moments panel now explains what the ecosystem is doing in plain language
 
 ### ⚡ Performance Optimized
 - **Spatial partitioning**: O(1) proximity queries with grid-based optimization

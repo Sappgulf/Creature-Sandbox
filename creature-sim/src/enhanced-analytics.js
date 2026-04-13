@@ -4,8 +4,6 @@
  */
 
 import { domCache } from './dom-cache.js';
-import { eventSystem, GameEvents } from './event-system.js';
-import { configManager } from './config-manager.js';
 
 /**
  * Interactive Chart Component
@@ -56,7 +54,6 @@ class InteractiveChart {
   handleMouseMove(e) {
     const rect = this.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
 
     const dataIndex = Math.floor((x / this.options.width) * this.data.length);
     this.hoverIndex = (dataIndex >= 0 && dataIndex < this.data.length) ? dataIndex : -1;
@@ -333,12 +330,13 @@ export class AnalyticsDashboard {
 
         <!-- Stats Summary -->
         <div id="analytics-summary" style="margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; font-size: 12px;">
-          <div style="display: flex; justify-content: space-between;">
+          <div style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
             <span>Total Creatures: <span id="stat-creatures">0</span></span>
             <span>Generations: <span id="stat-generations">0</span></span>
             <span>Eco Health: <span id="stat-ecosystem">--</span></span>
             <span>FPS: <span id="stat-fps">--</span></span>
           </div>
+          <div id="analytics-insights" aria-live="polite" style="margin-top: 8px; color: #bbf7d0; line-height: 1.45; min-height: 2.2em;"></div>
         </div>
       </div>
     `;
@@ -618,10 +616,72 @@ export class AnalyticsDashboard {
 
     creaturesElement.textContent = analyticsData.population?.total || 0;
     generationsElement.textContent = analyticsData.generation || 0;
-    ecosystemElement.textContent = analyticsData.ecosystem?.health ?
+    ecosystemElement.textContent = analyticsData.ecosystem?.health != null ?
       analyticsData.ecosystem.health.toFixed(2) : '--';
-    fpsElement.textContent = performanceStats?.current?.fps ?
+    fpsElement.textContent = performanceStats?.current?.fps != null ?
       performanceStats.current.fps.toFixed(1) : '--';
+    this.updateInsightNarrative(analyticsData, world, performanceStats);
+  }
+
+  buildInsightNarrative(analyticsData, world, performanceStats) {
+    const trends = analyticsData?.trends || {};
+    const total = Number(analyticsData?.population?.total ?? world?.creatures?.length ?? 0);
+    const health = Number(analyticsData?.ecosystem?.health);
+    const food = Number(analyticsData?.ecosystem?.foodAvailability);
+    const pressure = Number(analyticsData?.ecosystem?.predatorPressure);
+    const populationTrend = Number(trends.populationGrowth) || 0;
+    const diversityTrend = Number(trends.geneDiversity) || 0;
+    const healthTrend = Number(trends.ecosystemHealth) || 0;
+    const fps = Number(performanceStats?.current?.fps);
+
+    if (!Number.isFinite(total) || total <= 0) {
+      return 'Collecting ecosystem trends while the world initializes.';
+    }
+
+    const clauses = [];
+    clauses.push(populationTrend > 0.4
+      ? `Population is growing around ${total} creatures`
+      : populationTrend < -0.4
+        ? `Population is shrinking around ${total} creatures`
+        : `Population is holding steady around ${total} creatures`);
+
+    clauses.push(diversityTrend > 0.005
+      ? 'genetic diversity is widening'
+      : diversityTrend < -0.005
+        ? 'genetic diversity is narrowing'
+        : 'genetic diversity is stable');
+
+    clauses.push(healthTrend > 0.005
+      ? `ecosystem health is improving${Number.isFinite(health) ? ` (${health.toFixed(2)})` : ''}`
+      : healthTrend < -0.005
+        ? `ecosystem health is slipping${Number.isFinite(health) ? ` (${health.toFixed(2)})` : ''}`
+        : `ecosystem health is steady${Number.isFinite(health) ? ` (${health.toFixed(2)})` : ''}`);
+
+    if (Number.isFinite(food)) {
+      clauses.push(food < 0.3
+        ? 'food availability is tight'
+        : food > 0.7
+          ? 'food availability is abundant'
+          : 'food availability is balanced');
+    }
+
+    if (Number.isFinite(pressure) && pressure > 0.35) {
+      clauses.push(pressure > 0.65 ? 'predator pressure is high' : 'predator pressure is building');
+    }
+
+    if (Number.isFinite(fps)) {
+      clauses.push(fps < 45
+        ? `performance is dipping at ${fps.toFixed(0)} FPS`
+        : `performance is holding at ${fps.toFixed(0)} FPS`);
+    }
+
+    return `${clauses.join('. ')}.`;
+  }
+
+  updateInsightNarrative(analyticsData, world, performanceStats) {
+    const insights = this.panel.querySelector('#analytics-insights');
+    if (!insights) return;
+    insights.textContent = this.buildInsightNarrative(analyticsData, world, performanceStats);
   }
 
   updateTimeRange() {

@@ -127,6 +127,7 @@ export class MomentsSystem {
     if (!this.summaryEl) return;
     const summary = this.summary;
     const stressLabel = summary.peakStressAt ? `${Math.round(summary.peakStress)} @ ${this._formatTime(summary.peakStressAt)}` : '—';
+    const narrative = this._buildSummaryNarrative();
 
     this.summaryEl.innerHTML = `
       <div class="summary-grid">
@@ -136,6 +137,7 @@ export class MomentsSystem {
         <div class="summary-item"><span>Peak Stress</span><strong>${stressLabel}</strong></div>
         <div class="summary-item"><span>Biggest Migration</span><strong>${summary.largestMigration || 0}</strong></div>
       </div>
+      <div class="summary-narrative" style="margin-top: 8px; color: rgba(255, 255, 255, 0.82); line-height: 1.5;">${narrative}</div>
     `;
 
     const now = performance.now();
@@ -156,6 +158,33 @@ export class MomentsSystem {
     } catch (error) {
       console.warn('Failed to store session summary:', error);
     }
+  }
+
+  _buildSummaryNarrative() {
+    const summary = this.summary;
+    const currentPopulation = this.world?.creatures?.length ?? 0;
+
+    if (currentPopulation <= 0) {
+      return 'The world is quiet for now.';
+    }
+
+    if (summary.peakStress > 60 && summary.migrations > 0) {
+      return 'Crowding and stress are pushing creatures to migrate and settle elsewhere.';
+    }
+
+    if ((summary.largestMigration || 0) >= 8) {
+      return 'A large migration has reshaped the map and shifted the population into new regions.';
+    }
+
+    if (summary.births > summary.deaths + 5) {
+      return 'Births are outpacing losses, so the population is still expanding.';
+    }
+
+    if (summary.deaths > summary.births + 5) {
+      return 'Losses are outpacing births, and the population is under pressure.';
+    }
+
+    return 'The ecosystem is balancing itself while smaller events continue to reshape the world.';
   }
 
   updateStatsFromWorld(world) {
