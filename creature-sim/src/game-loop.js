@@ -648,7 +648,7 @@ export class GameLoop {
     // DEBUG: Log creature count on first few renders
     if (!this._debugRenderCount) this._debugRenderCount = 0;
     if (this._debugRenderCount < 3) {
-      console.log(`🎬 Render #${this._debugRenderCount}: ${this.world.creatures?.length || 0} creatures, canvas: ${canvas?.width}x${canvas?.height}`);
+      console.debug(`🎬 Render #${this._debugRenderCount}: ${this.world.creatures?.length || 0} creatures, canvas: ${canvas?.width}x${canvas?.height}`);
       this._debugRenderCount++;
     }
 

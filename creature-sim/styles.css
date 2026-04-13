@@ -3340,6 +3340,20 @@ select:focus-visible,
   display: none;
 }
 
+body.home-active #control-strip,
+body.home-active #watch-strip,
+body.home-active #session-meta,
+body.home-active #hud-bottom-left,
+body.home-active #inspector,
+body.home-active #tool-indicator,
+body.home-active #interaction-hint,
+body.home-active #moments-panel,
+body.home-active #god-mode-indicator,
+body.home-active #god-mode-panel,
+body.home-active #btn-show-inspector {
+  display: none !important;
+}
+
 /* Animated Background Canvas */
 .home-bg {
   position: absolute;

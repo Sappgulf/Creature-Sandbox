@@ -446,7 +446,7 @@ export class World {
       }
     }
 
-    console.log(`🌱 Seeded diverse world: ${nPureHerbivores} herbivores, ${nOmnivores} omnivores, ${nAquatic} aquatic, ${nPred} predators, ${nFood} food`);
+    console.debug(`🌱 Seeded diverse world: ${nPureHerbivores} herbivores, ${nOmnivores} omnivores, ${nAquatic} aquatic, ${nPred} predators, ${nFood} food`);
   }
 
   // Reset world to empty state

@@ -98,10 +98,10 @@ function createDevFpsOverlay(enabled) {
 // INITIALIZATION
 // ============================================================================
 
-console.log('🚀 Starting Creature Sandbox...');
+console.debug('🚀 Starting Creature Sandbox...');
 
 // Preload sprite assets
-console.log('🎨 Loading sprite assets...');
+console.debug('🎨 Loading sprite assets...');
 assetLoader.loadManifest('./assets/sprites/sprite-manifest.json', { optional: true })
   .then(manifest => {
     if (!manifest) {
@@ -116,7 +116,7 @@ assetLoader.loadManifest('./assets/sprites/sprite-manifest.json', { optional: tr
     return assetLoader.loadAll();
   })
   .then(() => {
-    console.log('✅ Sprite assets loaded successfully');
+    console.debug('✅ Sprite assets loaded successfully');
   })
   .catch(error => {
     console.warn('⚠️ Some sprite assets failed to load, falling back to shapes:', error);
@@ -124,7 +124,7 @@ assetLoader.loadManifest('./assets/sprites/sprite-manifest.json', { optional: tr
 
 // Wait for DOM to be ready before initializing
 function initializeApp() {
-  console.log('📄 DOM ready, initializing Creature Sandbox...');
+  console.debug('📄 DOM ready, initializing Creature Sandbox...');
 
   // Initialize DOM cache first (critical for performance)
   errorHandler.safeExecute(() => {
@@ -190,7 +190,7 @@ function initializeApp() {
         window.camera.viewportHeight = rect.height;
       }
 
-      console.log(`🖼️ Canvas: ${rect.width}x${rect.height} (${canvas.width}x${canvas.height} internal @ ${dpr}x DPI)`);
+      console.debug(`🖼️ Canvas: ${rect.width}x${rect.height} (${canvas.width}x${canvas.height} internal @ ${dpr}x DPI)`);
     }, 'Canvas resize');
   }
 
@@ -219,7 +219,7 @@ function initializeApp() {
   // World and core entities
   const world = errorHandler.safeExecute(() => {
     if (USE_SIM_WORKER) {
-      console.log('🚀 Initializing Simulation Worker...');
+      console.debug('🚀 Initializing Simulation Worker...');
       const w = new SimulationProxy(new URL('./worker-simulation.js', import.meta.url));
       w.init(4000, 2800);
       w.seed(STARTUP_SEED.herbivores, STARTUP_SEED.predators, STARTUP_SEED.food);
@@ -271,8 +271,8 @@ function initializeApp() {
     throw new Error('Cannot continue without renderer');
   }
 
-  console.log('🎨 Ultra-optimized Canvas 2D renderer initialized');
-  console.log('💪 60 FPS guaranteed with up to 500+ creatures!');
+  console.debug('🎨 Ultra-optimized Canvas 2D renderer initialized');
+  console.debug('💪 60 FPS guaranteed with up to 500+ creatures!');
 
   // Accessibility: reduced motion toggle (defaults to OS preference)
   errorHandler.safeExecute(() => {
@@ -459,8 +459,18 @@ function initializeApp() {
 
   const setElementHidden = (element, hidden) => {
     if (!element) return;
+    if (hidden) {
+      const activeElement = document.activeElement;
+      if (activeElement instanceof HTMLElement && element.contains(activeElement)) {
+        activeElement.blur();
+      }
+    }
     element.classList.toggle('hidden', !!hidden);
     element.setAttribute('aria-hidden', hidden ? 'true' : 'false');
+  };
+
+  const setHomePageActive = (active) => {
+    document.body.classList.toggle('home-active', !!active);
   };
 
   const applyLoadedState = (loaded, source = 'save') => {
@@ -565,7 +575,7 @@ function initializeApp() {
   }, 'Control strip initialization', null);
 
   if (controlStrip) {
-    console.log('🎮 Control strip initialized (new bottom UI)');
+    console.debug('🎮 Control strip initialized (new bottom UI)');
     let lastControlStripSync = 0;
     eventSystem.on(GameEvents.FRAME_UPDATE, (data) => {
       const now = Number(data?.now) || performance.now();
@@ -889,7 +899,7 @@ function initializeApp() {
 
   // Home page initialization
   function showHomePage() {
-
+    setHomePageActive(true);
 
     const homePage = domCache.get('homePage') || document.getElementById('home-page');
     const homeBg = domCache.get('homeBg') || document.getElementById('home-bg');
@@ -951,7 +961,7 @@ function initializeApp() {
             );
             if (loaded) {
               applyLoadedState(loaded, 'autosave');
-              console.log('✅ Auto-save loaded successfully!');
+              console.debug('✅ Auto-save loaded successfully!');
               notifyUI('✅ Continue loaded', 'success');
               if (audio) audio.playUISound('success');
             }
@@ -963,6 +973,7 @@ function initializeApp() {
 
           errorHandler.safeExecute(() => {
             setElementHidden(homePage, true);
+            setHomePageActive(false);
             gameState.startGame();
             startTutorialIfNeeded();
           }, 'Post-load setup');
@@ -972,17 +983,18 @@ function initializeApp() {
 
     // Handle new game button
     errorHandler.safeExecute(() => {
-      console.log('🔧 Setting up New Game button:', !!newGameBtn);
+      console.debug('🔧 Setting up New Game button:', !!newGameBtn);
       if (newGameBtn) {
         newGameBtn.addEventListener('click', () => {
-          console.log('🆕 New Game button clicked!');
+          console.debug('🆕 New Game button clicked!');
           errorHandler.safeExecute(() => {
             initAudioOnInteraction();
             if (audio) audio.playUISound('click');
             if (saveSystem) saveSystem.clearAutoSave();
-            console.log('🆕 Starting new game...');
+            console.debug('🆕 Starting new game...');
 
             setElementHidden(homePage, true);
+            setHomePageActive(false);
             startNewGame();
           }, 'New game setup');
         });
@@ -997,6 +1009,7 @@ function initializeApp() {
             initAudioOnInteraction();
             if (audio) audio.playUISound('click');
             setElementHidden(homePage, true);
+            setHomePageActive(false);
 
             // Trigger campaign panel open
             const campaignPanel = document.getElementById('campaign-panel');
@@ -1161,13 +1174,14 @@ function initializeApp() {
   function startNewGame() {
     // CRITICAL: Always set game state to ready FIRST
     // This ensures the game loop renders even if initialization has errors
+    setHomePageActive(false);
     gameState.startGame();
     gameState.selectedId = null;
     gameState.paused = false;
 
     // Remaining initialization - errors here won't block gameplay
     errorHandler.safeExecute(() => {
-      console.log('🔄 Resetting world for new game...');
+      console.debug('🔄 Resetting world for new game...');
 
       // Reset the world with fresh creatures
       if (world && world.seed) {
@@ -1197,7 +1211,7 @@ function initializeApp() {
         lineageTracker.reset();
       }
 
-      console.log('✅ New game started successfully!');
+      console.debug('✅ New game started successfully!');
 
       // Start tutorial for new players
       startTutorialIfNeeded();
@@ -1206,6 +1220,160 @@ function initializeApp() {
 
   // Expose startNewGame globally for fallback usage
   window.startNewGame = startNewGame;
+
+  const getFocusCreature = () => {
+    const focusId = gameState.pinnedId ?? gameState.selectedId ?? null;
+    return focusId ? world.getAnyCreatureById?.(focusId) ?? null : null;
+  };
+
+  const getViewportBounds = () => {
+    const zoom = Math.max(camera.zoom, 0.0001);
+    const halfWidth = (camera.viewportWidth || 0) / (2 * zoom);
+    const halfHeight = (camera.viewportHeight || 0) / (2 * zoom);
+    return {
+      left: camera.x - halfWidth,
+      right: camera.x + halfWidth,
+      top: camera.y - halfHeight,
+      bottom: camera.y + halfHeight
+    };
+  };
+
+  const getVisibleCreatures = (limit = 12) => {
+    const bounds = getViewportBounds();
+    return (world.creatures || [])
+      .filter(creature => creature?.alive !== false)
+      .filter(creature =>
+        creature.x >= bounds.left &&
+        creature.x <= bounds.right &&
+        creature.y >= bounds.top &&
+        creature.y <= bounds.bottom
+      )
+      .slice(0, limit)
+      .map(creature => ({
+        id: creature.id,
+        species: creature.species || creature.kind || creature.genes?.species || null,
+        diet: creature.genes?.diet ?? (creature.genes?.predator ? 1 : 0),
+        stage: creature.lifeStage || null,
+        x: Number(creature.x?.toFixed?.(1) ?? creature.x ?? 0),
+        y: Number(creature.y?.toFixed?.(1) ?? creature.y ?? 0),
+        energy: Number(creature.energy?.toFixed?.(1) ?? 0),
+        selected: creature.id === gameState.selectedId,
+        pinned: creature.id === gameState.pinnedId
+      }));
+  };
+
+  const getVisibleFood = (limit = 10) => {
+    const bounds = getViewportBounds();
+    return (world.food || [])
+      .filter(food =>
+        food.x >= bounds.left &&
+        food.x <= bounds.right &&
+        food.y >= bounds.top &&
+        food.y <= bounds.bottom
+      )
+      .slice(0, limit)
+      .map(food => ({
+        x: Number(food.x?.toFixed?.(1) ?? 0),
+        y: Number(food.y?.toFixed?.(1) ?? 0),
+        radius: Number(food.radius?.toFixed?.(1) ?? 0),
+        kind: food.kind || food.type || 'food'
+      }));
+  };
+
+  const renderGameToText = () => {
+    const focusCreature = getFocusCreature();
+    const homePage = domCache.get('homePage') || document.getElementById('home-page');
+    const tutorialOverlay = document.getElementById('tutorial-overlay');
+    const bounds = getViewportBounds();
+
+    return JSON.stringify({
+      coordinateSystem: 'World coordinates use a top-left origin with +x to the right and +y downward.',
+      ui: {
+        homeVisible: !!homePage && !homePage.classList.contains('hidden'),
+        tutorialActive: !!tutorial?.isActive,
+        tutorialVisible: !!tutorialOverlay && tutorialOverlay.style.display !== 'none',
+        paused: !!gameState.paused,
+        tool: tools?.mode ?? null,
+        speed: gameState.fastForward,
+        watchMode: !!gameState.watchModeEnabled,
+        godMode: !!gameState.godModeActive
+      },
+      camera: {
+        x: Number(camera.x.toFixed(1)),
+        y: Number(camera.y.toFixed(1)),
+        zoom: Number(camera.zoom.toFixed(3)),
+        viewportWidth: Number(camera.viewportWidth || 0),
+        viewportHeight: Number(camera.viewportHeight || 0),
+        bounds: {
+          left: Number(bounds.left.toFixed(1)),
+          right: Number(bounds.right.toFixed(1)),
+          top: Number(bounds.top.toFixed(1)),
+          bottom: Number(bounds.bottom.toFixed(1))
+        }
+      },
+      summary: {
+        totalCreatures: world.creatures?.length || 0,
+        totalFood: world.food?.length || 0,
+        totalCorpses: world.corpses?.length || 0,
+        worldTime: Number(world.t?.toFixed?.(2) ?? world.t ?? 0),
+        fps: Number(gameState.fps?.toFixed?.(1) ?? 0)
+      },
+      selectedCreature: focusCreature ? {
+        id: focusCreature.id,
+        species: focusCreature.species || focusCreature.kind || focusCreature.genes?.species || null,
+        stage: focusCreature.lifeStage || null,
+        x: Number(focusCreature.x?.toFixed?.(1) ?? 0),
+        y: Number(focusCreature.y?.toFixed?.(1) ?? 0),
+        energy: Number(focusCreature.energy?.toFixed?.(1) ?? 0),
+        age: Number(focusCreature.age?.toFixed?.(1) ?? 0),
+        status: focusCreature.currentGoal || focusCreature.state || null
+      } : null,
+      visibleCreatures: getVisibleCreatures(),
+      visibleFood: getVisibleFood()
+    });
+  };
+
+  const advanceTime = (ms = 16) => {
+    const requestedMs = Number(ms);
+    const safeMs = Number.isFinite(requestedMs) ? Math.max(0, requestedMs) : 16;
+    const fixedStepMs = Math.max(1, Math.round((gameLoop.fixedDt || (1 / 60)) * 1000));
+    const steps = Math.max(1, Math.round(safeMs / fixedStepMs));
+    const previousPaused = gameState.paused;
+
+    gameState.paused = true;
+
+    for (let index = 0; index < steps; index++) {
+      gameLoop.step(gameLoop.fixedDt);
+    }
+
+    const renderDt = steps * gameLoop.fixedDt;
+    camera.update(renderDt);
+    gameLoop.render(renderDt);
+    gameLoop.updateUI(renderDt);
+    gameLoop.updateSubsystems(renderDt);
+
+    try {
+      eventSystem.emit(GameEvents.FRAME_UPDATE, {
+        dt: renderDt,
+        now: performance.now(),
+        worldTime: world.t,
+        timeScale: renderDt > 0 ? 1 : 0
+      }, { throwOnError: false });
+    } catch {
+      // Keep the testing hook resilient.
+    }
+
+    gameLoop.lastNow = performance.now();
+    gameState.accumulator = 0;
+    gameState.paused = previousPaused;
+
+    return {
+      steps,
+      simulatedMs: Math.round(renderDt * 1000),
+      worldTime: Number(world.t?.toFixed?.(2) ?? world.t ?? 0),
+      paused: gameState.paused
+    };
+  };
 
   // ============================================================================
   // START GAME LOOP
@@ -1264,7 +1432,7 @@ function initializeApp() {
       }
     }, 500);
 
-    console.log('✨ UI auto-hide system initialized');
+    console.debug('✨ UI auto-hide system initialized');
   }, 'UI auto-hide system');
 
   // ============================================================================
@@ -1292,10 +1460,12 @@ function initializeApp() {
     window.diseaseSystem = diseaseSystem;
     window.gameplayModes = gameplayModes;
     window.sessionGoals = sessionGoals;
+    window.render_game_to_text = renderGameToText;
+    window.advanceTime = advanceTime;
   }, 'Debug exports');
 
-  console.log('🎉 Creature Sandbox initialized successfully!');
-  console.log('💡 Use the debug console (`) for advanced debugging tools');
+  console.debug('🎉 Creature Sandbox initialized successfully!');
+  console.debug('💡 Use the debug console (`) for advanced debugging tools');
 }
 
 // Wait for DOM to be ready before starting initialization

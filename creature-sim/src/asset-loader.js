@@ -387,7 +387,7 @@ export class AssetLoader {
     this.isLoaded = true;
     this.isLoading = false;
 
-    console.log(`✅ Loaded ${this.assets.size} creature assets, ${this.spriteSheets.size} sprite sheets`);
+    console.debug(`✅ Loaded ${this.assets.size} creature assets, ${this.spriteSheets.size} sprite sheets`);
     return this.assets;
   }
 

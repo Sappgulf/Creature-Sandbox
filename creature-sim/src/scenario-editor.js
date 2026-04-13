@@ -166,7 +166,7 @@ export class ScenarioEditor {
     this.setupEventListeners();
     this.loadDefaultTemplates();
 
-    console.log('🎭 Scenario editor initialized');
+    console.debug('🎭 Scenario editor initialized');
   }
 
   createUI() {
@@ -1044,4 +1044,4 @@ export const builtInScenarios = {
   }
 };
 
-console.log('🎭 Scenario system initialized with', Object.keys(builtInScenarios).length, 'built-in scenarios');
+console.debug('🎭 Scenario system initialized with', Object.keys(builtInScenarios).length, 'built-in scenarios');

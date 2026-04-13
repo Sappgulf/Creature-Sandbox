@@ -157,7 +157,7 @@ export class PerformanceProfiler {
 
     this.setupMemoryMonitoring();
 
-    console.log('📊 Performance profiler initialized (silent mode)');
+    console.debug('📊 Performance profiler initialized (silent mode)');
   }
 
   /**
@@ -564,7 +564,7 @@ export class PerformanceProfiler {
    */
   setEnabled(enabled) {
     this.isEnabled = enabled;
-    console.log(`${enabled ? '▶️' : '⏸️'} Performance profiler ${enabled ? 'enabled' : 'disabled'}`);
+    console.debug(`${enabled ? '▶️' : '⏸️'} Performance profiler ${enabled ? 'enabled' : 'disabled'}`);
   }
 
   /**
