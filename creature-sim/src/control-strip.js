@@ -27,9 +27,10 @@ export class ControlStripController {
     this.overflowDrawerOpen = false;
 
     // Initialize
+    this.lastUIStateSignature = '';
     this.cacheElements();
     this.bindEvents();
-    this.updateUI();
+    this.updateUI({ force: true });
   }
 
   cacheElements() {
@@ -465,7 +466,25 @@ export class ControlStripController {
   }
 
   // === UI UPDATE ===
-  updateUI() {
+  computeUIStateSignature() {
+    const followMode = this.camera?.followMode || 'free';
+    const selectedType = gameState.selectedCreatureType || this.currentSpawnType;
+    return [
+      gameState.paused ? 1 : 0,
+      gameState.fastForward,
+      gameState.watchModeEnabled ? 1 : 0,
+      gameState.godModeActive ? 1 : 0,
+      selectedType,
+      followMode
+    ].join('|');
+  }
+
+  updateUI({ force = false } = {}) {
+    const stateSignature = this.computeUIStateSignature();
+    if (!force && stateSignature === this.lastUIStateSignature) {
+      return;
+    }
+
     if (gameState.selectedCreatureType) {
       this.currentSpawnType = gameState.selectedCreatureType;
     }
@@ -480,6 +499,7 @@ export class ControlStripController {
     this.watchGodMode?.classList.toggle('active', this.isGodMode);
     this.ctrlGod?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
     this.watchGodMode?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
+    this.lastUIStateSignature = this.computeUIStateSignature();
   }
 
   // Called by main loop to sync state
