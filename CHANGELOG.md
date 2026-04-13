@@ -17,6 +17,18 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-04-13 — ui/docs/accessibility — Planned
+- **Issues:** Mobile browser zoom was disabled, the app had no skip path into the main experience, and custom select/range controls removed native keyboard focus cues.
+- **Root Causes:** The viewport meta and mobile viewport sync forced `user-scalable=no`; the document had no top-level skip link/main landmark; select and slider styles used `outline: none` without an equivalent focus-visible treatment.
+- **Fixes:** Restore browser zoom, add a skip link into the main app container, and add visible keyboard focus styles for the custom select and slider controls.
+- **Verification:** `npm test`; targeted lint on edited files if available; manual keyboard/mobile smoke checks for skip link and focus states.
+
+### 2026-04-13 — ui/docs/accessibility — Implemented
+- **Issues:** Mobile browser zoom was disabled, the app had no skip path into the main experience, and custom select/range controls removed native keyboard focus cues.
+- **Root Causes:** The viewport meta and mobile viewport sync forced `user-scalable=no`; the document had no top-level skip link/main landmark; select and slider styles used `outline: none` without an equivalent focus-visible treatment.
+- **Fixes:** Restored browser zoom in both the HTML viewport meta and the mobile viewport sync path; added a skip link to the new `main#main-content` wrapper; added visible focus-visible rings for range inputs and select controls.
+- **Verification:** `npm test` (pass); `npx eslint creature-sim/src/mobile-support.js creature-sim/src/main.js creature-sim/src/control-strip.js` (pass with pre-existing warnings only); manual source inspection confirmed the viewport, skip link, and focus-state changes.
+
 ### 2026-02-06 — ui/simulation/gameplay — Planned
 - **Issues:** Inspector close behavior was inconsistent, selecting creatures did not reliably zoom/focus for readability, replay variety between runs was limited, and god mode/item workflows needed richer interaction coverage.
 - **Root Causes:** Inspector visibility relied on scattered state toggles without immediate DOM sync, selection code duplicated follow logic without explicit zoom targeting, gameplay mode/goal variety had a narrow pool, and god mode lacked direct prop placement/removal parity.

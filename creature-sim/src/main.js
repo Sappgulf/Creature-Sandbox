@@ -40,21 +40,17 @@ import { GameLoop } from './game-loop.js';
 import { errorHandler } from './error-handler.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
-import { poolManager } from './object-pool.js';
 // batchRenderer removed (stub)
 import { performanceProfiler, initializePerformanceMonitor } from './performance-profiler.js';
 import { scenarioEditor } from './scenario-editor.js';
 import { diseaseSystem } from './disease-system.js';
-import { campaignSystem, CAMPAIGN_LEVELS } from './campaign-system.js';
+import { campaignSystem } from './campaign-system.js';
 import { assetLoader } from './asset-loader.js';
 
 // Import newly added systems
 import { seasonalEventsSystem } from './seasonal-events.js';
 import { advancedAI } from './advanced-predator-prey-ai.js';
 import { godPowers } from './god-powers.js';
-import { PersonalitySystem } from './personality-system.js';
-import { AdvancedGenetics } from './advanced-genetics.js';
-import { BiomeInteractions } from './biome-interactions.js';
 import { ProceduralSounds } from './procedural-sounds.js';
 import { UnlockableAchievements } from './unlockable-achievements.js';
 import { FamilyBondsSystem } from './family-bonds.js';
@@ -259,7 +255,7 @@ function initializeApp() {
   }, 'Renderer initialization', null);
 
   // Enable dedicated mobile/touch support (pinch, pan, taps)
-  const mobileSupport = errorHandler.safeExecute(() => {
+  errorHandler.safeExecute(() => {
     return new MobileSupport(canvas, camera);
   }, 'Mobile support initialization', null);
 
@@ -904,7 +900,7 @@ function initializeApp() {
               const timeStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               continueHint.textContent = timeStr;
             }
-          } catch (e) {
+          } catch {
             continueHint.textContent = '';
           }
         }
@@ -1180,8 +1176,8 @@ function initializeApp() {
       if (analytics) {
         try {
           analytics.reset();
-        } catch (e) {
-          console.warn('⚠️ Analytics reset failed:', e);
+        } catch (error) {
+          console.warn('⚠️ Analytics reset failed:', error);
         }
       }
 

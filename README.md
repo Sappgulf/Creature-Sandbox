@@ -11,7 +11,7 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 
 ---
 
-## ✨ What's New in v3.0
+## ✨ What's New in v2.0.0
 
 ### 🎭 **Advanced Systems**
 - **Personality System**: 7 core traits (boldness, curiosity, sociability, etc.), 15+ unique quirks, 5 temperaments

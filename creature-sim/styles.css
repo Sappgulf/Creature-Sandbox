@@ -231,7 +231,7 @@ input[type="range"]:focus-visible {
   transition: top 0.2s ease;
 }
 
-.skip-link:focus {
+.skip-link:focus-visible {
   top: 0;
 }
 
@@ -350,7 +350,7 @@ input[type="range"]:focus-visible {
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
@@ -599,7 +599,7 @@ input[type="range"]:focus-visible {
 .dropdown-item {
   padding: 10px var(--space-md);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
   font-size: 13px;
   color: var(--text-secondary);
   display: flex;
@@ -714,7 +714,7 @@ input[type="range"]:focus-visible {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  transition: all var(--transition-slow);
+  transition: opacity var(--transition-slow), transform var(--transition-slow);
   pointer-events: auto;
   animation: slideUp var(--transition-slow);
 }
@@ -1000,7 +1000,7 @@ input[type="range"]:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
 .god-mode-tools button.active {
@@ -1069,7 +1069,7 @@ input[type="range"]:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background var(--transition-fast), transform var(--transition-fast);
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .interaction-hint-close:active {
@@ -1179,7 +1179,7 @@ input[type="range"]:focus-visible {
   cursor: pointer;
   padding: var(--space-xs);
   border-radius: var(--radius-sm);
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
   line-height: 1;
   min-width: 36px;
   min-height: 36px;
@@ -1427,7 +1427,7 @@ input[type="range"]:focus-visible {
   cursor: pointer;
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-sm);
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
   position: relative;
 }
 
@@ -1449,7 +1449,7 @@ input[type="range"]:focus-visible {
   border-radius: 10px;
   cursor: pointer;
   position: relative;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
   flex-shrink: 0;
 }
 
@@ -1462,7 +1462,7 @@ input[type="range"]:focus-visible {
   height: 14px;
   background: var(--text-muted);
   border-radius: 50%;
-  transition: all var(--transition-fast);
+  transition: left var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .feature-toggle input[type="checkbox"]:checked {
@@ -1485,7 +1485,7 @@ input[type="range"]:focus-visible {
   border-radius: 50%;
   cursor: pointer;
   position: relative;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
   flex-shrink: 0;
 }
 
@@ -1555,6 +1555,12 @@ input[type="range"] {
   position: relative;
 }
 
+input[type="range"]:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 4px;
+  box-shadow: 0 0 0 4px var(--accent-primary-dim);
+}
+
 input[type="range"]::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 3px;
@@ -1619,7 +1625,7 @@ input[type="range"]::-moz-range-thumb {
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
   font-size: 12px;
   font-weight: 500;
 }
@@ -1733,7 +1739,7 @@ input[type="range"]::-moz-range-thumb {
   padding: 4px 10px;
   font-size: 11px;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .chip:hover {
@@ -1776,9 +1782,15 @@ select:hover,
   border-color: var(--glass-border-hover);
 }
 
-select:focus,
-.gene-select:focus {
+select:focus-visible,
+.gene-select:focus-visible {
   border-color: var(--accent-primary);
+  box-shadow: 0 0 0 4px var(--accent-primary-dim);
+}
+
+.meta-select:focus-visible {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.12);
 }
 
 /* ============================================================================
@@ -2032,7 +2044,7 @@ select:focus,
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast), filter var(--transition-fast);
   min-width: 160px;
   font-family: inherit;
 }
@@ -2140,7 +2152,7 @@ select:focus,
   height: 40px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .campaign-close-btn:hover {
@@ -2166,7 +2178,7 @@ select:focus,
   border-radius: var(--radius-md);
   padding: var(--space-lg);
   cursor: pointer;
-  transition: all var(--transition-normal);
+  transition: background-color var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal), opacity var(--transition-normal), transform var(--transition-normal);
   position: relative;
   overflow: hidden;
 }
@@ -2370,7 +2382,7 @@ select:focus,
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 11px;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
 .campaign-exit-btn:hover {
@@ -2625,7 +2637,7 @@ select:focus,
   backdrop-filter: blur(12px);
   box-shadow: var(--shadow-soft);
   z-index: 50;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
 #btn-show-inspector:hover {
@@ -2773,7 +2785,7 @@ select:focus,
   color: var(--text-secondary);
   font-size: 26px;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
   box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
@@ -3435,7 +3447,7 @@ select:focus,
   padding: var(--space-lg);
   text-align: center;
   backdrop-filter: blur(12px);
-  transition: all var(--transition-normal);
+  transition: background-color var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal), transform var(--transition-normal);
 }
 
 .home-feature:hover {
@@ -3489,7 +3501,7 @@ select:focus,
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: all var(--transition-normal);
+  transition: background-color var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal), transform var(--transition-normal);
   font-family: inherit;
   background: var(--glass-bg);
   backdrop-filter: blur(12px);
@@ -3679,7 +3691,7 @@ select:focus,
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 6px;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
 .shortcuts-close:hover {
@@ -3724,7 +3736,7 @@ select:focus,
   min-width: 28px;
   text-align: center;
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .shortcut-row:hover kbd {
@@ -3819,7 +3831,7 @@ select:focus,
   justify-content: center;
   gap: 6px;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .watch-btn:hover {
@@ -4013,7 +4025,7 @@ select:focus,
   border-radius: var(--radius-pill);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
   font-size: 18px;
   gap: 4px;
 }
@@ -4167,7 +4179,7 @@ select:focus,
   color: var(--text-secondary);
   font-size: 18px;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .drawer-close:hover {
@@ -4196,7 +4208,7 @@ select:focus,
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 
 .drawer-action-btn:hover {
@@ -4222,7 +4234,7 @@ select:focus,
   border-radius: var(--radius-md);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
   margin-bottom: 8px;
   text-align: left;
 }
@@ -4321,7 +4333,7 @@ select:focus,
   font-size: 14px;
   text-align: left;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
   margin-bottom: 4px;
 }
 
@@ -4372,7 +4384,7 @@ select:focus,
   color: var(--text-secondary);
   font-size: 16px;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
   gap: 6px;
 }
 

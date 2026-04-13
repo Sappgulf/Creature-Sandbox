@@ -48,7 +48,7 @@ export class MobileSupport {
     // Adjust viewport for better mobile experience
     const viewport = document.querySelector('meta[name="viewport"]');
     if (viewport) {
-      viewport.content = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover';
+      viewport.content = 'width=device-width, initial-scale=1, viewport-fit=cover';
     }
 
     // Stabilize viewport height to account for dynamic browser chrome

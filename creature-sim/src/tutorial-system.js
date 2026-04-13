@@ -158,7 +158,7 @@ export class TutorialSystem {
         border-radius: 8px;
         pointer-events: none;
         box-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
-        transition: all 0.3s ease;
+        transition: opacity 0.3s ease, transform 0.3s ease;
       `;
 
       // Button styles

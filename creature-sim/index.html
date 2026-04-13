@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <title>Creature Sandbox - Evolution Simulator</title>
   <meta name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="description"
     content="Watch creatures evolve in real-time. Genetic inheritance, predator-prey dynamics, and evolutionary adaptation in an interactive ecosystem simulation." />
   <meta name="keywords"
@@ -30,6 +30,8 @@
 </head>
 
 <body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <main id="main-content" tabindex="-1">
   <!-- MAIN GAME CANVAS -->
   <canvas id="view" style="width: 100vw; height: 100vh; display: block;"></canvas>
   <!-- UNIFIED CONTROL STRIP - Bottom Center (Thumb Zone) -->
@@ -938,8 +940,7 @@
     </div>
   </div>
 
-
-
+  </main>
   <script type="module" src="./src/main.js"></script>
 </body>
 
