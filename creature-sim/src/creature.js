@@ -127,6 +127,7 @@ export class Creature {
     this._cachedCanvas = null;
     this._cachedColor = null;
     this._cachedAssetType = null;
+    this._cachedSpriteSet = null;
 
     const baseMaxHealth = this.genes.predator ?
       CreatureTuning.DEFAULT_MAX_HEALTH * 1.25 :
@@ -222,6 +223,7 @@ export class Creature {
       state: 'idle', // idle, walking, running, eating, sleeping
       timer: 0, // Animation cycle timer
       bobPhase: Math.random() * Math.PI * 2, // Random start phase for variety
+      speedRatio: 0,
       lastEat: -Infinity,
       eatDuration: 0.5, // Eating animation lasts 0.5s
       sleepTimer: 0, // Time creature has been idle/resting
@@ -2879,7 +2881,8 @@ export class Creature {
 
     // Determine walking vs running based on speed
     const baseSpeed = this.genes.speed * (this.genes.predator ? 46 : 40);
-    const speedRatio = speed / baseSpeed;
+    const speedRatio = speed / Math.max(0.01, baseSpeed);
+    anim.speedRatio = speedRatio;
 
     if (speedRatio > 0.8) {
       anim.state = 'running'; // Fast movement
@@ -3093,8 +3096,13 @@ export class Creature {
       this._updateCachedCanvas(assetType, colorStr);
     }
 
-    // Render using cached canvas if available, otherwise fallback to triangle
-    if (this._cachedCanvas) {
+    // Render using cached animated sprite frame if available, otherwise fallback.
+    const worldTime = opts.worldTime ?? this._lastWorld?.t ?? 0;
+    const spriteFrame = this._getCachedSpriteFrame(worldTime);
+    if (spriteFrame) {
+      const renderSize = r * 4; // Scale factor for good appearance
+      ctx.drawImage(spriteFrame, -renderSize / 2, -renderSize / 2, renderSize, renderSize);
+    } else if (this._cachedCanvas) {
       const renderSize = r * 4; // Scale factor for good appearance
       ctx.drawImage(this._cachedCanvas, -renderSize / 2, -renderSize / 2, renderSize, renderSize);
     } else {
@@ -3170,6 +3178,33 @@ export class Creature {
   }
 
   /**
+   * Select a prepared sprite frame for this creature's current animation state.
+   * @private
+   */
+  _getCachedSpriteFrame(worldTime = 0) {
+    const spriteSet = this._cachedSpriteSet;
+    if (!spriteSet || !spriteSet.frames || spriteSet.frames.length === 0) {
+      return null;
+    }
+
+    const state = this.animation?.state || 'idle';
+    const speedRatio = clamp(this.animation?.speedRatio ?? 0.5, 0.2, 2.0);
+    let speedScale = 0.7;
+    if (state === 'walking') {
+      speedScale = 0.9 + speedRatio * 0.7;
+    } else if (state === 'running') {
+      speedScale = 1.1 + speedRatio * 1.1;
+    } else if (state === 'eating') {
+      speedScale = 1.3;
+    } else if (state === 'sleeping') {
+      speedScale = 0.35;
+    }
+
+    const frameIndex = assetLoader.getAnimationFrameIndex(spriteSet, state, worldTime, speedScale);
+    return spriteSet.frames[frameIndex] || spriteSet.frames[0] || null;
+  }
+
+  /**
    * Update the cached canvas for this creature's appearance
    * @private
    */
@@ -3177,14 +3212,15 @@ export class Creature {
     this._cachedColor = colorStr;
     this._cachedAssetType = assetType;
 
-    // Create tinted canvas asynchronously
-    assetLoader.createTintedCanvas(assetType, colorStr, 64).then(canvas => {
+    // Prepare tinted sprite frames asynchronously; falls back to one-frame assets.
+    assetLoader.requestSpriteFrames(assetType, { color: colorStr, size: 64 }).then(spriteSet => {
       // Only update if color/type hasn't changed in the meantime
       if (this._cachedColor === colorStr && this._cachedAssetType === assetType) {
-        this._cachedCanvas = canvas;
+        this._cachedSpriteSet = spriteSet;
+        this._cachedCanvas = spriteSet?.frames?.[0] || null;
       }
     }).catch(error => {
-      console.error(`Failed to create cached canvas for ${assetType}:`, error);
+      console.error(`Failed to prepare sprite frames for ${assetType}:`, error);
     });
   }
 

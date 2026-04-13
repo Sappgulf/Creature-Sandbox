@@ -3,6 +3,7 @@ import { RendererConfig } from './renderer-config.js';
 import { RendererFeatureManager } from './renderer-features.js';
 import { RendererPerformanceMonitor } from './renderer-performance.js';
 import { getDebugFlags } from './debug-flags.js';
+import { assetLoader } from './asset-loader.js';
 
 export class Renderer {
   constructor(ctx, camera) {
@@ -79,6 +80,28 @@ export class Renderer {
     // LEGENDARY OPTIMIZATION: Pre-create reusable Path2D objects
     this._circlePath = new Path2D();
     this._circlePath.arc(0, 0, 1, 0, Math.PI * 2);
+
+    this._foodSpriteAssetByType = {
+      grass: 'food_grass',
+      berries: 'food_berries',
+      fruit: 'food_fruit',
+      golden_fruit: 'food_golden_fruit'
+    };
+    this._propSpriteAssetByType = {
+      bounce: 'prop_bounce',
+      spring: 'prop_spring',
+      spinner: 'prop_spinner',
+      seesaw: 'prop_seesaw',
+      conveyor: 'prop_conveyor',
+      slope: 'prop_slope',
+      fan: 'prop_fan',
+      sticky: 'prop_sticky',
+      gravity: 'prop_gravity',
+      button: 'prop_button',
+      launch: 'prop_launch'
+    };
+    this._foodSpriteSize = 48;
+    this._propSpriteSize = 96;
   }
 
   clear(width, height) {
@@ -858,15 +881,146 @@ export class Renderer {
     ctx.restore();
   }
 
+  _getSpriteRuntime(name, size, color = null) {
+    if (!name) return null;
+    const options = color ? { size, color } : { size };
+    const cached = assetLoader.getSpriteFramesSync(name, options);
+    if (cached) return cached;
+    assetLoader.requestSpriteFrames(name, options).catch(() => {});
+    return null;
+  }
+
+  _drawSpriteAt(frame, x, y, size) {
+    if (!frame || !size || size <= 0) return;
+    this.ctx.drawImage(frame, x - size * 0.5, y - size * 0.5, size, size);
+  }
+
+  _shouldUseFoodSprites(visibleFoodCount) {
+    if (visibleFoodCount <= 0) return false;
+    if (this.camera.zoom < 0.75) return false;
+    const maxDetailed = this.isMobile ? 80 : 180;
+    return visibleFoodCount <= maxDetailed;
+  }
+
+  _drawFoodSprites(world, visibleFood) {
+    let needGrass = false;
+    let needBerries = false;
+    let needFruit = false;
+    let needGolden = false;
+    for (let i = 0; i < visibleFood.length; i++) {
+      const type = visibleFood[i].type || 'grass';
+      if (type === 'grass') needGrass = true;
+      else if (type === 'berries') needBerries = true;
+      else if (type === 'fruit') needFruit = true;
+      else if (type === 'golden_fruit') needGolden = true;
+    }
+
+    const grassSprite = needGrass ? this._getSpriteRuntime(this._foodSpriteAssetByType.grass, this._foodSpriteSize) : null;
+    const berriesSprite = needBerries ? this._getSpriteRuntime(this._foodSpriteAssetByType.berries, this._foodSpriteSize) : null;
+    const fruitSprite = needFruit ? this._getSpriteRuntime(this._foodSpriteAssetByType.fruit, this._foodSpriteSize) : null;
+    const goldenSprite = needGolden ? this._getSpriteRuntime(this._foodSpriteAssetByType.golden_fruit, this._foodSpriteSize) : null;
+
+    if ((needGrass && !grassSprite) || (needBerries && !berriesSprite) || (needFruit && !fruitSprite) || (needGolden && !goldenSprite)) {
+      return false;
+    }
+
+    const time = world?.t ?? 0;
+    const ctx = this.ctx;
+
+    for (let i = 0; i < visibleFood.length; i++) {
+      const f = visibleFood[i];
+      const type = f.type || 'grass';
+      let sprite = grassSprite;
+      let speedScale = 1;
+      if (type === 'berries') {
+        sprite = berriesSprite;
+        speedScale = 0.9;
+      } else if (type === 'fruit') {
+        sprite = fruitSprite;
+        speedScale = 0.8;
+      } else if (type === 'golden_fruit') {
+        sprite = goldenSprite;
+        speedScale = 1.25;
+      }
+      const frameIndex = assetLoader.getAnimationFrameIndex(sprite, 'idle', time, speedScale);
+      const frame = sprite.frames[frameIndex] || sprite.frames[0];
+      const drawSize = Math.max(4, (f.r || 2) * 3);
+      this._drawSpriteAt(frame, f.x, f.y, drawSize);
+
+      if (type === 'golden_fruit') {
+        ctx.save();
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = 'gold';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, drawSize * 0.55, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+    return true;
+  }
+
+  _shouldUsePropSprites(propCount) {
+    if (propCount <= 0) return false;
+    if (this.camera.zoom < 0.7) return false;
+    const maxDetailed = this.isMobile ? 36 : 72;
+    return propCount <= maxDetailed;
+  }
+
+  _drawSandboxPropSprite(prop, world) {
+    if (!prop) return false;
+    const spriteName = this._propSpriteAssetByType[prop.type];
+    if (!spriteName) return false;
+    const tintColor = assetLoader.isSpriteTintable(spriteName) ? (prop.color || null) : null;
+    const sprite = this._getSpriteRuntime(spriteName, this._propSpriteSize, tintColor);
+    if (!sprite) return false;
+
+    const time = world?.t ?? 0;
+    const speedScale = 0.8 + Math.min(1.4, (prop.strength ?? 1) * 0.5);
+    const frameIndex = assetLoader.getAnimationFrameIndex(sprite, 'idle', time, speedScale);
+    const frame = sprite.frames[frameIndex] || sprite.frames[0];
+    if (!frame) return false;
+
+    const radius = prop.radius || 40;
+    const drawSize = Math.max(18, radius * 2.2);
+    const directional = prop.type === 'conveyor' || prop.type === 'slope' || prop.type === 'fan';
+    const dynamicSpin = prop.type === 'spinner';
+    const dynamicTilt = prop.type === 'seesaw';
+    if (directional || dynamicSpin || dynamicTilt) {
+      let angle = prop.dir ?? 0;
+      if (dynamicSpin) {
+        angle += (time * 2.2) % (Math.PI * 2);
+      } else if (dynamicTilt) {
+        angle += Math.sin(time * 1.8 + (prop.id || 0)) * 0.2;
+      }
+      this.ctx.save();
+      this.ctx.translate(prop.x, prop.y);
+      this.ctx.rotate(angle);
+      this.ctx.drawImage(frame, -drawSize * 0.5, -drawSize * 0.5, drawSize, drawSize);
+      this.ctx.restore();
+      return true;
+    }
+
+    this._drawSpriteAt(frame, prop.x, prop.y, drawSize);
+    return true;
+  }
+
   drawSandboxProps(world) {
     const props = world.sandbox?.props;
     if (!props || props.length === 0) return;
+    const useSpriteProps = this._shouldUsePropSprites(props.length);
 
     const ctx = this.ctx;
     ctx.save();
 
     for (const prop of props) {
       if (!prop) continue;
+      if (useSpriteProps && this._drawSandboxPropSprite(prop, world)) {
+        ctx.globalAlpha = 1;
+        continue;
+      }
       const radius = prop.radius || 40;
       const color = prop.color || '#94a3b8';
 
@@ -1097,6 +1251,9 @@ export class Renderer {
     this.performance.stats.culled += (world.food.length - visibleFood.length);
 
     if (visibleFood.length === 0) return;
+    if (this._shouldUseFoodSprites(visibleFood.length) && this._drawFoodSprites(world, visibleFood)) {
+      return;
+    }
 
     // OPTIMIZATION: Reuse type grouping to avoid allocations
     if (!this._foodByType) this._foodByType = { grass: [], berries: [], fruit: [], golden_fruit: [] };
@@ -1328,7 +1485,8 @@ export class Renderer {
         showTrail: showTrails,
         showVision: this.enableVision,
         clusterHue,
-        zoom
+        zoom,
+        worldTime
       };
 
       // PERFORMANCE: Level of Detail (LOD) handling
