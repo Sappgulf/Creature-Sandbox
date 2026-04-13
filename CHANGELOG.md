@@ -17,6 +17,18 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-04-13 — ui/mobile/perf — Planned
+- **Issues:** Mobile users lacked quick-access controls for distraction-free play, battery-preserving quality locks, and tactile feedback settings tailored to touch interactions.
+- **Root Causes:** Overflow menu focused on feature navigation only, renderer quality adaptation could not be user-locked from UI, and touch feedback/haptics had no explicit preference controls.
+- **Fixes:** Add mobile-specific overflow actions (Focus Mode, Battery Saver, Haptics), wire persistent preferences via local storage, add renderer quality override support for low-power mode, and apply visual focus styling to suppress non-essential overlays.
+- **Verification:** `npm test`; `npx eslint creature-sim/src/control-strip.js creature-sim/src/renderer-performance.js`.
+
+### 2026-04-13 — ui/mobile/perf — Implemented
+- **Issues:** Mobile users lacked quick-access controls for distraction-free play, battery-preserving quality locks, and tactile feedback settings tailored to touch interactions.
+- **Root Causes:** Overflow menu focused on feature navigation only, renderer quality adaptation could not be user-locked from UI, and touch feedback/haptics had no explicit preference controls.
+- **Fixes:** Added new overflow actions in `index.html` for Focus Mode, Battery Saver, and Haptics; expanded `ControlStripController` with persisted mobile preferences, touch-device vibration feedback, and runtime toggles that apply body-state classes and renderer quality locks; passed `renderer` into control-strip initialization; added `setQualityOverride()` in renderer performance monitor and bypassed adaptive quality while override is active; introduced `mobile-focus-mode` CSS to hide non-essential overlays and emphasize thumb-zone controls.
+- **Verification:** `npm test` (pass); `npx eslint creature-sim/src/control-strip.js creature-sim/src/renderer-performance.js creature-sim/src/main.js` (pass).
+
 ### 2026-04-13 — ui/mobile — Planned
 - **Issues:** Mobile layouts on very narrow and landscape screens still felt cramped, with dense quick-action controls competing with panel space and no profile-specific UI tuning.
 - **Root Causes:** Mobile styling used one-size-fits-all quick-action dimensions, and viewport handling did not apply semantic compact/landscape state classes for responsive behavior branching.

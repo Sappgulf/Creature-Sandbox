@@ -569,6 +569,7 @@ function initializeApp() {
     return new ControlStripController({
       world,
       camera,
+      renderer,
       tools,
       uiController
     });
