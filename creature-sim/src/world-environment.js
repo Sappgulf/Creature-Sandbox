@@ -207,7 +207,7 @@ export class WorldEnvironment {
         type: 'season_change',
         season: this.currentSeason,
         config: config
-      });
+      }, this.world);
     }
   }
 

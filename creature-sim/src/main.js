@@ -100,20 +100,27 @@ function createDevFpsOverlay(enabled) {
 
 console.log('🚀 Starting Creature Sandbox...');
 
-// Preload creature assets
-console.log('🎨 Loading creature assets...');
-assetLoader.loadSVG('creature_herbivore', './assets/creature_herbivore.svg');
-assetLoader.loadSVG('creature_predator', './assets/creature_predator.svg');
-assetLoader.loadSVG('creature_omnivore', './assets/creature_omnivore.svg');
-assetLoader.loadSVG('creature_baby', './assets/creature_baby.svg');
-assetLoader.loadSVG('creature_elder', './assets/creature_elder.svg');
-assetLoader.loadSVG('creature_alpha', './assets/creature_alpha.svg');
-assetLoader.loadSVG('creature_aquatic', './assets/creature_aquatic.svg');
-assetLoader.loadAll().then(() => {
-  console.log('✅ Creature assets loaded successfully');
-}).catch(error => {
-  console.warn('⚠️ Some creature assets failed to load, falling back to shapes:', error);
-});
+// Preload sprite assets
+console.log('🎨 Loading sprite assets...');
+assetLoader.loadManifest('./assets/sprites/sprite-manifest.json', { optional: true })
+  .then(manifest => {
+    if (!manifest) {
+      assetLoader.loadSVG('creature_herbivore', './assets/creature_herbivore.svg');
+      assetLoader.loadSVG('creature_predator', './assets/creature_predator.svg');
+      assetLoader.loadSVG('creature_omnivore', './assets/creature_omnivore.svg');
+      assetLoader.loadSVG('creature_baby', './assets/creature_baby.svg');
+      assetLoader.loadSVG('creature_elder', './assets/creature_elder.svg');
+      assetLoader.loadSVG('creature_alpha', './assets/creature_alpha.svg');
+      assetLoader.loadSVG('creature_aquatic', './assets/creature_aquatic.svg');
+    }
+    return assetLoader.loadAll();
+  })
+  .then(() => {
+    console.log('✅ Sprite assets loaded successfully');
+  })
+  .catch(error => {
+    console.warn('⚠️ Some sprite assets failed to load, falling back to shapes:', error);
+  });
 
 // Wait for DOM to be ready before initializing
 function initializeApp() {

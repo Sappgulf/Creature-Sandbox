@@ -305,6 +305,8 @@ export class AssetLoader {
    */
   loadManifest(path = './assets/sprites/sprite-manifest.json', { optional = true } = {}) {
     if (typeof fetch === 'undefined') return Promise.resolve(null);
+    this._manifestAutoQueued = true;
+    this._manifestPath = path;
 
     const manifestPromise = (async () => {
       try {

@@ -12,6 +12,14 @@ export class LineageTracker {
     this.generationCache = new Map(); // Cache generation depths
   }
 
+  reset() {
+    this.names.clear();
+    this.events.length = 0;
+    this.heroGenerations.clear();
+    this.rootCache.clear();
+    this.generationCache.clear();
+  }
+
   /**
    * Compatibility wrapper: invoked by world/creature manager when a creature is born.
    * Accepts either (creature, world) or (creature, world, parent).
@@ -78,6 +86,39 @@ export class LineageTracker {
     // Audio feedback for milestone
     if (world.audio && typeof world.audio.playUISound === 'function') {
       world.audio.playUISound('success');
+    }
+  }
+
+  recordEvent(event, world = null) {
+    if (!event || typeof event !== 'object') return;
+
+    const time = Number(event.time ?? world?.t ?? 0);
+    const rootId = event.rootId ?? event.root ?? event.creatureId ?? event.creature?.id ?? null;
+    const title =
+      typeof event.title === 'string' && event.title.trim()
+        ? event.title
+        : this._formatEventTitle(event);
+
+    this.events.unshift({
+      ...event,
+      type: event.type || 'event',
+      time: Number.isFinite(time) ? time : 0,
+      rootId,
+      title
+    });
+    this.trim();
+  }
+
+  _formatEventTitle(event) {
+    switch (event?.type) {
+      case 'disaster_start':
+        return `Disaster started: ${event.disaster || 'unknown'}`;
+      case 'disaster_end':
+        return `Disaster ended: ${event.disaster || 'unknown'}`;
+      case 'season_change':
+        return `Season changed: ${event.season || 'unknown'}`;
+      default:
+        return event?.message || String(event?.type || 'event').replace(/_/g, ' ');
     }
   }
 

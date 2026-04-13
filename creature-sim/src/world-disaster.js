@@ -312,7 +312,7 @@ export class WorldDisaster {
         type: 'disaster_start',
         disaster: disaster.type,
         intensity: disaster.intensity
-      });
+      }, this.world);
     }
 
     // Audio cues
@@ -350,7 +350,7 @@ export class WorldDisaster {
         disaster: disaster.type,
         duration: this.world.t - disaster.startTime,
         cancelled
-      });
+      }, this.world);
     }
   }
 

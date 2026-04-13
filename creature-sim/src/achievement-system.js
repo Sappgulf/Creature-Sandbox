@@ -19,6 +19,7 @@ export class AchievementSystem {
     this.notificationsEnabled = true;
     this.autoSaveEnabled = true;
     this.xpMultiplier = 1.0;
+    this._broadcastingXP = false;
 
     this._subscriptions = [];
     this._lastWorldTime = null;
@@ -141,7 +142,15 @@ export class AchievementSystem {
     if (GameEvents.ACHIEVEMENT_XP) {
       this._subscriptions.push(
         eventSystem.on(GameEvents.ACHIEVEMENT_XP, (event) => {
-          this.awardXP(event?.amount);
+          if (this._broadcastingXP || event?.source === 'achievement-system') {
+            return;
+          }
+          this.awardXP(event?.amount, {
+            save: event?.save !== false,
+            world: event?.world || null,
+            event,
+            origin: event?.source || 'external'
+          });
         })
       );
     }
@@ -345,7 +354,7 @@ export class AchievementSystem {
     return Math.floor(base * Math.pow(level - 1, 1.35));
   }
 
-  awardXP(amount, { save = true, world = null, event = null } = {}) {
+  awardXP(amount, { save = true, world = null, event = null, origin = 'direct' } = {}) {
     if (!this.enabled) return;
     const value = Number(amount);
     if (!Number.isFinite(value) || value <= 0) return;
@@ -360,6 +369,7 @@ export class AchievementSystem {
     }
 
     try {
+      this._broadcastingXP = true;
       eventSystem.emit(GameEvents.ACHIEVEMENT_XP, {
         amount: value,
         totalXP: this.xp,
@@ -369,10 +379,14 @@ export class AchievementSystem {
         nextLevelXP: this.xpForLevel(this.level + 1),
         worldTime: world?.t,
         world,
-        event
+        event,
+        origin,
+        source: 'achievement-system'
       });
     } catch (e) {
       console.warn('Failed to emit XP event:', e);
+    } finally {
+      this._broadcastingXP = false;
     }
 
     if (save && this.autoSaveEnabled) {
