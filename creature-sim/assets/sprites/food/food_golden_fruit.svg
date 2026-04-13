@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="48" viewBox="0 0 384 48" fill="none"><defs><filter id="food_golden_fruit-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
+    <rect x="0" y="0" width="48" height="48" fill="none"/>
+    <path d="M 24 10.92 L 24 18.92"
+          stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
+    <circle cx="24" cy="26.42" r="9.2" fill="currentColor"/>
+    <circle cx="24" cy="26.42" r="11.4" fill="none" stroke="rgba(255,233,122,0.65)" stroke-width="1.2"/>
+    <g transform="translate(24.1 25.42) rotate(0)">
+      <path d="M 0 -5.8 L 1.7 -1.4 L 6 -0.8 L 2.8 1.7 L 3.8 6 L 0 3.6 L -3.8 6 L -2.8 1.7 L -6 -0.8 L -1.7 -1.4 Z"
+            fill="rgba(255,255,255,0.85)" opacity="0.92"/>
+    </g>
+    <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
+  </g><g transform="translate(48 0)">
+    <rect x="0" y="0" width="48" height="48" fill="none"/>
+    <path d="M 24 10.92 L 24 18.92"
+          stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
+    <circle cx="24" cy="26.42" r="9.42" fill="currentColor"/>
+    <circle cx="24" cy="26.42" r="11.69" fill="none" stroke="rgba(255,233,122,0.65)" stroke-width="1.2"/>
+    <g transform="translate(24.1 25.42) rotate(45)">
+      <path d="M 0 -5.8 L 1.7 -1.4 L 6 -0.8 L 2.8 1.7 L 3.8 6 L 0 3.6 L -3.8 6 L -2.8 1.7 L -6 -0.8 L -1.7 -1.4 Z"
+            fill="rgba(255,255,255,0.85)" opacity="0.92"/>
+    </g>
+    <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
+  </g><g transform="translate(96 0)">
+    <rect x="0" y="0" width="48" height="48" fill="none"/>
+    <path d="M 24 10.92 L 24 18.92"
+          stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
+    <circle cx="24" cy="26.42" r="8.87" fill="currentColor"/>
+    <circle cx="24" cy="26.42" r="10.96" fill="none" stroke="rgba(255,233,122,0.65)" stroke-width="1.2"/>
+    <g transform="translate(24.1 25.42) rotate(90)">
+      <path d="M 0 -5.8 L 1.7 -1.4 L 6 -0.8 L 2.8 1.7 L 3.8 6 L 0 3.6 L -3.8 6 L -2.8 1.7 L -6 -0.8 L -1.7 -1.4 Z"
+            fill="rgba(255,255,255,0.85)" opacity="0.92"/>
+    </g>
+    <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
+  </g><g transform="translate(144 0)">
+    <rect x="0" y="0" width="48" height="48" fill="none"/>
+    <path d="M 24 10.92 L 24 18.92"
+          stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
+    <circle cx="24" cy="26.42" r="9.48" fill="currentColor"/>
+    <circle cx="24" cy="26.42" r="11.78" fill="none" stroke="rgba(255,233,122,0.65)" stroke-width="1.2"/>
+    <g transform="translate(24.1 25.42) rotate(135)">
+      <path d="M 0 -5.8 L 1.7 -1.4 L 6 -0.8 L 2.8 1.7 L 3.8 6 L 0 3.6 L -3.8 6 L -2.8 1.7 L -6 -0.8 L -1.7 -1.4 Z"
+            fill="rgba(255,255,255,0.85)" opacity="0.92"/>
+    </g>
+    <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
+  </g><g transform="translate(192 0)">
+    <rect x="0" y="0" width="48" height="48" fill="none"/>
+    <path d="M 24 10.92 L 24 18.92"
+          stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
+    <circle cx="24" cy="26.42" r="9.1" fill="currentColor"/>
+    <circle cx="24" cy="26.42" r="11.26" fill="none" stroke="rgba(255,233,122,0.65)" stroke-width="1.2"/>
+    <g transform="translate(24.1 25.42) rotate(180)">
+      <path d="M 0 -5.8 L 1.7 -1.4 L 6 -0.8 L 2.8 1.7 L 3.8 6 L 0 3.6 L -3.8 6 L -2.8 1.7 L -6 -0.8 L -1.7 -1.4 Z"
+            fill="rgba(255,255,255,0.85)" opacity="0.92"/>
+    </g>
+    <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
+  </g><g transform="translate(240 0)">
+    <rect x="0" y="0" width="48" height="48" fill="none"/>
+    <path d="M 24 10.92 L 24 18.92"
+          stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
+    <circle cx="24" cy="26.42" r="9.07" fill="currentColor"/>
+    <circle cx="24" cy="26.42" r="11.23" fill="none" stroke="rgba(255,233,122,0.65)" stroke-width="1.2"/>
+    <g transform="translate(24.1 25.42) rotate(225)">
+      <path d="M 0 -5.8 L 1.7 -1.4 L 6 -0.8 L 2.8 1.7 L 3.8 6 L 0 3.6 L -3.8 6 L -2.8 1.7 L -6 -0.8 L -1.7 -1.4 Z"
+            fill="rgba(255,255,255,0.85)" opacity="0.92"/>
+    </g>
+    <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
+  </g><g transform="translate(288 0)">
+    <rect x="0" y="0" width="48" height="48" fill="none"/>
+    <path d="M 24 10.92 L 24 18.92"
+          stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
+    <circle cx="24" cy="26.42" r="9.5" fill="currentColor"/>
+    <circle cx="24" cy="26.42" r="11.8" fill="none" stroke="rgba(255,233,122,0.65)" stroke-width="1.2"/>
+    <g transform="translate(24.1 25.42) rotate(270)">
+      <path d="M 0 -5.8 L 1.7 -1.4 L 6 -0.8 L 2.8 1.7 L 3.8 6 L 0 3.6 L -3.8 6 L -2.8 1.7 L -6 -0.8 L -1.7 -1.4 Z"
+            fill="rgba(255,255,255,0.85)" opacity="0.92"/>
+    </g>
+    <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
+  </g><g transform="translate(336 0)">
+    <rect x="0" y="0" width="48" height="48" fill="none"/>
+    <path d="M 24 10.92 L 24 18.92"
+          stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
+    <circle cx="24" cy="26.42" r="8.88" fill="currentColor"/>
+    <circle cx="24" cy="26.42" r="10.96" fill="none" stroke="rgba(255,233,122,0.65)" stroke-width="1.2"/>
+    <g transform="translate(24.1 25.42) rotate(315)">
+      <path d="M 0 -5.8 L 1.7 -1.4 L 6 -0.8 L 2.8 1.7 L 3.8 6 L 0 3.6 L -3.8 6 L -2.8 1.7 L -6 -0.8 L -1.7 -1.4 Z"
+            fill="rgba(255,255,255,0.85)" opacity="0.92"/>
+    </g>
+    <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
+  </g></svg>

@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1152" height="96" viewBox="0 0 1152 96" fill="none"><defs><filter id="prop_sticky-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 23 60
+               Q 20 36 41 30
+               Q 64 24 73 44
+               Q 76 64 57 68
+               Q 36 72 23 60 Z"
+            fill="currentColor" opacity="0.72"/>
+      <circle cx="40" cy="46" r="5.5" fill="rgba(255,255,255,0.35)"/>
+      <circle cx="58" cy="54" r="3.4" fill="rgba(255,255,255,0.28)"/>
+    </g><g transform="translate(96 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 23 60
+               Q 20 38.92 41 30
+               Q 64 21.08 73 44
+               Q 76 64 57 68
+               Q 36 72 23 60 Z"
+            fill="currentColor" opacity="0.72"/>
+      <circle cx="40" cy="46" r="5.5" fill="rgba(255,255,255,0.35)"/>
+      <circle cx="58" cy="54" r="3.4" fill="rgba(255,255,255,0.28)"/>
+    </g><g transform="translate(192 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 23 60
+               Q 20 38.38 41 30
+               Q 64 21.62 73 44
+               Q 76 64 57 68
+               Q 36 72 23 60 Z"
+            fill="currentColor" opacity="0.72"/>
+      <circle cx="40" cy="46" r="5.5" fill="rgba(255,255,255,0.35)"/>
+      <circle cx="58" cy="54" r="3.4" fill="rgba(255,255,255,0.28)"/>
+    </g><g transform="translate(288 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 23 60
+               Q 20 35.01 41 30
+               Q 64 24.99 73 44
+               Q 76 64 57 68
+               Q 36 72 23 60 Z"
+            fill="currentColor" opacity="0.72"/>
+      <circle cx="40" cy="46" r="5.5" fill="rgba(255,255,255,0.35)"/>
+      <circle cx="58" cy="54" r="3.4" fill="rgba(255,255,255,0.28)"/>
+    </g><g transform="translate(384 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 23 60
+               Q 20 32.82 41 30
+               Q 64 27.18 73 44
+               Q 76 64 57 68
+               Q 36 72 23 60 Z"
+            fill="currentColor" opacity="0.72"/>
+      <circle cx="40" cy="46" r="5.5" fill="rgba(255,255,255,0.35)"/>
+      <circle cx="58" cy="54" r="3.4" fill="rgba(255,255,255,0.28)"/>
+    </g><g transform="translate(480 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 23 60
+               Q 20 34.4 41 30
+               Q 64 25.6 73 44
+               Q 76 64 57 68
+               Q 36 72 23 60 Z"
+            fill="currentColor" opacity="0.72"/>
+      <circle cx="40" cy="46" r="5.5" fill="rgba(255,255,255,0.35)"/>
+      <circle cx="58" cy="54" r="3.4" fill="rgba(255,255,255,0.28)"/>
+    </g><g transform="translate(576 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 23 60
+               Q 20 37.88 41 30
+               Q 64 22.12 73 44
+               Q 76 64 57 68
+               Q 36 72 23 60 Z"
+            fill="currentColor" opacity="0.72"/>
+      <circle cx="40" cy="46" r="5.5" fill="rgba(255,255,255,0.35)"/>
+      <circle cx="58" cy="54" r="3.4" fill="rgba(255,255,255,0.28)"/>
+    </g><g transform="translate(672 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 23 60
+               Q 20 39.13 41 30
+               Q 64 20.87 73 44
+               Q 76 64 57 68
+               Q 36 72 23 60 Z"
+            fill="currentColor" opacity="0.72"/>
+      <circle cx="40" cy="46" r="5.5" fill="rgba(255,255,255,0.35)"/>
+      <circle cx="58" cy="54" r="3.4" fill="rgba(255,255,255,0.28)"/>
+    </g><g transform="translate(768 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 23 60
+               Q 20 36.67 41 30
+               Q 64 23.33 73 44
+               Q 76 64 57 68
+               Q 36 72 23 60 Z"
+            fill="currentColor" opacity="0.72"/>
+      <circle cx="40" cy="46" r="5.5" fill="rgba(255,255,255,0.35)"/>
+      <circle cx="58" cy="54" r="3.4" fill="rgba(255,255,255,0.28)"/>
+    </g><g transform="translate(864 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 23 60
+               Q 20 33.41 41 30
+               Q 64 26.59 73 44
+               Q 76 64 57 68
+               Q 36 72 23 60 Z"
+            fill="currentColor" opacity="0.72"/>
+      <circle cx="40" cy="46" r="5.5" fill="rgba(255,255,255,0.35)"/>
+      <circle cx="58" cy="54" r="3.4" fill="rgba(255,255,255,0.28)"/>
+    </g><g transform="translate(960 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 23 60
+               Q 20 33.23 41 30
+               Q 64 26.77 73 44
+               Q 76 64 57 68
+               Q 36 72 23 60 Z"
+            fill="currentColor" opacity="0.72"/>
+      <circle cx="40" cy="46" r="5.5" fill="rgba(255,255,255,0.35)"/>
+      <circle cx="58" cy="54" r="3.4" fill="rgba(255,255,255,0.28)"/>
+    </g><g transform="translate(1056 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 23 60
+               Q 20 36.33 41 30
+               Q 64 23.67 73 44
+               Q 76 64 57 68
+               Q 36 72 23 60 Z"
+            fill="currentColor" opacity="0.72"/>
+      <circle cx="40" cy="46" r="5.5" fill="rgba(255,255,255,0.35)"/>
+      <circle cx="58" cy="54" r="3.4" fill="rgba(255,255,255,0.28)"/>
+    </g></svg>

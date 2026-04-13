@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1152" height="96" viewBox="0 0 1152 96" fill="none"><defs><filter id="prop_conveyor-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
+      <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
+      <g fill="rgba(255,255,255,0.82)">
+        <path d="M 30 48 l 7 -4 v 8 z"/>
+        <path d="M 47 48 l 7 -4 v 8 z"/>
+        <path d="M 64 48 l 7 -4 v 8 z"/>
+      </g>
+    </g><g transform="translate(96 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
+      <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
+      <g fill="rgba(255,255,255,0.82)">
+        <path d="M 31.67 48 l 7 -4 v 8 z"/>
+        <path d="M 48.67 48 l 7 -4 v 8 z"/>
+        <path d="M 65.67 48 l 7 -4 v 8 z"/>
+      </g>
+    </g><g transform="translate(192 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
+      <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
+      <g fill="rgba(255,255,255,0.82)">
+        <path d="M 33.33 48 l 7 -4 v 8 z"/>
+        <path d="M 50.33 48 l 7 -4 v 8 z"/>
+        <path d="M 67.33 48 l 7 -4 v 8 z"/>
+      </g>
+    </g><g transform="translate(288 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
+      <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
+      <g fill="rgba(255,255,255,0.82)">
+        <path d="M 35 48 l 7 -4 v 8 z"/>
+        <path d="M 52 48 l 7 -4 v 8 z"/>
+        <path d="M 69 48 l 7 -4 v 8 z"/>
+      </g>
+    </g><g transform="translate(384 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
+      <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
+      <g fill="rgba(255,255,255,0.82)">
+        <path d="M 36.67 48 l 7 -4 v 8 z"/>
+        <path d="M 53.67 48 l 7 -4 v 8 z"/>
+        <path d="M 70.67 48 l 7 -4 v 8 z"/>
+      </g>
+    </g><g transform="translate(480 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
+      <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
+      <g fill="rgba(255,255,255,0.82)">
+        <path d="M 38.33 48 l 7 -4 v 8 z"/>
+        <path d="M 55.33 48 l 7 -4 v 8 z"/>
+        <path d="M 72.33 48 l 7 -4 v 8 z"/>
+      </g>
+    </g><g transform="translate(576 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
+      <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
+      <g fill="rgba(255,255,255,0.82)">
+        <path d="M 40 48 l 7 -4 v 8 z"/>
+        <path d="M 57 48 l 7 -4 v 8 z"/>
+        <path d="M 74 48 l 7 -4 v 8 z"/>
+      </g>
+    </g><g transform="translate(672 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
+      <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
+      <g fill="rgba(255,255,255,0.82)">
+        <path d="M 41.67 48 l 7 -4 v 8 z"/>
+        <path d="M 58.67 48 l 7 -4 v 8 z"/>
+        <path d="M 75.67 48 l 7 -4 v 8 z"/>
+      </g>
+    </g><g transform="translate(768 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
+      <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
+      <g fill="rgba(255,255,255,0.82)">
+        <path d="M 43.33 48 l 7 -4 v 8 z"/>
+        <path d="M 60.33 48 l 7 -4 v 8 z"/>
+        <path d="M 77.33 48 l 7 -4 v 8 z"/>
+      </g>
+    </g><g transform="translate(864 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
+      <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
+      <g fill="rgba(255,255,255,0.82)">
+        <path d="M 45 48 l 7 -4 v 8 z"/>
+        <path d="M 62 48 l 7 -4 v 8 z"/>
+        <path d="M 79 48 l 7 -4 v 8 z"/>
+      </g>
+    </g><g transform="translate(960 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
+      <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
+      <g fill="rgba(255,255,255,0.82)">
+        <path d="M 46.67 48 l 7 -4 v 8 z"/>
+        <path d="M 63.67 48 l 7 -4 v 8 z"/>
+        <path d="M 80.67 48 l 7 -4 v 8 z"/>
+      </g>
+    </g><g transform="translate(1056 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
+      <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
+      <g fill="rgba(255,255,255,0.82)">
+        <path d="M 48.33 48 l 7 -4 v 8 z"/>
+        <path d="M 65.33 48 l 7 -4 v 8 z"/>
+        <path d="M 82.33 48 l 7 -4 v 8 z"/>
+      </g>
+    </g></svg>

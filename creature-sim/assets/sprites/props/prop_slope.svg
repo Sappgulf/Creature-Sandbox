@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1152" height="96" viewBox="0 0 1152 96" fill="none"><defs><filter id="prop_slope-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 18 66 L 76 36 L 76 66 Z"
+            fill="currentColor"/>
+      <path d="M 27 58 L 44 49 L 44 56 Z"
+            fill="rgba(255,255,255,0.78)"/>
+      <path d="M 45 49 L 62 40 L 62 47 Z"
+            fill="rgba(255,255,255,0.78)"/>
+    </g><g transform="translate(96 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 18 66 L 76 36 L 76 66 Z"
+            fill="currentColor"/>
+      <path d="M 27 56.87 L 44 47.87 L 44 54.87 Z"
+            fill="rgba(255,255,255,0.78)"/>
+      <path d="M 45 50.13 L 62 41.13 L 62 48.13 Z"
+            fill="rgba(255,255,255,0.78)"/>
+    </g><g transform="translate(192 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 18 66 L 76 36 L 76 66 Z"
+            fill="currentColor"/>
+      <path d="M 27 56.4 L 44 47.4 L 44 54.4 Z"
+            fill="rgba(255,255,255,0.78)"/>
+      <path d="M 45 50.6 L 62 41.6 L 62 48.6 Z"
+            fill="rgba(255,255,255,0.78)"/>
+    </g><g transform="translate(288 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 18 66 L 76 36 L 76 66 Z"
+            fill="currentColor"/>
+      <path d="M 27 56.87 L 44 47.87 L 44 54.87 Z"
+            fill="rgba(255,255,255,0.78)"/>
+      <path d="M 45 50.13 L 62 41.13 L 62 48.13 Z"
+            fill="rgba(255,255,255,0.78)"/>
+    </g><g transform="translate(384 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 18 66 L 76 36 L 76 66 Z"
+            fill="currentColor"/>
+      <path d="M 27 58 L 44 49 L 44 56 Z"
+            fill="rgba(255,255,255,0.78)"/>
+      <path d="M 45 49 L 62 40 L 62 47 Z"
+            fill="rgba(255,255,255,0.78)"/>
+    </g><g transform="translate(480 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 18 66 L 76 36 L 76 66 Z"
+            fill="currentColor"/>
+      <path d="M 27 59.13 L 44 50.13 L 44 57.13 Z"
+            fill="rgba(255,255,255,0.78)"/>
+      <path d="M 45 47.87 L 62 38.87 L 62 45.87 Z"
+            fill="rgba(255,255,255,0.78)"/>
+    </g><g transform="translate(576 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 18 66 L 76 36 L 76 66 Z"
+            fill="currentColor"/>
+      <path d="M 27 59.6 L 44 50.6 L 44 57.6 Z"
+            fill="rgba(255,255,255,0.78)"/>
+      <path d="M 45 47.4 L 62 38.4 L 62 45.4 Z"
+            fill="rgba(255,255,255,0.78)"/>
+    </g><g transform="translate(672 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 18 66 L 76 36 L 76 66 Z"
+            fill="currentColor"/>
+      <path d="M 27 59.13 L 44 50.13 L 44 57.13 Z"
+            fill="rgba(255,255,255,0.78)"/>
+      <path d="M 45 47.87 L 62 38.87 L 62 45.87 Z"
+            fill="rgba(255,255,255,0.78)"/>
+    </g><g transform="translate(768 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 18 66 L 76 36 L 76 66 Z"
+            fill="currentColor"/>
+      <path d="M 27 58 L 44 49 L 44 56 Z"
+            fill="rgba(255,255,255,0.78)"/>
+      <path d="M 45 49 L 62 40 L 62 47 Z"
+            fill="rgba(255,255,255,0.78)"/>
+    </g><g transform="translate(864 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 18 66 L 76 36 L 76 66 Z"
+            fill="currentColor"/>
+      <path d="M 27 56.87 L 44 47.87 L 44 54.87 Z"
+            fill="rgba(255,255,255,0.78)"/>
+      <path d="M 45 50.13 L 62 41.13 L 62 48.13 Z"
+            fill="rgba(255,255,255,0.78)"/>
+    </g><g transform="translate(960 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 18 66 L 76 36 L 76 66 Z"
+            fill="currentColor"/>
+      <path d="M 27 56.4 L 44 47.4 L 44 54.4 Z"
+            fill="rgba(255,255,255,0.78)"/>
+      <path d="M 45 50.6 L 62 41.6 L 62 48.6 Z"
+            fill="rgba(255,255,255,0.78)"/>
+    </g><g transform="translate(1056 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 18 66 L 76 36 L 76 66 Z"
+            fill="currentColor"/>
+      <path d="M 27 56.87 L 44 47.87 L 44 54.87 Z"
+            fill="rgba(255,255,255,0.78)"/>
+      <path d="M 45 50.13 L 62 41.13 L 62 48.13 Z"
+            fill="rgba(255,255,255,0.78)"/>
+    </g></svg>

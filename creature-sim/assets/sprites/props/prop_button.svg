@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1152" height="96" viewBox="0 0 1152 96" fill="none"><defs><filter id="prop_button-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <ellipse cx="48" cy="68" rx="22" ry="5" fill="rgba(0,0,0,0.18)"/>
+      <ellipse cx="48" cy="60" rx="19" ry="7" fill="currentColor" opacity="0.62"/>
+      <circle cx="48" cy="50" r="13" fill="currentColor"/>
+      <circle cx="48" cy="48.2" r="8.4" fill="rgba(255,255,255,0.34)"/>
+    </g><g transform="translate(96 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <ellipse cx="48" cy="68" rx="22" ry="5" fill="rgba(0,0,0,0.18)"/>
+      <ellipse cx="48" cy="61.6" rx="19" ry="7" fill="currentColor" opacity="0.62"/>
+      <circle cx="48" cy="54.46" r="13" fill="currentColor"/>
+      <circle cx="48" cy="52.3" r="8.4" fill="rgba(255,255,255,0.34)"/>
+    </g><g transform="translate(192 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <ellipse cx="48" cy="68" rx="22" ry="5" fill="rgba(0,0,0,0.18)"/>
+      <ellipse cx="48" cy="61.46" rx="19" ry="7" fill="currentColor" opacity="0.62"/>
+      <circle cx="48" cy="54.05" r="13" fill="currentColor"/>
+      <circle cx="48" cy="51.92" r="8.4" fill="rgba(255,255,255,0.34)"/>
+    </g><g transform="translate(288 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <ellipse cx="48" cy="68" rx="22" ry="5" fill="rgba(0,0,0,0.18)"/>
+      <ellipse cx="48" cy="60" rx="19" ry="7" fill="currentColor" opacity="0.62"/>
+      <circle cx="48" cy="50" r="13" fill="currentColor"/>
+      <circle cx="48" cy="48.2" r="8.4" fill="rgba(255,255,255,0.34)"/>
+    </g><g transform="translate(384 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <ellipse cx="48" cy="68" rx="22" ry="5" fill="rgba(0,0,0,0.18)"/>
+      <ellipse cx="48" cy="60" rx="19" ry="7" fill="currentColor" opacity="0.62"/>
+      <circle cx="48" cy="50" r="13" fill="currentColor"/>
+      <circle cx="48" cy="48.2" r="8.4" fill="rgba(255,255,255,0.34)"/>
+    </g><g transform="translate(480 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <ellipse cx="48" cy="68" rx="22" ry="5" fill="rgba(0,0,0,0.18)"/>
+      <ellipse cx="48" cy="60" rx="19" ry="7" fill="currentColor" opacity="0.62"/>
+      <circle cx="48" cy="50" r="13" fill="currentColor"/>
+      <circle cx="48" cy="48.2" r="8.4" fill="rgba(255,255,255,0.34)"/>
+    </g><g transform="translate(576 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <ellipse cx="48" cy="68" rx="22" ry="5" fill="rgba(0,0,0,0.18)"/>
+      <ellipse cx="48" cy="60.56" rx="19" ry="7" fill="currentColor" opacity="0.62"/>
+      <circle cx="48" cy="51.55" r="13" fill="currentColor"/>
+      <circle cx="48" cy="49.62" r="8.4" fill="rgba(255,255,255,0.34)"/>
+    </g><g transform="translate(672 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <ellipse cx="48" cy="68" rx="22" ry="5" fill="rgba(0,0,0,0.18)"/>
+      <ellipse cx="48" cy="61.78" rx="19" ry="7" fill="currentColor" opacity="0.62"/>
+      <circle cx="48" cy="54.94" r="13" fill="currentColor"/>
+      <circle cx="48" cy="52.74" r="8.4" fill="rgba(255,255,255,0.34)"/>
+    </g><g transform="translate(768 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <ellipse cx="48" cy="68" rx="22" ry="5" fill="rgba(0,0,0,0.18)"/>
+      <ellipse cx="48" cy="61.06" rx="19" ry="7" fill="currentColor" opacity="0.62"/>
+      <circle cx="48" cy="52.94" r="13" fill="currentColor"/>
+      <circle cx="48" cy="50.9" r="8.4" fill="rgba(255,255,255,0.34)"/>
+    </g><g transform="translate(864 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <ellipse cx="48" cy="68" rx="22" ry="5" fill="rgba(0,0,0,0.18)"/>
+      <ellipse cx="48" cy="60" rx="19" ry="7" fill="currentColor" opacity="0.62"/>
+      <circle cx="48" cy="50" r="13" fill="currentColor"/>
+      <circle cx="48" cy="48.2" r="8.4" fill="rgba(255,255,255,0.34)"/>
+    </g><g transform="translate(960 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <ellipse cx="48" cy="68" rx="22" ry="5" fill="rgba(0,0,0,0.18)"/>
+      <ellipse cx="48" cy="60" rx="19" ry="7" fill="currentColor" opacity="0.62"/>
+      <circle cx="48" cy="50" r="13" fill="currentColor"/>
+      <circle cx="48" cy="48.2" r="8.4" fill="rgba(255,255,255,0.34)"/>
+    </g><g transform="translate(1056 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <ellipse cx="48" cy="68" rx="22" ry="5" fill="rgba(0,0,0,0.18)"/>
+      <ellipse cx="48" cy="60" rx="19" ry="7" fill="currentColor" opacity="0.62"/>
+      <circle cx="48" cy="50" r="13" fill="currentColor"/>
+      <circle cx="48" cy="48.2" r="8.4" fill="rgba(255,255,255,0.34)"/>
+    </g></svg>

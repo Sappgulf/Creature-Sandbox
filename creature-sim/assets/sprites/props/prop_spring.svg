@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1152" height="96" viewBox="0 0 1152 96" fill="none"><defs><filter id="prop_spring-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
+      <path d="M 34 68
+               Q 42 63 47 57
+               Q 52 50 58 43
+               Q 63 37 68 30
+               "
+            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
+      <rect x="30" y="25" width="36" height="8.5" rx="4.25" fill="currentColor"/>
+      <rect x="34" y="27" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
+    </g><g transform="translate(96 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
+      <path d="M 34 68
+               Q 42 63.72 47 57
+               Q 52 49 58 43
+               Q 63 36.28 68 30
+               "
+            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
+      <rect x="30" y="29.01" width="36" height="8.5" rx="4.25" fill="currentColor"/>
+      <rect x="34" y="31.01" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
+    </g><g transform="translate(192 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
+      <path d="M 34 68
+               Q 42 63.66 47 57
+               Q 52 49.09 58 43
+               Q 63 36.34 68 30
+               "
+            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
+      <rect x="30" y="28.64" width="36" height="8.5" rx="4.25" fill="currentColor"/>
+      <rect x="34" y="30.64" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
+    </g><g transform="translate(288 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
+      <path d="M 34 68
+               Q 42 62.87 47 57
+               Q 52 50.18 58 43
+               Q 63 37.13 68 30
+               "
+            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
+      <rect x="30" y="24.3" width="36" height="8.5" rx="4.25" fill="currentColor"/>
+      <rect x="34" y="26.3" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
+    </g><g transform="translate(384 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
+      <path d="M 34 68
+               Q 42 62.23 47 57
+               Q 52 51.07 58 43
+               Q 63 37.77 68 30
+               "
+            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
+      <rect x="30" y="20.72" width="36" height="8.5" rx="4.25" fill="currentColor"/>
+      <rect x="34" y="22.72" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
+    </g><g transform="translate(480 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
+      <path d="M 34 68
+               Q 42 62.43 47 57
+               Q 52 50.8 58 43
+               Q 63 37.57 68 30
+               "
+            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
+      <rect x="30" y="21.82" width="36" height="8.5" rx="4.25" fill="currentColor"/>
+      <rect x="34" y="23.82" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
+    </g><g transform="translate(576 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
+      <path d="M 34 68
+               Q 42 63.25 47 57
+               Q 52 49.65 58 43
+               Q 63 36.75 68 30
+               "
+            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
+      <rect x="30" y="26.39" width="36" height="8.5" rx="4.25" fill="currentColor"/>
+      <rect x="34" y="28.39" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
+    </g><g transform="translate(672 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
+      <path d="M 34 68
+               Q 42 63.8 47 57
+               Q 52 48.89 58 43
+               Q 63 36.2 68 30
+               "
+            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
+      <rect x="30" y="29.44" width="36" height="8.5" rx="4.25" fill="currentColor"/>
+      <rect x="34" y="31.44" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
+    </g><g transform="translate(768 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
+      <path d="M 34 68
+               Q 42 63.48 47 57
+               Q 52 49.34 58 43
+               Q 63 36.52 68 30
+               "
+            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
+      <rect x="30" y="27.65" width="36" height="8.5" rx="4.25" fill="currentColor"/>
+      <rect x="34" y="29.65" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
+    </g><g transform="translate(864 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
+      <path d="M 34 68
+               Q 42 62.63 47 57
+               Q 52 50.51 58 43
+               Q 63 37.37 68 30
+               "
+            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
+      <rect x="30" y="22.96" width="36" height="8.5" rx="4.25" fill="currentColor"/>
+      <rect x="34" y="24.96" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
+    </g><g transform="translate(960 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
+      <path d="M 34 68
+               Q 42 62.19 47 57
+               Q 52 51.13 58 43
+               Q 63 37.81 68 30
+               "
+            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
+      <rect x="30" y="20.5" width="36" height="8.5" rx="4.25" fill="currentColor"/>
+      <rect x="34" y="22.5" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
+    </g><g transform="translate(1056 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
+      <path d="M 34 68
+               Q 42 62.63 47 57
+               Q 52 50.51 58 43
+               Q 63 37.37 68 30
+               "
+            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
+      <rect x="30" y="22.96" width="36" height="8.5" rx="4.25" fill="currentColor"/>
+      <rect x="34" y="24.96" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
+    </g></svg>

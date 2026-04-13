@@ -1,0 +1,404 @@
+{
+  "version": 1,
+  "atlasType": "svg-strip",
+  "generator": "creature-sim/scripts/generate-sprite-sheets.mjs",
+  "deterministic": true,
+  "sprites": [
+    {
+      "key": "creature_herbivore",
+      "category": "creatures",
+      "path": "assets/sprites/creatures/creature_herbivore.svg",
+      "frameCount": 10,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "fps": 12,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.58
+      },
+      "pivot": {
+        "x": 0.48,
+        "y": 0.53
+      },
+      "notes": "Tintable creature idle loop. Body and fins use currentColor; eye and highlight layers remain neutral."
+    },
+    {
+      "key": "creature_omnivore",
+      "category": "creatures",
+      "path": "assets/sprites/creatures/creature_omnivore.svg",
+      "frameCount": 10,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "fps": 12,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.58
+      },
+      "pivot": {
+        "x": 0.48,
+        "y": 0.53
+      },
+      "notes": "Tintable creature idle loop. Body and fins use currentColor; eye and highlight layers remain neutral."
+    },
+    {
+      "key": "creature_predator",
+      "category": "creatures",
+      "path": "assets/sprites/creatures/creature_predator.svg",
+      "frameCount": 10,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "fps": 12,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.58
+      },
+      "pivot": {
+        "x": 0.48,
+        "y": 0.53
+      },
+      "notes": "Tintable creature idle loop. Body and fins use currentColor; eye and highlight layers remain neutral."
+    },
+    {
+      "key": "creature_baby",
+      "category": "creatures",
+      "path": "assets/sprites/creatures/creature_baby.svg",
+      "frameCount": 10,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "fps": 12,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.58
+      },
+      "pivot": {
+        "x": 0.48,
+        "y": 0.53
+      },
+      "notes": "Tintable creature idle loop. Body and fins use currentColor; eye and highlight layers remain neutral."
+    },
+    {
+      "key": "creature_elder",
+      "category": "creatures",
+      "path": "assets/sprites/creatures/creature_elder.svg",
+      "frameCount": 10,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "fps": 12,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.58
+      },
+      "pivot": {
+        "x": 0.48,
+        "y": 0.53
+      },
+      "notes": "Tintable creature idle loop. Body and fins use currentColor; eye and highlight layers remain neutral."
+    },
+    {
+      "key": "creature_alpha",
+      "category": "creatures",
+      "path": "assets/sprites/creatures/creature_alpha.svg",
+      "frameCount": 10,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "fps": 12,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.58
+      },
+      "pivot": {
+        "x": 0.48,
+        "y": 0.53
+      },
+      "notes": "Tintable creature idle loop. Body and fins use currentColor; eye and highlight layers remain neutral."
+    },
+    {
+      "key": "creature_aquatic",
+      "category": "creatures",
+      "path": "assets/sprites/creatures/creature_aquatic.svg",
+      "frameCount": 10,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "fps": 12,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.58
+      },
+      "pivot": {
+        "x": 0.48,
+        "y": 0.53
+      },
+      "notes": "Tintable creature idle loop. Body and fins use currentColor; eye and highlight layers remain neutral."
+    },
+    {
+      "key": "food_grass",
+      "category": "food",
+      "path": "assets/sprites/food/food_grass.svg",
+      "frameCount": 8,
+      "frameWidth": 48,
+      "frameHeight": 48,
+      "fps": 8,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.52
+      },
+      "notes": "Tint-first food idle loop. Core silhouette uses currentColor for ecosystem-driven coloring."
+    },
+    {
+      "key": "food_berries",
+      "category": "food",
+      "path": "assets/sprites/food/food_berries.svg",
+      "frameCount": 8,
+      "frameWidth": 48,
+      "frameHeight": 48,
+      "fps": 8,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.52
+      },
+      "notes": "Tint-first food idle loop. Core silhouette uses currentColor for ecosystem-driven coloring."
+    },
+    {
+      "key": "food_fruit",
+      "category": "food",
+      "path": "assets/sprites/food/food_fruit.svg",
+      "frameCount": 8,
+      "frameWidth": 48,
+      "frameHeight": 48,
+      "fps": 8,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.52
+      },
+      "notes": "Tint-first food idle loop. Core silhouette uses currentColor for ecosystem-driven coloring."
+    },
+    {
+      "key": "food_golden_fruit",
+      "category": "food",
+      "path": "assets/sprites/food/food_golden_fruit.svg",
+      "frameCount": 8,
+      "frameWidth": 48,
+      "frameHeight": 48,
+      "fps": 10,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.52
+      },
+      "notes": "Tint-first food idle loop. Core silhouette uses currentColor for ecosystem-driven coloring."
+    },
+    {
+      "key": "prop_bounce",
+      "category": "props",
+      "path": "assets/sprites/props/prop_bounce.svg",
+      "frameCount": 12,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "fps": 10,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Sandbox prop loop. Primary shape is currentColor-driven so runtime can preserve prop-color semantics."
+    },
+    {
+      "key": "prop_spring",
+      "category": "props",
+      "path": "assets/sprites/props/prop_spring.svg",
+      "frameCount": 12,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "fps": 10,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Sandbox prop loop. Primary shape is currentColor-driven so runtime can preserve prop-color semantics."
+    },
+    {
+      "key": "prop_spinner",
+      "category": "props",
+      "path": "assets/sprites/props/prop_spinner.svg",
+      "frameCount": 12,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "fps": 14,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Sandbox prop loop. Primary shape is currentColor-driven so runtime can preserve prop-color semantics."
+    },
+    {
+      "key": "prop_seesaw",
+      "category": "props",
+      "path": "assets/sprites/props/prop_seesaw.svg",
+      "frameCount": 12,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "fps": 10,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Sandbox prop loop. Primary shape is currentColor-driven so runtime can preserve prop-color semantics."
+    },
+    {
+      "key": "prop_conveyor",
+      "category": "props",
+      "path": "assets/sprites/props/prop_conveyor.svg",
+      "frameCount": 12,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "fps": 10,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Sandbox prop loop. Primary shape is currentColor-driven so runtime can preserve prop-color semantics."
+    },
+    {
+      "key": "prop_slope",
+      "category": "props",
+      "path": "assets/sprites/props/prop_slope.svg",
+      "frameCount": 12,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "fps": 10,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Sandbox prop loop. Primary shape is currentColor-driven so runtime can preserve prop-color semantics."
+    },
+    {
+      "key": "prop_fan",
+      "category": "props",
+      "path": "assets/sprites/props/prop_fan.svg",
+      "frameCount": 12,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "fps": 14,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Sandbox prop loop. Primary shape is currentColor-driven so runtime can preserve prop-color semantics."
+    },
+    {
+      "key": "prop_sticky",
+      "category": "props",
+      "path": "assets/sprites/props/prop_sticky.svg",
+      "frameCount": 12,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "fps": 10,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Sandbox prop loop. Primary shape is currentColor-driven so runtime can preserve prop-color semantics."
+    },
+    {
+      "key": "prop_gravity",
+      "category": "props",
+      "path": "assets/sprites/props/prop_gravity.svg",
+      "frameCount": 12,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "fps": 10,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Sandbox prop loop. Primary shape is currentColor-driven so runtime can preserve prop-color semantics."
+    },
+    {
+      "key": "prop_button",
+      "category": "props",
+      "path": "assets/sprites/props/prop_button.svg",
+      "frameCount": 12,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "fps": 10,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Sandbox prop loop. Primary shape is currentColor-driven so runtime can preserve prop-color semantics."
+    },
+    {
+      "key": "prop_launch",
+      "category": "props",
+      "path": "assets/sprites/props/prop_launch.svg",
+      "frameCount": 12,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "fps": 10,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Sandbox prop loop. Primary shape is currentColor-driven so runtime can preserve prop-color semantics."
+    }
+  ]
+}

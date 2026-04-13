@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1152" height="96" viewBox="0 0 1152 96" fill="none"><defs><filter id="prop_spinner-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <circle cx="48" cy="48" r="6.5" fill="currentColor"/>
+      <g transform="translate(48 48) rotate(0)">
+        <path d="M 0 -27 L 7 -9 L -7 -9 Z" fill="currentColor"/>
+        <path d="M 27 0 L 9 7 L 9 -7 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M 0 27 L -7 9 L 7 9 Z" fill="currentColor" opacity="0.86"/>
+        <path d="M -27 0 L -9 -7 L -9 7 Z" fill="currentColor" opacity="0.92"/>
+      </g>
+      <circle cx="48" cy="48" r="14.5" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="1.4"/>
+    </g><g transform="translate(96 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <circle cx="48" cy="48" r="6.5" fill="currentColor"/>
+      <g transform="translate(48 48) rotate(30)">
+        <path d="M 0 -27 L 7 -9 L -7 -9 Z" fill="currentColor"/>
+        <path d="M 27 0 L 9 7 L 9 -7 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M 0 27 L -7 9 L 7 9 Z" fill="currentColor" opacity="0.86"/>
+        <path d="M -27 0 L -9 -7 L -9 7 Z" fill="currentColor" opacity="0.92"/>
+      </g>
+      <circle cx="48" cy="48" r="14.5" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="1.4"/>
+    </g><g transform="translate(192 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <circle cx="48" cy="48" r="6.5" fill="currentColor"/>
+      <g transform="translate(48 48) rotate(60)">
+        <path d="M 0 -27 L 7 -9 L -7 -9 Z" fill="currentColor"/>
+        <path d="M 27 0 L 9 7 L 9 -7 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M 0 27 L -7 9 L 7 9 Z" fill="currentColor" opacity="0.86"/>
+        <path d="M -27 0 L -9 -7 L -9 7 Z" fill="currentColor" opacity="0.92"/>
+      </g>
+      <circle cx="48" cy="48" r="14.5" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="1.4"/>
+    </g><g transform="translate(288 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <circle cx="48" cy="48" r="6.5" fill="currentColor"/>
+      <g transform="translate(48 48) rotate(90)">
+        <path d="M 0 -27 L 7 -9 L -7 -9 Z" fill="currentColor"/>
+        <path d="M 27 0 L 9 7 L 9 -7 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M 0 27 L -7 9 L 7 9 Z" fill="currentColor" opacity="0.86"/>
+        <path d="M -27 0 L -9 -7 L -9 7 Z" fill="currentColor" opacity="0.92"/>
+      </g>
+      <circle cx="48" cy="48" r="14.5" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="1.4"/>
+    </g><g transform="translate(384 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <circle cx="48" cy="48" r="6.5" fill="currentColor"/>
+      <g transform="translate(48 48) rotate(120)">
+        <path d="M 0 -27 L 7 -9 L -7 -9 Z" fill="currentColor"/>
+        <path d="M 27 0 L 9 7 L 9 -7 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M 0 27 L -7 9 L 7 9 Z" fill="currentColor" opacity="0.86"/>
+        <path d="M -27 0 L -9 -7 L -9 7 Z" fill="currentColor" opacity="0.92"/>
+      </g>
+      <circle cx="48" cy="48" r="14.5" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="1.4"/>
+    </g><g transform="translate(480 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <circle cx="48" cy="48" r="6.5" fill="currentColor"/>
+      <g transform="translate(48 48) rotate(150)">
+        <path d="M 0 -27 L 7 -9 L -7 -9 Z" fill="currentColor"/>
+        <path d="M 27 0 L 9 7 L 9 -7 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M 0 27 L -7 9 L 7 9 Z" fill="currentColor" opacity="0.86"/>
+        <path d="M -27 0 L -9 -7 L -9 7 Z" fill="currentColor" opacity="0.92"/>
+      </g>
+      <circle cx="48" cy="48" r="14.5" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="1.4"/>
+    </g><g transform="translate(576 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <circle cx="48" cy="48" r="6.5" fill="currentColor"/>
+      <g transform="translate(48 48) rotate(180)">
+        <path d="M 0 -27 L 7 -9 L -7 -9 Z" fill="currentColor"/>
+        <path d="M 27 0 L 9 7 L 9 -7 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M 0 27 L -7 9 L 7 9 Z" fill="currentColor" opacity="0.86"/>
+        <path d="M -27 0 L -9 -7 L -9 7 Z" fill="currentColor" opacity="0.92"/>
+      </g>
+      <circle cx="48" cy="48" r="14.5" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="1.4"/>
+    </g><g transform="translate(672 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <circle cx="48" cy="48" r="6.5" fill="currentColor"/>
+      <g transform="translate(48 48) rotate(210)">
+        <path d="M 0 -27 L 7 -9 L -7 -9 Z" fill="currentColor"/>
+        <path d="M 27 0 L 9 7 L 9 -7 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M 0 27 L -7 9 L 7 9 Z" fill="currentColor" opacity="0.86"/>
+        <path d="M -27 0 L -9 -7 L -9 7 Z" fill="currentColor" opacity="0.92"/>
+      </g>
+      <circle cx="48" cy="48" r="14.5" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="1.4"/>
+    </g><g transform="translate(768 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <circle cx="48" cy="48" r="6.5" fill="currentColor"/>
+      <g transform="translate(48 48) rotate(240)">
+        <path d="M 0 -27 L 7 -9 L -7 -9 Z" fill="currentColor"/>
+        <path d="M 27 0 L 9 7 L 9 -7 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M 0 27 L -7 9 L 7 9 Z" fill="currentColor" opacity="0.86"/>
+        <path d="M -27 0 L -9 -7 L -9 7 Z" fill="currentColor" opacity="0.92"/>
+      </g>
+      <circle cx="48" cy="48" r="14.5" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="1.4"/>
+    </g><g transform="translate(864 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <circle cx="48" cy="48" r="6.5" fill="currentColor"/>
+      <g transform="translate(48 48) rotate(270)">
+        <path d="M 0 -27 L 7 -9 L -7 -9 Z" fill="currentColor"/>
+        <path d="M 27 0 L 9 7 L 9 -7 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M 0 27 L -7 9 L 7 9 Z" fill="currentColor" opacity="0.86"/>
+        <path d="M -27 0 L -9 -7 L -9 7 Z" fill="currentColor" opacity="0.92"/>
+      </g>
+      <circle cx="48" cy="48" r="14.5" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="1.4"/>
+    </g><g transform="translate(960 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <circle cx="48" cy="48" r="6.5" fill="currentColor"/>
+      <g transform="translate(48 48) rotate(300)">
+        <path d="M 0 -27 L 7 -9 L -7 -9 Z" fill="currentColor"/>
+        <path d="M 27 0 L 9 7 L 9 -7 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M 0 27 L -7 9 L 7 9 Z" fill="currentColor" opacity="0.86"/>
+        <path d="M -27 0 L -9 -7 L -9 7 Z" fill="currentColor" opacity="0.92"/>
+      </g>
+      <circle cx="48" cy="48" r="14.5" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="1.4"/>
+    </g><g transform="translate(1056 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <circle cx="48" cy="48" r="6.5" fill="currentColor"/>
+      <g transform="translate(48 48) rotate(330)">
+        <path d="M 0 -27 L 7 -9 L -7 -9 Z" fill="currentColor"/>
+        <path d="M 27 0 L 9 7 L 9 -7 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M 0 27 L -7 9 L 7 9 Z" fill="currentColor" opacity="0.86"/>
+        <path d="M -27 0 L -9 -7 L -9 7 Z" fill="currentColor" opacity="0.92"/>
+      </g>
+      <circle cx="48" cy="48" r="14.5" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="1.4"/>
+    </g></svg>

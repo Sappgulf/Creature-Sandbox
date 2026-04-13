@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1152" height="96" viewBox="0 0 1152 96" fill="none"><defs><filter id="prop_seesaw-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 48 63 L 40 78 L 56 78 Z"
+            fill="rgba(0,0,0,0.24)"/>
+      <g transform="translate(48 62) rotate(0)">
+        <rect x="-30" y="-4" width="60" height="8" rx="4" fill="currentColor"/>
+        <circle cx="-24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+        <circle cx="24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+      </g>
+    </g><g transform="translate(96 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 48 63 L 40 78 L 56 78 Z"
+            fill="rgba(0,0,0,0.24)"/>
+      <g transform="translate(48 62) rotate(9.37)">
+        <rect x="-30" y="-4" width="60" height="8" rx="4" fill="currentColor"/>
+        <circle cx="-24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+        <circle cx="24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+      </g>
+    </g><g transform="translate(192 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 48 63 L 40 78 L 56 78 Z"
+            fill="rgba(0,0,0,0.24)"/>
+      <g transform="translate(48 62) rotate(13.92)">
+        <rect x="-30" y="-4" width="60" height="8" rx="4" fill="currentColor"/>
+        <circle cx="-24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+        <circle cx="24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+      </g>
+    </g><g transform="translate(288 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 48 63 L 40 78 L 56 78 Z"
+            fill="rgba(0,0,0,0.24)"/>
+      <g transform="translate(48 62) rotate(11.33)">
+        <rect x="-30" y="-4" width="60" height="8" rx="4" fill="currentColor"/>
+        <circle cx="-24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+        <circle cx="24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+      </g>
+    </g><g transform="translate(384 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 48 63 L 40 78 L 56 78 Z"
+            fill="rgba(0,0,0,0.24)"/>
+      <g transform="translate(48 62) rotate(2.91)">
+        <rect x="-30" y="-4" width="60" height="8" rx="4" fill="currentColor"/>
+        <circle cx="-24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+        <circle cx="24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+      </g>
+    </g><g transform="translate(480 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 48 63 L 40 78 L 56 78 Z"
+            fill="rgba(0,0,0,0.24)"/>
+      <g transform="translate(48 62) rotate(-7)">
+        <rect x="-30" y="-4" width="60" height="8" rx="4" fill="currentColor"/>
+        <circle cx="-24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+        <circle cx="24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+      </g>
+    </g><g transform="translate(576 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 48 63 L 40 78 L 56 78 Z"
+            fill="rgba(0,0,0,0.24)"/>
+      <g transform="translate(48 62) rotate(-13.31)">
+        <rect x="-30" y="-4" width="60" height="8" rx="4" fill="currentColor"/>
+        <circle cx="-24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+        <circle cx="24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+      </g>
+    </g><g transform="translate(672 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 48 63 L 40 78 L 56 78 Z"
+            fill="rgba(0,0,0,0.24)"/>
+      <g transform="translate(48 62) rotate(-12.79)">
+        <rect x="-30" y="-4" width="60" height="8" rx="4" fill="currentColor"/>
+        <circle cx="-24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+        <circle cx="24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+      </g>
+    </g><g transform="translate(768 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 48 63 L 40 78 L 56 78 Z"
+            fill="rgba(0,0,0,0.24)"/>
+      <g transform="translate(48 62) rotate(-5.69)">
+        <rect x="-30" y="-4" width="60" height="8" rx="4" fill="currentColor"/>
+        <circle cx="-24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+        <circle cx="24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+      </g>
+    </g><g transform="translate(864 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 48 63 L 40 78 L 56 78 Z"
+            fill="rgba(0,0,0,0.24)"/>
+      <g transform="translate(48 62) rotate(4.33)">
+        <rect x="-30" y="-4" width="60" height="8" rx="4" fill="currentColor"/>
+        <circle cx="-24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+        <circle cx="24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+      </g>
+    </g><g transform="translate(960 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 48 63 L 40 78 L 56 78 Z"
+            fill="rgba(0,0,0,0.24)"/>
+      <g transform="translate(48 62) rotate(12.12)">
+        <rect x="-30" y="-4" width="60" height="8" rx="4" fill="currentColor"/>
+        <circle cx="-24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+        <circle cx="24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+      </g>
+    </g><g transform="translate(1056 0)">
+      <rect x="0" y="0" width="96" height="96" fill="none"/>
+      <path d="M 48 63 L 40 78 L 56 78 Z"
+            fill="rgba(0,0,0,0.24)"/>
+      <g transform="translate(48 62) rotate(13.69)">
+        <rect x="-30" y="-4" width="60" height="8" rx="4" fill="currentColor"/>
+        <circle cx="-24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+        <circle cx="24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
+      </g>
+    </g></svg>

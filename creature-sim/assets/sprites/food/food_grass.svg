@@ -1,0 +1,193 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="48" viewBox="0 0 384 48" fill="none"><defs><filter id="food_grass-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
+      <rect x="0" y="0" width="48" height="48" fill="none"/>
+      <path d="M 17 34.92
+               Q 15 26.92
+                 19 18.92
+               Q 22 27.92
+                 22.8 34.92 Z"
+            fill="currentColor" opacity="0.92"/>
+      <path d="M 23.4 35.92
+               Q 21.2 27.92
+                 24.6 14.92
+               Q 27.5 27.92
+                 27.2 35.92 Z"
+            fill="currentColor"/>
+      <path d="M 28 34.92
+               Q 27 26.72
+                 32.8 17.92
+               Q 34.3 27.52
+                 33 34.92 Z"
+            fill="currentColor" opacity="0.84"/>
+      <path d="M 16 30.92
+               Q 23 26.92
+                 32 29.92"
+            stroke="rgba(255,255,255,0.24)" stroke-width="1" fill="none"/>
+    </g><g transform="translate(48 0)">
+      <rect x="0" y="0" width="48" height="48" fill="none"/>
+      <path d="M 17 34.92
+               Q 16.09 26.92
+                 19 18.92
+               Q 22.49 27.92
+                 22.8 34.92 Z"
+            fill="currentColor" opacity="0.92"/>
+      <path d="M 23.4 35.92
+               Q 21.94 27.92
+                 24.6 14.92
+               Q 27.85 27.92
+                 27.2 35.92 Z"
+            fill="currentColor"/>
+      <path d="M 28 34.92
+               Q 27.89 26.72
+                 32.8 17.92
+               Q 34.7 27.52
+                 33 34.92 Z"
+            fill="currentColor" opacity="0.84"/>
+      <path d="M 16 30.92
+               Q 23 27.27
+                 32 29.92"
+            stroke="rgba(255,255,255,0.24)" stroke-width="1" fill="none"/>
+    </g><g transform="translate(96 0)">
+      <rect x="0" y="0" width="48" height="48" fill="none"/>
+      <path d="M 17 34.92
+               Q 15.34 26.92
+                 19 18.92
+               Q 22.15 27.92
+                 22.8 34.92 Z"
+            fill="currentColor" opacity="0.92"/>
+      <path d="M 23.4 35.92
+               Q 21.43 27.92
+                 24.6 14.92
+               Q 27.61 27.92
+                 27.2 35.92 Z"
+            fill="currentColor"/>
+      <path d="M 28 34.92
+               Q 27.28 26.72
+                 32.8 17.92
+               Q 34.42 27.52
+                 33 34.92 Z"
+            fill="currentColor" opacity="0.84"/>
+      <path d="M 16 30.92
+               Q 23 27.03
+                 32 29.92"
+            stroke="rgba(255,255,255,0.24)" stroke-width="1" fill="none"/>
+    </g><g transform="translate(144 0)">
+      <rect x="0" y="0" width="48" height="48" fill="none"/>
+      <path d="M 17 34.92
+               Q 14.02 26.92
+                 19 18.92
+               Q 21.55 27.92
+                 22.8 34.92 Z"
+            fill="currentColor" opacity="0.92"/>
+      <path d="M 23.4 35.92
+               Q 20.53 27.92
+                 24.6 14.92
+               Q 27.19 27.92
+                 27.2 35.92 Z"
+            fill="currentColor"/>
+      <path d="M 28 34.92
+               Q 26.2 26.72
+                 32.8 17.92
+               Q 33.94 27.52
+                 33 34.92 Z"
+            fill="currentColor" opacity="0.84"/>
+      <path d="M 16 30.92
+               Q 23 26.61
+                 32 29.92"
+            stroke="rgba(255,255,255,0.24)" stroke-width="1" fill="none"/>
+    </g><g transform="translate(192 0)">
+      <rect x="0" y="0" width="48" height="48" fill="none"/>
+      <path d="M 17 34.92
+               Q 14.35 26.92
+                 19 18.92
+               Q 21.71 27.92
+                 22.8 34.92 Z"
+            fill="currentColor" opacity="0.92"/>
+      <path d="M 23.4 35.92
+               Q 20.76 27.92
+                 24.6 14.92
+               Q 27.29 27.92
+                 27.2 35.92 Z"
+            fill="currentColor"/>
+      <path d="M 28 34.92
+               Q 26.47 26.72
+                 32.8 17.92
+               Q 34.06 27.52
+                 33 34.92 Z"
+            fill="currentColor" opacity="0.84"/>
+      <path d="M 16 30.92
+               Q 23 26.71
+                 32 29.92"
+            stroke="rgba(255,255,255,0.24)" stroke-width="1" fill="none"/>
+    </g><g transform="translate(240 0)">
+      <rect x="0" y="0" width="48" height="48" fill="none"/>
+      <path d="M 17 34.92
+               Q 15.78 26.92
+                 19 18.92
+               Q 22.35 27.92
+                 22.8 34.92 Z"
+            fill="currentColor" opacity="0.92"/>
+      <path d="M 23.4 35.92
+               Q 21.73 27.92
+                 24.6 14.92
+               Q 27.75 27.92
+                 27.2 35.92 Z"
+            fill="currentColor"/>
+      <path d="M 28 34.92
+               Q 27.64 26.72
+                 32.8 17.92
+               Q 34.58 27.52
+                 33 34.92 Z"
+            fill="currentColor" opacity="0.84"/>
+      <path d="M 16 30.92
+               Q 23 27.17
+                 32 29.92"
+            stroke="rgba(255,255,255,0.24)" stroke-width="1" fill="none"/>
+    </g><g transform="translate(288 0)">
+      <rect x="0" y="0" width="48" height="48" fill="none"/>
+      <path d="M 17 34.92
+               Q 15.89 26.92
+                 19 18.92
+               Q 22.4 27.92
+                 22.8 34.92 Z"
+            fill="currentColor" opacity="0.92"/>
+      <path d="M 23.4 35.92
+               Q 21.81 27.92
+                 24.6 14.92
+               Q 27.78 27.92
+                 27.2 35.92 Z"
+            fill="currentColor"/>
+      <path d="M 28 34.92
+               Q 27.73 26.72
+                 32.8 17.92
+               Q 34.62 27.52
+                 33 34.92 Z"
+            fill="currentColor" opacity="0.84"/>
+      <path d="M 16 30.92
+               Q 23 27.2
+                 32 29.92"
+            stroke="rgba(255,255,255,0.24)" stroke-width="1" fill="none"/>
+    </g><g transform="translate(336 0)">
+      <rect x="0" y="0" width="48" height="48" fill="none"/>
+      <path d="M 17 34.92
+               Q 14.5 26.92
+                 19 18.92
+               Q 21.77 27.92
+                 22.8 34.92 Z"
+            fill="currentColor" opacity="0.92"/>
+      <path d="M 23.4 35.92
+               Q 20.86 27.92
+                 24.6 14.92
+               Q 27.34 27.92
+                 27.2 35.92 Z"
+            fill="currentColor"/>
+      <path d="M 28 34.92
+               Q 26.59 26.72
+                 32.8 17.92
+               Q 34.12 27.52
+                 33 34.92 Z"
+            fill="currentColor" opacity="0.84"/>
+      <path d="M 16 30.92
+               Q 23 26.76
+                 32 29.92"
+            stroke="rgba(255,255,255,0.24)" stroke-width="1" fill="none"/>
+    </g></svg>
