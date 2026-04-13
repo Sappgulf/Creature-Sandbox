@@ -13,6 +13,9 @@ export class MobileSupport {
     this.panSensitivity = 0.75;
     this.pinchSensitivity = 0.8;
     this.panThreshold = 1.2;
+    this.compactBreakpoint = 430;
+    this.landscapeBreakpoint = 900;
+    this.cleanupCallbacks = [];
 
     this.init();
   }
@@ -32,13 +35,18 @@ export class MobileSupport {
     this.canvas.style.touchAction = 'none';
 
     // Touch event listeners
-    this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
-    this.canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
-    this.canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
-    this.canvas.addEventListener('touchcancel', (e) => this.handleTouchEnd(e), { passive: false });
+    this.registerListener(this.canvas, 'touchstart', (e) => this.handleTouchStart(e), { passive: false });
+    this.registerListener(this.canvas, 'touchmove', (e) => this.handleTouchMove(e), { passive: false });
+    this.registerListener(this.canvas, 'touchend', (e) => this.handleTouchEnd(e), { passive: false });
+    this.registerListener(this.canvas, 'touchcancel', (e) => this.handleTouchEnd(e), { passive: false });
 
     // Apply mobile-specific styles
     this.applyMobileStyles();
+  }
+
+  registerListener(target, eventName, handler, options) {
+    target.addEventListener(eventName, handler, options);
+    this.cleanupCallbacks.push(() => target.removeEventListener(eventName, handler, options));
   }
 
   applyMobileStyles() {
@@ -48,7 +56,7 @@ export class MobileSupport {
     // Adjust viewport for better mobile experience
     const viewport = document.querySelector('meta[name="viewport"]');
     if (viewport) {
-      viewport.content = 'width=device-width, initial-scale=1, viewport-fit=cover';
+      viewport.content = 'width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content';
     }
 
     // Stabilize viewport height to account for dynamic browser chrome
@@ -67,20 +75,34 @@ export class MobileSupport {
       document.body.classList.toggle('keyboard-open', offset > 0);
     };
 
+    const syncMobileLayoutProfile = () => {
+      const viewportWidth = window.visualViewport?.width || window.innerWidth;
+      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      const isCompact = viewportWidth <= this.compactBreakpoint;
+      const isLandscape = viewportWidth > viewportHeight && viewportWidth <= this.landscapeBreakpoint;
+
+      document.body.classList.toggle('mobile-compact-ui', isCompact);
+      document.body.classList.toggle('mobile-landscape-ui', isLandscape);
+    };
+
     setViewportHeight();
     updateKeyboardOffset();
-    window.addEventListener('resize', setViewportHeight);
-    window.addEventListener('orientationchange', setViewportHeight);
-    window.addEventListener('resize', updateKeyboardOffset);
-    window.addEventListener('orientationchange', updateKeyboardOffset);
+    syncMobileLayoutProfile();
+    this.registerListener(window, 'resize', setViewportHeight);
+    this.registerListener(window, 'orientationchange', setViewportHeight);
+    this.registerListener(window, 'resize', updateKeyboardOffset);
+    this.registerListener(window, 'orientationchange', updateKeyboardOffset);
+    this.registerListener(window, 'resize', syncMobileLayoutProfile);
+    this.registerListener(window, 'orientationchange', syncMobileLayoutProfile);
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', setViewportHeight);
-      window.visualViewport.addEventListener('scroll', setViewportHeight);
-      window.visualViewport.addEventListener('resize', updateKeyboardOffset);
-      window.visualViewport.addEventListener('scroll', updateKeyboardOffset);
+      this.registerListener(window.visualViewport, 'resize', setViewportHeight);
+      this.registerListener(window.visualViewport, 'scroll', setViewportHeight);
+      this.registerListener(window.visualViewport, 'resize', updateKeyboardOffset);
+      this.registerListener(window.visualViewport, 'scroll', updateKeyboardOffset);
+      this.registerListener(window.visualViewport, 'resize', syncMobileLayoutProfile);
     }
 
-    document.addEventListener('focusin', (event) => {
+    this.registerListener(document, 'focusin', (event) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
       if (!target.matches('input, textarea, select')) return;
@@ -90,7 +112,7 @@ export class MobileSupport {
       }, 50);
     });
 
-    document.addEventListener('focusout', () => {
+    this.registerListener(document, 'focusout', () => {
       setTimeout(() => updateKeyboardOffset(), 50);
     });
   }
@@ -276,5 +298,12 @@ export class MobileSupport {
     const sx = touch.clientX - rect.left - rect.width / 2;
     const sy = touch.clientY - rect.top - rect.height / 2;
     return this.camera.screenToWorld(sx, sy);
+  }
+
+  destroy() {
+    while (this.cleanupCallbacks.length > 0) {
+      const cleanup = this.cleanupCallbacks.pop();
+      cleanup?.();
+    }
   }
 }
