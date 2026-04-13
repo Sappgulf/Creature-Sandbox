@@ -214,6 +214,7 @@ export class UIController {
     this.bindBehaviorControls();
     this.bindEnhancedControls();
     this.bindChaosControls();
+    this.bindFeaturesEnhancements();
     this.bindGameplayModeControls();
     this.bindSessionGoalControls();
     this.bindWatchControls();
@@ -775,6 +776,117 @@ export class UIController {
         window.localStorage?.setItem('creatureSandboxChaosLevel', String(level));
       }
     });
+  }
+
+  bindFeaturesEnhancements() {
+    const panel = document.getElementById('features-panel');
+    if (!panel) return;
+
+    const searchInput = document.getElementById('features-search');
+    const results = document.getElementById('features-results-count');
+    const enableVisualsBtn = document.getElementById('btn-features-enable-visuals');
+    const disableOverlaysBtn = document.getElementById('btn-features-disable-overlays');
+    const resetBtn = document.getElementById('btn-features-reset');
+
+    const applySearchFilter = () => {
+      const query = (searchInput?.value || '').trim().toLowerCase();
+      const allRows = [...panel.querySelectorAll('.feature-toggle')];
+      let visibleCount = 0;
+
+      allRows.forEach((row) => {
+        const matches = !query || row.textContent.toLowerCase().includes(query);
+        row.classList.toggle('feature-hidden', !matches);
+        if (matches) visibleCount += 1;
+      });
+
+      const sections = [...panel.querySelectorAll('.features-section')];
+      sections.forEach((section) => {
+        const hasVisible = section.querySelector('.feature-toggle:not(.feature-hidden)');
+        section.classList.toggle('section-hidden', !hasVisible);
+      });
+
+      if (results) {
+        results.textContent = query
+          ? `Showing ${visibleCount} matching controls`
+          : `Showing all controls (${allRows.length})`;
+      }
+    };
+
+    const setControls = (ids, checked) => {
+      ids.forEach((id) => {
+        const input = document.getElementById(id);
+        if (!input || input.checked === checked) return;
+        input.checked = checked;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    };
+
+    if (searchInput && !searchInput._boundFeaturesSearch) {
+      searchInput.addEventListener('input', applySearchFilter);
+      searchInput._boundFeaturesSearch = true;
+      applySearchFilter();
+    }
+
+    if (enableVisualsBtn && !enableVisualsBtn._boundFeaturesAction) {
+      enableVisualsBtn.addEventListener('click', () => {
+        setControls([
+          'toggle-vision',
+          'toggle-clustering',
+          'toggle-territories',
+          'toggle-memory',
+          'toggle-social',
+          'toggle-nameplates',
+          'toggle-migration',
+          'toggle-nests',
+          'toggle-emotions',
+          'toggle-sensory',
+          'toggle-intelligence',
+          'toggle-mating',
+          'toggle-minigraphs'
+        ], true);
+      });
+      enableVisualsBtn._boundFeaturesAction = true;
+    }
+
+    if (disableOverlaysBtn && !disableOverlaysBtn._boundFeaturesAction) {
+      disableOverlaysBtn.addEventListener('click', () => {
+        setControls([
+          'toggle-vision',
+          'toggle-clustering',
+          'toggle-territories',
+          'toggle-memory',
+          'toggle-social',
+          'toggle-migration',
+          'toggle-nests',
+          'toggle-emotions',
+          'toggle-sensory',
+          'toggle-intelligence',
+          'toggle-mating',
+          'toggle-minigraphs'
+        ], false);
+        const offRadio = document.getElementById('toggle-heatmap-off');
+        if (offRadio && !offRadio.checked) {
+          offRadio.checked = true;
+          offRadio.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+      disableOverlaysBtn._boundFeaturesAction = true;
+    }
+
+    if (resetBtn && !resetBtn._boundFeaturesAction) {
+      resetBtn.addEventListener('click', () => {
+        if (searchInput) {
+          searchInput.value = '';
+          applySearchFilter();
+        }
+        const chaosSlider = document.getElementById('chaos-slider');
+        if (chaosSlider) {
+          chaosSlider.value = '50';
+        }
+        chaosSlider?.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      resetBtn._boundFeaturesAction = true;
+    }
   }
 
   /**

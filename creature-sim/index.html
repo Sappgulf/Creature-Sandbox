@@ -670,6 +670,19 @@
         onclick="event.stopPropagation()">×</button>
     </div>
     <div class="panel-body">
+      <div class="features-toolbar">
+        <label class="features-search-wrap">
+          <span class="muted tiny">Find control</span>
+          <input id="features-search" class="features-search-input" type="search"
+            placeholder="Search features, overlays, heatmaps..." aria-label="Search feature controls" />
+        </label>
+        <div class="features-toolbar-actions">
+          <button id="btn-features-enable-visuals" class="features-toolbar-btn">Enable Visuals</button>
+          <button id="btn-features-disable-overlays" class="features-toolbar-btn">Disable Overlays</button>
+          <button id="btn-features-reset" class="features-toolbar-btn ghost">Reset</button>
+        </div>
+        <div id="features-results-count" class="muted tiny">Showing all controls</div>
+      </div>
       <div class="features-section">
         <div class="features-section-title">Basic Features</div>
         <label class="feature-toggle">
