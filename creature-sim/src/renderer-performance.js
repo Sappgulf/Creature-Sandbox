@@ -23,6 +23,7 @@ export class RendererPerformanceMonitor {
 
     // ENHANCEMENT: Quality preset tracking
     this.currentQuality = 'high';
+    this.qualityOverride = null;
     this.qualityLockTimer = 0; // Prevent rapid quality changes
     this.qualityLockDuration = 120; // ~2 seconds at 60fps
 
@@ -160,6 +161,8 @@ export class RendererPerformanceMonitor {
    * ENHANCED: Uses quality presets for smoother transitions
    */
   adjustQuality() {
+    if (this.qualityOverride) return;
+
     const stats = this.getStats();
     this.frameCount++;
 
@@ -221,6 +224,16 @@ export class RendererPerformanceMonitor {
    */
   getCurrentQuality() {
     return this.currentQuality;
+  }
+
+  setQualityOverride(presetName = null) {
+    if (!presetName) {
+      this.qualityOverride = null;
+      return;
+    }
+    if (!RendererConfig.QUALITY_PRESETS[presetName]) return;
+    this.qualityOverride = presetName;
+    this.applyQualityPreset(presetName);
   }
 
   /**

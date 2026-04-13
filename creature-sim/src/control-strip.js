@@ -15,6 +15,7 @@ export class ControlStripController {
     this.camera = options.camera;
     this.tools = options.tools;
     this.uiController = options.uiController;
+    this.renderer = options.renderer;
 
     // State
     this.currentSpawnType = 'herbivore';
@@ -25,6 +26,7 @@ export class ControlStripController {
     // Drawer states
     this.spawnDrawerOpen = false;
     this.overflowDrawerOpen = false;
+    this.mobilePrefs = this.loadMobilePrefs();
 
     // Initialize
     this.lastUIStateSignature = '';
@@ -137,6 +139,70 @@ export class ControlStripController {
     // Keep control strip state synced with global events
     eventSystem.on('game:paused', () => this.updatePauseButton());
     eventSystem.on('game:resumed', () => this.updatePauseButton());
+    this.applyMobilePrefs({ syncMenu: true });
+  }
+
+  loadMobilePrefs() {
+    try {
+      return {
+        focusMode: localStorage.getItem('creature-mobile-focus') === 'true',
+        batterySaver: localStorage.getItem('creature-mobile-battery') === 'true',
+        haptics: localStorage.getItem('creature-mobile-haptics') !== 'false'
+      };
+    } catch {
+      return { focusMode: false, batterySaver: false, haptics: true };
+    }
+  }
+
+  saveMobilePref(key, value) {
+    try {
+      localStorage.setItem(key, String(value));
+    } catch {
+      // Storage may be unavailable in private browsing contexts.
+    }
+  }
+
+  buzz(pattern = 12) {
+    if (!this.mobilePrefs.haptics) return;
+    const isTouchDevice = window.matchMedia?.('(pointer: coarse)').matches || ('ontouchstart' in window);
+    if (!isTouchDevice) return;
+    if (typeof navigator.vibrate !== 'function') return;
+    navigator.vibrate(pattern);
+  }
+
+  applyMobilePrefs({ syncMenu = false } = {}) {
+    document.body.classList.toggle('mobile-focus-mode', this.mobilePrefs.focusMode);
+
+    if (this.mobilePrefs.batterySaver) {
+      this.renderer?.performance?.setQualityOverride?.('low');
+      if (gameState.fastForward > 1) {
+        gameState.fastForward = 1;
+      }
+    } else {
+      this.renderer?.performance?.setQualityOverride?.(null);
+    }
+
+    if (syncMenu) {
+      this.syncMobileMenuLabels();
+    }
+  }
+
+  syncMobileMenuLabels() {
+    const focusBtn = document.getElementById('menu-mobile-focus');
+    const batteryBtn = document.getElementById('menu-mobile-battery');
+    const hapticsBtn = document.getElementById('menu-mobile-haptics');
+    if (focusBtn) {
+      focusBtn.textContent = `${this.mobilePrefs.focusMode ? '✅' : '🧭'} Focus Mode`;
+      focusBtn.setAttribute('aria-pressed', this.mobilePrefs.focusMode ? 'true' : 'false');
+    }
+    if (batteryBtn) {
+      batteryBtn.textContent = `${this.mobilePrefs.batterySaver ? '✅' : '🔋'} Battery Saver`;
+      batteryBtn.setAttribute('aria-pressed', this.mobilePrefs.batterySaver ? 'true' : 'false');
+    }
+    if (hapticsBtn) {
+      hapticsBtn.textContent = `${this.mobilePrefs.haptics ? '✅' : '📳'} Haptics`;
+      hapticsBtn.setAttribute('aria-pressed', this.mobilePrefs.haptics ? 'true' : 'false');
+    }
   }
 
   blurFocusedDescendant(container) {
@@ -156,6 +222,7 @@ export class ControlStripController {
     const paused = gameState.togglePause();
     eventSystem.emit(paused ? 'game:paused' : 'game:resumed', { reason: 'control-strip' });
     this.updatePauseButton();
+    this.buzz(10);
   }
 
   updatePauseButton() {
@@ -185,8 +252,12 @@ export class ControlStripController {
   cycleSpeed() {
     this.syncSpeedIndexFromState();
     this.speedIndex = (this.speedIndex + 1) % SPEED_OPTIONS.length;
+    if (this.mobilePrefs.batterySaver) {
+      this.speedIndex = Math.min(this.speedIndex, 1);
+    }
     gameState.fastForward = SPEED_OPTIONS[this.speedIndex];
     this.updateSpeedButton();
+    this.buzz(8);
   }
 
   updateSpeedButton() {
@@ -224,6 +295,7 @@ export class ControlStripController {
     this.spawnDrawerOpen = true;
     this.ctrlSpawn?.setAttribute('aria-expanded', 'true');
     this.updateSpawnSelection();
+    this.buzz([10, 24, 10]);
   }
 
   closeSpawnDrawer() {
@@ -272,6 +344,8 @@ export class ControlStripController {
     this.overflowDrawer.setAttribute('aria-hidden', 'false');
     this.overflowDrawerOpen = true;
     this.ctrlMore?.setAttribute('aria-expanded', 'true');
+    this.syncMobileMenuLabels();
+    this.buzz([8, 18, 8]);
   }
 
   closeOverflowDrawer() {
@@ -345,6 +419,25 @@ export class ControlStripController {
         break;
       case 'analytics':
         this.uiController?.onAnalyticsToggle();
+        break;
+      case 'mobile-focus':
+        this.mobilePrefs.focusMode = !this.mobilePrefs.focusMode;
+        this.saveMobilePref('creature-mobile-focus', this.mobilePrefs.focusMode);
+        this.applyMobilePrefs({ syncMenu: true });
+        this.buzz(this.mobilePrefs.focusMode ? [12, 20, 16] : 10);
+        break;
+      case 'mobile-battery':
+        this.mobilePrefs.batterySaver = !this.mobilePrefs.batterySaver;
+        this.saveMobilePref('creature-mobile-battery', this.mobilePrefs.batterySaver);
+        this.applyMobilePrefs({ syncMenu: true });
+        this.updateSpeedButton();
+        this.buzz(this.mobilePrefs.batterySaver ? [16, 24, 24] : 10);
+        break;
+      case 'mobile-haptics':
+        this.mobilePrefs.haptics = !this.mobilePrefs.haptics;
+        this.saveMobilePref('creature-mobile-haptics', this.mobilePrefs.haptics);
+        this.syncMobileMenuLabels();
+        this.buzz(14);
         break;
     }
   }
@@ -445,6 +538,7 @@ export class ControlStripController {
     this.watchGodMode?.classList.toggle('active', this.isGodMode);
     this.ctrlGod?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
     this.watchGodMode?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
+    this.buzz(this.isGodMode ? [12, 20, 12] : 10);
   }
 
   // === KEYBOARD SHORTCUTS ===
