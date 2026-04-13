@@ -5,6 +5,7 @@
 export class DOMCache {
   constructor() {
     this.elements = new Map();
+    this.keyToIds = new Map();
     this.initialized = false;
   }
 
@@ -20,14 +21,26 @@ export class DOMCache {
     this.cacheElement('selected-info', 'selectedInfo');
     this.cacheElement('hud-bottom-left', 'hudBottom');
     this.cacheElement('watch-strip', 'watchStrip');
+    this.cacheElement('watch-pause', 'watchPauseBtn');
+    this.cacheElement('watch-speed', 'watchSpeedBtn');
+    this.cacheElement('watch-follow', 'watchFollowBtn');
+    this.cacheElement('watch-moments', 'watchMomentsBtn');
+    this.cacheElement('watch-god-mode', 'watchGodModeBtn');
+    this.cacheElement('watch-recenter', 'watchRecenterBtn');
 
     this.cacheElement('moments-close', 'momentsClose');
+    this.cacheElement('moments-panel', 'momentsPanel');
+    this.cacheElement('moments-list', 'momentsList');
+    this.cacheElement('moments-summary', 'momentsSummary');
 
     // Inspector elements
     this.cacheElement('inspector', 'inspector');
     this.cacheElement('btn-show-inspector', 'showInspectorBtn');
     this.cacheElement('btn-close-inspector', 'closeInspectorBtn');
     this.cacheElement('btn-minimize-inspector', 'minimizeInspectorBtn');
+    this.cacheElement('btn-export', 'exportBtn');
+    this.cacheElement('btn-export-csv', 'exportCSVBtn');
+    this.cacheElement('btn-export-genes', 'exportGenesBtn');
 
     // UI controls
 
@@ -36,6 +49,14 @@ export class DOMCache {
     this.cacheElement('slider-forage', 'forageSlider');
     this.cacheElement('slider-wander', 'wanderSlider');
     this.cacheElement('slider-rest', 'restSlider');
+    this.cacheElement('chaos-slider', 'chaosSlider');
+    this.cacheElement('chaos-value', 'chaosValue');
+    this.cacheElement('toggle-vision', 'toggleVision');
+    this.cacheElement('toggle-clustering', 'toggleClustering');
+    this.cacheElement('toggle-territories', 'toggleTerritories');
+    this.cacheElement('toggle-memory', 'toggleMemory');
+    this.cacheElement('toggle-social', 'toggleSocial');
+    this.cacheElement('toggle-migration', 'toggleMigration');
 
     // Spawn controls
 
@@ -56,9 +77,19 @@ export class DOMCache {
 
 
     // Feature panel
+    this.cacheElement('features-panel', 'featuresPanel');
+    this.cacheElement('btn-features-close', 'featuresCloseBtn');
 
 
     // Achievements panel
+    this.cacheElement('achievements-panel', 'achievementsPanel');
+    this.cacheElement('btn-achievements-close', 'achievementsCloseBtn');
+    this.cacheElement('gene-editor-panel', 'geneEditorPanel');
+    this.cacheElement('btn-gene-editor-close', 'geneEditorCloseBtn');
+    this.cacheElement('scenario-panel', 'scenarioPanel');
+    this.cacheElement('btn-scenario-close', 'scenarioCloseBtn');
+    this.cacheElement('eco-health-panel', 'ecoHealthPanel');
+    this.cacheElement('btn-eco-health-close', 'ecoHealthCloseBtn');
 
 
     // Gameplay modes + goals
@@ -90,6 +121,7 @@ export class DOMCache {
    * Cache a DOM element by ID
    */
   cacheElement(id, key) {
+    this.keyToIds.set(key, id);
     try {
       const element = document.getElementById(id);
       if (element) {
@@ -111,7 +143,17 @@ export class DOMCache {
     if (!this.initialized) {
       this.initialize();
     }
-    return this.elements.get(key) || null;
+    let element = this.elements.get(key) || null;
+    if (!element) {
+      const id = this.keyToIds.get(key);
+      if (id) {
+        element = document.getElementById(id);
+        if (element) {
+          this.elements.set(key, element);
+        }
+      }
+    }
+    return element || null;
   }
 
   /**
@@ -144,6 +186,7 @@ export class DOMCache {
    */
   clear() {
     this.elements.clear();
+    this.keyToIds.clear();
     this.initialized = false;
   }
 

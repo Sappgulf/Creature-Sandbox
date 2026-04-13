@@ -266,9 +266,19 @@ export class UIController {
     return isNotificationSystem(this.notifications);
   }
 
+  blurFocusedDescendant(container) {
+    const active = document.activeElement;
+    if (container && active instanceof HTMLElement && container.contains(active)) {
+      active.blur();
+    }
+  }
+
   setPanelVisibility(panel, visible) {
     if (!panel) return false;
     const isVisible = !!visible;
+    if (!isVisible) {
+      this.blurFocusedDescendant(panel);
+    }
     panel.classList.toggle('hidden', !isVisible);
     panel.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
     return isVisible;
@@ -519,25 +529,10 @@ export class UIController {
   }
 
   bindWatchControls() {
-    const watchToggleBtn = domCache.get('watchModeBtn');
-    const watchPauseBtn = domCache.get('watchPauseBtn');
-    const watchSpeedBtn = domCache.get('watchSpeedBtn');
-    const watchFollowBtn = domCache.get('watchFollowBtn');
-    const watchMomentsBtn = domCache.get('watchMomentsBtn');
-    const watchGodModeBtn = domCache.get('watchGodModeBtn');
-    const watchRecenterBtn = domCache.get('watchRecenterBtn');
-    const momentsPanel = domCache.get('momentsPanel');
-    const momentsList = domCache.get('momentsList');
-    const momentsSummary = domCache.get('momentsSummary');
-    const momentsClose = domCache.get('momentsClose');
-
-    if (watchToggleBtn) watchToggleBtn.addEventListener('click', this.boundHandlers.onWatchModeToggle);
-    if (watchPauseBtn) watchPauseBtn.addEventListener('click', this.boundHandlers.onWatchPause);
-    if (watchSpeedBtn) watchSpeedBtn.addEventListener('click', this.boundHandlers.onWatchSpeed);
-    if (watchFollowBtn) watchFollowBtn.addEventListener('click', this.boundHandlers.onWatchFollow);
-    if (watchMomentsBtn) watchMomentsBtn.addEventListener('click', this.boundHandlers.onWatchMoments);
-    if (watchGodModeBtn) watchGodModeBtn.addEventListener('click', this.boundHandlers.onWatchGodMode);
-    if (watchRecenterBtn) watchRecenterBtn.addEventListener('click', this.boundHandlers.onWatchRecenter);
+    const momentsPanel = domCache.get('momentsPanel') || document.getElementById('moments-panel');
+    const momentsList = domCache.get('momentsList') || document.getElementById('moments-list');
+    const momentsSummary = domCache.get('momentsSummary') || document.getElementById('moments-summary');
+    const momentsClose = domCache.get('momentsClose') || document.getElementById('moments-close');
 
     if (this.moments?.bindDom) {
       this.moments.bindDom({
@@ -686,11 +681,11 @@ export class UIController {
    * Bind panel toggle controls
    */
   bindPanelControls() {
-    const featuresCloseBtn = domCache.get('featuresCloseBtn');
-    const scenarioCloseBtn = domCache.get('scenarioCloseBtn');
-    const achievementsCloseBtn = domCache.get('achievementsCloseBtn');
-    const geneEditorCloseBtn = domCache.get('geneEditorCloseBtn');
-    const ecoHealthCloseBtn = domCache.get('ecoHealthCloseBtn');
+    const featuresCloseBtn = domCache.get('featuresCloseBtn') || document.getElementById('btn-features-close');
+    const scenarioCloseBtn = domCache.get('scenarioCloseBtn') || document.getElementById('btn-scenario-close');
+    const achievementsCloseBtn = domCache.get('achievementsCloseBtn') || document.getElementById('btn-achievements-close');
+    const geneEditorCloseBtn = domCache.get('geneEditorCloseBtn') || document.getElementById('btn-gene-editor-close');
+    const ecoHealthCloseBtn = domCache.get('ecoHealthCloseBtn') || document.getElementById('btn-eco-health-close');
     const shortcutsCloseBtn = document.getElementById('btn-shortcuts-close');
 
     if (featuresCloseBtn) featuresCloseBtn.addEventListener('click', this.boundHandlers.onFeaturesToggle);
@@ -880,8 +875,8 @@ export class UIController {
     const quickActions = domCache.get('quickActions');
     const mobileQuickActions = domCache.get('mobileQuickActions');
     const interactionHint = domCache.get('interactionHint');
-    const scenarioPanel = domCache.get('scenarioPanel');
-    const geneEditorPanel = domCache.get('geneEditorPanel');
+    const scenarioPanel = domCache.get('scenarioPanel') || document.getElementById('scenario-panel');
+    const geneEditorPanel = domCache.get('geneEditorPanel') || document.getElementById('gene-editor-panel');
     const editorOpen = (scenarioPanel && !scenarioPanel.classList.contains('hidden')) ||
       (geneEditorPanel && !geneEditorPanel.classList.contains('hidden'));
     const godModeActive = gameState.godModeActive;
@@ -908,6 +903,9 @@ export class UIController {
     ];
 
     if (panel) {
+      if (!gameState.godModeActive) {
+        this.blurFocusedDescendant(panel);
+      }
       panel.classList.toggle('hidden', !gameState.godModeActive);
       panel.setAttribute('aria-hidden', gameState.godModeActive ? 'false' : 'true');
     }
@@ -1301,7 +1299,7 @@ export class UIController {
   }
 
   onFeaturesToggle() {
-    const featuresPanel = domCache.get('featuresPanel');
+    const featuresPanel = domCache.get('featuresPanel') || document.getElementById('features-panel');
     if (featuresPanel) {
       const willShow = featuresPanel.classList.contains('hidden');
       if (willShow) {
@@ -1314,7 +1312,7 @@ export class UIController {
   }
 
   onScenarioToggle() {
-    const scenarioPanel = domCache.get('scenarioPanel');
+    const scenarioPanel = domCache.get('scenarioPanel') || document.getElementById('scenario-panel');
     if (scenarioPanel) {
       const willShow = scenarioPanel.classList.contains('hidden');
       if (willShow) {

@@ -76,6 +76,10 @@ export class MomentsSystem {
 
   closePanel() {
     if (!this.panel) return;
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && this.panel.contains(active)) {
+      active.blur();
+    }
     this.panel.classList.add('hidden');
     this.panel.setAttribute('aria-hidden', 'true');
   }

@@ -91,21 +91,44 @@ export class ControlStripController {
     this.overflowDrawerClose?.addEventListener('click', () => this.closeOverflowDrawer());
     this.overflowDrawer?.querySelector('.drawer-backdrop')?.addEventListener('click', () => this.closeOverflowDrawer());
 
-    this.menuItems?.forEach(item => {
-      item.addEventListener('click', () => {
-        const action = item.dataset.action;
-        if (action) this.handleMenuAction(action);
-      });
+    this.overflowDrawer?.addEventListener('click', (event) => {
+      const item = event.target.closest('.menu-item');
+      if (!item) return;
+      const action = item.dataset.action;
+      if (action) {
+        this.handleMenuAction(action);
+      }
     });
 
-    // Watch strip buttons
-    this.watchPause?.addEventListener('click', () => this.togglePause());
-    this.watchSpeed?.addEventListener('click', () => this.cycleSpeed());
-    this.watchFollow?.addEventListener('click', () => this.toggleFollow());
-    this.watchRecenter?.addEventListener('click', () => this.recenterCamera());
-    this.watchMoments?.addEventListener('click', () => this.openMoments());
-    this.watchGodMode?.addEventListener('click', () => this.toggleGodMode());
-    this.watchExit?.addEventListener('click', () => this.exitWatchMode());
+    // Watch strip buttons are delegated so bindings survive UI refreshes.
+    this.watchStrip?.addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button) return;
+
+      switch (button.id) {
+        case 'watch-pause':
+          this.togglePause();
+          break;
+        case 'watch-speed':
+          this.cycleSpeed();
+          break;
+        case 'watch-follow':
+          this.toggleFollow();
+          break;
+        case 'watch-recenter':
+          this.recenterCamera();
+          break;
+        case 'watch-moments':
+          this.openMoments();
+          break;
+        case 'watch-god-mode':
+          this.toggleGodMode();
+          break;
+        case 'watch-exit':
+          this.exitWatchMode();
+          break;
+      }
+    });
 
     // Keyboard shortcuts (only actions not handled by InputManager)
     document.addEventListener('keydown', (e) => this.handleKeyboard(e));
@@ -113,6 +136,13 @@ export class ControlStripController {
     // Keep control strip state synced with global events
     eventSystem.on('game:paused', () => this.updatePauseButton());
     eventSystem.on('game:resumed', () => this.updatePauseButton());
+  }
+
+  blurFocusedDescendant(container) {
+    const active = document.activeElement;
+    if (container && active instanceof HTMLElement && container.contains(active)) {
+      active.blur();
+    }
   }
 
   // === PAUSE / PLAY ===
@@ -197,6 +227,7 @@ export class ControlStripController {
 
   closeSpawnDrawer() {
     if (!this.spawnDrawer) return;
+    this.blurFocusedDescendant(this.spawnDrawer);
     this.spawnDrawer.classList.add('hidden');
     this.spawnDrawer.setAttribute('aria-hidden', 'true');
     this.spawnDrawerOpen = false;
@@ -244,6 +275,7 @@ export class ControlStripController {
 
   closeOverflowDrawer() {
     if (!this.overflowDrawer) return;
+    this.blurFocusedDescendant(this.overflowDrawer);
     this.overflowDrawer.classList.add('hidden');
     this.overflowDrawer.setAttribute('aria-hidden', 'true');
     this.overflowDrawerOpen = false;
@@ -339,10 +371,12 @@ export class ControlStripController {
     this.isWatchMode = !!gameState.watchModeEnabled;
     // Toggle control strip vs watch strip visibility
     if (this.isWatchMode) {
+      this.blurFocusedDescendant(this.controlStrip);
       this.controlStrip?.classList.add('hidden');
       this.watchStrip?.classList.remove('hidden');
       this.watchStrip?.setAttribute('aria-hidden', 'false');
     } else {
+      this.blurFocusedDescendant(this.watchStrip);
       this.controlStrip?.classList.remove('hidden');
       this.watchStrip?.classList.add('hidden');
       this.watchStrip?.setAttribute('aria-hidden', 'true');

@@ -29,13 +29,13 @@ import { SessionGoals } from './session-goals.js';
 import { MobileSupport } from './mobile-support.js';
 import { AutoDirector } from './auto-director.js';
 import { MomentsSystem } from './moments-system.js';
-import { ControlStripController } from './control-strip.js';
+import { ControlStripController } from './control-strip.js?v=20260413b';
 
 // Import new modular systems
 import { domCache } from './dom-cache.js';
 import { gameState } from './game-state.js';
 import { InputManager } from './input-manager.js';
-import { UIController } from './ui-controller.js';
+import { UIController } from './ui-controller.js?v=20260413b';
 import { GameLoop } from './game-loop.js';
 import { errorHandler } from './error-handler.js';
 import { eventSystem, GameEvents } from './event-system.js';

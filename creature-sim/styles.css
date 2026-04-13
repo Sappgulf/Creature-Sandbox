@@ -945,7 +945,7 @@ input[type="range"]:focus-visible {
   color: #f8fafc;
   font-size: 12px;
   letter-spacing: 0.3px;
-  z-index: 70;
+  z-index: 260;
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(10px);
 }
@@ -962,7 +962,7 @@ input[type="range"]:focus-visible {
   background: rgba(16, 20, 36, 0.82);
   border: 1px solid rgba(148, 163, 184, 0.35);
   box-shadow: var(--shadow-medium);
-  z-index: 70;
+  z-index: 260;
   backdrop-filter: blur(12px);
 }
 
@@ -3883,7 +3883,7 @@ body.home-active #btn-show-inspector {
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
   backdrop-filter: blur(16px);
-  z-index: 45;
+  z-index: 260;
   box-shadow: var(--shadow-hard);
   animation: momentsSlideIn var(--transition-slow) ease-out;
 }
