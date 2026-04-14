@@ -10,6 +10,8 @@ import { makeGenes, mutateGenes, GENETIC_DISORDERS, MUTATION_TYPES, applyDisorde
 import { SpatialGrid } from '../creature-sim/src/spatial-grid.js';
 import { ObjectPool, Vector2DPool, ArrayPool, ParticlePool, PoolManager, TempObjectPool } from '../creature-sim/src/object-pool.js';
 import { LineageTracker } from '../creature-sim/src/lineage-tracker.js';
+import { updateAgeStage, updateLifeStage, getAgeSizeMultiplier, getAgeSpeedMultiplier, getAgeMetabolismMultiplier, getElderFadeAlpha, getAgeStageIcon } from '../creature-sim/src/creature-age.js';
+import { NAME_SUGGESTIONS, pickNameSuggestion, determineSenseType, resolveDietRole, calculateAttractiveness, pickDesiredTraits } from '../creature-sim/src/creature-genetics-helpers.js';
 
 let passed = 0;
 let failed = 0;
@@ -906,6 +908,137 @@ test('LineageTracker: onCreatureBorn with null parent', () => {
   const world = makeMockWorld([root]);
   tracker.onCreatureBorn(root, world, null);
   assert.ok(tracker.names.size > 0, 'should register name for root');
+});
+
+// ============================================================================
+// creature-age.js
+// ============================================================================
+
+test('creature-age: updateAgeStage sets baby for age < 30', () => {
+  const creature = { age: 10, ageStage: 'adult' };
+  updateAgeStage(creature);
+  assert.equal(creature.ageStage, 'baby', 'should be baby when age < 30');
+});
+
+test('creature-age: updateAgeStage sets juvenile for age 30-60', () => {
+  const creature = { age: 45, ageStage: 'baby' };
+  updateAgeStage(creature);
+  assert.equal(creature.ageStage, 'juvenile', 'should be juvenile when age 30-60');
+});
+
+test('creature-age: updateAgeStage sets adult for age 60-240', () => {
+  const creature = { age: 120, ageStage: 'juvenile' };
+  updateAgeStage(creature);
+  assert.equal(creature.ageStage, 'adult', 'should be adult when age 60-240');
+});
+
+test('creature-age: updateAgeStage sets elder for age >= 240', () => {
+  const creature = { age: 250, ageStage: 'adult' };
+  updateAgeStage(creature);
+  assert.equal(creature.ageStage, 'elder', 'should be elder when age >= 240');
+});
+
+test('creature-age: updateLifeStage sets correct lifeStage', () => {
+  const creature = { age: 10, ageStage: 'baby', alive: true, reproductionCoolDown: 0 };
+  updateLifeStage(creature);
+  assert.equal(creature.lifeStage, 'baby', 'should set lifeStage to baby');
+  
+  creature.age = 120;
+  creature.ageStage = 'adult';
+  updateLifeStage(creature);
+  assert.equal(creature.lifeStage, 'adult', 'should set lifeStage to adult');
+  
+  creature.age = 260;
+  creature.ageStage = 'elder';
+  updateLifeStage(creature);
+  assert.equal(creature.lifeStage, 'elder', 'should set lifeStage to elder');
+});
+
+test('creature-age: getAgeSizeMultiplier returns correct values based on age and stage', () => {
+  assert.equal(getAgeSizeMultiplier(0, 'baby'), 0.3, 'baby at age 0 should have size multiplier 0.3');
+  assert.equal(getAgeSizeMultiplier(0, 'adult'), 1.0, 'adult should have size multiplier 1.0');
+  assert.equal(getAgeSizeMultiplier(0, 'elder'), 1.0, 'young elder should have size multiplier 1.0');
+});
+
+test('creature-age: getAgeSpeedMultiplier returns values for different ages', () => {
+  assert.ok(getAgeSpeedMultiplier(10) >= 0.9, 'baby should have speed >= 0.9');
+  assert.equal(getAgeSpeedMultiplier(120), 1.0, 'adult should have speed 1.0');
+  assert.ok(getAgeSpeedMultiplier(280) < 1.0, 'elder should have speed < 1.0');
+});
+
+test('creature-age: getAgeMetabolismMultiplier increases for babies and elders', () => {
+  assert.ok(getAgeMetabolismMultiplier(10) > 1.0, 'baby should have metabolism > 1.0');
+  assert.equal(getAgeMetabolismMultiplier(120), 1.0, 'adult should have metabolism 1.0');
+  assert.ok(getAgeMetabolismMultiplier(280) > 1.0, 'elder should have metabolism > 1.0');
+});
+
+test('creature-age: getElderFadeAlpha returns 1 for young, <1 for elders', () => {
+  assert.equal(getElderFadeAlpha(10), 1, 'baby should have fade alpha 1');
+  assert.equal(getElderFadeAlpha(120), 1, 'adult should have fade alpha 1');
+  assert.equal(getElderFadeAlpha(260), 1, 'elder just past adult should have fade alpha 1');
+  const elderAlpha = getElderFadeAlpha(280);
+  assert.ok(elderAlpha < 1, 'old elder should have fade alpha < 1');
+  assert.ok(elderAlpha >= 0, 'elder fade alpha should be >= 0');
+});
+
+test('creature-age: getAgeStageIcon returns correct emoji', () => {
+  assert.equal(getAgeStageIcon('baby'), '🍼', 'baby should return bottle emoji');
+  assert.equal(getAgeStageIcon('juvenile'), '🌱', 'juvenile should return seedling emoji');
+  assert.equal(getAgeStageIcon('adult'), '⭐', 'adult should return star emoji');
+  assert.equal(getAgeStageIcon('elder'), '👴', 'elder should return elderly emoji');
+});
+
+// ============================================================================
+// creature-genetics-helpers.js
+// ============================================================================
+
+test('creature-genetics-helpers: NAME_SUGGESTIONS has 15 entries', () => {
+  assert.equal(NAME_SUGGESTIONS.length, 15, 'NAME_SUGGESTIONS should have 15 entries');
+});
+
+test('creature-genetics-helpers: pickNameSuggestion returns string with format "NAME-##"', () => {
+  const result = pickNameSuggestion(123);
+  assert.ok(typeof result === 'string', 'should return a string');
+  assert.ok(result.includes('-'), 'should contain dash');
+  assert.ok(/[A-Z][a-z]+-\d+$/.test(result), 'should match NAME-## format');
+});
+
+test('creature-genetics-helpers: determineSenseType returns correct type based on genes hue', () => {
+  let genes = { hue: 50 };
+  assert.equal(determineSenseType(genes), 'normal', 'hue 50 should return normal');
+  
+  genes = { hue: 150 };
+  assert.equal(determineSenseType(genes), 'chemical', 'hue 150 should return chemical');
+  
+  genes = { hue: 260 };
+  assert.equal(determineSenseType(genes), 'thermal', 'hue 260 should return thermal');
+  
+  genes = { hue: 350 };
+  assert.equal(determineSenseType(genes), 'echolocation', 'hue 350 should return echolocation');
+});
+
+test('creature-genetics-helpers: resolveDietRole returns herbivore/predator-lite/scavenger based on diet', () => {
+  assert.equal(resolveDietRole({ diet: 0.1 }), 'herbivore', 'low diet should be herbivore');
+  assert.equal(resolveDietRole({ diet: 0.9 }), 'predator-lite', 'high diet should be predator-lite');
+  assert.equal(resolveDietRole({ predator: true }), 'predator-lite', 'predator flag should return predator-lite');
+});
+
+test('creature-genetics-helpers: calculateAttractiveness returns number based on genes', () => {
+  const genes = { speed: 1.0, sense: 50, metabolism: 1.0, predator: false, aggression: 0.5 };
+  const result = calculateAttractiveness(genes);
+  assert.ok(typeof result === 'number', 'should return a number');
+  assert.ok(!isNaN(result), 'should not be NaN');
+});
+
+test('creature-genetics-helpers: pickDesiredTraits returns object with speed/sense/health/predator properties', () => {
+  const result = pickDesiredTraits({ speed: 1.5, sense: 150, predator: true });
+  assert.ok(typeof result === 'object', 'should return an object');
+  assert.ok('speed' in result, 'should have speed property');
+  assert.ok('sense' in result, 'should have sense property');
+  assert.ok('health' in result, 'should have health property');
+  assert.ok('predator' in result, 'should have predator property');
+  assert.equal(result.speed, true, 'speed should be true when > 1.2');
+  assert.equal(result.predator, true, 'predator should match input');
 });
 
 // ============================================================================
