@@ -2908,6 +2908,7 @@ select:focus-visible,
 #mobile-quick-actions button:active {
   transform: scale(0.97);
   background: var(--bg-hover);
+  transition: transform 0.1s ease-out, background 0.1s ease-out;
 }
 
 #mobile-quick-actions button.active {
@@ -2915,6 +2916,7 @@ select:focus-visible,
   color: var(--accent-primary);
   border-color: rgba(0, 212, 255, 0.35);
   box-shadow: var(--glow-primary);
+  transition: all 0.2s ease-out;
 }
 
 #mobile-quick-actions button.pulse {
@@ -4170,16 +4172,19 @@ body.home-active #btn-show-inspector {
   background: var(--bg-hover);
   color: var(--text-primary);
   border-color: var(--glass-border-hover);
+  transition: all 0.15s ease-out;
 }
 
 .ctrl-btn:active {
   transform: scale(0.95);
+  transition: transform 0.08s ease-out;
 }
 
 .ctrl-btn.active {
   background: var(--accent-primary-dim);
   color: var(--accent-primary);
   border-color: rgba(0, 212, 255, 0.3);
+  transition: all 0.2s ease-out;
 }
 
 .ctrl-icon {
