@@ -123,6 +123,12 @@ export class GameLoop {
 
     this.boundLoop = this.loop.bind(this);
 
+    // PERFORMANCE: Skip frames when tab is hidden
+    this._isVisible = !document.hidden;
+    document.addEventListener('visibilitychange', () => {
+      this._isVisible = !document.hidden;
+    });
+
     // STABILITY: Watchdog to detect if game loop stops
     this._lastLoopTime = 0;
     this._watchdogInterval = null;
@@ -373,6 +379,12 @@ export class GameLoop {
    * STABILITY: Added defensive guards to prevent crashes
    */
   loop(now) {
+    // PERFORMANCE: Skip frames when tab is hidden
+    if (!this._isVisible) {
+      requestAnimationFrame(this.boundLoop);
+      return;
+    }
+
     // STABILITY: Update watchdog timestamp
     this._lastLoopTime = now || performance.now();
 

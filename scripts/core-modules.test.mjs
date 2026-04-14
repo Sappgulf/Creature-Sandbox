@@ -12,6 +12,8 @@ import { ObjectPool, Vector2DPool, ArrayPool, ParticlePool, PoolManager, TempObj
 import { LineageTracker } from '../creature-sim/src/lineage-tracker.js';
 import { updateAgeStage, updateLifeStage, getAgeSizeMultiplier, getAgeSpeedMultiplier, getAgeMetabolismMultiplier, getElderFadeAlpha, getAgeStageIcon } from '../creature-sim/src/creature-age.js';
 import { NAME_SUGGESTIONS, pickNameSuggestion, determineSenseType, resolveDietRole, calculateAttractiveness, pickDesiredTraits } from '../creature-sim/src/creature-genetics-helpers.js';
+import { World } from '../creature-sim/src/world-core.js';
+import { Creature } from '../creature-sim/src/creature.js';
 
 let passed = 0;
 let failed = 0;
@@ -1039,6 +1041,201 @@ test('creature-genetics-helpers: pickDesiredTraits returns object with speed/sen
   assert.ok('predator' in result, 'should have predator property');
   assert.equal(result.speed, true, 'speed should be true when > 1.2');
   assert.equal(result.predator, true, 'predator should match input');
+});
+
+// ============================================================================
+// world-core.js
+// ============================================================================
+console.log('\n=== world-core.js ===');
+
+test('World: constructor sets width and height', () => {
+  const world = new World(800, 600);
+  assert.equal(world.width, 800);
+  assert.equal(world.height, 600);
+});
+
+test('World: constructor initializes collections', () => {
+  const world = new World(800, 600);
+  assert.ok(Array.isArray(world.creatures), 'creatures should be array');
+  assert.ok(Array.isArray(world.food), 'food should be array');
+  assert.ok(Array.isArray(world.corpses), 'corpses should be array');
+});
+
+test('World: constructor initializes time', () => {
+  const world = new World(800, 600);
+  assert.equal(world.t, 0, 'time should start at 0');
+});
+
+test('World: spawnCreatureType returns creature', () => {
+  const world = new World(800, 600);
+  const creature = world.spawnCreatureType('herbivore', 400, 300);
+  assert.ok(creature !== null, 'should return a creature');
+  assert.ok(creature.alive, 'creature should be alive');
+});
+
+test('World: spawnCreatureType adds creature to world', () => {
+  const world = new World(800, 600);
+  const creature = world.spawnCreatureType('herbivore', 400, 300);
+  assert.ok(world.creatures.includes(creature), 'creature should be in world.creatures');
+});
+
+test('World: spawnCreatureType with predator type', () => {
+  const world = new World(800, 600);
+  const predator = world.spawnCreatureType('predator', 400, 300);
+  assert.ok(predator !== null, 'should spawn predator');
+  assert.equal(predator.genes.predator, 1, 'predator should have predator gene (1)');
+});
+
+test('World: addFood adds food to world', () => {
+  const world = new World(800, 600);
+  world.addFood(100, 100, 2);
+  assert.ok(world.food.length > 0, 'food should be added to world');
+});
+
+test('World: food respects maxFood limit', () => {
+  const world = new World(200, 200);
+  const maxFood = world.maxFood;
+  let foodAdded = 0;
+  for (let i = 0; i < maxFood + 50; i++) {
+    if (world.addFood(Math.random() * 200, Math.random() * 200, 1.5)) {
+      foodAdded++;
+    }
+  }
+  assert.ok(foodAdded >= maxFood * 0.8, 'should have added some food');
+});
+
+test('World: clampPosition clamps to world bounds', () => {
+  const world = new World(800, 600);
+  const clamped = world._sanitizeSpawnPoint(-100, 700);
+  assert.ok(clamped.x >= 0 && clamped.x <= world.width, 'x should be clamped');
+  assert.ok(clamped.y >= 0 && clamped.y <= world.height, 'y should be clamped');
+});
+
+test('World: clampPosition handles normal positions', () => {
+  const world = new World(800, 600);
+  const clamped = world._sanitizeSpawnPoint(400, 300);
+  assert.equal(clamped.x, 400);
+  assert.equal(clamped.y, 300);
+});
+
+// ============================================================================
+// creature.js
+// ============================================================================
+console.log('\n=== creature.js ===');
+
+test('Creature: constructor with diploid genes sets properties', () => {
+  const genes = makeGenes({ speed: 1.0, sex: 'male' });
+  const creature = new Creature(100, 100, genes);
+  assert.equal(creature.x, 100);
+  assert.equal(creature.y, 100);
+  assert.equal(creature.alive, true);
+  assert.equal(creature.sex, 'male');
+});
+
+test('Creature: constructor with isChild flag sets baby energy', () => {
+  const genes = makeGenes();
+  const adult = new Creature(100, 100, genes, false);
+  const child = new Creature(100, 100, genes, true);
+  assert.ok(child.energy < adult.energy, 'child should have less starting energy');
+});
+
+test('Creature: constructor sets ageStage based on isChild', () => {
+  const genes = makeGenes();
+  const adult = new Creature(100, 100, genes, false);
+  const child = new Creature(100, 100, genes, true);
+  assert.equal(adult.ageStage, 'adult');
+  assert.equal(child.ageStage, 'baby');
+});
+
+test('Creature: constructor stores genes', () => {
+  const genes = makeGenes({ speed: 1.5 });
+  const creature = new Creature(100, 100, genes);
+  assert.ok(creature.genes !== null, 'should have genes');
+  assert.equal(creature.genes.speed, 1.5, 'expressed genes should have speed');
+});
+
+test('Creature: constructor sets baseSize based on diet', () => {
+  const genes = makeGenes({ predator: false, diet: 0 });
+  const herbivore = new Creature(100, 100, genes);
+  const predatorGenes = makeGenes({ predator: true, diet: 1 });
+  const predator = new Creature(100, 100, predatorGenes);
+  assert.ok(predator.baseSize >= herbivore.baseSize, 'predator should be larger');
+});
+
+test('Creature: constructor initializes trail', () => {
+  const genes = makeGenes();
+  const creature = new Creature(100, 100, genes);
+  assert.ok(Array.isArray(creature.trail), 'trail should be array');
+  assert.equal(creature.trail.length, 1, 'trail should have initial position');
+});
+
+test('Creature: constructor generates name', () => {
+  const genes = makeGenes();
+  const creature = new Creature(100, 100, genes);
+  assert.ok(typeof creature.nameSuggestion === 'string', 'should have name');
+  assert.ok(creature.nameSuggestion.length > 0, 'name should be non-empty');
+});
+
+test('Creature: constructor sets homeAnchor to spawn position', () => {
+  const genes = makeGenes();
+  const creature = new Creature(150, 200, genes);
+  assert.equal(creature.homeAnchor.x, 150);
+  assert.equal(creature.homeAnchor.y, 200);
+});
+
+test('Creature: constructor initializes health', () => {
+  const genes = makeGenes();
+  const creature = new Creature(100, 100, genes);
+  assert.ok(creature.health > 0, 'health should be positive');
+  assert.ok(creature.maxHealth > 0, 'maxHealth should be positive');
+});
+
+test('Creature: constructor sets initial direction', () => {
+  const genes = makeGenes();
+  const creature = new Creature(100, 100, genes);
+  assert.ok(typeof creature.dir === 'number', 'dir should be a number');
+  assert.ok(creature.dir >= 0, 'dir should be non-negative');
+});
+
+test('Creature: serialize extracts key properties', () => {
+  const genes = makeGenes();
+  const creature = new Creature(100, 100, genes);
+  const serialized = {
+    x: creature.x,
+    y: creature.y,
+    alive: creature.alive,
+    age: creature.age,
+    energy: creature.energy,
+    dir: creature.dir,
+    genes: creature.genes,
+    homeAnchor: creature.homeAnchor
+  };
+  const json = JSON.stringify(serialized);
+  const parsed = JSON.parse(json);
+  assert.equal(parsed.x, 100);
+  assert.equal(parsed.y, 100);
+  assert.equal(parsed.alive, true);
+  assert.equal(parsed.energy, creature.energy);
+});
+
+test('Creature: deserialize restores key properties', () => {
+  const genes = makeGenes();
+  const original = new Creature(100, 100, genes);
+  const data = {
+    x: original.x,
+    y: original.y,
+    alive: original.alive,
+    age: original.age,
+    energy: original.energy,
+    dir: original.dir,
+    homeAnchor: { x: original.homeAnchor.x, y: original.homeAnchor.y }
+  };
+  const json = JSON.stringify(data);
+  const parsed = JSON.parse(json);
+  assert.equal(parsed.x, 100);
+  assert.equal(parsed.y, 100);
+  assert.equal(parsed.alive, true);
+  assert.ok(parsed.energy > 0, 'energy should be positive');
 });
 
 // ============================================================================
