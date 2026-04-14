@@ -527,26 +527,42 @@ export class Renderer {
     // REDESIGNED: Subtle atmospheric biome rendering (player-focused!)
     const ctx = this.ctx;
     const bounds = this._viewBounds;
-    const _sampleSize = Math.max(30, 120 / this.camera.zoom); // Larger samples = less blocky
+    const _sampleSize = Math.max(30, 120 / this.camera.zoom);
+    
+    // Biome colors for terrain ground
+    const biomeColors = {
+      forest: '#1a2f1a',
+      desert: '#3d2f1a',
+      tundra: '#2a2a33',
+      swamp: '#1a2a20',
+      ocean: '#0a1a2a',
+      mountain: '#2a2520',
+      jungle: '#1a2f25',
+      savanna: '#2a2a1a'
+    };
 
-    // Base background - fill entire visible area (including areas outside world bounds when zoomed out)
-    ctx.fillStyle = '#15201a'; // Match CSS background
-
-    // Calculate the full visible area in world coordinates
+    // Fill base background
+    ctx.fillStyle = '#15201a';
     const visibleWidth = bounds.x2 - bounds.x1;
     const visibleHeight = bounds.y2 - bounds.y1;
-    const extendAmount = Math.max(visibleWidth, visibleHeight) * 2; // Extend far beyond visible area
+    const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
+    ctx.fillRect(bounds.x1 - extendAmount, bounds.y1 - extendAmount, visibleWidth + extendAmount * 2, visibleHeight + extendAmount * 2);
 
-    // Fill entire visible area + large margin (to handle any zoom level)
-    ctx.fillRect(
-      bounds.x1 - extendAmount,
-      bounds.y1 - extendAmount,
-      visibleWidth + extendAmount * 2,
-      visibleHeight + extendAmount * 2
-    );
-
-    // Fill world area (may overlap, but ensures world is fully covered)
-    ctx.fillRect(0, 0, world.width, world.height);
+    // Draw biome-colored ground overlay (sample grid)
+    if (world.getBiomeAt && this.camera.zoom > 0.3) {
+      const gridSize = Math.max(60, 180 / this.camera.zoom);
+      for (let gx = Math.floor(bounds.x1 / gridSize) * gridSize; gx < bounds.x2; gx += gridSize) {
+        for (let gy = Math.floor(bounds.y1 / gridSize) * gridSize; gy < bounds.y2; gy += gridSize) {
+          const biome = world.getBiomeAt(gx + gridSize / 2, gy + gridSize / 2);
+          if (biome?.type && biomeColors[biome.type]) {
+            ctx.fillStyle = biomeColors[biome.type];
+            ctx.globalAlpha = 0.4;
+            ctx.fillRect(gx, gy, gridSize, gridSize);
+            ctx.globalAlpha = 1;
+          }
+        }
+      }
+    }
 
     // Draw decorations with better visibility (less dense)
     if (world.decorations && this.camera.zoom > 0.4) {

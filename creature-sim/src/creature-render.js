@@ -192,6 +192,22 @@ export function drawCreature(creature, ctx, opts = {}) {
     updateCachedCanvas(creature, assetType, colorStr);
   }
 
+  // Bioluminescence glow effect
+  const rareMutations = creature.rareMutations || creature.mutations || [];
+  const hasGlow = rareMutations.some(m => m.name === 'Bioluminescence');
+  if (hasGlow) {
+    const glowSize = r * 6;
+    const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, glowSize);
+    glow.addColorStop(0, 'rgba(0, 255, 200, 0.6)');
+    glow.addColorStop(0.3, 'rgba(0, 255, 150, 0.3)');
+    glow.addColorStop(0.6, 'rgba(0, 200, 255, 0.1)');
+    glow.addColorStop(1, 'rgba(0, 255, 200, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(0, 0, glowSize, 0, TAU);
+    ctx.fill();
+  }
+
   const worldTime = opts.worldTime ?? creature._lastWorld?.t ?? 0;
   const spriteFrame = getCachedSpriteFrame(creature, worldTime);
   if (spriteFrame) {
