@@ -29,6 +29,23 @@ export function getBadges(creature) {
   if (creature.funStats?.hardLandings >= 2) badges.push('😵 Crash Landed');
   if (creature.funStats?.propBounces >= 3) badges.push('🎯 Bounce Star');
   if (creature.funStats?.goofyFails >= 2) badges.push('🤹 Goofball');
+  
+  // Rare mutation badges
+  const rareMutations = creature.rareMutations || creature.mutations || [];
+  for (const mutation of rareMutations) {
+    switch (mutation.name) {
+      case 'Bioluminescence': badges.push('✨ Glow'); break;
+      case 'Regeneration': badges.push('💚 Heal'); break;
+      case 'Gigantism': badges.push('🦖 Giant'); break;
+      case 'Dwarfism': badges.push('🐹 Tiny'); break;
+      case 'Albinism': badges.push('⚪ Albino'); break;
+      case 'Melanism': badges.push('⬛ Dark'); break;
+      case 'Chameleon': badges.push('🌈 Hidden'); break;
+      case 'Venomous': badges.push('🐍 Venom'); break;
+      case 'Armored Shell': badges.push('🛡️ Armor'); break;
+      case 'Telepathy': badges.push('📡 Mind'); break;
+    }
+  }
   return badges;
 }
 
