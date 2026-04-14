@@ -763,7 +763,50 @@ export class Renderer {
   }
 
   _drawWeatherEffects(_world) {
-    // Will be enhanced with particle system
+    const weatherType = _world?.environment?.weatherType;
+    const weatherIntensity = _world?.environment?.weatherIntensity || 0;
+    if (!weatherType || weatherIntensity <= 0) return;
+    
+    const bounds = this._viewBounds;
+    const ctx = this.ctx;
+    
+    // Aurora Borealis effect
+    if (weatherType === 'aurora') {
+      const time = performance.now() * 0.001;
+      const gradient = ctx.createLinearGradient(0, bounds.y1, 0, bounds.y1 + 200);
+      gradient.addColorStop(0, 'rgba(0, 255, 128, 0)');
+      gradient.addColorStop(0.3, `rgba(0, 255, 200, ${0.15 * weatherIntensity})`);
+      gradient.addColorStop(0.5, `rgba(128, 255, 255, ${0.2 * weatherIntensity})`);
+      gradient.addColorStop(0.7, `rgba(0, 200, 255, ${0.15 * weatherIntensity})`);
+      gradient.addColorStop(1, 'rgba(0, 255, 128, 0)');
+      
+      ctx.fillStyle = gradient;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(bounds.x1, bounds.y1, bounds.x2 - bounds.x1, bounds.y2 - bounds.y1);
+      ctx.clip();
+      
+      // Draw wavy aurora bands
+      for (let i = 0; i < 3; i++) {
+        const yOffset = 30 + i * 40;
+        const waveOffset = Math.sin(time * 0.5 + i * 0.7) * 20;
+        
+        ctx.beginPath();
+        ctx.moveTo(bounds.x1, bounds.y1 + yOffset);
+        
+        for (let x = bounds.x1; x <= bounds.x2; x += 20) {
+          const y = bounds.y1 + yOffset + Math.sin(x * 0.005 + time * 0.8 + i) * waveOffset;
+          ctx.lineTo(x, y);
+        }
+        
+        ctx.lineTo(bounds.x2, bounds.y1 + yOffset + 60);
+        ctx.lineTo(bounds.x1, bounds.y1 + yOffset + 60);
+        ctx.closePath();
+        ctx.fill();
+      }
+      
+      ctx.restore();
+    }
   }
 
   _drawMoodOverlay(world, intensity, type) {

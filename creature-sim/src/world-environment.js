@@ -94,7 +94,7 @@ export class WorldEnvironment {
         },
         audioCue: 'season_autumn'
       },
-      winter: {
+winter: {
         label: 'Frozen Winter',
         foodMultiplier: 0.8,
         reproductionMultiplier: 0.6,
@@ -105,12 +105,30 @@ export class WorldEnvironment {
           foodRateMultiplier: 0.7
         },
         weather: {
-          type: 'snow',
-          baseIntensity: 0.4,
-          variation: 0.1,
-          transition: 12
+          type: 'aurora',
+          baseIntensity: 0.5,
+          variation: 0.3,
+          transition: 15
         },
         audioCue: 'season_winter'
+      },
+      aurora: {
+        label: 'Aurora Night',
+        foodMultiplier: 0.9,
+        reproductionMultiplier: 0.7,
+        metabolismScalar: 1.0,
+        environment: {
+          tempOffset: -0.1,
+          tempPenaltyAdd: -0.05,
+          foodRateMultiplier: 0.85
+        },
+        weather: {
+          type: 'aurora',
+          baseIntensity: 0.7,
+          variation: 0.4,
+          transition: 20
+        },
+        audioCue: 'season_night'
       }
     };
 
