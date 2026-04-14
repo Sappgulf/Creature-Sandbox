@@ -139,4 +139,22 @@ const fixtureResult = saveSystem.deserialize(fixtureData, World, Creature, Camer
 assertZeroPreservation(fixtureResult, { expectedNextId: 2, expectedDayNightEnabled: false });
 assert.equal(fixtureResult.world.biomeGenerator.seed, 0, 'biomeSeed should preserve 0');
 
+// Edge case: empty world preserves structure
+const emptyWorld = new World(100, 80);
+emptyWorld.reset();
+emptyWorld.t = 0;
+emptyWorld.creatureManager._nextId = 0;
+const emptySave = saveSystem.serialize(emptyWorld, camera, null, null);
+assert.equal(emptySave.world.creatures.length, 0, 'empty world should have no creatures');
+assert.equal(emptySave.world.food.length, 0, 'empty world should have no food');
+
+// Edge case: world with creatures of different types
+const multiWorld = new World(100, 80);
+multiWorld.reset();
+multiWorld.spawnCreatureType('herbivore', 30, 40);
+multiWorld.spawnCreatureType('predator', 70, 60);
+multiWorld.spawnCreatureType('omnivore', 50, 30);
+const multiSave = saveSystem.serialize(multiWorld, camera, null, null);
+assert.equal(multiSave.world.creatures.length, 3, 'should save 3 creatures');
+
 console.log('Save system tests passed.');
