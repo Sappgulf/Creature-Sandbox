@@ -5,7 +5,57 @@
 - [ ] Complete smoke test verification in browser (now use `npm run dev` instead of python http.server)
 - [ ] Verify core loop: spawn → select → interact → save/load
 - [ ] Verify mobile touch controls work correctly
-- [ ] Polish mobile panels so side menus stop blocking the playfield
+- [ ] Polish mobile panels — FIXED (inspector hidden transform, panel bottom offsets, panel overlay with dismiss)
+
+## Session Audit (2026-04-13, Session 2)
+
+### Focus
+1. Add unit tests, Vite bundler, mobile panel fixes
+2. Split large files into focused modules
+3. Code quality fixes (debug globals, ECS cleanup)
+
+### Changes
+- Added 108 unit tests for core modules: utils.js, genetics.js, spatial-grid.js, object-pool.js, lineage-tracker.js (scripts/core-modules.test.mjs)
+- Added Vite bundler: `npm run dev` (HMR), `npm run build` (prod), `npm run preview` — configured in vite.config.js, updated vercel.json, updated package.json scripts
+- Fixed mobile panel overlap: inspector hidden transform, panel bottom offset +16px clearance, god-mode/moments panel bottom using CSS variable, added panel overlay backdrop with dismiss click handler
+- Wrapped debug window.* globals behind devtools flag in main.js (lines 1442+)
+- Removed ECS no-op from game-loop.js per-frame call
+- Removed cache-busting ?v= from index.html (Vite handles this)
+- Upgraded ESLint config: no-console warn (allow debug/warn/error/info), varsIgnorePattern for _ prefix, debug-console.js override
+
+### File Splits (prototype-assignment pattern, zero API changes)
+
+**Creature split (creature.js: 3377→2266):**
+- creature-genetics-helpers.js (60 lines): NAME_SUGGESTIONS, determineSenseType, resolveDietRole, calculateAttractiveness, pickDesiredTraits
+- creature-age.js (94 lines): updateAgeStage, updateLifeStage, getAgeSizeMultiplier, getAgeSpeedMultiplier, getAgeMetabolismMultiplier, getElderFadeAlpha, getAgeStageIcon
+- creature-render.js (436 lines): getBadges, drawCreature, getCachedSpriteFrame, updateCachedCanvas, drawBehaviorState, drawTraits
+- creature-agent-needs.js (~500 lines): updateAgentState, updateAgentSenses, updateNeeds, selectGoal, updateSteeringForces, isMateCompatible, applyRestRecovery, updateRestHome, updateMatingBond, applyHungerRelief, getHomeBias
+
+**Renderer split (renderer.js: 2681→1377):**
+- renderer-features-viz.js (454 lines): 13 feature visualization methods (nests, territories, memory, bonds, migration, emotions, etc.)
+- renderer-minimap.js (311 lines): drawMiniMap, _drawBiomeLabels, _getDisasterTint
+- renderer-creatures.js (545 lines): 11 creature rendering methods
+
+**UI Controller split (ui-controller.js: 1777→688):**
+- ui-controller-exports.js (55 lines): exportSnapshot, exportCSV, exportGenesCSV
+- ui-controller-game-mode.js (~120 lines): gameplay mode + session goals controls
+- ui-controller-watch.js (~120 lines): watch mode controls + moments
+- ui-controller-god-mode.js (~180 lines): god mode controls + actions
+- ui-controller-spawn.js (~195 lines): spawn + prop controls + CREATURE_SPAWN_TYPES
+- ui-controller-achievements.js (~135 lines): achievements panel + render
+- ui-controller-panels.js (~265 lines): features/panel toggles + shortcuts
+
+### Verified
+- `npm test` — pass (118 tests: 108 core + 10 save-system)
+- `npm run lint` — 0 errors, 0 warnings
+- `node -c` syntax checks pass on all files
+
+### Metrics
+- Source files now: 87 → 103 modules (16 new focused modules)
+- creature.js: -33% (3377→2266)
+- renderer.js: -49% (2681→1377)  
+- ui-controller.js: -61% (1777→688)
+- Total lines reduced across 3 largest files: ~2,900 lines reorganized
 
 ## Session Audit (2026-04-13)
 
