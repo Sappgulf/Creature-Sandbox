@@ -122,6 +122,52 @@ export class ParticleSystem {
     });
   }
 
+  // Weather particles - rain, snow, wind streaks
+  _addWeatherParticles(originX, originY, weatherType, intensity = 1) {
+    const count = Math.floor(5 * intensity);
+    for (let i = 0; i < count; i++) {
+      const x = originX + (Math.random() - 0.5) * 300;
+      const y = originY + (Math.random() - 0.5) * 200;
+      if (weatherType === 'rain') {
+        this.particles.push({
+          type: 'weather',
+          x, y,
+          vx: -80 + Math.random() * 20,
+          vy: 150 + Math.random() * 50,
+          life: 0.8,
+          maxLife: 0.8,
+          size: 1.5,
+          color: 'rgba(150, 180, 255, 0.5)',
+          opacity: 0.5
+        });
+      } else if (weatherType === 'snow') {
+        this.particles.push({
+          type: 'weather',
+          x, y,
+          vx: -20 + Math.random() * 40,
+          vy: 30 + Math.random() * 20,
+          life: 2 + Math.random(),
+          maxLife: 3,
+          size: 2 + Math.random() * 2,
+          color: 'rgba(255, 255, 255, 0.7)',
+          opacity: 0.7
+        });
+      } else if (weatherType === 'wind') {
+        this.particles.push({
+          type: 'weather',
+          x, y,
+          vx: 150 + Math.random() * 100,
+          vy: -10 + Math.random() * 20,
+          life: 0.5,
+          maxLife: 0.5,
+          size: 1,
+          color: 'rgba(200, 220, 255, 0.3)',
+          opacity: 0.3
+        });
+      }
+    }
+  }
+
   // Add combat hit effects (blood splatter)
   addCombatHit(x, y, damage, isKill = false) {
     const particleCount = isKill ? 15 : 8;
@@ -575,6 +621,15 @@ export class ParticleSystem {
         break;
       case 'death':
         this.addDeathMarker(x, y, options.name || 'Unknown', options.diet || 0);
+        break;
+      case 'weather_rain':
+        this._addWeatherParticles(x, y, 'rain', options.intensity || 1);
+        break;
+      case 'weather_snow':
+        this._addWeatherParticles(x, y, 'snow', options.intensity || 1);
+        break;
+      case 'weather_wind':
+        this._addWeatherParticles(x, y, 'wind', options.intensity || 1);
         break;
       case 'combat':
       case 'hit':
