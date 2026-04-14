@@ -7,36 +7,15 @@ import { createEcosystemState, ECOSYSTEM_STATES } from './creature-ecosystem.js'
 import { CreatureStatusSystem } from './creature-status.js';
 import { CreatureBehaviorSystem } from './creature-behavior.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
+import { updateAgentState, applyRestRecovery, updateRestHome, updateMatingBond, applyHungerRelief, getHomeBias } from './creature-agent-needs.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { generateTemperament } from './creature-traits.js';
-import { assetLoader } from './asset-loader.js';
-import { getDebugFlags } from './debug-flags.js';
+import { pickNameSuggestion, determineSenseType, resolveDietRole, calculateAttractiveness, pickDesiredTraits } from './creature-genetics-helpers.js';
+import { updateAgeStage, getAgeSizeMultiplier, getAgeSpeedMultiplier, getAgeMetabolismMultiplier } from './creature-age.js';
+import { getBadges as _getBadges, drawCreature as _drawCreature, getCachedSpriteFrame as _getCachedSpriteFrame, updateCachedCanvas as _updateCachedCanvas, drawBehaviorState as _drawBehaviorState, drawTraits as _drawTraits } from './creature-render.js';
 
 // Destructure commonly-used constants for cleaner code
-const { TRAIL_INTERVAL, TRAIL_MAX, LOG_MAX, TAU } = CreatureConfig;
-const NAME_SUGGESTIONS = [
-  'Fizz',
-  'Pebble',
-  'Wiggle',
-  'Pip',
-  'Bloop',
-  'Ziggy',
-  'Sprout',
-  'Nib',
-  'Mochi',
-  'Skitter',
-  'Jelly',
-  'Nimbus',
-  'Gizmo',
-  'Sprocket',
-  'Noodle'
-];
-
-function pickNameSuggestion(seed) {
-  const idx = Math.abs(Math.floor(seed)) % NAME_SUGGESTIONS.length;
-  const tag = Math.abs(Math.floor(seed * 37)) % 99;
-  return `${NAME_SUGGESTIONS[idx]}-${tag}`;
-}
+const { TRAIL_INTERVAL, TRAIL_MAX, LOG_MAX } = CreatureConfig;
 
 /**
  * Represents a creature in the simulation with genetic traits and behaviors.
@@ -111,7 +90,7 @@ export class Creature {
     }
 
     // Age-based size multiplier
-    const ageSizeMultiplier = this._getAgeSizeMultiplier();
+    const ageSizeMultiplier = getAgeSizeMultiplier(this.age, this.ageStage);
     this.size = this.baseSize * ageSizeMultiplier;
 
     // Parent tracking for parental care
@@ -171,7 +150,7 @@ export class Creature {
       reactivity: clamp(0.35 + rand(-0.1, 0.25) + (this.genes.sense / 200) * 0.25, 0.2, 1.2),
       playfulness: clamp(0.3 + rand(-0.2, 0.4) + (1 - this.genes.metabolism / 2) * 0.2, 0.1, 1.2)
     };
-    const dietRole = this._resolveDietRole(this.genes);
+    const dietRole = resolveDietRole(this.genes);
     this.traits = {
       bounce: clamp(0.95 + rand(-0.08, 0.08), 0.75, 1.25),
       temperament: clamp(0.5 + rand(-0.18, 0.18), 0, 1),
@@ -336,7 +315,7 @@ export class Creature {
     });
 
     // FEATURE 6: Sensory Specialization
-    this.senseType = this._determineSenseType(genes);
+    this.senseType = determineSenseType(genes);
 
     // FEATURE 7: Problem Solving & Intelligence
     this.intelligence = {
@@ -350,54 +329,16 @@ export class Creature {
 
     // FEATURE 8: Sexual Selection
     this.sexuality = {
-      attractiveness: this._calculateAttractiveness(genes),
+      attractiveness: calculateAttractiveness(genes),
       lastMated: -Infinity,
       choosiness: clamp(genes.sense / 120, 0.3, 1), // how picky
       courtshipStyle: Math.random(), // display type
-      desiredTraits: this._pickDesiredTraits(genes)
+      desiredTraits: pickDesiredTraits(genes)
     };
 
     // Initialize new modular systems
     this.statusSystem = new CreatureStatusSystem(this);
     this.behaviorSystem = new CreatureBehaviorSystem(this);
-  }
-
-  _determineSenseType(genes) {
-    // Determine sense type based on genes
-    const r = genes.hue / 360; // use hue as determinant
-    if (r < CreatureConfig.GENETICS.SENSE_TYPE_THRESHOLDS.NORMAL_MAX) return 'normal';
-    if (r < CreatureConfig.GENETICS.SENSE_TYPE_THRESHOLDS.CHEMICAL_MAX) return 'chemical'; // better pheromone tracking
-    if (r < CreatureConfig.GENETICS.SENSE_TYPE_THRESHOLDS.THERMAL_MAX) return 'thermal'; // see through obstacles
-    return 'echolocation'; // wider detection
-  }
-
-  _resolveDietRole(genes) {
-    const diet = genes?.diet ?? (genes?.predator ? 1.0 : 0.0);
-    if (diet > 0.7) {
-      return 'predator-lite';
-    }
-    if (diet >= 0.3) {
-      return Math.random() < 0.55 ? 'scavenger' : 'herbivore';
-    }
-    return 'herbivore';
-  }
-
-  _calculateAttractiveness(genes) {
-    // Multi-factor attractiveness
-    return (genes.speed * 0.3 +
-      genes.sense * 0.002 +
-      (2 - genes.metabolism) * 0.2 +
-      (genes.predator ? genes.aggression * 0.2 : 1 - genes.metabolism * 0.3));
-  }
-
-  _pickDesiredTraits(genes) {
-    // What this creature finds attractive
-    return {
-      speed: genes.speed > 1.2,
-      sense: genes.sense > 100,
-      health: true,
-      predator: genes.predator
-    };
   }
 
   baseBurn() {
@@ -613,506 +554,6 @@ export class Creature {
     this.personality.currentTargetId = null;
   }
 
-  _updateAgentState(dt, world) {
-    if (!this.needs || !this.goal || !this.senses) return;
-
-    this._needsTimer = (this._needsTimer ?? 0) + dt;
-    this._goalTimer = (this._goalTimer ?? 0) + dt;
-    this._steeringTimer = (this._steeringTimer ?? 0) + dt;
-
-    this.goal.cooldown = Math.max(0, (this.goal.cooldown ?? 0) - dt);
-    this.goal.mateCooldown = Math.max(0, (this.goal.mateCooldown ?? 0) - dt);
-
-    if (this._needsTimer >= CreatureAgentTuning.NEEDS.UPDATE_INTERVAL) {
-      const step = this._needsTimer;
-      this._needsTimer = 0;
-      this._updateAgentSenses(world);
-      this._updateNeeds(step, world);
-    }
-
-    if (this._goalTimer >= CreatureAgentTuning.GOALS.UPDATE_INTERVAL) {
-      this._goalTimer = 0;
-      if (this._needsTimer > 0) {
-        this._updateAgentSenses(world);
-      }
-      this._selectGoal(world);
-    }
-
-    if (this._steeringTimer >= CreatureAgentTuning.MOVEMENT.STEERING_INTERVAL) {
-      this._steeringTimer = 0;
-      this._updateSteeringForces(world);
-    }
-  }
-
-  _updateAgentSenses(world) {
-    const senses = this.senses;
-    if (!senses) return;
-    const dietRole = this.traits?.dietRole ?? 'herbivore';
-    const diet = this.genes.diet ?? (this.genes.predator ? 1.0 : 0.0);
-
-    const foodRadius = clamp(
-      this.genes.sense * CreatureAgentTuning.SENSES.FOOD_RADIUS_MULT,
-      CreatureAgentTuning.SENSES.FOOD_RADIUS_MIN,
-      CreatureAgentTuning.SENSES.FOOD_RADIUS_MAX
-    );
-    const foodList = world?.ecosystem?.nearbyFood(this.x, this.y, foodRadius) || [];
-    let bestFood = null;
-    let bestFoodD2 = Infinity;
-    for (const food of foodList) {
-      if (!food) continue;
-      if (food.bites !== undefined && food.bites <= 0) continue;
-      const dx = food.x - this.x;
-      const dy = food.y - this.y;
-      const d2 = dx * dx + dy * dy;
-      const scentRadius = food.scentRadius ?? CreatureAgentTuning.FOOD.SCENT_RADIUS;
-      if (d2 > scentRadius * scentRadius) continue;
-      if (d2 < bestFoodD2) {
-        bestFoodD2 = d2;
-        bestFood = food;
-      }
-    }
-    senses.food = bestFood;
-
-    const restZone = world?.ecosystem?.nearestRestZone?.(this.x, this.y, CreatureAgentTuning.REST_ZONES.DETECT_RADIUS);
-    senses.restZone = restZone || null;
-
-    const homeNest = this.homeNestId ? world?.getNestById?.(this.homeNestId) : null;
-    const nearbyNest = world?.getNearestNest?.(this.x, this.y, CreatureAgentTuning.NESTS.DETECT_RADIUS);
-    senses.homeNest = homeNest || null;
-    senses.nest = homeNest || nearbyNest || null;
-
-    if (this.homeRegionId == null && world?.getRegionId) {
-      this.homeRegionId = world.getRegionId(this.x, this.y);
-    }
-
-    const mateRadius = this.genes.sense * CreatureAgentTuning.SENSES.MATE_RADIUS_MULT;
-    const candidates = world?.creatureManager?.queryCreaturesFast
-      ? world.creatureManager.queryCreaturesFast(this.x, this.y, mateRadius)
-      : world?.queryCreatures?.(this.x, this.y, mateRadius) || [];
-    let bestMate = null;
-    let bestMateD2 = Infinity;
-    for (const other of candidates) {
-      if (!this._isMateCompatible(other)) continue;
-      const dx = other.x - this.x;
-      const dy = other.y - this.y;
-      const d2 = dx * dx + dy * dy;
-      if (d2 < bestMateD2) {
-        bestMateD2 = d2;
-        bestMate = other;
-      }
-    }
-    senses.mate = bestMate;
-
-    if (dietRole === 'scavenger' || diet >= 0.3) {
-      senses.corpse = world?.findNearbyCorpse
-        ? world.findNearbyCorpse(this.x, this.y, this.genes.sense * 0.9)
-        : null;
-    } else {
-      senses.corpse = null;
-    }
-
-    const crowdRadius = CreatureAgentTuning.SENSES.OVERCROWD_RADIUS;
-    const crowd = world?.creatureManager?.queryCreaturesFast
-      ? world.creatureManager.queryCreaturesFast(this.x, this.y, crowdRadius)
-      : world?.queryCreatures?.(this.x, this.y, crowdRadius) || [];
-    senses.overcrowded = crowd.length > CreatureAgentTuning.SENSES.OVERCROWD_COUNT;
-    if (senses.overcrowded && !this._wasOvercrowded) {
-      this._wasOvercrowded = true;
-      try {
-        eventSystem.emit(GameEvents.CREATURE_OVERCROWD, {
-          x: this.x,
-          y: this.y,
-          count: crowd.length,
-          worldTime: world?.t ?? 0
-        });
-      } catch (error) {
-        console.warn('Failed to emit overcrowd event:', error);
-      }
-    } else if (!senses.overcrowded) {
-      this._wasOvercrowded = false;
-    }
-  }
-
-  _updateNeeds(dt, world) {
-    const needs = this.needs;
-    if (!needs) return;
-
-    const dayNight = world?.dayNightState;
-    const dayFactor = dayNight ? clamp((dayNight.light - 0.2) / 0.8, 0, 1) : 1;
-    const hungerRate = CreatureAgentTuning.NEEDS.HUNGER_RATE * (
-      CreatureAgentTuning.DAY_NIGHT.HUNGER_NIGHT_MULT +
-      (CreatureAgentTuning.DAY_NIGHT.HUNGER_DAY_MULT - CreatureAgentTuning.DAY_NIGHT.HUNGER_NIGHT_MULT) * dayFactor
-    );
-    const socialRate = CreatureAgentTuning.NEEDS.SOCIAL_RATE * (
-      CreatureAgentTuning.DAY_NIGHT.SOCIAL_NIGHT_MULT +
-      (CreatureAgentTuning.DAY_NIGHT.SOCIAL_DAY_MULT - CreatureAgentTuning.DAY_NIGHT.SOCIAL_NIGHT_MULT) * dayFactor
-    );
-
-    needs.hunger = clamp(needs.hunger + hungerRate * dt, 0, 100);
-    needs.socialDrive = clamp(needs.socialDrive + socialRate * dt, 0, 100);
-    needs.energy = clamp(this.energy ?? needs.energy, CreatureAgentTuning.NEEDS.MIN, CreatureAgentTuning.NEEDS.MAX);
-
-    const ecoStress = this.ecosystem?.stress;
-    if (Number.isFinite(ecoStress)) {
-      needs.stress = clamp(ecoStress, 0, 100);
-    }
-
-    const overcrowdMult = CreatureAgentTuning.DAY_NIGHT.OVERCROWD_NIGHT_MULT +
-      (CreatureAgentTuning.DAY_NIGHT.OVERCROWD_DAY_MULT - CreatureAgentTuning.DAY_NIGHT.OVERCROWD_NIGHT_MULT) * dayFactor;
-    const stressGainMultiplier = this.lifeStage === 'baby' ? 1.35 : this.lifeStage === 'elder' ? 1.15 : 1;
-    if (this.senses?.overcrowded) {
-      needs.stress = clamp(
-        needs.stress + CreatureAgentTuning.NEEDS.STRESS_OVERCROWD_GAIN * stressGainMultiplier * overcrowdMult * dt,
-        0,
-        100
-      );
-    } else if (this.goal?.current === 'REST') {
-      needs.stress = clamp(needs.stress - CreatureAgentTuning.NEEDS.STRESS_REST_DECAY * dt, 0, 100);
-    } else {
-      needs.stress = clamp(needs.stress - CreatureAgentTuning.NEEDS.STRESS_CALM_DECAY * dt, 0, 100);
-    }
-
-    const calmZone = world?.environment?.getCalmZoneAt?.(this.x, this.y);
-    const calmBoost = (world?.moodState?.calmBoost ?? 0) + (calmZone?.strength ?? 0);
-    if (calmBoost > 0) {
-      needs.stress = clamp(needs.stress - calmBoost * 6 * dt, 0, 100);
-    }
-
-    const region = world?.getRegionAt?.(this.x, this.y);
-    if (region && region.pressure > 0) {
-      const pressureGain = CreatureAgentTuning.TERRITORY.STRESS_GAIN * region.pressure * stressGainMultiplier;
-      needs.stress = clamp(needs.stress + pressureGain * dt, 0, 100);
-    }
-
-    const prevStress = this._lastStressLevel ?? needs.stress;
-    const stressDelta = needs.stress - prevStress;
-    this._lastStressLevel = needs.stress;
-    if (world && stressDelta >= CreatureConfig.MEMORY.STRESS_SPIKE_THRESHOLD &&
-      needs.stress >= CreatureConfig.MEMORY.STRESS_THRESHOLD) {
-      if (this.memory && world.t - (this.memory.lastDangerAt ?? -Infinity) >= CreatureConfig.MEMORY.DANGER_COOLDOWN) {
-        this.rememberLocation?.(this.x, this.y, 'danger', clamp(stressDelta / 40, 0.2, 0.8), world.t);
-        this.memory.lastDangerAt = world.t;
-      }
-    }
-  }
-
-  _selectGoal(world) {
-    const needs = this.needs;
-    const senses = this.senses;
-    const goal = this.goal;
-    if (!needs || !senses || !goal) return;
-
-    const dietRole = this.traits?.dietRole ?? 'herbivore';
-    const roleTuning = CreatureAgentTuning.ROLES?.[dietRole] ?? {};
-
-    const hungerScore = clamp(needs.hunger / 100, 0, 1);
-    const energyScore = clamp(1 - needs.energy / 100, 0, 1);
-    const socialScore = clamp(needs.socialDrive / 100, 0, 1);
-    const stressScore = clamp(needs.stress / 100, 0, 1);
-    const dayNight = world?.dayNightState;
-    const dayFactor = dayNight ? clamp((dayNight.light - 0.2) / 0.8, 0, 1) : 1;
-    const restBias = CreatureAgentTuning.DAY_NIGHT.REST_NIGHT_BIAS +
-      (CreatureAgentTuning.DAY_NIGHT.REST_DAY_BIAS - CreatureAgentTuning.DAY_NIGHT.REST_NIGHT_BIAS) * dayFactor;
-    const eatBias = CreatureAgentTuning.DAY_NIGHT.EAT_NIGHT_BIAS +
-      (CreatureAgentTuning.DAY_NIGHT.EAT_DAY_BIAS - CreatureAgentTuning.DAY_NIGHT.EAT_NIGHT_BIAS) * dayFactor;
-    const wanderBias = CreatureAgentTuning.DAY_NIGHT.WANDER_NIGHT_BIAS +
-      (CreatureAgentTuning.DAY_NIGHT.WANDER_DAY_BIAS - CreatureAgentTuning.DAY_NIGHT.WANDER_NIGHT_BIAS) * dayFactor;
-
-    const memoryFood = !senses.food && this._selectMemory ? this._selectMemory('food', world) : null;
-    const memoryCalm = !senses.restZone && this._selectMemory ? this._selectMemory('calm', world) : null;
-    const eatSourceFactor = senses.food ? 1 : memoryFood ? 0.6 : 0.3;
-    const restSourceFactor = senses.restZone ? 1 : memoryCalm ? 0.6 : 0.4;
-    let eatScore = hungerScore * eatSourceFactor * CreatureAgentTuning.GOALS.SCORE_BIAS.EAT * eatBias;
-    let restScore = (energyScore * 0.9 + stressScore * 0.3) *
-      restSourceFactor * CreatureAgentTuning.GOALS.SCORE_BIAS.REST * restBias;
-    let mateScore = socialScore * (senses.mate ? 1 : 0.2) * CreatureAgentTuning.GOALS.SCORE_BIAS.SEEK_MATE;
-    if (needs.stress > CreatureAgentTuning.MATING.STRESS_MAX) {
-      mateScore *= 0.1;
-    }
-    if (goal.mateCooldown > 0) {
-      mateScore = 0;
-    }
-    if (this.lifeStage === 'elder') {
-      restScore *= 1.2;
-      mateScore *= CreatureAgentTuning.MATING.ELDER_GOAL_MULT;
-    }
-
-    let wanderScore = CreatureAgentTuning.GOALS.SCORE_BIAS.WANDER * wanderBias;
-
-    const nest = senses.homeNest || senses.nest;
-    if (nest) {
-      let nestBias = 1 + this.territoryAffinity * 0.3;
-      if (this.lifeStage === 'baby') {
-        nestBias += 0.35;
-      } else if (this.lifeStage === 'elder') {
-        nestBias += 0.25;
-      } else {
-        nestBias += 0.12;
-      }
-      restScore *= nestBias;
-      if (this.lifeStage === 'adult') {
-        mateScore *= 1.08;
-      }
-    }
-
-    if (senses.corpse && dietRole === 'scavenger') {
-      eatScore *= roleTuning.corpseBias ?? 1.25;
-    }
-    eatScore *= roleTuning.eatBias ?? 1;
-    restScore *= roleTuning.restBias ?? 1;
-    mateScore *= roleTuning.mateBias ?? 1;
-    wanderScore *= roleTuning.wanderBias ?? 1;
-
-    const scores = [
-      { key: 'EAT', score: eatScore },
-      { key: 'REST', score: restScore },
-      { key: 'SEEK_MATE', score: mateScore },
-      { key: 'WANDER', score: wanderScore }
-    ];
-
-    scores.sort((a, b) => b.score - a.score);
-    const best = scores[0];
-    const now = world?.t ?? 0;
-    const timeSinceChange = now - (goal.lastChange ?? 0);
-    const shouldHold = timeSinceChange < CreatureAgentTuning.GOALS.MIN_DURATION &&
-      (goal.score ?? 0) >= best.score - CreatureAgentTuning.GOALS.SWITCH_HYSTERESIS;
-
-    if (!shouldHold && goal.current !== best.key) {
-      goal.current = best.key;
-      goal.lastChange = now;
-    }
-    goal.score = best.score;
-
-    if (needs.hunger > 70) {
-      this.setMood('🍽️', 0.5);
-    } else if (needs.energy < 30) {
-      this.setMood('😴', 0.5);
-    } else if (needs.socialDrive > 75 && goal.current === 'SEEK_MATE') {
-      this.setMood('💞', 0.5);
-    }
-  }
-
-  _updateSteeringForces(world) {
-    if (!this._separation || !this._edgeAvoid) return;
-    const separation = this._separation;
-    separation.x = 0;
-    separation.y = 0;
-
-    const radius = CreatureAgentTuning.MOVEMENT.SEPARATION_RADIUS;
-    const neighbors = world?.creatureManager?.queryCreaturesFast
-      ? world.creatureManager.queryCreaturesFast(this.x, this.y, radius)
-      : world?.queryCreatures?.(this.x, this.y, radius) || [];
-    for (const other of neighbors) {
-      if (!other || other === this) continue;
-      const dx = this.x - other.x;
-      const dy = this.y - other.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist <= 0.001) continue;
-      const strength = clamp((radius - dist) / radius, 0, 1);
-      separation.x += (dx / dist) * strength;
-      separation.y += (dy / dist) * strength;
-    }
-    separation.x *= CreatureAgentTuning.MOVEMENT.SEPARATION_STRENGTH;
-    separation.y *= CreatureAgentTuning.MOVEMENT.SEPARATION_STRENGTH;
-
-    const edgeAvoid = this._edgeAvoid;
-    edgeAvoid.x = 0;
-    edgeAvoid.y = 0;
-    const margin = CreatureAgentTuning.MOVEMENT.EDGE_AVOID_MARGIN;
-    if (this.x < margin) edgeAvoid.x += (margin - this.x) / margin;
-    if (this.x > world.width - margin) edgeAvoid.x -= (this.x - (world.width - margin)) / margin;
-    if (this.y < margin) edgeAvoid.y += (margin - this.y) / margin;
-    if (this.y > world.height - margin) edgeAvoid.y -= (this.y - (world.height - margin)) / margin;
-    edgeAvoid.x *= CreatureAgentTuning.MOVEMENT.EDGE_AVOID_FORCE;
-    edgeAvoid.y *= CreatureAgentTuning.MOVEMENT.EDGE_AVOID_FORCE;
-  }
-
-  _isMateCompatible(other) {
-    if (!other || other === this || !other.alive) return false;
-    if (this.ageStage !== 'adult' || other.ageStage !== 'adult') return false;
-    const diet = this.genes.diet ?? (this.genes.predator ? 1.0 : 0.0);
-    const otherDiet = other.genes.diet ?? (other.genes.predator ? 1.0 : 0.0);
-    if (Math.abs(diet - otherDiet) > 0.4) return false;
-    return true;
-  }
-
-  _applyRestRecovery(dt, world, { inRestZone = false, nest = null } = {}) {
-    if (!inRestZone && !nest) return;
-    const nestComfort = nest ? (nest.comfortEffective ?? nest.comfort ?? CreatureAgentTuning.NESTS.COMFORT) : 1;
-    const restBonus = nest ? CreatureAgentTuning.NESTS.REST_BONUS : 1;
-    const energyGain = CreatureAgentTuning.REST_ZONES.ENERGY_RECOVERY * restBonus * nestComfort * dt;
-    this.energy = Math.min((this.energy ?? 0) + energyGain, CreatureAgentTuning.NEEDS.MAX);
-    if (this.needs) {
-      this.needs.energy = clamp(this.energy ?? this.needs.energy, 0, 100);
-      const stressRecovery = CreatureAgentTuning.REST_ZONES.STRESS_RECOVERY * (nest ? 1 + nestComfort * 0.4 : 1);
-      this.needs.stress = clamp(this.needs.stress - stressRecovery * dt, 0, 100);
-      if (nest?.overcrowded) {
-        this.needs.stress = clamp(
-          this.needs.stress + CreatureAgentTuning.NESTS.OVERCROWD_PENALTY * dt,
-          0,
-          100
-        );
-      }
-    }
-    world?.creatureEcosystem?.registerEvent?.(this, 'rest');
-    if (this.memory && this.needs?.stress <= CreatureConfig.MEMORY.CALM_STRESS_MAX) {
-      const now = world?.t ?? 0;
-      if (now - (this.memory.lastCalmAt ?? -Infinity) >= CreatureConfig.MEMORY.CALM_COOLDOWN) {
-        this.rememberLocation?.(this.x, this.y, 'calm', 0.55, now);
-        this.memory.lastCalmAt = now;
-      }
-      if (this.memory.focus?.tag === 'calm') {
-        this._reinforceMemory?.(this.memory.focus.entry, CreatureConfig.MEMORY.REINFORCE_AMOUNT * 0.6, now);
-        this.memory.focus = null;
-      }
-    }
-  }
-
-  _updateRestHome(dt, world, nest = null) {
-    if (!world) return;
-    const now = world.t ?? 0;
-    const region = world.getRegionAt?.(this.x, this.y);
-    if (region?.id != null) {
-      this.homeRegionId = region.id;
-    }
-
-    const shouldTrack = (this.needs?.stress ?? 100) <= CreatureAgentTuning.NESTS.CREATE_STRESS_MAX;
-    if (!shouldTrack) {
-      this._restNestTimer = 0;
-      return;
-    }
-    this._restNestTimer += dt;
-
-    if (nest && nest.id) {
-      this.homeNestId = nest.id;
-    }
-
-    if (this.migration?.active && this.migration.targetRegionId != null) {
-      if (region?.id === this.migration.targetRegionId) {
-        this.migration.settleTimer = (this.migration.settleTimer ?? 0) + dt;
-        if (this.migration.settleTimer >= CreatureAgentTuning.MIGRATION.SETTLE_REST_TIME &&
-          (this.needs?.stress ?? 100) < CreatureAgentTuning.MIGRATION.STRESS_TRIGGER) {
-          this.migration.active = false;
-          this.migration.settled = true;
-          this.migration.targetRegionId = region.id;
-          this.migration.recentUntil = now + CreatureAgentTuning.MIGRATION.RECENTLY_MIGRATED;
-          this.migration.settleTimer = 0;
-          this.migration.bias = null;
-          this.migration.target = null;
-          world.registerMigrationSettled?.(this, region);
-
-          if (!nest && world.addNest) {
-            const newNest = world.addNest(this.x, this.y, { createdBy: this.id });
-            if (newNest) {
-              this.homeNestId = newNest.id;
-              nest = newNest;
-            }
-          }
-          if (nest) {
-            this.rememberLocation?.(nest.x, nest.y, 'nest', CreatureAgentTuning.NESTS.MEMORY_STRENGTH, now);
-            if (this.memory) {
-              this.memory.lastNestAt = now;
-            }
-            this._restNestTimer = 0;
-          }
-        }
-      } else {
-        this.migration.settleTimer = 0;
-      }
-    }
-
-    if (this._restNestTimer < CreatureAgentTuning.NESTS.CREATE_MIN_REST) return;
-    if (this.lifeStage === 'baby') return;
-    if ((this.needs?.energy ?? 0) < CreatureAgentTuning.NESTS.CREATE_ENERGY_MIN) return;
-    if (now - (this.memory?.lastNestAt ?? -Infinity) < CreatureAgentTuning.NESTS.CREATE_COOLDOWN) return;
-
-    if (!nest && world.addNest) {
-      const newNest = world.addNest(this.x, this.y, { createdBy: this.id });
-      if (newNest) {
-        this.homeNestId = newNest.id;
-        nest = newNest;
-      }
-    }
-
-    if (nest) {
-      this.rememberLocation?.(nest.x, nest.y, 'nest', CreatureAgentTuning.NESTS.MEMORY_STRENGTH, now);
-      if (this.memory) {
-        this.memory.lastNestAt = now;
-      }
-      this.territoryAffinity = clamp(this.territoryAffinity + 0.05, 0.1, 1);
-    }
-
-    this._restNestTimer = 0;
-  }
-
-  _updateMatingBond(world, mate, dt, bondDuration) {
-    if (!this.goal || !mate?.goal) return false;
-    if (this.goal.bondingWith !== mate.id) {
-      this.goal.bondingWith = mate.id;
-      this.goal.bondTimer = 0;
-      this.goal.bondAnnounced = false;
-    }
-    if (!this.goal.bondAnnounced) {
-      this.goal.bondAnnounced = true;
-      try {
-        eventSystem.emit(GameEvents.CREATURE_BOND, {
-          creature: this,
-          mateId: mate.id,
-          worldTime: world?.t ?? 0
-        });
-      } catch (error) {
-        console.warn('Failed to emit bond event:', error);
-      }
-    }
-    this.goal.bondTimer += dt;
-    if (mate.goal.bondingWith !== this.id) {
-      mate.goal.bondingWith = this.id;
-      mate.goal.bondTimer = Math.max(mate.goal.bondTimer ?? 0, this.goal.bondTimer * 0.5);
-    }
-    return this.goal.bondTimer >= bondDuration;
-  }
-
-  _applyHungerRelief(energyGain) {
-    if (!this.needs || !Number.isFinite(energyGain)) return;
-    this.needs.hunger = clamp(
-      this.needs.hunger - energyGain * CreatureAgentTuning.NEEDS.HUNGER_RELIEF_PER_ENERGY,
-      0,
-      100
-    );
-    this.needs.lastEatAt = this._lastWorld?.t ?? this.needs.lastEatAt;
-    if (this.needs.hunger < 45) {
-      this._returnHomeUntil = (this._lastWorld?.t ?? 0) + CreatureAgentTuning.TERRITORY.HOME_RETURN_DURATION;
-    }
-  }
-
-  _getHomeBias(world, goal) {
-    if (!world?.getRegionById || !this.homeRegionId) return null;
-    const affinity = this.territoryAffinity ?? 0;
-    if (affinity <= 0.05) return null;
-
-    const region = world.getRegionById(this.homeRegionId);
-    if (!region) return null;
-
-    const dx = region.x - this.x;
-    const dy = region.y - this.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist <= 0.01) return null;
-
-    const now = world.t ?? 0;
-    const returning = now < (this._returnHomeUntil ?? -Infinity);
-    const stressed = (this.needs?.stress ?? 0) >= CreatureAgentTuning.MIGRATION.STRESS_TRIGGER;
-    const goalAllows = goal === 'WANDER' || goal === 'REST' || goal === 'SEEK_MATE' || returning || stressed;
-    if (!goalAllows) return null;
-
-    const homeRadius = (region.size ?? CreatureAgentTuning.TERRITORY.REGION_SIZE) * 0.5 *
-      CreatureAgentTuning.TERRITORY.HOME_RADIUS_MULT;
-    if (dist < homeRadius * 0.6 && !returning && !stressed) return null;
-
-    const baseStrength = returning ? 0.55 : stressed ? 0.45 : 0.28;
-    const strength = baseStrength * affinity;
-    return { x: (dx / dist) * strength, y: (dy / dist) * strength };
-  }
-
   /**
    * Updates the creature's state for one simulation frame.
    * OPTIMIZED: Early exits and reduced per-frame overhead
@@ -1133,15 +574,15 @@ export class Creature {
     // OPTIMIZATION: Only update age stage every 60 frames (~1s at 60fps)
     // Age stage doesn't change frequently
     if (!this._ageStageFrame || this._ageStageFrame++ > 60) {
-      this._updateAgeStage();
-      this.size = this.baseSize * this._getAgeSizeMultiplier();
+      updateAgeStage(this);
+      this.size = this.baseSize * getAgeSizeMultiplier(this.age, this.ageStage);
       this._ageStageFrame = 0;
     }
 
     // Update modular systems
     this.statusSystem.tick(dt);
     this.behaviorSystem.update(dt, world);
-    this._updateAgentState(dt, world);
+    updateAgentState(this, dt, world);
 
     if (this.isGrabbed && this.grabTarget) {
       this.x = clamp(this.grabTarget.x, 0, world.width);
@@ -1413,7 +854,7 @@ export class Creature {
     const memoryAvoid = (this.needs?.stress ?? 0) >= CreatureConfig.MEMORY.STRESS_THRESHOLD
       ? this._getMemoryAvoidance?.('danger')
       : null;
-    const homeBias = this._getHomeBias?.(world, goal);
+    const homeBias = getHomeBias(this, world, goal);
     const migrationBias = this.migration?.bias;
     const avoidScale = CreatureConfig.MEMORY.AVOID_STRENGTH;
     const steeringX = Math.cos(desiredAngle) +
@@ -1477,7 +918,7 @@ export class Creature {
     }
 
     // NEW: Age stage speed modifiers (smooth transitions)
-    _baseSpeed *= this._getAgeSpeedMultiplier();
+    _baseSpeed *= getAgeSpeedMultiplier(this.age);
     let _speedScalar = clamp(1 - restFactor * 0.6, 0.15, 1);
     let speedBoost = 1;
     const herdBuff = this.getStatus('herd-buff');
@@ -1589,8 +1030,8 @@ export class Creature {
     const nest = this.senses?.homeNest || this.senses?.nest;
     const inNest = nest ? Math.hypot(nest.x - this.x, nest.y - this.y) <= nest.radius : false;
     if ((goal === 'REST' || (this.needs?.energy ?? 100) < 30) && (inRestZone || inNest) && spd < 12) {
-      this._applyRestRecovery(dt, world, { inRestZone, nest: inNest ? nest : null });
-      this._updateRestHome(dt, world, inNest ? nest : null);
+      applyRestRecovery(this, dt, world, { inRestZone, nest: inNest ? nest : null });
+      updateRestHome(this, dt, world, inNest ? nest : null);
       if (Math.random() < 0.02) {
         this.setMood('💤', 0.5);
       }
@@ -1622,7 +1063,7 @@ export class Creature {
         if (attackResult?.victim) {
           if (attackResult.killed) {
             this.energy += 14; // BALANCED: Less OP, need more strategic hunting
-            this._applyHungerRelief(14);
+            applyHungerRelief(this, 14);
             this.stats.kills += 1;
             this.logEvent(attackResult.victim?.id != null ? `Claimed prey #${attackResult.victim.id}` : 'Claimed prey', world.t);
             const victim = attackResult.victim;
@@ -1648,7 +1089,7 @@ export class Creature {
         if (eaten) {
           const wasHungry = (this.needs?.hunger ?? 0) >= CreatureConfig.MEMORY.HUNGER_THRESHOLD &&
             (world.t - (this.needs?.lastEatAt ?? -Infinity) > 6);
-          this._applyHungerRelief(eaten.energy);
+          applyHungerRelief(this, eaten.energy);
           if (wasHungry) {
             try {
               eventSystem.emit(GameEvents.CREATURE_EAT, {
@@ -1671,7 +1112,7 @@ export class Creature {
         if (eaten) {
           const wasHungry = (this.needs?.hunger ?? 0) >= CreatureConfig.MEMORY.HUNGER_THRESHOLD &&
             (world.t - (this.needs?.lastEatAt ?? -Infinity) > 6);
-          this._applyHungerRelief(eaten.energy);
+          applyHungerRelief(this, eaten.energy);
           if (wasHungry) {
             try {
               eventSystem.emit(GameEvents.CREATURE_EAT, {
@@ -1698,7 +1139,7 @@ export class Creature {
             this.energy += energyGain;
             this.health = Math.min(this.maxHealth, this.health + energyGain * 0.15);
             this.stats.food += 1;
-            this._applyHungerRelief(energyGain);
+            applyHungerRelief(this, energyGain);
             this.logEvent(`Foraged ${food?.type || 'food'}`, world.t);
             world.dropPheromone(this.x, this.y, 0.5);
 
@@ -1757,7 +1198,7 @@ export class Creature {
           this.energy += energyGain;
           this.health = Math.min(this.maxHealth, this.health + energyGain * 0.15);
           this.stats.food += 1;
-          this._applyHungerRelief(energyGain);
+          applyHungerRelief(this, energyGain);
           this.logEvent(`Foraged ${food?.type || 'food'}`, world.t);
           world.dropPheromone(this.x, this.y, 0.5);
 
@@ -1796,7 +1237,7 @@ export class Creature {
     let energyDrain = this.baseBurn() + tempPenalty;
 
     // NEW: Age stage metabolism modifiers (smooth transitions)
-    energyDrain *= this._getAgeMetabolismMultiplier();
+    energyDrain *= getAgeMetabolismMultiplier(this.age);
 
     if (adrenalineStatus) energyDrain += 2.6 + (adrenalineStatus.metadata?.boost ?? adrenalineStatus.intensity ?? 0) * 2;
     if (herdBuff && !this.genes.predator) energyDrain += (herdBuff.intensity ?? 0) * 0.8;
@@ -1880,7 +1321,7 @@ export class Creature {
           ? CreatureAgentTuning.MATING.OVERCROWD_BOND_MULT * (1 + overload / CreatureAgentTuning.MATING.POPULATION_SOFT_CAP)
           : 1;
         const bondDuration = CreatureAgentTuning.MATING.BOND_TIME * bondMultiplier;
-        const bonded = this._updateMatingBond(world, mate, dt, bondDuration);
+        const bonded = updateMatingBond(this, world, mate, dt, bondDuration);
 
         if (bonded && this.id < mate.id) {
           world.spawnChild(this, mate);
@@ -2344,7 +1785,7 @@ export class Creature {
     }
 
     // Age stage speed modifiers
-    baseSpeed *= this._getAgeSpeedMultiplier();
+    baseSpeed *= getAgeSpeedMultiplier(this.age);
 
     let speedBoost = 1;
     const herdBuff = this.getStatus('herd-buff');
@@ -2625,100 +2066,6 @@ export class Creature {
     this.logEvent(`Spawned child #${childId}`, time);
   }
 
-  // NEW: Get age stage multipliers
-  _updateAgeStage() {
-    const stages = CreatureAgentTuning.LIFE_STAGE;
-    if (this.age < stages.BABY_END) {
-      this.ageStage = 'baby';
-    } else if (this.age < stages.JUVENILE_END) {
-      this.ageStage = 'juvenile';
-    } else if (this.age < stages.ADULT_END) {
-      this.ageStage = 'adult';
-    } else {
-      this.ageStage = 'elder';
-    }
-    this._updateLifeStage();
-  }
-
-  _updateLifeStage() {
-    const stages = CreatureAgentTuning.LIFE_STAGE;
-    if (this.age < stages.BABY_END) {
-      this.lifeStage = 'baby';
-    } else if (this.age < stages.ADULT_END) {
-      this.lifeStage = 'adult';
-    } else {
-      this.lifeStage = 'elder';
-    }
-  }
-
-  _getAgeSizeMultiplier() {
-    switch (this.ageStage) {
-      case 'baby': return clamp(0.3 + (this.age / 30) * 0.4, 0.3, 0.7); // 30% → 70%
-      case 'juvenile': return clamp(0.7 + ((this.age - 30) / 30) * 0.3, 0.7, 1.0); // 70% → 100%
-      case 'adult': return 1.0; // 100%
-      case 'elder': return clamp(1.0 - ((this.age - 240) / 60) * 0.1, 0.9, 1.0); // 100% → 90%
-      default: return 1.0;
-    }
-  }
-
-  _getAgeSpeedMultiplier() {
-    const stages = CreatureAgentTuning.LIFE_STAGE;
-    if (this.age < stages.BABY_END) {
-      return clamp(0.95 + (this.age / stages.BABY_END) * 0.1, 0.9, 1.05);
-    }
-    if (this.age < stages.JUVENILE_END) {
-      const t = (this.age - stages.BABY_END) / (stages.JUVENILE_END - stages.BABY_END);
-      return clamp(1.05 - t * 0.05, 0.95, 1.05);
-    }
-    if (this.age < stages.ADULT_END) {
-      return 1.0;
-    }
-    if (this.age < stages.ELDER_FADE_START) {
-      const t = (this.age - stages.ADULT_END) / (stages.ELDER_FADE_START - stages.ADULT_END);
-      return clamp(1.0 - t * 0.1, 0.85, 1.0);
-    }
-    const t = (this.age - stages.ELDER_FADE_START) / (stages.ELDER_FADE_END - stages.ELDER_FADE_START);
-    return clamp(0.9 - t * 0.15, 0.7, 0.9);
-  }
-
-  _getAgeMetabolismMultiplier() {
-    const stages = CreatureAgentTuning.LIFE_STAGE;
-    if (this.age < stages.BABY_END) {
-      return clamp(1.1 + (this.age / stages.BABY_END) * 0.05, 1.1, 1.2);
-    }
-    if (this.age < stages.JUVENILE_END) {
-      const t = (this.age - stages.BABY_END) / (stages.JUVENILE_END - stages.BABY_END);
-      return clamp(1.15 - t * 0.1, 1.05, 1.15);
-    }
-    if (this.age < stages.ADULT_END) {
-      return 1.0;
-    }
-    if (this.age < stages.ELDER_FADE_START) {
-      const t = (this.age - stages.ADULT_END) / (stages.ELDER_FADE_START - stages.ADULT_END);
-      return clamp(1.0 + t * 0.1, 1.0, 1.1);
-    }
-    const t = (this.age - stages.ELDER_FADE_START) / (stages.ELDER_FADE_END - stages.ELDER_FADE_START);
-    return clamp(1.1 + t * 0.1, 1.1, 1.2);
-  }
-
-  _getElderFadeAlpha() {
-    const stages = CreatureAgentTuning.LIFE_STAGE;
-    if (this.age < stages.ELDER_FADE_START) return 1;
-    const t = clamp((this.age - stages.ELDER_FADE_START) / (stages.ELDER_FADE_END - stages.ELDER_FADE_START), 0, 1);
-    return clamp(1 - t * 0.4, 0.6, 1);
-  }
-
-  _getAgeStageIcon() {
-    switch (this.ageStage) {
-      case 'baby': return '🍼';
-      case 'juvenile': return '🌱';
-      case 'adult': return '⭐';
-      case 'elder': return '👴';
-      default: return '';
-    }
-  }
-
-  // NEW: Apply visual animation transforms
   _applyAnimationTransform(ctx) {
     const anim = this.animation;
     if (!anim) return;
@@ -2893,485 +2240,27 @@ export class Creature {
     }
   }
 
-  getBadges() {
-    const badges = [];
-    const g = this.genes;
+  getBadges() { return _getBadges(this); }
 
-    // Age stage badge (visual indicator)
-    badges.push(this._getAgeStageIcon());
-
-    // NEW: Lucky mutation badge!
-    if (g._luckyMutation) badges.push('🍀 Lucky');
-
-    if (g.speed >= 1.45) badges.push('Swift');
-    if (g.sense >= 150) badges.push('Scout');
-    if (g.metabolism <= 0.6) badges.push('Efficient');
-    if (this.ageStage === 'elder') badges.push('Elder');
-    if (!g.predator && this.stats.food >= 15) badges.push('Grazer');
-    if (g.predator && this.stats.kills >= 3) badges.push('Apex');
-    if (this.energy >= 35) badges.push('Charged');
-    if (this.aquaticAffinity > 0.6) badges.push('Amphibious');
-    if (this.hasStatus && this.hasStatus('disease')) badges.push('Sick');
-    if (this.hasStatus && this.hasStatus('venom')) badges.push('Poisoned');
-    if (this.funStats?.hardLandings >= 2) badges.push('😵 Crash Landed');
-    if (this.funStats?.propBounces >= 3) badges.push('🎯 Bounce Star');
-    if (this.funStats?.goofyFails >= 2) badges.push('🤹 Goofball');
-    return badges;
-  }
-
-  draw(ctx, opts = {}) {
-    const {
-      isSelected = false,
-      isPinned = false,
-      inLineage = false,
-      showTrail = false,
-      showVision = false,
-      clusterHue = null
-    } = opts;
-    const damageFx = this.damageFx ?? null;
-
-    if (showTrail && this.trail.length > 1) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(this.trail[0].x, this.trail[0].y);
-      for (let i = 1; i < this.trail.length; i++) {
-        const pt = this.trail[i];
-        ctx.lineTo(pt.x, pt.y);
-      }
-      const trailColor = inLineage ? 'rgba(123,198,255,0.35)' : (isSelected || isPinned) ? 'rgba(255,240,180,0.35)' : 'rgba(200,210,255,0.18)';
-      ctx.strokeStyle = trailColor;
-      ctx.lineWidth = inLineage ? 1.4 : 1;
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // Draw vision cone if enabled
-    if (showVision && (isSelected || isPinned)) {
-      ctx.save();
-
-      // Sense radius (full circle)
-      const senseRadius = this.genes.sense;
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, senseRadius, 0, TAU);
-      const hasTarget = this.target !== null;
-      const senseColor = hasTarget
-        ? (this.genes.predator ? 'rgba(255,100,100,0.08)' : 'rgba(100,255,100,0.08)')
-        : 'rgba(200,200,255,0.05)';
-      ctx.fillStyle = senseColor;
-      ctx.fill();
-      ctx.strokeStyle = hasTarget
-        ? (this.genes.predator ? 'rgba(255,100,100,0.25)' : 'rgba(100,255,100,0.25)')
-        : 'rgba(200,200,255,0.15)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 3]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // FOV cone
-      const halfFov = this._halfFovRad;
-      ctx.beginPath();
-      ctx.moveTo(this.x, this.y);
-      ctx.arc(this.x, this.y, senseRadius, this.dir - halfFov, this.dir + halfFov);
-      ctx.closePath();
-      ctx.fillStyle = hasTarget
-        ? (this.genes.predator ? 'rgba(255,80,80,0.12)' : 'rgba(80,255,80,0.12)')
-        : 'rgba(255,255,150,0.08)';
-      ctx.fill();
-      ctx.strokeStyle = hasTarget
-        ? (this.genes.predator ? 'rgba(255,80,80,0.4)' : 'rgba(80,255,80,0.4)')
-        : 'rgba(255,255,150,0.25)';
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
-
-      // NEW: Draw line to target for better AI intent visualization
-      if (this.target && (this.target.x !== undefined && this.target.y !== undefined)) {
-        const targetDist = Math.sqrt((this.target.x - this.x) ** 2 + (this.target.y - this.y) ** 2);
-        const lineLength = Math.min(targetDist, senseRadius * 0.8);
-        const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
-
-        // Dashed line from creature to target
-        ctx.beginPath();
-        ctx.moveTo(this.x, this.y);
-        ctx.lineTo(
-          this.x + Math.cos(angle) * lineLength,
-          this.y + Math.sin(angle) * lineLength
-        );
-        ctx.strokeStyle = this.target.creatureId !== undefined
-          ? 'rgba(255,100,100,0.6)' // Red for prey
-          : this.target.isCorpse
-            ? 'rgba(180,130,80,0.5)' // Brown for corpse
-            : 'rgba(100,220,100,0.5)'; // Green for food
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([4, 4]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Small dot at target location
-        if (targetDist <= senseRadius) {
-          ctx.beginPath();
-          ctx.arc(this.target.x, this.target.y, 3, 0, TAU);
-          ctx.fillStyle = ctx.strokeStyle;
-          ctx.fill();
-        }
-      }
-
-      ctx.restore();
-    }
-
-    const g = this.genes;
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.globalAlpha *= this._getElderFadeAlpha();
-
-    // OPTIMIZATION: Only apply animation when zoomed in enough or selected
-    const shouldAnimate = isSelected || isPinned || (opts.zoom && opts.zoom > 0.8);
-    if (shouldAnimate) {
-      this._applyAnimationTransform(ctx);
-    }
-
-    ctx.rotate(this.dir);
-
-    // OPTIMIZATION: Cache size calculation
-    const energyRatio = clamp(this.energy / 40, 0.2, 1.0);
-    const r = energyRatio * (3 + this.size);
-
-    if (damageFx?.recentDamage > 0) {
-      ctx.beginPath();
-      ctx.arc(0, 0, this.size + 5, 0, TAU);
-      ctx.strokeStyle = `rgba(255,96,96,${clamp(damageFx.recentDamage / 2.6, 0.15, 0.55)})`;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    }
-
-    const displayHue = clusterHue !== null ? clusterHue : g.hue;
-
-    if (inLineage) {
-      ctx.beginPath();
-      ctx.arc(0, 0, 10, 0, TAU);
-      ctx.fillStyle = `hsla(${displayHue},100%,70%,0.18)`;
-      ctx.fill();
-    }
-
-    const baseLight = g.predator ? 45 : 60;
-    const flash = damageFx ? damageFx.hitFlash : 0;
-    const eco = this.ecosystem;
-    const stressTint = eco ? clamp(eco.stress / 100, 0, 1) : 0;
-    const calmBoost = eco?.state === ECOSYSTEM_STATES.CALM ? 2 : 0;
-    const lightness = Math.min(85, baseLight + flash * 90 - stressTint * 6 + calmBoost);
-    ctx.fillStyle = `hsl(${displayHue},85%,${lightness}%)`;
-
-    // OPTIMIZATION: Only draw detailed traits when zoomed in significantly
-    const showTraitDetails = opts.showTraitVisualization !== false && (isSelected || isPinned || (opts.zoom && opts.zoom > 1.0));
-
-    // NEW: SVG-based body rendering with dynamic tinting and variant selection
-    const diet = g.diet ?? (g.predator ? 1.0 : 0.0);
-    let assetType = 'creature_herbivore'; // default
-
-    // Select asset based on creature characteristics
-    if (this.ageStage === 'baby') {
-      // Babies use special baby sprite
-      assetType = 'creature_baby';
-    } else if (this.ageStage === 'elder') {
-      // Elders use special elder sprite
-      assetType = 'creature_elder';
-    } else if (this.aquaticAffinity && this.aquaticAffinity > 0.6) {
-      // Highly aquatic creatures get aquatic sprite
-      assetType = 'creature_aquatic';
-    } else if (this.socialRank && this.socialRank === 'alpha') {
-      // Alpha creatures get special alpha sprite
-      assetType = 'creature_alpha';
-    } else {
-      // Adults use diet-based sprites
-      if (diet > 0.7) {
-        assetType = 'creature_predator';
-      } else if (diet > 0.3) {
-        assetType = 'creature_omnivore';
-      }
-    }
-
-    const colorStr = `hsl(${displayHue},85%,${lightness}%)`;
-
-    // Check if we need to update the cached canvas
-    if (assetLoader.isReady() && (this._cachedColor !== colorStr || this._cachedAssetType !== assetType)) {
-      this._updateCachedCanvas(assetType, colorStr);
-    }
-
-    // Render using cached animated sprite frame if available, otherwise fallback.
-    const worldTime = opts.worldTime ?? this._lastWorld?.t ?? 0;
-    const spriteFrame = this._getCachedSpriteFrame(worldTime);
-    if (spriteFrame) {
-      const renderSize = r * 4; // Scale factor for good appearance
-      ctx.drawImage(spriteFrame, -renderSize / 2, -renderSize / 2, renderSize, renderSize);
-    } else if (this._cachedCanvas) {
-      const renderSize = r * 4; // Scale factor for good appearance
-      ctx.drawImage(this._cachedCanvas, -renderSize / 2, -renderSize / 2, renderSize, renderSize);
-    } else {
-      // Fallback to original triangle rendering
-      const bodyScale = 0.8 + (2 - g.metabolism) * 0.3; // Low metabolism = chunkier
-      ctx.save();
-      ctx.scale(1, bodyScale);
-      ctx.beginPath();
-      ctx.moveTo(6, 0);
-      ctx.lineTo(-4, 3.5 / bodyScale);
-      ctx.lineTo(-4, -3.5 / bodyScale);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-      const debugFlags = getDebugFlags();
-      if (debugFlags.spawnDebug) {
-        ctx.save();
-        ctx.font = '9px sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.65)';
-        const label = this.id ? `id:${this.id}` : 'spawn';
-        ctx.fillText(label, -r, -r - 6);
-        ctx.restore();
-      }
-    }
-
-    ctx.strokeStyle = `hsla(${displayHue},90%,80%,${0.65 + flash * 0.4})`;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, TAU);
-    ctx.stroke();
-
-    // OPTIMIZATION: Only draw detailed trait visualization when zoomed in
-    if (showTraitDetails) {
-      this._drawTraits(ctx, g, displayHue, r);
-    }
-
-    if (isPinned) {
-      ctx.strokeStyle = 'rgba(140,200,255,0.9)';
-      ctx.lineWidth = 1.4;
-      ctx.setLineDash([3, 2]);
-      ctx.beginPath();
-      ctx.arc(0, 0, r + 4.5, 0, TAU);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
-    if (isSelected) {
-      ctx.strokeStyle = 'rgba(255,255,220,0.9)';
-      ctx.lineWidth = 1.6;
-      ctx.beginPath();
-      ctx.arc(0, 0, r + 7, 0, TAU);
-      ctx.stroke();
-    }
-
-    ctx.restore();
-
-    if (this.maxHealth > 0) {
-      const hpRatio = clamp(this.health / this.maxHealth, 0, 1);
-      const barWidth = 12;
-      const barHeight = 2;
-      const x = this.x - barWidth / 2;
-      const y = this.y - this.size - 8;
-      ctx.fillStyle = 'rgba(0,0,0,0.45)';
-      ctx.fillRect(x, y, barWidth, barHeight);
-      ctx.fillStyle = this.genes.predator ? 'rgba(255,120,120,0.85)' : 'rgba(120,255,160,0.85)';
-      ctx.fillRect(x, y, barWidth * hpRatio, barHeight);
-    }
-
-    // NEW: Draw behavior state indicator for AI legibility
-    if (opts.showBehaviorState !== false && (isSelected || isPinned || (opts.zoom && opts.zoom > 0.8))) {
-      this._drawBehaviorState(ctx);
-    }
-  }
+  draw(ctx, opts = {}) { return _drawCreature(this, ctx, opts); }
 
   /**
    * Select a prepared sprite frame for this creature's current animation state.
    * @private
    */
-  _getCachedSpriteFrame(worldTime = 0) {
-    const spriteSet = this._cachedSpriteSet;
-    if (!spriteSet || !spriteSet.frames || spriteSet.frames.length === 0) {
-      return null;
-    }
-
-    const state = this.animation?.state || 'idle';
-    const speedRatio = clamp(this.animation?.speedRatio ?? 0.5, 0.2, 2.0);
-    let speedScale = 0.7;
-    if (state === 'walking') {
-      speedScale = 0.9 + speedRatio * 0.7;
-    } else if (state === 'running') {
-      speedScale = 1.1 + speedRatio * 1.1;
-    } else if (state === 'eating') {
-      speedScale = 1.3;
-    } else if (state === 'sleeping') {
-      speedScale = 0.35;
-    }
-
-    const frameIndex = assetLoader.getAnimationFrameIndex(spriteSet, state, worldTime, speedScale);
-    return spriteSet.frames[frameIndex] || spriteSet.frames[0] || null;
-  }
+  _getCachedSpriteFrame(worldTime = 0) { return _getCachedSpriteFrame(this, worldTime); }
 
   /**
    * Update the cached canvas for this creature's appearance
    * @private
    */
-  _updateCachedCanvas(assetType, colorStr) {
-    this._cachedColor = colorStr;
-    this._cachedAssetType = assetType;
-
-    // Prepare tinted sprite frames asynchronously; falls back to one-frame assets.
-    assetLoader.requestSpriteFrames(assetType, { color: colorStr, size: 64 }).then(spriteSet => {
-      // Only update if color/type hasn't changed in the meantime
-      if (this._cachedColor === colorStr && this._cachedAssetType === assetType) {
-        this._cachedSpriteSet = spriteSet;
-        this._cachedCanvas = spriteSet?.frames?.[0] || null;
-      }
-    }).catch(error => {
-      console.error(`Failed to prepare sprite frames for ${assetType}:`, error);
-    });
-  }
+  _updateCachedCanvas(assetType, colorStr) { return _updateCachedCanvas(this, assetType, colorStr); }
 
   /**
    * Draw a small icon/indicator showing the creature's current behavior state
    * This makes AI behavior much more legible to players
    */
-  _drawBehaviorState(ctx) {
-    let stateIcon = null;
-    let stateColor = 'rgba(255,255,255,0.8)';
+  _drawBehaviorState(ctx) { return _drawBehaviorState(this, ctx); }
 
-    // Determine current behavior state from various indicators
-    if (this.target) {
-      if (this.target.creatureId !== undefined) {
-        // Hunting prey
-        stateIcon = '🎯';
-        stateColor = 'rgba(255,80,80,0.9)';
-      } else if (this.target.isCorpse) {
-        // Scavenging
-        stateIcon = '🦴';
-        stateColor = 'rgba(180,130,80,0.9)';
-      } else if (this.target.mate) {
-        // Seeking mate
-        stateIcon = '💞';
-        stateColor = 'rgba(255,120,180,0.9)';
-      } else if (this.target.restZone) {
-        // Heading to rest zone
-        stateIcon = '🛏️';
-        stateColor = 'rgba(120,180,255,0.9)';
-      } else if (this.target.food) {
-        // Foraging
-        stateIcon = '🌿';
-        stateColor = 'rgba(120,220,120,0.9)';
-      } else if (this.target.family) {
-        // Following family
-        stateIcon = '❤️';
-        stateColor = 'rgba(255,150,200,0.9)';
-      } else if (this.target.pheromone) {
-        // Following scent trail
-        stateIcon = '👃';
-        stateColor = 'rgba(200,180,255,0.9)';
-      }
-    }
-
-    // Status-based overrides
-    if (this.hasStatus && this.hasStatus('adrenaline')) {
-      stateIcon = '⚡';
-      stateColor = 'rgba(255,220,80,0.9)';
-    } else if (this.emotions && this.emotions.fear > 0.6) {
-      stateIcon = '😰';
-      stateColor = 'rgba(255,200,100,0.9)';
-    } else if (this.hasStatus && this.hasStatus('disease')) {
-      stateIcon = '🤢';
-      stateColor = 'rgba(100,220,100,0.9)';
-    } else if (this.lifecycle && this.lifecycle.playTimer > 0) {
-      stateIcon = '🎮';
-      stateColor = 'rgba(255,255,150,0.9)';
-    } else if (this.animation && this.animation.state === 'eating') {
-      stateIcon = '😋';
-      stateColor = 'rgba(255,200,100,0.9)';
-    } else if (this.animation && this.animation.state === 'sleeping') {
-      stateIcon = '💤';
-      stateColor = 'rgba(150,150,220,0.9)';
-    }
-
-    if (!stateIcon && this.mood?.icon) {
-      stateIcon = this.mood.icon;
-      stateColor = 'rgba(255,220,220,0.9)';
-    }
-
-    // Age stage indicator (only for babies and elders)
-    if (!stateIcon && this.ageStage === 'baby') {
-      stateIcon = '🐣';
-    } else if (!stateIcon && this.ageStage === 'elder') {
-      stateIcon = '👴';
-    }
-
-    if (stateIcon) {
-      ctx.save();
-      ctx.font = '8px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillStyle = stateColor;
-      ctx.fillText(stateIcon, this.x, this.y - this.size - 10);
-      ctx.restore();
-    }
-  }
-
-  _drawTraits(ctx, g, hue, r) {
-    // Draw visual traits based on genes
-
-    // 1. EYES - Size based on sense radius (bigger sense = bigger eyes)
-    const eyeSize = clamp(g.sense / 100, 0.6, 1.5);
-    const look = this._getLookOffset();
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(2, -1.5, eyeSize, 0, TAU);
-    ctx.fill();
-    // Pupil
-    ctx.fillStyle = '#000000';
-    ctx.beginPath();
-    ctx.arc(2 + look.x, -1.5 + look.y, eyeSize * 0.5, 0, TAU);
-    ctx.fill();
-
-    // 2. SPIKES - Defensive herbivores have spikes
-    const spineStrength = g.spines ?? 0;
-    if (spineStrength > 0.2) {
-      ctx.strokeStyle = `hsl(${hue}, 70%, 40%)`;
-      ctx.lineWidth = 1.5;
-      const spikeCount = Math.floor(spineStrength * 6) + 2;
-      for (let i = 0; i < spikeCount; i++) {
-        const angle = (i / spikeCount) * TAU;
-        const spikeLength = 2 + spineStrength * 3;
-        const x1 = Math.cos(angle + Math.PI * 0.5) * r;
-        const y1 = Math.sin(angle + Math.PI * 0.5) * r;
-        const x2 = Math.cos(angle + Math.PI * 0.5) * (r + spikeLength);
-        const y2 = Math.sin(angle + Math.PI * 0.5) * (r + spikeLength);
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-      }
-    }
-
-    // 3. SPEED INDICATOR - Fast creatures have elongated tail/fins
-    if (g.speed > 1.2) {
-      ctx.fillStyle = `hsla(${hue}, 70%, 50%, 0.6)`;
-      ctx.beginPath();
-      const tailLength = (g.speed - 1) * 4;
-      ctx.moveTo(-4, 0);
-      ctx.lineTo(-4 - tailLength, 2);
-      ctx.lineTo(-4 - tailLength, -2);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // 4. PREDATOR TEETH
-    if (g.predator || (g.diet && g.diet > 0.7)) {
-      ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = '#888888';
-      ctx.lineWidth = 0.5;
-      // Upper teeth
-      for (let i = 0; i < 3; i++) {
-        ctx.beginPath();
-        ctx.moveTo(4 - i * 1.5, 0.5);
-        ctx.lineTo(5 - i * 1.5, 2);
-        ctx.lineTo(3 - i * 1.5, 2);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-      }
-    }
-  }
+  _drawTraits(ctx, g, hue, r) { return _drawTraits(this, ctx, g, hue, r); }
 }
