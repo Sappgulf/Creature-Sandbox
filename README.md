@@ -325,10 +325,35 @@ See `OPTIMIZATION_REPORT.md` for detailed analysis.
 
 ## 🛠️ Tech Stack
 
-- **Vanilla JavaScript** (ES6 modules)
+- **Vanilla JavaScript** (ES6 modules, 100+ source files)
 - **HTML5 Canvas** (2D rendering)
-- **No dependencies** (zero npm packages)
+- **Vite** (dev server + production bundler)
+- **ESLint** (code quality)
+- **118 unit tests** (core modules)
 - **Static hosting** (Vercel, Netlify, GitHub Pages compatible)
+
+---
+
+## 🚀 Commands
+
+```bash
+npm run dev        # Start dev server with HMR on port 8000
+npm run build     # Build for production (outputs to dist/)
+npm run preview   # Preview production build
+npm test         # Run all unit tests (118 tests)
+npm run lint     # Check code quality
+npm run lint:fix # Auto-fix lint issues
+```
+
+---
+
+## 📦 Module Structure
+
+The codebase is organized into focused modules:
+- `creature-sim/src/creature*.js` — Creature logic split into genetics, age, render, agent-needs
+- `creature-sim/src/renderer*.js` — Renderer split into features-viz, minimap, creatures
+- `creature-sim/src/ui-controller*.js` — UI split into spawn, god-mode, watch, panels, etc.
+- `scripts/*.test.mjs` — Unit tests
 
 ---
 
