@@ -350,10 +350,17 @@ npm run lint:fix # Auto-fix lint issues
 ## 📦 Module Structure
 
 The codebase is organized into focused modules:
-- `creature-sim/src/creature*.js` — Creature logic split into genetics, age, render, agent-needs
-- `creature-sim/src/renderer*.js` — Renderer split into features-viz, minimap, creatures
-- `creature-sim/src/ui-controller*.js` — UI split into spawn, god-mode, watch, panels, etc.
-- `scripts/*.test.mjs` — Unit tests
+- `creature-sim/src/creature*.js` — Creature logic (genetics, age, render, agent-needs)
+- `creature-sim/src/renderer*.js` — Renderer (features-viz, minimap, creatures)
+- `creature-sim/src/ui-controller*.js` — UI (spawn, god-mode, watch, panels, game-mode, exports)
+- `creature-sim/src/input*.js` — Input (pointer, touch handlers)
+- `scripts/*.test.mjs` — Unit tests (146 tests)
+
+**Large files split:**
+- `creature.js`: 3377 → 2266 lines
+- `renderer.js`: 2681 → 1377 lines
+- `ui-controller.js`: 1777 → 688 lines
+- `input-manager.js`: 1342 → 534 lines (with input-pointer.js, input-touch.js)
 
 ---
 
