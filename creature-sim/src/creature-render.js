@@ -29,7 +29,7 @@ export function getBadges(creature) {
   if (creature.funStats?.hardLandings >= 2) badges.push('😵 Crash Landed');
   if (creature.funStats?.propBounces >= 3) badges.push('🎯 Bounce Star');
   if (creature.funStats?.goofyFails >= 2) badges.push('🤹 Goofball');
-  
+
   // Rare mutation badges
   const rareMutations = creature.rareMutations || creature.mutations || [];
   for (const mutation of rareMutations) {

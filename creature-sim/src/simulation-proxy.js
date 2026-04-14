@@ -154,11 +154,11 @@ export class SimulationProxy {
       if (id) this._send('REMOVE_FOOD', { id });
     };
 
-// Disaster Stubs
-// Note: Worker sync requires additional message protocol - currently uses cached snapshot
-this.getActiveDisaster = () => {
-  return this.worldSnapshot?.activeDisaster || null;
-};
+    // Disaster Stubs
+    // Note: Worker sync requires additional message protocol - currently uses cached snapshot
+    this.getActiveDisaster = () => {
+      return this.worldSnapshot?.activeDisaster || null;
+    };
 
     this.triggerDisaster = (type, options = {}) => {
       this._send('TRIGGER_DISASTER', { type, options });

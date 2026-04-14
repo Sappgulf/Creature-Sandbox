@@ -94,7 +94,7 @@ export class WorldEnvironment {
         },
         audioCue: 'season_autumn'
       },
-winter: {
+      winter: {
         label: 'Frozen Winter',
         foodMultiplier: 0.8,
         reproductionMultiplier: 0.6,
