@@ -10,14 +10,14 @@ export class WorldEnhancements {
       duration: 0,
       particles: []
     };
-    
+
     this.timeEffects = {
       sunrise: false,
       sunset: false,
       dawn: false,
       dusk: false
     };
-    
+
     this.seasonalEvents = [];
   }
 
@@ -28,18 +28,18 @@ export class WorldEnhancements {
     // Decrease weather duration
     if (this.weather.duration > 0) {
       this.weather.duration -= dt;
-      
+
       if (this.weather.duration <= 0) {
         this.weather.type = 'clear';
         this.weather.intensity = 0;
       }
     }
-    
+
     // Random weather events
     if (Math.random() < 0.0005 * dt) {
       this.triggerWeatherEvent(world);
     }
-    
+
     // Update weather particles
     this.updateWeatherParticles(dt, world);
   }
@@ -47,15 +47,15 @@ export class WorldEnhancements {
   /**
    * Trigger a random weather event
    */
-  triggerWeatherEvent(world) {
+  triggerWeatherEvent(_world) {
     const events = ['rain', 'storm'];
     const event = events[Math.floor(Math.random() * events.length)];
-    
+
     this.weather.type = event;
     this.weather.intensity = 0.3 + Math.random() * 0.7;
     this.weather.duration = 30 + Math.random() * 60; // 30-90 seconds
-    
-    console.log(`🌦️ Weather event: ${event} (intensity: ${this.weather.intensity.toFixed(2)})`);
+
+    console.debug(`🌦️ Weather event: ${event} (intensity: ${this.weather.intensity.toFixed(2)})`);
   }
 
   /**
@@ -72,7 +72,7 @@ export class WorldEnhancements {
         life: 1
       });
     }
-    
+
     // Update and remove old particles
     this.weather.particles = this.weather.particles.filter(p => {
       p.x += p.vx * dt;
@@ -80,7 +80,7 @@ export class WorldEnhancements {
       p.life -= dt;
       return p.life > 0 && p.y < world.height;
     });
-    
+
     // Limit particle count
     if (this.weather.particles.length > 500) {
       this.weather.particles = this.weather.particles.slice(-500);
@@ -90,17 +90,17 @@ export class WorldEnhancements {
   /**
    * Draw weather effects
    */
-  drawWeather(ctx, camera) {
+  drawWeather(ctx, _camera) {
     if (this.weather.type === 'clear') return;
-    
+
     ctx.save();
     ctx.globalAlpha = 0.6 * this.weather.intensity;
-    
+
     for (const particle of this.weather.particles) {
       ctx.fillStyle = '#a0c0ff';
       ctx.fillRect(particle.x, particle.y, 1, 4);
     }
-    
+
     ctx.restore();
   }
 
@@ -109,9 +109,9 @@ export class WorldEnhancements {
    */
   updateTimeEffects(world) {
     if (!world.dayNightEnabled) return;
-    
+
     const hour = world.timeOfDay % 24;
-    
+
     this.timeEffects.dawn = (hour >= 5 && hour < 7);
     this.timeEffects.sunrise = (hour >= 6 && hour < 8);
     this.timeEffects.dusk = (hour >= 18 && hour < 20);
@@ -132,7 +132,7 @@ export class WorldEnhancements {
       // But provides a small energy boost (moisture/cooling)
       creature.energy += 0.02 * this.weather.intensity * dt;
     }
-    
+
     if (this.weather.type === 'storm') {
       // Storms stress creatures
       if (creature.needs && creature.needs.stress !== undefined) {

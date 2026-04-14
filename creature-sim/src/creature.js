@@ -342,7 +342,7 @@ export class Creature {
     this.intelligence = {
       level: clamp((genes.sense / CreatureConfig.INTELLIGENCE.LEVEL_SENSE_RATIO) *
         (genes.metabolism ?? CreatureConfig.INTELLIGENCE.LEVEL_METABOLISM_MULTIPLIER),
-        0, CreatureConfig.INTELLIGENCE.LEVEL_MAX),
+      0, CreatureConfig.INTELLIGENCE.LEVEL_MAX),
       patterns: [], // learned successful strategies
       experiencePoints: 0,
       learningRate: CreatureConfig.INTELLIGENCE.PATTERN_LEARNING
@@ -1450,35 +1450,35 @@ export class Creature {
 
     const restFactor = BehaviorConfig.restWeight * clamp(1 - this.energy / 36, 0, 1);
     const aggressionFactor = this.genes.predator ? clamp(this.personality.aggression, 0.4, 2.2) : 1;
-    let baseSpeed = this.genes.speed * (this.genes.predator ? 46 : 40);
-    if (this.genes.predator) baseSpeed *= 0.85 + aggressionFactor * 0.25;
+    let _baseSpeed = this.genes.speed * (this.genes.predator ? 46 : 40);
+    if (this.genes.predator) _baseSpeed *= 0.85 + aggressionFactor * 0.25;
 
     // Water biome speed modifiers
     if (inWater) {
       if (this.aquaticAffinity > 0.5) {
         // Aquatic creatures are fast in water
-        baseSpeed *= currentBiome.aquaticSpeed || (1.2 + this.aquaticAffinity * 0.3);
+        _baseSpeed *= currentBiome.aquaticSpeed || (1.2 + this.aquaticAffinity * 0.3);
       } else if (this.aquaticAffinity > 0.2) {
         // Semi-aquatic creatures are okay in water
-        baseSpeed *= 0.7 + this.aquaticAffinity * 0.5;
+        _baseSpeed *= 0.7 + this.aquaticAffinity * 0.5;
       } else {
         // Non-aquatic creatures struggle badly in water
-        baseSpeed *= currentBiome.movementSpeed || 0.3;
+        _baseSpeed *= currentBiome.movementSpeed || 0.3;
       }
     } else if (inWetland) {
       if (this.aquaticAffinity > 0.1) {
-        baseSpeed *= 1 + this.aquaticAffinity * 0.32;
+        _baseSpeed *= 1 + this.aquaticAffinity * 0.32;
       } else {
-        baseSpeed *= 0.88;
+        _baseSpeed *= 0.88;
       }
     } else if (this.aquaticAffinity > 0.5) {
       // Highly aquatic creatures are slower on land
-      baseSpeed *= 0.9 - Math.min(0.2, (this.aquaticAffinity - 0.5) * 0.25);
+      _baseSpeed *= 0.9 - Math.min(0.2, (this.aquaticAffinity - 0.5) * 0.25);
     }
 
     // NEW: Age stage speed modifiers (smooth transitions)
-    baseSpeed *= this._getAgeSpeedMultiplier();
-    let speedScalar = clamp(1 - restFactor * 0.6, 0.15, 1);
+    _baseSpeed *= this._getAgeSpeedMultiplier();
+    let _speedScalar = clamp(1 - restFactor * 0.6, 0.15, 1);
     let speedBoost = 1;
     const herdBuff = this.getStatus('herd-buff');
     const playBurst = this.getStatus('play-burst');
@@ -1500,24 +1500,24 @@ export class Creature {
     if (elderAid) {
       speedBoost += (elderAid.intensity ?? 0) * 0.08;
     }
-    speedScalar *= clamp(speedBoost, 0.6, 1.9);
+    _speedScalar *= clamp(speedBoost, 0.6, 1.9);
     const goalSpeedFactor = goal === 'REST'
       ? CreatureAgentTuning.MOVEMENT.REST_SPEED_MULT
       : goal === 'SEEK_MATE'
         ? CreatureAgentTuning.MOVEMENT.SEEK_MATE_SPEED_MULT
         : 1;
-    speedScalar *= arriveFactor * goalSpeedFactor;
+    _speedScalar *= arriveFactor * goalSpeedFactor;
     const recallUntil = this.memory?.focus?.recallUntil ?? -Infinity;
     if (world.t < recallUntil) {
-      speedScalar *= CreatureConfig.MEMORY.RECALL_SLOW;
+      _speedScalar *= CreatureConfig.MEMORY.RECALL_SLOW;
     }
     if (this.genes.predator) {
       if (this.personality.ambushTimer > 0 && this.target && this.target.creatureId != null) {
-        speedScalar *= 0.25 + 0.15 * aggressionFactor;
+        _speedScalar *= 0.25 + 0.15 * aggressionFactor;
       } else if (this.target && this.target.creatureId != null) {
-        speedScalar *= 1.05 + aggressionFactor * 0.15;
+        _speedScalar *= 1.05 + aggressionFactor * 0.15;
       } else if (this.target && this.target.signal) {
-        speedScalar *= 0.9 + this.personality.packInstinct * 0.35;
+        _speedScalar *= 0.9 + this.personality.packInstinct * 0.35;
       }
     }
 
@@ -1708,7 +1708,7 @@ export class Creature {
             if (world.audio && world.audio.ctx) {
               try {
                 world.audio.playCreatureSound(this, 'eat');
-              } catch (e) {
+              } catch {
                 // Ignore audio errors (non-critical)
               }
             }
@@ -2069,7 +2069,7 @@ export class Creature {
         if (world.audio && world.audio.ctx) {
           try {
             world.audio.playCreatureSound?.(this, 'play');
-          } catch (err) {
+          } catch {
             // Ignore audio errors
           }
         }
@@ -2232,7 +2232,7 @@ export class Creature {
   }
 
   /**
-   * Records damage taken by the creature, applying health reduction, 
+   * Records damage taken by the creature, applying health reduction,
    * damage caps, and invincibility frames.
    * @param {number} amount - Initial damage amount
    * @param {Object} ctx - Damage context (attacker, type, etc.)

@@ -18,7 +18,7 @@ export class ProceduralSounds {
     try {
       this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
       this.enabled = true;
-      console.log('🔊 Procedural sound system initialized');
+      console.debug('🔊 Procedural sound system initialized');
     } catch (e) {
       console.warn('Audio context not supported:', e);
       this.enabled = false;
@@ -30,10 +30,10 @@ export class ProceduralSounds {
    */
   playBirthSound(creature) {
     if (!this.enabled) return;
-    
+
     const hue = creature.genes?.hue ?? 120;
     const frequency = 400 + (hue / 360) * 200; // Vary by color
-    
+
     this.playTone({
       frequency,
       duration: 0.3,
@@ -41,7 +41,7 @@ export class ProceduralSounds {
       envelope: { attack: 0.01, decay: 0.1, sustain: 0.5, release: 0.2 },
       volume: 0.2
     });
-    
+
     // Add sparkle sound
     setTimeout(() => {
       this.playTone({
@@ -58,9 +58,9 @@ export class ProceduralSounds {
    */
   playDeathSound(creature) {
     if (!this.enabled) return;
-    
+
     const isPredator = creature.genes?.predator;
-    
+
     // Descending tone
     this.playSweep({
       startFreq: isPredator ? 300 : 400,
@@ -76,9 +76,9 @@ export class ProceduralSounds {
    */
   playEatSound(creature, foodType) {
     if (!this.enabled) return;
-    
+
     const baseFreq = foodType === 'meat' ? 200 : 350;
-    
+
     // Chomp sound
     this.playNoise({
       duration: 0.08,
@@ -93,9 +93,9 @@ export class ProceduralSounds {
    */
   playMatingSound(creature) {
     if (!this.enabled) return;
-    
+
     const hue = creature.genes?.hue ?? 180;
-    
+
     // Rising chirp
     this.playSweep({
       startFreq: 300 + (hue / 360) * 150,
@@ -104,7 +104,7 @@ export class ProceduralSounds {
       type: 'sine',
       volume: 0.2
     });
-    
+
     // Echo
     setTimeout(() => {
       this.playSweep({
@@ -122,7 +122,7 @@ export class ProceduralSounds {
    */
   playAttackSound(attacker, impact = false) {
     if (!this.enabled) return;
-    
+
     if (impact) {
       // Impact noise
       this.playNoise({
@@ -148,10 +148,10 @@ export class ProceduralSounds {
    */
   playMovementSound(creature, intensity) {
     if (!this.enabled || Math.random() > 0.1) return; // Only 10% chance
-    
+
     const speed = creature.genes?.speed ?? 1;
     const frequency = 100 + speed * 50;
-    
+
     this.playNoise({
       duration: 0.05,
       frequency,
@@ -165,17 +165,17 @@ export class ProceduralSounds {
    */
   playBiomeAmbience(biomeType) {
     if (!this.enabled) return;
-    
+
     const ambience = {
       forest: { freq: 200, mod: 0.3, type: 'sine' },
       desert: { freq: 150, mod: 0.1, type: 'triangle' },
       ocean: { freq: 100, mod: 0.5, type: 'sine' },
       mountain: { freq: 180, mod: 0.2, type: 'triangle' }
     };
-    
+
     const settings = ambience[biomeType];
     if (!settings) return;
-    
+
     // Subtle background tone
     this.playTone({
       frequency: settings.freq,
@@ -191,7 +191,7 @@ export class ProceduralSounds {
    */
   playWeatherSound(weatherType, intensity) {
     if (!this.enabled) return;
-    
+
     if (weatherType === 'rain') {
       // Rain noise
       this.playNoise({
@@ -217,7 +217,7 @@ export class ProceduralSounds {
    */
   playTone(options) {
     if (!this.audioContext || this.soundQueue.length >= this.maxConcurrentSounds) return;
-    
+
     const {
       frequency = 440,
       duration = 0.5,
@@ -226,13 +226,13 @@ export class ProceduralSounds {
       envelope = null,
       modulation = 0
     } = options;
-    
+
     const oscillator = this.audioContext.createOscillator();
     const gainNode = this.audioContext.createGain();
-    
+
     oscillator.type = type;
     oscillator.frequency.value = frequency;
-    
+
     // Add modulation if specified
     if (modulation > 0) {
       const modOsc = this.audioContext.createOscillator();
@@ -244,12 +244,12 @@ export class ProceduralSounds {
       modOsc.start();
       modOsc.stop(this.audioContext.currentTime + duration);
     }
-    
+
     // Apply envelope
     if (envelope) {
       const { attack = 0.01, decay = 0.1, sustain = 0.7, release = 0.3 } = envelope;
       const now = this.audioContext.currentTime;
-      
+
       gainNode.gain.setValueAtTime(0, now);
       gainNode.gain.linearRampToValueAtTime(volume, now + attack);
       gainNode.gain.linearRampToValueAtTime(volume * sustain, now + attack + decay);
@@ -259,13 +259,13 @@ export class ProceduralSounds {
       gainNode.gain.setValueAtTime(volume * this.volume, this.audioContext.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
     }
-    
+
     oscillator.connect(gainNode);
     gainNode.connect(this.audioContext.destination);
-    
+
     oscillator.start();
     oscillator.stop(this.audioContext.currentTime + duration);
-    
+
     this.soundQueue.push(oscillator);
     setTimeout(() => {
       this.soundQueue = this.soundQueue.filter(s => s !== oscillator);
@@ -277,7 +277,7 @@ export class ProceduralSounds {
    */
   playSweep(options) {
     if (!this.audioContext || this.soundQueue.length >= this.maxConcurrentSounds) return;
-    
+
     const {
       startFreq = 200,
       endFreq = 600,
@@ -285,23 +285,23 @@ export class ProceduralSounds {
       type = 'sine',
       volume = 0.3
     } = options;
-    
+
     const oscillator = this.audioContext.createOscillator();
     const gainNode = this.audioContext.createGain();
-    
+
     oscillator.type = type;
     oscillator.frequency.setValueAtTime(startFreq, this.audioContext.currentTime);
     oscillator.frequency.exponentialRampToValueAtTime(endFreq, this.audioContext.currentTime + duration);
-    
+
     gainNode.gain.setValueAtTime(volume * this.volume, this.audioContext.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
-    
+
     oscillator.connect(gainNode);
     gainNode.connect(this.audioContext.destination);
-    
+
     oscillator.start();
     oscillator.stop(this.audioContext.currentTime + duration);
-    
+
     this.soundQueue.push(oscillator);
     setTimeout(() => {
       this.soundQueue = this.soundQueue.filter(s => s !== oscillator);
@@ -313,19 +313,19 @@ export class ProceduralSounds {
    */
   playNoise(options) {
     if (!this.audioContext || this.soundQueue.length >= this.maxConcurrentSounds) return;
-    
+
     const {
       duration = 0.1,
-      frequency = 1000,
+      frequency: _frequency = 1000,
       volume = 0.2,
       type = 'white',
       highpass = null
     } = options;
-    
+
     const bufferSize = this.audioContext.sampleRate * duration;
     const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
     const data = buffer.getChannelData(0);
-    
+
     // Generate noise
     if (type === 'white') {
       for (let i = 0; i < bufferSize; i++) {
@@ -345,14 +345,14 @@ export class ProceduralSounds {
         b6 = white * 0.115926;
       }
     }
-    
+
     const source = this.audioContext.createBufferSource();
     source.buffer = buffer;
-    
+
     const gainNode = this.audioContext.createGain();
     gainNode.gain.setValueAtTime(volume * this.volume, this.audioContext.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
-    
+
     // Optional highpass filter
     if (highpass) {
       const filter = this.audioContext.createBiquadFilter();
@@ -363,11 +363,11 @@ export class ProceduralSounds {
     } else {
       source.connect(gainNode);
     }
-    
+
     gainNode.connect(this.audioContext.destination);
-    
+
     source.start();
-    
+
     this.soundQueue.push(source);
     setTimeout(() => {
       this.soundQueue = this.soundQueue.filter(s => s !== source);
@@ -391,7 +391,7 @@ export class ProceduralSounds {
       this.soundQueue.forEach(source => {
         try {
           source.stop();
-        } catch (e) {
+        } catch {
           // Already stopped
         }
       });

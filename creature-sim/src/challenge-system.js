@@ -14,7 +14,7 @@ export class ChallengeSystem {
   /**
    * Generate a new random challenge
    */
-  generateChallenge(world) {
+  generateChallenge(_world) {
     const challengeTypes = [
       // Population challenges
       {
@@ -103,10 +103,10 @@ export class ChallengeSystem {
         points: 65
       }
     ];
-    
+
     const template = challengeTypes[Math.floor(Math.random() * challengeTypes.length)];
     const target = template.target();
-    
+
     return {
       id: Date.now() + Math.random(),
       type: template.type,
@@ -129,16 +129,16 @@ export class ChallengeSystem {
     if (this.challenges.length < 3) {
       this.challenges.push(this.generateChallenge(world));
     }
-    
+
     // Check challenge completion
     for (const challenge of this.challenges) {
       if (challenge.completed) continue;
-      
+
       if (challenge.check(world, challenge.target, challenge)) {
         this.completeChallenge(challenge);
       }
     }
-    
+
     // Remove old completed challenges
     this.challenges = this.challenges.filter(c => {
       if (c.completed) {
@@ -155,12 +155,12 @@ export class ChallengeSystem {
   completeChallenge(challenge) {
     challenge.completed = true;
     challenge.completedTime = Date.now();
-    
+
     this.points += challenge.points;
     this.completedChallenges.push(challenge);
-    
-    console.log(`🎯 Challenge completed: ${challenge.title} (+${challenge.points} points)`);
-    
+
+    console.debug(`🎯 Challenge completed: ${challenge.title} (+${challenge.points} points)`);
+
     // Check for level up
     if (this.points >= this.nextLevelPoints) {
       this.levelUp();
@@ -173,7 +173,7 @@ export class ChallengeSystem {
   levelUp() {
     this.level++;
     this.nextLevelPoints = Math.floor(this.nextLevelPoints * 1.5);
-    console.log(`⭐ Level up! Now level ${this.level}`);
+    console.debug(`⭐ Level up! Now level ${this.level}`);
   }
 
   /**
@@ -196,54 +196,54 @@ export class ChallengeSystem {
   draw(ctx, x, y) {
     const active = this.getActiveChallenges();
     const recent = this.getRecentCompletions();
-    
+
     ctx.save();
     ctx.font = '14px sans-serif';
-    
+
     // Draw level and points
     ctx.fillStyle = '#ffffff';
     ctx.fillText(`Level ${this.level} - ${this.points}/${this.nextLevelPoints} pts`, x, y);
-    
+
     let offsetY = y + 25;
-    
+
     // Draw active challenges
     for (const challenge of active) {
       ctx.fillStyle = 'rgba(40, 40, 60, 0.8)';
       ctx.fillRect(x, offsetY, 250, 40);
-      
+
       ctx.fillStyle = '#ffdd88';
       ctx.font = 'bold 12px sans-serif';
       ctx.fillText(challenge.title, x + 5, offsetY + 15);
-      
+
       ctx.fillStyle = '#cccccc';
       ctx.font = '11px sans-serif';
       ctx.fillText(challenge.description, x + 5, offsetY + 30);
-      
+
       // Progress bar if applicable
       if (challenge.progress) {
         ctx.fillStyle = 'rgba(100, 200, 100, 0.3)';
         ctx.fillRect(x + 5, offsetY + 35, 240 * challenge.progress, 3);
       }
-      
+
       offsetY += 45;
     }
-    
+
     // Draw recently completed
     for (const challenge of recent) {
       ctx.fillStyle = 'rgba(60, 180, 60, 0.9)';
       ctx.fillRect(x, offsetY, 250, 35);
-      
+
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 12px sans-serif';
       ctx.fillText(`✓ ${challenge.title}`, x + 5, offsetY + 15);
-      
+
       ctx.fillStyle = '#ffff88';
       ctx.font = '11px sans-serif';
       ctx.fillText(`+${challenge.points} points!`, x + 5, offsetY + 28);
-      
+
       offsetY += 40;
     }
-    
+
     ctx.restore();
   }
 }

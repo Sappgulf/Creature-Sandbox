@@ -29,18 +29,17 @@ import { SessionGoals } from './session-goals.js';
 import { MobileSupport } from './mobile-support.js';
 import { AutoDirector } from './auto-director.js';
 import { MomentsSystem } from './moments-system.js';
-import { ControlStripController } from './control-strip.js?v=20260413b';
+import { ControlStripController } from './control-strip.js';
 
 // Import new modular systems
 import { domCache } from './dom-cache.js';
 import { gameState } from './game-state.js';
 import { InputManager } from './input-manager.js';
-import { UIController } from './ui-controller.js?v=20260413b';
+import { UIController } from './ui-controller.js';
 import { GameLoop } from './game-loop.js';
 import { errorHandler } from './error-handler.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
-// batchRenderer removed (stub)
 import { performanceProfiler, initializePerformanceMonitor } from './performance-profiler.js';
 import { scenarioEditor } from './scenario-editor.js';
 import { diseaseSystem } from './disease-system.js';
@@ -329,8 +328,6 @@ function initializeApp() {
       });
     }
   }, 'Feature toggles');
-
-  // Batch renderer removed - using direct canvas rendering for better performance
 
   // Tools system
   const tools = errorHandler.safeExecute(() => {
@@ -885,7 +882,7 @@ function initializeApp() {
       }
     });
 
-    console.log('🏆 Campaign system initialized');
+    console.debug('🏆 Campaign system initialized');
   }, 'Campaign system initialization');
 
   // ============================================================================
@@ -1476,10 +1473,3 @@ if (document.readyState === 'loading') {
   // DOM is already ready
   initializeApp();
 }
-
-// ============================================================================
-// SIMPLE HOME PAGE BUTTON HANDLERS (FALLBACK)
-// These run independently to ensure buttons always work
-// ============================================================================
-// Fallback handlers merged into main initialization logic
-// This block removed to prevent conflicts

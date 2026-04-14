@@ -246,7 +246,7 @@ export class Renderer {
         ? creature.x >= bounds.x1 && creature.x <= bounds.x2 && creature.y >= bounds.y1 && creature.y <= bounds.y2
         : false;
       const alpha = creature ? clamp(creature.energy / 40, 0.25, 1) : null;
-      console.log('[Spawn][render]', {
+      console.debug('[Spawn][render]', {
         spawn: spawnInfo,
         camera: {
           x: Number(camera.x.toFixed(2)),
@@ -524,7 +524,7 @@ export class Renderer {
     // REDESIGNED: Subtle atmospheric biome rendering (player-focused!)
     const ctx = this.ctx;
     const bounds = this._viewBounds;
-    const sampleSize = Math.max(30, 120 / this.camera.zoom); // Larger samples = less blocky
+    const _sampleSize = Math.max(30, 120 / this.camera.zoom); // Larger samples = less blocky
 
     // Base background - fill entire visible area (including areas outside world bounds when zoomed out)
     ctx.fillStyle = '#15201a'; // Match CSS background
@@ -760,8 +760,7 @@ export class Renderer {
     }
   }
 
-  _drawWeatherEffects(world) {
-    // Placeholder for weather particles (rain, snow, dust)
+  _drawWeatherEffects(_world) {
     // Will be enhanced with particle system
   }
 
@@ -886,7 +885,7 @@ export class Renderer {
     const options = color ? { size, color } : { size };
     const cached = assetLoader.getSpriteFramesSync(name, options);
     if (cached) return cached;
-    assetLoader.requestSpriteFrames(name, options).catch(() => {});
+    assetLoader.requestSpriteFrames(name, options).catch((e) => { console.debug('[Renderer] sprite load failed:', name, e); });
     return null;
   }
 
@@ -1555,7 +1554,7 @@ export class Renderer {
    * Data-driven creature drawing for Proxy Mode / Fallback
    */
   _drawExplicit(ctx, c, opts) {
-    const { isSelected, isPinned, clusterHue, zoom } = opts;
+    const { isSelected, isPinned, clusterHue, zoom: _zoom } = opts;
     const g = c.genes || {};
     const hue = clusterHue !== null ? clusterHue : g.hue || 0;
 

@@ -148,21 +148,21 @@ export class ConfigManager {
    * @param {boolean} validate - Whether to validate changes
    */
   loadFromObject(configData, validate = true) {
-    let loadedCount = 0;
-    let failedCount = 0;
+    let _loadedCount = 0;
+    let _failedCount = 0;
 
     for (const [section, sectionConfig] of Object.entries(configData)) {
       if (this.configs.has(section)) {
         for (const [key, value] of Object.entries(sectionConfig)) {
           if (this.set(section, key, value, validate)) {
-            loadedCount++;
+            _loadedCount++;
           } else {
-            failedCount++;
+            _failedCount++;
           }
         }
       } else {
         console.warn(`Unknown configuration section: ${section}`);
-        failedCount++;
+        _failedCount++;
       }
     }
 

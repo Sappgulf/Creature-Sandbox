@@ -522,7 +522,7 @@ export class ControlStripController {
       this.watchRecenter?.classList.remove('active');
     }, 300);
 
-    console.log('🎥 Camera control returned to auto-director');
+    console.debug('🎥 Camera control returned to auto-director');
   }
 
   // === GOD MODE ===

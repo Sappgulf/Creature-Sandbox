@@ -845,7 +845,7 @@ export class SaveSystem {
             population: data.metadata.populationSize,
             timeElapsed: data.metadata.timeElapsed
           });
-        } catch (err) {
+        } catch {
           slots.push({ slot: i, error: true });
         }
       } else {
@@ -904,7 +904,7 @@ export class SaveSystem {
     if (fromVersion === '2.4') {
       ensureTerritoryDefaults();
       migrated.version = '2.5';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
+      console.debug(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
       return migrated;
     }
 
@@ -912,7 +912,7 @@ export class SaveSystem {
       if (!migrated.world?.foodPatches) migrated.world.foodPatches = [];
       ensureTerritoryDefaults();
       migrated.version = '2.5';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
+      console.debug(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
       return migrated;
     }
 
@@ -921,7 +921,7 @@ export class SaveSystem {
       if (!migrated.world?.foodPatches) migrated.world.foodPatches = [];
       ensureTerritoryDefaults();
       migrated.version = '2.5';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
+      console.debug(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
       return migrated;
     }
 
@@ -945,7 +945,7 @@ export class SaveSystem {
       if (!migrated.world?.foodPatches) migrated.world.foodPatches = [];
       ensureTerritoryDefaults();
       migrated.version = '2.5';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
+      console.debug(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
       return migrated;
     }
 
@@ -970,7 +970,7 @@ export class SaveSystem {
       if (!migrated.world?.foodPatches) migrated.world.foodPatches = [];
       ensureTerritoryDefaults();
       migrated.version = '2.5';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
+      console.debug(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
       return migrated;
     }
 
@@ -1023,7 +1023,7 @@ export class SaveSystem {
       if (!migrated.world?.foodPatches) migrated.world.foodPatches = [];
       ensureTerritoryDefaults();
       migrated.version = '2.5';
-      console.log(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
+      console.debug(`[SaveSystem] Migrated save from v${fromVersion} to v2.5`);
     }
 
     return migrated;

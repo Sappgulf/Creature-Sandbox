@@ -216,7 +216,7 @@ export class DebugConsole {
    * Update method called each frame (for interface compatibility)
    * @param {number} dt - Delta time
    */
-  update(dt) {
+  update(_dt) {
     // Debug console is primarily reactive (responds to user commands)
     // No per-frame updates needed currently
   }

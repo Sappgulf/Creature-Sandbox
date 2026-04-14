@@ -11,7 +11,6 @@ import { performanceProfiler, updatePerformanceMonitor, profile } from './perfor
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
 import { poolManager } from './object-pool.js';
-// batchRenderer removed
 import { ecsWorld } from './ecs.js';
 import { analyticsDashboard, advancedStatsCalculator } from './enhanced-analytics.js';
 // STATIC UI IMPORTS - avoids dynamic import() latency in hot path
@@ -111,7 +110,6 @@ export class GameLoop {
       cameraMoving: false,
       viewportWidth: 0,
       viewportHeight: 0,
-      batchRenderer: null,
       useBatchRendering: false,
       particleSystem: null,
       heatmaps: null,
@@ -516,7 +514,7 @@ export class GameLoop {
       `draws=${current.drawCalls}`,
       `creatures=${current.creaturesRendered}`
     ].join(' ');
-    console.log(`[Perf] ${summary}`);
+    console.debug(`[Perf] ${summary}`);
 
     if (this.profileReportIncludeScopes) {
       const scopes = performanceProfiler.getScopeStats();
@@ -526,7 +524,7 @@ export class GameLoop {
         .map(([name, data]) => `${name}:${data.avgDuration.toFixed(2)}ms`)
         .join(' ');
       if (topScopes) {
-        console.log(`[PerfScopes] ${topScopes}`);
+        console.debug(`[PerfScopes] ${topScopes}`);
       }
     }
   }
@@ -661,7 +659,6 @@ export class GameLoop {
       : null;
 
     // Update reusable render options (reduces per-frame allocations)
-    const batchRendererReady = false;
     const opts = this.renderOptions;
     opts.selectedId = gameState.selectedId;
     opts.pinnedId = gameState.pinnedId;
@@ -676,8 +673,7 @@ export class GameLoop {
     opts.cameraMoving = this.camera.isMoving;
     opts.viewportWidth = canvas.width;
     opts.viewportHeight = canvas.height;
-    opts.batchRenderer = null;
-    opts.useBatchRendering = batchRendererReady && configManager.get('rendering', 'performance.batchRendering', true);
+    opts.useBatchRendering = false;
     opts.particleSystem = this.particles;
     opts.heatmaps = this.heatmaps;
     opts.showGoalDebug = gameState.showGoalDebug || gameState.showObserverDebug;
@@ -700,11 +696,6 @@ export class GameLoop {
 
     // Update FPS calculation
     gameState.fps = 0.9 * gameState.fps + 0.1 * (1 / Math.max(dt, 0.0001));
-
-    // Flush batch renderer (removed)
-    // if (opts.useBatchRendering) {
-    //   batchRenderer.flush?.();
-    // }
 
     // Render heatmaps (if active)
     if (this.world.heatmaps?.activeType) {

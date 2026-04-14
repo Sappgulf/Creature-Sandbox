@@ -583,7 +583,7 @@ export class UIController {
     // Use world helper so genetics and bookkeeping stay centralized
     const debugFlags = getDebugFlags();
     if (debugFlags.spawnDebug) {
-      console.log('[Spawn][ui]', {
+      console.debug('[Spawn][ui]', {
         requestedType: type,
         resolvedType: safeType,
         x: Number(x.toFixed(2)),
@@ -596,7 +596,7 @@ export class UIController {
     if (creature && this.hasNotifications()) {
       this.notifications.show(`Spawned ${safeType}!`, 'info', 1500);
     }
-    console.log(`🦌 Spawned ${safeType} at (${x.toFixed(0)}, ${y.toFixed(0)})`);
+    console.debug(`🦌 Spawned ${safeType} at (${x.toFixed(0)}, ${y.toFixed(0)})`);
   }
 
   updateSpawnButton(type) {

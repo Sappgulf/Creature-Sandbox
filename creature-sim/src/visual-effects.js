@@ -24,7 +24,7 @@ export class VisualEffects {
       alpha: 1,
       life: 0.5
     });
-    
+
     // Sparkle particles
     for (let i = 0; i < 12; i++) {
       const angle = (i / 12) * Math.PI * 2;
@@ -56,7 +56,7 @@ export class VisualEffects {
       alpha: 1,
       life: 1.2
     });
-    
+
     // Falling particles
     for (let i = 0; i < 8; i++) {
       this.effects.push({
@@ -131,7 +131,7 @@ export class VisualEffects {
         delay
       });
     }
-    
+
     // Star burst
     this.effects.push({
       type: 'starburst',
@@ -157,7 +157,7 @@ export class VisualEffects {
       alpha: 0.8,
       life: 0.3
     });
-    
+
     // Damage number
     this.effects.push({
       type: 'damage-number',
@@ -194,17 +194,17 @@ export class VisualEffects {
         effect.delay -= dt;
         return true;
       }
-      
+
       effect.life -= dt;
       if (effect.life <= 0) return false;
-      
+
       // Update based on type
       switch (effect.type) {
         case 'expand':
           effect.radius += effect.speed * dt;
           effect.alpha = effect.life / 0.5;
           break;
-          
+
         case 'sparkle':
         case 'nom':
         case 'fall':
@@ -213,41 +213,41 @@ export class VisualEffects {
           effect.vy += 50 * dt; // Gravity
           effect.alpha = effect.life;
           break;
-          
+
         case 'heart':
           effect.y += effect.vy * dt;
           effect.wobble += dt * 3;
           effect.alpha = effect.life;
           break;
-          
+
         case 'spiral':
           effect.y += effect.vy * dt;
           effect.radius += effect.radiusGrowth * dt;
           effect.alpha = effect.life / 1.5;
           break;
-          
+
         case 'death-mark':
           effect.rotation += effect.rotationSpeed * dt;
           effect.alpha = effect.life / 1.2;
           break;
-          
+
         case 'flash':
           effect.alpha = effect.life / 0.3;
           break;
-          
+
         case 'damage-number':
           effect.y += effect.vy * dt;
           effect.alpha = effect.life;
           break;
-          
+
         case 'starburst':
           effect.alpha = effect.life / 0.8;
           break;
       }
-      
+
       return true;
     });
-    
+
     // Update ripples
     this.ripples = this.ripples.filter(ripple => {
       ripple.radius += ripple.speed * dt;
@@ -263,10 +263,10 @@ export class VisualEffects {
   draw(ctx) {
     for (const effect of this.effects) {
       if (effect.delay && effect.delay > 0) continue;
-      
+
       ctx.save();
       ctx.globalAlpha = Math.max(0, effect.alpha);
-      
+
       switch (effect.type) {
         case 'expand':
           ctx.strokeStyle = effect.color;
@@ -275,7 +275,7 @@ export class VisualEffects {
           ctx.arc(effect.x, effect.y, effect.radius, 0, Math.PI * 2);
           ctx.stroke();
           break;
-          
+
         case 'sparkle':
         case 'nom':
         case 'fall':
@@ -284,13 +284,13 @@ export class VisualEffects {
           ctx.arc(effect.x, effect.y, effect.size, 0, Math.PI * 2);
           ctx.fill();
           break;
-          
+
         case 'heart':
           ctx.fillStyle = effect.color;
           ctx.translate(effect.x + Math.sin(effect.wobble) * 3, effect.y);
           this.drawHeart(ctx, 0, 0, effect.size);
           break;
-          
+
         case 'spiral':
           ctx.fillStyle = effect.color;
           const sx = effect.x + Math.cos(effect.angle) * effect.radius;
@@ -299,7 +299,7 @@ export class VisualEffects {
           ctx.arc(sx, sy, 2, 0, Math.PI * 2);
           ctx.fill();
           break;
-          
+
         case 'death-mark':
           ctx.strokeStyle = effect.color;
           ctx.lineWidth = 3;
@@ -312,14 +312,14 @@ export class VisualEffects {
           ctx.lineTo(-effect.size/2, effect.size/2);
           ctx.stroke();
           break;
-          
+
         case 'flash':
           ctx.fillStyle = effect.color;
           ctx.beginPath();
           ctx.arc(effect.x, effect.y, effect.radius, 0, Math.PI * 2);
           ctx.fill();
           break;
-          
+
         case 'damage-number':
           ctx.fillStyle = effect.color;
           ctx.font = 'bold 12px sans-serif';
@@ -327,7 +327,7 @@ export class VisualEffects {
           ctx.textBaseline = 'middle';
           ctx.fillText(effect.text, effect.x, effect.y);
           break;
-          
+
         case 'starburst':
           ctx.strokeStyle = effect.color;
           ctx.lineWidth = 2;
@@ -343,10 +343,10 @@ export class VisualEffects {
           }
           break;
       }
-      
+
       ctx.restore();
     }
-    
+
     // Draw ripples
     for (const ripple of this.ripples) {
       ctx.save();

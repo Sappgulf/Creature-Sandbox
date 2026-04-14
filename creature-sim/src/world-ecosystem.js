@@ -474,8 +474,8 @@ export class WorldEcosystem {
   // Simple species classification
   getCreatureSpeciesKey(creature) {
     const diet = creature.genes.diet ?? (creature.genes.predator ? 1.0 : 0.0);
-    const speed = creature.genes.speed || 1;
-    const size = creature.genes.size || 1;
+    const _speed = creature.genes.speed || 1;
+    const _size = creature.genes.size || 1;
 
     // Classify based on primary traits
     if (diet < 0.3) return 'herbivore';

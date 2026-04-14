@@ -453,13 +453,13 @@ export class AnalyticsDashboard {
     this.panel.style.display = 'block';
     this.isVisible = true;
     requestAnimationFrame(() => this.resizeCharts());
-    console.log('📊 Analytics dashboard opened');
+    console.debug('📊 Analytics dashboard opened');
   }
 
   hide() {
     this.panel.style.display = 'none';
     this.isVisible = false;
-    console.log('📊 Analytics dashboard closed');
+    console.debug('📊 Analytics dashboard closed');
   }
 
   toggle() {
@@ -688,13 +688,13 @@ export class AnalyticsDashboard {
     const timeRange = parseInt(this.panel.querySelector('#analytics-time-range').value);
     // Update max history points based on selected time range
     // This would affect how much historical data is displayed
-    console.log(`📊 Time range changed to ${timeRange} seconds`);
+    console.debug(`📊 Time range changed to ${timeRange} seconds`);
   }
 
   clearData() {
     this.dataHistory.forEach(history => history.length = 0);
     this.charts.forEach(chart => chart.clear());
-    console.log('📊 Analytics data cleared');
+    console.debug('📊 Analytics data cleared');
   }
 
   exportData() {
@@ -721,7 +721,7 @@ export class AnalyticsDashboard {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    console.log('📊 Analytics data exported');
+    console.debug('📊 Analytics data exported');
   }
 }
 

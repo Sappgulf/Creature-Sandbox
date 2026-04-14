@@ -189,7 +189,7 @@ Creature.prototype.recallMemories = function (type) {
     .sort((a, b) => b.strength - a.strength);
 };
 
-Creature.prototype._selectMemory = function (tag, world) {
+Creature.prototype._selectMemory = function (tag, _world) {
   if (!this.memory?.locations?.length) return null;
   const maxDistance = CreatureConfig.MEMORY.MAX_DISTANCE;
   const maxDistance2 = maxDistance * maxDistance;
@@ -318,7 +318,7 @@ Creature.prototype._updateSocialBehavior = function (world) {
 // FEATURE 9: MIGRATION PATTERNS
 // ============================================================================
 
-Creature.prototype._updateMigration = function (world, dt) {
+Creature.prototype._updateMigration = function (world, _dt) {
   if (!this.migration || this.migration.instinct < 0.25) return;
   const now = world.t ?? 0;
   if (now < (this.migration.nextCheckAt ?? 0)) return;
@@ -596,7 +596,7 @@ Creature.prototype.getPheromoneBonus = function () {
 // FEATURE 7: PROBLEM SOLVING & INTELLIGENCE
 // ============================================================================
 
-Creature.prototype._updateIntelligence = function (dt, world) {
+Creature.prototype._updateIntelligence = function (dt, _world) {
   const intel = this.intelligence;
 
   // Gain experience from successful actions

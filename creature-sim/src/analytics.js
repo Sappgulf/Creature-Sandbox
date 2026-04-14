@@ -22,7 +22,7 @@ export class AnalyticsTracker {
 
     // NUCLEAR FIX: Define reset directly on 'this' to ensure it's always found
     this.reset = () => {
-      console.log('📊 Analytics Tracker Resetting...');
+      console.debug('📊 Analytics Tracker Resetting...');
       this.samples = [];
       this.geneHistory = [];
       this.speciesGroups = [];
@@ -37,7 +37,7 @@ export class AnalyticsTracker {
       return this;
     };
 
-    console.log('✅ AnalyticsTracker [v2] Hard-Initialized');
+    console.debug('✅ AnalyticsTracker [v2] Hard-Initialized');
   }
 
   _initializeWorker() {

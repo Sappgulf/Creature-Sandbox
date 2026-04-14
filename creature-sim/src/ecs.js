@@ -7,7 +7,7 @@
 export const ecsWorld = {
   entities: [],
 
-  update(dt) {
+  update(_dt) {
     // No-op placeholder for ECS tick
     // Future: process systems here
   },

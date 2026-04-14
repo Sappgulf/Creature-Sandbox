@@ -154,7 +154,7 @@ export class HeatmapSystem {
     }
   }
 
-  _drawLegend(ctx, camera) {
+  _drawLegend(ctx, _camera) {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform to screen space
 

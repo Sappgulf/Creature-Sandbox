@@ -144,7 +144,7 @@ export class GeneEditor {
 
     this.syncUIToGenes();
     this.setStatus(`Preset applied: ${presetName}`, 'success');
-    console.log(`✨ Applied preset: ${presetName}`);
+    console.debug(`✨ Applied preset: ${presetName}`);
   }
 
   randomize() {
@@ -168,7 +168,7 @@ export class GeneEditor {
 
     this.syncUIToGenes();
     this.setStatus('Randomized gene set.', 'success');
-    console.log('🎲 Randomized genes!');
+    console.debug('🎲 Randomized genes!');
   }
 
   spawnCreature(world, x, y) {
@@ -181,7 +181,7 @@ export class GeneEditor {
     const creature = new Creature(x, y, genes, false);
     world.addCreature(creature, null);
 
-    console.log(`🧬 Spawned custom creature at (${Math.round(x)}, ${Math.round(y)})`);
+    console.debug(`🧬 Spawned custom creature at (${Math.round(x)}, ${Math.round(y)})`);
     return creature;
   }
 
@@ -201,7 +201,7 @@ export class GeneEditor {
       spawned.push(creature);
     }
 
-    console.log(`🧬 Spawned ${spawned.length} custom creatures!`);
+    console.debug(`🧬 Spawned ${spawned.length} custom creatures!`);
     return spawned;
   }
 
@@ -215,7 +215,7 @@ export class GeneEditor {
     a.click();
     URL.revokeObjectURL(url);
     this.setStatus('Exported gene JSON file.', 'success');
-    console.log('📥 Exported custom genes!');
+    console.debug('📥 Exported custom genes!');
   }
 
   importGenes(jsonString) {
@@ -228,7 +228,7 @@ export class GeneEditor {
       });
       this.syncUIToGenes();
       this.setStatus('Imported gene code.', 'success');
-      console.log('📤 Imported custom genes!');
+      console.debug('📤 Imported custom genes!');
       return true;
     } catch (err) {
       this.setStatus('Invalid gene code. Paste JSON from Export or Copy Code.', 'error');
@@ -241,7 +241,7 @@ export class GeneEditor {
    * Update method called each frame (for interface compatibility)
    * @param {number} dt - Delta time
    */
-  update(dt) {
+  update(_dt) {
     // Gene editor is primarily reactive (responds to user input)
     // No per-frame updates needed currently
     const isActive = gameState.geneEditorSpawnMode === true;

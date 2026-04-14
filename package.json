@@ -11,8 +11,8 @@
     "lint:fix": "eslint creature-sim/src --fix"
   },
   "devDependencies": {
-    "eslint": "^9.0.0",
-    "globals": "^15.0.0"
+    "eslint": "^10.2.0",
+    "globals": "^17.5.0"
   },
   "keywords": [
     "simulation",

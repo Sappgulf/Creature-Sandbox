@@ -1,7 +1,7 @@
 /**
  * World Disaster System - Manages disasters, effects, and ecosystem challenges
  */
-import { rand, clamp } from './utils.js';
+import { rand } from './utils.js';
 import { diseaseSystem, DISEASE_TYPES } from './disease-system.js';
 
 export class WorldDisaster {
@@ -162,7 +162,7 @@ export class WorldDisaster {
     // Trigger start effects
     this.onDisasterStart(this.activeDisaster);
 
-    console.log(`🌪️ Disaster started: ${this.activeDisaster.name} (${this.activeDisaster.intensity.toFixed(1)}× intensity)`);
+    console.debug(`🌪️ Disaster started: ${this.activeDisaster.name} (${this.activeDisaster.intensity.toFixed(1)}× intensity)`);
     return true;
   }
 
@@ -219,7 +219,7 @@ export class WorldDisaster {
   }
 
   // Apply damage to creatures
-  applyCreatureDamage(dt, intensity, progress) {
+  applyCreatureDamage(dt, intensity, _progress) {
     const damageRate = intensity * dt * 2; // 2 damage per second at 1.0 intensity
 
     for (const creature of this.world.creatures) {
@@ -235,7 +235,7 @@ export class WorldDisaster {
   }
 
   // Destroy food
-  applyFoodDestruction(dt, intensity, progress) {
+  applyFoodDestruction(dt, intensity, _progress) {
     const destroyRate = intensity * dt * 0.5; // 0.5 food destroyed per second
 
     for (let i = this.world.food.length - 1; i >= 0; i--) {
@@ -248,7 +248,7 @@ export class WorldDisaster {
   }
 
   // Apply temperature effects
-  applyTemperatureEffect(dt, intensity, progress) {
+  applyTemperatureEffect(dt, intensity, _progress) {
     const tempDrop = intensity * 0.05 * dt;
     // This would affect the temperature scalar field
     // For now, we'll apply a global temperature modifier
@@ -256,7 +256,7 @@ export class WorldDisaster {
   }
 
   // Apply disease effects using the disease system
-  applyDiseaseEffect(dt, intensity, progress) {
+  applyDiseaseEffect(dt, intensity, _progress) {
     // Only try to infect new creatures periodically, not every frame
     if (Math.random() > dt * 0.5) return; // ~50% chance per second to attempt infections
 
@@ -328,7 +328,7 @@ export class WorldDisaster {
     const disaster = this.activeDisaster;
     const cancelled = options.cancelled || false;
 
-    console.log(`${cancelled ? '🚫' : '✅'} Disaster ended: ${disaster.name}`);
+    console.debug(`${cancelled ? '🚫' : '✅'} Disaster ended: ${disaster.name}`);
 
     // Record in history
     this.disasterHistory.push({

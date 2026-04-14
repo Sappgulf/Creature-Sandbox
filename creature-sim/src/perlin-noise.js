@@ -159,7 +159,7 @@ export class BiomeGenerator {
    * @param {number} worldHeight - Total world height
    * @returns {object} Biome information
    */
-  getBiomeAt(x, y, worldWidth, worldHeight) {
+  getBiomeAt(x, y, _worldWidth, _worldHeight) {
     const scale = 0.001; // Adjust for biome size
 
     // Get noise values (0-1 range)

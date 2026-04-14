@@ -3,9 +3,7 @@
  * Provides tools for designing scenarios with specific conditions, objectives, and challenges
  */
 
-import { domCache } from './dom-cache.js';
-import { eventSystem, GameEvents } from './event-system.js';
-import { configManager } from './config-manager.js';
+import { eventSystem } from './event-system.js';
 
 /**
  * Scenario Template
@@ -820,7 +818,7 @@ export class ScenarioEditor {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    console.log('🎭 Scenario saved:', filename);
+    console.debug('🎭 Scenario saved:', filename);
     this.updateStatus('Scenario saved successfully');
   }
 
@@ -841,7 +839,7 @@ export class ScenarioEditor {
             this.currentScenario = ScenarioTemplate.fromJSON(scenarioData);
             this.updateUIFromScenario();
             this.updateStatus('Scenario loaded successfully');
-            console.log('🎭 Scenario loaded:', file.name);
+            console.debug('🎭 Scenario loaded:', file.name);
           } catch (error) {
             alert('Error loading scenario: ' + error.message);
           }
@@ -870,7 +868,7 @@ export class ScenarioEditor {
     }
 
     this.updateStatus('Testing scenario...');
-    console.log('🎭 Testing scenario:', this.currentScenario.name);
+    console.debug('🎭 Testing scenario:', this.currentScenario.name);
   }
 
   loadTemplates() {
@@ -918,13 +916,13 @@ export class ScenarioEditor {
     this.panel.style.display = 'block';
     this.isVisible = true;
     this.updateUIFromScenario();
-    console.log('🎭 Scenario editor opened');
+    console.debug('🎭 Scenario editor opened');
   }
 
   hide() {
     this.panel.style.display = 'none';
     this.isVisible = false;
-    console.log('🎭 Scenario editor closed');
+    console.debug('🎭 Scenario editor closed');
   }
 
   toggle() {

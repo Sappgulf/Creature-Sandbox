@@ -71,18 +71,18 @@ export class SeasonalEventsSystem {
   update(world, dt) {
     // Progress through season
     this.seasonProgress += dt / this.seasonDuration;
-    
+
     if (this.seasonProgress >= 1) {
       this.seasonProgress = 0;
       this.changeSeason(world);
     }
-    
+
     // Update active events
     this.updateEvents(world, dt);
-    
+
     // Apply seasonal effects
     this.applySeasonalEffects(world, dt);
-    
+
     // Check for migrations
     this.checkMigrations(world, dt);
   }
@@ -94,14 +94,14 @@ export class SeasonalEventsSystem {
     const seasons = ['spring', 'summer', 'autumn', 'winter'];
     const currentIndex = seasons.indexOf(this.currentSeason);
     const nextIndex = (currentIndex + 1) % seasons.length;
-    
+
     this.currentSeason = seasons[nextIndex];
-    
-    console.log(`🍂 Season changed to ${this.seasonalEffects[this.currentSeason].name}`);
-    
+
+    console.debug(`🍂 Season changed to ${this.seasonalEffects[this.currentSeason].name}`);
+
     // Trigger season change event
     this.triggerSeasonChangeEvent(world);
-    
+
     // Notify creatures
     if (world.notificationSystem) {
       world.notificationSystem.show(
@@ -118,7 +118,7 @@ export class SeasonalEventsSystem {
   triggerSeasonChangeEvent(world) {
     const seasonData = this.seasonalEffects[this.currentSeason];
     const possibleEvents = seasonData.events;
-    
+
     // Random chance to trigger event
     if (Math.random() < 0.7) {
       const eventType = possibleEvents[Math.floor(Math.random() * possibleEvents.length)];
@@ -137,11 +137,11 @@ export class SeasonalEventsSystem {
       intensity: 0.5 + Math.random() * 0.5,
       active: true
     };
-    
+
     this.activeEvents.push(event);
-    
-    console.log(`⚡ Seasonal event: ${eventType}`);
-    
+
+    console.debug(`⚡ Seasonal event: ${eventType}`);
+
     // Apply immediate event effects
     this.applyEventEffect(event, world);
   }
@@ -161,33 +161,33 @@ export class SeasonalEventsSystem {
           );
         }
         break;
-        
+
       case 'heat_wave':
         // All creatures lose energy faster
         event.energyDrain = 0.5 * event.intensity;
         break;
-        
+
       case 'drought':
         // Reduce food spawning
         event.foodReduction = 0.7;
         break;
-        
+
       case 'harvest':
         // Bonus food in specific areas
         event.harvestZones = this.createHarvestZones(world, 3);
         break;
-        
+
       case 'migration_start':
         // Trigger migration for some creatures
         this.initiateSeasonalMigration(world);
         break;
-        
+
       case 'snowfall':
         // Slow movement, create snow particles
         event.snowParticles = [];
         event.movementPenalty = 0.8;
         break;
-        
+
       case 'hibernation':
         // Some creatures enter low-energy state
         event.hibernationBonus = 0.5; // Energy savings
@@ -200,7 +200,7 @@ export class SeasonalEventsSystem {
    */
   createHarvestZones(world, count) {
     const zones = [];
-    
+
     for (let i = 0; i < count; i++) {
       zones.push({
         x: Math.random() * world.width,
@@ -209,7 +209,7 @@ export class SeasonalEventsSystem {
         foodBonus: 2
       });
     }
-    
+
     return zones;
   }
 
@@ -218,17 +218,17 @@ export class SeasonalEventsSystem {
    */
   initiateSeasonalMigration(world) {
     // Some creatures will migrate to better biomes
-    const migrants = world.creatures.filter(c => 
+    const migrants = world.creatures.filter(c =>
       c.genes?.migrationInstinct && c.genes.migrationInstinct > 0.6
     );
-    
+
     for (const creature of migrants) {
       const route = this.createMigrationRoute(creature, world);
       this.migrationRoutes.set(creature.id, route);
       creature.isMigrating = true;
     }
-    
-    console.log(`🦅 ${migrants.length} creatures began migration`);
+
+    console.debug(`🦅 ${migrants.length} creatures began migration`);
   }
 
   /**
@@ -238,7 +238,7 @@ export class SeasonalEventsSystem {
     // Find a distant location with favorable conditions
     const targetX = Math.random() * world.width;
     const targetY = Math.random() * world.height;
-    
+
     return {
       startX: creature.x,
       startY: creature.y,
@@ -255,7 +255,7 @@ export class SeasonalEventsSystem {
   generateWaypoints(startX, startY, targetX, targetY) {
     const waypoints = [];
     const steps = 5;
-    
+
     for (let i = 1; i <= steps; i++) {
       const t = i / steps;
       waypoints.push({
@@ -263,7 +263,7 @@ export class SeasonalEventsSystem {
         y: startY + (targetY - startY) * t
       });
     }
-    
+
     return waypoints;
   }
 
@@ -272,16 +272,16 @@ export class SeasonalEventsSystem {
    */
   updateEvents(world, dt) {
     const now = Date.now();
-    
+
     this.activeEvents = this.activeEvents.filter(event => {
       const age = now - event.startTime;
-      
+
       if (age > event.duration) {
         // Event ended
         this.endEvent(event, world);
         return false;
       }
-      
+
       // Update event
       this.updateEvent(event, world, dt);
       return true;
@@ -303,12 +303,12 @@ export class SeasonalEventsSystem {
             size: 2 + Math.random() * 2
           });
         }
-        
+
         // Update snow particles
         for (const particle of event.snowParticles) {
           particle.y += particle.vy * dt;
         }
-        
+
         event.snowParticles = event.snowParticles.filter(p => p.y < world.height);
         break;
     }
@@ -318,8 +318,8 @@ export class SeasonalEventsSystem {
    * End event
    */
   endEvent(event, world) {
-    console.log(`✓ Event ended: ${event.type}`);
-    
+    console.debug(`✓ Event ended: ${event.type}`);
+
     // Clean up event-specific data
     if (event.type === 'migration_start') {
       // End migrations
@@ -335,13 +335,13 @@ export class SeasonalEventsSystem {
   /**
    * Apply seasonal effects to creatures
    */
-  applySeasonalEffects(world, dt) {
+  applySeasonalEffects(world, _dt) {
     const seasonData = this.seasonalEffects[this.currentSeason];
-    
+
     for (const creature of world.creatures) {
       // Energy modifier
       creature.seasonalEnergyMod = seasonData.effects.energy;
-      
+
       // Mood effect
       if (creature.emotions) {
         this.applySeasonalMood(creature, seasonData.effects.mood);
@@ -374,34 +374,34 @@ export class SeasonalEventsSystem {
   /**
    * Check and update migrations
    */
-  checkMigrations(world, dt) {
+  checkMigrations(world, _dt) {
     for (const [creatureId, route] of this.migrationRoutes.entries()) {
       const creature = world.creatures.find(c => c.id === creatureId);
       if (!creature || !creature.alive) {
         this.migrationRoutes.delete(creatureId);
         continue;
       }
-      
+
       // Move towards next waypoint
       const waypoint = route.waypoints[Math.floor(route.progress * route.waypoints.length)];
       if (waypoint) {
         const dx = waypoint.x - creature.x;
         const dy = waypoint.y - creature.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        
+
         if (dist < 50) {
           route.progress += 0.01;
         }
-        
+
         // Guide creature towards waypoint
         creature.migrationTarget = waypoint;
       }
-      
+
       // Complete migration
       if (route.progress >= 1) {
         creature.isMigrating = false;
         this.migrationRoutes.delete(creatureId);
-        console.log(`✓ Creature ${creatureId} completed migration`);
+        console.debug(`✓ Creature ${creatureId} completed migration`);
       }
     }
   }
@@ -409,7 +409,7 @@ export class SeasonalEventsSystem {
   /**
    * Draw seasonal effects
    */
-  drawSeasonalEffects(ctx, world) {
+  drawSeasonalEffects(ctx, _world) {
     // Draw snow particles
     for (const event of this.activeEvents) {
       if (event.type === 'snowfall' && event.snowParticles) {
@@ -422,7 +422,7 @@ export class SeasonalEventsSystem {
         }
         ctx.restore();
       }
-      
+
       // Draw harvest zones
       if (event.type === 'harvest' && event.harvestZones) {
         ctx.save();
@@ -443,31 +443,31 @@ export class SeasonalEventsSystem {
    */
   drawSeasonUI(ctx, x, y) {
     const seasonData = this.seasonalEffects[this.currentSeason];
-    
+
     ctx.save();
-    
+
     // Season indicator
     ctx.fillStyle = 'rgba(30, 30, 45, 0.8)';
     ctx.fillRect(x, y, 200, 50);
-    
+
     ctx.fillStyle = seasonData.color;
     ctx.font = 'bold 14px sans-serif';
     ctx.fillText(`🍂 ${seasonData.name}`, x + 10, y + 20);
-    
+
     // Progress bar
     ctx.fillStyle = 'rgba(100, 100, 120, 0.5)';
     ctx.fillRect(x + 10, y + 30, 180, 8);
-    
+
     ctx.fillStyle = seasonData.color;
     ctx.fillRect(x + 10, y + 30, 180 * this.seasonProgress, 8);
-    
+
     // Active events
     if (this.activeEvents.length > 0) {
       ctx.fillStyle = '#ffff88';
       ctx.font = '11px sans-serif';
       ctx.fillText(`⚡ ${this.activeEvents[0].type}`, x + 10, y + 48);
     }
-    
+
     ctx.restore();
   }
 

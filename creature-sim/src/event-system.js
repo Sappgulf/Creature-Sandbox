@@ -6,7 +6,7 @@
  * @example
  * // Subscribe to an event
  * const unsubscribe = eventSystem.on('creature:born', (data) => {
- *   console.log('Creature born:', data.id);
+ *   console.debug('Creature born:', data.id);
  * });
  *
  * // Emit an event

@@ -8,7 +8,6 @@
  * - Integration with creature status system
  */
 
-import { rand, clamp } from './utils.js';
 import { eventSystem, GameEvents } from './event-system.js';
 
 /** Disease type definitions */
@@ -328,7 +327,7 @@ export class DiseaseSystem {
    * Handle creature death from disease
    * @param {object} creature - Creature that died
    */
-  handleDiseaseDeath(creature) {
+  handleDiseaseDeath(_creature) {
     this.statistics.totalDeaths++;
   }
 

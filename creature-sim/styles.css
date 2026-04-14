@@ -29,6 +29,7 @@
   /* Text */
   --text-primary: #e8eaed;
   --text-secondary: #9aa3b8;
+  --text-tertiary: #7a8299;
   --text-muted: #5c6478;
   --text-inverse: #0c0f18;
 
@@ -1189,18 +1190,13 @@ input[type="range"]:focus-visible {
 }
 
 .panel-close:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-hover);
   border-color: var(--glass-border);
   color: var(--text-primary);
 }
 
 .panel-close:active {
   transform: scale(0.95);
-}
-
-.panel-close:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
 }
 
 /* Scenario Panel */

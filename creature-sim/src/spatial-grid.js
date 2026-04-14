@@ -135,7 +135,7 @@ export class SpatialGrid {
    * For compatibility with world-creature-manager
    * @param {*} item - Item to remove
    */
-  remove(item) {
+  remove(_item) {
     // The grid is rebuilt each frame from scratch, so we don't need to track removals
     // This is just for API compatibility
   }

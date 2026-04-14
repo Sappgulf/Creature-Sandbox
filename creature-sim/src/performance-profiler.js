@@ -3,7 +3,7 @@
  * Provides real-time performance metrics, memory tracking, and optimization insights
  */
 
-import { eventSystem, GameEvents } from './event-system.js';
+import { eventSystem } from './event-system.js';
 
 /**
  * Performance sample data structure
@@ -407,7 +407,7 @@ export class PerformanceProfiler {
   setDebugMode(enabled) {
     this.debugMode = enabled;
     this.alertsEnabled = enabled; // Also enable alerts when debug mode is on
-    console.log(`🔧 Performance debug mode: ${enabled ? 'ON' : 'OFF'}`);
+    console.debug(`🔧 Performance debug mode: ${enabled ? 'ON' : 'OFF'}`);
   }
 
   /**
@@ -416,7 +416,7 @@ export class PerformanceProfiler {
   setOverlayAlerts(enabled) {
     this.showOverlayAlerts = enabled;
     this.alertsEnabled = enabled; // Also enable alerts when overlay alerts are on
-    console.log(`🔔 Performance overlay alerts: ${enabled ? 'ON' : 'OFF'}`);
+    console.debug(`🔔 Performance overlay alerts: ${enabled ? 'ON' : 'OFF'}`);
   }
 
   /**
@@ -424,7 +424,7 @@ export class PerformanceProfiler {
    */
   setAlertsEnabled(enabled) {
     this.alertsEnabled = enabled;
-    console.log(`📊 Performance alerts: ${enabled ? 'ON' : 'OFF'}`);
+    console.debug(`📊 Performance alerts: ${enabled ? 'ON' : 'OFF'}`);
   }
 
   /**
@@ -555,7 +555,7 @@ export class PerformanceProfiler {
     this.frameCount = 0;
     this.lastFPSTime = performance.now();
 
-    console.log('🔄 Performance profiler reset');
+    console.debug('🔄 Performance profiler reset');
   }
 
   /**
@@ -573,7 +573,7 @@ export class PerformanceProfiler {
    */
   setBudgets(budgets) {
     Object.assign(this.budgets, budgets);
-    console.log('📊 Performance budgets updated:', budgets);
+    console.debug('📊 Performance budgets updated:', budgets);
   }
 }
 
@@ -835,7 +835,7 @@ export class PerformanceMonitor {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    console.log('📊 Performance data exported');
+    console.debug('📊 Performance data exported');
   }
 }
 

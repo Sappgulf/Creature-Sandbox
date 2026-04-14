@@ -63,7 +63,7 @@ export class RendererPerformanceMonitor {
       this.renderer._heatmapCache.updateInterval = preset.miniMapUpdateInterval;
     }
 
-    console.log(`🎨 Quality set to: ${presetName}`);
+    console.debug(`🎨 Quality set to: ${presetName}`);
   }
 
   reset() {

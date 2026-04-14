@@ -183,7 +183,7 @@ export class WorldEnvironment {
     this.seasonPhase = 0;
 
     this.applySeasonConfig(this.seasonConfigs[this.currentSeason]);
-    console.log(`🍂 Season changed to: ${this.seasonConfigs[this.currentSeason].label}`);
+    console.debug(`🍂 Season changed to: ${this.seasonConfigs[this.currentSeason].label}`);
   }
 
   applySeasonConfig(config, { announce = true } = {}) {
@@ -405,7 +405,7 @@ export class WorldEnvironment {
         contagiousness: 0.2
       });
 
-      console.log('🦠 Disease outbreak affects creature');
+      console.debug('🦠 Disease outbreak affects creature');
     }
   }
 

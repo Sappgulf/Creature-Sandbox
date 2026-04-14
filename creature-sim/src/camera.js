@@ -59,12 +59,12 @@ export class Camera {
    */
   canAutoMove() {
     if (this.userPermanentOverride) {
-      if (DEBUG_CAMERA) console.log('[CAM] canAutoMove=false (userPermanentOverride)');
+      if (DEBUG_CAMERA) console.debug('[CAM] canAutoMove=false (userPermanentOverride)');
       return false;
     }
     const now = performance.now();
     if (now < this.userOverrideUntil) {
-      if (DEBUG_CAMERA) console.log('[CAM] canAutoMove=false (temporary override)');
+      if (DEBUG_CAMERA) console.debug('[CAM] canAutoMove=false (temporary override)');
       return false;
     }
     return true;
@@ -78,10 +78,10 @@ export class Camera {
     if (permanent) {
       this.userPermanentOverride = true;
       this.lastMoveSource = 'user';
-      if (DEBUG_CAMERA) console.log('[CAM] User permanent override set');
+      if (DEBUG_CAMERA) console.debug('[CAM] User permanent override set');
     } else {
       this.userOverrideUntil = performance.now() + 6000; // 6 second temporary override
-      if (DEBUG_CAMERA) console.log('[CAM] User temporary override set (6s)');
+      if (DEBUG_CAMERA) console.debug('[CAM] User temporary override set (6s)');
     }
   }
 
@@ -91,7 +91,7 @@ export class Camera {
   clearUserOverride() {
     this.userPermanentOverride = false;
     this.userOverrideUntil = 0;
-    if (DEBUG_CAMERA) console.log('[CAM] User override cleared');
+    if (DEBUG_CAMERA) console.debug('[CAM] User override cleared');
   }
 
   /** Apply smooth interpolation toward target pan/zoom each frame. */
@@ -220,29 +220,49 @@ export class Camera {
   }
 
   _clampTargets() {
-    // REMOVED: No world boundaries - camera can move freely
-    // No clamping needed
+    if (!Number.isFinite(this.worldWidth) || !Number.isFinite(this.worldHeight)) return;
+    const margin = 200;
+    const hw = (this.viewportWidth / 2) / this.targetZoom;
+    const hh = (this.viewportHeight / 2) / this.targetZoom;
+    const minX = -margin + hw;
+    const maxX = this.worldWidth + margin - hw;
+    const minY = -margin + hh;
+    const maxY = this.worldHeight + margin - hh;
+    if (maxX > minX) this.targetX = clamp(this.targetX, minX, maxX);
+    if (maxY > minY) this.targetY = clamp(this.targetY, minY, maxY);
   }
 
   _clampPosition() {
-    // REMOVED: No world boundaries - camera can move freely
-    // No clamping needed
+    if (!Number.isFinite(this.worldWidth) || !Number.isFinite(this.worldHeight)) return;
+    const margin = 200;
+    const hw = (this.viewportWidth / 2) / this.zoom;
+    const hh = (this.viewportHeight / 2) / this.zoom;
+    const minX = -margin + hw;
+    const maxX = this.worldWidth + margin - hw;
+    const minY = -margin + hh;
+    const maxY = this.worldHeight + margin - hh;
+    if (maxX > minX) this.x = clamp(this.x, minX, maxX);
+    if (maxY > minY) this.y = clamp(this.y, minY, maxY);
   }
 
-  _limits(zoom) {
-    // REMOVED: No world boundaries - camera can move freely anywhere
-    // Return infinite bounds
+  _limits(zoom = this.zoom) {
+    const margin = 200;
+    const hw = (this.viewportWidth / 2) / zoom;
+    const hh = (this.viewportHeight / 2) / zoom;
     return {
-      minX: -Infinity,
-      maxX: Infinity,
-      minY: -Infinity,
-      maxY: Infinity
+      minX: -margin + hw,
+      maxX: this.worldWidth + margin - hw,
+      minY: -margin + hh,
+      maxY: this.worldHeight + margin - hh
     };
   }
 
   _clampPoint(x, y, zoom = this.targetZoom) {
-    // REMOVED: No boundaries - return point as-is
-    return { x, y };
+    const limits = this._limits(zoom);
+    return {
+      x: clamp(x, limits.minX, limits.maxX),
+      y: clamp(y, limits.minY, limits.maxY)
+    };
   }
 
   _updateTravel(dt) {

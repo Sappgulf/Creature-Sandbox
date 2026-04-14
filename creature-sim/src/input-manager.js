@@ -314,7 +314,7 @@ export class InputManager {
       // Debug overlay toggle
       case 'd':
         gameState.showDebugOverlay = !gameState.showDebugOverlay;
-        console.log(`🔧 Debug overlay: ${gameState.showDebugOverlay ? 'ON' : 'OFF'}`);
+        console.debug(`🔧 Debug overlay: ${gameState.showDebugOverlay ? 'ON' : 'OFF'}`);
         break;
 
       // UI toggles
@@ -902,7 +902,7 @@ export class InputManager {
         const selectedType = gameState.selectedCreatureType || 'herbivore';
         const debugFlags = getDebugFlags();
         if (debugFlags.spawnDebug) {
-          console.log('[Spawn][input]', {
+          console.debug('[Spawn][input]', {
             mode,
             selectedType,
             x: Number(x.toFixed(2)),

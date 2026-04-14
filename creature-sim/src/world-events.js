@@ -109,7 +109,7 @@ export class WorldEvents {
         type: 'world_event',
         event: this.activeEvent
       });
-    } catch (_) {
+    } catch {
       // Non-critical
     }
   }

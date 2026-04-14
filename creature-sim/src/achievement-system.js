@@ -365,7 +365,7 @@ export class AchievementSystem {
     const levelUp = newLevel > previousLevel;
     if (levelUp) {
       this.level = newLevel;
-      console.log(`🎉 Level Up! Now level ${this.level}`);
+      console.debug(`🎉 Level Up! Now level ${this.level}`);
     }
 
     try {
@@ -492,7 +492,7 @@ export class AchievementSystem {
       this.saveProgress();
     }
 
-    console.log(`🏆 Achievement Unlocked: ${achievement.name} (+${achievement.xp} XP)`);
+    console.debug(`🏆 Achievement Unlocked: ${achievement.name} (+${achievement.xp} XP)`);
   }
 
   // Show achievement notification

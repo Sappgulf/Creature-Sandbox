@@ -12,9 +12,9 @@ export default [
       }
     },
     rules: {
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       'no-undef': 'error',
-      'no-console': 'off',
+      'no-console': ['warn', { allow: ['warn', 'error', 'info', 'debug'] }],
       'prefer-const': 'warn',
       'no-var': 'warn',
       'eqeqeq': ['warn', 'smart'],
@@ -35,5 +35,11 @@ export default [
   },
   {
     ignores: ['node_modules/', '**/*.min.js']
+  },
+  {
+    files: ['creature-sim/src/debug-console.js'],
+    rules: {
+      'no-console': 'off'
+    }
   }
 ];

@@ -50,7 +50,7 @@ export class ObjectPool {
    * Default reset function (does nothing)
    * @param {*} obj - Object to reset
    */
-  defaultReset(obj) {
+  defaultReset(_obj) {
     // Default: do nothing, let the user provide custom reset logic
   }
 

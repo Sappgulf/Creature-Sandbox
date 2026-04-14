@@ -49,7 +49,7 @@ export class GodPowersSystem {
         level: 1,
         icon: '💨'
       },
-      
+
       // Advanced Powers (Level 2)
       lightning: {
         name: 'Lightning Strike',
@@ -83,7 +83,7 @@ export class GodPowersSystem {
         level: 2,
         icon: '💑'
       },
-      
+
       // Master Powers (Level 3)
       timeWarp: {
         name: 'Time Warp',
@@ -117,7 +117,7 @@ export class GodPowersSystem {
         level: 3,
         icon: '🌀'
       },
-      
+
       // Ultimate Powers (Level 4)
       apocalypse: {
         name: 'Apocalypse',
@@ -152,33 +152,33 @@ export class GodPowersSystem {
   usePower(powerName, x, y, world, radius = null) {
     const powers = this.getPowers();
     const power = powers[powerName];
-    
+
     if (!power) {
       console.warn(`Unknown power: ${powerName}`);
       return false;
     }
-    
+
     // Check level requirement
     if (power.level > this.powerLevel) {
       console.warn(`Power ${powerName} requires level ${power.level}`);
       return false;
     }
-    
+
     // Check cooldown
     const lastUse = this.powerCooldowns.get(powerName) || 0;
     if (Date.now() - lastUse < power.cooldown) {
       console.warn(`Power ${powerName} on cooldown`);
       return false;
     }
-    
+
     // Apply power effect
     const actualRadius = radius || this.brushSize;
     this.applyPowerEffect(powerName, power, x, y, world, actualRadius);
-    
+
     // Set cooldown
     this.powerCooldowns.set(powerName, Date.now());
-    
-    console.log(`${power.icon} Used power: ${power.name}`);
+
+    console.debug(`${power.icon} Used power: ${power.name}`);
     return true;
   }
 
@@ -240,18 +240,18 @@ export class GodPowersSystem {
    */
   applyBless(x, y, world, radius) {
     const affected = this.getCreaturesInRadius(x, y, world, radius);
-    
+
     for (const creature of affected) {
       creature.health = creature.maxHealth;
       creature.energy = Math.min(50, creature.energy + 20);
-      
+
       // Add blessing buff
       creature.blessed = {
         duration: 10,
         healthRegen: 0.5,
         energyBonus: 1.2
       };
-      
+
       // Visual effect
       if (world.visualEffects) {
         world.visualEffects.createEvolutionEffect(creature.x, creature.y, creature.genes?.hue ?? 120);
@@ -264,14 +264,14 @@ export class GodPowersSystem {
    */
   applyCurse(x, y, world, radius) {
     const affected = this.getCreaturesInRadius(x, y, world, radius);
-    
+
     for (const creature of affected) {
       creature.cursed = {
         duration: 8,
         speedPenalty: 0.7,
         energyDrain: 1.5
       };
-      
+
       creature.energy *= 0.7;
     }
   }
@@ -281,7 +281,7 @@ export class GodPowersSystem {
    */
   applyAttraction(x, y, world, radius, duration) {
     const affected = this.getCreaturesInRadius(x, y, world, radius);
-    
+
     for (const creature of affected) {
       creature.attracted = {
         targetX: x,
@@ -295,13 +295,13 @@ export class GodPowersSystem {
   /**
    * Repulsion - push creatures away
    */
-  applyRepulsion(x, y, world, radius, duration) {
+  applyRepulsion(x, y, world, radius, _duration) {
     const affected = this.getCreaturesInRadius(x, y, world, radius);
-    
+
     for (const creature of affected) {
       const angle = Math.atan2(creature.y - y, creature.x - x);
       const force = 200;
-      
+
       creature.vx += Math.cos(angle) * force;
       creature.vy += Math.sin(angle) * force;
     }
@@ -312,11 +312,11 @@ export class GodPowersSystem {
    */
   applyLightning(x, y, world, radius) {
     const affected = this.getCreaturesInRadius(x, y, world, radius);
-    
+
     for (const creature of affected) {
       creature.alive = false;
       creature.health = 0;
-      
+
       // Create fear in nearby creatures
       const nearbyCreatures = this.getCreaturesInRadius(x, y, world, radius * 2);
       for (const nearby of nearbyCreatures) {
@@ -325,7 +325,7 @@ export class GodPowersSystem {
         }
       }
     }
-    
+
     // Visual effect
     if (world.visualEffects) {
       world.visualEffects.effects.push({
@@ -342,7 +342,7 @@ export class GodPowersSystem {
    */
   applyGrowth(x, y, world, radius) {
     const affected = this.getCreaturesInRadius(x, y, world, radius);
-    
+
     for (const creature of affected) {
       if (creature.ageStage === 'baby' || creature.ageStage === 'juvenile') {
         creature.ageStage = 'adult';
@@ -357,17 +357,17 @@ export class GodPowersSystem {
    */
   applyMeteor(x, y, world, radius) {
     const affected = this.getCreaturesInRadius(x, y, world, radius);
-    
+
     for (const creature of affected) {
       const dist = Math.sqrt((creature.x - x) ** 2 + (creature.y - y) ** 2);
       const damage = (1 - dist / radius) * 30;
-      
+
       creature.health = Math.max(0, creature.health - damage);
       if (creature.health <= 0) {
         creature.alive = false;
       }
     }
-    
+
     // Create crater
     if (world.craters) {
       world.craters.push({ x, y, radius, age: 0 });
@@ -379,7 +379,7 @@ export class GodPowersSystem {
    */
   applyFertility(x, y, world, radius, duration) {
     const affected = this.getCreaturesInRadius(x, y, world, radius);
-    
+
     for (const creature of affected) {
       creature.fertile = {
         duration,
@@ -394,7 +394,7 @@ export class GodPowersSystem {
    */
   applyTimeWarp(x, y, world, radius, duration) {
     const affected = this.getCreaturesInRadius(x, y, world, radius);
-    
+
     for (const creature of affected) {
       creature.timeWarped = {
         duration,
@@ -408,16 +408,16 @@ export class GodPowersSystem {
    */
   applyEvolution(x, y, world, radius) {
     const affected = this.getCreaturesInRadius(x, y, world, radius);
-    
+
     for (const creature of affected) {
       // Boost random trait
       const traits = ['speed', 'sense', 'size'];
       const trait = traits[Math.floor(Math.random() * traits.length)];
-      
+
       if (creature.genes[trait]) {
         creature.genes[trait] *= 1.2;
       }
-      
+
       // Chance for rare mutation
       if (Math.random() < 0.3 && world.advancedGenetics) {
         const mutations = world.advancedGenetics.applyRareMutations(creature.genes, 5);
@@ -431,10 +431,10 @@ export class GodPowersSystem {
    */
   applyResurrection(x, y, world, radius) {
     if (!world.recentlyDead) return;
-    
+
     for (const deadCreature of world.recentlyDead) {
       const dist = Math.sqrt((deadCreature.x - x) ** 2 + (deadCreature.y - y) ** 2);
-      
+
       if (dist < radius) {
         deadCreature.alive = true;
         deadCreature.health = deadCreature.maxHealth * 0.5;
@@ -459,7 +459,7 @@ export class GodPowersSystem {
    */
   applyApocalypse(x, y, world, radius) {
     const affected = this.getCreaturesInRadius(x, y, world, radius);
-    
+
     for (const creature of affected) {
       if (Math.random() < 0.8) { // 80% death rate
         creature.alive = false;
@@ -474,13 +474,13 @@ export class GodPowersSystem {
   applyGenesis(x, y, world) {
     // Create a powerful custom creature
     const genes = world.makeGenes ? world.makeGenes() : {};
-    
+
     // Boost all traits
     genes.speed = 1.5;
     genes.sense = 200;
     genes.size = 10;
     genes.metabolism = 0.8;
-    
+
     if (world.Creature) {
       const creature = new world.Creature(x, y, genes);
       world.addCreature(creature);
@@ -492,7 +492,7 @@ export class GodPowersSystem {
    */
   applyAscension(x, y, world, radius) {
     const affected = this.getCreaturesInRadius(x, y, world, radius);
-    
+
     for (const creature of affected) {
       // Grant legendary status
       creature.ascended = true;
@@ -501,7 +501,7 @@ export class GodPowersSystem {
       creature.size *= 1.3;
       creature.maxHealth *= 2;
       creature.health = creature.maxHealth;
-      
+
       // Add visual aura
       creature.aura = {
         color: '#ffaa00',
@@ -526,11 +526,11 @@ export class GodPowersSystem {
    */
   generateLightningBranches(x, y, branches) {
     const result = [];
-    
+
     for (let i = 0; i < branches; i++) {
       const angle = (i / branches) * Math.PI * 2;
       const length = 50 + Math.random() * 50;
-      
+
       result.push({
         startX: x,
         startY: y,
@@ -538,7 +538,7 @@ export class GodPowersSystem {
         endY: y + Math.sin(angle) * length
       });
     }
-    
+
     return result;
   }
 
@@ -548,10 +548,10 @@ export class GodPowersSystem {
   isPowerAvailable(powerName) {
     const powers = this.getPowers();
     const power = powers[powerName];
-    
+
     if (!power) return false;
     if (power.level > this.powerLevel) return false;
-    
+
     const lastUse = this.powerCooldowns.get(powerName) || 0;
     return Date.now() - lastUse >= power.cooldown;
   }
@@ -562,12 +562,12 @@ export class GodPowersSystem {
   getCooldownRemaining(powerName) {
     const powers = this.getPowers();
     const power = powers[powerName];
-    
+
     if (!power) return 0;
-    
+
     const lastUse = this.powerCooldowns.get(powerName) || 0;
     const remaining = power.cooldown - (Date.now() - lastUse);
-    
+
     return Math.max(0, remaining);
   }
 }

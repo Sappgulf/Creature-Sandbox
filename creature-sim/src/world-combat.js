@@ -2,7 +2,7 @@
  * World Combat System - Handles predation, damage, and combat mechanics
  */
 import { rand, clamp, dist2 } from './utils.js';
-import { CreatureTuning } from './creature-tuning.js';
+
 import { eventSystem, GameEvents } from './event-system.js';
 
 export class WorldCombat {
@@ -200,7 +200,7 @@ export class WorldCombat {
   }
 
   // Trigger panic response in nearby creatures
-  triggerPanicResponse(victim, predator, damage) {
+  triggerPanicResponse(victim, predator, _damage) {
     const nearby = this.world.creatureManager?.queryCreatures(victim.x, victim.y, 100) || [];
 
     for (const creature of nearby) {
@@ -253,7 +253,7 @@ export class WorldCombat {
   }
 
   // Trigger visual damage effects
-  triggerDamageEffects(target, amount, ctx) {
+  triggerDamageEffects(target, amount, _ctx) {
     target.damageFx.recentDamage = amount;
     target.damageFx.lastDamageTime = this.world.t;
 

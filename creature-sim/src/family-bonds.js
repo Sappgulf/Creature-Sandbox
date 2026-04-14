@@ -49,7 +49,7 @@ export class FamilyBondsSystem {
         // Create new family
         relationshipData.familyId = this.createFamily(creature, parent1, parent2);
       }
-      
+
       // Find siblings (same parents)
       this.findSiblings(creature, relationshipData);
     } else {
@@ -66,7 +66,7 @@ export class FamilyBondsSystem {
    */
   createFamily(founder, parent1 = null, parent2 = null) {
     const familyId = `fam_${this.nextFamilyId++}`;
-    
+
     const family = {
       id: familyId,
       founder: founder.id,
@@ -90,16 +90,16 @@ export class FamilyBondsSystem {
     // Look for other creatures with same parents
     for (const [otherId, otherData] of this.relationships.entries()) {
       if (otherId === creature.id) continue;
-      
-      const sharedParents = relationshipData.parents.filter(p => 
+
+      const sharedParents = relationshipData.parents.filter(p =>
         otherData.parents.includes(p)
       );
-      
+
       if (sharedParents.length > 0) {
         // They're siblings!
         relationshipData.siblings.push(otherId);
         otherData.siblings.push(creature.id);
-        
+
         // Create sibling bond
         this.createBond(creature.id, otherId, 'sibling', 0.7);
       }
@@ -122,7 +122,7 @@ export class FamilyBondsSystem {
    */
   createBond(creature1Id, creature2Id, type, initialStrength = 0.5) {
     const bondId = `bond_${this.nextBondId++}`;
-    
+
     const bond = {
       id: bondId,
       creatures: [creature1Id, creature2Id],
@@ -136,14 +136,14 @@ export class FamilyBondsSystem {
     };
 
     this.bonds.set(bondId, bond);
-    
+
     // Update relationship data
     const data1 = this.relationships.get(creature1Id);
     const data2 = this.relationships.get(creature2Id);
-    
+
     if (data1) data1.bondStrength.set(creature2Id, initialStrength);
     if (data2) data2.bondStrength.set(creature1Id, initialStrength);
-    
+
     return bond;
   }
 
@@ -152,7 +152,7 @@ export class FamilyBondsSystem {
    */
   recordInteraction(creature1, creature2, isPositive = true) {
     const bond = this.findBond(creature1.id, creature2.id);
-    
+
     if (!bond) {
       // Create friendship bond if interacting positively
       if (isPositive) {
@@ -163,14 +163,14 @@ export class FamilyBondsSystem {
 
     bond.interactions++;
     bond.lastInteraction = Date.now();
-    
+
     if (isPositive) {
       bond.positiveInteractions++;
       bond.strength = Math.min(1, bond.strength + 0.05);
     } else {
       bond.negativeInteractions++;
       bond.strength = Math.max(0, bond.strength - 0.1);
-      
+
       // Convert to rivalry if bond becomes negative
       if (bond.strength < 0.2 && bond.type === 'friend') {
         bond.type = 'rival';
@@ -181,7 +181,7 @@ export class FamilyBondsSystem {
     // Update bond strength in relationship data
     const data1 = this.relationships.get(creature1.id);
     const data2 = this.relationships.get(creature2.id);
-    
+
     if (data1) data1.bondStrength.set(creature2.id, bond.strength);
     if (data2) data2.bondStrength.set(creature1.id, bond.strength);
   }
@@ -192,14 +192,14 @@ export class FamilyBondsSystem {
   convertToRivalry(creature1Id, creature2Id) {
     const data1 = this.relationships.get(creature1Id);
     const data2 = this.relationships.get(creature2Id);
-    
+
     if (data1) {
       data1.friends = data1.friends.filter(id => id !== creature2Id);
       if (!data1.rivals.includes(creature2Id)) {
         data1.rivals.push(creature2Id);
       }
     }
-    
+
     if (data2) {
       data2.friends = data2.friends.filter(id => id !== creature1Id);
       if (!data2.rivals.includes(creature1Id)) {
@@ -226,10 +226,10 @@ export class FamilyBondsSystem {
   getFamilyMembers(creatureId, world) {
     const data = this.relationships.get(creatureId);
     if (!data || !data.familyId) return [];
-    
+
     const family = this.families.get(data.familyId);
     if (!family) return [];
-    
+
     return world.creatures.filter(c => family.members.includes(c.id));
   }
 
@@ -239,23 +239,23 @@ export class FamilyBondsSystem {
   getClosestFamilyMember(creature, world) {
     const familyMembers = this.getFamilyMembers(creature.id, world);
     if (familyMembers.length === 0) return null;
-    
+
     let closest = null;
     let closestDist = Infinity;
-    
+
     for (const member of familyMembers) {
       if (member.id === creature.id || !member.alive) continue;
-      
+
       const dx = member.x - creature.x;
       const dy = member.y - creature.y;
       const dist = dx * dx + dy * dy;
-      
+
       if (dist < closestDist) {
         closestDist = dist;
         closest = member;
       }
     }
-    
+
     return closest;
   }
 
@@ -265,14 +265,14 @@ export class FamilyBondsSystem {
   applyFamilyBehaviors(creature, world, dt) {
     const data = this.relationships.get(creature.id);
     if (!data) return;
-    
+
     // Stay near family (weak attraction)
     const closestFamily = this.getClosestFamilyMember(creature, world);
     if (closestFamily) {
       const dx = closestFamily.x - creature.x;
       const dy = closestFamily.y - creature.y;
       const distSq = dx * dx + dy * dy;
-      
+
       // Weak attraction to family within 200 units
       if (distSq < 200 * 200 && distSq > 50 * 50) {
         const strength = 0.1 * dt;
@@ -280,7 +280,7 @@ export class FamilyBondsSystem {
         creature.vy += (dy / Math.sqrt(distSq)) * strength;
       }
     }
-    
+
     // Defend family members from threats
     if (creature.genes?.packInstinct && creature.genes.packInstinct > 0.6) {
       this.defendFamily(creature, world);
@@ -292,19 +292,19 @@ export class FamilyBondsSystem {
    */
   defendFamily(creature, world) {
     const familyMembers = this.getFamilyMembers(creature.id, world);
-    
+
     for (const member of familyMembers) {
       if (!member.alive || member.id === creature.id) continue;
-      
+
       // Check if family member is being attacked
       const nearbyPredators = world.creatures.filter(c => {
         if (!c.alive || !c.genes?.predator) return false;
-        
+
         const dx = c.x - member.x;
         const dy = c.y - member.y;
         return dx * dx + dy * dy < 100 * 100;
       });
-      
+
       if (nearbyPredators.length > 0 && !creature.genes?.predator) {
         // Try to distract predator
         creature.isDefending = true;
@@ -319,17 +319,17 @@ export class FamilyBondsSystem {
   drawFamilyConnections(ctx, creature, world) {
     const data = this.relationships.get(creature.id);
     if (!data) return;
-    
+
     const familyMembers = this.getFamilyMembers(creature.id, world);
-    
+
     ctx.save();
     ctx.strokeStyle = 'rgba(255, 220, 100, 0.2)';
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 3]);
-    
+
     for (const member of familyMembers) {
       if (member.id === creature.id || !member.alive) continue;
-      
+
       // Only draw if close enough
       const dx = member.x - creature.x;
       const dy = member.y - creature.y;
@@ -340,7 +340,7 @@ export class FamilyBondsSystem {
         ctx.stroke();
       }
     }
-    
+
     ctx.setLineDash([]);
     ctx.restore();
   }
@@ -351,16 +351,16 @@ export class FamilyBondsSystem {
   getRelationshipDescription(creatureId) {
     const data = this.relationships.get(creatureId);
     if (!data) return 'No relationships';
-    
+
     const parts = [];
-    
+
     if (data.parents.length > 0) parts.push(`${data.parents.length} parents`);
     if (data.siblings.length > 0) parts.push(`${data.siblings.length} siblings`);
     if (data.children.length > 0) parts.push(`${data.children.length} children`);
     if (data.friends.length > 0) parts.push(`${data.friends.length} friends`);
     if (data.rivals.length > 0) parts.push(`${data.rivals.length} rivals`);
     if (data.mate) parts.push('mated');
-    
+
     return parts.join(', ') || 'Solitary';
   }
 
@@ -369,18 +369,18 @@ export class FamilyBondsSystem {
    */
   cleanup(world) {
     const aliveIds = new Set(world.creatures.map(c => c.id));
-    
+
     // Remove relationships for dead creatures
     for (const [id, data] of this.relationships.entries()) {
       if (!aliveIds.has(id)) {
         this.relationships.delete(id);
-        
+
         // Remove from family
         if (data.familyId) {
           const family = this.families.get(data.familyId);
           if (family) {
             family.members = family.members.filter(memberId => memberId !== id);
-            
+
             // Remove empty families
             if (family.members.length === 0) {
               this.families.delete(data.familyId);
@@ -389,7 +389,7 @@ export class FamilyBondsSystem {
         }
       }
     }
-    
+
     // Remove bonds with dead creatures
     for (const [bondId, bond] of this.bonds.entries()) {
       const allAlive = bond.creatures.every(id => aliveIds.has(id));

@@ -1,7 +1,7 @@
 /**
  * Creature Status System - Manages status effects, diseases, and temporary conditions
  */
-import { rand, clamp } from './utils.js';
+import { rand } from './utils.js';
 import { CreatureConfig } from './creature-config.js';
 import { diseaseSystem, DISEASE_TYPES } from './disease-system.js';
 
@@ -202,7 +202,7 @@ export class CreatureStatusSystem {
   /**
    * Apply bleeding effects
    */
-  applyBleedingEffects(dt, bleed) {
+  applyBleedingEffects(_dt, _bleed) {
     // Bleeding damage is applied in main update loop
     // This method handles any additional bleeding logic
   }

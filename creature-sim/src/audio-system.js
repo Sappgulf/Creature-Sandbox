@@ -109,8 +109,8 @@ export class AudioSystem {
       // Volume based on size (larger = louder)
       const volume = Math.min(1.0, 0.3 + size / 15);
 
-      const duration = 0.1;
-      const type = 'sine';
+      const _duration = 0.1;
+      const _type = 'sine';
 
       switch (event) {
         case 'impact':
@@ -136,7 +136,7 @@ export class AudioSystem {
             gain.connect(this.ctx.destination);
             osc.start();
             osc.stop(now + 0.4);
-          } catch (e) {
+          } catch {
           // Ignore audio errors
           }
           break;
@@ -161,8 +161,8 @@ export class AudioSystem {
             attackGain.connect(this.ctx.destination);
             attackOsc.start();
             attackOsc.stop(now + 0.15);
-          } catch (e) {
-          // Ignore audio errors
+          } catch {
+            // Ignore audio errors
           }
           break;
 
@@ -175,8 +175,8 @@ export class AudioSystem {
                 this.playTone(pitch * 1.5, 0.2, 'sine', volume * 0.4, 'creatures');
               }
             }, 100);
-          } catch (e) {
-          // Ignore audio errors
+          } catch {
+            // Ignore audio errors
           }
           break;
 
@@ -300,7 +300,7 @@ export class AudioSystem {
     if (this.musicOscillator) {
       try {
         this.musicOscillator.stop();
-      } catch (e) {}
+      } catch {}
       this.musicOscillator = null;
       this.musicGain = null;
     }
@@ -332,8 +332,7 @@ export class AudioSystem {
    * Update method called each frame - currently handles adaptive music
    * @param {number} dt - Delta time (unused but kept for interface consistency)
    */
-  update(dt) {
-    // Audio system doesn't need per-frame updates
+  update(_dt) {
     // Adaptive music is handled via playAdaptiveMusic() when called explicitly
   }
 
@@ -373,7 +372,7 @@ export class AudioSystem {
     if (!this.soundsEnabled || !this.ctx) return;
 
     const now = this.ctx.currentTime;
-    
+
     // Limit ambient sound frequency
     if (now - this.lastAmbientTime < this.ambientInterval) return;
     this.lastAmbientTime = now;
@@ -429,7 +428,7 @@ export class AudioSystem {
       // Determine biome based on world state (simplified)
       const biomes = ['forest', 'wetland', 'desert', 'mountain'];
       const randomBiome = biomes[Math.floor(Math.random() * biomes.length)];
-      
+
       // Vary intensity based on population and activity
       const population = world?.creatures?.length || 0;
       const intensity = Math.min(1.0, 0.3 + population / 200);

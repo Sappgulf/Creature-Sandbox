@@ -593,7 +593,7 @@ export class World {
     const debugFlags = getDebugFlags();
     const sanitized = this._sanitizeSpawnPoint(x, y);
     if (debugFlags.spawnDebug) {
-      console.log('[Spawn][world] manual:start', {
+      console.debug('[Spawn][world] manual:start', {
         predator,
         x: Number(sanitized.x.toFixed(2)),
         y: Number(sanitized.y.toFixed(2))
@@ -601,7 +601,7 @@ export class World {
     }
     const creature = this.creatureManager.spawnManual(sanitized.x, sanitized.y, predator);
     if (debugFlags.spawnDebug) {
-      console.log('[Spawn][world] manual:end', {
+      console.debug('[Spawn][world] manual:end', {
         id: creature?.id ?? null,
         worldCount: this.creatures.length
       });
@@ -614,7 +614,7 @@ export class World {
     const debugFlags = getDebugFlags();
     const sanitized = this._sanitizeSpawnPoint(x, y);
     if (debugFlags.spawnDebug) {
-      console.log('[Spawn][world] genes:start', {
+      console.debug('[Spawn][world] genes:start', {
         x: Number(sanitized.x.toFixed(2)),
         y: Number(sanitized.y.toFixed(2)),
         hasGenes: Boolean(genes)
@@ -622,7 +622,7 @@ export class World {
     }
     const creature = this.creatureManager.spawnManualWithGenes(sanitized.x, sanitized.y, genes);
     if (debugFlags.spawnDebug) {
-      console.log('[Spawn][world] genes:end', {
+      console.debug('[Spawn][world] genes:end', {
         id: creature?.id ?? null,
         worldCount: this.creatures.length
       });
@@ -639,7 +639,7 @@ export class World {
     const debugFlags = getDebugFlags();
     const sanitized = this._sanitizeSpawnPoint(x, y);
     if (debugFlags.spawnDebug) {
-      console.log('[Spawn][world] type:start', {
+      console.debug('[Spawn][world] type:start', {
         type,
         x: Number(sanitized.x.toFixed(2)),
         y: Number(sanitized.y.toFixed(2))
@@ -650,21 +650,21 @@ export class World {
       case 'predator':
         const predator = this.creatureManager.spawnManual(sanitized.x, sanitized.y, true);
         if (debugFlags.spawnDebug) {
-          console.log('[Spawn][world] type:end', { id: predator?.id ?? null, worldCount: this.creatures.length });
+          console.debug('[Spawn][world] type:end', { id: predator?.id ?? null, worldCount: this.creatures.length });
         }
         this._recordSpawnDebug({ source: 'type', type, x: sanitized.x, y: sanitized.y, creature: predator });
         return predator;
       case 'omnivore':
         const omnivore = this.creatureManager.spawnOmnivore(sanitized.x, sanitized.y);
         if (debugFlags.spawnDebug) {
-          console.log('[Spawn][world] type:end', { id: omnivore?.id ?? null, worldCount: this.creatures.length });
+          console.debug('[Spawn][world] type:end', { id: omnivore?.id ?? null, worldCount: this.creatures.length });
         }
         this._recordSpawnDebug({ source: 'type', type, x: sanitized.x, y: sanitized.y, creature: omnivore });
         return omnivore;
       case 'aquatic':
         const aquatic = this.creatureManager.spawnAquatic(sanitized.x, sanitized.y);
         if (debugFlags.spawnDebug) {
-          console.log('[Spawn][world] type:end', { id: aquatic?.id ?? null, worldCount: this.creatures.length });
+          console.debug('[Spawn][world] type:end', { id: aquatic?.id ?? null, worldCount: this.creatures.length });
         }
         this._recordSpawnDebug({ source: 'type', type, x: sanitized.x, y: sanitized.y, creature: aquatic });
         return aquatic;
@@ -672,7 +672,7 @@ export class World {
       default:
         const herbivore = this.creatureManager.spawnManual(sanitized.x, sanitized.y, false);
         if (debugFlags.spawnDebug) {
-          console.log('[Spawn][world] type:end', { id: herbivore?.id ?? null, worldCount: this.creatures.length });
+          console.debug('[Spawn][world] type:end', { id: herbivore?.id ?? null, worldCount: this.creatures.length });
         }
         this._recordSpawnDebug({ source: 'type', type: 'herbivore', x: sanitized.x, y: sanitized.y, creature: herbivore });
         return herbivore;
@@ -753,7 +753,7 @@ export class World {
     if (this.audio && this.audio.ctx && scavenger) {
       try {
         this.audio.playCreatureSound(scavenger, 'eat');
-      } catch (_) {
+      } catch {
         // Non-critical
       }
     }
@@ -1287,6 +1287,6 @@ export class World {
     // Rebuild family links
     this.creatureManager.rebuildFamilyLinks();
 
-    console.log('📦 World state imported');
+    console.debug('📦 World state imported');
   }
 }

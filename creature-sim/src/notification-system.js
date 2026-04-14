@@ -103,7 +103,7 @@ export class NotificationSystem {
     if (showAchievements !== undefined) this.showAchievements = showAchievements;
   }
 
-  update(dt) {
+  update(_dt) {
     const now = performance.now();
 
     for (let i = this.notifications.length - 1; i >= 0; i--) {
@@ -131,7 +131,7 @@ export class NotificationSystem {
     }
   }
 
-  draw(ctx, viewportWidth, viewportHeight) {
+  draw(ctx, viewportWidth, _viewportHeight) {
     if (this.notifications.length === 0) return;
 
     ctx.save();

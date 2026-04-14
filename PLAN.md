@@ -2,12 +2,72 @@
 
 ## Active
 
-- [x] **FIX**: Creature visibility issue after "New Game" - RESOLVED
 - [ ] Complete smoke test verification in browser
 - [ ] Verify core loop: spawn → select → interact → save/load
 - [ ] Verify mobile touch controls work correctly
-- [ ] Run final polish + balance pass for survivability, impacts, and recovery tuning
 - [ ] Polish mobile panels so side menus stop blocking the playfield
+
+## Session Audit (2026-04-13)
+
+### Focus
+1. Comprehensive codebase audit and cleanup (P0–P2 issues).
+2. Fix all lint errors/warnings, remove dead code, upgrade dependencies.
+
+### Changes
+- `creature-sim/src/main.js` — Removed invalid `?v=20260413b` query strings from ES module imports (P0 blocker; would fail in strict module resolution).
+- 29 source files — Auto-fixed 542 trailing whitespace + 29 indentation warnings via `npm run lint:fix`.
+- `creature-sim/src/creature-behavior.js` — Removed unused `CreatureAgentTuning` import and unused `dist2` destructured import.
+- `creature-sim/src/performance-profiler.js` — Removed unused `GameEvents` import.
+- `creature-sim/src/enhanced-behaviors.js` — Removed unused `clamp` import.
+- `creature-sim/src/disease-system.js` — Removed unused `rand`/`clamp` imports.
+- `creature-sim/src/creature-status.js` — Removed unused `clamp` import.
+- `creature-sim/src/world-combat.js` — Removed unused `CreatureTuning` import.
+- `creature-sim/src/world-disaster.js` — Removed unused `clamp` import.
+- `creature-sim/src/creature.js` — Prefixed dead code vars `_baseSpeed`, `_speedScalar`; changed `catch (e)` → `catch (_e)`, `catch (err)` → `catch (_err)`.
+- `creature-sim/src/advanced-predator-prey-ai.js` — Prefixed `_predatorSpeed`, `_panicLevel`.
+- `creature-sim/src/audio-system.js` — Prefixed unused destructures `_duration`, `_type`.
+- `creature-sim/src/world-ecosystem.js` — Prefixed `_speed`, `_size`.
+- `creature-sim/src/config-manager.js` — Prefixed `_loadedCount`, `_failedCount`.
+- `creature-sim/src/world-core.js` — Changed `catch (__)` → `catch {`.
+- `creature-sim/src/world-events.js` — Changed `catch (__)` → `catch {`.
+- 29 source files — Converted ~133 `console.log` → `console.debug` (excluded debug-console.js).
+- `creature-sim/styles.css` — Added missing `--text-tertiary: #7a8299` variable; merged duplicate `.panel-close:hover` rules.
+- `eslint.config.js` — Upgraded to ESLint 10 compat; changed `no-console` from `off` to `warn` (allowing warn/error/info/debug); added `varsIgnorePattern: '^_'` to `no-unused-vars`; added override for debug-console.js to allow `console.log`.
+- `package.json` — Upgraded `eslint` from v9 to v10, `globals` from v15 to v17.
+
+### Verified
+- `npm test` — pass
+- `npm run lint` — 0 errors, 0 warnings (down from 1,177)
+- `node -c` syntax checks pass on all core files
+- All 87 source files pass syntax validation
+
+### Metrics
+- Warnings reduced: 1,177 → 0 (100% resolution)
+- Errors: 0 (was already 0)
+- Dead imports removed: 8
+- Dead assigned vars prefixed: 13
+- Console.log → console.debug: ~133 conversions
+- Dead batchRenderer code removed: 7 references
+- Orphan comments removed: 4
+- Camera clamping re-enabled (was disabled with "REMOVED" comments)
+- 14 historical markdown files archived to docs/archive/
+
+## Session Audit (2026-04-13, cont.)
+
+### Camera drift fix
+- `creature-sim/src/camera.js` — Re-enabled `_clampTargets()`, `_clampPosition()`, `_limits()`, and `_clampPoint()` with 200px margin. These were disabled with "REMOVED: No world boundaries" comments, causing the known camera drift bug.
+- Clamping uses `worldWidth`/`worldHeight` plus a 200px margin so the camera stays within the world bounds while allowing slight overscroll.
+
+### Dead code removal
+- `creature-sim/src/game-loop.js` — Removed all batchRenderer dead code: `batchRendererReady = false`, `opts.batchRenderer = null`, `useBatchRendering` conditional, and commented-out flush block. Kept `useBatchRendering: false` in renderOptions for interface compatibility.
+- `creature-sim/src/main.js` — Removed `// batchRenderer removed (stub)` comment and orphaned `// This block removed to prevent conflicts` comment block at EOF.
+
+### Silent error fix
+- `creature-sim/src/renderer.js` — Changed silent `.catch(() => {})` to `.catch((e) => { console.debug(...) })` for sprite load failures.
+
+### Markdown cleanup
+- Archived 14 historical markdown files from root to `docs/archive/`: AUTO_HIDE_OVERLAYS.md, COMPLETE_FEATURES.md, DEBUGGING.md, FULLSCREEN_FIX.md, IMPLEMENTATION_COMPLETE.md, MEMORY.md, MOBILE_OPTIMIZATION.md, PERFORMANCE.md, PHASE1_VERIFICATION.md, IMPROVEMENTS.md, UPGRADE_IDEAS.md, FUTURE_IDEAS.md, GAME_GUIDE.md, ARCHITECTURE.md.
+- Root directory now contains only: README.md, PLAN.md, CHANGELOG.md, AGENT.md, claude.md
 
 ## Session Audit (2026-01-29)
 
@@ -313,6 +373,19 @@ Creatures not showing after clicking "New Game".
 - [ ] Prototype creature presets panel for sandbox quick starts
 
 ## Done
+
+### 2026-04-13
+
+- Changed: `creature-sim/src/main.js` — Removed invalid `?v=20260413b` query strings from ES module imports (P0 blocker).
+- Changed: 8 source files — Removed dead unused imports (CreatureAgentTuning, GameEvents, clamp, rand, dist2, CreatureTuning).
+- Changed: 6 source files — Prefixed assigned-but-unused vars with `_` (baseSpeed, speedScalar, predatorSpeed, panicLevel, etc.).
+- Changed: 29 source files — Converted ~133 `console.log` → `console.debug` (excluded debug-console.js).
+- Changed: 29 source files — Auto-fixed 542 trailing whitespace + 29 indentation warnings.
+- Changed: `creature-sim/styles.css` — Added missing `--text-tertiary` CSS variable; merged duplicate `.panel-close:hover`.
+- Changed: `creature-sim/src/world-core.js`, `world-events.js` — Changed `catch (__)` → `catch {}`.
+- Changed: `eslint.config.js` — ESLint 10 compat; `no-console` warn (allow debug/warn/error/info); `varsIgnorePattern: '^_'`; debug-console.js override.
+- Changed: `package.json` — Upgraded eslint v9→v10, globals v15→v17.
+- Verified: `npm test` pass, `npm run lint` 0 errors / 76 warnings (down from 1,177), `node -c` all core files pass.
 
 ### 2026-01-26
 

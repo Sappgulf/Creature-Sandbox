@@ -53,7 +53,7 @@ export class UnlockableAchievements {
         reward: { type: 'feature', value: 'advanced_analytics' },
         points: 50
       },
-      
+
       // Genetic Achievements
       {
         id: 'first_mutation',
@@ -69,7 +69,7 @@ export class UnlockableAchievements {
         name: 'Legendary Lineage',
         description: 'Create a creature with a legendary mutation',
         category: 'genetics',
-        check: (world) => world.creatures.some(c => 
+        check: (world) => world.creatures.some(c =>
           c.rareMutations?.some(m => m.rarity === 'legendary')
         ),
         reward: { type: 'skin', value: 'cosmic' },
@@ -84,7 +84,7 @@ export class UnlockableAchievements {
         reward: { type: 'particles', value: 'mythic' },
         points: 100
       },
-      
+
       // Survival Achievements
       {
         id: 'elder_5',
@@ -104,7 +104,7 @@ export class UnlockableAchievements {
         reward: { type: 'feature', value: 'family_tree' },
         points: 40
       },
-      
+
       // Ecosystem Achievements
       {
         id: 'balanced_ecosystem',
@@ -133,7 +133,7 @@ export class UnlockableAchievements {
         reward: { type: 'particles', value: 'rainbow' },
         points: 35
       },
-      
+
       // Behavior Achievements
       {
         id: 'pack_hunter',
@@ -153,9 +153,9 @@ export class UnlockableAchievements {
           // Check for clusters of herbivores
           const herbs = world.creatures.filter(c => !c.genes?.predator);
           if (herbs.length < 15) return false;
-          
+
           // Simple clustering check
-          return herbs.some(h1 => 
+          return herbs.some(h1 =>
             herbs.filter(h2 => {
               const dx = h1.x - h2.x;
               const dy = h1.y - h2.y;
@@ -166,20 +166,20 @@ export class UnlockableAchievements {
         reward: { type: 'feature', value: 'social_network_view' },
         points: 20
       },
-      
+
       // Biome Achievements
       {
         id: 'adaptation_master',
         name: 'Master of Environment',
         description: 'Have a creature adapted to 5 biomes',
         category: 'biome',
-        check: (world) => world.creatures.some(c => 
+        check: (world) => world.creatures.some(c =>
           c.biomeAdaptations && Object.keys(c.biomeAdaptations).length >= 5
         ),
         reward: { type: 'biome', value: 'nexus' },
         points: 55
       },
-      
+
       // Special Achievements
       {
         id: 'speed_demon',
@@ -204,7 +204,7 @@ export class UnlockableAchievements {
         name: 'Personality Study',
         description: 'Observe 10 different personality quirks',
         category: 'special',
-        check: (world, system) => {
+        check: (world, _system) => {
           const quirks = new Set();
           world.creatures.forEach(c => {
             c.personality?.quirks?.forEach(q => quirks.add(q.name));
@@ -214,7 +214,7 @@ export class UnlockableAchievements {
         reward: { type: 'feature', value: 'personality_inspector' },
         points: 40
       },
-      
+
       // Mastery Achievements
       {
         id: 'first_ascension',
@@ -252,18 +252,18 @@ export class UnlockableAchievements {
   /**
    * Update achievement progress
    */
-  update(world, systems = {}) {
+  update(world, _systems = {}) {
     for (const achievement of this.achievements) {
       if (this.unlockedAchievements.has(achievement.id)) continue;
-      
+
       // Initialize progress for time-based achievements
       if (achievement.isTimeBased && !this.progress[achievement.id]) {
         this.progress[achievement.id] = 0;
       }
-      
+
       // Check achievement condition
       const conditionMet = achievement.check(world, this);
-      
+
       if (achievement.isTimeBased) {
         if (conditionMet) {
           this.progress[achievement.id] += 1/60; // Assume 60 FPS
@@ -284,17 +284,17 @@ export class UnlockableAchievements {
    */
   unlockAchievement(achievement, world) {
     this.unlockedAchievements.add(achievement.id);
-    
-    console.log(`🏆 Achievement Unlocked: ${achievement.name}`);
-    console.log(`   ${achievement.description}`);
-    console.log(`   +${achievement.points} points`);
-    
+
+    console.debug(`🏆 Achievement Unlocked: ${achievement.name}`);
+    console.debug(`   ${achievement.description}`);
+    console.debug(`   +${achievement.points} points`);
+
     // Apply reward
     if (achievement.reward) {
       this.applyReward(achievement.reward);
-      console.log(`   🎁 Unlocked: ${achievement.reward.type} - ${achievement.reward.value}`);
+      console.debug(`   🎁 Unlocked: ${achievement.reward.type} - ${achievement.reward.value}`);
     }
-    
+
     // Trigger achievement notification
     if (world.notificationSystem) {
       world.notificationSystem.show(
@@ -311,7 +311,7 @@ export class UnlockableAchievements {
    */
   applyReward(reward) {
     const { type, value } = reward;
-    
+
     if (this.unlocks[type + 's']) {
       this.unlocks[type + 's'].add(value);
     } else if (this.unlocks[type]) {
@@ -340,7 +340,7 @@ export class UnlockableAchievements {
     const total = this.achievements.length;
     const unlocked = this.unlockedAchievements.size;
     const percentage = (unlocked / total) * 100;
-    
+
     return {
       total,
       unlocked,
@@ -363,7 +363,7 @@ export class UnlockableAchievements {
    */
   getAchievementsByCategory() {
     const categories = {};
-    
+
     for (const achievement of this.achievements) {
       if (!categories[achievement.category]) {
         categories[achievement.category] = [];
@@ -374,7 +374,7 @@ export class UnlockableAchievements {
         progress: this.progress[achievement.id] || 0
       });
     }
-    
+
     return categories;
   }
 
@@ -383,32 +383,32 @@ export class UnlockableAchievements {
    */
   drawPanel(ctx, x, y, width = 300) {
     const progress = this.getAchievementProgress();
-    
+
     ctx.save();
     ctx.fillStyle = 'rgba(30, 30, 45, 0.9)';
     ctx.fillRect(x, y, width, 60);
-    
+
     // Title
     ctx.fillStyle = '#ffdd88';
     ctx.font = 'bold 14px sans-serif';
     ctx.fillText('🏆 Achievements', x + 10, y + 20);
-    
+
     // Progress
     ctx.fillStyle = '#cccccc';
     ctx.font = '12px sans-serif';
     ctx.fillText(`${progress.unlocked}/${progress.total} (${progress.percentage}%)`, x + 10, y + 40);
-    
+
     // Points
     ctx.fillStyle = '#88ff88';
     ctx.fillText(`${progress.points} points`, x + width - 90, y + 40);
-    
+
     // Progress bar
     ctx.fillStyle = 'rgba(100, 100, 120, 0.5)';
     ctx.fillRect(x + 10, y + 48, width - 20, 8);
-    
+
     ctx.fillStyle = '#ffdd88';
     ctx.fillRect(x + 10, y + 48, (width - 20) * (progress.unlocked / progress.total), 8);
-    
+
     ctx.restore();
   }
 }

@@ -1,9 +1,8 @@
 /**
  * Creature Behavior System - AI, decision making, and behavioral logic
  */
-import { rand, clamp, dist2 } from './utils.js';
+import { rand, clamp } from './utils.js';
 import { CreatureConfig } from './creature-config.js';
-import { CreatureAgentTuning } from './creature-agent-constants.js';
 import { TempObjectPool } from './object-pool.js';
 
 export class CreatureBehaviorSystem {
@@ -47,7 +46,7 @@ export class CreatureBehaviorSystem {
   /**
    * Update target selection and tracking
    */
-  updateTargeting(world, dt) {
+  updateTargeting(world, _dt) {
     // Update existing target validity
     if (this.creature.target) {
       if (this.creature.target.isCorpse && this.creature.target.corpse) {
@@ -80,24 +79,24 @@ export class CreatureBehaviorSystem {
     const energy = this.creature.energy;
     const maxEnergy = this.creature.maxEnergy;
     const energyRatio = energy / maxEnergy;
-    
+
     // Critical energy - prioritize any food source
     if (energyRatio < 0.2) {
       // Try food first
       this.selectForagingTarget(world);
-      
+
       // If no food, try scavenging
       if (!this.creature.target) {
         this.selectScavengingTarget(world);
       }
-      
+
       // Last resort: hunt only if creature is a predator/omnivore and desperate
       if (!this.creature.target && diet > 0.3) {
         this.selectHuntingTarget(world);
       }
       return;
     }
-    
+
     // Low energy - cautious decisions
     if (energyRatio < 0.4) {
       if (dietRole === 'predator-lite' || diet > 0.7) {
@@ -120,7 +119,7 @@ export class CreatureBehaviorSystem {
       }
       return;
     }
-    
+
     // Normal energy - follow natural behavior patterns
     if (dietRole === 'predator-lite') {
       this.selectPredatorLiteTarget(world);
@@ -153,8 +152,8 @@ export class CreatureBehaviorSystem {
 
     // Check memory for successful hunting locations
     let searchRadius = 120;
-    let preferredLocation = null;
-    
+    let _preferredLocation = null;
+
     if (world.memoryLearning && this.creature.id) {
       const memory = world.memoryLearning.getMemory(this.creature.id);
       if (memory?.successfulHunts > 3) {
@@ -162,19 +161,19 @@ export class CreatureBehaviorSystem {
         const huntingSpots = memory.foodLocations.filter(loc => loc.quality > 0.7);
         if (huntingSpots.length > 0) {
           huntingSpots.sort((a, b) => b.quality - a.quality);
-          preferredLocation = huntingSpots[0];
+          _preferredLocation = huntingSpots[0];
           searchRadius = 180; // Expand search if going to known spot
         }
       }
-      
+
       // Avoid danger zones
       if (memory?.dangerZones && memory.dangerZones.length > 0) {
         const now = Date.now();
-        const recentDangers = memory.dangerZones.filter(zone => 
+        const recentDangers = memory.dangerZones.filter(zone =>
           now - zone.lastEncounter < 60000 && // Last 60s
           Math.hypot(zone.x - this.creature.x, zone.y - this.creature.y) < 100
         );
-        
+
         // If in danger zone, flee instead of hunting
         if (recentDangers.length > 0) {
           return; // Skip hunting, prioritize safety
@@ -184,13 +183,13 @@ export class CreatureBehaviorSystem {
 
     // Find prey, preferring weak or isolated targets
     const prey = world.combat.findPrey(this.creature, searchRadius);
-    
+
     if (prey) {
       // Assess prey difficulty
       const preyEnergy = prey.energy ?? 50;
       const preySpeed = prey.genes?.speed ?? 1.0;
       const mySpeed = this.creature.genes?.speed ?? 1.0;
-      
+
       // Experienced hunters are more selective
       if (world.memoryLearning && this.creature.id) {
         const memory = world.memoryLearning.getMemory(this.creature.id);
@@ -198,13 +197,13 @@ export class CreatureBehaviorSystem {
           // Prefer weak or slow prey
           const isFastPrey = preySpeed > mySpeed * 1.2;
           const isHealthyPrey = preyEnergy > 70;
-          
+
           if (isFastPrey && isHealthyPrey && rand() < 0.7) {
             return; // Skip difficult prey, look for easier target
           }
         }
       }
-      
+
       this.creature.target = {
         x: prey.x,
         y: prey.y,
@@ -214,7 +213,7 @@ export class CreatureBehaviorSystem {
         preySpeed: preySpeed
       };
       this.creature.personality.currentTargetId = prey.id;
-      
+
       // Remember this hunting location
       if (world.memoryLearning) {
         world.memoryLearning.rememberFood(this.creature, this.creature.x, this.creature.y, 0.5);
@@ -244,10 +243,10 @@ export class CreatureBehaviorSystem {
     const energy = this.creature.energy;
     const maxEnergy = this.creature.maxEnergy;
     const energyRatio = energy / maxEnergy;
-    
+
     // Smart decision-making based on creature state
     let shouldHunt = false;
-    
+
     // High energy and confident → more likely to hunt
     if (energyRatio > 0.7 && this.creature.stats.kills > 2) {
       shouldHunt = rand() < 0.6; // 60% chance to hunt
@@ -264,22 +263,22 @@ export class CreatureBehaviorSystem {
     else {
       shouldHunt = false;
     }
-    
+
     // Check personality - cautious creatures hunt less
     if (this.creature.temperament?.cautiousness > 0.7) {
       shouldHunt = shouldHunt && rand() < 0.5; // 50% reduction
     }
-    
+
     // Aggressive creatures hunt more
     if (this.creature.temperament?.aggression > 0.7) {
       shouldHunt = shouldHunt || rand() < 0.25; // Boost hunting instinct
     }
-    
+
     // Execute decision
     if (shouldHunt) {
       // Try hunting first
       this.selectHuntingTarget(world);
-      
+
       // If no prey found, fall back to food
       if (!this.creature.target) {
         const food = this.seekFood(world);
@@ -304,7 +303,7 @@ export class CreatureBehaviorSystem {
         };
         return;
       }
-      
+
       // If no food found and energy not critical, can consider hunting
       if (energyRatio > 0.35) {
         this.selectHuntingTarget(world);
@@ -363,7 +362,7 @@ export class CreatureBehaviorSystem {
           const dist = Math.hypot(loc.x - this.creature.x, loc.y - this.creature.y);
           return age < 30000 && dist < 150 && loc.quality > 0.4; // Within 30s and 150px
         });
-        
+
         if (recentFoodMemories.length > 0) {
           // Sort by quality and distance
           recentFoodMemories.sort((a, b) => {
@@ -373,7 +372,7 @@ export class CreatureBehaviorSystem {
             const scoreB = b.quality / (distB + 1);
             return scoreB - scoreA;
           });
-          
+
           // Try remembered location
           const remembered = recentFoodMemories[0];
           const nearbyFood = world.ecosystem.nearbyFood(remembered.x, remembered.y, 40);
@@ -439,7 +438,7 @@ export class CreatureBehaviorSystem {
   /**
    * Follow pheromone trails
    */
-  followPheromoneTrail(world, senseRadius) {
+  followPheromoneTrail(world, _senseRadius) {
     let maxVal = 0;
     let bestDir = null;
 
@@ -638,12 +637,12 @@ export class CreatureBehaviorSystem {
    */
   updatePredatorBehavior(world, dt) {
     if (this.creature.traits?.dietRole === 'predator-lite') return;
-    
+
     // Pack hunting coordination
     if (this.creature.genes.packInstinct > 0.5 && this.creature.personality.currentTargetId) {
       this.updatePackHunting(world, dt);
     }
-    
+
     // Update ambush timer
     if (this.creature.personality.ambushTimer > 0) {
       this.creature.personality.ambushTimer -= dt;
@@ -706,7 +705,7 @@ export class CreatureBehaviorSystem {
         const interceptDistance = 60;
         const interceptX = prey.x + Math.cos(escapeAngle) * interceptDistance;
         const interceptY = prey.y + Math.sin(escapeAngle) * interceptDistance;
-        
+
         // Move to intercept position
         if (this.creature.target) {
           this.creature.target.x = interceptX;
