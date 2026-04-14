@@ -282,6 +282,13 @@ export class UIController {
     }
     panel.classList.toggle('hidden', !isVisible);
     panel.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    if (isMobile) {
+      const anyPanelOpen = document.querySelector('.panel:not(.hidden)');
+      document.body.classList.toggle('panel-open', !!anyPanelOpen);
+    } else {
+      document.body.classList.remove('panel-open');
+    }
     return isVisible;
   }
 
@@ -319,6 +326,18 @@ export class UIController {
    * Bind core game controls
    */
   bindCoreControls() {
+    // Panel overlay (mobile — closes panels on tap outside)
+    const panelOverlay = document.querySelector('.panel-overlay');
+    if (panelOverlay) {
+      panelOverlay.addEventListener('click', () => {
+        this.closeMajorPanels();
+        const inspector = domCache.get('inspector');
+        if (inspector) inspector.classList.add('hidden');
+        gameState.inspectorVisible = false;
+        this.updateInspectorVisibility();
+      });
+    }
+
     // Export buttons
     const exportBtn = domCache.get('exportBtn');
     const exportCSVBtn = domCache.get('exportCSVBtn');
@@ -1099,6 +1118,13 @@ export class UIController {
         showBtn.classList.remove('hidden');
         showBtn.setAttribute('aria-hidden', 'false');
       }
+    }
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    if (isMobile) {
+      const anyPanelOrInspectorOpen = document.querySelector('.panel:not(.hidden), #inspector:not(.hidden)');
+      document.body.classList.toggle('panel-open', !!anyPanelOrInspectorOpen);
+    } else {
+      document.body.classList.remove('panel-open');
     }
   }
 

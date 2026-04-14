@@ -4,15 +4,17 @@
   "description": "Creature simulation with genetic evolution, predator-prey dynamics, and real-time analytics",
   "type": "module",
   "scripts": {
-    "dev": "python3 -m http.server 8000 --directory creature-sim",
-    "preview": "python3 -m http.server 8000 --directory creature-sim",
-    "test": "node scripts/save-system.test.mjs",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node scripts/save-system.test.mjs && node scripts/core-modules.test.mjs",
     "lint": "eslint creature-sim/src",
     "lint:fix": "eslint creature-sim/src --fix"
   },
   "devDependencies": {
     "eslint": "^10.2.0",
-    "globals": "^17.5.0"
+    "globals": "^17.5.0",
+    "vite": "^8.0.8"
   },
   "keywords": [
     "simulation",

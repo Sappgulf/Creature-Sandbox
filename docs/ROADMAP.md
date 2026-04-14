@@ -1,11 +1,18 @@
 # Creature Sandbox Roadmap
 
-## Known Quirks (2026-01-29)
+## Known Quirks (2026-04-13)
 
-1. **Camera can drift far off-world**
-   - **Description:** The camera has no world bounds, so heavy panning or travel can move far away from active creatures.
-   - **Impact:** Players may need to manually recenter by focusing on a creature or double-tapping a new target.
-   - **Owner:** TBD
+1. **Camera world bounds are generous**
+   - **Description:** Camera clamping re-enabled with 200px margin. Aggressive panning near edges may still show slight overscroll.
+   - **Impact:** Minor — use focus/re-center to snap back quickly.
+   - **Status:** Fixed (was: camera had no bounds at all).
+
+## Shipped (2026-04-13)
+
+1. **Full codebase cleanup**
+   - **Description:** Zero lint warnings (was 1,177), removed dead code, fixed P0 ES module import bug, re-enabled camera clamping, upgraded eslint/globals, archived historical docs.
+   - **Risk level:** Low
+   - **Verification:** `npm run lint` (0 warnings), `npm test` (pass).
 
 ## Shipped (2026-01-29)
 

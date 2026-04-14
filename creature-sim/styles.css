@@ -1021,7 +1021,7 @@ input[type="range"]:focus-visible {
     left: 50%;
     right: auto;
     transform: translateX(-50%);
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + var(--mobile-action-bar-height, 124px) + var(--space-lg));
   }
 }
 
@@ -2760,13 +2760,29 @@ select:focus-visible,
     transform: translateY(0);
   }
 
+  #inspector.hidden {
+    transform: translateY(100%);
+  }
+
   .panel {
     width: calc(100% - var(--space-lg) * 2) !important;
     left: var(--space-lg) !important;
     right: var(--space-lg) !important;
     top: auto !important;
-    bottom: calc(var(--mobile-action-bar-height) + var(--space-lg));
+    bottom: calc(var(--mobile-action-bar-height) + var(--space-lg) + 16px);
     max-height: calc(var(--vh, 1vh) * 60);
+  }
+
+.panel-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 190;
+  }
+
+  body.panel-open .panel-overlay {
+    display: block;
   }
 
   .campaign-levels-grid {
@@ -4098,7 +4114,7 @@ body.home-active #btn-show-inspector {
 
   .moments-panel {
     right: 12px;
-    bottom: calc(72px + env(safe-area-inset-bottom));
+    bottom: calc(var(--mobile-action-bar-height, 124px) + var(--space-lg) + env(safe-area-inset-bottom));
   }
 }
 

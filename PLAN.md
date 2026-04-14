@@ -2,7 +2,7 @@
 
 ## Active
 
-- [ ] Complete smoke test verification in browser
+- [ ] Complete smoke test verification in browser (now use `npm run dev` instead of python http.server)
 - [ ] Verify core loop: spawn → select → interact → save/load
 - [ ] Verify mobile touch controls work correctly
 - [ ] Polish mobile panels so side menus stop blocking the playfield
@@ -373,6 +373,17 @@ Creatures not showing after clicking "New Game".
 - [ ] Prototype creature presets panel for sandbox quick starts
 
 ## Done
+
+### 2026-04-13 (Vite setup)
+
+- Changed: `vite.config.js` — Created Vite config with root=creature-sim, server port 8000, build outDir=../dist, emptyOutDir=true.
+- Changed: `package.json` — Added vite as devDependency; replaced python http.server scripts with `vite`, `vite build`, `vite preview`; kept existing `test` and `lint` scripts.
+- Changed: `creature-sim/index.html` — Removed `?v=20260413b` cache-busting query strings from `<script>` and `<link>` tags (Vite handles cache busting via hashed filenames).
+- Changed: `vercel.json` — Changed `buildCommand` to `npm run build`, `outputDirectory` to `dist`, updated JS header path from `/src/` to `/assets/`.
+- Verified: `npm run build` — 83 modules transformed, built in 578ms.
+- Verified: `npm run lint` — 0 errors, 0 warnings.
+- Verified: `node scripts/core-modules.test.mjs` — 108/108 passed.
+- Verified: `npm test` — Save system tests passed.
 
 ### 2026-04-13
 

@@ -11,7 +11,7 @@ import { performanceProfiler, updatePerformanceMonitor, profile } from './perfor
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
 import { poolManager } from './object-pool.js';
-import { ecsWorld } from './ecs.js';
+
 import { analyticsDashboard, advancedStatsCalculator } from './enhanced-analytics.js';
 // STATIC UI IMPORTS - avoids dynamic import() latency in hot path
 import { renderStats, renderSelectedInfo, renderAnalyticsCharts, renderInteractionHint } from './ui.js';
@@ -537,9 +537,6 @@ export class GameLoop {
 
     // Update world
     this.world.step(dt);
-
-    // Update ECS world
-    ecsWorld.update(dt);
 
     this.profileEnd();
 
