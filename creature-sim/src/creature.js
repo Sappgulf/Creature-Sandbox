@@ -214,6 +214,9 @@ export class Creature {
       }
     };
 
+    this.spawnTime = 0;
+    this.spawnScale = 0;
+
     // Cache expensive calculations
     this._cachedBaseBurn = null;
     this._senseRadius2Cache = null;
@@ -569,6 +572,8 @@ export class Creature {
     // if (!world || typeof world !== 'object') return;
 
     this.age += dt;
+    this.spawnTime += dt;
+    this.spawnScale = Math.min(1, this.spawnTime / 0.4);
     this._lastWorld = world;
 
     // OPTIMIZATION: Only update age stage every 60 frames (~1s at 60fps)

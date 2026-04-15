@@ -147,6 +147,12 @@ export function drawCreature(creature, ctx, opts = {}) {
   ctx.translate(creature.x, creature.y);
   ctx.globalAlpha *= getElderFadeAlpha(creature.age);
 
+  const spawnScale = creature.spawnScale ?? 1;
+  if (spawnScale < 1) {
+    ctx.scale(spawnScale, spawnScale);
+    ctx.globalAlpha *= (0.4 + spawnScale * 0.6);
+  }
+
   const shouldAnimate = isSelected || isPinned || (opts.zoom && opts.zoom > 0.8);
   if (shouldAnimate) {
     creature._applyAnimationTransform(ctx);

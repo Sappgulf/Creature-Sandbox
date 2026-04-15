@@ -90,6 +90,21 @@ export class ParticleSystem {
       });
     }
 
+    // Ghost silhouette (brief translucent shape that fades)
+    this.particles.push({
+      type: 'ghost',
+      x,
+      y,
+      vx: 0,
+      vy: -8,
+      life: 1.5,
+      maxLife: 1.5,
+      size: 14,
+      hue: diet > 0.7 ? 0 : diet > 0.3 ? 45 : 120,
+      opacity: 0.5,
+      fadeInTime: 0.1
+    });
+
     // Gravestone marker
     this.particles.push({
       type: 'gravestone',
@@ -989,6 +1004,8 @@ export class ParticleSystem {
         ctx.fill();
       } else if (p.type === 'gravestone') {
         // Draw gravestone symbol
+        const fadeIn = p.fadeInTime ? Math.min(1, (p.maxLife - p.life) / p.fadeInTime) : 1;
+        ctx.globalAlpha = p.opacity * fadeIn * Math.min(1, p.life / 1.5);
         ctx.fillStyle = '#666';
         ctx.font = `${p.size}px Arial`;
         ctx.textAlign = 'center';
@@ -1001,6 +1018,21 @@ export class ParticleSystem {
           ctx.fillStyle = '#999';
           ctx.fillText(p.name, p.x, p.y + 12);
         }
+        ctx.globalAlpha = p.opacity;
+      } else if (p.type === 'ghost') {
+        // Ghost silhouette - translucent shape that fades and rises
+        const fadeIn = p.fadeInTime ? Math.min(1, (p.maxLife - p.life) / p.fadeInTime) : 1;
+        const fadeOut = Math.min(1, p.life / (p.maxLife * 0.6));
+        ctx.globalAlpha = p.opacity * fadeIn * fadeOut;
+        ctx.fillStyle = `hsla(${p.hue}, 60%, 70%, ${0.3 * fadeOut})`;
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, p.size, p.size * 0.7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `hsla(${p.hue}, 40%, 85%, ${0.5 * fadeOut})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y - p.size * 0.3, p.size * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = p.opacity;
       } else if (p.type === 'sleep') {
         ctx.fillStyle = '#FFFFFF';
         ctx.font = `${p.size}px Arial`;

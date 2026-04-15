@@ -5,7 +5,28 @@
 - [ ] Complete smoke test verification in browser (now use `npm run dev` instead of python http.server)
 - [ ] Verify core loop: spawn → select → interact → save/load
 - [ ] Verify mobile touch controls work correctly
-- [ ] Polish mobile panels — FIXED (inspector hidden transform, panel bottom offsets, panel overlay with dismiss)
+
+## Session Audit (2026-04-14)
+
+### Focus
+1. Fix failing test (Creature constructor genes speed race condition)
+2. Visual polish: creature spawn scale-in, death ghost particles, gravestone fade
+3. Notification polish: species extinction milestones, first-event toasts, throttled checks
+4. CSS polish: loading spinner, focus-visible, panel section dividers
+
+### Changes
+- `scripts/core-modules.test.mjs` — Fixed flaky test: set `sex: 'female'` to avoid male speed modifier making expressed genes nondeterministic (1.5 → 1.65).
+- `creature-sim/src/creature.js` — Added `spawnTime`/`spawnScale` properties for smooth scale-in animation on birth (0→1 over 0.4s).
+- `creature-sim/src/creature-render.js` — Applied spawn scale to creature drawing: scale transform + opacity fade during spawn animation.
+- `creature-sim/src/particle-system.js` — Added ghost silhouette particle type on death (brief translucent shape that rises and fades). Enhanced gravestone with fade-in animation.
+- `creature-sim/src/notification-system.js` — Added species extinction milestones (herbivore/predator extinct), first-event toasts ("Your ecosystem is growing!"), and `_lastPopulations`/`_firstEventToasts` tracking. Throttled checks.
+- `creature-sim/src/game-loop.js` — Added throttled milestone check every 2 seconds in `updateSubsystems`. Added `_milestoneTimer` field.
+- `creature-sim/styles.css` — Added CSS loading spinner, `creature-spawn` keyframe, `pulse-glow` keyframe, `focus-visible` outline for `.ctrl-btn`, and `.panel-section + .panel-section` dividers.
+
+### Verified
+- `npm test` — 146 passed, 0 failed (was 145 pass, 1 fail)
+- `npm run lint` — 0 errors, 0 warnings
+- `node -c` syntax checks pass on all modified files
 
 ## Session Audit (2026-04-13, Session 2)
 

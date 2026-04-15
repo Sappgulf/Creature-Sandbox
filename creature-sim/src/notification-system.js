@@ -5,19 +5,21 @@ export class NotificationSystem {
   constructor() {
     this.notifications = [];
     this.milestones = {
-      population: [100, 250, 500, 1000, 2500, 5000], // Removed 50, less spam
+      population: [100, 250, 500, 1000, 2500, 5000],
       extinctionWarning: 10,
       herbivoreExtinct: true,
       predatorExtinct: true
     };
     this.triggeredMilestones = new Set();
+    this._lastPopulations = { herbivores: 0, predators: 0 };
+    this._firstEventToasts = new Set();
 
     // === NEW: Notification filtering ===
-    this.showPerformanceAlerts = false;  // Hide FPS warnings by default
+    this.showPerformanceAlerts = false;
     this.showMilestones = true;
     this.showAchievements = true;
-    this.maxVisible = 3;  // Reduced from 5
-    this.defaultDuration = 2500;  // Shorter duration
+    this.maxVisible = 3;
+    this.defaultDuration = 2500;
   }
 
   checkMilestones(world) {
@@ -51,6 +53,34 @@ export class NotificationSystem {
     if (pop > this.milestones.extinctionWarning + 20) {
       this.triggeredMilestones.delete('extinction_warning');
     }
+
+    // Species composition milestones
+    let herbivores = 0;
+    let predators = 0;
+    for (let i = 0; i < world.creatures.length; i++) {
+      if (world.creatures[i].genes?.predator) predators++;
+      else herbivores++;
+    }
+
+    if (herbivores === 0 && pop > 0 && !this.triggeredMilestones.has('herbivore_extinct')) {
+      this.addNotification({ type: 'warning', title: 'Herbivores Extinct!', message: 'Only predators remain. Ecosystem collapsing.', duration: 5000 });
+      this.triggeredMilestones.add('herbivore_extinct');
+    }
+    if (herbivores > 0) this.triggeredMilestones.delete('herbivore_extinct');
+
+    if (predators === 0 && pop > 0 && !this.triggeredMilestones.has('predator_extinct')) {
+      this.addNotification({ type: 'info', title: 'Predators Extinct', message: 'Only herbivores remain. Peaceful times.', duration: 4000 });
+      this.triggeredMilestones.add('predator_extinct');
+    }
+    if (predators > 0) this.triggeredMilestones.delete('predator_extinct');
+
+    // First-event toasts
+    if (pop >= 2 && !this._firstEventToasts.has('first_birth')) {
+      this.addNotification({ type: 'milestone', title: '', message: 'Your ecosystem is growing!', duration: 3000 });
+      this._firstEventToasts.add('first_birth');
+    }
+
+    this._lastPopulations = { herbivores, predators };
   }
 
   addNotification({ type = 'info', title = '', message = '', duration = null }) {
@@ -223,6 +253,8 @@ export class NotificationSystem {
   reset() {
     this.notifications = [];
     this.triggeredMilestones.clear();
+    this._firstEventToasts.clear();
+    this._lastPopulations = { herbivores: 0, predators: 0 };
   }
 }
 

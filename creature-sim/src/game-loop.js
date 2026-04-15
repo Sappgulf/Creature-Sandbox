@@ -863,6 +863,15 @@ export class GameLoop {
       this.sessionGoals.update(this.world, dt);
     }
 
+    // Throttled milestone checks (every 2s)
+    if (this.hasNotifications()) {
+      this._milestoneTimer = (this._milestoneTimer || 0) + dt;
+      if (this._milestoneTimer >= 2) {
+        this.notifications.checkMilestones(this.world);
+        this._milestoneTimer = 0;
+      }
+    }
+
     // Update eco-health
     if (this.ecoHealth) {
       this.lastEcoHealthUpdate += dt;

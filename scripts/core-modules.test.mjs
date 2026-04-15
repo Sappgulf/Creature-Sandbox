@@ -1148,7 +1148,7 @@ test('Creature: constructor sets ageStage based on isChild', () => {
 });
 
 test('Creature: constructor stores genes', () => {
-  const genes = makeGenes({ speed: 1.5 });
+  const genes = makeGenes({ speed: 1.5, sex: 'female' });
   const creature = new Creature(100, 100, genes);
   assert.ok(creature.genes !== null, 'should have genes');
   assert.equal(creature.genes.speed, 1.5, 'expressed genes should have speed');

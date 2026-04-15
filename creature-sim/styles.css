@@ -4606,3 +4606,50 @@ body:not(.legacy-ui) #hud {
     padding: 0 8px;
   }
 }
+
+/* === LOADING SPINNER === */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* === SMOOTH SPAWN ANIMATION === */
+@keyframes creature-spawn {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(0, 212, 255, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(0, 212, 255, 0.4);
+  }
+}
+
+.ctrl-btn:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.panel-section + .panel-section {
+  border-top: 1px solid var(--glass-border);
+  padding-top: var(--space-md);
+  margin-top: var(--space-md);
+}
