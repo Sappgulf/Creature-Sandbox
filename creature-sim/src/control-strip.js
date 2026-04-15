@@ -432,6 +432,9 @@ export class ControlStripController {
       case 'analytics':
         this.uiController?.onAnalyticsToggle();
         break;
+      case 'fullscreen':
+        this.toggleFullscreen();
+        break;
       case 'mobile-focus':
         this.mobilePrefs.focusMode = !this.mobilePrefs.focusMode;
         this.saveMobilePref('creature-mobile-focus', this.mobilePrefs.focusMode);
@@ -451,6 +454,29 @@ export class ControlStripController {
         this.syncMobileMenuLabels();
         this.buzz(14);
         break;
+    }
+  }
+
+  async toggleFullscreen() {
+    const root = document.documentElement;
+    const isFullscreen = !!document.fullscreenElement;
+
+    try {
+      if (isFullscreen) {
+        await document.exitFullscreen?.();
+      } else {
+        if (typeof root.requestFullscreen === 'function') {
+          try {
+            await root.requestFullscreen({ navigationUI: 'hide' });
+          } catch {
+            await root.requestFullscreen();
+          }
+        }
+      }
+      this.buzz(isFullscreen ? 10 : [10, 18, 10]);
+    } catch (error) {
+      console.warn('Fullscreen toggle failed:', error);
+      this.buzz(8);
     }
   }
 

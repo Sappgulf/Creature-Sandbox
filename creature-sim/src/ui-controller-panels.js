@@ -1,6 +1,6 @@
 import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
-import { analyticsDashboard } from './enhanced-analytics.js';
+import { loadEnhancedAnalyticsModule } from './enhanced-analytics-loader.js';
 
 export function applyUiPanelMethods(UIController) {
   UIController.prototype.setPanelVisibility = function(panel, visible) {
@@ -245,7 +245,8 @@ export function applyUiPanelMethods(UIController) {
     this.dismissInteractionHint();
   };
 
-  UIController.prototype.onAnalyticsToggle = function() {
+  UIController.prototype.onAnalyticsToggle = async function() {
+    const { analyticsDashboard } = await loadEnhancedAnalyticsModule();
     analyticsDashboard.toggle();
   };
 

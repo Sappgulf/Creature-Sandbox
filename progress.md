@@ -33,3 +33,30 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Fresh mobile load check via Playwright MCP: gameplay starts with hidden session meta/inspector, reduced stat row (`🐾 58 🦁 6 🌿 230 🔍 Inspect`), and compact selected-creature card empty state.
 
 - Residual note: production bundle remains large (~680 kB pre-gzip JS). This session improved readability and mobile frame budget without attempting a risky chunking/refactor pass.
+
+- Second pass goal: execute the deferred bundle/startup reduction, mobile interaction polish, hot-path UI/render cleanup, and final gameplay verification.
+- Implemented startup chunking:
+- lazy-loaded `scenario-editor.js`, `campaign-system.js`, and `enhanced-analytics.js` behind cached async loaders instead of paying their startup cost on first paint.
+- removed the ineffective `behavior.js` dynamic import path from `ui-controller.js` because the module is already required by `creature.js`; this removed the build warning and extra async UI churn.
+- Implemented hot-path cleanup:
+- `GameLoop` now updates advanced analytics only after the analytics module has actually been loaded.
+- overlay rendering now reuses the renderer context instead of reacquiring the canvas context.
+- stats/selection/interaction-hint DOM writes stay signature-gated to avoid needless rerenders every stats tick.
+- Implemented mobile/system polish:
+- overflow menu now exposes a working fullscreen action.
+- fullscreen toggling falls back cleanly when `requestFullscreen({ navigationUI: 'hide' })` is rejected.
+- verified mobile body classes still flip on resize (`mobile-device mobile-compact-ui` at `390x844`, cleared again at `1280x720`).
+- Determinism hardening:
+- `makeGenes()` now suppresses random disorder injection for scripted trait overrides unless a caller explicitly opts into `randomDisorders`, which removes the remaining flaky constructor-path tests while preserving natural random disorders for default spawns.
+
+- Verification after second pass:
+- `npx eslint creature-sim/src/genetics.js creature-sim/src/enhanced-analytics-loader.js creature-sim/src/ui-controller-panels.js creature-sim/src/game-loop.js creature-sim/src/control-strip.js creature-sim/src/main.js creature-sim/src/ui-controller.js` ✅
+- `npm test` ✅
+- `npm run build` ✅
+- bundle result: main JS chunk dropped from roughly `680 kB` pre-gzip to `617.64 kB` pre-gzip, with separate campaign / scenario-editor / enhanced-analytics chunks.
+- `node "$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js" --url "http://127.0.0.1:4173/" --click-selector "#btn-new-game" --actions-json '{"steps":[{"buttons":[],"frames":12},{"buttons":["left_mouse_button"],"frames":2,"mouse_x":420,"mouse_y":320},{"buttons":[],"frames":12}]}' --iterations 2 --pause-ms 250 --screenshot-dir output/web-game/second-pass` ✅
+- Browser verification via Playwright MCP:
+- overflow menu exposes `⛶ Fullscreen` and successfully entered/exited fullscreen.
+- resize from desktop to `390x844` applied `mobile-device mobile-compact-ui`; resize back to `1280x720` cleared mobile classes again.
+
+- Residual note: the main bundle is materially smaller, but still large enough that more aggressive chunking would be the next perf pass if we keep pushing startup further.

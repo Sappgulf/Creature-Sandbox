@@ -11,8 +11,7 @@ import { performanceProfiler, updatePerformanceMonitor, profile } from './perfor
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
 import { poolManager } from './object-pool.js';
-
-import { analyticsDashboard, advancedStatsCalculator } from './enhanced-analytics.js';
+import { getEnhancedAnalyticsModule } from './enhanced-analytics-loader.js';
 // STATIC UI IMPORTS - avoids dynamic import() latency in hot path
 import { renderStats, renderSelectedInfo, renderAnalyticsCharts, renderInteractionHint } from './ui.js';
 
@@ -88,6 +87,9 @@ export class GameLoop {
     // Track pause state for UI sync
     this._lastPausedState = false;
     this._uiCache = new Map();
+    this._statsUiSignature = '';
+    this._selectedInfoSignature = '';
+    this._interactionHintSignature = '';
 
     // Reusable event objects to reduce allocations
     this.worldUpdateEvent = {
@@ -563,7 +565,8 @@ export class GameLoop {
       this.analytics.update(this.world, dt * 5);
 
       // Update enhanced analytics
-      advancedStatsCalculator.update(this.world.creatures, this.world.food, this.world);
+      const enhancedAnalytics = getEnhancedAnalyticsModule();
+      enhancedAnalytics?.advancedStatsCalculator?.update?.(this.world.creatures, this.world.food, this.world);
       this.profileEnd();
     }
 
@@ -758,7 +761,7 @@ export class GameLoop {
    * Render heatmaps
    */
   renderHeatmaps() {
-    const ctx = domCache.get('canvas').getContext('2d');
+    const ctx = this.renderer.ctx;
     ctx.save();
     ctx.translate(this.renderer.ctx.canvas.width / 2, this.renderer.ctx.canvas.height / 2);
     ctx.scale(this.camera.zoom, this.camera.zoom);
@@ -771,7 +774,7 @@ export class GameLoop {
    * Render UI overlays
    */
   renderOverlays(_dt) {
-    const ctx = domCache.get('canvas').getContext('2d');
+    const ctx = this.renderer.ctx;
     const hudBottomEl = domCache.get('hudBottom');
 
     // Calculate bottom offset for mini-graphs
@@ -807,10 +810,13 @@ export class GameLoop {
     }
 
     // Update enhanced analytics dashboard (throttled)
-    if (analyticsDashboard.isVisible) {
+    const enhancedAnalytics = getEnhancedAnalyticsModule();
+    const analyticsDashboard = enhancedAnalytics?.analyticsDashboard;
+    const advancedStatsCalculator = enhancedAnalytics?.advancedStatsCalculator;
+    if (analyticsDashboard?.isVisible) {
       const now = performance.now();
       if (now - this.lastDashboardUpdate > 250) {
-        analyticsDashboard.update(advancedStatsCalculator.stats, this.world, performanceProfiler.getStats());
+        analyticsDashboard.update(advancedStatsCalculator?.stats || null, this.world, performanceProfiler.getStats());
         this.lastDashboardUpdate = now;
       }
     }
@@ -954,8 +960,39 @@ export class GameLoop {
     const statsEl = domCache.get('stats');
     const selectedInfoEl = domCache.get('selectedInfo');
     const interactionHintEl = domCache.get('interactionHint');
-
-    if (statsEl) {
+    const focusId = gameState.pinnedId ?? gameState.selectedId ?? null;
+    const focusCreature = focusId ? this.world.getAnyCreatureById(focusId) : null;
+    const statsSignature = [
+      this.world.creatures.length,
+      this.world.food.length,
+      Math.round(gameState.fps || 0),
+      gameState.fastForward,
+      gameState.paused ? 1 : 0,
+      this.uiController?.tools?.mode || '',
+      Math.round(this.uiController?.tools?.brushSize || 0),
+      this.renderer.enableVision ? 1 : 0,
+      this.renderer.enableClustering ? 1 : 0,
+      gameState.godModeActive ? 1 : 0,
+      gameState.godModeTool || '',
+      Math.round(this.world.timeOfDay || 0)
+    ].join('|');
+    const selectedSignature = focusCreature
+      ? [
+        focusCreature.id,
+        focusCreature.alive ? 1 : 0,
+        focusCreature.lifeStage || '',
+        focusCreature.age?.toFixed?.(1) ?? 0,
+        focusCreature.energy?.toFixed?.(1) ?? 0,
+        focusCreature.health?.toFixed?.(0) ?? 0,
+        focusCreature.maxHealth?.toFixed?.(0) ?? 0,
+        focusCreature.x?.toFixed?.(1) ?? 0,
+        focusCreature.y?.toFixed?.(1) ?? 0,
+        focusCreature.currentBiomeType || this.world.getBiomeAt?.(focusCreature.x, focusCreature.y)?.type || '',
+        gameState.showQuirks ? 1 : 0,
+        (focusCreature.quirks || []).join(',')
+      ].join('|')
+      : `none|${gameState.showQuirks ? 1 : 0}`;
+    if (statsEl && statsSignature !== this._statsUiSignature) {
       renderStats(statsEl, this.world, gameState.fps, {
         fastForward: gameState.fastForward,
         paused: gameState.paused,
@@ -967,24 +1004,36 @@ export class GameLoop {
         godModeActive: gameState.godModeActive,
         godModeTool: gameState.godModeTool
       });
+      this._statsUiSignature = statsSignature;
     }
 
-    if (selectedInfoEl) {
-      const focusId = gameState.pinnedId ?? gameState.selectedId ?? null;
-      const focusCreature = focusId ? this.world.getAnyCreatureById(focusId) : null;
+    if (selectedInfoEl && selectedSignature !== this._selectedInfoSignature) {
       renderSelectedInfo(selectedInfoEl, focusCreature, { world: this.world, lineageTracker: this.world.lineageTracker });
+      this._selectedInfoSignature = selectedSignature;
     }
 
     if (interactionHintEl) {
       this.updateCuriosityPrompt();
-      renderInteractionHint(interactionHintEl, {
-        tool: this.uiController?.tools?.mode,
-        propType: gameState.selectedPropType,
-        hasSelection: !!(gameState.pinnedId ?? gameState.selectedId),
-        customMessage: gameState.curiosityPrompt?.message || null,
-        customId: gameState.curiosityPrompt?.id || null,
-        hintDurationMs: gameState.curiosityPrompt?.durationMs || 4500
-      });
+      const refreshedHintSignature = [
+        this.uiController?.tools?.mode || '',
+        gameState.selectedPropType || '',
+        focusId ? 1 : 0,
+        gameState.curiosityPrompt?.id || '',
+        gameState.curiosityPrompt?.message || '',
+        gameState.curiosityPrompt?.durationMs || 4500,
+        Math.floor(performance.now() / 500)
+      ].join('|');
+      if (refreshedHintSignature !== this._interactionHintSignature) {
+        renderInteractionHint(interactionHintEl, {
+          tool: this.uiController?.tools?.mode,
+          propType: gameState.selectedPropType,
+          hasSelection: !!focusId,
+          customMessage: gameState.curiosityPrompt?.message || null,
+          customId: gameState.curiosityPrompt?.id || null,
+          hintDurationMs: gameState.curiosityPrompt?.durationMs || 4500
+        });
+        this._interactionHintSignature = refreshedHintSignature;
+      }
     }
 
     if (this.uiController?.updateWatchModeUI) {

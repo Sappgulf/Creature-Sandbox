@@ -41,9 +41,7 @@ import { errorHandler } from './error-handler.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
 import { performanceProfiler, initializePerformanceMonitor } from './performance-profiler.js';
-import { scenarioEditor } from './scenario-editor.js';
 import { diseaseSystem } from './disease-system.js';
-import { campaignSystem } from './campaign-system.js';
 import { assetLoader } from './asset-loader.js';
 
 // Import newly added systems
@@ -103,6 +101,11 @@ const DESKTOP_STARTUP_SEED = { herbivores: 72, predators: 10, food: 320 };
 const MOBILE_STARTUP_SEED = { herbivores: 60, predators: 8, food: 260 };
 const COMPACT_MOBILE_STARTUP_SEED = { herbivores: 52, predators: 6, food: 220 };
 
+let scenarioEditorInstance = null;
+let scenarioEditorPromise = null;
+let campaignSystemInstance = null;
+let campaignSystemPromise = null;
+
 function getRuntimeProfile() {
   if (typeof window === 'undefined') {
     return {
@@ -131,6 +134,38 @@ function getRuntimeProfile() {
     defaultZoom: mobileViewport ? 0.28 : 0.25,
     startupSeed: compactViewport || lowMemory ? COMPACT_MOBILE_STARTUP_SEED : (mobileViewport ? MOBILE_STARTUP_SEED : DESKTOP_STARTUP_SEED)
   };
+}
+
+async function ensureScenarioEditor() {
+  if (scenarioEditorInstance) return scenarioEditorInstance;
+  if (!scenarioEditorPromise) {
+    scenarioEditorPromise = import('./scenario-editor.js')
+      .then(({ scenarioEditor }) => {
+        scenarioEditorInstance = scenarioEditor;
+        return scenarioEditor;
+      })
+      .catch((error) => {
+        scenarioEditorPromise = null;
+        throw error;
+      });
+  }
+  return scenarioEditorPromise;
+}
+
+async function ensureCampaignSystem() {
+  if (campaignSystemInstance) return campaignSystemInstance;
+  if (!campaignSystemPromise) {
+    campaignSystemPromise = import('./campaign-system.js')
+      .then(({ campaignSystem }) => {
+        campaignSystemInstance = campaignSystem;
+        return campaignSystem;
+      })
+      .catch((error) => {
+        campaignSystemPromise = null;
+        throw error;
+      });
+  }
+  return campaignSystemPromise;
 }
 
 // Preload sprite assets
@@ -733,7 +768,10 @@ function initializeApp() {
   errorHandler.safeExecute(() => {
     const scenarioToggle = domCache.get('scenario-editor-toggle');
     if (scenarioToggle) {
-      scenarioToggle.addEventListener('click', () => scenarioEditor.toggle());
+      scenarioToggle.addEventListener('click', async () => {
+        const scenarioEditor = await ensureScenarioEditor();
+        scenarioEditor.toggle();
+      });
     }
   }, 'Scenario editor UI connection');
 
@@ -751,9 +789,10 @@ function initializeApp() {
     const campaignExitBtn = document.getElementById('btn-campaign-exit');
 
     // Render campaign levels
-    function renderCampaignLevels() {
+    async function renderCampaignLevels() {
       if (!campaignLevelsContainer) return;
 
+      const campaignSystem = await ensureCampaignSystem();
       const levels = campaignSystem.getAllLevels();
       campaignLevelsContainer.innerHTML = levels.map(level => {
         const progress = level.progress;
@@ -785,18 +824,19 @@ function initializeApp() {
       campaignLevelsContainer.querySelectorAll('.campaign-level-card:not(.locked)').forEach(card => {
         card.addEventListener('click', () => {
           const levelId = parseInt(card.dataset.levelId);
-          startCampaignLevel(levelId);
+          void startCampaignLevel(levelId);
         });
       });
     }
 
     // Start a campaign level
-    function startCampaignLevel(levelId) {
+    async function startCampaignLevel(levelId) {
       // Pause game and reset world for campaign
       gameState.setPaused(true);
       eventSystem.emit('game:paused', { reason: 'campaign-start' });
 
       // Get level config
+      const campaignSystem = await ensureCampaignSystem();
       const level = campaignSystem.getLevel(levelId);
       if (!level) return;
 
@@ -836,6 +876,8 @@ function initializeApp() {
 
     // Update campaign progress UI
     function updateCampaignProgressUI() {
+      const campaignSystem = campaignSystemInstance;
+      if (!campaignSystem) return;
       const status = campaignSystem.getStatus();
       if (!status || !campaignProgress) return;
 
@@ -879,8 +921,8 @@ function initializeApp() {
 
     // Open campaign panel
     if (campaignBtn) {
-      campaignBtn.addEventListener('click', () => {
-        renderCampaignLevels();
+      campaignBtn.addEventListener('click', async () => {
+        await renderCampaignLevels();
         setElementHidden(campaignPanel, false);
         if (audio) audio.playUISound('click');
       });
@@ -895,7 +937,8 @@ function initializeApp() {
 
     // Exit campaign
     if (campaignExitBtn) {
-      campaignExitBtn.addEventListener('click', () => {
+      campaignExitBtn.addEventListener('click', async () => {
+        const campaignSystem = await ensureCampaignSystem();
         campaignSystem.exitCampaign();
         setElementHidden(campaignProgress, true);
         if (audio) audio.playUISound('click');
@@ -904,6 +947,8 @@ function initializeApp() {
 
     // Update campaign during game loop
     eventSystem.on(GameEvents.FRAME_UPDATE, (data) => {
+      const campaignSystem = campaignSystemInstance;
+      if (!campaignSystem) return;
       if (campaignSystem.isActive) {
         const dt = Number(data?.dt) || 1 / 60;
         campaignSystem.update(dt, world);
@@ -1498,7 +1543,7 @@ function initializeApp() {
       window.notifications = notifications;
       window.performanceProfiler = performanceProfiler;
       window.configManager = configManager;
-      window.campaignSystem = campaignSystem;
+      window.campaignSystem = campaignSystemInstance;
       window.diseaseSystem = diseaseSystem;
       window.gameplayModes = gameplayModes;
       window.sessionGoals = sessionGoals;

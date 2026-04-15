@@ -8,6 +8,7 @@ import { eventSystem, GameEvents } from './event-system.js';
 import { HudMenu } from './hud-menu.js';
 import { SANDBOX_PROP_TYPES } from './sandbox-props.js';
 import { clamp } from './utils.js';
+import { BehaviorConfig, setBehaviorWeights } from './behavior.js';
 
 import { applyUiExportMethods } from './ui-controller-exports.js';
 import { applyUiGameModeMethods } from './ui-controller-game-mode.js';
@@ -515,12 +516,9 @@ export class UIController {
     const wanderSlider = domCache.get('wanderSlider');
     const restSlider = domCache.get('restSlider');
 
-    // Import BehaviorConfig dynamically to avoid circular dependency
-    import('./behavior.js').then(({ BehaviorConfig }) => {
-      if (forageSlider) forageSlider.value = BehaviorConfig.forageWeight;
-      if (wanderSlider) wanderSlider.value = BehaviorConfig.wanderWeight;
-      if (restSlider) restSlider.value = BehaviorConfig.restWeight;
-    });
+    if (forageSlider) forageSlider.value = BehaviorConfig.forageWeight;
+    if (wanderSlider) wanderSlider.value = BehaviorConfig.wanderWeight;
+    if (restSlider) restSlider.value = BehaviorConfig.restWeight;
   }
 
   /**
@@ -665,17 +663,14 @@ export class UIController {
   }
 
   onBehaviorChange() {
-    // Import and update behavior weights dynamically
-    import('./behavior.js').then(({ setBehaviorWeights }) => {
-      const forageSlider = domCache.get('forageSlider');
-      const wanderSlider = domCache.get('wanderSlider');
-      const restSlider = domCache.get('restSlider');
+    const forageSlider = domCache.get('forageSlider');
+    const wanderSlider = domCache.get('wanderSlider');
+    const restSlider = domCache.get('restSlider');
 
-      setBehaviorWeights({
-        forage: Number(forageSlider?.value ?? 1),
-        wander: Number(wanderSlider?.value ?? 1),
-        rest: Number(restSlider?.value ?? 0.6)
-      });
+    setBehaviorWeights({
+      forage: Number(forageSlider?.value ?? 1),
+      wander: Number(wanderSlider?.value ?? 1),
+      rest: Number(restSlider?.value ?? 0.6)
     });
   }
 

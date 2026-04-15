@@ -77,6 +77,15 @@ export const MUTATION_TYPES = {
 export function makeGenes(seed={}) {
   const predator = seed.predator ?? 0;
   const diet = seed.diet ?? (predator ? 1.0 : 0.0);
+  const seedKeys = Object.keys(seed);
+  const hasDeterministicTraitOverrides = seedKeys.some((key) => ![
+    'predator',
+    'diet',
+    'sex',
+    'mutations',
+    'disorders',
+    'randomDisorders'
+  ].includes(key));
 
   // Determine sex (50/50 split unless specified)
   const sex = seed.sex ?? (Math.random() < 0.5 ? 'male' : 'female');
@@ -130,12 +139,14 @@ export function makeGenes(seed={}) {
   // Calculate expressed traits
   calculateExpressedGenes(genes);
 
-  // Respect explicit disorder seeds. An empty array intentionally disables
-  // random disorder assignment for deterministic tests and scripted spawns.
+  // Respect explicit disorder seeds. Scripted trait overrides should remain
+  // deterministic unless a caller explicitly opts back into random disorders.
   if (Array.isArray(seed.disorders)) {
     genes.disorders = [...seed.disorders];
-  } else {
+  } else if (seed.randomDisorders === true || !hasDeterministicTraitOverrides) {
     checkForDisorders(genes);
+  } else {
+    genes.disorders = [];
   }
 
   return genes;
