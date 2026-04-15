@@ -527,22 +527,21 @@ export class Renderer {
     // REDESIGNED: Subtle atmospheric biome rendering (player-focused!)
     const ctx = this.ctx;
     const bounds = this._viewBounds;
-    const _sampleSize = Math.max(30, 120 / this.camera.zoom);
 
     // Biome colors for terrain ground
     const biomeColors = {
-      forest: '#31553a',
-      desert: '#705136',
-      tundra: '#5b6877',
-      swamp: '#2a4b3f',
-      ocean: '#1d4562',
-      mountain: '#544c44',
-      jungle: '#2d5a43',
-      savanna: '#55623b',
-      meadow: '#5a7b42',
-      grassland: '#49683b',
-      water: '#1d4562',
-      wetland: '#2f6358'
+      forest: [72, 96, 84],
+      desert: [150, 118, 84],
+      tundra: [122, 137, 156],
+      swamp: [74, 102, 97],
+      ocean: [62, 98, 132],
+      mountain: [111, 102, 96],
+      jungle: [74, 112, 98],
+      savanna: [148, 133, 89],
+      meadow: [129, 143, 104],
+      grassland: [114, 124, 92],
+      water: [76, 112, 146],
+      wetland: [86, 122, 111]
     };
 
     // Fill base background
@@ -552,19 +551,59 @@ export class Renderer {
     const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
     ctx.fillRect(bounds.x1 - extendAmount, bounds.y1 - extendAmount, visibleWidth + extendAmount * 2, visibleHeight + extendAmount * 2);
 
-    // Draw biome-colored ground overlay (sample grid)
+    const atmosphereGradient = ctx.createLinearGradient(
+      bounds.x1,
+      bounds.y1,
+      bounds.x2,
+      bounds.y2
+    );
+    atmosphereGradient.addColorStop(0, 'rgba(248, 218, 178, 0.18)');
+    atmosphereGradient.addColorStop(0.45, 'rgba(142, 163, 191, 0.08)');
+    atmosphereGradient.addColorStop(1, 'rgba(52, 64, 88, 0.14)');
+    ctx.fillStyle = atmosphereGradient;
+    ctx.fillRect(
+      bounds.x1 - extendAmount,
+      bounds.y1 - extendAmount,
+      visibleWidth + extendAmount * 2,
+      visibleHeight + extendAmount * 2
+    );
+
+    // Blend biome-colored ground with soft radial patches to avoid the hard
+    // checkerboard look of one-fill-per-cell terrain blocks.
     if (world.getBiomeAt && this.camera.zoom > 0.18) {
-      const gridSize = Math.max(72, 220 / this.camera.zoom);
-      const overlayAlpha = clamp(0.28 + this.camera.zoom * 0.34, 0.32, 0.58);
-      for (let gx = Math.floor(bounds.x1 / gridSize) * gridSize; gx < bounds.x2; gx += gridSize) {
-        for (let gy = Math.floor(bounds.y1 / gridSize) * gridSize; gy < bounds.y2; gy += gridSize) {
-          const biome = world.getBiomeAt(gx + gridSize / 2, gy + gridSize / 2);
-          if (biome?.type && biomeColors[biome.type]) {
-            ctx.fillStyle = biomeColors[biome.type];
-            ctx.globalAlpha = overlayAlpha;
-            ctx.fillRect(gx, gy, gridSize, gridSize);
-            ctx.globalAlpha = 1;
+      const sampleSpacing = Math.max(110, 250 / this.camera.zoom);
+      const overlayAlpha = clamp(0.2 + this.camera.zoom * 0.13, 0.2, 0.32);
+      const influenceRadius = sampleSpacing * 0.92;
+      const startX = Math.floor(bounds.x1 / sampleSpacing) * sampleSpacing;
+      const startY = Math.floor(bounds.y1 / sampleSpacing) * sampleSpacing;
+      for (let gx = startX; gx < bounds.x2 + sampleSpacing; gx += sampleSpacing) {
+        for (let gy = startY; gy < bounds.y2 + sampleSpacing; gy += sampleSpacing) {
+          const cx = gx + sampleSpacing * 0.5;
+          const cy = gy + sampleSpacing * 0.5;
+          const biome = world.getBiomeAt(cx, cy);
+          const biomeColor = biome?.type ? biomeColors[biome.type] : null;
+          if (!biomeColor) {
+            continue;
           }
+
+          const gradient = ctx.createRadialGradient(
+            cx,
+            cy,
+            influenceRadius * 0.12,
+            cx,
+            cy,
+            influenceRadius
+          );
+          gradient.addColorStop(0, `rgba(${biomeColor.join(',')}, ${overlayAlpha})`);
+          gradient.addColorStop(0.55, `rgba(${biomeColor.join(',')}, ${overlayAlpha * 0.46})`);
+          gradient.addColorStop(1, `rgba(${biomeColor.join(',')}, 0)`);
+          ctx.fillStyle = gradient;
+          ctx.fillRect(
+            cx - influenceRadius,
+            cy - influenceRadius,
+            influenceRadius * 2,
+            influenceRadius * 2
+          );
         }
       }
     }
@@ -610,14 +649,14 @@ export class Renderer {
 
   _getBiomeTint(biomeType) {
     switch (biomeType) {
-      case 'forest': return 'rgba(34, 139, 34, 0.6)';
-      case 'desert': return 'rgba(218, 165, 32, 0.5)';
-      case 'mountain': return 'rgba(105, 105, 105, 0.4)';
-      case 'wetland': return 'rgba(64, 224, 208, 0.5)';
-      case 'water': return 'rgba(30, 64, 175, 0.7)';
-      case 'meadow': return 'rgba(154, 205, 50, 0.6)';
+      case 'forest': return 'rgba(72, 96, 84, 0.4)';
+      case 'desert': return 'rgba(150, 118, 84, 0.32)';
+      case 'mountain': return 'rgba(111, 102, 96, 0.28)';
+      case 'wetland': return 'rgba(86, 122, 111, 0.36)';
+      case 'water': return 'rgba(76, 112, 146, 0.46)';
+      case 'meadow': return 'rgba(129, 143, 104, 0.34)';
       case 'grassland':
-      default: return 'rgba(107, 142, 35, 0.5)';
+      default: return 'rgba(114, 124, 92, 0.34)';
     }
   }
 
@@ -754,16 +793,16 @@ export class Renderer {
     let tint = null;
     switch (season) {
       case 'spring':
-        tint = 'rgba(127, 219, 106, 0.08)'; // Fresh green tint
+        tint = 'rgba(255, 214, 168, 0.035)';
         break;
       case 'summer':
-        tint = 'rgba(255, 215, 0, 0.05)'; // Golden tint
+        tint = 'rgba(255, 196, 118, 0.04)';
         break;
       case 'autumn':
-        tint = 'rgba(255, 140, 66, 0.12)'; // Orange tint
+        tint = 'rgba(214, 124, 68, 0.055)';
         break;
       case 'winter':
-        tint = 'rgba(176, 224, 230, 0.15)'; // Icy blue tint
+        tint = 'rgba(187, 214, 240, 0.08)';
         break;
     }
 

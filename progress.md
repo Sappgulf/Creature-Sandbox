@@ -60,3 +60,26 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - resize from desktop to `390x844` applied `mobile-device mobile-compact-ui`; resize back to `1280x720` cleared mobile classes again.
 
 - Residual note: the main bundle is materially smaller, but still large enough that more aggressive chunking would be the next perf pass if we keep pushing startup further.
+
+2026-04-15
+- New request: fix the world screen being overwhelmingly green, then add follow-on visual polish and ship the result.
+- Root visual issue found in `renderer.js`:
+- the world base used a dark green background, biome rendering drew large green-biased rectangular samples, and spring added another fresh-green seasonal wash on top.
+- Implemented palette/presentation pass:
+- shifted the global world background from green to a blue-slate neutral in `renderer-config.js`.
+- replaced hard biome tile fills in `drawBiomes()` with soft radial terrain blending over a warm/cool atmosphere gradient, so biome variation reads without checkerboard blocks.
+- rebalanced biome tint colors toward earth/stone/blue-green neutrals instead of pure greens.
+- reduced the spring/summer/autumn seasonal overlays to subtle warm/cool washes instead of a full-scene green glaze.
+- toned down the minimap viewport/frame accents in `renderer-minimap.js` so the HUD now matches the calmer scene palette.
+
+- Visual verification:
+- `output/web-game/palette-pass/shot-0.png` proved the green cast was removed but the first pass was too flat/slate-heavy.
+- adjusted the background/terrain wash a second time for a warmer neutral base.
+- `output/web-game/palette-pass-final/shot-0.png` verified the final scene stays neutral, readable, and no longer collapses into green.
+
+- Verification after palette pass:
+- `npx eslint creature-sim/src/renderer.js creature-sim/src/renderer-config.js creature-sim/src/renderer-minimap.js` ✅
+- `node "$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js" --url "http://127.0.0.1:4173/" --click-selector "#btn-new-game" --actions-json '{"steps":[{"buttons":[],"frames":12},{"buttons":["left_mouse_button"],"frames":2,"mouse_x":420,"mouse_y":320},{"buttons":[],"frames":12}]}' --iterations 2 --pause-ms 250 --screenshot-dir output/web-game/palette-pass` ✅
+- `node "$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js" --url "http://127.0.0.1:4173/" --click-selector "#btn-new-game" --actions-json '{"steps":[{"buttons":[],"frames":12},{"buttons":["left_mouse_button"],"frames":2,"mouse_x":420,"mouse_y":320},{"buttons":[],"frames":12}]}' --iterations 1 --pause-ms 250 --screenshot-dir output/web-game/palette-pass-final` ✅
+- `npm test` ✅
+- `npm run build` ✅

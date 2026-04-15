@@ -5,7 +5,7 @@
 export const RendererConfig = {
   // Canvas and rendering
   CANVAS: {
-    DEFAULT_BACKGROUND: '#203626',
+    DEFAULT_BACKGROUND: '#435060',
     IMAGE_SMOOTHING: {
       MOBILE: 'medium',
       DESKTOP: 'high'
@@ -121,7 +121,7 @@ export const RendererConfig = {
 
   // Color schemes
   COLORS: {
-    BACKGROUND: '#203626',
+    BACKGROUND: '#435060',
     FOOD: {
       GRASS: '#7FDB6A',
       BERRIES: '#FF6B9D',

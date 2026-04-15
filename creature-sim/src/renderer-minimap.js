@@ -188,7 +188,7 @@ export function applyMinimapMethods(Renderer) {
     const viewX = camera.x - viewW / 2;
     const viewY = camera.y - viewH / 2;
 
-    ctx.strokeStyle = 'rgba(255, 255, 100, 0.9)'; // Yellow = more visible
+    ctx.strokeStyle = 'rgba(198, 220, 255, 0.82)';
     ctx.lineWidth = 2;
     ctx.strokeRect(
       mapX + viewX * scaleX * dpr,
@@ -237,15 +237,15 @@ export function applyMinimapMethods(Renderer) {
     }
 
     // Border with slight glow
-    ctx.shadowColor = 'rgba(123, 183, 255, 0.3)';
+    ctx.shadowColor = 'rgba(146, 188, 255, 0.24)';
     ctx.shadowBlur = 4;
-    ctx.strokeStyle = 'rgba(123, 183, 255, 0.6)';
+    ctx.strokeStyle = 'rgba(153, 190, 244, 0.74)';
     ctx.lineWidth = 2;
     ctx.strokeRect(mapX - dpr, mapY - dpr, mapWCanvas + 2 * dpr, mapHCanvas + 2 * dpr);
     ctx.shadowBlur = 0;
 
     // Label
-    ctx.fillStyle = 'rgba(200, 200, 220, 0.8)';
+    ctx.fillStyle = 'rgba(216, 225, 239, 0.8)';
     ctx.font = `bold ${10 * dpr}px sans-serif`;
     ctx.fillText('WORLD MAP', mapX + 5 * dpr, mapY - 5 * dpr);
 
