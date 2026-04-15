@@ -5,7 +5,7 @@
 export const RendererConfig = {
   // Canvas and rendering
   CANVAS: {
-    DEFAULT_BACKGROUND: '#15201a',
+    DEFAULT_BACKGROUND: '#203626',
     IMAGE_SMOOTHING: {
       MOBILE: 'medium',
       DESKTOP: 'high'
@@ -48,11 +48,11 @@ export const RendererConfig = {
       maxRenderedCreatures: 300
     },
     medium: {
-      maxParticles: 150,
+      maxParticles: 120,
       shadowsEnabled: false,
       trailsEnabled: false,
       clusteringEnabled: true,
-      miniMapEnabled: true,
+      miniMapEnabled: false,
       miniMapUpdateInterval: 60,
       heatmapEnabled: true,
       nameLabelsEnabled: false,
@@ -121,7 +121,7 @@ export const RendererConfig = {
 
   // Color schemes
   COLORS: {
-    BACKGROUND: '#15201a',
+    BACKGROUND: '#203626',
     FOOD: {
       GRASS: '#7FDB6A',
       BERRIES: '#FF6B9D',

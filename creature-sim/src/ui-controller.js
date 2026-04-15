@@ -217,6 +217,7 @@ export class UIController {
     this.bindSessionGoalControls();
     this.bindWatchControls();
     this.applyMobileDefaults();
+    this.bindResponsiveLayoutSync();
     this.updateInspectorVisibility();
 
     this.updateSessionMetaVisibility();
@@ -251,6 +252,25 @@ export class UIController {
       panel.classList.add('hidden');
       panel.setAttribute('aria-hidden', 'true');
     }
+  }
+
+  bindResponsiveLayoutSync() {
+    if (this.responsiveLayoutSyncBound) return;
+    this.responsiveLayoutSyncBound = true;
+    const sync = () => {
+      const isMobile = document.body.classList.contains('mobile-device') ||
+        (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+      if (!isMobile) return;
+
+      this.mobileDefaultsApplied = false;
+      this.applyMobileDefaults();
+      this.closeMajorPanels?.();
+      this.updateInspectorVisibility();
+      this.updateSessionMetaVisibility();
+      this.updateSandboxUiVisibility();
+    };
+
+    window.addEventListener('creature:mobile-layout-change', sync);
   }
 
   setupHudMenu() {

@@ -4,6 +4,7 @@ export class MobileSupport {
     this.canvas = canvas;
     this.camera = camera;
     this.isMobile = this.detectMobile();
+    this.touchHandlersAttached = false;
     this.touches = new Map();
     this.lastPinchDistance = null;
     this.lastPanCenter = null;
@@ -27,20 +28,6 @@ export class MobileSupport {
   }
 
   init() {
-    if (!this.isMobile) return;
-
-    console.debug('📱 Mobile device detected - enabling touch controls');
-
-    // Prevent default touch behaviors
-    this.canvas.style.touchAction = 'none';
-
-    // Touch event listeners
-    this.registerListener(this.canvas, 'touchstart', (e) => this.handleTouchStart(e), { passive: false });
-    this.registerListener(this.canvas, 'touchmove', (e) => this.handleTouchMove(e), { passive: false });
-    this.registerListener(this.canvas, 'touchend', (e) => this.handleTouchEnd(e), { passive: false });
-    this.registerListener(this.canvas, 'touchcancel', (e) => this.handleTouchEnd(e), { passive: false });
-
-    // Apply mobile-specific styles
     this.applyMobileStyles();
   }
 
@@ -49,10 +36,16 @@ export class MobileSupport {
     this.cleanupCallbacks.push(() => target.removeEventListener(eventName, handler, options));
   }
 
-  applyMobileStyles() {
-    // Add mobile class to body
-    document.body.classList.add('mobile-device');
+  ensureTouchHandlers() {
+    if (this.touchHandlersAttached) return;
+    this.touchHandlersAttached = true;
+    this.registerListener(this.canvas, 'touchstart', (e) => this.handleTouchStart(e), { passive: false });
+    this.registerListener(this.canvas, 'touchmove', (e) => this.handleTouchMove(e), { passive: false });
+    this.registerListener(this.canvas, 'touchend', (e) => this.handleTouchEnd(e), { passive: false });
+    this.registerListener(this.canvas, 'touchcancel', (e) => this.handleTouchEnd(e), { passive: false });
+  }
 
+  applyMobileStyles() {
     // Adjust viewport for better mobile experience
     const viewport = document.querySelector('meta[name="viewport"]');
     if (viewport) {
@@ -76,13 +69,38 @@ export class MobileSupport {
     };
 
     const syncMobileLayoutProfile = () => {
+      const wasMobile = this.isMobile;
+      this.isMobile = this.detectMobile();
+
       const viewportWidth = window.visualViewport?.width || window.innerWidth;
       const viewportHeight = window.visualViewport?.height || window.innerHeight;
-      const isCompact = viewportWidth <= this.compactBreakpoint;
-      const isLandscape = viewportWidth > viewportHeight && viewportWidth <= this.landscapeBreakpoint;
+      const isCompact = this.isMobile && viewportWidth <= this.compactBreakpoint;
+      const isLandscape = this.isMobile && viewportWidth > viewportHeight && viewportWidth <= this.landscapeBreakpoint;
 
+      document.body.classList.toggle('mobile-device', this.isMobile);
       document.body.classList.toggle('mobile-compact-ui', isCompact);
       document.body.classList.toggle('mobile-landscape-ui', isLandscape);
+
+      this.canvas.style.touchAction = this.isMobile ? 'none' : '';
+
+      if (this.isMobile) {
+        this.ensureTouchHandlers();
+      } else {
+        this.touches.clear();
+        this.lastPinchDistance = null;
+        this.lastPanCenter = null;
+        document.body.classList.remove('keyboard-open');
+      }
+
+      if (!wasMobile && this.isMobile) {
+        console.debug('📱 Mobile layout detected - enabling touch controls');
+      }
+
+      if (wasMobile !== this.isMobile) {
+        window.dispatchEvent(new CustomEvent('creature:mobile-layout-change', {
+          detail: { active: this.isMobile }
+        }));
+      }
     };
 
     setViewportHeight();
@@ -103,6 +121,7 @@ export class MobileSupport {
     }
 
     this.registerListener(document, 'focusin', (event) => {
+      if (!this.isMobile) return;
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
       if (!target.matches('input, textarea, select')) return;
@@ -113,6 +132,7 @@ export class MobileSupport {
     });
 
     this.registerListener(document, 'focusout', () => {
+      if (!this.isMobile) return;
       setTimeout(() => updateKeyboardOffset(), 50);
     });
   }

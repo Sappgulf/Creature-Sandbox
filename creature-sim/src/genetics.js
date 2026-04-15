@@ -130,8 +130,13 @@ export function makeGenes(seed={}) {
   // Calculate expressed traits
   calculateExpressedGenes(genes);
 
-  // Check for genetic disorders
-  checkForDisorders(genes);
+  // Respect explicit disorder seeds. An empty array intentionally disables
+  // random disorder assignment for deterministic tests and scripted spawns.
+  if (Array.isArray(seed.disorders)) {
+    genes.disorders = [...seed.disorders];
+  } else {
+    checkForDisorders(genes);
+  }
 
   return genes;
 }

@@ -143,14 +143,26 @@ export class ControlStripController {
   }
 
   loadMobilePrefs() {
+    const isTouchDevice = window.matchMedia?.('(pointer: coarse)').matches || ('ontouchstart' in window);
+    const compactMobile = isTouchDevice && Math.min(window.innerWidth, window.innerHeight) <= 430;
+    const deviceMemory = Number(navigator.deviceMemory || 0);
+    const lowMemoryMobile = isTouchDevice && deviceMemory > 0 && deviceMemory <= 4;
+
     try {
+      const storedFocus = localStorage.getItem('creature-mobile-focus');
+      const storedBattery = localStorage.getItem('creature-mobile-battery');
+      const storedHaptics = localStorage.getItem('creature-mobile-haptics');
       return {
-        focusMode: localStorage.getItem('creature-mobile-focus') === 'true',
-        batterySaver: localStorage.getItem('creature-mobile-battery') === 'true',
-        haptics: localStorage.getItem('creature-mobile-haptics') !== 'false'
+        focusMode: storedFocus !== null ? storedFocus === 'true' : compactMobile,
+        batterySaver: storedBattery !== null ? storedBattery === 'true' : (compactMobile || lowMemoryMobile),
+        haptics: storedHaptics !== null ? storedHaptics !== 'false' : true
       };
     } catch {
-      return { focusMode: false, batterySaver: false, haptics: true };
+      return {
+        focusMode: compactMobile,
+        batterySaver: compactMobile || lowMemoryMobile,
+        haptics: true
+      };
     }
   }
 

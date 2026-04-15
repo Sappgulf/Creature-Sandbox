@@ -531,32 +531,37 @@ export class Renderer {
 
     // Biome colors for terrain ground
     const biomeColors = {
-      forest: '#1a2f1a',
-      desert: '#3d2f1a',
-      tundra: '#2a2a33',
-      swamp: '#1a2a20',
-      ocean: '#0a1a2a',
-      mountain: '#2a2520',
-      jungle: '#1a2f25',
-      savanna: '#2a2a1a'
+      forest: '#31553a',
+      desert: '#705136',
+      tundra: '#5b6877',
+      swamp: '#2a4b3f',
+      ocean: '#1d4562',
+      mountain: '#544c44',
+      jungle: '#2d5a43',
+      savanna: '#55623b',
+      meadow: '#5a7b42',
+      grassland: '#49683b',
+      water: '#1d4562',
+      wetland: '#2f6358'
     };
 
     // Fill base background
-    ctx.fillStyle = '#15201a';
+    ctx.fillStyle = this.background;
     const visibleWidth = bounds.x2 - bounds.x1;
     const visibleHeight = bounds.y2 - bounds.y1;
     const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
     ctx.fillRect(bounds.x1 - extendAmount, bounds.y1 - extendAmount, visibleWidth + extendAmount * 2, visibleHeight + extendAmount * 2);
 
     // Draw biome-colored ground overlay (sample grid)
-    if (world.getBiomeAt && this.camera.zoom > 0.3) {
-      const gridSize = Math.max(60, 180 / this.camera.zoom);
+    if (world.getBiomeAt && this.camera.zoom > 0.18) {
+      const gridSize = Math.max(72, 220 / this.camera.zoom);
+      const overlayAlpha = clamp(0.28 + this.camera.zoom * 0.34, 0.32, 0.58);
       for (let gx = Math.floor(bounds.x1 / gridSize) * gridSize; gx < bounds.x2; gx += gridSize) {
         for (let gy = Math.floor(bounds.y1 / gridSize) * gridSize; gy < bounds.y2; gy += gridSize) {
           const biome = world.getBiomeAt(gx + gridSize / 2, gy + gridSize / 2);
           if (biome?.type && biomeColors[biome.type]) {
             ctx.fillStyle = biomeColors[biome.type];
-            ctx.globalAlpha = 0.4;
+            ctx.globalAlpha = overlayAlpha;
             ctx.fillRect(gx, gy, gridSize, gridSize);
             ctx.globalAlpha = 1;
           }

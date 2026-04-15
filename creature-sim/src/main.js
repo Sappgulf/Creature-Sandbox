@@ -99,6 +99,40 @@ function createDevFpsOverlay(enabled) {
 
 console.debug('🚀 Starting Creature Sandbox...');
 
+const DESKTOP_STARTUP_SEED = { herbivores: 72, predators: 10, food: 320 };
+const MOBILE_STARTUP_SEED = { herbivores: 60, predators: 8, food: 260 };
+const COMPACT_MOBILE_STARTUP_SEED = { herbivores: 52, predators: 6, food: 220 };
+
+function getRuntimeProfile() {
+  if (typeof window === 'undefined') {
+    return {
+      mobile: false,
+      compact: false,
+      lowMemory: false,
+      renderScale: 1,
+      defaultZoom: 0.25,
+      startupSeed: DESKTOP_STARTUP_SEED
+    };
+  }
+
+  const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches || ('ontouchstart' in window);
+  const mobileViewport = coarsePointer || window.matchMedia?.('(max-width: 768px)').matches;
+  const shortEdge = Math.min(window.innerWidth || 0, window.innerHeight || 0);
+  const compactViewport = mobileViewport && shortEdge > 0 && shortEdge <= 430;
+  const deviceMemory = Number(navigator.deviceMemory || 0);
+  const lowMemory = mobileViewport && deviceMemory > 0 && deviceMemory <= 4;
+  const renderScale = mobileViewport ? (compactViewport || lowMemory ? 0.82 : 0.9) : 1;
+
+  return {
+    mobile: mobileViewport,
+    compact: compactViewport,
+    lowMemory,
+    renderScale,
+    defaultZoom: mobileViewport ? 0.28 : 0.25,
+    startupSeed: compactViewport || lowMemory ? COMPACT_MOBILE_STARTUP_SEED : (mobileViewport ? MOBILE_STARTUP_SEED : DESKTOP_STARTUP_SEED)
+  };
+}
+
 // Preload sprite assets
 console.debug('🎨 Loading sprite assets...');
 assetLoader.loadManifest('./assets/sprites/sprite-manifest.json', { optional: true })
@@ -167,7 +201,8 @@ function initializeApp() {
   function setCanvasSize() {
     errorHandler.safeExecute(() => {
       let rect = canvas.getBoundingClientRect();
-      const dpr = 1.0; // Performance optimization: 1x DPR for max FPS
+      const runtimeProfile = getRuntimeProfile();
+      const dpr = runtimeProfile.renderScale; // Resolution scale biased toward smooth mobile frame pacing
 
       // Fallback if clientRect is zero or suspicious (e.g. before layout)
       if (rect.width < 100 || rect.height < 100) {
@@ -189,7 +224,7 @@ function initializeApp() {
         window.camera.viewportHeight = rect.height;
       }
 
-      console.debug(`🖼️ Canvas: ${rect.width}x${rect.height} (${canvas.width}x${canvas.height} internal @ ${dpr}x DPI)`);
+      console.debug(`🖼️ Canvas: ${rect.width}x${rect.height} (${canvas.width}x${canvas.height} internal @ ${dpr.toFixed(2)}x render scale)`);
     }, 'Canvas resize');
   }
 
@@ -213,7 +248,7 @@ function initializeApp() {
   // Opt in to worker mode with ?worker=1.
   const workerParam = new URLSearchParams(window.location.search).get('worker');
   const USE_SIM_WORKER = workerParam === '1' || workerParam === 'true';
-  const STARTUP_SEED = { herbivores: 72, predators: 10, food: 320 };
+  const startupSeed = getRuntimeProfile().startupSeed;
 
   // World and core entities
   const world = errorHandler.safeExecute(() => {
@@ -221,11 +256,11 @@ function initializeApp() {
       console.debug('🚀 Initializing Simulation Worker...');
       const w = new SimulationProxy(new URL('./worker-simulation.js', import.meta.url));
       w.init(4000, 2800);
-      w.seed(STARTUP_SEED.herbivores, STARTUP_SEED.predators, STARTUP_SEED.food);
+      w.seed(startupSeed.herbivores, startupSeed.predators, startupSeed.food);
       return w;
     } else {
       const w = new World(4000, 2800);
-      w.seed(STARTUP_SEED.herbivores, STARTUP_SEED.predators, STARTUP_SEED.food);
+      w.seed(startupSeed.herbivores, startupSeed.predators, startupSeed.food);
       return w;
     }
   }, 'World initialization', null);
@@ -240,7 +275,7 @@ function initializeApp() {
     return new Camera({
       x: world.width * 0.5,
       y: world.height * 0.5,
-      zoom: 0.25,
+      zoom: getRuntimeProfile().defaultZoom,
       minZoom: 0.1,
       maxZoom: 3,
       worldWidth: world.width,
@@ -1183,15 +1218,17 @@ function initializeApp() {
 
       // Reset the world with fresh creatures
       if (world && world.seed) {
-        world.seed(STARTUP_SEED.herbivores, STARTUP_SEED.predators, STARTUP_SEED.food);
+        const nextSeed = getRuntimeProfile().startupSeed;
+        world.seed(nextSeed.herbivores, nextSeed.predators, nextSeed.food);
       }
 
       applyReplayKickoff();
 
       // Reset camera to center
       if (camera) {
+        const runtimeProfile = getRuntimeProfile();
         camera.focusOn(world.width * 0.5, world.height * 0.5);
-        camera.setZoom(0.25);
+        camera.setZoom(runtimeProfile.defaultZoom);
         camera.clearUserOverride();
       }
 
@@ -1294,7 +1331,9 @@ function initializeApp() {
         tool: tools?.mode ?? null,
         speed: gameState.fastForward,
         watchMode: !!gameState.watchModeEnabled,
-        godMode: !!gameState.godModeActive
+        godMode: !!gameState.godModeActive,
+        mobileLayout: document.body.classList.contains('mobile-device'),
+        focusMode: document.body.classList.contains('mobile-focus-mode')
       },
       camera: {
         x: Number(camera.x.toFixed(1)),
@@ -1437,6 +1476,8 @@ function initializeApp() {
   // EXPORTS FOR DEBUGGING
   // ============================================================================
 
+  window.render_game_to_text = renderGameToText;
+  window.advanceTime = advanceTime;
   window.debug = debugConsole;
 
   const _devtoolsEnabled = gameState.showDebugOverlay ||
@@ -1461,8 +1502,6 @@ function initializeApp() {
       window.diseaseSystem = diseaseSystem;
       window.gameplayModes = gameplayModes;
       window.sessionGoals = sessionGoals;
-      window.render_game_to_text = renderGameToText;
-      window.advanceTime = advanceTime;
     }, 'Debug exports');
   }
 

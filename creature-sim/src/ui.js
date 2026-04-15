@@ -6,6 +6,7 @@ export function renderStats(el, world, fps, extra = {}) {
   if (!el) return;
 
   const n = world.creatures.length;
+  const isMobile = typeof window !== 'undefined' && (window.matchMedia?.('(max-width: 768px)').matches ?? false);
   const toolMeta = {
     food: { icon: '🌿', label: 'Food' },
     spawn: { icon: '🧬', label: 'Spawn' },
@@ -37,6 +38,20 @@ export function renderStats(el, world, fps, extra = {}) {
       ? `${meta.label} ${brushSize}px`
       : meta.label;
     statParts.push(`<span class="stat-tool">${meta.icon} <span class="value">${toolLabel}</span></span>`);
+  }
+
+  if (isMobile) {
+    if (extra.fastForward && extra.fastForward !== 1) {
+      statParts.push(`<span>⚡<span class="value">×${extra.fastForward}</span></span>`);
+    }
+    if (extra.paused) {
+      statParts.push('<span style="color: var(--accent-danger);">⏸</span>');
+    }
+    if (fps < 40) {
+      statParts.push(`<span style="color: var(--accent-warning);">${fps.toFixed(0)} FPS</span>`);
+    }
+    el.innerHTML = statParts.join('');
+    return;
   }
 
   if (extra.godModeActive) {
@@ -173,17 +188,23 @@ export function renderInteractionHint(el, {
 
 export function renderSelectedInfo(el, creature, { world = null, lineageTracker = null } = {}) {
   if (!el) return;
+  const isMobile = typeof window !== 'undefined' && (window.matchMedia?.('(max-width: 768px)').matches ?? false);
   if (!creature) {
     el.classList.remove('hidden');
     el.classList.add('selected-empty');
-    el.innerHTML = `
-      <div class="empty-title">No creature selected</div>
-      <div class="muted">Tap a creature to inspect, or spawn one to get started.</div>
-      <ul class="empty-list">
-        <li>Use <strong>S</strong> or the spawn button to place creatures.</li>
-        <li>Shift+click sets a lineage root.</li>
-      </ul>
-    `;
+    el.innerHTML = isMobile
+      ? `
+        <div class="empty-title">No creature selected</div>
+        <div class="muted">Tap a creature to inspect or use spawn to drop a new one.</div>
+      `
+      : `
+        <div class="empty-title">No creature selected</div>
+        <div class="muted">Tap a creature to inspect, or spawn one to get started.</div>
+        <ul class="empty-list">
+          <li>Use <strong>S</strong> or the spawn button to place creatures.</li>
+          <li>Shift+click sets a lineage root.</li>
+        </ul>
+      `;
     return;
   }
 
@@ -255,6 +276,26 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
   };
   const quirkLine = showQuirks ? `<div class="subline quirks">Quirks: ${quirks.map(q => quirkLabelMap[q] || q).join(', ')}</div>` : '';
   const quirkHint = quirks.length ? '<div class="hint">Press Q to toggle quirks</div>' : '';
+
+  if (isMobile) {
+    el.innerHTML = `
+      <div class="headline">
+        <span>${headline}</span>
+        <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>
+      </div>
+      <div class="subline">${sublineParts.join(' · ')}</div>
+      ${nameSuggestion ? `<div class="muted tiny">${nameSuggestion}</div>` : ''}
+      ${showQuirks ? `<div class="hint">Quirks: ${quirks.map(q => quirkLabelMap[q] || q).join(', ')}</div>` : quirkHint}
+      <div class="metrics compact">
+        <span><span>Energy</span><span>${energy}</span></span>
+        <span><span>Health</span><span>${health}</span></span>
+        <span><span>Speed</span><span>${speed}</span></span>
+        <span><span>Senses</span><span>${sense}px</span></span>
+      </div>
+      <div class="subline compact-meta">${biome} biome · ${dietLabel} · Aquatic ${aquatic}</div>
+    `;
+    return;
+  }
 
   el.innerHTML = `
     <div class="headline">
