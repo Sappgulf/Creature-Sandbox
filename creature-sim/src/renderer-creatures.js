@@ -123,7 +123,8 @@ export function applyCreatureMethods(Renderer) {
         clusterHue,
         zoom,
         worldTime,
-        dayLight
+        dayLight,
+        world
       };
 
       // PERFORMANCE: Level of Detail (LOD) handling

@@ -8,6 +8,13 @@ import { getAgeStageIcon, getElderFadeAlpha } from './creature-age.js';
 
 const { TAU } = CreatureConfig;
 
+export function isAlphaCreature(creature, world) {
+  if (!creature || !world?.lineageTracker) return false;
+  if (creature.parentId === null || creature.parentId === undefined) return true;
+  const rootId = world.lineageTracker.getRoot(world, creature.id);
+  return rootId === creature.id;
+}
+
 export function getBadges(creature) {
   const badges = [];
   const g = creature.genes;
@@ -364,6 +371,42 @@ export function drawCreature(creature, ctx, opts = {}) {
       const wobble = Math.sin(worldTime * 20) * 0.5;
       ctx.translate(wobble, 0);
       ctx.restore();
+    }
+
+    // Very scared creatures emit fear wave ripples (emotion contagion visualization)
+    if (fear > 0.7 && isLowZoom && !isSelected && !isPinned) {
+      const fearPhase = worldTime * 2.5;
+      const contagionRadius = 80 + fear * 40;
+      for (let i = 0; i < 3; i++) {
+        const waveProgress = ((fearPhase + i * 0.4) % 1);
+        const waveRadius = r * (1 + waveProgress * 4);
+        if (waveRadius > contagionRadius) break;
+        const waveAlpha = (1 - waveProgress) * 0.2 * (fear - 0.7) / 0.3;
+        ctx.beginPath();
+        ctx.arc(0, 0, waveRadius, 0, TAU);
+        ctx.strokeStyle = `rgba(160, 100, 180, ${waveAlpha})`;
+        ctx.lineWidth = 1.5 - waveProgress;
+        ctx.stroke();
+      }
+
+      // Fear contagion: nearby creatures show subtle fear tint
+      if (opts.world?.creatureManager && zoom > 0.4) {
+        const nearbyRadius = 60 + fear * 30;
+        const nearby = opts.world.creatureManager.queryCreaturesFast(
+          creature.x, creature.y, nearbyRadius
+        ).filter(c => c !== creature && c.alive && c.emotions);
+
+        for (const other of nearby) {
+          const dist = Math.sqrt((other.x - creature.x) ** 2 + (other.y - creature.y) ** 2);
+          const influence = (1 - dist / nearbyRadius) * (fear - 0.5) * 0.15;
+          if (influence > 0.01) {
+            ctx.beginPath();
+            ctx.arc(other.x - creature.x, other.y - creature.y, other.size || 5, 0, TAU);
+            ctx.fillStyle = `rgba(160, 80, 150, ${influence})`;
+            ctx.fill();
+          }
+        }
+      }
     }
 
     // Happy creatures have a subtle warm glow
@@ -1142,6 +1185,79 @@ export function drawCreature(creature, ctx, opts = {}) {
     ctx.restore();
   }
 
+  if (creature.personality?.isPackHunting && g.predator) {
+    const zoom = opts.zoom ?? 1;
+    if (zoom > 0.5) {
+      ctx.save();
+      const packPulse = (worldTime * 4) % TAU;
+
+      if (opts.world?.creatureManager) {
+        const packMembers = opts.world.creatureManager.queryCreaturesFast(
+          creature.x, creature.y, 150
+        ).filter(c =>
+          c !== creature &&
+          c.alive &&
+          c.genes.predator &&
+          c.genes.packInstinct > 0.5 &&
+          Math.abs((c.genes.hue || 0) - (g.hue || 0)) < 0.2
+        );
+
+        if (packMembers.length > 0) {
+          ctx.strokeStyle = `rgba(255, 120, 80, ${0.25 + Math.sin(packPulse) * 0.15})`;
+          ctx.lineWidth = 1.2;
+          ctx.setLineDash([4, 4]);
+
+          for (const member of packMembers) {
+            ctx.beginPath();
+            ctx.moveTo(creature.x, creature.y);
+            ctx.lineTo(member.x, member.y);
+            ctx.stroke();
+          }
+
+          ctx.setLineDash([]);
+
+          const packCenterX = (creature.x + packMembers.reduce((s, m) => s + m.x, 0)) / (packMembers.length + 1);
+          const packCenterY = (creature.y + packMembers.reduce((s, m) => s + m.y, 0)) / (packMembers.length + 1);
+          const auraRadius = r * (2 + packMembers.length * 0.5);
+          const packAura = ctx.createRadialGradient(
+            packCenterX, packCenterY, r * 0.5,
+            packCenterX, packCenterY, auraRadius
+          );
+          packAura.addColorStop(0, `rgba(255, 80, 40, ${0.12 + Math.sin(packPulse) * 0.05})`);
+          packAura.addColorStop(0.5, `rgba(200, 60, 30, ${0.06 + Math.sin(packPulse) * 0.03})`);
+          packAura.addColorStop(1, 'rgba(150, 30, 20, 0)');
+          ctx.fillStyle = packAura;
+          ctx.beginPath();
+          ctx.arc(packCenterX, packCenterY, auraRadius, 0, TAU);
+          ctx.fill();
+
+          const prey = creature.target?.creatureId !== undefined
+            ? opts.world.getAnyCreatureById?.(creature.target.creatureId)
+            : null;
+          if (prey && prey.alive) {
+            ctx.strokeStyle = `rgba(255, 200, 150, ${0.3 + Math.sin(packPulse * 1.5) * 0.15})`;
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.moveTo(creature.x, creature.y);
+            const interceptX = prey.x + (prey.vx || 0) * 5;
+            const interceptY = prey.y + (prey.vy || 0) * 5;
+            ctx.lineTo(interceptX, interceptY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = `rgba(255, 200, 150, ${0.5 + Math.sin(packPulse) * 0.2})`;
+            ctx.beginPath();
+            ctx.arc(interceptX, interceptY, 3, 0, TAU);
+            ctx.fill();
+          }
+        }
+      }
+
+      ctx.restore();
+    }
+  }
+
   ctx.strokeStyle = `hsla(${displayHue},90%,80%,${0.65 + flash * 0.4})`;
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -1150,6 +1266,39 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   if (showTraitDetails) {
     drawTraits(creature, ctx, g, displayHue, r);
+  }
+
+  if (isAlphaCreature(creature, opts.world)) {
+    const worldTime = opts.worldTime ?? creature._lastWorld?.t ?? 0;
+    const crownPhase = worldTime * 2;
+    const crownY = -r - 5;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(255, 215, 50, 0.8)';
+    ctx.shadowBlur = 6;
+
+    ctx.fillStyle = `rgba(255, 215, 50, ${0.85 + Math.sin(crownPhase) * 0.15})`;
+    ctx.beginPath();
+    ctx.moveTo(-5, crownY + 3);
+    ctx.lineTo(-5, crownY - 1);
+    ctx.lineTo(-2.5, crownY - 3);
+    ctx.lineTo(0, crownY - 1);
+    ctx.lineTo(2.5, crownY - 3);
+    ctx.lineTo(5, crownY - 1);
+    ctx.lineTo(5, crownY + 3);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+
+    const alphaAura = ctx.createRadialGradient(0, 0, r * 0.8, 0, 0, r * 2);
+    alphaAura.addColorStop(0, 'rgba(255, 215, 50, 0.12)');
+    alphaAura.addColorStop(0.5, 'rgba(255, 200, 50, 0.06)');
+    alphaAura.addColorStop(1, 'rgba(255, 180, 0, 0)');
+    ctx.fillStyle = alphaAura;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 2, 0, TAU);
+    ctx.fill();
   }
 
   if (isPinned) {

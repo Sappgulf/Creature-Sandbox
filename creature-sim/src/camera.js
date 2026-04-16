@@ -27,7 +27,7 @@ export class Camera {
     this.targetZoom = zoom;
     this.targetX = x;
     this.targetY = y;
-    this.smooth = 0.14;
+    this.smooth = 0.08;
     this.worldWidth = worldWidth;
     this.worldHeight = worldHeight;
     this.viewportWidth = viewportWidth;
@@ -97,7 +97,8 @@ export class Camera {
   /** Apply smooth interpolation toward target pan/zoom each frame. */
   update(dt) {
     const lerp = (a, b, t) => a + (b - a) * t;
-    const t = 1 - Math.pow(1 - this.smooth, Math.min(dt * 60, 1));
+    const rawT = 1 - Math.pow(1 - this.smooth, Math.min(dt * 60, 1));
+    const t = this._ease('easeOutCubic', rawT);
     if (this.travel) {
       this._updateTravel(dt);
     }
@@ -284,8 +285,13 @@ export class Camera {
   _ease(type, t) {
     switch (type) {
       case 'easeOutCubic':
-      default:
         return 1 - Math.pow(1 - t, 3);
+      case 'easeOutQuad':
+        return 1 - Math.pow(1 - t, 2);
+      case 'easeInOutCubic':
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      default:
+        return t;
     }
   }
 }

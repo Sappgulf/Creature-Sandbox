@@ -55,30 +55,51 @@ export class ParticleSystem {
     };
   }
 
-  // Add birth sparkles with color variation based on creature type
+  // Add birth sparkles with celebratory puff effect
   addBirthEffect(x, y, diet = 0) {
-    const sparkleCount = 12;
     const hueBase = diet > 0.7 ? 0 : diet > 0.3 ? 45 : 120;
 
-    for (let i = 0; i < sparkleCount; i++) {
-      const angle = (i / sparkleCount) * Math.PI * 2;
-      const speed = 40 + Math.random() * 20;
+    // Main sparkle burst - 16 particles in circular pattern
+    for (let i = 0; i < 16; i++) {
+      const angle = (i / 16) * Math.PI * 2;
+      const speed = 45 + Math.random() * 25;
       const p = this._getPooledParticle();
       p.type = 'sparkle';
       p.category = 'sparkle';
       p.x = x;
       p.y = y;
       p.vx = Math.cos(angle) * speed;
-      p.vy = Math.sin(angle) * speed - 15;
-      p.life = 1.0 + Math.random() * 0.3;
-      p.maxLife = 1.3;
-      p.size = 2 + Math.random() * 3;
+      p.vy = Math.sin(angle) * speed - 20;
+      p.life = 1.0 + Math.random() * 0.4;
+      p.maxLife = 1.4;
+      p.size = 2.5 + Math.random() * 3;
       p.color = `hsl(${hueBase + Math.random() * 30}, 100%, 70%)`;
       p.twinkle = true;
       p.opacity = 1;
       this.particles.push(p);
     }
 
+    // Additional upward floating sparkles (celebratory burst)
+    for (let i = 0; i < 8; i++) {
+      const angle = (Math.random() - 0.5) * Math.PI * 0.8 - Math.PI / 2;
+      const speed = 15 + Math.random() * 25;
+      const p = this._getPooledParticle();
+      p.type = 'sparkle';
+      p.category = 'sparkle';
+      p.x = x + (Math.random() - 0.5) * 10;
+      p.y = y + (Math.random() - 0.5) * 10;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed - 30;
+      p.life = 1.3 + Math.random() * 0.5;
+      p.maxLife = 1.8;
+      p.size = 1.5 + Math.random() * 2;
+      p.color = `hsl(${hueBase + 20 + Math.random() * 40}, 100%, 80%)`;
+      p.twinkle = true;
+      p.opacity = 1;
+      this.particles.push(p);
+    }
+
+    // Expanding ring
     const ring = this._getPooledParticle();
     ring.type = 'ring';
     ring.category = 'ring';
@@ -86,49 +107,104 @@ export class ParticleSystem {
     ring.y = y;
     ring.vx = 0;
     ring.vy = 0;
-    ring.life = 0.5;
-    ring.maxLife = 0.5;
-    ring.size = 5;
-    ring.expandRate = 80;
-    ring.color = `hsl(${hueBase}, 80%, 60%)`;
-    ring.opacity = 0.8;
+    ring.life = 0.6;
+    ring.maxLife = 0.6;
+    ring.size = 6;
+    ring.expandRate = 90;
+    ring.color = `hsl(${hueBase}, 80%, 65%)`;
+    ring.opacity = 0.9;
     this.particles.push(ring);
+
+    // Secondary puff ring (soft cloud)
+    const puffRing = this._getPooledParticle();
+    puffRing.type = 'ring';
+    puffRing.category = 'puff';
+    puffRing.x = x;
+    puffRing.y = y;
+    puffRing.vx = 0;
+    puffRing.vy = 0;
+    puffRing.life = 0.8;
+    puffRing.maxLife = 0.8;
+    puffRing.size = 12;
+    puffRing.expandRate = 40;
+    puffRing.color = `hsl(${hueBase + 15}, 40%, 85%)`;
+    puffRing.opacity = 0.5;
+    this.particles.push(puffRing);
   }
 
-  // Add death gravestone marker with enhanced visuals
+  // Add death gravestone marker with somber soul-rising effect
   addDeathMarker(x, y, creatureName, diet = 0) {
-    for (let i = 0; i < 12; i++) {
-      const angle = (i / 12) * Math.PI * 2;
+    const hueBase = diet > 0.7 ? 0 : diet > 0.3 ? 45 : 120;
+
+    // Somber dust burst - darker, slower particles
+    for (let i = 0; i < 10; i++) {
+      const angle = (i / 10) * Math.PI * 2;
       const p = this._getPooledParticle();
       p.type = 'dust';
       p.category = 'dust';
       p.x = x;
       p.y = y;
-      p.vx = Math.cos(angle) * (20 + Math.random() * 15);
-      p.vy = Math.sin(angle) * (20 + Math.random() * 15) - 10;
-      p.life = 0.6 + Math.random() * 0.4;
-      p.maxLife = 1.0;
-      p.size = 3 + Math.random() * 4;
-      p.color = diet > 0.7 ? '#aa4444' : diet > 0.3 ? '#88aa44' : '#88aa88';
-      p.opacity = 0.8;
+      p.vx = Math.cos(angle) * (15 + Math.random() * 12);
+      p.vy = Math.sin(angle) * (15 + Math.random() * 12) - 8;
+      p.life = 0.8 + Math.random() * 0.4;
+      p.maxLife = 1.2;
+      p.size = 2.5 + Math.random() * 3;
+      p.color = diet > 0.7 ? '#884444' : diet > 0.3 ? '#666655' : '#556655';
+      p.opacity = 0.7;
       this.particles.push(p);
     }
 
+    // Primary ghost wisp - larger, rises slowly
     const ghost = this._getPooledParticle();
     ghost.type = 'ghost';
     ghost.category = 'ghost';
-    ghost.x = x;
+    ghost.x = x + (Math.random() - 0.5) * 4;
     ghost.y = y;
     ghost.vx = 0;
-    ghost.vy = -8;
-    ghost.life = 1.5;
-    ghost.maxLife = 1.5;
-    ghost.size = 14;
-    ghost.hue = diet > 0.7 ? 0 : diet > 0.3 ? 45 : 120;
-    ghost.opacity = 0.5;
-    ghost.fadeInTime = 0.1;
+    ghost.vy = -12;
+    ghost.life = 2.0;
+    ghost.maxLife = 2.0;
+    ghost.size = 16;
+    ghost.hue = hueBase;
+    ghost.opacity = 0.6;
+    ghost.fadeInTime = 0.2;
     this.particles.push(ghost);
 
+    // Secondary ghost wisps - smaller, drifting
+    for (let i = 0; i < 3; i++) {
+      const ghost2 = this._getPooledParticle();
+      ghost2.type = 'ghost';
+      ghost2.category = 'ghost';
+      ghost2.x = x + (Math.random() - 0.5) * 8;
+      ghost2.y = y - 5;
+      ghost2.vx = (Math.random() - 0.5) * 6;
+      ghost2.vy = -8 - Math.random() * 6;
+      ghost2.life = 1.6 + Math.random() * 0.4;
+      ghost2.maxLife = 2.0;
+      ghost2.size = 8 + Math.random() * 4;
+      ghost2.hue = hueBase;
+      ghost2.opacity = 0.4;
+      ghost2.fadeInTime = 0.15;
+      this.particles.push(ghost2);
+    }
+
+    // Somber fade ring
+    const fadeRing = this._getPooledParticle();
+    fadeRing.type = 'ring';
+    fadeRing.category = 'fade';
+    fadeRing.x = x;
+    fadeRing.y = y;
+    fadeRing.vx = 0;
+    fadeRing.vy = 0;
+    fadeRing.life = 1.0;
+    fadeRing.maxLife = 1.0;
+    fadeRing.size = 8;
+    fadeRing.expandRate = 30;
+    fadeRing.color = `hsl(${hueBase}, 30%, 40%)`;
+    fadeRing.opacity = 0.4;
+    this.particles.push(fadeRing);
+
+    // Gravestone marker
     const grave = this._getPooledParticle();
     grave.type = 'gravestone';
     grave.category = 'gravestone';
@@ -163,11 +239,14 @@ export class ParticleSystem {
   }
 
   // Weather particles - rain, snow, wind streaks
+  // Intensity scales: particle count, speed, size, and opacity
   _addWeatherParticles(originX, originY, weatherType, intensity = 1) {
-    const count = Math.floor(5 * intensity);
+    const count = Math.floor(5 + 15 * intensity);
+    const intensityClamped = Math.min(1, intensity);
+
     for (let i = 0; i < count; i++) {
-      const x = originX + (Math.random() - 0.5) * 300;
-      const y = originY + (Math.random() - 0.5) * 200;
+      const x = originX + (Math.random() - 0.5) * 400;
+      const y = originY + (Math.random() - 0.5) * 300;
       const p = this._getPooledParticle();
       p.type = 'weather';
       p.category = weatherType;
@@ -175,32 +254,77 @@ export class ParticleSystem {
       p.y = y;
 
       if (weatherType === 'rain') {
-        p.vx = -80 + Math.random() * 20;
-        p.vy = 150 + Math.random() * 50;
-        p.life = 0.8;
-        p.maxLife = 0.8;
-        p.size = 1.5;
-        p.color = 'rgba(150, 180, 255, 0.5)';
-        p.opacity = 0.5;
+        const speedMult = 0.7 + intensityClamped * 0.6;
+        p.vx = (-80 + Math.random() * 30) * speedMult;
+        p.vy = (150 + Math.random() * 80) * speedMult;
+        p.life = 0.5 + Math.random() * 0.4;
+        p.maxLife = p.life;
+        p.size = 1.2 + intensityClamped * 0.8 + Math.random() * 0.5;
+        p.color = intensityClamped > 0.6 ? 'rgba(120, 160, 255, 0.6)' : 'rgba(150, 180, 255, 0.5)';
+        p.opacity = 0.4 + intensityClamped * 0.4;
       } else if (weatherType === 'snow') {
-        p.vx = -20 + Math.random() * 40;
-        p.vy = 30 + Math.random() * 20;
-        p.life = 2 + Math.random();
-        p.maxLife = 3;
-        p.size = 2 + Math.random() * 2;
+        p.vx = (-30 + Math.random() * 60) * (0.5 + intensityClamped * 0.5);
+        p.vy = 20 + Math.random() * 30;
+        p.life = 2.5 + Math.random() * 1.5;
+        p.maxLife = p.life;
+        p.size = 2 + intensityClamped * 3 + Math.random() * 2;
         p.color = 'rgba(255, 255, 255, 0.7)';
-        p.opacity = 0.7;
+        p.opacity = 0.5 + intensityClamped * 0.3;
       } else if (weatherType === 'wind') {
-        p.vx = 150 + Math.random() * 100;
-        p.vy = -10 + Math.random() * 20;
-        p.life = 0.5;
-        p.maxLife = 0.5;
-        p.size = 1;
+        p.vx = (150 + Math.random() * 150) * (0.6 + intensityClamped * 0.8);
+        p.vy = -15 + Math.random() * 30;
+        p.life = 0.3 + Math.random() * 0.3;
+        p.maxLife = p.life;
+        p.size = 0.8 + Math.random() * 0.8;
         p.color = 'rgba(200, 220, 255, 0.3)';
-        p.opacity = 0.3;
+        p.opacity = 0.2 + intensityClamped * 0.3;
+      } else if (weatherType === 'storm') {
+        p.vx = (-100 + Math.random() * 40) * (0.8 + intensityClamped * 0.5);
+        p.vy = 180 + Math.random() * 100;
+        p.life = 0.4 + Math.random() * 0.3;
+        p.maxLife = p.life;
+        p.size = 1.5 + intensityClamped * 1.2 + Math.random() * 0.6;
+        p.color = 'rgba(100, 140, 255, 0.7)';
+        p.opacity = 0.5 + intensityClamped * 0.3;
       }
       this.particles.push(p);
     }
+  }
+
+  // Emit weather particles for a storm (debris, spray, heavy rain)
+  emitStormDebris(x, y, intensity = 1) {
+    const count = Math.floor(3 + 8 * intensity);
+    for (let i = 0; i < count; i++) {
+      const p = this._getPooledParticle();
+      p.type = 'weather';
+      p.category = 'debris';
+      p.x = x + (Math.random() - 0.5) * 200;
+      p.y = y + (Math.random() - 0.5) * 150;
+      p.vx = (-60 + Math.random() * 30) * (0.8 + intensity * 0.6);
+      p.vy = 80 + Math.random() * 120;
+      p.life = 0.6 + Math.random() * 0.5;
+      p.maxLife = p.life;
+      p.size = 1 + Math.random() * 2;
+      p.color = intensity > 0.5 ? 'rgba(140, 120, 100, 0.6)' : 'rgba(180, 160, 140, 0.5)';
+      p.opacity = 0.4 + intensity * 0.3;
+      this.particles.push(p);
+    }
+  }
+
+  // Screen-wide rain streak for heavy rain overlay (rendered differently in draw())
+  addRainStreak(x, y, length, intensity = 1) {
+    const p = this._getPooledParticle();
+    p.type = 'rainstreak';
+    p.category = 'rainstreak';
+    p.x = x;
+    p.y = y;
+    p.vx = 0;
+    p.vy = 0;
+    p.life = 0.15 + Math.random() * 0.1;
+    p.maxLife = p.life;
+    p.size = length;
+    p.opacity = 0.15 + intensity * 0.25;
+    this.particles.push(p);
   }
 
   // Add combat hit effects (blood splatter)
@@ -690,6 +814,12 @@ export class ParticleSystem {
       case 'weather_wind':
         this._addWeatherParticles(x, y, 'wind', options.intensity || 1);
         break;
+      case 'weather_storm':
+        this._addWeatherParticles(x, y, 'storm', options.intensity || 1);
+        if (options.intensity > 0.4) {
+          this.emitStormDebris(x, y, options.intensity);
+        }
+        break;
       case 'combat':
       case 'hit':
         this.addCombatHit(x, y, options.damage || 5, options.isKill || false);
@@ -814,8 +944,10 @@ export class ParticleSystem {
         break;
 
       case 'ring':
+      case 'puff':
+      case 'fade':
         p.size += p.expandRate * dt;
-        p.opacity = lifeRatio * 0.6;
+        p.opacity = lifeRatio * (p.category === 'puff' ? 0.5 : p.category === 'fade' ? 0.4 : 0.6);
         break;
 
       case 'dust':
@@ -923,6 +1055,10 @@ export class ParticleSystem {
       case 'elder':
         p.opacity = lifeRatio * 0.7;
         p.size += dt * 20;
+        break;
+
+      case 'rainstreak':
+        p.opacity = lifeRatio * 0.8;
         break;
 
       // Default: just fade based on life
@@ -1207,6 +1343,25 @@ export class ParticleSystem {
           ctx.lineTo(p.x, p.y);
           ctx.stroke();
           ctx.restore();
+        } else if (p.category === 'storm') {
+          // Storm - heavy rain with motion blur
+          ctx.save();
+          ctx.strokeStyle = p.color;
+          ctx.lineWidth = p.size;
+          ctx.lineCap = 'round';
+          ctx.globalAlpha = p.opacity;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p.x + p.vx * 0.025, p.y + p.vy * 0.025);
+          ctx.stroke();
+          ctx.restore();
+        } else if (p.category === 'debris') {
+          // Storm debris - small particles being blown
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = p.opacity;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
         } else {
           // Generic weather
           ctx.fillStyle = p.color;
@@ -1229,6 +1384,18 @@ export class ParticleSystem {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
+      } else if (p.type === 'rainstreak') {
+        // Screen-wide rain streak (vertical line)
+        ctx.save();
+        ctx.strokeStyle = `rgba(150, 180, 255, ${p.opacity})`;
+        ctx.lineWidth = 1.5;
+        ctx.lineCap = 'round';
+        ctx.globalAlpha = p.opacity;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x - 2, p.y + p.size);
+        ctx.stroke();
+        ctx.restore();
       }
 
       ctx.restore();

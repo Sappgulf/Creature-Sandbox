@@ -415,6 +415,123 @@ export class AudioSystem {
     }
   }
 
+  // Play ecosystem health-based ambient sounds
+  playEcosystemAmbient(world) {
+    if (!this.soundsEnabled || !this.ctx || !this.musicEnabled) return;
+
+    const now = this.ctx.currentTime;
+    if (now - this.lastAmbientTime < this.ambientInterval) return;
+    this.lastAmbientTime = now;
+
+    try {
+      const population = world?.creatures?.length || 0;
+      if (population === 0) return;
+
+      const health = world?.ecoHealth?.metrics?.overall ?? 50;
+      const dayNight = world?.dayNightState || world?.environment?.getDayNightState?.();
+      const isNight = dayNight?.phase === 'night' || (dayNight?.light ?? 1) < 0.4;
+
+      let predators = 0;
+      for (const c of world.creatures) {
+        const diet = c.genes?.diet ?? (c.genes?.predator ? 1 : 0);
+        if (diet > 0.7) predators++;
+      }
+      const predatorRatio = predators / population;
+      const tension = predatorRatio;
+
+      let ambientType = 'peaceful';
+      let volume = 0.15;
+
+      if (health >= 70 && tension < 0.2) {
+        ambientType = isNight ? 'peacefulNight' : 'peacefulDay';
+        volume = 0.2;
+      } else if (health >= 40 && tension < 0.35) {
+        ambientType = isNight ? 'calmNight' : 'calmDay';
+        volume = 0.15;
+      } else if (tension >= 0.35 || health < 30) {
+        ambientType = 'tense';
+        volume = 0.08;
+      } else {
+        ambientType = isNight ? 'neutralNight' : 'neutralDay';
+        volume = 0.12;
+      }
+
+      this.playEcosystemSound(ambientType, volume);
+    } catch (e) {
+      console.warn('Ecosystem ambient error:', e);
+    }
+  }
+
+  // Play specific ecosystem ambient sound
+  playEcosystemSound(type, volume) {
+    if (!this.soundsEnabled || !this.ctx) return;
+
+    try {
+      switch (type) {
+        case 'peacefulDay':
+          // Happy birds chirping
+          this.playTone(1200 + Math.random() * 300, 0.1, 'sine', volume * 0.6, 'ambient');
+          setTimeout(() => {
+            if (this.soundsEnabled && this.ctx) {
+              this.playTone(1400 + Math.random() * 400, 0.08, 'sine', volume * 0.4, 'ambient');
+            }
+          }, 120);
+          setTimeout(() => {
+            if (this.soundsEnabled && this.ctx) {
+              this.playTone(1100 + Math.random() * 200, 0.12, 'sine', volume * 0.5, 'ambient');
+            }
+          }, 250);
+          break;
+
+        case 'peacefulNight':
+          // Gentle crickets and night sounds
+          this.playTone(1800 + Math.random() * 200, 0.08, 'sine', volume * 0.5, 'ambient');
+          this.playTone(2200 + Math.random() * 150, 0.06, 'triangle', volume * 0.3, 'ambient');
+          setTimeout(() => {
+            if (this.soundsEnabled && this.ctx) {
+              this.playTone(1900 + Math.random() * 100, 0.1, 'sine', volume * 0.4, 'ambient');
+            }
+          }, 180);
+          break;
+
+        case 'calmDay':
+          // Occasional birds
+          if (Math.random() < 0.7) {
+            this.playTone(900 + Math.random() * 300, 0.1, 'sine', volume * 0.5, 'ambient');
+            setTimeout(() => {
+              if (this.soundsEnabled && this.ctx) {
+                this.playTone(1000 + Math.random() * 200, 0.08, 'sine', volume * 0.35, 'ambient');
+              }
+            }, 100);
+          }
+          break;
+
+        case 'calmNight':
+          // Soft crickets
+          this.playTone(2000 + Math.random() * 200, 0.06, 'sine', volume * 0.4, 'ambient');
+          break;
+
+        case 'tense':
+          // Sparse, unsettling sounds - low frequency rumble or high pitch警觉
+          if (Math.random() < 0.5) {
+            this.playTone(80 + Math.random() * 40, 0.4, 'sine', volume * 0.6, 'ambient');
+          } else {
+            this.playTone(3000 + Math.random() * 500, 0.05, 'sine', volume * 0.3, 'ambient');
+          }
+          break;
+
+        case 'neutralDay':
+        case 'neutralNight':
+        default:
+          // Minimal ambient
+          this.playTone(400 + Math.random() * 200, 0.15, 'sine', volume * 0.4, 'ambient');
+          break;
+      }
+    } catch (e) {
+      console.warn('Ecosystem sound error:', e);
+    }
+  }
+
   // Update method - call this regularly to trigger ambient sounds
   update(dt, world) {
     if (!this.soundsEnabled || !this.ctx) return;
@@ -425,15 +542,8 @@ export class AudioSystem {
     if (this.ambientTimer >= this.ambientInterval) {
       this.ambientTimer = 0;
 
-      // Determine biome based on world state (simplified)
-      const biomes = ['forest', 'wetland', 'desert', 'mountain'];
-      const randomBiome = biomes[Math.floor(Math.random() * biomes.length)];
-
-      // Vary intensity based on population and activity
-      const population = world?.creatures?.length || 0;
-      const intensity = Math.min(1.0, 0.3 + population / 200);
-
-      this.playAmbientSound(randomBiome, intensity);
+      // Use ecosystem health-based ambient sounds
+      this.playEcosystemAmbient(world);
     }
   }
 

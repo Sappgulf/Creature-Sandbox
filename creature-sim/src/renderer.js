@@ -477,24 +477,90 @@ export class Renderer {
     }
   }
 
-  _drawDecoration(dec) {
+  _getSeasonalDecorationModifier(dec, world) {
+    const season = world.currentSeason || 'spring';
+    const phase = world.seasonPhase || 0;
+
+    const modifier = {
+      hueShift: 0,
+      saturationMult: 1,
+      lightnessMult: 1,
+      alphaMult: 1,
+      isBare: false
+    };
+
+    switch (season) {
+      case 'spring':
+        modifier.saturationMult = 0.7 + phase * 0.3;
+        modifier.lightnessMult = 0.85 + phase * 0.15;
+        if (dec.type === 'flower') {
+          modifier.alphaMult = 0.4 + phase * 0.6;
+        }
+        break;
+
+      case 'summer':
+        modifier.saturationMult = 1.0;
+        modifier.lightnessMult = 1.0;
+        if (dec.type === 'flower') {
+          modifier.alphaMult = 0.9 + phase * 0.1;
+        }
+        break;
+
+      case 'autumn': {
+        const autumnProgress = phase;
+        modifier.hueShift = -30 * autumnProgress;
+        modifier.saturationMult = 1.0 - autumnProgress * 0.3;
+        modifier.lightnessMult = 0.9 - autumnProgress * 0.2;
+        if (dec.type === 'tree') {
+          modifier.alphaMult = 1.0 - autumnProgress * 0.4;
+          modifier.isBare = autumnProgress > 0.7;
+        } else if (dec.type === 'flower') {
+          modifier.alphaMult = 0.7 - autumnProgress * 0.6;
+        } else if (dec.type === 'grass') {
+          modifier.alphaMult = 0.8 - autumnProgress * 0.5;
+        }
+        break;
+      }
+
+      case 'winter': {
+        modifier.hueShift = -35;
+        modifier.saturationMult = 0.3;
+        modifier.lightnessMult = 0.7;
+        if (dec.type === 'tree') {
+          modifier.alphaMult = 0.6;
+          modifier.isBare = true;
+        } else if (dec.type === 'flower') {
+          modifier.alphaMult = 0.1;
+        } else if (dec.type === 'grass') {
+          modifier.alphaMult = 0.3;
+        }
+        break;
+      }
+    }
+
+    return modifier;
+  }
+
+  _drawDecoration(dec, world) {
     const assetKey = this._getDecorationSpriteAsset(dec);
 
     if (assetKey && assetLoader) {
       const spriteInfo = assetLoader.spriteSheets?.get(assetKey);
       if (spriteInfo) {
-        this._drawDecorationFromSprite(dec, spriteInfo, assetKey);
+        this._drawDecorationFromSprite(dec, spriteInfo, assetKey, world);
         return;
       }
     }
 
-    this._drawDecorationFallback(dec);
+    this._drawDecorationFallback(dec, world);
   }
 
-  _drawDecorationFromSprite(dec, spriteInfo, assetKey) {
+  _drawDecorationFromSprite(dec, spriteInfo, assetKey, world) {
     const ctx = this.ctx;
     const { frameWidth, frameHeight } = spriteInfo;
     const spriteIndex = dec.sprite || 0;
+
+    const mod = this._getSeasonalDecorationModifier(dec, world);
 
     ctx.save();
     ctx.translate(dec.x, dec.y);
@@ -502,51 +568,73 @@ export class Renderer {
     const scale = (dec.size || 40) / frameHeight;
     ctx.scale(scale, scale);
 
-    ctx.globalAlpha = 0.85;
+    ctx.globalAlpha = 0.85 * mod.alphaMult;
+
+    if (mod.hueShift !== 0 || mod.saturationMult !== 1 || mod.lightnessMult !== 1) {
+      ctx.filter = `saturate(${mod.saturationMult * 100}%) brightness(${mod.lightnessMult * 100}%)`;
+      if (mod.hueShift !== 0) {
+        ctx.filter += ` hue-rotate(${mod.hueShift}deg)`;
+      }
+    }
 
     const frame = assetLoader.getSpriteFrameSync(assetKey, spriteIndex, frameWidth, dec.hue);
     if (frame) {
       ctx.drawImage(frame, -frameWidth / 2, -frameHeight);
     } else {
       ctx.restore();
-      this._drawDecorationFallback(dec);
+      this._drawDecorationFallback(dec, world);
       return;
     }
 
     ctx.restore();
   }
 
-  _drawDecorationFallback(dec) {
+  _drawDecorationFallback(dec, world) {
     const ctx = this.ctx;
+    const mod = this._getSeasonalDecorationModifier(dec, world);
+
     ctx.save();
     ctx.translate(dec.x, dec.y);
-    ctx.globalAlpha = 0.6;
+    ctx.globalAlpha = 0.6 * mod.alphaMult;
 
     const size = dec.size || 30;
 
+    const applyHsl = (hue, saturation, lightness) => {
+      const h = (hue + mod.hueShift + 360) % 360;
+      const s = clamp(saturation * mod.saturationMult, 0, 100);
+      const l = clamp(lightness * mod.lightnessMult, 0, 100);
+      return `hsl(${h}, ${s}%, ${l}%)`;
+    };
+
     switch (dec.type) {
       case 'tree':
-        ctx.fillStyle = `hsl(${dec.hue}, 35%, 25%)`;
-        ctx.fillRect(-size * 0.1, -size * 0.1, size * 0.2, size * 0.75);
-        ctx.fillStyle = `hsl(${dec.hue}, 45%, 32%)`;
-        ctx.beginPath();
-        ctx.arc(0, -size * 0.35, size * 0.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = `hsl(${dec.hue + 10}, 40%, 28%)`;
-        ctx.beginPath();
-        ctx.arc(-size * 0.18, -size * 0.28, size * 0.35, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(size * 0.15, -size * 0.32, size * 0.32, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = `hsl(${dec.hue + 5}, 50%, 38%)`;
-        ctx.beginPath();
-        ctx.arc(size * 0.05, -size * 0.48, size * 0.22, 0, Math.PI * 2);
-        ctx.fill();
+        if (mod.isBare) {
+          ctx.fillStyle = applyHsl(25, 30, 20);
+          ctx.fillRect(-size * 0.1, -size * 0.1, size * 0.2, size * 0.75);
+          ctx.globalAlpha *= 0.5;
+        } else {
+          ctx.fillStyle = applyHsl(dec.hue, 35, 25);
+          ctx.fillRect(-size * 0.1, -size * 0.1, size * 0.2, size * 0.75);
+          ctx.fillStyle = applyHsl(dec.hue, 45, 32);
+          ctx.beginPath();
+          ctx.arc(0, -size * 0.35, size * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = applyHsl(dec.hue + 10, 40, 28);
+          ctx.beginPath();
+          ctx.arc(-size * 0.18, -size * 0.28, size * 0.35, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(size * 0.15, -size * 0.32, size * 0.32, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = applyHsl(dec.hue + 5, 50, 38);
+          ctx.beginPath();
+          ctx.arc(size * 0.05, -size * 0.48, size * 0.22, 0, Math.PI * 2);
+          ctx.fill();
+        }
         break;
 
       case 'rock':
-        ctx.fillStyle = `hsl(${dec.hue}, 12%, 40%)`;
+        ctx.fillStyle = applyHsl(dec.hue, 12, 40);
         ctx.beginPath();
         ctx.moveTo(-size * 0.4, size * 0.2);
         ctx.lineTo(-size * 0.1, -size * 0.4);
@@ -554,21 +642,21 @@ export class Renderer {
         ctx.lineTo(size * 0.4, size * 0.15);
         ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = `hsl(${dec.hue}, 10%, 52%)`;
+        ctx.fillStyle = applyHsl(dec.hue, 10, 52);
         ctx.beginPath();
         ctx.moveTo(-size * 0.15, size * 0.08);
         ctx.lineTo(size * 0.05, -size * 0.2);
         ctx.lineTo(size * 0.28, size * 0.05);
         ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = `hsl(${dec.hue}, 8%, 60%)`;
+        ctx.fillStyle = applyHsl(dec.hue, 8, 60);
         ctx.beginPath();
         ctx.arc(-size * 0.1, -size * 0.15, size * 0.08, 0, Math.PI * 2);
         ctx.fill();
         break;
 
       case 'flower': {
-        ctx.strokeStyle = `hsl(${dec.hue}, 45%, 35%)`;
+        ctx.strokeStyle = applyHsl(dec.hue, 45, 35);
         ctx.lineWidth = size * 0.07;
         ctx.beginPath();
         ctx.moveTo(0, size * 0.45);
@@ -581,16 +669,16 @@ export class Renderer {
           const angle = (i / petalCount) * Math.PI * 2 - Math.PI / 2;
           const px = Math.cos(angle) * petalRadius;
           const py = -size * 0.1 + Math.sin(angle) * petalRadius;
-          ctx.fillStyle = `hsl(${dec.hue}, 70%, 55%)`;
+          ctx.fillStyle = applyHsl(dec.hue, 70, 55);
           ctx.beginPath();
           ctx.ellipse(px, py, petalSize, petalSize * 0.6, angle, 0, Math.PI * 2);
           ctx.fill();
         }
-        ctx.fillStyle = `hsl(${dec.hue + 40}, 85%, 65%)`;
+        ctx.fillStyle = applyHsl(dec.hue + 40, 85, 65);
         ctx.beginPath();
         ctx.arc(0, -size * 0.1, size * 0.12, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = `hsl(${dec.hue + 50}, 90%, 75%)`;
+        ctx.fillStyle = applyHsl(dec.hue + 50, 90, 75);
         ctx.beginPath();
         ctx.arc(0, -size * 0.1, size * 0.06, 0, Math.PI * 2);
         ctx.fill();
@@ -598,7 +686,7 @@ export class Renderer {
       }
 
       case 'grass':
-        ctx.strokeStyle = `hsl(${dec.hue}, 50%, 30%)`;
+        ctx.strokeStyle = applyHsl(dec.hue, 50, 30);
         ctx.lineWidth = size * 0.07;
         for (let i = 0; i < 6; i++) {
           const offset = (i - 2.5) * size * 0.12;
@@ -613,20 +701,38 @@ export class Renderer {
           );
           ctx.stroke();
         }
-        ctx.fillStyle = `hsl(${dec.hue + 20}, 55%, 25%)`;
+        ctx.fillStyle = applyHsl(dec.hue + 20, 55, 25);
         ctx.beginPath();
         ctx.ellipse(0, size * 0.35, size * 0.15, size * 0.08, 0, 0, Math.PI * 2);
         ctx.fill();
         break;
 
       default:
-        ctx.fillStyle = `hsl(${dec.hue}, 40%, 40%)`;
+        ctx.fillStyle = applyHsl(dec.hue, 40, 40);
         ctx.beginPath();
         ctx.arc(0, 0, size * 0.3, 0, Math.PI * 2);
         ctx.fill();
     }
 
     ctx.restore();
+  }
+
+  _getSeasonalGroundTint(season, phase) {
+    const tintFactors = {
+      spring: { r: 0.03, g: 0.05, b: -0.02 },
+      summer: { r: 0.05, g: 0.02, b: -0.03 },
+      autumn: { r: 0.08, g: -0.03, b: -0.05 },
+      winter: { r: -0.05, g: -0.02, b: 0.08 }
+    };
+
+    const t = tintFactors[season];
+    const blendFactor = 0.5 + phase * 0.5;
+
+    return {
+      r: t.r * blendFactor,
+      g: t.g * blendFactor,
+      b: t.b * blendFactor
+    };
   }
 
   drawBiomes(world) {
@@ -649,6 +755,11 @@ export class Renderer {
       water: [76, 112, 146],
       wetland: [86, 122, 111]
     };
+
+    // Seasonal ground color modifiers
+    const season = world.currentSeason || 'spring';
+    const phase = world.seasonPhase || 0;
+    const seasonGroundTint = this._getSeasonalGroundTint(season, phase);
 
     // Fill base background
     ctx.fillStyle = this.background;
@@ -700,9 +811,14 @@ export class Renderer {
             cy,
             influenceRadius
           );
-          gradient.addColorStop(0, `rgba(${biomeColor.join(',')}, ${overlayAlpha})`);
-          gradient.addColorStop(0.55, `rgba(${biomeColor.join(',')}, ${overlayAlpha * 0.46})`);
-          gradient.addColorStop(1, `rgba(${biomeColor.join(',')}, 0)`);
+          const tintedColor = [
+            clamp(biomeColor[0] + seasonGroundTint.r * 100, 0, 255),
+            clamp(biomeColor[1] + seasonGroundTint.g * 100, 0, 255),
+            clamp(biomeColor[2] + seasonGroundTint.b * 100, 0, 255)
+          ];
+          gradient.addColorStop(0, `rgba(${tintedColor.join(',')}, ${overlayAlpha})`);
+          gradient.addColorStop(0.55, `rgba(${tintedColor.join(',')}, ${overlayAlpha * 0.46})`);
+          gradient.addColorStop(1, `rgba(${tintedColor.join(',')}, 0)`);
           ctx.fillStyle = gradient;
           ctx.fillRect(
             cx - influenceRadius,
@@ -727,7 +843,7 @@ export class Renderer {
           continue;
         }
 
-        this._drawDecoration(dec);
+        this._drawDecoration(dec, world);
       }
     }
 
@@ -1013,41 +1129,53 @@ export class Renderer {
     }
   }
 
-  // NEW: Draw season-based overlay tint
+  // NEW: Draw season-based overlay tint with smooth transitions
   _drawSeasonOverlay(world) {
     const ctx = this.ctx;
     const season = world.currentSeason || 'spring';
+    const phase = world.seasonPhase || 0;
 
-    let tint = null;
-    switch (season) {
-      case 'spring':
-        tint = 'rgba(255, 214, 168, 0.035)';
-        break;
-      case 'summer':
-        tint = 'rgba(255, 196, 118, 0.04)';
-        break;
-      case 'autumn':
-        tint = 'rgba(214, 124, 68, 0.055)';
-        break;
-      case 'winter':
-        tint = 'rgba(187, 214, 240, 0.08)';
-        break;
+    const seasonColors = {
+      spring: { r: 255, g: 214, b: 168, baseAlpha: 0.035 },
+      summer: { r: 255, g: 196, b: 118, baseAlpha: 0.04 },
+      autumn: { r: 214, g: 124, b: 68, baseAlpha: 0.055 },
+      winter: { r: 187, g: 214, b: 240, baseAlpha: 0.08 }
+    };
+
+    const seasonOrder = ['spring', 'summer', 'autumn', 'winter'];
+    const currentIdx = seasonOrder.indexOf(season);
+    const nextIdx = (currentIdx + 1) % 4;
+
+    const current = seasonColors[season];
+    const next = seasonColors[seasonOrder[nextIdx]];
+
+    let transitionTint;
+    if (phase < 0.7) {
+      const t = phase / 0.7;
+      const r = Math.round(current.r + (next.r - current.r) * t);
+      const g = Math.round(current.g + (next.g - current.g) * t);
+      const b = Math.round(current.b + (next.b - current.b) * t);
+      const alpha = current.baseAlpha + (next.baseAlpha - current.baseAlpha) * t;
+      transitionTint = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    } else {
+      const t = (phase - 0.7) / 0.3;
+      const r = Math.round(next.r + (next.r - current.r) * t * 0.3);
+      const g = Math.round(next.g + (next.g - current.g) * t * 0.3);
+      const b = Math.round(next.b + (next.b - current.b) * t * 0.3);
+      transitionTint = `rgba(${r}, ${g}, ${b}, ${next.baseAlpha})`;
     }
 
-    if (tint) {
-      // Fill entire visible area, not just world bounds
-      const bounds = this._viewBounds;
-      const visibleWidth = bounds.x2 - bounds.x1;
-      const visibleHeight = bounds.y2 - bounds.y1;
-      const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
-      ctx.fillStyle = tint;
-      ctx.fillRect(
-        bounds.x1 - extendAmount,
-        bounds.y1 - extendAmount,
-        visibleWidth + extendAmount * 2,
-        visibleHeight + extendAmount * 2
-      );
-    }
+    const bounds = this._viewBounds;
+    const visibleWidth = bounds.x2 - bounds.x1;
+    const visibleHeight = bounds.y2 - bounds.y1;
+    const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
+    ctx.fillStyle = transitionTint;
+    ctx.fillRect(
+      bounds.x1 - extendAmount,
+      bounds.y1 - extendAmount,
+      visibleWidth + extendAmount * 2,
+      visibleHeight + extendAmount * 2
+    );
   }
 
   _drawWeatherEffects(_world) {
@@ -1057,6 +1185,75 @@ export class Renderer {
 
     const bounds = this._viewBounds;
     const ctx = this.ctx;
+    const visibleWidth = bounds.x2 - bounds.x1;
+    const visibleHeight = bounds.y2 - bounds.y1;
+    const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
+
+    // Storm screen darkening overlay
+    if (weatherType === 'storm' && weatherIntensity > 0.3) {
+      const darkness = 0.1 + (weatherIntensity - 0.3) * 0.25;
+      ctx.fillStyle = `rgba(10, 15, 30, ${clamp(darkness, 0.1, 0.35)})`;
+      ctx.fillRect(
+        bounds.x1 - extendAmount,
+        bounds.y1 - extendAmount,
+        visibleWidth + extendAmount * 2,
+        visibleHeight + extendAmount * 2
+      );
+    }
+
+    // Heavy rain screen-wide streaks
+    if ((weatherType === 'rain' || weatherType === 'storm') && weatherIntensity > 0.5) {
+      const time = performance.now() * 0.001;
+      const streakCount = Math.floor(20 + (weatherIntensity - 0.5) * 60);
+      ctx.save();
+      ctx.strokeStyle = `rgba(150, 180, 255, ${0.08 + (weatherIntensity - 0.5) * 0.15})`;
+      ctx.lineWidth = 1;
+      ctx.lineCap = 'round';
+      for (let i = 0; i < streakCount; i++) {
+        const seed = i * 73.1;
+        const x = bounds.x1 + ((seed * 31) % 1) * visibleWidth;
+        const y = bounds.y1 + ((seed * 17) % 1) * visibleHeight;
+        const length = 30 + weatherIntensity * 50 + Math.sin(time * 3 + seed) * 10;
+        const offsetX = Math.sin(time * 2 + seed) * 5;
+        ctx.globalAlpha = 0.3 + Math.sin(time * 4 + seed) * 0.15;
+        ctx.beginPath();
+        ctx.moveTo(x + offsetX, y);
+        ctx.lineTo(x - 3 + offsetX, y + length);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Blizzard thickening overlay (heavy snow)
+    if (weatherType === 'snow' && weatherIntensity > 0.6) {
+      const time = performance.now() * 0.001;
+      const snowCount = Math.floor(30 + (weatherIntensity - 0.6) * 50);
+      ctx.save();
+      for (let i = 0; i < snowCount; i++) {
+        const seed = i * 91.3;
+        const x = bounds.x1 + ((seed * 23) % 1) * visibleWidth;
+        const y = bounds.y1 + ((seed * 41) % 1) * visibleHeight;
+        const size = 2 + Math.sin(time * 2 + seed) * 1 + weatherIntensity * 2;
+        const alpha = 0.15 + Math.sin(time * 3 + seed) * 0.1;
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // Snow fog effect
+      if (weatherIntensity > 0.75) {
+        const fogAlpha = (weatherIntensity - 0.75) * 0.3;
+        ctx.fillStyle = `rgba(200, 210, 230, ${fogAlpha})`;
+        ctx.fillRect(
+          bounds.x1 - extendAmount,
+          bounds.y1 - extendAmount,
+          visibleWidth + extendAmount * 2,
+          visibleHeight + extendAmount * 2
+        );
+      }
+    }
 
     // Aurora Borealis effect
     if (weatherType === 'aurora') {
@@ -1259,6 +1456,19 @@ export class Renderer {
     const time = world?.t ?? 0;
     const ctx = this.ctx;
 
+    const glowColors = {
+      grass: 'rgba(80,200,60,0.4)',
+      berries: 'rgba(255,50,100,0.45)',
+      fruit: 'rgba(255,140,30,0.45)',
+      golden_fruit: 'rgba(255,200,0,0.6)'
+    };
+    const pulseSpeeds = {
+      grass: 1.4,
+      berries: 1.1,
+      fruit: 0.9,
+      golden_fruit: 0.7
+    };
+
     for (let i = 0; i < visibleFood.length; i++) {
       const f = visibleFood[i];
       const type = f.type || 'grass';
@@ -1277,13 +1487,19 @@ export class Renderer {
       const frameIndex = assetLoader.getAnimationFrameIndex(sprite, 'idle', time, speedScale);
       const frame = sprite.frames[frameIndex] || sprite.frames[0];
       const drawSize = Math.max(4, (f.r || 2) * 3);
+      const pulse = Math.sin(time * pulseSpeeds[type] + i * 0.1) * 0.5 + 0.5;
+
+      ctx.save();
+      ctx.shadowBlur = 6 + pulse * 4;
+      ctx.shadowColor = glowColors[type] || glowColors.grass;
       this._drawSpriteAt(frame, f.x, f.y, drawSize);
+      ctx.restore();
 
       if (type === 'golden_fruit') {
         ctx.save();
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = 'gold';
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+        ctx.shadowBlur = 15 + pulse * 10;
+        ctx.shadowColor = 'rgba(255,215,0,0.8)';
+        ctx.strokeStyle = `rgba(255,255,200,${0.3 + pulse * 0.25})`;
         ctx.lineWidth = 1.3;
         ctx.beginPath();
         ctx.arc(f.x, f.y, drawSize * 0.55, 0, Math.PI * 2);
@@ -1603,29 +1819,69 @@ export class Renderer {
       }
     }
 
-    // Draw each vegetation type with its color
-    const defaultColors = {
-      grass: 'rgba(126,210,120,0.85)',
-      berries: 'rgba(200,100,150,0.85)',
-      fruit: 'rgba(255,180,80,0.85)',
-      golden_fruit: 'rgba(255,215,0,0.95)'
+    const time = world?.t ?? 0;
+
+    const foodVisuals = {
+      grass: {
+        color: 'rgba(100,220,90,0.9)',
+        glow: 'rgba(80,200,60,0.35)',
+        pulseSpeed: 1.4
+      },
+      berries: {
+        color: 'rgba(255,80,130,0.9)',
+        glow: 'rgba(255,50,100,0.4)',
+        pulseSpeed: 1.1
+      },
+      fruit: {
+        color: 'rgba(255,160,50,0.9)',
+        glow: 'rgba(255,140,30,0.4)',
+        pulseSpeed: 0.9
+      },
+      golden_fruit: {
+        color: 'rgba(255,230,50,0.95)',
+        glow: 'rgba(255,200,0,0.5)',
+        pulseSpeed: 0.7
+      }
     };
 
     for (const [type, items] of Object.entries(byType)) {
       if (items.length === 0) continue;
 
-      ctx.fillStyle = items[0].color || defaultColors[type] || defaultColors.grass;
+      const visual = foodVisuals[type] || foodVisuals.grass;
+      const pulse = Math.sin(time * visual.pulseSpeed + items.length * 0.1) * 0.5 + 0.5;
+      const baseColor = items[0].color || visual.color;
 
-      // OPTIMIZATION: Batch draw all items of this type
+      const glowSize = 3 + pulse * 2;
+      const glowAlpha = 0.2 + pulse * 0.15;
+
+      ctx.save();
+      ctx.shadowBlur = glowSize;
+      ctx.shadowColor = visual.glow;
+
+      ctx.fillStyle = baseColor;
       ctx.beginPath();
       for (let i = 0; i < items.length; i++) {
         const f = items[i];
-        ctx.moveTo(f.x + f.r, f.y);
-        ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+        const sizeMod = 1 + pulse * 0.08 + (f.r || 2) * 0.03;
+        ctx.moveTo(f.x + f.r * sizeMod, f.y);
+        ctx.arc(f.x, f.y, f.r * sizeMod, 0, Math.PI * 2);
       }
       ctx.fill();
+      ctx.restore();
 
-      // OPTIMIZATION: Only draw stems when zoomed in enough
+      ctx.save();
+      ctx.globalAlpha = glowAlpha;
+      ctx.fillStyle = visual.glow;
+      ctx.beginPath();
+      for (let i = 0; i < items.length; i++) {
+        const f = items[i];
+        const auraSize = (f.r || 2) + glowSize * 1.5;
+        ctx.moveTo(f.x + auraSize, f.y);
+        ctx.arc(f.x, f.y, auraSize, 0, Math.PI * 2);
+      }
+      ctx.fill();
+      ctx.restore();
+
       if (type === 'fruit' && this.camera.zoom > 0.5) {
         ctx.strokeStyle = '#8B4513';
         ctx.lineWidth = 1;
@@ -1638,18 +1894,17 @@ export class Renderer {
         ctx.stroke();
       }
 
-      // Special handling for Golden Fruit (rare)
       if (type === 'golden_fruit') {
         ctx.save();
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = 'gold';
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.lineWidth = 2;
+        ctx.shadowBlur = 18 + pulse * 6;
+        ctx.shadowColor = 'rgba(255,215,0,0.8)';
+        ctx.strokeStyle = `rgba(255,255,200,${0.3 + pulse * 0.2})`;
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
         for (let i = 0; i < items.length; i++) {
           const f = items[i];
-          ctx.moveTo(f.x + f.r + 1, f.y);
-          ctx.arc(f.x, f.y, f.r + 1, 0, Math.PI * 2);
+          ctx.moveTo(f.x + f.r + 2, f.y);
+          ctx.arc(f.x, f.y, f.r + 2, 0, Math.PI * 2);
         }
         ctx.stroke();
         ctx.restore();

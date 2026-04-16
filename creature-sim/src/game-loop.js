@@ -84,6 +84,10 @@ export class GameLoop {
       lastThrowToastAt: 0
     };
 
+    // Weather particle emission timer
+    this._weatherParticleTimer = 0;
+    this._weatherParticleInterval = 0.25; // Emit weather particles every 0.25 seconds
+
     // Track pause state for UI sync
     this._lastPausedState = false;
     this._uiCache = new Map();
@@ -553,6 +557,9 @@ export class GameLoop {
     this.world.step(dt);
 
     this.profileEnd();
+
+    // Emit weather particles based on weather state (throttled)
+    this._emitWeatherParticles(dt);
 
     // Update camera follow logic
     this.profileStart('camera-follow');
@@ -1335,5 +1342,49 @@ export class GameLoop {
     gameState.paused = true;
     gameState.accumulator += this.fixedDt;
 
+  }
+
+  /**
+   * Emit weather particles based on current weather state
+   * Particles are emitted in camera viewport area for visual effect
+   */
+  _emitWeatherParticles(dt) {
+    if (!this.particles || !this.world?.environment) return;
+
+    const env = this.world.environment;
+    const weatherType = env.weatherType;
+    const intensity = env.weatherIntensity;
+
+    if (!weatherType || intensity <= 0.05) return;
+
+    this._weatherParticleTimer += dt;
+    if (this._weatherParticleTimer < this._weatherParticleInterval) return;
+    this._weatherParticleTimer = 0;
+
+    const cam = this.camera;
+    const viewW = cam.viewportWidth || 800;
+    const viewH = cam.viewportHeight || 600;
+    const centerX = cam.x;
+    const centerY = cam.y;
+
+    const halfW = viewW / (2 * cam.zoom);
+    const halfH = viewH / (2 * cam.zoom);
+
+    const emitX = centerX + (Math.random() - 0.5) * halfW * 0.8;
+    const emitY = centerY + (Math.random() - 0.5) * halfH * 0.8;
+
+    if (weatherType === 'rain' || weatherType === 'storm') {
+      const particleIntensity = intensity * (weatherType === 'storm' ? 1.3 : 1.0);
+      this.particles.emit(emitX, emitY, 'weather_rain', { intensity: particleIntensity });
+      if (weatherType === 'storm' && intensity > 0.4) {
+        this.particles.emitStormDebris(emitX, emitY, intensity);
+      }
+    } else if (weatherType === 'snow') {
+      this.particles.emit(emitX, emitY, 'weather_snow', { intensity });
+    } else if (weatherType === 'wind') {
+      this.particles.emit(emitX, emitY, 'weather_wind', { intensity });
+    } else if (weatherType === 'aurora') {
+      // Aurora is handled via screen effect in renderer, not particles
+    }
   }
 }

@@ -361,6 +361,10 @@ export function applyInputPointerMethods(InputManager) {
               gameState.selectionPulseUntil = 0;
             }
             gameState.selectionPulseUntil = performance.now() + 400;
+            this.world?.particles?.addImpactRing?.(creature.x, creature.y, {
+              color: 'rgba(123, 183, 255, 1)',
+              size: 6
+            });
           } else {
             gameState.selectedId = null;
             this.camera.followMode = 'free';

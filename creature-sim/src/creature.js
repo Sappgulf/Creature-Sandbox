@@ -150,7 +150,8 @@ export class Creature {
       idleTempo: rand(0.7, 1.4),
       idleSway: rand(0.6, 1.3),
       reactivity: clamp(0.35 + rand(-0.1, 0.25) + (this.genes.sense / 200) * 0.25, 0.2, 1.2),
-      playfulness: clamp(0.3 + rand(-0.2, 0.4) + (1 - this.genes.metabolism / 2) * 0.2, 0.1, 1.2)
+      playfulness: clamp(0.3 + rand(-0.2, 0.4) + (1 - this.genes.metabolism / 2) * 0.2, 0.1, 1.2),
+      isPackHunting: false
     };
     const dietRole = resolveDietRole(this.genes);
     this.traits = {

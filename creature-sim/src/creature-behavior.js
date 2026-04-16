@@ -804,6 +804,8 @@ export class CreatureBehaviorSystem {
    * Pack hunting coordination - predators work together
    */
   updatePackHunting(world, dt) {
+    this.creature.personality.isPackHunting = false;
+
     const prey = world.getAnyCreatureById?.(this.creature.personality.currentTargetId);
     if (!prey || !prey.alive) return;
 
@@ -822,6 +824,8 @@ export class CreatureBehaviorSystem {
     ) || [];
 
     if (packMembers.length > 0) {
+      this.creature.personality.isPackHunting = true;
+
       // Coordinate attack - surround prey
       const distToPrey = Math.hypot(prey.x - this.creature.x, prey.y - this.creature.y);
 

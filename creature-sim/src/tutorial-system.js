@@ -59,6 +59,27 @@ const DEFAULT_STEPS = [
   }
 ];
 
+const TOOLTIP_CONFIG = {
+  '#ctrl-pause': { text: 'Pause or resume simulation', shortcut: 'Space' },
+  '#ctrl-speed': { text: 'Adjust simulation speed', shortcut: '1-4' },
+  '#ctrl-food': { text: 'Paint food on the world', shortcut: 'F' },
+  '#ctrl-spawn': { text: 'Spawn creatures', shortcut: 'S' },
+  '#ctrl-watch': { text: 'Follow creatures automatically', shortcut: 'W' },
+  '#ctrl-god': { text: 'God mode tools', shortcut: 'G' },
+  '#ctrl-more': { text: 'More options menu', shortcut: 'M' },
+  '#watch-pause': { text: 'Pause or resume', shortcut: 'Space' },
+  '#watch-speed': { text: 'Adjust watch speed', shortcut: '1-4' },
+  '#watch-follow': { text: 'Toggle creature follow', shortcut: 'F' },
+  '#watch-moments': { text: 'View notable events', shortcut: 'M' },
+  '#watch-god-mode': { text: 'Toggle god mode', shortcut: 'G' },
+  '#god-tool-food': { text: 'Place food sources', shortcut: null },
+  '#god-tool-calm': { text: 'Create calm zones', shortcut: null },
+  '#god-tool-chaos': { text: 'Add chaos events', shortcut: null },
+  '#god-tool-spawn': { text: 'Spawn creatures', shortcut: null },
+  '#god-tool-prop': { text: 'Place sandbox props', shortcut: null },
+  '#god-tool-remove': { text: 'Remove creatures', shortcut: null }
+};
+
 export class TutorialSystem {
   constructor(options = {}) {
     this.completed = new Set();
@@ -70,6 +91,11 @@ export class TutorialSystem {
     this.skipRequested = false;
     this._listenersBound = false;
     this._pendingAdvanceTimeout = null;
+
+    this.tooltipsDismissed = new Set();
+    this._tooltipOverlay = null;
+    this._tooltipElements = new Map();
+    this._hoverListeners = [];
 
     // Event listeners tracking
     this.listeners = {
@@ -88,7 +114,9 @@ export class TutorialSystem {
   // Start tutorial (first time players)
   start() {
     this.loadProgress();
+    this.loadTooltipDismissals();
     if (this.completed.has('all') || this.active) {
+      this.initTooltips();
       return; // Already completed
     }
 
@@ -240,6 +268,7 @@ export class TutorialSystem {
     this.completed.add('all');
     this.saveProgress();
     this._notifyCompletion('complete');
+    this.initTooltips();
 
     // Trigger achievement
     if (window.achievements) {
@@ -331,6 +360,167 @@ export class TutorialSystem {
   // Check if should show tutorial
   shouldShow() {
     return !this.completed.has('all');
+  }
+
+  // Initialize hover tooltips for UI elements
+  initTooltips() {
+    if (this._tooltipsInitialized) return;
+    this._tooltipsInitialized = true;
+    this._tooltipOverlay = this._createTooltipOverlay();
+    document.body.appendChild(this._tooltipOverlay);
+    this._bindTooltipListeners();
+  }
+
+  _createTooltipOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'tooltip-overlay';
+    overlay.style.cssText = `
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+    `;
+    return overlay;
+  }
+
+  _bindTooltipListeners() {
+    for (const [selector, config] of Object.entries(TOOLTIP_CONFIG)) {
+      const element = document.querySelector(selector);
+      if (!element) continue;
+      if (this.tooltipsDismissed.has(selector)) continue;
+
+      const tooltipId = `tooltip-${selector.slice(1)}`;
+      const tooltip = document.createElement('div');
+      tooltip.id = tooltipId;
+      tooltip.className = 'hover-tooltip';
+      tooltip.setAttribute('role', 'tooltip');
+      tooltip.innerHTML = `
+        <span class="tooltip-text">${config.text}</span>
+        ${config.shortcut ? `<kbd class="tooltip-shortcut">${config.shortcut}</kbd>` : ''}
+        <button class="tooltip-dismiss" aria-label="Dismiss tooltip">×</button>
+      `;
+      tooltip.style.cssText = `
+        position: absolute;
+        background: rgba(15, 23, 42, 0.96);
+        color: var(--text-primary, #f8fafc);
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        display: none;
+        pointer-events: auto;
+        opacity: 0;
+        transform: translateY(4px);
+        transition: opacity 0.15s ease, transform 0.15s ease;
+        max-width: 200px;
+        white-space: normal;
+      `;
+
+      const textStyle = tooltip.querySelector('.tooltip-text')?.style;
+      if (textStyle) textStyle.marginRight = '8px';
+
+      const dismissBtn = tooltip.querySelector('.tooltip-dismiss');
+      if (dismissBtn) {
+        dismissBtn.style.cssText = `
+          background: none;
+          border: none;
+          color: rgba(255, 255, 255, 0.5);
+          cursor: pointer;
+          padding: 0;
+          font-size: 14px;
+          line-height: 1;
+          margin-left: 4px;
+        `;
+        dismissBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.dismissTooltip(selector);
+        });
+      }
+
+      const shortcutStyle = tooltip.querySelector('.tooltip-shortcut')?.style;
+      if (shortcutStyle) {
+        shortcutStyle.cssText = `
+          display: inline-block;
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 4px;
+          padding: 2px 6px;
+          font-size: 10px;
+          font-family: inherit;
+          margin-left: 8px;
+        `;
+      }
+
+      this._tooltipOverlay.appendChild(tooltip);
+      this._tooltipElements.set(selector, tooltip);
+
+      const showTooltip = () => {
+        if (this.tooltipsDismissed.has(selector)) return;
+        const rect = element.getBoundingClientRect();
+        tooltip.style.display = 'block';
+        tooltip.style.left = `${rect.left + rect.width / 2 - tooltip.offsetWidth / 2}px`;
+        tooltip.style.top = `${rect.top - tooltip.offsetHeight - 10}px`;
+        requestAnimationFrame(() => {
+          tooltip.style.opacity = '1';
+          tooltip.style.transform = 'translateY(0)';
+        });
+      };
+
+      const hideTooltip = () => {
+        tooltip.style.opacity = '0';
+        tooltip.style.transform = 'translateY(4px)';
+        setTimeout(() => {
+          if (tooltip.style.opacity === '0') {
+            tooltip.style.display = 'none';
+          }
+        }, 150);
+      };
+
+      element.addEventListener('mouseenter', showTooltip);
+      element.addEventListener('mouseleave', hideTooltip);
+      element.addEventListener('focus', showTooltip);
+      element.addEventListener('blur', hideTooltip);
+
+      this._hoverListeners.push({ element, showTooltip, hideTooltip });
+    }
+  }
+
+  dismissTooltip(selector) {
+    this.tooltipsDismissed.add(selector);
+    const tooltip = this._tooltipElements.get(selector);
+    if (tooltip) {
+      tooltip.style.opacity = '0';
+      tooltip.style.transform = 'translateY(4px)';
+      setTimeout(() => {
+        tooltip.style.display = 'none';
+      }, 150);
+    }
+    this.saveTooltipDismissals();
+  }
+
+  saveTooltipDismissals() {
+    try {
+      localStorage.setItem('tooltips_dismissed', JSON.stringify(Array.from(this.tooltipsDismissed)));
+    } catch (e) {
+      console.warn('Failed to save tooltip dismissals:', e);
+    }
+  }
+
+  loadTooltipDismissals() {
+    try {
+      const saved = localStorage.getItem('tooltips_dismissed');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          this.tooltipsDismissed = new Set(parsed);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load tooltip dismissals:', e);
+    }
   }
 
   ensureOverlay() {
