@@ -6,6 +6,27 @@
 - [ ] Verify core loop: spawn → select → interact → save/load
 - [ ] Verify mobile touch controls work correctly
 
+## Session Audit (2026-04-15, Session 7 - Visual Polish)
+
+### Focus
+Fix creature visibility at default zoom and add creature type zones and personality-based visuals.
+
+### Changes
+
+**Creature Visibility Fixes:**
+1. **Enhanced LOD rendering** (`renderer-creatures.js:129-160`) — Increased LOD dot size from 2px to 2.5px at ultra-low zoom; increased medium LOD triangle from 6px to 7px with brighter base light (62% vs 60%) and added white outline for contrast
+2. **Day-time ambient glow** (`creature-render.js:291-323`) — Added subtle creature aura during day based on diet type (predators: reddish, omnivores: yellowish, herbivores: greenish) to help creatures stand out against background
+3. **Personality visual effects** (`creature-render.js:317-340`) — Aggressive creatures (aggression > 0.7) show subtle red ring; bold creatures (boldness > 0.65) show golden confidence ring
+4. **Emotion visual effects** (`creature-render.js:341-382`) — Stressed creatures (stress > 0.5) have purple/red glow; scared creatures (fear > 0.6) have wobble animation; happy creatures (joy > 0.6) have warm golden glow
+
+**Creature Territory Zones:**
+5. **Creature type zones** (`renderer.js:747-763, 878-978`) — New visualization layer showing dominant creature types in regions using colored gradient overlays (red for predators, yellow for omnivores, green for herbivores) based on local population density
+
+### Verified
+- `npm run lint` — 0 errors, 0 warnings
+- `npm test` — 146 passed, 0 failed
+- `npm run build` — succeeds in 169ms
+
 ## Session Audit (2026-04-15, Session 6 - Major Improvements)
 
 ### Focus

@@ -287,6 +287,95 @@ export function drawCreature(creature, ctx, opts = {}) {
     ctx.fill();
     // Reset fill style for actual creature
     ctx.fillStyle = `hsl(${displayHue},85%,${lightness}%)`;
+  } else {
+    // Day-time ambient glow - subtle creature aura to help stand out against background
+    const zoom = opts.zoom ?? 1;
+    const isLowZoom = zoom < 1.2;
+    if (isLowZoom && !isSelected && !isPinned) {
+      // Subtle day-time aura based on creature type
+      let auraColor;
+      const diet = g.diet ?? (g.predator ? 1.0 : 0.0);
+      if (diet > 0.7) {
+        auraColor = `hsla(${displayHue}, 70%, 55%, 0.12)`;
+      } else if (diet > 0.3) {
+        auraColor = `hsla(${displayHue}, 65%, 60%, 0.10)`;
+      } else {
+        auraColor = `hsla(${displayHue}, 75%, 55%, 0.08)`;
+      }
+      const auraRadius = r * (1.8 + (1.2 - zoom) * 0.5);
+      const dayGlow = ctx.createRadialGradient(0, 0, r * 0.8, 0, 0, auraRadius);
+      dayGlow.addColorStop(0, auraColor);
+      dayGlow.addColorStop(1, 'hsla(0, 0%, 0%, 0)');
+      ctx.fillStyle = dayGlow;
+      ctx.beginPath();
+      ctx.arc(0, 0, auraRadius, 0, TAU);
+      ctx.fill();
+    }
+  }
+
+  // Personality-based visual effects
+  if (creature.personality) {
+    const zoom = opts.zoom ?? 1;
+    const isLowZoom = zoom < 1.5;
+    const aggression = creature.personality.aggression ?? 0.5;
+    const boldness = creature.personality.boldness ?? 0.5;
+
+    // Aggressive creatures have a subtle red tint ring
+    if (aggression > 0.7 && isLowZoom && !isSelected && !isPinned) {
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 1.6, 0, TAU);
+      ctx.strokeStyle = `rgba(255, 80, 60, ${(aggression - 0.7) * 0.25})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // Bold creatures have a subtle confidence ring
+    if (boldness > 0.65 && isLowZoom && !isSelected && !isPinned) {
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 1.4, 0, TAU);
+      ctx.strokeStyle = `rgba(255, 220, 100, ${(boldness - 0.65) * 0.2})`;
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    }
+  }
+
+  // Emotion-based visual effects
+  if (creature.emotions) {
+    const zoom = opts.zoom ?? 1;
+    const isLowZoom = zoom < 1.5;
+    const stress = creature.emotions.stress ?? 0;
+    const fear = creature.emotions.fear ?? 0;
+    const joy = creature.emotions.joy ?? 0;
+
+    // Stressed creatures have a subtle purple/red tinge
+    if (stress > 0.5 && isLowZoom && !isSelected && !isPinned) {
+      const stressGlow = ctx.createRadialGradient(0, 0, r, 0, 0, r * 2);
+      stressGlow.addColorStop(0, `rgba(180, 80, 160, ${(stress - 0.5) * 0.12})`);
+      stressGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = stressGlow;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 2, 0, TAU);
+      ctx.fill();
+    }
+
+    // Scared creatures tremble slightly (visual only)
+    if (fear > 0.6 && isLowZoom && !isSelected && !isPinned) {
+      ctx.save();
+      const wobble = Math.sin(worldTime * 20) * 0.5;
+      ctx.translate(wobble, 0);
+      ctx.restore();
+    }
+
+    // Happy creatures have a subtle warm glow
+    if (joy > 0.6 && isLowZoom && !isSelected && !isPinned) {
+      const joyGlow = ctx.createRadialGradient(0, 0, r, 0, 0, r * 1.8);
+      joyGlow.addColorStop(0, `rgba(255, 220, 100, ${(joy - 0.6) * 0.1})`);
+      joyGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = joyGlow;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 1.8, 0, TAU);
+      ctx.fill();
+    }
   }
 
   const showTraitDetails = opts.showTraitVisualization !== false && (isSelected || isPinned || (opts.zoom && opts.zoom > 1.0));

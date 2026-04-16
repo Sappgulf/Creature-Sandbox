@@ -128,23 +128,34 @@ export function applyCreatureMethods(Renderer) {
 
       // PERFORMANCE: Level of Detail (LOD) handling
       if (zoom < 0.25 && !isSelected && !isPinned) {
-        // ULTRA LOW LOD: Just a tiny dot
-        ctx.fillStyle = `hsl(${clusterHue ?? c.genes?.hue ?? 0}, 80%, 60%)`;
+        // ULTRA LOW LOD: Small colored dot with outline
+        const hue = clusterHue ?? c.genes?.hue ?? 0;
+        ctx.fillStyle = `hsl(${hue}, 80%, 55%)`;
         ctx.beginPath();
-        ctx.arc(c.x, c.y, 2, 0, Math.PI * 2);
+        ctx.arc(c.x, c.y, 2.5, 0, Math.PI * 2);
         ctx.fill();
+        // Tiny outline for visibility
+        ctx.strokeStyle = `hsl(${hue}, 60%, 85%)`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
       } else if (zoom < 0.6 && !isSelected && !isPinned) {
-        // MEDIUM LOD: Simplified shape (Triangle)
+        // MEDIUM LOD: Simplified shape (Triangle) with outline for better visibility
         ctx.save();
         ctx.translate(c.x, c.y);
         ctx.rotate(c.dir || 0);
-        ctx.fillStyle = `hsl(${clusterHue ?? c.genes?.hue ?? 0}, 85%, 60%)`;
+        const hue = clusterHue ?? c.genes?.hue ?? 0;
+        const baseLight = c.genes?.predator ? 50 : 62;
+        ctx.fillStyle = `hsl(${hue}, 88%, ${baseLight}%)`;
         ctx.beginPath();
-        ctx.moveTo(6, 0);
-        ctx.lineTo(-4, 3.5);
-        ctx.lineTo(-4, -3.5);
+        ctx.moveTo(7, 0);
+        ctx.lineTo(-4.5, 4);
+        ctx.lineTo(-4.5, -4);
         ctx.closePath();
         ctx.fill();
+        // Outline for contrast
+        ctx.strokeStyle = `hsl(${hue}, 50%, 82%)`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
         ctx.restore();
       } else {
         // HIGH LOD: Full rendering

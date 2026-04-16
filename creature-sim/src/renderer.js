@@ -52,6 +52,7 @@ export class Renderer {
     // NEW: Name labels & trait visualization
     this.enableNameLabels = true;
     this.enableTraitVisualization = true;
+    this.enableCreatureZones = true; // Show creature territory zones
     this.hoveredCreatureId = null;
     this.enableNests = false;
 
@@ -730,6 +731,11 @@ export class Renderer {
       }
     }
 
+    // Draw creature territory zones (dominant creature types in regions)
+    if (this.enableCreatureZones && this.camera.zoom > 0.3) {
+      this._drawCreatureTerritoryZones(world);
+    }
+
     // Draw water biomes with animated waves
     this._drawWaterBiomes(world);
 
@@ -865,6 +871,99 @@ export class Renderer {
           ctx.lineTo(wlx + sampleSize * 0.1, y + sampleSize);
           ctx.stroke();
         }
+      }
+    }
+
+    ctx.restore();
+  }
+
+  /**
+   * Draw creature territory zones showing dominant creature types in regions
+   */
+  _drawCreatureTerritoryZones(world) {
+    if (!world.creatures || world.creatures.length < 5) return;
+
+    const ctx = this.ctx;
+    const bounds = this._viewBounds;
+    const zoom = this.camera.zoom;
+
+    // Sample grid size based on zoom
+    const sampleSize = Math.max(80, 150 / zoom);
+    const startX = Math.floor(bounds.x1 / sampleSize) * sampleSize;
+    const startY = Math.floor(bounds.y1 / sampleSize) * sampleSize;
+    const endX = Math.min(world.width, bounds.x2);
+    const endY = Math.min(world.height, bounds.y2);
+
+    ctx.save();
+
+    // Track territory data for each grid cell
+    const cellSize = sampleSize;
+    const gridCols = Math.ceil((endX - startX) / cellSize);
+    const gridRows = Math.ceil((endY - startY) / cellSize);
+
+    // Initialize grid with type counts
+    const grid = [];
+    for (let i = 0; i < gridCols * gridRows; i++) {
+      grid.push({ predator: 0, herbivore: 0, omnivore: 0, total: 0 });
+    }
+
+    // Count creatures in each cell
+    for (const c of world.creatures) {
+      if (!c.alive || c.x < startX || c.x > endX || c.y < startY || c.y > endY) continue;
+
+      const col = Math.floor((c.x - startX) / cellSize);
+      const row = Math.floor((c.y - startY) / cellSize);
+      const idx = row * gridCols + col;
+      if (idx < 0 || idx >= grid.length) continue;
+
+      const diet = c.genes?.diet ?? (c.genes?.predator ? 1.0 : 0.0);
+      if (diet > 0.7) {
+        grid[idx].predator++;
+      } else if (diet > 0.3) {
+        grid[idx].omnivore++;
+      } else {
+        grid[idx].herbivore++;
+      }
+      grid[idx].total++;
+    }
+
+    // Draw territory zones with gradient overlays
+    for (let row = 0; row < gridRows; row++) {
+      for (let col = 0; col < gridCols; col++) {
+        const idx = row * gridCols + col;
+        const cell = grid[idx];
+        if (cell.total < 2) continue; // Need at least 2 creatures to show territory
+
+        const x = startX + col * cellSize;
+        const y = startY + row * cellSize;
+
+        // Determine dominant type
+        let dominantColor, dominantAlpha;
+        if (cell.predator >= cell.herbivore && cell.predator >= cell.omnivore && cell.predator >= 2) {
+          dominantColor = 'rgba(220, 60, 60, 0.08)';
+          dominantAlpha = Math.min(0.18, cell.predator * 0.03);
+        } else if (cell.omnivore >= cell.herbivore && cell.omnivore >= 2) {
+          dominantColor = 'rgba(200, 160, 80, 0.07)';
+          dominantAlpha = Math.min(0.15, cell.omnivore * 0.025);
+        } else if (cell.herbivore >= 3) {
+          dominantColor = 'rgba(80, 180, 80, 0.06)';
+          dominantAlpha = Math.min(0.12, cell.herbivore * 0.02);
+        } else {
+          continue;
+        }
+
+        // Draw territory gradient
+        const gradient = ctx.createRadialGradient(
+          x + cellSize / 2, y + cellSize / 2, 0,
+          x + cellSize / 2, y + cellSize / 2, cellSize * 0.7
+        );
+        gradient.addColorStop(0, dominantColor.replace(/[\d.]+\)$/, `${dominantAlpha})`));
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(x + cellSize / 2, y + cellSize / 2, cellSize * 0.7, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
 
