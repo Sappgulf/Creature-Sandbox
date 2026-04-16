@@ -1086,7 +1086,7 @@ export function drawCreature(creature, ctx, opts = {}) {
     eatScale = 1 + Math.sin(eatPhase) * 0.15;
   }
 
-  const renderSize = r * 4 * eatScale;
+  const renderSize = r * 5 * eatScale;
   const spriteFrame = getCachedSpriteFrame(creature, worldTime, renderSize);
   if (spriteFrame) {
     ctx.drawImage(spriteFrame, -renderSize / 2, -renderSize / 2, renderSize, renderSize);
@@ -1097,10 +1097,11 @@ export function drawCreature(creature, ctx, opts = {}) {
     ctx.scale(eatScale, 2 - eatScale);
     const bodyScale = 0.8 + (2 - g.metabolism) * 0.3;
     ctx.scale(1, bodyScale);
+    const procSize = r * 1.2;
     ctx.beginPath();
-    ctx.moveTo(6, 0);
-    ctx.lineTo(-4, 3.5 / bodyScale);
-    ctx.lineTo(-4, -3.5 / bodyScale);
+    ctx.moveTo(procSize, 0);
+    ctx.lineTo(-procSize * 0.7, procSize * 0.6);
+    ctx.lineTo(-procSize * 0.7, -procSize * 0.6);
     ctx.closePath();
     ctx.fill();
     ctx.restore();

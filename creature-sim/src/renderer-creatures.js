@@ -128,15 +128,17 @@ export function applyCreatureMethods(Renderer) {
 
       // PERFORMANCE: Level of Detail (LOD) handling
       if (zoom < 0.25 && !isSelected && !isPinned) {
-        // ULTRA LOW LOD: Small colored dot with outline
+        // ULTRA LOW LOD: Colored dot with outline, sized by creature
         const hue = clusterHue ?? c.genes?.hue ?? 0;
+        const creatureR = ((c.energy || 40) / 40) * (3 + (c.size || 5));
+        const dotSize = Math.max(3, creatureR * 0.6);
         ctx.fillStyle = `hsl(${hue}, 80%, 55%)`;
         ctx.beginPath();
-        ctx.arc(c.x, c.y, 2.5, 0, Math.PI * 2);
+        ctx.arc(c.x, c.y, dotSize, 0, Math.PI * 2);
         ctx.fill();
-        // Tiny outline for visibility
+        // Outline for visibility
         ctx.strokeStyle = `hsl(${hue}, 60%, 85%)`;
-        ctx.lineWidth = 0.5;
+        ctx.lineWidth = 1;
         ctx.stroke();
       } else if (zoom < 0.6 && !isSelected && !isPinned) {
         // MEDIUM LOD: Simplified shape (Triangle) with outline for better visibility
@@ -145,16 +147,19 @@ export function applyCreatureMethods(Renderer) {
         ctx.rotate(c.dir || 0);
         const hue = clusterHue ?? c.genes?.hue ?? 0;
         const baseLight = c.genes?.predator ? 50 : 62;
+        // Scale triangle based on creature size for better visibility
+        const creatureR = ((c.energy || 40) / 40) * (3 + (c.size || 5));
+        const triSize = Math.max(8, creatureR * 1.5);
         ctx.fillStyle = `hsl(${hue}, 88%, ${baseLight}%)`;
         ctx.beginPath();
-        ctx.moveTo(7, 0);
-        ctx.lineTo(-4.5, 4);
-        ctx.lineTo(-4.5, -4);
+        ctx.moveTo(triSize, 0);
+        ctx.lineTo(-triSize * 0.6, triSize * 0.6);
+        ctx.lineTo(-triSize * 0.6, -triSize * 0.6);
         ctx.closePath();
         ctx.fill();
         // Outline for contrast
         ctx.strokeStyle = `hsl(${hue}, 50%, 82%)`;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 1.5;
         ctx.stroke();
         ctx.restore();
       } else {
@@ -213,14 +218,18 @@ export function applyCreatureMethods(Renderer) {
 
     const r = ((c.energy || 40) / 40) * (3 + (c.size || 5));
 
-    // Draw simple triangle as high-detail fallback
-    ctx.fillStyle = `hsl(${hue}, 85%, ${g.predator ? 45 : 60}%)`;
+    // Draw triangle scaled by creature size for better visibility
+    ctx.fillStyle = `hsl(${hue}, 85%, ${g.predator ? 50 : 65}%)`;
     ctx.beginPath();
-    ctx.moveTo(r, 0);
-    ctx.lineTo(-r * 0.8, r * 0.6);
-    ctx.lineTo(-r * 0.8, -r * 0.6);
+    ctx.moveTo(r * 1.2, 0);
+    ctx.lineTo(-r * 0.8, r * 0.7);
+    ctx.lineTo(-r * 0.8, -r * 0.7);
     ctx.closePath();
     ctx.fill();
+    // Outline
+    ctx.strokeStyle = `hsl(${hue}, 60%, 80%)`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
 
     if (isSelected || isPinned) {
       ctx.strokeStyle = isSelected ? 'white' : 'skyblue';
