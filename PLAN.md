@@ -7,6 +7,15 @@
 - [ ] Verify core loop: spawn → select → interact → save/load
 - [ ] Verify mobile touch controls work correctly
 
+## Done
+
+### 2026-04-15
+
+* Changed: `creature-sim/src/creature-render.js` — Fixed critical temporal dead zone bug where `rareMutations` and `worldTime` were referenced before their `const` declarations, causing ReferenceError crashes in night glow, bioluminescence, fear wobble, and emotion contagion code paths. Moved declarations before first usage.
+* Changed: `creature-sim/src/creature-render.js` — Fixed pack hunting visualization drawing lines at world coordinates instead of creature-local coordinates (lines, aura center, and prey intercept were all double-offset due to canvas already being translated/rotated to creature position). Now converts coordinates to local space using inverse rotation.
+* Changed: `creature-sim/src/creature-render.js` — Fixed fear contagion circles drawn at world-relative coords without accounting for canvas rotation. Now applies inverse rotation to correctly position influence circles.
+* Verified: `npm run lint` — 0 errors, `npm test` — 146 passed
+
 ## Session Audit (2026-04-15, Session 17 - Smooth Camera Transitions)
 
 ### Focus

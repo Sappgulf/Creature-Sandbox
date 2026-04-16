@@ -239,6 +239,9 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   // Day/night aware lighting
+  const rareMutations = creature.rareMutations || creature.mutations || [];
+  const worldTime = opts.worldTime ?? creature._lastWorld?.t ?? 0;
+
   const dayLight = opts.dayLight ?? 1;
   const isNight = dayLight < 0.4;
   const isDawnDusk = dayLight >= 0.4 && dayLight < 0.7;
@@ -396,12 +399,18 @@ export function drawCreature(creature, ctx, opts = {}) {
           creature.x, creature.y, nearbyRadius
         ).filter(c => c !== creature && c.alive && c.emotions);
 
+        const invCos = Math.cos(-creature.dir);
+        const invSin = Math.sin(-creature.dir);
         for (const other of nearby) {
           const dist = Math.sqrt((other.x - creature.x) ** 2 + (other.y - creature.y) ** 2);
           const influence = (1 - dist / nearbyRadius) * (fear - 0.5) * 0.15;
           if (influence > 0.01) {
+            const dx = other.x - creature.x;
+            const dy = other.y - creature.y;
+            const localX = dx * invCos - dy * invSin;
+            const localY = dx * invSin + dy * invCos;
             ctx.beginPath();
-            ctx.arc(other.x - creature.x, other.y - creature.y, other.size || 5, 0, TAU);
+            ctx.arc(localX, localY, other.size || 5, 0, TAU);
             ctx.fillStyle = `rgba(160, 80, 150, ${influence})`;
             ctx.fill();
           }
@@ -452,9 +461,6 @@ export function drawCreature(creature, ctx, opts = {}) {
   if (assetLoader.isReady() && (creature._cachedColor !== colorStr || creature._cachedAssetType !== assetType)) {
     updateCachedCanvas(creature, assetType, colorStr);
   }
-
-  const rareMutations = creature.rareMutations || creature.mutations || [];
-  const worldTime = opts.worldTime ?? creature._lastWorld?.t ?? 0;
 
   // Enhanced Bioluminescence glow effect with pulsing animation
   const bioGlow = rareMutations.find(m => m.name === 'Bioluminescence');
@@ -1190,6 +1196,9 @@ export function drawCreature(creature, ctx, opts = {}) {
     if (zoom > 0.5) {
       ctx.save();
       const packPulse = (worldTime * 4) % TAU;
+      const cosDir = Math.cos(-creature.dir);
+      const sinDir = Math.sin(-creature.dir);
+      ctx.rotate(-creature.dir);
 
       if (opts.world?.creatureManager) {
         const packMembers = opts.world.creatureManager.queryCreaturesFast(
@@ -1208,47 +1217,56 @@ export function drawCreature(creature, ctx, opts = {}) {
           ctx.setLineDash([4, 4]);
 
           for (const member of packMembers) {
+            const dx = member.x - creature.x;
+            const dy = member.y - creature.y;
             ctx.beginPath();
-            ctx.moveTo(creature.x, creature.y);
-            ctx.lineTo(member.x, member.y);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(dx * cosDir - dy * sinDir, dx * sinDir + dy * cosDir);
             ctx.stroke();
           }
 
           ctx.setLineDash([]);
 
-          const packCenterX = (creature.x + packMembers.reduce((s, m) => s + m.x, 0)) / (packMembers.length + 1);
-          const packCenterY = (creature.y + packMembers.reduce((s, m) => s + m.y, 0)) / (packMembers.length + 1);
+          const relPositions = packMembers.map(m => {
+            const dx = m.x - creature.x;
+            const dy = m.y - creature.y;
+            return { rx: dx * cosDir - dy * sinDir, ry: dx * sinDir + dy * cosDir };
+          });
+          const packCenterLocalX = relPositions.reduce((s, p) => s + p.rx, 0) / (packMembers.length + 1);
+          const packCenterLocalY = relPositions.reduce((s, p) => s + p.ry, 0) / (packMembers.length + 1);
           const auraRadius = r * (2 + packMembers.length * 0.5);
           const packAura = ctx.createRadialGradient(
-            packCenterX, packCenterY, r * 0.5,
-            packCenterX, packCenterY, auraRadius
+            packCenterLocalX, packCenterLocalY, r * 0.5,
+            packCenterLocalX, packCenterLocalY, auraRadius
           );
           packAura.addColorStop(0, `rgba(255, 80, 40, ${0.12 + Math.sin(packPulse) * 0.05})`);
           packAura.addColorStop(0.5, `rgba(200, 60, 30, ${0.06 + Math.sin(packPulse) * 0.03})`);
           packAura.addColorStop(1, 'rgba(150, 30, 20, 0)');
           ctx.fillStyle = packAura;
           ctx.beginPath();
-          ctx.arc(packCenterX, packCenterY, auraRadius, 0, TAU);
+          ctx.arc(packCenterLocalX, packCenterLocalY, auraRadius, 0, TAU);
           ctx.fill();
 
           const prey = creature.target?.creatureId !== undefined
             ? opts.world.getAnyCreatureById?.(creature.target.creatureId)
             : null;
           if (prey && prey.alive) {
+            const targetX = prey.x + (prey.vx || 0) * 5 - creature.x;
+            const targetY = prey.y + (prey.vy || 0) * 5 - creature.y;
+            const localTargetX = targetX * cosDir - targetY * sinDir;
+            const localTargetY = targetX * sinDir + targetY * cosDir;
             ctx.strokeStyle = `rgba(255, 200, 150, ${0.3 + Math.sin(packPulse * 1.5) * 0.15})`;
             ctx.lineWidth = 1.5;
             ctx.setLineDash([6, 4]);
             ctx.beginPath();
-            ctx.moveTo(creature.x, creature.y);
-            const interceptX = prey.x + (prey.vx || 0) * 5;
-            const interceptY = prey.y + (prey.vy || 0) * 5;
-            ctx.lineTo(interceptX, interceptY);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(localTargetX, localTargetY);
             ctx.stroke();
             ctx.setLineDash([]);
 
             ctx.fillStyle = `rgba(255, 200, 150, ${0.5 + Math.sin(packPulse) * 0.2})`;
             ctx.beginPath();
-            ctx.arc(interceptX, interceptY, 3, 0, TAU);
+            ctx.arc(localTargetX, localTargetY, 3, 0, TAU);
             ctx.fill();
           }
         }
@@ -1269,7 +1287,6 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   if (isAlphaCreature(creature, opts.world)) {
-    const worldTime = opts.worldTime ?? creature._lastWorld?.t ?? 0;
     const crownPhase = worldTime * 2;
     const crownY = -r - 5;
 
