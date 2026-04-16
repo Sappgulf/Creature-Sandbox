@@ -209,23 +209,31 @@ export class ArrayPool extends ObjectPool {
  * Particle pool for visual effects
  */
 export class ParticlePool extends ObjectPool {
-  constructor(initialSize = 100, maxSize = 1000) {
+  constructor(initialSize = 100, maxSize = 2000) {
     super(
       () => ({
         x: 0, y: 0,
         vx: 0, vy: 0,
         life: 0, maxLife: 0,
+        size: 1, opacity: 1,
+        type: '', category: '',
         color: '#ffffff',
-        size: 1,
-        alpha: 1
+        twinkle: false, expandRate: 0,
+        targetX: 0, targetY: 0,
+        text: '', pulse: 0, delay: 0,
+        fadeInTime: 0, name: '', hue: 0, label: ''
       }),
       (particle) => {
         particle.x = 0; particle.y = 0;
         particle.vx = 0; particle.vy = 0;
         particle.life = 0; particle.maxLife = 0;
+        particle.size = 1; particle.opacity = 1;
+        particle.type = ''; particle.category = '';
         particle.color = '#ffffff';
-        particle.size = 1;
-        particle.alpha = 1;
+        particle.twinkle = false; particle.expandRate = 0;
+        particle.targetX = 0; particle.targetY = 0;
+        particle.text = ''; particle.pulse = 0; particle.delay = 0;
+        particle.fadeInTime = 0; particle.name = ''; particle.hue = 0; particle.label = '';
       },
       initialSize,
       maxSize

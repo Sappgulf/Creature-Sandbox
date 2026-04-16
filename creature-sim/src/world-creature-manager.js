@@ -269,6 +269,88 @@ export class WorldCreatureManager {
     return this.addCreature(creature);
   }
 
+  // Spawn flying creature with wing-related traits
+  spawnFlying(x, y) {
+    const genes = makeGenes({
+      predator: 0,
+      diet: 0.35,
+      speed: 1.35,
+      sense: 140,
+      metabolism: 1.1,
+      hue: 280,
+      fov: 140,
+      flying: 0.85
+    });
+
+    // Set flying traits
+    if (genes.speed && typeof genes.speed === 'object') {
+      genes.speed.allele1 = 1.35;
+      genes.speed.allele2 = 1.35;
+      genes.speed.expressed = 1.35;
+    }
+    if (genes.fov && typeof genes.fov === 'object') {
+      genes.fov.allele1 = 140;
+      genes.fov.allele2 = 140;
+      genes.fov.expressed = 140;
+    }
+    if (genes.flying && typeof genes.flying === 'object') {
+      genes.flying.allele1 = 0.85;
+      genes.flying.allele2 = 0.85;
+      genes.flying.expressed = 0.85;
+    }
+
+    const creature = new Creature(x, y, genes);
+    creature.temperament = generateTemperament();
+    creature.quirks = rollQuirks();
+    if (creature.traits) {
+      creature.traits.dietRole = 'herbivore';
+      creature.traits.creatureType = 'flying';
+    }
+    creature.baseSize *= 0.85;
+    return this.addCreature(creature);
+  }
+
+  // Spawn burrowing creature with digging traits
+  spawnBurrowing(x, y) {
+    const genes = makeGenes({
+      predator: 0,
+      diet: 0.25,
+      speed: 0.8,
+      sense: 110,
+      metabolism: 0.75,
+      hue: 30,
+      aggression: 0.8,
+      burrowing: 0.85
+    });
+
+    // Set burrowing traits - slower but sturdy
+    if (genes.speed && typeof genes.speed === 'object') {
+      genes.speed.allele1 = 0.8;
+      genes.speed.allele2 = 0.8;
+      genes.speed.expressed = 0.8;
+    }
+    if (genes.metabolism && typeof genes.metabolism === 'object') {
+      genes.metabolism.allele1 = 0.75;
+      genes.metabolism.allele2 = 0.75;
+      genes.metabolism.expressed = 0.75;
+    }
+    if (genes.burrowing && typeof genes.burrowing === 'object') {
+      genes.burrowing.allele1 = 0.85;
+      genes.burrowing.allele2 = 0.85;
+      genes.burrowing.expressed = 0.85;
+    }
+
+    const creature = new Creature(x, y, genes);
+    creature.temperament = generateTemperament();
+    creature.quirks = rollQuirks();
+    if (creature.traits) {
+      creature.traits.dietRole = 'herbivore';
+      creature.traits.creatureType = 'burrowing';
+    }
+    creature.baseSize *= 1.15;
+    return this.addCreature(creature);
+  }
+
   // Find nearest creature
   nearestCreature(x, y, maxDistPx = 30) {
     let nearest = null;

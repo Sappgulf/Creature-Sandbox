@@ -6,6 +6,270 @@
 - [ ] Verify core loop: spawn → select → interact → save/load
 - [ ] Verify mobile touch controls work correctly
 
+## Session Audit (2026-04-15, Session 6 - Major Improvements)
+
+### Focus
+Implemented 12 major improvements across visuals, gameplay, performance, and UX.
+
+### Changes
+
+**Visual Improvements:**
+1. **Particle system overhaul** (`particle-system.js`) — Added `category` property to all 20 particle types, replaced fragile `p.color.includes()` string matching with typed `p.category === ...` checks
+2. **Sprite-based decorations** (`renderer.js`, `world-core.js`) — Enhanced procedural fallbacks with layered depth (tree foliage, rock highlights, flower petals, grass blades); added type-specific hue ranges for better visual variety
+3. **Creature sprite animations** (`creature-render.js`, `world-creature-manager.js`) — Flying/burrowing creatures now use SVG sprites; added `creatureType` trait detection for sprite selection
+4. **Post-processing bloom/glow** (`creature-render.js`, `particle-system.js`) — Added `shadowBlur` to fire (8), ice (6), electric (10), sparkle (6), food (5), and evolution (12) particle effects
+
+**Gameplay Improvements:**
+5. **Flying/burrowing behaviors** (`creature.js`, `creature-behavior.js`, `genetics.js`) — Flying creatures seek high elevation with swooping motion; burrowing creatures prefer underground with fear reduction
+6. **Mutation visual diversity** (`creature-render.js`) — Added effects for Gigantism (power aura + ripples), Dwarfism (cute aura + stars), Albinism (UV glow + damage sparks), Melanism (night vision aura), Longevity (golden aura + rings), Accelerated Aging (decay aura), Super Senses (radar sweep), Photosynthesis (energy glow), Chimera (multi-color swirl)
+7. **Nocturnal advantages** (`creature-agent-needs.js`, `creature.js`, `world-combat.js`, `creature-render.js`) — Nocturnal creatures gain 25% speed, 30% vision, 20% hunting bonus at night; diurnal creatures get 15% night penalty; enhanced nocturnal glow
+
+**Performance Improvements:**
+8. **Culling optimization** (`game-loop.js`) — Verified spatial grid culling already implemented; enhanced debug overlay with culling effectiveness metrics
+9. **Particle pooling** (`object-pool.js`, `particle-system.js`) — Particle pool size increased to 2000; all particle creation uses pooled objects; fixed particle leak bug where dead particles weren't returned to pool
+
+**Other Improvements:**
+10. **Sprite caching** (`asset-loader.js`, `creature-render.js`) — Multi-zoom sprite caching at 5 levels (32, 48, 64, 96, 128px); nearest zoom level selected to minimize scaling
+11. **Save system compression** (`save-system.js`, `main.js`) — gzip compression using browser's `CompressionStream` API; backward compatible with `C2:` prefix marker
+12. **Tutorial system** (`event-system.js`, `ui-controller-spawn.js`, `tutorial-system.js`) — Added spawn step to tutorial; spawn tracking via events; persistent progress in localStorage
+
+### Verified
+- `npm run lint` — 0 errors, 0 warnings
+- `npm test` — 146 passed, 0 failed
+- `npm run build` — succeeds in 187ms
+
+## Session Audit (2026-04-15, Session 5)
+
+### Focus
+Sprite Caching at Multiple Zoom Levels - pre-render creature sprites at multiple zoom levels to avoid re-tinting on every frame.
+
+### Changes
+- `creature-sim/src/asset-loader.js` — Added `ZOOM_SIZES = [32, 48, 64, 96, 128]` constant and `getNearestSpriteSize()` helper method for selecting nearest cached size
+- `creature-sim/src/creature-render.js` — `updateCachedCanvas()`: replaced single-size (64px) caching with multi-size pre-caching at all 5 zoom levels into `creature._cachedSpriteSets`; color-invalidation guard still works correctly across all sizes; changed `console.error` to `console.debug` for expected async failures
+- `creature-sim/src/creature-render.js` — `getCachedSpriteFrame()`: added `renderSize` parameter; selects nearest cached zoom level (smallest cached size >= renderSize, or largest available if none qualify) to minimize canvas scaling quality loss
+- `creature-sim/src/creature-render.js` — `drawCreature`: factored out `renderSize = r * 4 * eatScale` computation before sprite draw to pass to `getCachedSpriteFrame()`
+
+### Verified
+- `npm run lint` — 0 errors, 0 warnings
+- `npm test` — 146 passed, 0 failed
+
+## Session Audit (2026-04-15, Session 4)
+
+### Focus
+Tutorial System - add "spawn creatures" step and proper spawn tracking.
+
+### Changes
+- `creature-sim/src/event-system.js` — Added `CREATURE_SPAWN: 'creature:spawn'` event for manual creature spawns
+- `creature-sim/src/ui-controller-spawn.js` — Added import for `eventSystem` and `GameEvents`; emit `CREATURE_SPAWN` event after successful spawn with creatureId, type, and position
+- `creature-sim/src/tutorial-system.js` — Added spawn step to `DEFAULT_STEPS` (after welcome, before camera); updated welcome text from "four" to "five" quick moves; added `spawn` listener tracking; added `trackSpawn()` method; added `spawn` case to `_progressWaitFor()` and `_resetProgressCounters()`
+
+### Verified
+- `npm run lint` — 0 errors, 1 warning (pre-existing in asset-loader.js)
+- `npm test` — 146 passed, 0 failed
+
+### Notes
+- Tutorial system already existed but lacked spawn tracking and spawn step
+- `CREATURE_SPAWN` event distinguishes user-initiated spawns from natural creature births (`CREATURE_BORN`)
+- Tutorial dismisses on first successful spawn action via auto-advance timer
+
+## Session Audit (2026-04-15)
+
+### Focus
+Save System Compression - reduce localStorage usage by compressing saves.
+
+### Changes
+- `creature-sim/src/save-system.js` — Added gzip compression using browser's built-in `CompressionStream` API:
+  - Added `COMPRESSED_MARKER = 'C2:'` prefix for compressed data
+  - Added `compressJson()` function: compresses JSON string to gzip, returns base64 with marker
+  - Added `decompressJson()` function: detects compressed data via marker, decompresses gzip
+  - Added `compressionEnabled` toggle (default: true) to SaveSystem
+  - Modified `autoSave()`: now async, compresses before storing in localStorage
+  - Modified `loadAutoSave()`: now async, auto-detects and decompresses if needed
+  - Modified `saveToSlot()`: now async, compresses before storing
+  - Modified `loadFromSlot()`: now async, auto-detects and decompresses if needed
+  - Modified `saveToFile()`: now async, saves as .crsim file (compressed or uncompressed based on toggle)
+  - Modified `loadFromFile()`: now async, auto-detects and decompresses if needed
+- `creature-sim/src/main.js` — Updated callers to handle async methods:
+  - `handleSaveToFile` is now async
+  - Continue button click handler is now async to properly await `loadAutoSave`
+
+### Verified
+- `npm run lint` — 0 errors, 1 pre-existing warning (MAX_ZOOM_CACHE_PER_SPRITE unused)
+- `npm test` — 146 passed, 0 failed
+- Backward compatible: uncompressed saves load correctly (detected by missing `C2:` prefix)
+
+### Notes
+- Compression uses gzip via `CompressionStream` - available in all modern browsers
+- Saves are marked with `C2:` prefix so uncompressed saves (from older versions) load fine
+- `compressionEnabled` toggle allows disabling compression if needed for performance
+
+## Session Audit (2026-04-16, Session 4)
+
+### Focus
+Particle Pooling - reduce GC pressure from particles by implementing object pooling.
+
+### Changes
+- `creature-sim/src/object-pool.js` — Enhanced `ParticlePool`: increased maxSize from 1000 to 2000, expanded factory/defaults to include all particle properties (type, category, opacity, twinkle, expandRate, targetX/Y, text, pulse, delay, fadeInTime, name, hue, label), comprehensive reset function clears all particle properties
+- `creature-sim/src/particle-system.js` — Full pooling integration:
+  - Added `import { poolManager }` for accessing shared pool
+  - Added `_getPooledParticle()` / `_releaseParticle()` helper methods
+  - Replaced all `this.particles.push({...})` calls with pooled particle acquisition in 20+ methods (birth, death, weather, combat, food, evolution, heal, season, disease, venom, eat, bond, panic, migration, nest, scarcity, mutation, territory, play, elder, bubbles, ripples, etc.)
+  - `update()` now calls `_releaseParticle()` when particles die (before they were simply discarded - a leak)
+  - `clear()` now releases all particles back to pool before clearing array
+  - Added `_particleReleased` tracking counter
+- `scripts/core-modules.test.mjs` — Fixed test to check for `opacity` instead of `alpha` (actual property used by particle system)
+
+### Verified
+- `npm run lint` — 0 errors, 0 warnings
+- `npm test` — 146 passed, 0 failed (all tests pass)
+- All particle effects should work identically, but particles are now recycled instead of garbage collected
+
+## Session Audit (2026-04-16, Session 5)
+
+### Focus
+Post-Processing Effects - Bloom/Glow: enhance visual effects using canvas shadowBlur.
+
+### Changes
+- `creature-sim/src/creature-render.js` — Enhanced elemental auras with shadowBlur:
+  - **Fire elemental**: Added `shadowBlur = 8` with orange glow color for flame particles (wrapped in save/restore)
+  - **Ice elemental**: Added `shadowBlur = 6` with cyan-white glow for ice crystal rays (wrapped in save/restore)
+  - **Electric elemental**: Added `shadowBlur = 10` with yellow glow for lightning bolts (wrapped in save/restore)
+- `creature-sim/src/particle-system.js` — Enhanced particle glows with shadowBlur:
+  - **Sparkle particles**: Added `shadowBlur = 6` with particle color for birth/celebration sparkles
+  - **Food particles**: Added `shadowBlur = 5` with green color for food absorption effect
+  - **Evolution particles**: Simplified glow using single save/shadow/restore block (shadowBlur = 12)
+
+### Verified
+- `npm run lint` — 0 errors, 1 warning (pre-existing unused var in asset-loader.js)
+- `npm test` — 146 passed, 0 failed
+
+## Session Audit (2026-04-16, Session 3)
+
+### Focus
+Day/Night Creature Behavior - Nocturnal Advantages: enhance nocturnal creature behaviors at night.
+
+### Changes
+- `creature-sim/src/creature-agent-constants.js` — Added `NOCTURNAL` tuning block: `NIGHT_SPEED_BONUS: 0.25`, `NIGHT_SENSE_BONUS: 0.3`, `NIGHT_HUNT_BONUS: 0.2`, `NIGHT_GLOW_INTENSITY: 1.8`, `DIURNAL_NIGHT_SPEED_PENALTY: 0.15`
+- `creature-sim/src/creature-agent-needs.js` — Enhanced `updateAgentSenses()` with nocturnal vision bonus at night: nocturnal creatures get up to 30% increased food radius and mate detection radius at night; diurnal creatures get 15% penalty
+- `creature-sim/src/creature.js` — Enhanced `calculateCurrentSpeed()` with nocturnal speed bonus at night: nocturnal creatures gain up to 25% speed bonus at night (safer from diurnal predators); also added "night-owl" status effect for nocturnal creatures after dark
+- `creature-sim/src/world-combat.js` — Enhanced `executeAttack()` with nocturnal hunting bonus: nocturnal predators gain up to 20% increased hunting success chance at night
+- `creature-sim/src/creature-render.js` — Enhanced nocturnal creature glow at night: nocturnal creatures emit a stronger, more visible glow with larger radius (up to 3x+ base radius vs 3x for others), with distinct cyan-tinted coloring
+
+### Verified
+- `npm run lint` — 0 errors, 0 warnings
+- `npm test` — 144 passed, 2 failed (pre-existing ParticlePool/PoolManager failures unrelated to nocturnal changes)
+
+## Session Audit (2026-04-16, Session 3)
+
+### Focus
+Flying and burrowing creature behavior system - add AI movement patterns for specialized creature types.
+
+### Changes
+- `creature-sim/src/genetics.js` — Added `flying` and `burrowing` diploid genes with default expression
+- `creature-sim/src/creature.js` — Added `flyingAffinity` and `burrowingAffinity` properties; added speed modifiers (flying: +15% at high elevation, burrowing: +10% underground/-15% on surface) and energy drain modifiers (flying: -15% at high altitude/+10% otherwise, burrowing: -25% underground/+15% otherwise)
+- `creature-sim/src/creature-behavior.js` — Added `updateFlyingMovement()` with elevation preference, swooping/gliding patterns, and ground obstacle avoidance; added `updateBurrowingMovement()` with underground preference and fear reduction; added helper methods `sampleHighElevationDirection()`, `sampleGroundObstacles()`, `sampleUndergroundDirection()`
+- `creature-sim/src/world-creature-manager.js` — `spawnFlying()` now sets `flying: 0.85` gene; `spawnBurrowing()` now sets `burrowing: 0.85` gene
+
+### Verified
+- `npm run lint` — 0 errors, 1 warning (pre-existing)
+- `npm test` — 144 passed, 2 failed (pre-existing particle pool failures unrelated to changes)
+- Gene creation test: flying/burrowing genes express correctly
+
+## Session Audit (2026-04-15)
+
+### Focus
+Add or improve visual effects for mutations that lack them.
+
+### Changes
+- `creature-sim/src/creature-render.js` — Added visual effects for 9 mutations that previously lacked them:
+  - **Gigantism**: Power aura with 3 expanding ripple rings, orange glow gradient, and 4 orbiting power particles
+  - **Dwarfism**: Pink/purple cute aura, 3 sparkle stars, and mini heart particle approximations
+  - **Albinism**: Pale UV-sensitive glow, UV damage sparks (more intense during day via `dayLight`), white outline ring
+  - **Melanism**: Dark purple/blue night vision aura, glowing eye effect with shadowBlur, dark energy wisps
+  - **Longevity**: Golden aura with 3 age indicator rings, 4 golden sparkle particles
+  - **Accelerated Aging**: 4 rapid ticking decay rings, 6 time urgency particles, brown decay aura
+  - **Super Senses**: 2 radar sweep rings, detection sweep line, 5 sensory particles
+  - **Photosynthesis**: Green sun energy absorption glow (day-dependent via `dayLight`), energy particles falling from above, chlorophyll sparkles
+  - **Chimera**: Multi-colored chaotic aura (purple/cyan/orange/green), trait indicator particles based on `hybridTraits`, chaotic swirl lines
+
+### Verified
+- `npm run lint` — 0 errors, 0 warnings
+- `npm test` — 144 passed, 2 failed (pre-existing failures in `ParticlePool`/`PoolManager.getParticle` unrelated to visual changes)
+
+## Session Audit (2026-04-16, Session 2)
+
+### Focus
+Sprite-based decorations integration: ensure decorations use sprite rendering when available with procedural fallback.
+
+### Changes
+- `creature-sim/src/world-core.js` — `generateDecorations()`: Added type-specific hue ranges (rocks: 20-50 for browns/grays, flowers: 0-360 full spectrum, trees: 80-130 greens, grass: 70-110 yellowish greens) instead of uniform 80-120 green range.
+- `creature-sim/src/renderer.js` — `_drawDecorationFallback` tree: Improved with layered foliage circles, darker trunk, better depth.
+- `creature-sim/src/renderer.js` — `_drawDecorationFallback` rock: Improved with additional highlight circle, darker base tones.
+- `creature-sim/src/renderer.js` — `_drawDecorationFallback` flower: Enhanced with variable petal count based on hue, elliptical petals, layered center with highlight.
+- `creature-sim/src/renderer.js` — `_drawDecorationFallback` grass: Enhanced with more blades, elliptical base clump, better lean variation.
+
+### Verified
+- `npm run lint` — 0 errors, 0 warnings
+- `npm test` — 146 passed, 0 failed
+
+## Session Audit (2026-04-16)
+
+### Focus
+Particle system overhaul: replace fragile string color matching with typed categories.
+
+### Changes
+- `creature-sim/src/particle-system.js` — Added `category` property to all particle types (sparkle, ring, dust, ghost, gravestone, sleep, weather/rain/snow/wind, blood, food, evolution, heal, season, disease, contagion, venom, bubble, ripple, play, elder, territory). Replaced fragile `p.color.includes(...)` checks in `draw()` with `p.category === ...` checks for rain/snow/wind weather particles. Backward compatible: color property preserved for existing particle creation code.
+
+### Verified
+- `npm run lint` — 0 errors, 0 warnings
+- `npm test` — 146 passed, 0 failed
+
+## Session Audit (2026-04-15)
+
+### Focus
+1. Culling optimization verification and debug display enhancement
+
+### Changes
+- `creature-sim/src/game-loop.js` — Enhanced debug overlay (`renderDebugOverlay`) to show spatial grid culling effectiveness: displays cull percentage, total objects vs rendered, and per-type counts (creatures/food/corpses) using aggregated `performance.stats`
+
+### Verified
+- `npm run lint` — 0 errors, 0 warnings
+- `npm test` — 146 passed, 0 failed
+
+### Analysis: Spatial Grid Culling (Already Implemented)
+All culling already uses spatial grid queries:
+- **Creatures**: `world.creatureManager.creatureGrid.queryRect()` (renderer-creatures.js:12-18)
+- **Food**: `world.foodGrid.queryRect()` (renderer.js:1461)
+- **Corpses**: `world.corpseGrid.queryRect()` (renderer.js:1550)
+
+The `queryRect` method iterates only over grid cells intersecting the view bounds, providing O(1) broad-phase culling per cell with per-item precise culling. No changes to culling logic were needed.
+
+## Session Audit (2026-04-15)
+
+### Focus
+1. Enhanced water biome rendering with layered caustics, animated waves, and light reflections
+2. Enhanced bioluminescence glow effect with shadowBlur, sparkle particles, and night boost
+3. Added eating animation (chomp effect) and hunting animation (aggressive pulse ring)
+4. Bug sweep: fixed unused variable warnings and verified code quality
+5. Wire up Flying/Burrowing creature sprites
+
+### Changes
+- `creature-sim/src/renderer.js` — Enhanced `_drawWaterBiomes()` with multi-layered caustic patterns (3 concentric circles with different drift speeds), animated shimmer sparkles (2 per cell at zoom > 0.7), light reflection streaks (zoom > 0.8), and better depth-based coloring (shallow/deep differentiation)
+- `creature-sim/src/creature-render.js` — Enhanced bioluminescence glow: added `shadowBlur` for bloom-like effect, 5-stop radial gradient for richer glow, 4 animated sparkle particles orbiting the creature, inner and outer glow rings, night-time brightness boost via `dayLight` option
+- `creature-sim/src/creature-render.js` — Added eating animation: creature body pulses (scales between 1.0-1.15) using sine wave over 0.5s cycle, procedural creatures show animated mouth (green circle that opens/closes at front)
+- `creature-sim/src/creature-render.js` — Added hunting animation: predators with creature targets show dashed red pulsing ring around them (visible when zoomed in)
+- `creature-sim/src/renderer.js` — Fixed bug: `_drawDecorationFromSprite` was referencing undefined `assetKey` variable (passed as parameter now)
+- `creature-sim/src/renderer-creatures.js` — Removed unused `hue` variable
+- `creature-sim/src/renderer.js` — Removed unused `ctx` variable in `_drawDecoration`
+- `creature-sim/src/creature-render.js` — Added `creatureType` check to `assetType` determination: flying creatures use `creature_flying` sprite, burrowing creatures use `creature_burrowing` sprite (checked after age stage but before aquatic/alpha/diet checks)
+- `creature-sim/src/world-creature-manager.js` — `spawnFlying()` now sets `creature.traits.creatureType = 'flying'`
+- `creature-sim/src/world-creature-manager.js` — `spawnBurrowing()` now sets `creature.traits.creatureType = 'burrowing'`
+
+### Verified
+- `npm run lint` — 0 errors, 0 warnings (previously 0 errors, 2 warnings)
+- `npm test` — 146 passed, 0 failed
+- `npm run build` — succeeds in 277ms
+
 ## Session Audit (2026-04-14)
 
 ### Focus

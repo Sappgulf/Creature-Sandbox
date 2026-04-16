@@ -1,0 +1,291 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="64" viewBox="0 0 1024 64" fill="none">
+<defs>
+<filter id="creature_flying-soft-shadow" x="-40%" y="-40%" width="180%" height="180%">
+<feGaussianBlur in="SourceAlpha" stdDeviation="1.5" />
+<feOffset dx="0.5" dy="1.5" result="offsetblur" />
+<feComponentTransfer><feFuncA type="linear" slope="0.3" /></feComponentTransfer>
+<feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge>
+</filter>
+<filter id="creature_flying-glow" x="-50%" y="-50%" width="200%" height="200%">
+<feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
+<feFlood flood-color="currentColor" flood-opacity="0.4"/>
+<feComposite in2="blur" operator="in"/>
+<feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge>
+</filter>
+</defs>
+
+<!-- FRAME 0: Wings up -->
+<g transform="translate(0 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<!-- Body -->
+<path d="M 32 38 Q 24 32 22 28 Q 20 24 24 22 Q 28 20 32 24 Q 36 20 40 22 Q 44 24 42 28 Q 40 32 32 38 Z" fill="currentColor" filter="url(#creature_flying-soft-shadow)"/>
+<!-- Head -->
+<ellipse cx="32" cy="22" rx="6" ry="5" fill="currentColor"/>
+<!-- Eye -->
+<ellipse cx="34" cy="21" rx="2" ry="1.5" fill="white"/>
+<ellipse cx="34.5" cy="21" rx="1" ry="0.8" fill="#1a1a2e"/>
+<circle cx="34.2" cy="20.7" r="0.4" fill="white" opacity="0.9"/>
+<!-- Wings (up position) -->
+<path d="M 22 26 Q 8 10 4 6 Q 10 14 16 20 Q 12 18 8 16 Q 14 20 18 24 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 42 26 Q 56 10 60 6 Q 54 14 48 20 Q 52 18 56 16 Q 50 20 46 24 Z" fill="currentColor" opacity="0.85"/>
+<!-- Wing membrane detail -->
+<path d="M 22 26 Q 12 16 8 10" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" fill="none"/>
+<path d="M 22 26 Q 14 20 10 16" stroke="rgba(255,255,255,0.2)" stroke-width="0.5" fill="none"/>
+<path d="M 42 26 Q 52 16 56 10" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" fill="none"/>
+<path d="M 42 26 Q 50 20 54 16" stroke="rgba(255,255,255,0.2)" stroke-width="0.5" fill="none"/>
+<!-- Tail feathers -->
+<path d="M 28 38 Q 24 48 22 52 Q 26 50 30 44 Q 28 46 26 50 Q 30 48 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 36 38 Q 40 48 42 52 Q 38 50 34 44 Q 36 46 38 50 Q 34 48 32 42 Z" fill="currentColor" opacity="0.7"/>
+<!-- Beak -->
+<path d="M 30 24 L 28 28 L 36 28 L 34 24 Z" fill="currentColor" opacity="0.8"/>
+</g>
+
+<!-- FRAME 1: Wings rising -->
+<g transform="translate(64 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 38 Q 24 32 22 28 Q 20 24 24 22 Q 28 20 32 24 Q 36 20 40 22 Q 44 24 42 28 Q 40 32 32 38 Z" fill="currentColor" filter="url(#creature_flying-soft-shadow)"/>
+<ellipse cx="32" cy="22" rx="6" ry="5" fill="currentColor"/>
+<ellipse cx="34" cy="21" rx="2" ry="1.5" fill="white"/>
+<ellipse cx="34.5" cy="21" rx="1" ry="0.8" fill="#1a1a2e"/>
+<circle cx="34.2" cy="20.7" r="0.4" fill="white" opacity="0.9"/>
+<path d="M 22 26 Q 10 14 6 8 Q 12 16 17 21 Q 13 19 10 16 Q 15 20 19 24 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 42 26 Q 54 14 58 8 Q 52 16 47 21 Q 51 19 54 16 Q 49 20 45 24 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 22 26 Q 14 18 10 12" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" fill="none"/>
+<path d="M 22 26 Q 16 22 12 18" stroke="rgba(255,255,255,0.2)" stroke-width="0.5" fill="none"/>
+<path d="M 42 26 Q 50 18 54 12" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" fill="none"/>
+<path d="M 42 26 Q 48 22 52 18" stroke="rgba(255,255,255,0.2)" stroke-width="0.5" fill="none"/>
+<path d="M 28 38 Q 25 47 23 51 Q 27 49 30 44 Q 28 46 26 49 Q 30 47 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 36 38 Q 39 47 41 51 Q 37 49 34 44 Q 36 46 38 49 Q 34 47 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 30 24 L 28 27 L 36 27 L 34 24 Z" fill="currentColor" opacity="0.8"/>
+</g>
+
+<!-- FRAME 2: Wings level -->
+<g transform="translate(128 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 38 Q 24 32 22 28 Q 20 24 24 22 Q 28 20 32 24 Q 36 20 40 22 Q 44 24 42 28 Q 40 32 32 38 Z" fill="currentColor" filter="url(#creature_flying-soft-shadow)"/>
+<ellipse cx="32" cy="22" rx="6" ry="5" fill="currentColor"/>
+<ellipse cx="34" cy="21" rx="2" ry="1.5" fill="white"/>
+<ellipse cx="34.5" cy="21" rx="1" ry="0.8" fill="#1a1a2e"/>
+<circle cx="34.2" cy="20.7" r="0.4" fill="white" opacity="0.9"/>
+<path d="M 22 26 Q 12 20 6 18 Q 12 22 18 25 Q 14 23 11 21 Q 16 24 20 26 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 42 26 Q 52 20 58 18 Q 52 22 46 25 Q 50 23 53 21 Q 48 24 44 26 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 22 26 Q 16 22 12 20" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" fill="none"/>
+<path d="M 22 26 Q 18 24 15 22" stroke="rgba(255,255,255,0.2)" stroke-width="0.5" fill="none"/>
+<path d="M 42 26 Q 48 22 52 20" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" fill="none"/>
+<path d="M 42 26 Q 46 24 49 22" stroke="rgba(255,255,255,0.2)" stroke-width="0.5" fill="none"/>
+<path d="M 28 38 Q 26 46 24 50 Q 28 48 30 44 Q 28 46 27 49 Q 30 47 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 36 38 Q 38 46 40 50 Q 36 48 34 44 Q 36 46 37 49 Q 34 47 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 30 24 L 28 27 L 36 27 L 34 24 Z" fill="currentColor" opacity="0.8"/>
+</g>
+
+<!-- FRAME 3: Wings lowering -->
+<g transform="translate(192 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 38 Q 24 32 22 28 Q 20 24 24 22 Q 28 20 32 24 Q 36 20 40 22 Q 44 24 42 28 Q 40 32 32 38 Z" fill="currentColor" filter="url(#creature_flying-soft-shadow)"/>
+<ellipse cx="32" cy="22" rx="6" ry="5" fill="currentColor"/>
+<ellipse cx="34" cy="21" rx="2" ry="1.5" fill="white"/>
+<ellipse cx="34.5" cy="21" rx="1" ry="0.8" fill="#1a1a2e"/>
+<circle cx="34.2" cy="20.7" r="0.4" fill="white" opacity="0.9"/>
+<path d="M 22 26 Q 14 26 10 28 Q 14 26 19 27 Q 16 26 13 25 Q 17 27 20 28 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 42 26 Q 50 26 54 28 Q 50 26 45 27 Q 48 26 51 25 Q 47 27 44 28 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 28 38 Q 27 45 25 49 Q 29 47 30 44 Q 28 46 27 48 Q 30 46 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 36 38 Q 37 45 39 49 Q 35 47 34 44 Q 36 46 37 48 Q 34 46 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 30 24 L 28 27 L 36 27 L 34 24 Z" fill="currentColor" opacity="0.8"/>
+</g>
+
+<!-- FRAME 4: Wings down -->
+<g transform="translate(256 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 38 Q 24 32 22 28 Q 20 24 24 22 Q 28 20 32 24 Q 36 20 40 22 Q 44 24 42 28 Q 40 32 32 38 Z" fill="currentColor" filter="url(#creature_flying-soft-shadow)"/>
+<ellipse cx="32" cy="22" rx="6" ry="5" fill="currentColor"/>
+<ellipse cx="34" cy="21" rx="2" ry="1.5" fill="white"/>
+<ellipse cx="34.5" cy="21" rx="1" ry="0.8" fill="#1a1a2e"/>
+<circle cx="34.2" cy="20.7" r="0.4" fill="white" opacity="0.9"/>
+<path d="M 22 26 Q 16 32 14 38 Q 18 32 21 29 Q 18 30 16 32 Q 19 30 21 28 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 42 26 Q 48 32 50 38 Q 46 32 43 29 Q 46 30 48 32 Q 45 30 43 28 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 28 38 Q 28 44 27 48 Q 30 46 30 44 Q 28 46 28 47 Q 30 45 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 36 38 Q 36 44 37 48 Q 34 46 34 44 Q 36 46 36 47 Q 34 45 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 30 24 L 28 27 L 36 27 L 34 24 Z" fill="currentColor" opacity="0.8"/>
+</g>
+
+<!-- FRAME 5: Wings lowering (asymmetrical) -->
+<g transform="translate(320 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 38 Q 24 32 22 28 Q 20 24 24 22 Q 28 20 32 24 Q 36 20 40 22 Q 44 24 42 28 Q 40 32 32 38 Z" fill="currentColor" filter="url(#creature_flying-soft-shadow)"/>
+<ellipse cx="32" cy="22" rx="6" ry="5" fill="currentColor"/>
+<ellipse cx="34" cy="21" rx="2" ry="1.5" fill="white"/>
+<ellipse cx="34.5" cy="21" rx="1" ry="0.8" fill="#1a1a2e"/>
+<circle cx="34.2" cy="20.7" r="0.4" fill="white" opacity="0.9"/>
+<path d="M 22 26 Q 15 30 12 34 Q 16 29 20 27 Q 17 28 15 30 Q 18 28 20 27 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 42 26 Q 49 28 52 24 Q 48 27 45 28 Q 48 27 50 25 Q 47 27 44 28 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 28 38 Q 28 44 27 48 Q 30 46 30 44 Q 28 46 28 47 Q 30 45 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 36 38 Q 36 44 37 48 Q 34 46 34 44 Q 36 46 36 47 Q 34 45 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 30 24 L 28 27 L 36 27 L 34 24 Z" fill="currentColor" opacity="0.8"/>
+</g>
+
+<!-- FRAME 6: Wings level (asymmetrical) -->
+<g transform="translate(384 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 38 Q 24 32 22 28 Q 20 24 24 22 Q 28 20 32 24 Q 36 20 40 22 Q 44 24 42 28 Q 40 32 32 38 Z" fill="currentColor" filter="url(#creature_flying-soft-shadow)"/>
+<ellipse cx="32" cy="22" rx="6" ry="5" fill="currentColor"/>
+<ellipse cx="34" cy="21" rx="2" ry="1.5" fill="white"/>
+<ellipse cx="34.5" cy="21" rx="1" ry="0.8" fill="#1a1a2e"/>
+<circle cx="34.2" cy="20.7" r="0.4" fill="white" opacity="0.9"/>
+<path d="M 22 26 Q 13 22 8 20 Q 13 24 18 26 Q 14 24 11 23 Q 15 25 19 27 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 42 26 Q 51 24 56 22 Q 51 26 46 27 Q 50 26 53 24 Q 49 26 45 27 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 28 38 Q 27 45 26 49 Q 29 47 30 44 Q 28 46 27 48 Q 30 46 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 36 38 Q 37 45 38 49 Q 35 47 34 44 Q 36 46 37 48 Q 34 46 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 30 24 L 28 27 L 36 27 L 34 24 Z" fill="currentColor" opacity="0.8"/>
+</g>
+
+<!-- FRAME 7: Wings rising (asymmetrical) -->
+<g transform="translate(448 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 38 Q 24 32 22 28 Q 20 24 24 22 Q 28 20 32 24 Q 36 20 40 22 Q 44 24 42 28 Q 40 32 32 38 Z" fill="currentColor" filter="url(#creature_flying-soft-shadow)"/>
+<ellipse cx="32" cy="22" rx="6" ry="5" fill="currentColor"/>
+<ellipse cx="34" cy="21" rx="2" ry="1.5" fill="white"/>
+<ellipse cx="34.5" cy="21" rx="1" ry="0.8" fill="#1a1a2e"/>
+<circle cx="34.2" cy="20.7" r="0.4" fill="white" opacity="0.9"/>
+<path d="M 22 26 Q 11 16 6 10 Q 12 18 17 22 Q 13 20 10 17 Q 15 21 19 25 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 42 26 Q 53 18 58 12 Q 52 20 47 24 Q 51 22 54 18 Q 49 22 45 26 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 22 26 Q 15 19 11 14" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" fill="none"/>
+<path d="M 22 26 Q 17 22 14 18" stroke="rgba(255,255,255,0.2)" stroke-width="0.5" fill="none"/>
+<path d="M 42 26 Q 49 19 53 14" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" fill="none"/>
+<path d="M 42 26 Q 47 22 50 18" stroke="rgba(255,255,255,0.2)" stroke-width="0.5" fill="none"/>
+<path d="M 28 38 Q 26 46 24 50 Q 28 48 30 44 Q 28 46 27 49 Q 30 47 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 36 38 Q 38 46 40 50 Q 36 48 34 44 Q 36 46 37 49 Q 34 47 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 30 24 L 28 27 L 36 27 L 34 24 Z" fill="currentColor" opacity="0.8"/>
+</g>
+
+<!-- FRAME 8: Wings up (peak) -->
+<g transform="translate(512 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 38 Q 24 32 22 28 Q 20 24 24 22 Q 28 20 32 24 Q 36 20 40 22 Q 44 24 42 28 Q 40 32 32 38 Z" fill="currentColor" filter="url(#creature_flying-soft-shadow)"/>
+<ellipse cx="32" cy="22" rx="6" ry="5" fill="currentColor"/>
+<ellipse cx="34" cy="21" rx="2" ry="1.5" fill="white"/>
+<ellipse cx="34.5" cy="21" rx="1" ry="0.8" fill="#1a1a2e"/>
+<circle cx="34.2" cy="20.7" r="0.4" fill="white" opacity="0.9"/>
+<path d="M 22 26 Q 7 8 2 4 Q 8 12 14 18 Q 10 16 6 12 Q 12 17 18 24 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 42 26 Q 57 8 62 4 Q 56 12 50 18 Q 54 16 58 12 Q 52 17 46 24 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 22 26 Q 12 14 8 8" stroke="rgba(255,255,255,0.35)" stroke-width="0.5" fill="none"/>
+<path d="M 22 26 Q 14 18 10 14" stroke="rgba(255,255,255,0.25)" stroke-width="0.5" fill="none"/>
+<path d="M 42 26 Q 52 14 56 8" stroke="rgba(255,255,255,0.35)" stroke-width="0.5" fill="none"/>
+<path d="M 42 26 Q 50 18 54 14" stroke="rgba(255,255,255,0.25)" stroke-width="0.5" fill="none"/>
+<path d="M 28 38 Q 24 48 22 52 Q 26 50 30 44 Q 28 46 26 50 Q 30 48 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 36 38 Q 40 48 42 52 Q 38 50 34 44 Q 36 46 38 50 Q 34 48 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 30 24 L 28 28 L 36 28 L 34 24 Z" fill="currentColor" opacity="0.8"/>
+</g>
+
+<!-- FRAME 9: Wings descending -->
+<g transform="translate(576 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 38 Q 24 32 22 28 Q 20 24 24 22 Q 28 20 32 24 Q 36 20 40 22 Q 44 24 42 28 Q 40 32 32 38 Z" fill="currentColor" filter="url(#creature_flying-soft-shadow)"/>
+<ellipse cx="32" cy="22" rx="6" ry="5" fill="currentColor"/>
+<ellipse cx="34" cy="21" rx="2" ry="1.5" fill="white"/>
+<ellipse cx="34.5" cy="21" rx="1" ry="0.8" fill="#1a1a2e"/>
+<circle cx="34.2" cy="20.7" r="0.4" fill="white" opacity="0.9"/>
+<path d="M 22 26 Q 10 18 6 14 Q 12 20 17 24 Q 13 22 10 19 Q 15 22 19 26 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 42 26 Q 54 18 58 14 Q 52 20 47 24 Q 51 22 54 19 Q 49 22 45 26 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 28 38 Q 26 46 24 50 Q 28 48 30 44 Q 28 46 27 49 Q 30 47 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 36 38 Q 38 46 40 50 Q 36 48 34 44 Q 36 46 37 49 Q 34 47 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 30 24 L 28 27 L 36 27 L 34 24 Z" fill="currentColor" opacity="0.8"/>
+</g>
+
+<!-- FRAME 10: Wings level -->
+<g transform="translate(640 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 38 Q 24 32 22 28 Q 20 24 24 22 Q 28 20 32 24 Q 36 20 40 22 Q 44 24 42 28 Q 40 32 32 38 Z" fill="currentColor" filter="url(#creature_flying-soft-shadow)"/>
+<ellipse cx="32" cy="22" rx="6" ry="5" fill="currentColor"/>
+<ellipse cx="34" cy="21" rx="2" ry="1.5" fill="white"/>
+<ellipse cx="34.5" cy="21" rx="1" ry="0.8" fill="#1a1a2e"/>
+<circle cx="34.2" cy="20.7" r="0.4" fill="white" opacity="0.9"/>
+<path d="M 22 26 Q 13 21 7 19 Q 13 23 18 26 Q 14 24 11 22 Q 15 24 19 27 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 42 26 Q 51 21 57 19 Q 51 23 46 26 Q 50 24 53 22 Q 49 24 45 27 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 28 38 Q 27 45 26 49 Q 29 47 30 44 Q 28 46 27 48 Q 30 46 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 36 38 Q 37 45 38 49 Q 35 47 34 44 Q 36 46 37 48 Q 34 46 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 30 24 L 28 27 L 36 27 L 34 24 Z" fill="currentColor" opacity="0.8"/>
+</g>
+
+<!-- FRAME 11: Wings lowering -->
+<g transform="translate(704 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 38 Q 24 32 22 28 Q 20 24 24 22 Q 28 20 32 24 Q 36 20 40 22 Q 44 24 42 28 Q 40 32 32 38 Z" fill="currentColor" filter="url(#creature_flying-soft-shadow)"/>
+<ellipse cx="32" cy="22" rx="6" ry="5" fill="currentColor"/>
+<ellipse cx="34" cy="21" rx="2" ry="1.5" fill="white"/>
+<ellipse cx="34.5" cy="21" rx="1" ry="0.8" fill="#1a1a2e"/>
+<circle cx="34.2" cy="20.7" r="0.4" fill="white" opacity="0.9"/>
+<path d="M 22 26 Q 16 28 12 32 Q 16 28 20 27 Q 17 28 15 30 Q 18 28 20 27 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 42 26 Q 48 30 52 34 Q 48 30 45 28 Q 48 29 50 30 Q 47 29 44 28 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 28 38 Q 28 44 27 48 Q 30 46 30 44 Q 28 46 28 47 Q 30 45 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 36 38 Q 36 44 37 48 Q 34 46 34 44 Q 36 46 36 47 Q 34 45 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 30 24 L 28 27 L 36 27 L 34 24 Z" fill="currentColor" opacity="0.8"/>
+</g>
+
+<!-- FRAME 12: Wings down -->
+<g transform="translate(768 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 38 Q 24 32 22 28 Q 20 24 24 22 Q 28 20 32 24 Q 36 20 40 22 Q 44 24 42 28 Q 40 32 32 38 Z" fill="currentColor" filter="url(#creature_flying-soft-shadow)"/>
+<ellipse cx="32" cy="22" rx="6" ry="5" fill="currentColor"/>
+<ellipse cx="34" cy="21" rx="2" ry="1.5" fill="white"/>
+<ellipse cx="34.5" cy="21" rx="1" ry="0.8" fill="#1a1a2e"/>
+<circle cx="34.2" cy="20.7" r="0.4" fill="white" opacity="0.9"/>
+<path d="M 22 26 Q 17 34 15 40 Q 19 34 21 30 Q 18 31 16 33 Q 19 31 21 28 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 42 26 Q 47 34 49 40 Q 45 34 43 30 Q 46 31 48 33 Q 45 31 43 28 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 28 38 Q 28 45 27 49 Q 30 47 30 44 Q 28 46 28 47 Q 30 45 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 36 38 Q 36 45 37 49 Q 34 47 34 44 Q 36 46 36 47 Q 34 45 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 30 24 L 28 27 L 36 27 L 34 24 Z" fill="currentColor" opacity="0.8"/>
+</g>
+
+<!-- FRAME 13: Wings rising from down -->
+<g transform="translate(832 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 38 Q 24 32 22 28 Q 20 24 24 22 Q 28 20 32 24 Q 36 20 40 22 Q 44 24 42 28 Q 40 32 32 38 Z" fill="currentColor" filter="url(#creature_flying-soft-shadow)"/>
+<ellipse cx="32" cy="22" rx="6" ry="5" fill="currentColor"/>
+<ellipse cx="34" cy="21" rx="2" ry="1.5" fill="white"/>
+<ellipse cx="34.5" cy="21" rx="1" ry="0.8" fill="#1a1a2e"/>
+<circle cx="34.2" cy="20.7" r="0.4" fill="white" opacity="0.9"/>
+<path d="M 22 26 Q 14 30 10 26 Q 14 28 19 28 Q 16 27 14 26 Q 17 28 20 28 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 42 26 Q 50 30 54 26 Q 50 28 45 28 Q 48 27 50 26 Q 47 28 44 28 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 28 38 Q 27 45 26 49 Q 29 47 30 44 Q 28 46 27 48 Q 30 46 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 36 38 Q 37 45 38 49 Q 35 47 34 44 Q 36 46 37 48 Q 34 46 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 30 24 L 28 27 L 36 27 L 34 24 Z" fill="currentColor" opacity="0.8"/>
+</g>
+
+<!-- FRAME 14: Wings level rising -->
+<g transform="translate(896 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 38 Q 24 32 22 28 Q 20 24 24 22 Q 28 20 32 24 Q 36 20 40 22 Q 44 24 42 28 Q 40 32 32 38 Z" fill="currentColor" filter="url(#creature_flying-soft-shadow)"/>
+<ellipse cx="32" cy="22" rx="6" ry="5" fill="currentColor"/>
+<ellipse cx="34" cy="21" rx="2" ry="1.5" fill="white"/>
+<ellipse cx="34.5" cy="21" rx="1" ry="0.8" fill="#1a1a2e"/>
+<circle cx="34.2" cy="20.7" r="0.4" fill="white" opacity="0.9"/>
+<path d="M 22 26 Q 12 20 8 16 Q 13 22 18 25 Q 14 23 11 21 Q 15 24 19 27 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 42 26 Q 52 20 56 16 Q 51 22 46 25 Q 50 23 53 21 Q 48 24 45 27 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 22 26 Q 15 20 11 16" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" fill="none"/>
+<path d="M 22 26 Q 17 23 14 20" stroke="rgba(255,255,255,0.2)" stroke-width="0.5" fill="none"/>
+<path d="M 42 26 Q 49 20 53 16" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" fill="none"/>
+<path d="M 42 26 Q 47 23 50 20" stroke="rgba(255,255,255,0.2)" stroke-width="0.5" fill="none"/>
+<path d="M 28 38 Q 26 46 24 50 Q 28 48 30 44 Q 28 46 27 49 Q 30 47 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 36 38 Q 38 46 40 50 Q 36 48 34 44 Q 36 46 37 49 Q 34 47 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 30 24 L 28 27 L 36 27 L 34 24 Z" fill="currentColor" opacity="0.8"/>
+</g>
+
+<!-- FRAME 15: Wings up (back to start) -->
+<g transform="translate(960 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 38 Q 24 32 22 28 Q 20 24 24 22 Q 28 20 32 24 Q 36 20 40 22 Q 44 24 42 28 Q 40 32 32 38 Z" fill="currentColor" filter="url(#creature_flying-soft-shadow)"/>
+<ellipse cx="32" cy="22" rx="6" ry="5" fill="currentColor"/>
+<ellipse cx="34" cy="21" rx="2" ry="1.5" fill="white"/>
+<ellipse cx="34.5" cy="21" rx="1" ry="0.8" fill="#1a1a2e"/>
+<circle cx="34.2" cy="20.7" r="0.4" fill="white" opacity="0.9"/>
+<path d="M 22 26 Q 8 10 4 6 Q 10 14 16 20 Q 12 18 8 16 Q 14 20 18 24 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 42 26 Q 56 10 60 6 Q 54 14 48 20 Q 52 18 56 16 Q 50 20 46 24 Z" fill="currentColor" opacity="0.85"/>
+<path d="M 22 26 Q 12 16 8 10" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" fill="none"/>
+<path d="M 22 26 Q 14 20 10 16" stroke="rgba(255,255,255,0.2)" stroke-width="0.5" fill="none"/>
+<path d="M 42 26 Q 52 16 56 10" stroke="rgba(255,255,255,0.3)" stroke-width="0.5" fill="none"/>
+<path d="M 42 26 Q 50 20 54 16" stroke="rgba(255,255,255,0.2)" stroke-width="0.5" fill="none"/>
+<path d="M 28 38 Q 24 48 22 52 Q 26 50 30 44 Q 28 46 26 50 Q 30 48 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 36 38 Q 40 48 42 52 Q 38 50 34 44 Q 36 46 38 50 Q 34 48 32 42 Z" fill="currentColor" opacity="0.7"/>
+<path d="M 30 24 L 28 28 L 36 28 L 34 24 Z" fill="currentColor" opacity="0.8"/>
+</g>
+</svg>

@@ -491,6 +491,16 @@ export class CreatureBehaviorSystem {
       desiredAngle = this.updateAquaticMovement(world, desiredAngle);
     }
 
+    // Flying behavior
+    if (this.creature.flyingAffinity > 0.4) {
+      desiredAngle = this.updateFlyingMovement(world, desiredAngle);
+    }
+
+    // Burrowing behavior
+    if (this.creature.burrowingAffinity > 0.4) {
+      desiredAngle = this.updateBurrowingMovement(world, desiredAngle);
+    }
+
     if (desiredAngle !== null) {
       this.steerToward(desiredAngle, dt);
     }
@@ -539,6 +549,133 @@ export class CreatureBehaviorSystem {
     }
 
     return desiredAngle;
+  }
+
+  /**
+   * Update flying movement behavior - prefer high elevation, swooping patterns
+   */
+  updateFlyingMovement(world, desiredAngle) {
+    if (this.creature.flyingAffinity < 0.4) {
+      return desiredAngle;
+    }
+
+    const biome = world.getBiomeAt ?
+      world.getBiomeAt(this.creature.x, this.creature.y) : null;
+    const elevation = biome?.elevation ?? 0.5;
+
+    // Flying creatures prefer high elevations
+    if (elevation < 0.5 && (!this.creature.target || this.creature.target.family)) {
+      const highDir = this.sampleHighElevationDirection(world);
+      if (highDir !== null) {
+        return highDir;
+      }
+    }
+
+    // Add swooping/gliding motion when moving
+    if (this.creature.target && this.creature.flyingAffinity > 0.6) {
+      const time = world.t || 0;
+      const swoopAngle = Math.sin(time * 2.5 + this.creature.id) * 0.3 * this.creature.flyingAffinity;
+      this.creature.dir += swoopAngle * 0.1;
+    }
+
+    // Avoid ground obstacles (detect low elevation directly ahead)
+    if (this.creature.flyingAffinity > 0.6) {
+      const avoidance = this.sampleGroundObstacles(world);
+      if (avoidance !== null) {
+        return avoidance;
+      }
+    }
+
+    return desiredAngle;
+  }
+
+  /**
+   * Update burrowing movement behavior - prefer underground, slower but protected
+   */
+  updateBurrowingMovement(world, desiredAngle) {
+    if (this.creature.burrowingAffinity < 0.4) {
+      return desiredAngle;
+    }
+
+    const biome = world.getBiomeAt ?
+      world.getBiomeAt(this.creature.x, this.creature.y) : null;
+    const isUnderground = biome?.type === 'mountain' || (biome?.elevation ?? 0) > 0.65;
+
+    // Burrowing creatures prefer underground areas
+    if (!isUnderground && (!this.creature.target || this.creature.target.family)) {
+      const undergroundDir = this.sampleUndergroundDirection(world);
+      if (undergroundDir !== null) {
+        return undergroundDir;
+      }
+    }
+
+    // Protected from predators when underground
+    if (isUnderground && this.creature.emotions) {
+      this.creature.emotions.fear = Math.max(0, this.creature.emotions.fear - 0.01);
+    }
+
+    return desiredAngle;
+  }
+
+  /**
+   * Sample direction toward high elevation for flying creatures
+   */
+  sampleHighElevationDirection(world) {
+    if (!world.getBiomeAt) return null;
+
+    for (let i = 0; i < 5; i++) {
+      const angle = rand() * CreatureConfig.TAU;
+      const distance = 30 + rand() * 50;
+      const testX = this.creature.x + Math.cos(angle) * distance;
+      const testY = this.creature.y + Math.sin(angle) * distance;
+
+      const biome = world.getBiomeAt(testX, testY);
+      if (biome?.elevation > 0.5) {
+        return angle;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Sample direction away from ground obstacles for flying creatures
+   */
+  sampleGroundObstacles(world) {
+    if (!world.getBiomeAt) return null;
+
+    const lookAhead = 40;
+    const testX = this.creature.x + Math.cos(this.creature.dir) * lookAhead;
+    const testY = this.creature.y + Math.sin(this.creature.dir) * lookAhead;
+    const biome = world.getBiomeAt(testX, testY);
+
+    if (biome?.elevation < 0.3) {
+      // Low elevation ahead - steer upward
+      return this.creature.dir - Math.PI * 0.4;
+    }
+
+    return null;
+  }
+
+  /**
+   * Sample direction toward underground for burrowing creatures
+   */
+  sampleUndergroundDirection(world) {
+    if (!world.getBiomeAt) return null;
+
+    for (let i = 0; i < 5; i++) {
+      const angle = rand() * CreatureConfig.TAU;
+      const distance = 30 + rand() * 50;
+      const testX = this.creature.x + Math.cos(angle) * distance;
+      const testY = this.creature.y + Math.sin(angle) * distance;
+
+      const biome = world.getBiomeAt(testX, testY);
+      if (biome?.type === 'mountain' || (biome?.elevation ?? 0) > 0.65) {
+        return angle;
+      }
+    }
+
+    return null;
   }
 
   /**

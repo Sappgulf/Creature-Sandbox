@@ -7,10 +7,19 @@ const DEFAULT_STEPS = [
   {
     id: 'welcome',
     title: 'Welcome to Creature Sandbox',
-    text: 'Follow four quick moves to get oriented, then explore the world at your own pace.',
+    text: 'Follow five quick moves to get oriented, then explore the world at your own pace.',
     highlight: null,
     autoAdvance: true,
     autoAdvanceDelay: 2400
+  },
+  {
+    id: 'spawn',
+    title: 'Spawn Your First Creature',
+    text: 'Tap the spawn button or press S to add creatures to the world. Every ecosystem starts with just one!',
+    highlight: ['#ctrl-spawn'],
+    waitFor: { type: 'spawn', count: 1 },
+    autoAdvance: true,
+    autoAdvanceDelay: 12000
   },
   {
     id: 'camera',
@@ -67,7 +76,8 @@ export class TutorialSystem {
       zoom: 0,
       select: 0,
       keypress: {},
-      god_mode_action: 0
+      god_mode_action: 0,
+      spawn: 0
     };
   }
 
@@ -270,6 +280,10 @@ export class TutorialSystem {
     eventSystem.on(GameEvents.GOD_MODE_ACTION, () => {
       this.trackGodModeAction();
     });
+
+    eventSystem.on(GameEvents.CREATURE_SPAWN, () => {
+      this.trackSpawn();
+    });
   }
 
   // Track creature selection (called from main.js)
@@ -280,6 +294,11 @@ export class TutorialSystem {
   // Track god mode action (called from main.js)
   trackGodModeAction() {
     this._progressWaitFor('god_mode_action');
+  }
+
+  // Track creature spawn (called from event listener)
+  trackSpawn() {
+    this._progressWaitFor('spawn');
   }
 
   // Save progress to localStorage
@@ -481,6 +500,7 @@ export class TutorialSystem {
     this.listeners.select = 0;
     this.listeners.keypress = {};
     this.listeners.god_mode_action = 0;
+    this.listeners.spawn = 0;
   }
 
   _advanceSoon(delay = 650) {
@@ -507,6 +527,10 @@ export class TutorialSystem {
       case 'god_mode_action':
         this.listeners.god_mode_action += 1;
         if (this.listeners.god_mode_action >= count) this._advanceSoon();
+        return true;
+      case 'spawn':
+        this.listeners.spawn += 1;
+        if (this.listeners.spawn >= count) this._advanceSoon();
         return true;
       case 'keypress':
         if (waitFor.key && waitFor.key !== key) return false;

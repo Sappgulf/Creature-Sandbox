@@ -34,6 +34,7 @@ export class World {
     this.corpses = [];
     this.restZones = [];
     this.nests = [];
+    this.decorations = []; // Environmental decorations (trees, rocks, flowers)
 
     // Spatial grids for performance
     this.foodGrid = new SpatialGrid(36);
@@ -447,6 +448,125 @@ export class World {
     }
 
     console.debug(`🌱 Seeded diverse world: ${nPureHerbivores} herbivores, ${nOmnivores} omnivores, ${nAquatic} aquatic, ${nPred} predators, ${nFood} food`);
+
+    // Generate environmental decorations
+    this.generateDecorations();
+  }
+
+  // Generate environmental decorations based on biomes
+  generateDecorations() {
+    this.decorations = [];
+    const decorDensity = 0.0003; // decorations per pixel
+    const decorCount = Math.floor(this.width * this.height * decorDensity);
+
+    const decorTypes = {
+      forest: [
+        { type: 'tree', sprite: 0, sizeRange: [40, 80] }, // oak
+        { type: 'tree', sprite: 1, sizeRange: [50, 90] }, // pine
+        { type: 'rock', sprite: 0, sizeRange: [20, 35] },
+        { type: 'flower', sprite: 0, sizeRange: [15, 25] }, // tulip
+        { type: 'flower', sprite: 3, sizeRange: [15, 25] }, // daisy
+        { type: 'grass', sprite: 6, sizeRange: [20, 35] }
+      ],
+      meadow: [
+        { type: 'flower', sprite: 0, sizeRange: [15, 25] },
+        { type: 'flower', sprite: 1, sizeRange: [20, 30] }, // sunflower
+        { type: 'flower', sprite: 3, sizeRange: [15, 25] },
+        { type: 'flower', sprite: 4, sizeRange: [18, 28] }, // lavender
+        { type: 'grass', sprite: 6, sizeRange: [25, 40] },
+        { type: 'grass', sprite: 7, sizeRange: [20, 35] }
+      ],
+      grassland: [
+        { type: 'grass', sprite: 6, sizeRange: [20, 35] },
+        { type: 'grass', sprite: 7, sizeRange: [15, 30] },
+        { type: 'flower', sprite: 5, sizeRange: [12, 20] } // wildflower
+      ],
+      swamp: [
+        { type: 'rock', sprite: 4, sizeRange: [15, 25] }, // mossy rock
+        { type: 'flower', sprite: 4, sizeRange: [18, 28] }, // lavender
+        { type: 'grass', sprite: 6, sizeRange: [30, 50] }
+      ],
+      desert: [
+        { type: 'rock', sprite: 2, sizeRange: [20, 35] },
+        { type: 'rock', sprite: 3, sizeRange: [25, 45] } // flat rock
+      ],
+      tundra: [
+        { type: 'rock', sprite: 0, sizeRange: [25, 40] },
+        { type: 'rock', sprite: 7, sizeRange: [30, 50] } // standing stone
+      ],
+      mountain: [
+        { type: 'rock', sprite: 0, sizeRange: [30, 50] },
+        { type: 'rock', sprite: 7, sizeRange: [35, 55] },
+        { type: 'tree', sprite: 4, sizeRange: [40, 70] } // winter pine
+      ],
+      jungle: [
+        { type: 'tree', sprite: 0, sizeRange: [50, 90] }, // oak
+        { type: 'tree', sprite: 5, sizeRange: [45, 80] }, // cherry blossom
+        { type: 'flower', sprite: 2, sizeRange: [15, 25] }, // blue flower
+        { type: 'flower', sprite: 4, sizeRange: [18, 28] },
+        { type: 'rock', sprite: 4, sizeRange: [15, 25] }
+      ],
+      savanna: [
+        { type: 'tree', sprite: 0, sizeRange: [45, 75] },
+        { type: 'tree', sprite: 2, sizeRange: [40, 70] }, // autumn tree
+        { type: 'grass', sprite: 6, sizeRange: [25, 45] },
+        { type: 'rock', sprite: 2, sizeRange: [20, 35] }
+      ],
+      water: [], // no decorations in water
+      wetland: [
+        { type: 'rock', sprite: 4, sizeRange: [15, 25] },
+        { type: 'grass', sprite: 6, sizeRange: [30, 50] },
+        { type: 'flower', sprite: 4, sizeRange: [18, 28] }
+      ]
+    };
+
+    const defaultTypes = [
+      { type: 'grass', sprite: 7, sizeRange: [15, 30] },
+      { type: 'flower', sprite: 5, sizeRange: [12, 20] },
+      { type: 'rock', sprite: 1, sizeRange: [15, 25] }
+    ];
+
+    for (let i = 0; i < decorCount; i++) {
+      const x = Math.random() * this.width;
+      const y = Math.random() * this.height;
+      const biome = this.getBiomeAt(x, y);
+      const biomeType = biome?.type || 'grassland';
+
+      const possibleDecors = decorTypes[biomeType] || defaultTypes;
+      if (possibleDecors.length === 0) continue;
+
+      const decorTemplate = possibleDecors[Math.floor(Math.random() * possibleDecors.length)];
+      const size = decorTemplate.sizeRange[0] + Math.random() * (decorTemplate.sizeRange[1] - decorTemplate.sizeRange[0]);
+      let hue;
+      switch (decorTemplate.type) {
+        case 'rock':
+          hue = 20 + Math.random() * 30; // browns and grays
+          break;
+        case 'flower':
+          hue = Math.random() * 360; // full spectrum for flowers
+          break;
+        case 'tree':
+          hue = 80 + Math.random() * 50; // greens
+          break;
+        case 'grass':
+          hue = 70 + Math.random() * 40; // yellowish greens
+          break;
+        default:
+          hue = 80 + Math.random() * 40; // natural green-ish
+      }
+
+      this.decorations.push({
+        x,
+        y,
+        type: decorTemplate.type,
+        sprite: decorTemplate.sprite,
+        size,
+        hue,
+        season: 0 // 0=none, 1=spring, 2=summer, 3=autumn, 4=winter
+      });
+    }
+
+    console.debug(`🌿 Generated ${this.decorations.length} environmental decorations`);
   }
 
   // Reset world to empty state
@@ -456,6 +576,7 @@ export class World {
     this.corpses = [];
     this.restZones = [];
     this.nests = [];
+    this.decorations = [];
     this.t = 0;
 
     // Reset subsystems
@@ -668,6 +789,20 @@ export class World {
         }
         this._recordSpawnDebug({ source: 'type', type, x: sanitized.x, y: sanitized.y, creature: aquatic });
         return aquatic;
+      case 'flying':
+        const flying = this.creatureManager.spawnFlying(sanitized.x, sanitized.y);
+        if (debugFlags.spawnDebug) {
+          console.debug('[Spawn][world] type:end', { id: flying?.id ?? null, worldCount: this.creatures.length });
+        }
+        this._recordSpawnDebug({ source: 'type', type, x: sanitized.x, y: sanitized.y, creature: flying });
+        return flying;
+      case 'burrowing':
+        const burrowing = this.creatureManager.spawnBurrowing(sanitized.x, sanitized.y);
+        if (debugFlags.spawnDebug) {
+          console.debug('[Spawn][world] type:end', { id: burrowing?.id ?? null, worldCount: this.creatures.length });
+        }
+        this._recordSpawnDebug({ source: 'type', type, x: sanitized.x, y: sanitized.y, creature: burrowing });
+        return burrowing;
       case 'herbivore':
       default:
         const herbivore = this.creatureManager.spawnManual(sanitized.x, sanitized.y, false);

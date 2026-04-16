@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "atlasType": "svg-strip",
   "generator": "creature-sim/scripts/generate-sprite-sheets.mjs",
   "deterministic": true,
@@ -129,6 +129,132 @@
         "y": 0.53
       },
       "notes": "Tintable creature idle loop. Body and fins use currentColor; eye and highlight layers remain neutral."
+    },
+    {
+      "key": "creature_flying",
+      "category": "creatures",
+      "path": "assets/sprites/creatures/creature_flying.svg",
+      "frameCount": 16,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "fps": 14,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.55
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Flying creature with animated wing flap cycle. Wings use currentColor for dynamic tinting."
+    },
+    {
+      "key": "creature_burrowing",
+      "category": "creatures",
+      "path": "assets/sprites/creatures/creature_burrowing.svg",
+      "frameCount": 16,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "fps": 10,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.6
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.55
+      },
+      "notes": "Burrowing creature with digging claw animation. Claws use currentColor for dynamic tinting."
+    },
+    {
+      "key": "env_trees",
+      "category": "environment",
+      "path": "assets/sprites/environment/env_trees.svg",
+      "frameCount": 8,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "fps": 0,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Environmental tree sprites: forest oak, pine, autumn tree, bush, winter pine, cherry blossom, dead tree, palm."
+    },
+    {
+      "key": "env_rocks",
+      "category": "environment",
+      "path": "assets/sprites/environment/env_rocks.svg",
+      "frameCount": 8,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "fps": 0,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Environmental rock sprites: boulder, stone, rock cluster, flat rock, mossy rock, crystal, stump, standing stone."
+    },
+    {
+      "key": "env_flowers",
+      "category": "environment",
+      "path": "assets/sprites/environment/env_flowers.svg",
+      "frameCount": 8,
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "fps": 0,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.95
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Environmental flower and grass sprites: tulip, sunflower, blue flower, daisy, lavender, wildflower, tall grass, grass patch."
+    },
+    {
+      "key": "env_seasonal",
+      "category": "environment",
+      "path": "assets/sprites/environment/env_seasonal.svg",
+      "frameCount": 8,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "fps": 0,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Seasonal decorations: autumn leaves (maple, oak, gold), falling leaves, snowflake, snow pile, ice crystal, flower bud."
+    },
+    {
+      "key": "particle_sparkle",
+      "category": "particles",
+      "path": "assets/sprites/particles/particle_sprites.svg",
+      "frameCount": 16,
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "fps": 8,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Particle sprites: sparkles (star, round, diamond, cross), hearts (classic, small, bouncy), dust (cloud, dirt, smoke), bursts, rings, ZZZ."
     },
     {
       "key": "food_grass",

@@ -110,6 +110,10 @@ export function applyCreatureMethods(Renderer) {
 
       const clusterHue = clusterMap ? clusterMap.get(c.id) : null;
 
+      // Get day/night light level for creature lighting
+      const dayNight = world?.dayNightState || world?.environment?.getDayNightState?.();
+      const dayLight = dayNight?.light ?? 1;
+
       const renderOpts = {
         isSelected,
         isPinned,
@@ -118,7 +122,8 @@ export function applyCreatureMethods(Renderer) {
         showVision: this.enableVision,
         clusterHue,
         zoom,
-        worldTime
+        worldTime,
+        dayLight
       };
 
       // PERFORMANCE: Level of Detail (LOD) handling
@@ -218,24 +223,66 @@ export function applyCreatureMethods(Renderer) {
   };
 
   Renderer.prototype._drawCreatureShadow = function(creature) {
-    // Soft drop shadow for depth (makes creatures pop!)
+    // Enhanced dynamic shadow with biome/time-of-day awareness
     const ctx = this.ctx;
     const r = creature.size || creature.genes?.size || 5;
+    const g = creature.genes;
 
     ctx.save();
-    ctx.globalAlpha = 0.3;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
 
-    // Shadow offset (slightly down and right)
-    const offsetX = 2;
-    const offsetY = 3;
+    // Shadow opacity varies by time of day and creature
+    let shadowAlpha = 0.25;
+    let shadowColor = 'rgba(0, 0, 0';
+
+    // Adjust shadow based on creature hue (lighter creatures have lighter shadows)
+    if (g) {
+      const lightness = g.lightness || 50;
+      // Creatures with high lightness have softer shadows
+      if (lightness > 60) {
+        shadowAlpha = 0.15;
+        shadowColor = 'rgba(30, 30, 40';
+      } else if (lightness < 35) {
+        shadowAlpha = 0.35;
+        shadowColor = 'rgba(0, 0, 0';
+      }
+    }
+
+    // Elemental creatures have colored shadows
+    if (g?.elementalAffinity) {
+      switch (g.elementalAffinity) {
+        case 'fire': shadowColor = 'rgba(80, 20, 0'; break;
+        case 'ice': shadowColor = 'rgba(40, 80, 120'; break;
+        case 'electric': shadowColor = 'rgba(100, 100, 0'; break;
+        case 'earth': shadowColor = 'rgba(60, 40, 20'; break;
+      }
+    }
+
+    // Bioluminescent creatures have ethereal shadows
+    const rareMutations = creature.rareMutations || creature.mutations || [];
+    const hasBioGlow = rareMutations.some(m => m.name === 'Bioluminescence');
+    if (hasBioGlow) {
+      shadowAlpha = 0.12;
+      shadowColor = 'rgba(0, 80, 60';
+    }
+
+    ctx.globalAlpha = shadowAlpha;
+    ctx.fillStyle = `${shadowColor}, ${shadowAlpha})`;
+
+    // Dynamic shadow offset based on creature velocity (shadow stretches when moving)
+    const speed = Math.sqrt((creature.vx || 0) ** 2 + (creature.vy || 0) ** 2);
+    const stretchFactor = Math.min(speed / 100, 0.5);
+    const offsetX = 2 + stretchFactor * 2;
+    const offsetY = 3 + stretchFactor * 1;
+
+    // Shadow scale based on creature height (larger = more prominent shadow)
+    const heightFactor = creature.baseSize ? creature.baseSize / 10 : 1;
 
     ctx.beginPath();
     ctx.ellipse(
       creature.x + offsetX,
       creature.y + offsetY,
-      r * 1.1,
-      r * 0.6,
+      r * 1.1 * (1 + stretchFactor * 0.3),
+      r * 0.6 * (1 - stretchFactor * 0.15) * heightFactor,
       0,
       0,
       Math.PI * 2

@@ -9,13 +9,54 @@ import { CreatureAgentTuning } from './creature-agent-constants.js';
 import { CreatureConfig } from './creature-config.js';
 import { clamp, rand } from './utils.js';
 
+const COMPRESSED_MARKER = 'C2:';
+const COMPRESSION_SUPPORTED = typeof CompressionStream !== 'undefined';
+
+async function compressJson(jsonString) {
+  if (!COMPRESSION_SUPPORTED) {
+    throw new Error('Compression not supported in this environment');
+  }
+  const encoder = new TextEncoder();
+  const inputData = encoder.encode(jsonString);
+  const cs = new CompressionStream('gzip');
+  const writer = cs.writable.getWriter();
+  writer.write(inputData);
+  writer.close();
+  const outputBuffer = await new Response(cs.readable).arrayBuffer();
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(outputBuffer)));
+  return COMPRESSED_MARKER + base64;
+}
+
+async function decompressJson(compressedString) {
+  if (!COMPRESSED_MARKER || !compressedString.startsWith(COMPRESSED_MARKER)) {
+    return null;
+  }
+  if (!COMPRESSION_SUPPORTED) {
+    throw new Error('Compression not supported in this environment');
+  }
+  const base64 = compressedString.slice(COMPRESSED_MARKER.length);
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  const cs = new DecompressionStream('gzip');
+  const writer = cs.writable.getWriter();
+  writer.write(bytes);
+  writer.close();
+  const decoder = new TextDecoder();
+  const decompressedBuffer = await new Response(cs.readable).arrayBuffer();
+  return decoder.decode(decompressedBuffer);
+}
+
 export class SaveSystem {
   constructor() {
     this.autoSaveEnabled = true;
-    this.autoSaveInterval = 60; // seconds
+    this.autoSaveInterval = 60;
     this.lastAutoSave = 0;
     this.saveSlots = 3;
     this._autoSaveScheduled = false;
+    this.compressionEnabled = true;
   }
 
   /**
@@ -686,21 +727,32 @@ export class SaveSystem {
   /**
    * Save to file (download)
    */
-  saveToFile(world, camera, analytics, lineageTracker, filename = null) {
+  async saveToFile(world, camera, analytics, lineageTracker, filename = null) {
     const saveData = this.serialize(world, camera, analytics, lineageTracker, {
       saveName: filename || `save_${Date.now()}`
     });
 
     const json = JSON.stringify(saveData, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = (filename || `creature-sim-${Date.now()}`) + '.crsim';
-    a.click();
-
-    URL.revokeObjectURL(url);
+    if (this.compressionEnabled && COMPRESSION_SUPPORTED) {
+      const compressed = await compressJson(json);
+      const encoder = new TextEncoder();
+      const data = encoder.encode(compressed);
+      const blob = new Blob([data], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (filename || `creature-sim-${Date.now()}`) + '.crsim';
+      a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (filename || `creature-sim-${Date.now()}`) + '.crsim';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   }
 
   /**
@@ -710,9 +762,16 @@ export class SaveSystem {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
-          const json = e.target.result;
+          let json = e.target.result;
+          if (typeof json === 'string' && json.startsWith(COMPRESSED_MARKER)) {
+            if (COMPRESSION_SUPPORTED) {
+              json = await decompressJson(json);
+            } else {
+              throw new Error('Compressed save but decompression not supported');
+            }
+          }
           const saveData = JSON.parse(json);
           const result = this.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld);
           resolve(result);
@@ -730,7 +789,7 @@ export class SaveSystem {
   /**
    * Auto-save to localStorage
    */
-  autoSave(world, camera, analytics, lineageTracker, dt) {
+  async autoSave(world, camera, analytics, lineageTracker, dt) {
     if (!this.autoSaveEnabled) return;
 
     const delta = Number(dt);
@@ -742,14 +801,19 @@ export class SaveSystem {
     if (this._autoSaveScheduled) return;
     this._autoSaveScheduled = true;
 
-    const runSave = () => {
+    const runSave = async () => {
       this._autoSaveScheduled = false;
       try {
         const saveData = this.serialize(world, camera, analytics, lineageTracker, {
           isAutoSave: true
         });
         const json = JSON.stringify(saveData);
-        localStorage.setItem('creature-sim-autosave', json);
+        if (this.compressionEnabled && COMPRESSION_SUPPORTED) {
+          const compressed = await compressJson(json);
+          localStorage.setItem('creature-sim-autosave', compressed);
+        } else {
+          localStorage.setItem('creature-sim-autosave', json);
+        }
       } catch (err) {
         console.warn('Auto-save failed:', err);
       }
@@ -765,11 +829,20 @@ export class SaveSystem {
   /**
    * Load from localStorage
    */
-  loadAutoSave(World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld = null) {
+  async loadAutoSave(World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld = null) {
     try {
-      const json = localStorage.getItem('creature-sim-autosave');
-      if (!json) return null;
+      const stored = localStorage.getItem('creature-sim-autosave');
+      if (!stored) return null;
 
+      let json = stored;
+      if (stored.startsWith(COMPRESSED_MARKER)) {
+        if (COMPRESSION_SUPPORTED) {
+          json = await decompressJson(stored);
+        } else {
+          console.warn('Compressed save but decompression not supported');
+          return null;
+        }
+      }
       const saveData = JSON.parse(json);
       const result = this.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld);
       return result;
@@ -796,7 +869,7 @@ export class SaveSystem {
   /**
    * Save to slot (localStorage)
    */
-  saveToSlot(slotNumber, world, camera, analytics, lineageTracker, name = '') {
+  async saveToSlot(slotNumber, world, camera, analytics, lineageTracker, name = '') {
     if (slotNumber < 1 || slotNumber > this.saveSlots) {
       throw new Error(`Invalid slot number: ${slotNumber}`);
     }
@@ -808,20 +881,34 @@ export class SaveSystem {
     });
 
     const json = JSON.stringify(saveData);
-    localStorage.setItem(`creature-sim-slot-${slotNumber}`, json);
+    if (this.compressionEnabled && COMPRESSION_SUPPORTED) {
+      const compressed = await compressJson(json);
+      localStorage.setItem(`creature-sim-slot-${slotNumber}`, compressed);
+    } else {
+      localStorage.setItem(`creature-sim-slot-${slotNumber}`, json);
+    }
   }
 
   /**
    * Load from slot
    */
-  loadFromSlot(slotNumber, World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld = null) {
+  async loadFromSlot(slotNumber, World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld = null) {
     if (slotNumber < 1 || slotNumber > this.saveSlots) {
       throw new Error(`Invalid slot number: ${slotNumber}`);
     }
 
-    const json = localStorage.getItem(`creature-sim-slot-${slotNumber}`);
-    if (!json) return null;
+    const stored = localStorage.getItem(`creature-sim-slot-${slotNumber}`);
+    if (!stored) return null;
 
+    let json = stored;
+    if (stored.startsWith(COMPRESSED_MARKER)) {
+      if (COMPRESSION_SUPPORTED) {
+        json = await decompressJson(stored);
+      } else {
+        console.warn('Compressed save but decompression not supported');
+        return null;
+      }
+    }
     const saveData = JSON.parse(json);
     const result = this.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld);
     return result;

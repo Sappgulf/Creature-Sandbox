@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="768" height="96" viewBox="0 0 768 96" fill="none">
+<!-- Rocks and stones for environmental decoration -->
+
+<!-- ROCK 0: Large Boulder -->
+<g transform="translate(0 0)">
+<rect x="0" y="0" width="96" height="96" fill="none"/>
+<ellipse cx="48" cy="70" rx="38" ry="22" fill="#5d5d5d"/>
+<ellipse cx="48" cy="66" rx="34" ry="18" fill="#6e6e6e"/>
+<ellipse cx="44" cy="62" rx="28" ry="14" fill="#7e7e7e"/>
+<ellipse cx="40" cy="58" rx="18" ry="10" fill="#8e8e8e"/>
+<!-- Highlight -->
+<ellipse cx="36" cy="58" rx="8" ry="5" fill="#9e9e9e" opacity="0.6"/>
+</g>
+
+<!-- ROCK 1: Medium Stone -->
+<g transform="translate(96 0)">
+<rect x="0" y="0" width="96" height="96" fill="none"/>
+<ellipse cx="48" cy="72" rx="24" ry="16" fill="#6d6d6d"/>
+<ellipse cx="48" cy="68" rx="20" ry="12" fill="#7d7d7d"/>
+<ellipse cx="45" cy="65" rx="14" ry="8" fill="#8d8d8d"/>
+<ellipse cx="42" cy="62" rx="8" ry="5" fill="#9d9d9d" opacity="0.7"/>
+</g>
+
+<!-- ROCK 2: Small Rock Cluster -->
+<g transform="translate(192 0)">
+<rect x="0" y="0" width="96" height="96" fill="none"/>
+<ellipse cx="30" cy="74" rx="18" ry="12" fill="#6d6d6d"/>
+<ellipse cx="30" cy="70" rx="14" ry="9" fill="#7d7d7d"/>
+<ellipse cx="55" cy="76" rx="14" ry="10" fill="#5d5d5d"/>
+<ellipse cx="55" cy="72" rx="11" ry="7" fill="#6d6d6d"/>
+<ellipse cx="70" cy="78" rx="10" ry="8" fill="#6d6d6d"/>
+<ellipse cx="70" cy="75" rx="7" ry="5" fill="#7d7d7d"/>
+<ellipse cx="42" cy="68" rx="8" ry="6" fill="#8d8d8d"/>
+</g>
+
+<!-- ROCK 3: Flat Rock -->
+<g transform="translate(288 0)">
+<rect x="0" y="0" width="96" height="96" fill="none"/>
+<ellipse cx="48" cy="74" rx="40" ry="14" fill="#5d5d5d"/>
+<ellipse cx="48" cy="70" rx="36" ry="11" fill="#6e6e6e"/>
+<ellipse cx="48" cy="67" rx="30" ry="8" fill="#7e7e7e"/>
+<ellipse cx="36" cy="66" rx="12" ry="4" fill="#8e8e8e" opacity="0.6"/>
+</g>
+
+<!-- ROCK 4: Mossy Rock -->
+<g transform="translate(384 0)">
+<rect x="0" y="0" width="96" height="96" fill="none"/>
+<ellipse cx="48" cy="70" rx="30" ry="20" fill="#5d5d5d"/>
+<ellipse cx="48" cy="66" rx="26" ry="16" fill="#6e6e6e"/>
+<ellipse cx="48" cy="62" rx="20" ry="12" fill="#7e7e7e"/>
+<!-- Moss patches -->
+<ellipse cx="36" cy="64" rx="10" ry="6" fill="#558b2f" opacity="0.7"/>
+<ellipse cx="56" cy="68" rx="8" ry="5" fill="#558b2f" opacity="0.6"/>
+<ellipse cx="44" cy="58" rx="6" ry="4" fill="#7cb342" opacity="0.5"/>
+</g>
+
+<!-- ROCK 5: Crystal -->
+<g transform="translate(480 0)">
+<rect x="0" y="0" width="96" height="96" fill="none"/>
+<!-- Crystal formations -->
+<path d="M 48 20 L 60 50 L 52 50 L 58 75 L 38 75 L 44 50 L 36 50 Z" fill="#7986cb" opacity="0.8"/>
+<path d="M 48 20 L 56 45 L 52 45 L 56 70 L 40 70 L 44 45 L 40 45 Z" fill="#9fa8da" opacity="0.9"/>
+<path d="M 48 25 L 52 42 L 48 42 L 52 65 L 44 65 L 48 42 L 44 42 Z" fill="#c5cae9" opacity="0.8"/>
+<!-- Base -->
+<ellipse cx="48" cy="76" rx="20" ry="8" fill="#5d5d5d"/>
+<ellipse cx="48" cy="74" rx="16" ry="5" fill="#6e6e6e"/>
+</g>
+
+<!-- ROCK 6: Log/Stump -->
+<g transform="translate(576 0)">
+<rect x="0" y="0" width="96" height="96" fill="none"/>
+<!-- Stump -->
+<ellipse cx="48" cy="72" rx="24" ry="12" fill="#5d4037"/>
+<ellipse cx="48" cy="66" rx="22" ry="10" fill="#6d4c41"/>
+<ellipse cx="48" cy="62" rx="18" ry="8" fill="#795548"/>
+<!-- Rings on top -->
+<ellipse cx="48" cy="62" rx="14" ry="6" fill="none" stroke="#5d4037" stroke-width="1"/>
+<ellipse cx="48" cy="62" rx="10" ry="4" fill="none" stroke="#5d4037" stroke-width="1"/>
+<ellipse cx="48" cy="62" rx="6" ry="2.5" fill="none" stroke="#5d4037" stroke-width="1"/>
+<ellipse cx="48" cy="62" rx="3" ry="1.2" fill="#5d4037"/>
+<!-- Bark texture -->
+<path d="M 28 68 Q 30 72 28 76" stroke="#4e342e" stroke-width="2" fill="none"/>
+<path d="M 68 68 Q 70 72 68 76" stroke="#4e342e" stroke-width="2" fill="none"/>
+</g>
+
+<!-- ROCK 7: Standing Stone -->
+<g transform="translate(672 0)">
+<rect x="0" y="0" width="96" height="96" fill="none"/>
+<!-- Standing stone -->
+<path d="M 40 80 Q 35 60 38 40 Q 42 20 50 12 Q 58 20 62 40 Q 65 60 60 80 Z" fill="#5d5d5d"/>
+<path d="M 42 78 Q 38 60 40 42 Q 44 24 50 16 Q 56 24 60 42 Q 62 60 58 78 Z" fill="#6e6e6e"/>
+<!-- Weathering/patterns -->
+<path d="M 44 50 Q 50 48 56 52" stroke="#7e7e7e" stroke-width="2" fill="none"/>
+<path d="M 46 65 Q 52 63 54 68" stroke="#7e7e7e" stroke-width="1.5" fill="none"/>
+<path d="M 48 35 Q 52 33 54 38" stroke="#7e7e7e" stroke-width="1.5" fill="none"/>
+</g>
+</svg>

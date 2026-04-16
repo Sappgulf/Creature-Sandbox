@@ -4,6 +4,7 @@
 import { rand, clamp, dist2 } from './utils.js';
 
 import { eventSystem, GameEvents } from './event-system.js';
+import { CreatureAgentTuning } from './creature-agent-constants.js';
 
 export class WorldCombat {
   constructor(world) {
@@ -74,8 +75,16 @@ export class WorldCombat {
     const predatorStrength = predator.size * predator.energy / predator.maxHealth;
     const preyStrength = prey.size * prey.energy / prey.maxHealth;
 
+    // Nocturnal predator bonus at night
+    const dayNight = this.world?.dayNightState;
+    const isNight = dayNight?.phase === 'night' || (dayNight?.light ?? 1) < 0.4;
+    let nocturnalBonus = 0;
+    if (isNight && predator.genes.nocturnal !== undefined && predator.genes.nocturnal > 0.5) {
+      nocturnalBonus = CreatureAgentTuning.NOCTURNAL.NIGHT_HUNT_BONUS * predator.genes.nocturnal;
+    }
+
     const attackRoll = rand();
-    const successChance = clamp(predatorStrength / (predatorStrength + preyStrength), 0.1, 0.9);
+    const successChance = clamp(predatorStrength / (predatorStrength + preyStrength) + nocturnalBonus, 0.1, 0.95);
 
     if (attackRoll < successChance) {
       // Attack succeeds

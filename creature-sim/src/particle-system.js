@@ -1,6 +1,8 @@
 // Particle System for visual effects
 // Handles birth sparkles, death markers, sleep particles, etc.
-// OPTIMIZED: Uses swap-and-pop for O(1) particle removal instead of splice O(n)
+// OPTIMIZED: Uses object pooling to reduce GC pressure
+
+import { poolManager } from './object-pool.js';
 
 export class ParticleSystem {
   constructor() {
@@ -9,7 +11,27 @@ export class ParticleSystem {
     this.screenShake = { x: 0, y: 0, intensity: 0 };
     // Performance tracking
     this._particleCreated = 0;
+    this._particleReleased = 0;
     this._particleRemoved = 0;
+  }
+
+  /**
+   * Get a particle from the pool and initialize common properties
+   * @returns {Object} Pooled particle object
+   */
+  _getPooledParticle() {
+    return poolManager.getParticle();
+  }
+
+  /**
+   * Release a particle back to the pool
+   * @param {Object} particle - Particle to release
+   */
+  _releaseParticle(particle) {
+    if (particle) {
+      poolManager.releaseParticle(particle);
+      this._particleReleased++;
+    }
   }
 
   /**
@@ -35,106 +57,109 @@ export class ParticleSystem {
 
   // Add birth sparkles with color variation based on creature type
   addBirthEffect(x, y, diet = 0) {
-    const sparkleCount = 12; // Increased from 8
-    const hueBase = diet > 0.7 ? 0 : diet > 0.3 ? 45 : 120; // Red for predators, yellow for omnivores, green for herbivores
+    const sparkleCount = 12;
+    const hueBase = diet > 0.7 ? 0 : diet > 0.3 ? 45 : 120;
 
     for (let i = 0; i < sparkleCount; i++) {
       const angle = (i / sparkleCount) * Math.PI * 2;
       const speed = 40 + Math.random() * 20;
-      this.particles.push({
-        type: 'sparkle',
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 15, // Upward bias
-        life: 1.0 + Math.random() * 0.3,
-        maxLife: 1.3,
-        size: 2 + Math.random() * 3,
-        color: `hsl(${hueBase + Math.random() * 30}, 100%, 70%)`,
-        twinkle: true // Add twinkle effect
-      });
+      const p = this._getPooledParticle();
+      p.type = 'sparkle';
+      p.category = 'sparkle';
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed - 15;
+      p.life = 1.0 + Math.random() * 0.3;
+      p.maxLife = 1.3;
+      p.size = 2 + Math.random() * 3;
+      p.color = `hsl(${hueBase + Math.random() * 30}, 100%, 70%)`;
+      p.twinkle = true;
+      p.opacity = 1;
+      this.particles.push(p);
     }
 
-    // Add burst ring
-    this.particles.push({
-      type: 'ring',
-      x,
-      y,
-      vx: 0,
-      vy: 0,
-      life: 0.5,
-      maxLife: 0.5,
-      size: 5,
-      expandRate: 80, // Expands 80 units per second
-      color: `hsl(${hueBase}, 80%, 60%)`,
-      opacity: 0.8
-    });
+    const ring = this._getPooledParticle();
+    ring.type = 'ring';
+    ring.category = 'ring';
+    ring.x = x;
+    ring.y = y;
+    ring.vx = 0;
+    ring.vy = 0;
+    ring.life = 0.5;
+    ring.maxLife = 0.5;
+    ring.size = 5;
+    ring.expandRate = 80;
+    ring.color = `hsl(${hueBase}, 80%, 60%)`;
+    ring.opacity = 0.8;
+    this.particles.push(ring);
   }
 
   // Add death gravestone marker with enhanced visuals
   addDeathMarker(x, y, creatureName, diet = 0) {
-    // Dust cloud on death
     for (let i = 0; i < 12; i++) {
       const angle = (i / 12) * Math.PI * 2;
-      this.particles.push({
-        type: 'dust',
-        x,
-        y,
-        vx: Math.cos(angle) * (20 + Math.random() * 15),
-        vy: Math.sin(angle) * (20 + Math.random() * 15) - 10,
-        life: 0.6 + Math.random() * 0.4,
-        maxLife: 1.0,
-        size: 3 + Math.random() * 4,
-        color: diet > 0.7 ? '#aa4444' : diet > 0.3 ? '#88aa44' : '#88aa88',
-        opacity: 0.8
-      });
+      const p = this._getPooledParticle();
+      p.type = 'dust';
+      p.category = 'dust';
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(angle) * (20 + Math.random() * 15);
+      p.vy = Math.sin(angle) * (20 + Math.random() * 15) - 10;
+      p.life = 0.6 + Math.random() * 0.4;
+      p.maxLife = 1.0;
+      p.size = 3 + Math.random() * 4;
+      p.color = diet > 0.7 ? '#aa4444' : diet > 0.3 ? '#88aa44' : '#88aa88';
+      p.opacity = 0.8;
+      this.particles.push(p);
     }
 
-    // Ghost silhouette (brief translucent shape that fades)
-    this.particles.push({
-      type: 'ghost',
-      x,
-      y,
-      vx: 0,
-      vy: -8,
-      life: 1.5,
-      maxLife: 1.5,
-      size: 14,
-      hue: diet > 0.7 ? 0 : diet > 0.3 ? 45 : 120,
-      opacity: 0.5,
-      fadeInTime: 0.1
-    });
+    const ghost = this._getPooledParticle();
+    ghost.type = 'ghost';
+    ghost.category = 'ghost';
+    ghost.x = x;
+    ghost.y = y;
+    ghost.vx = 0;
+    ghost.vy = -8;
+    ghost.life = 1.5;
+    ghost.maxLife = 1.5;
+    ghost.size = 14;
+    ghost.hue = diet > 0.7 ? 0 : diet > 0.3 ? 45 : 120;
+    ghost.opacity = 0.5;
+    ghost.fadeInTime = 0.1;
+    this.particles.push(ghost);
 
-    // Gravestone marker
-    this.particles.push({
-      type: 'gravestone',
-      x,
-      y,
-      vx: 0,
-      vy: 0,
-      life: 5.0, // Lasts 5 seconds
-      maxLife: 5.0,
-      size: 12,
-      opacity: 1.0,
-      name: creatureName,
-      fadeInTime: 0.3 // Fade in over 0.3 seconds
-    });
+    const grave = this._getPooledParticle();
+    grave.type = 'gravestone';
+    grave.category = 'gravestone';
+    grave.x = x;
+    grave.y = y;
+    grave.vx = 0;
+    grave.vy = 0;
+    grave.life = 5.0;
+    grave.maxLife = 5.0;
+    grave.size = 12;
+    grave.opacity = 1.0;
+    grave.name = creatureName;
+    grave.fadeInTime = 0.3;
+    this.particles.push(grave);
   }
 
   // Add sleep Zzz particles
   addSleepParticle(x, y) {
-    this.particles.push({
-      type: 'sleep',
-      x,
-      y,
-      vx: (Math.random() - 0.5) * 5,
-      vy: -15 - Math.random() * 10, // Float upward
-      life: 1.5,
-      maxLife: 1.5,
-      size: 8,
-      text: 'Z',
-      opacity: 0.8
-    });
+    const p = this._getPooledParticle();
+    p.type = 'sleep';
+    p.category = 'sleep';
+    p.x = x;
+    p.y = y;
+    p.vx = (Math.random() - 0.5) * 5;
+    p.vy = -15 - Math.random() * 10;
+    p.life = 1.5;
+    p.maxLife = 1.5;
+    p.size = 8;
+    p.text = 'Z';
+    p.opacity = 0.8;
+    this.particles.push(p);
   }
 
   // Weather particles - rain, snow, wind streaks
@@ -143,43 +168,38 @@ export class ParticleSystem {
     for (let i = 0; i < count; i++) {
       const x = originX + (Math.random() - 0.5) * 300;
       const y = originY + (Math.random() - 0.5) * 200;
+      const p = this._getPooledParticle();
+      p.type = 'weather';
+      p.category = weatherType;
+      p.x = x;
+      p.y = y;
+
       if (weatherType === 'rain') {
-        this.particles.push({
-          type: 'weather',
-          x, y,
-          vx: -80 + Math.random() * 20,
-          vy: 150 + Math.random() * 50,
-          life: 0.8,
-          maxLife: 0.8,
-          size: 1.5,
-          color: 'rgba(150, 180, 255, 0.5)',
-          opacity: 0.5
-        });
+        p.vx = -80 + Math.random() * 20;
+        p.vy = 150 + Math.random() * 50;
+        p.life = 0.8;
+        p.maxLife = 0.8;
+        p.size = 1.5;
+        p.color = 'rgba(150, 180, 255, 0.5)';
+        p.opacity = 0.5;
       } else if (weatherType === 'snow') {
-        this.particles.push({
-          type: 'weather',
-          x, y,
-          vx: -20 + Math.random() * 40,
-          vy: 30 + Math.random() * 20,
-          life: 2 + Math.random(),
-          maxLife: 3,
-          size: 2 + Math.random() * 2,
-          color: 'rgba(255, 255, 255, 0.7)',
-          opacity: 0.7
-        });
+        p.vx = -20 + Math.random() * 40;
+        p.vy = 30 + Math.random() * 20;
+        p.life = 2 + Math.random();
+        p.maxLife = 3;
+        p.size = 2 + Math.random() * 2;
+        p.color = 'rgba(255, 255, 255, 0.7)';
+        p.opacity = 0.7;
       } else if (weatherType === 'wind') {
-        this.particles.push({
-          type: 'weather',
-          x, y,
-          vx: 150 + Math.random() * 100,
-          vy: -10 + Math.random() * 20,
-          life: 0.5,
-          maxLife: 0.5,
-          size: 1,
-          color: 'rgba(200, 220, 255, 0.3)',
-          opacity: 0.3
-        });
+        p.vx = 150 + Math.random() * 100;
+        p.vy = -10 + Math.random() * 20;
+        p.life = 0.5;
+        p.maxLife = 0.5;
+        p.size = 1;
+        p.color = 'rgba(200, 220, 255, 0.3)';
+        p.opacity = 0.3;
       }
+      this.particles.push(p);
     }
   }
 
@@ -189,18 +209,19 @@ export class ParticleSystem {
     for (let i = 0; i < particleCount; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = (Math.random() * 30 + 20) * (damage / 10);
-      this.particles.push({
-        type: 'blood',
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        life: 0.5,
-        maxLife: 0.5,
-        size: 2 + Math.random() * 2,
-        color: isKill ? '#cc0000' : '#ff4444',
-        opacity: 1.0
-      });
+      const p = this._getPooledParticle();
+      p.type = 'blood';
+      p.category = 'blood';
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed;
+      p.life = 0.5;
+      p.maxLife = 0.5;
+      p.size = 2 + Math.random() * 2;
+      p.color = isKill ? '#cc0000' : '#ff4444';
+      p.opacity = 1.0;
+      this.particles.push(p);
     }
   }
 
@@ -209,21 +230,22 @@ export class ParticleSystem {
     const particleCount = 5;
     for (let i = 0; i < particleCount; i++) {
       const t = i / particleCount;
-      this.particles.push({
-        type: 'food',
-        x: foodX + (Math.random() - 0.5) * 8,
-        y: foodY + (Math.random() - 0.5) * 8,
-        targetX: creatureX,
-        targetY: creatureY,
-        vx: 0,
-        vy: 0,
-        life: 0.4,
-        maxLife: 0.4,
-        size: 2 + Math.random() * 2,
-        color: '#44ff44',
-        opacity: 1.0,
-        delay: t * 0.05 // Stagger particles
-      });
+      const p = this._getPooledParticle();
+      p.type = 'food';
+      p.category = 'food';
+      p.x = foodX + (Math.random() - 0.5) * 8;
+      p.y = foodY + (Math.random() - 0.5) * 8;
+      p.targetX = creatureX;
+      p.targetY = creatureY;
+      p.vx = 0;
+      p.vy = 0;
+      p.life = 0.4;
+      p.maxLife = 0.4;
+      p.size = 2 + Math.random() * 2;
+      p.color = '#44ff44';
+      p.opacity = 1.0;
+      p.delay = t * 0.05;
+      this.particles.push(p);
     }
   }
 
@@ -231,37 +253,39 @@ export class ParticleSystem {
   addEvolutionEffect(x, y) {
     for (let i = 0; i < 12; i++) {
       const angle = (i / 12) * Math.PI * 2;
-      this.particles.push({
-        type: 'evolution',
-        x,
-        y,
-        vx: Math.cos(angle) * 40,
-        vy: Math.sin(angle) * 40,
-        life: 1.2,
-        maxLife: 1.2,
-        size: 3 + Math.random() * 2,
-        color: `hsl(45, 100%, ${50 + Math.random() * 30}%)`, // Gold
-        opacity: 1.0
-      });
+      const p = this._getPooledParticle();
+      p.type = 'evolution';
+      p.category = 'evolution';
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(angle) * 40;
+      p.vy = Math.sin(angle) * 40;
+      p.life = 1.2;
+      p.maxLife = 1.2;
+      p.size = 3 + Math.random() * 2;
+      p.color = `hsl(45, 100%, ${50 + Math.random() * 30}%)`;
+      p.opacity = 1.0;
+      this.particles.push(p);
     }
   }
 
   // Add healing effect (green plus signs)
   addHealEffect(x, y) {
     for (let i = 0; i < 6; i++) {
-      this.particles.push({
-        type: 'heal',
-        x,
-        y,
-        vx: (Math.random() - 0.5) * 20,
-        vy: -20 - Math.random() * 20, // Float upward
-        life: 0.8,
-        maxLife: 0.8,
-        size: 10 + Math.random() * 4,
-        text: '+',
-        opacity: 1.0,
-        color: '#44ff44'
-      });
+      const p = this._getPooledParticle();
+      p.type = 'heal';
+      p.category = 'heal';
+      p.x = x;
+      p.y = y;
+      p.vx = (Math.random() - 0.5) * 20;
+      p.vy = -20 - Math.random() * 20;
+      p.life = 0.8;
+      p.maxLife = 0.8;
+      p.size = 10 + Math.random() * 4;
+      p.text = '+';
+      p.opacity = 1.0;
+      p.color = '#44ff44';
+      this.particles.push(p);
     }
   }
 
@@ -280,54 +304,55 @@ export class ParticleSystem {
           : palette.spring;
     for (let i = 0; i < 24; i++) {
       const angle = Math.random() * Math.PI * 2;
-      this.particles.push({
-        type: 'season',
-        x: (Math.random() - 0.5) * 400,
-        y: (Math.random() - 0.5) * 250,
-        vx: Math.cos(angle) * 18,
-        vy: Math.sin(angle) * 18,
-        life: 1.8,
-        maxLife: 1.8,
-        size: 6 + Math.random() * 8,
-        color: tint,
-        label: label ?? 'Season Shift',
-        opacity: 1.0
-      });
+      const p = this._getPooledParticle();
+      p.type = 'season';
+      p.category = 'season';
+      p.x = (Math.random() - 0.5) * 400;
+      p.y = (Math.random() - 0.5) * 250;
+      p.vx = Math.cos(angle) * 18;
+      p.vy = Math.sin(angle) * 18;
+      p.life = 1.8;
+      p.maxLife = 1.8;
+      p.size = 6 + Math.random() * 8;
+      p.color = tint;
+      p.label = label ?? 'Season Shift';
+      p.opacity = 1.0;
+      this.particles.push(p);
     }
   }
 
   addDiseasePulse(x, y, color = '#7fff7f') {
-    // Main expanding ring
-    this.particles.push({
-      type: 'disease',
-      x,
-      y,
-      vx: 0,
-      vy: 0,
-      life: 1.2,
-      maxLife: 1.2,
-      size: 16,
-      opacity: 1.0,
-      pulse: 0,
-      color
-    });
+    const disease = this._getPooledParticle();
+    disease.type = 'disease';
+    disease.category = 'disease';
+    disease.x = x;
+    disease.y = y;
+    disease.vx = 0;
+    disease.vy = 0;
+    disease.life = 1.2;
+    disease.maxLife = 1.2;
+    disease.size = 16;
+    disease.opacity = 1.0;
+    disease.pulse = 0;
+    disease.color = color;
+    this.particles.push(disease);
 
-    // Add smaller contagion particles spreading outward
     for (let i = 0; i < 6; i++) {
       const angle = (i / 6) * Math.PI * 2 + Math.random() * 0.3;
       const speed = 30 + Math.random() * 20;
-      this.particles.push({
-        type: 'contagion',
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        life: 0.8,
-        maxLife: 0.8,
-        size: 2 + Math.random() * 2,
-        color,
-        opacity: 0.8
-      });
+      const p = this._getPooledParticle();
+      p.type = 'contagion';
+      p.category = 'contagion';
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed;
+      p.life = 0.8;
+      p.maxLife = 0.8;
+      p.size = 2 + Math.random() * 2;
+      p.color = color;
+      p.opacity = 0.8;
+      this.particles.push(p);
     }
   }
 
@@ -335,252 +360,267 @@ export class ParticleSystem {
     for (let i = 0; i < 10; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 60 + Math.random() * 40;
-      this.particles.push({
-        type: 'venom',
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        life: 0.6,
-        maxLife: 0.6,
-        size: 3 + Math.random() * 2,
-        color: '#6CFF7C',
-        opacity: 1.0
-      });
+      const p = this._getPooledParticle();
+      p.type = 'venom';
+      p.category = 'venom';
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed;
+      p.life = 0.6;
+      p.maxLife = 0.6;
+      p.size = 3 + Math.random() * 2;
+      p.color = '#6CFF7C';
+      p.opacity = 1.0;
+      this.particles.push(p);
     }
   }
 
   addEatEffect(x, y, color = '#88ff88') {
-    this.particles.push({
-      type: 'ring',
-      x,
-      y,
-      vx: 0,
-      vy: 0,
-      life: 0.45,
-      maxLife: 0.45,
-      size: 5,
-      expandRate: 70,
-      color,
-      opacity: 0.75
-    });
+    const ring = this._getPooledParticle();
+    ring.type = 'ring';
+    ring.category = 'ring';
+    ring.x = x;
+    ring.y = y;
+    ring.vx = 0;
+    ring.vy = 0;
+    ring.life = 0.45;
+    ring.maxLife = 0.45;
+    ring.size = 5;
+    ring.expandRate = 70;
+    ring.color = color;
+    ring.opacity = 0.75;
+    this.particles.push(ring);
 
     for (let i = 0; i < 8; i++) {
       const angle = (i / 8) * Math.PI * 2 + (Math.random() - 0.5) * 0.35;
       const speed = 24 + Math.random() * 18;
-      this.particles.push({
-        type: 'sparkle',
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 8,
-        life: 0.55 + Math.random() * 0.15,
-        maxLife: 0.7,
-        size: 1.6 + Math.random() * 1.8,
-        color,
-        opacity: 1,
-        twinkle: true
-      });
+      const p = this._getPooledParticle();
+      p.type = 'sparkle';
+      p.category = 'sparkle';
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed - 8;
+      p.life = 0.55 + Math.random() * 0.15;
+      p.maxLife = 0.7;
+      p.size = 1.6 + Math.random() * 1.8;
+      p.color = color;
+      p.opacity = 1;
+      p.twinkle = true;
+      this.particles.push(p);
     }
   }
 
   addBondEffect(x, y, color = '#ff9ad5') {
-    this.particles.push({
-      type: 'ring',
-      x,
-      y,
-      vx: 0,
-      vy: 0,
-      life: 0.6,
-      maxLife: 0.6,
-      size: 6,
-      expandRate: 60,
-      color,
-      opacity: 0.7
-    });
+    const ring = this._getPooledParticle();
+    ring.type = 'ring';
+    ring.category = 'ring';
+    ring.x = x;
+    ring.y = y;
+    ring.vx = 0;
+    ring.vy = 0;
+    ring.life = 0.6;
+    ring.maxLife = 0.6;
+    ring.size = 6;
+    ring.expandRate = 60;
+    ring.color = color;
+    ring.opacity = 0.7;
+    this.particles.push(ring);
 
     for (let i = 0; i < 6; i++) {
       const angle = (i / 6) * Math.PI * 2;
       const speed = 18 + Math.random() * 16;
-      this.particles.push({
-        type: 'sparkle',
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 6,
-        life: 0.75 + Math.random() * 0.2,
-        maxLife: 0.95,
-        size: 1.5 + Math.random() * 1.5,
-        color,
-        opacity: 1
-      });
+      const p = this._getPooledParticle();
+      p.type = 'sparkle';
+      p.category = 'sparkle';
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed - 6;
+      p.life = 0.75 + Math.random() * 0.2;
+      p.maxLife = 0.95;
+      p.size = 1.5 + Math.random() * 1.5;
+      p.color = color;
+      p.opacity = 1;
+      this.particles.push(p);
     }
   }
 
   addPanicEffect(x, y, color = '#ffb347') {
-    this.particles.push({
-      type: 'ring',
-      x,
-      y,
-      vx: 0,
-      vy: 0,
-      life: 0.35,
-      maxLife: 0.35,
-      size: 8,
-      expandRate: 90,
-      color,
-      opacity: 0.9
-    });
+    const ring = this._getPooledParticle();
+    ring.type = 'ring';
+    ring.category = 'ring';
+    ring.x = x;
+    ring.y = y;
+    ring.vx = 0;
+    ring.vy = 0;
+    ring.life = 0.35;
+    ring.maxLife = 0.35;
+    ring.size = 8;
+    ring.expandRate = 90;
+    ring.color = color;
+    ring.opacity = 0.9;
+    this.particles.push(ring);
 
     for (let i = 0; i < 10; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 35 + Math.random() * 45;
-      this.particles.push({
-        type: 'dust',
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 14,
-        life: 0.65 + Math.random() * 0.25,
-        maxLife: 0.9,
-        size: 1.8 + Math.random() * 2.2,
-        color,
-        opacity: 0.85
-      });
+      const p = this._getPooledParticle();
+      p.type = 'dust';
+      p.category = 'dust';
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed - 14;
+      p.life = 0.65 + Math.random() * 0.25;
+      p.maxLife = 0.9;
+      p.size = 1.8 + Math.random() * 2.2;
+      p.color = color;
+      p.opacity = 0.85;
+      this.particles.push(p);
     }
   }
 
   addMigrationEffect(x, y, color = '#9ad9ff') {
-    this.particles.push({
-      type: 'ring',
-      x,
-      y,
-      vx: 0,
-      vy: 0,
-      life: 0.7,
-      maxLife: 0.7,
-      size: 10,
-      expandRate: 50,
-      color,
-      opacity: 0.6
-    });
+    const ring = this._getPooledParticle();
+    ring.type = 'ring';
+    ring.category = 'ring';
+    ring.x = x;
+    ring.y = y;
+    ring.vx = 0;
+    ring.vy = 0;
+    ring.life = 0.7;
+    ring.maxLife = 0.7;
+    ring.size = 10;
+    ring.expandRate = 50;
+    ring.color = color;
+    ring.opacity = 0.6;
+    this.particles.push(ring);
 
     for (let i = 0; i < 8; i++) {
       const angle = (i / 8) * Math.PI * 2;
       const speed = 22 + Math.random() * 20;
-      this.particles.push({
-        type: 'play',
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 6,
-        life: 0.8 + Math.random() * 0.2,
-        maxLife: 1,
-        size: 1.8 + Math.random() * 1.6,
-        color,
-        opacity: 1
-      });
+      const p = this._getPooledParticle();
+      p.type = 'play';
+      p.category = 'play';
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed - 6;
+      p.life = 0.8 + Math.random() * 0.2;
+      p.maxLife = 1;
+      p.size = 1.8 + Math.random() * 1.6;
+      p.color = color;
+      p.opacity = 1;
+      this.particles.push(p);
     }
   }
 
   addNestEffect(x, y, color = '#7FDB6A') {
-    this.particles.push({
-      type: 'ring',
-      x,
-      y,
-      vx: 0,
-      vy: 0,
-      life: 0.65,
-      maxLife: 0.65,
-      size: 7,
-      expandRate: 55,
-      color,
-      opacity: 0.75
-    });
+    const ring = this._getPooledParticle();
+    ring.type = 'ring';
+    ring.category = 'ring';
+    ring.x = x;
+    ring.y = y;
+    ring.vx = 0;
+    ring.vy = 0;
+    ring.life = 0.65;
+    ring.maxLife = 0.65;
+    ring.size = 7;
+    ring.expandRate = 55;
+    ring.color = color;
+    ring.opacity = 0.75;
+    this.particles.push(ring);
 
     for (let i = 0; i < 8; i++) {
       const angle = (i / 8) * Math.PI * 2 + 0.2;
       const speed = 16 + Math.random() * 12;
-      this.particles.push({
-        type: 'sparkle',
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 5,
-        life: 0.7 + Math.random() * 0.25,
-        maxLife: 0.95,
-        size: 1.6 + Math.random() * 1.4,
-        color,
-        opacity: 1,
-        twinkle: true
-      });
+      const p = this._getPooledParticle();
+      p.type = 'sparkle';
+      p.category = 'sparkle';
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed - 5;
+      p.life = 0.7 + Math.random() * 0.25;
+      p.maxLife = 0.95;
+      p.size = 1.6 + Math.random() * 1.4;
+      p.color = color;
+      p.opacity = 1;
+      p.twinkle = true;
+      this.particles.push(p);
     }
   }
 
   addScarcityEffect(x, y, color = '#9ca3af') {
-    this.particles.push({
-      type: 'ring',
-      x,
-      y,
-      vx: 0,
-      vy: 0,
-      life: 0.75,
-      maxLife: 0.75,
-      size: 9,
-      expandRate: 45,
-      color,
-      opacity: 0.5
-    });
+    const ring = this._getPooledParticle();
+    ring.type = 'ring';
+    ring.category = 'ring';
+    ring.x = x;
+    ring.y = y;
+    ring.vx = 0;
+    ring.vy = 0;
+    ring.life = 0.75;
+    ring.maxLife = 0.75;
+    ring.size = 9;
+    ring.expandRate = 45;
+    ring.color = color;
+    ring.opacity = 0.5;
+    this.particles.push(ring);
 
     for (let i = 0; i < 8; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 18 + Math.random() * 18;
-      this.particles.push({
-        type: 'dust',
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 4,
-        life: 0.8 + Math.random() * 0.25,
-        maxLife: 1,
-        size: 1.7 + Math.random() * 1.8,
-        color,
-        opacity: 0.7
-      });
+      const p = this._getPooledParticle();
+      p.type = 'dust';
+      p.category = 'dust';
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed - 4;
+      p.life = 0.8 + Math.random() * 0.25;
+      p.maxLife = 1;
+      p.size = 1.7 + Math.random() * 1.8;
+      p.color = color;
+      p.opacity = 0.7;
+      this.particles.push(p);
     }
   }
 
   addMutationEffect(x, y, color = '#c084fc') {
-    this.particles.push({
-      type: 'ring',
-      x,
-      y,
-      vx: 0,
-      vy: 0,
-      life: 0.5,
-      maxLife: 0.5,
-      size: 4,
-      expandRate: 85,
-      color,
-      opacity: 0.8
-    });
+    const ring = this._getPooledParticle();
+    ring.type = 'ring';
+    ring.category = 'ring';
+    ring.x = x;
+    ring.y = y;
+    ring.vx = 0;
+    ring.vy = 0;
+    ring.life = 0.5;
+    ring.maxLife = 0.5;
+    ring.size = 4;
+    ring.expandRate = 85;
+    ring.color = color;
+    ring.opacity = 0.8;
+    this.particles.push(ring);
 
     for (let i = 0; i < 10; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 26 + Math.random() * 22;
-      this.particles.push({
-        type: 'sparkle',
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 10,
-        life: 0.7 + Math.random() * 0.2,
-        maxLife: 0.95,
-        size: 1.8 + Math.random() * 1.8,
-        color,
-        opacity: 1,
-        twinkle: true
-      });
+      const p = this._getPooledParticle();
+      p.type = 'sparkle';
+      p.category = 'sparkle';
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed - 10;
+      p.life = 0.7 + Math.random() * 0.2;
+      p.maxLife = 0.95;
+      p.size = 1.8 + Math.random() * 1.8;
+      p.color = color;
+      p.opacity = 1;
+      p.twinkle = true;
+      this.particles.push(p);
     }
   }
 
@@ -593,31 +633,35 @@ export class ParticleSystem {
   }
 
   addTerritoryMarker(x, y, color = '#ff6b6b') {
-    this.particles.push({
-      type: 'territory',
-      x,
-      y,
-      vx: 0,
-      vy: 0,
-      life: 1.1,
-      maxLife: 1.1,
-      size: 14,
-      color,
-      opacity: 0.9
-    });
+    const territory = this._getPooledParticle();
+    territory.type = 'territory';
+    territory.category = 'territory';
+    territory.x = x;
+    territory.y = y;
+    territory.vx = 0;
+    territory.vy = 0;
+    territory.life = 1.1;
+    territory.maxLife = 1.1;
+    territory.size = 14;
+    territory.color = color;
+    territory.opacity = 0.9;
+    this.particles.push(territory);
+
     for (let i = 0; i < 4; i++) {
-      this.particles.push({
-        type: 'sparkle',
-        x,
-        y,
-        vx: (Math.random() - 0.5) * 30,
-        vy: -10 - Math.random() * 15,
-        life: 0.6 + Math.random() * 0.2,
-        maxLife: 0.8,
-        size: 1.4 + Math.random() * 1.2,
-        color,
-        opacity: 1
-      });
+      const p = this._getPooledParticle();
+      p.type = 'sparkle';
+      p.category = 'sparkle';
+      p.x = x;
+      p.y = y;
+      p.vx = (Math.random() - 0.5) * 30;
+      p.vy = -10 - Math.random() * 15;
+      p.life = 0.6 + Math.random() * 0.2;
+      p.maxLife = 0.8;
+      p.size = 1.4 + Math.random() * 1.2;
+      p.color = color;
+      p.opacity = 1;
+      p.twinkle = false;
+      this.particles.push(p);
     }
   }
 
@@ -705,41 +749,35 @@ export class ParticleSystem {
 
   /**
    * Update all particles
-   * OPTIMIZED: Uses swap-and-pop pattern for O(1) removal instead of splice O(n)
+   * OPTIMIZED: Uses swap-and-pop pattern for O(1) removal + releases dead particles to pool
    */
   update(dt) {
     const particles = this.particles;
     let writeIdx = 0;
 
-    // Process all particles, keeping alive ones compacted
     for (let i = 0; i < particles.length; i++) {
       const p = particles[i];
       p.life -= dt;
 
-      // Skip dead particles (they won't be copied)
       if (p.life <= 0) {
+        this._releaseParticle(p);
         this._particleRemoved++;
         continue;
       }
 
-      // Update position
       p.x += p.vx * dt;
       p.y += p.vy * dt;
 
-      // Update opacity based on life
       const lifeRatio = p.life / p.maxLife;
 
-      // Type-specific updates using lookup for common types
       this._updateParticleByType(p, dt, lifeRatio);
 
-      // Compact: move particle to write position
       if (writeIdx !== i) {
         particles[writeIdx] = p;
       }
       writeIdx++;
     }
 
-    // Truncate array to remove dead particles (O(1))
     particles.length = writeIdx;
 
     // Update screen shake decay (moved outside particle loop)
@@ -897,33 +935,35 @@ export class ParticleSystem {
     for (let i = 0; i < 8; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 70 + Math.random() * 50;
-      this.particles.push({
-        type: 'play',
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        life: 0.5,
-        maxLife: 0.5,
-        size: 2 + Math.random() * 2,
-        color: '#9AD9FF',
-        opacity: 1.0
-      });
+      const p = this._getPooledParticle();
+      p.type = 'play';
+      p.category = 'play';
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed;
+      p.life = 0.5;
+      p.maxLife = 0.5;
+      p.size = 2 + Math.random() * 2;
+      p.color = '#9AD9FF';
+      p.opacity = 1.0;
+      this.particles.push(p);
     }
   }
 
   addElderAura(x, y) {
-    this.particles.push({
-      type: 'elder',
-      x,
-      y,
-      vx: 0,
-      vy: 0,
-      life: 1.6,
-      maxLife: 1.6,
-      size: 22,
-      opacity: 1.0
-    });
+    const p = this._getPooledParticle();
+    p.type = 'elder';
+    p.category = 'elder';
+    p.x = x;
+    p.y = y;
+    p.vx = 0;
+    p.vy = 0;
+    p.life = 1.6;
+    p.maxLife = 1.6;
+    p.size = 22;
+    p.opacity = 1.0;
+    this.particles.push(p);
   }
 
   /**
@@ -931,50 +971,53 @@ export class ParticleSystem {
    */
   addBubbles(x, y, count = 4) {
     for (let i = 0; i < count; i++) {
-      this.particles.push({
-        type: 'bubble',
-        x: x + (Math.random() - 0.5) * 10,
-        y: y + (Math.random() - 0.5) * 10,
-        vx: (Math.random() - 0.5) * 15,
-        vy: -20 - Math.random() * 30, // Float upward
-        life: 0.8 + Math.random() * 0.4,
-        maxLife: 1.2,
-        size: 2 + Math.random() * 3,
-        opacity: 0.7
-      });
+      const p = this._getPooledParticle();
+      p.type = 'bubble';
+      p.category = 'bubble';
+      p.x = x + (Math.random() - 0.5) * 10;
+      p.y = y + (Math.random() - 0.5) * 10;
+      p.vx = (Math.random() - 0.5) * 15;
+      p.vy = -20 - Math.random() * 30;
+      p.life = 0.8 + Math.random() * 0.4;
+      p.maxLife = 1.2;
+      p.size = 2 + Math.random() * 3;
+      p.opacity = 0.7;
+      this.particles.push(p);
     }
   }
 
   addImpactRing(x, y, { color = 'rgba(147, 197, 253, 1)', size = 8 } = {}) {
-    this.particles.push({
-      type: 'ripple',
-      x,
-      y,
-      vx: 0,
-      vy: 0,
-      life: 0.55,
-      maxLife: 0.55,
-      size,
-      color,
-      opacity: 0.6
-    });
+    const p = this._getPooledParticle();
+    p.type = 'ripple';
+    p.category = 'ripple';
+    p.x = x;
+    p.y = y;
+    p.vx = 0;
+    p.vy = 0;
+    p.life = 0.55;
+    p.maxLife = 0.55;
+    p.size = size;
+    p.color = color;
+    p.opacity = 0.6;
+    this.particles.push(p);
   }
 
   /**
    * Add swimming ripple effect
    */
   addSwimRipple(x, y) {
-    this.particles.push({
-      type: 'ripple',
-      x,
-      y,
-      vx: 0,
-      vy: 0,
-      life: 0.6,
-      maxLife: 0.6,
-      size: 5,
-      opacity: 0.5
-    });
+    const p = this._getPooledParticle();
+    p.type = 'ripple';
+    p.category = 'ripple';
+    p.x = x;
+    p.y = y;
+    p.vx = 0;
+    p.vy = 0;
+    p.life = 0.6;
+    p.maxLife = 0.6;
+    p.size = 5;
+    p.opacity = 0.5;
+    this.particles.push(p);
   }
 
   draw(ctx, _camera = null) {
@@ -985,10 +1028,14 @@ export class ParticleSystem {
       ctx.globalAlpha = p.opacity || 1.0;
 
       if (p.type === 'sparkle') {
+        ctx.save();
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 6;
         ctx.fillStyle = p.color;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
       } else if (p.type === 'ring') {
         // Expanding ring
         ctx.strokeStyle = p.color;
@@ -1045,20 +1092,23 @@ export class ParticleSystem {
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
       } else if (p.type === 'food') {
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (p.type === 'evolution') {
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-        // Add glow effect
-        ctx.shadowBlur = 10;
+        ctx.save();
         ctx.shadowColor = p.color;
+        ctx.shadowBlur = 5;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowBlur = 0;
+        ctx.restore();
+      } else if (p.type === 'evolution') {
+        ctx.save();
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
       } else if (p.type === 'heal') {
         ctx.fillStyle = p.color;
         ctx.font = `${p.size}px Arial`;
@@ -1118,6 +1168,54 @@ export class ParticleSystem {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
+      } else if (p.type === 'weather') {
+        // Enhanced weather particle rendering using category
+        if (p.category === 'rain') {
+          // Rain - elongated drops with motion blur
+          ctx.save();
+          ctx.strokeStyle = p.color;
+          ctx.lineWidth = p.size;
+          ctx.lineCap = 'round';
+          ctx.globalAlpha = p.opacity;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p.x + p.vx * 0.02, p.y + p.vy * 0.02);
+          ctx.stroke();
+          ctx.restore();
+        } else if (p.category === 'snow') {
+          // Snow - soft fluffy flakes with sparkle
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = p.opacity;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+          // Snow sparkle
+          if (Math.random() > 0.95) {
+            ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 1.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (p.category === 'wind') {
+          // Wind - horizontal streaks
+          ctx.save();
+          ctx.strokeStyle = p.color;
+          ctx.lineWidth = p.size;
+          ctx.globalAlpha = p.opacity;
+          ctx.beginPath();
+          ctx.moveTo(p.x - p.vx * 0.03, p.y);
+          ctx.lineTo(p.x, p.y);
+          ctx.stroke();
+          ctx.restore();
+        } else {
+          // Generic weather
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = p.opacity;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
       } else if (p.type === 'play') {
         ctx.fillStyle = `rgba(154,217,255,${p.opacity})`;
         ctx.beginPath();
@@ -1154,6 +1252,9 @@ export class ParticleSystem {
   }
 
   clear() {
+    for (const p of this.particles) {
+      this._releaseParticle(p);
+    }
     this.particles = [];
     this.screenShake = { x: 0, y: 0, intensity: 0 };
   }

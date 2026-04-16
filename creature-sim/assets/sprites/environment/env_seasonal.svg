@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="96" viewBox="0 0 512 96" fill="none">
+<!-- Seasonal environment overlays and decorations -->
+
+<!-- AUTUMN 0: Maple leaf (orange) -->
+<g transform="translate(0 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 8 Q 36 16 40 20 Q 44 14 50 16 Q 46 22 48 28 Q 54 26 58 30 Q 52 34 54 40 Q 60 40 60 46 Q 54 46 52 50 Q 56 54 52 58 Q 46 54 44 58 Q 44 62 38 62 Q 36 56 32 56 Q 28 56 28 62 Q 22 62 22 58 Q 20 54 14 58 Q 12 54 6 58 Q 2 54 8 50 Q 6 46 0 46 Q 0 40 6 40 Q 8 34 2 30 Q 8 26 12 28 Q 14 22 10 16 Q 16 14 20 20 Q 24 16 28 8 Q 30 12 32 8 Z" fill="#ff7043"/>
+<path d="M 32 12 L 32 56" stroke="#d84315" stroke-width="2" fill="none"/>
+<path d="M 32 24 Q 24 20 18 22" stroke="#d84315" stroke-width="1.5" fill="none"/>
+<path d="M 32 32 Q 40 28 46 30" stroke="#d84315" stroke-width="1.5" fill="none"/>
+<path d="M 32 40 Q 24 36 20 38" stroke="#d84315" stroke-width="1.5" fill="none"/>
+<path d="M 32 48 Q 40 44 44 46" stroke="#d84315" stroke-width="1.5" fill="none"/>
+</g>
+
+<!-- AUTUMN 1: Oak leaf (red) -->
+<g transform="translate(64 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 6 Q 38 12 42 18 Q 48 14 54 18 Q 50 24 52 30 Q 58 28 60 34 Q 54 36 56 42 Q 58 48 54 52 Q 48 50 46 54 Q 42 58 36 58 Q 34 54 32 54 Q 30 54 28 58 Q 22 58 18 54 Q 16 50 10 52 Q 8 48 10 42 Q 12 36 6 34 Q 8 28 14 30 Q 16 24 12 18 Q 18 14 22 18 Q 26 12 32 6 Z" fill="#c62828"/>
+<path d="M 32 10 L 32 52" stroke="#8e0000" stroke-width="2" fill="none"/>
+<path d="M 32 22 Q 22 18 16 20" stroke="#8e0000" stroke-width="1.5" fill="none"/>
+<path d="M 32 32 Q 42 28 48 32" stroke="#8e0000" stroke-width="1.5" fill="none"/>
+<path d="M 32 42 Q 24 40 20 42" stroke="#8e0000" stroke-width="1.5" fill="none"/>
+</g>
+
+<!-- AUTUMN 2: Yellow/Gold leaf -->
+<g transform="translate(128 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 10 Q 38 14 42 20 Q 48 16 52 20 Q 48 26 50 32 Q 56 30 58 36 Q 52 38 54 44 Q 54 50 50 54 Q 44 52 42 56 Q 36 58 32 56 Q 28 58 22 56 Q 20 52 14 54 Q 10 50 10 44 Q 12 38 6 36 Q 8 30 14 32 Q 16 26 12 20 Q 18 16 22 20 Q 26 14 32 10 Z" fill="#fdd835"/>
+<path d="M 32 14 L 32 52" stroke="#f9a825" stroke-width="2" fill="none"/>
+<path d="M 32 26 Q 24 22 18 24" stroke="#f9a825" stroke-width="1.5" fill="none"/>
+<path d="M 32 36 Q 40 32 46 36" stroke="#f9a825" stroke-width="1.5" fill="none"/>
+</g>
+
+<!-- AUTUMN 3: Falling leaf cluster -->
+<g transform="translate(192 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 16 20 Q 18 24 22 26 Q 20 28 18 32 Q 22 30 24 34 Q 26 28 22 24 Q 26 22 28 18 Q 24 20 22 18 Q 22 14 16 20 Z" fill="#ff7043" transform="rotate(-20 22 25)"/>
+<path d="M 38 14 Q 40 18 44 20 Q 42 22 40 26 Q 44 24 46 28 Q 48 22 44 18 Q 48 16 50 12 Q 46 14 44 12 Q 44 8 38 14 Z" fill="#ffa726" transform="rotate(15 44 20)"/>
+<path d="M 28 38 Q 30 42 34 44 Q 32 46 30 50 Q 34 48 36 52 Q 38 46 34 42 Q 38 40 40 36 Q 36 38 34 36 Q 34 32 28 38 Z" fill="#c62828" transform="rotate(-10 34 44)"/>
+</g>
+
+<!-- WINTER 0: Snowflake -->
+<g transform="translate(256 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<line x1="32" y1="8" x2="32" y2="56" stroke="#eceff1" stroke-width="2"/>
+<line x1="8" y1="32" x2="56" y2="32" stroke="#eceff1" stroke-width="2"/>
+<line x1="14" y1="14" x2="50" y2="50" stroke="#eceff1" stroke-width="2"/>
+<line x1="50" y1="14" x2="14" y2="50" stroke="#eceff1" stroke-width="2"/>
+<circle cx="32" cy="32" r="4" fill="#eceff1"/>
+<circle cx="32" cy="12" r="2" fill="#eceff1"/>
+<circle cx="32" cy="52" r="2" fill="#eceff1"/>
+<circle cx="12" cy="32" r="2" fill="#eceff1"/>
+<circle cx="52" cy="32" r="2" fill="#eceff1"/>
+</g>
+
+<!-- WINTER 1: Snow pile -->
+<g transform="translate(320 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<ellipse cx="32" cy="50" rx="28" ry="12" fill="#eceff1"/>
+<ellipse cx="32" cy="46" rx="24" ry="10" fill="#f5f5f5"/>
+<ellipse cx="32" cy="42" rx="20" ry="8" fill="#ffffff"/>
+<ellipse cx="26" cy="40" rx="6" ry="4" fill="#ffffff"/>
+</g>
+
+<!-- WINTER 2: Ice crystal -->
+<g transform="translate(384 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M 32 4 L 34 28 L 60 32 L 34 36 L 32 60 L 30 36 L 4 32 L 30 28 Z" fill="#b3e5fc" opacity="0.8"/>
+<path d="M 32 12 L 33 30 L 50 32 L 33 34 L 32 52 L 31 34 L 14 32 L 31 30 Z" fill="#e1f5fe" opacity="0.9"/>
+<circle cx="32" cy="32" r="4" fill="#ffffff"/>
+</g>
+
+<!-- SPRING 0: Flower bud -->
+<g transform="translate(448 0)">
+<rect x="0" y="0" width="64" height="64" fill="none"/>
+<!-- Stem -->
+<path d="M 32 58 Q 30 45 32 35" stroke="#66bb6a" stroke-width="3" fill="none"/>
+<!-- Leaves -->
+<path d="M 32 50 Q 24 46 22 40 Q 28 44 32 50 Z" fill="#81c784"/>
+<path d="M 32 45 Q 40 40 44 34 Q 38 40 32 45 Z" fill="#66bb6a"/>
+<!-- Closed bud -->
+<path d="M 28 32 Q 28 22 32 18 Q 36 22 36 32 Q 32 28 28 32 Z" fill="#f48fb1"/>
+<path d="M 30 30 Q 30 24 32 20" stroke="#ec407a" stroke-width="1" fill="none"/>
+</g>
+</svg>

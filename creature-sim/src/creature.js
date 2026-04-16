@@ -83,6 +83,8 @@ export class Creature {
       (CreatureConfig.GENETICS.SIZE_MODIFIERS.HERBIVORE_BASE +
         (this.genes.predator ? CreatureConfig.GENETICS.SIZE_MODIFIERS.PREDATOR_BONUS : 0));
     this.aquaticAffinity = this.genes.aquatic ?? 0;
+    this.flyingAffinity = this.genes.flying ?? 0;
+    this.burrowingAffinity = this.genes.burrowing ?? 0;
 
     // Apply disorder size modifiers
     if (this.genesRaw && this.genesRaw.sizeModifier) {
@@ -589,6 +591,18 @@ export class Creature {
     this.behaviorSystem.update(dt, world);
     updateAgentState(this, dt, world);
 
+    // Nocturnal "Night Owl" status at night
+    const dayNight = world?.dayNightState;
+    const isNight = dayNight?.phase === 'night' || (dayNight?.light ?? 1) < 0.4;
+    if (isNight && this.genes.nocturnal !== undefined && this.genes.nocturnal > 0.5) {
+      const nightOwlStrength = this.genes.nocturnal;
+      this.applyStatus('night-owl', {
+        duration: 0.5,
+        intensity: nightOwlStrength,
+        metadata: { nocturnalPref: nightOwlStrength }
+      });
+    }
+
     if (this.isGrabbed && this.grabTarget) {
       this.x = clamp(this.grabTarget.x, 0, world.width);
       this.y = clamp(this.grabTarget.y, 0, world.height);
@@ -920,6 +934,26 @@ export class Creature {
     } else if (this.aquaticAffinity > 0.5) {
       // Highly aquatic creatures are slower on land
       _baseSpeed *= 0.9 - Math.min(0.2, (this.aquaticAffinity - 0.5) * 0.25);
+    }
+
+    // Flying creatures get speed boost and prefer high elevation
+    if (this.flyingAffinity > 0.4) {
+      const isHighElevation = currentBiome?.elevation > 0.5;
+      if (isHighElevation) {
+        _baseSpeed *= 1.15 + this.flyingAffinity * 0.15;
+      } else {
+        _baseSpeed *= 1.05 + this.flyingAffinity * 0.1;
+      }
+    }
+
+    // Burrowing creatures are slower but protected underground
+    if (this.burrowingAffinity > 0.4) {
+      const isUnderground = currentBiome?.type === 'mountain' || currentBiome?.elevation > 0.65;
+      if (isUnderground) {
+        _baseSpeed *= 1.1 + this.burrowingAffinity * 0.1;
+      } else {
+        _baseSpeed *= 0.85 - this.burrowingAffinity * 0.1;
+      }
     }
 
     // NEW: Age stage speed modifiers (smooth transitions)
@@ -1270,6 +1304,26 @@ export class Creature {
     } else if (this.aquaticAffinity > 0.4) {
       // Aquatic creatures on dry land get tired
       energyDrain += this.aquaticAffinity * 0.35;
+    }
+
+    // Flying creatures have high metabolism but gain efficiency at high altitude
+    if (this.flyingAffinity > 0.4) {
+      const isHighElevation = currentBiome?.elevation > 0.5;
+      if (isHighElevation) {
+        energyDrain *= 0.85 - this.flyingAffinity * 0.1;
+      } else {
+        energyDrain *= 1.1 + this.flyingAffinity * 0.15;
+      }
+    }
+
+    // Burrowing creatures are metabolically efficient when underground
+    if (this.burrowingAffinity > 0.4) {
+      const isUnderground = currentBiome?.type === 'mountain' || currentBiome?.elevation > 0.65;
+      if (isUnderground) {
+        energyDrain *= 0.75 - this.burrowingAffinity * 0.1;
+      } else {
+        energyDrain *= 1.15 + this.burrowingAffinity * 0.1;
+      }
     }
 
     // Day/Night cycle: nocturnal creatures use less energy at night
@@ -1787,6 +1841,19 @@ export class Creature {
       }
     } else if (this.aquaticAffinity > 0.5) {
       baseSpeed *= 0.9 - Math.min(0.2, (this.aquaticAffinity - 0.5) * 0.25);
+    }
+
+    // Nocturnal advantage at night
+    const dayNight = world?.dayNightState;
+    const isNight = dayNight?.phase === 'night' || (dayNight?.light ?? 1) < 0.4;
+    if (isNight && this.genes.nocturnal !== undefined) {
+      const nocturnalPref = this.genes.nocturnal;
+      const isNocturnal = nocturnalPref > 0.5;
+      if (isNocturnal) {
+        baseSpeed *= 1 + CreatureAgentTuning.NOCTURNAL.NIGHT_SPEED_BONUS * nocturnalPref;
+      } else {
+        baseSpeed *= 1 - CreatureAgentTuning.NOCTURNAL.DIURNAL_NIGHT_SPEED_PENALTY * (1 - nocturnalPref);
+      }
     }
 
     // Age stage speed modifiers

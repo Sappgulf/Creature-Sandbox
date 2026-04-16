@@ -2,12 +2,15 @@ import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
 import { SANDBOX_PROP_TYPES } from './sandbox-props.js';
 import { getDebugFlags } from './debug-flags.js';
+import { eventSystem, GameEvents } from './event-system.js';
 
 export const CREATURE_SPAWN_TYPES = {
   herbivore: { icon: '🦌', label: 'Herbivore' },
   omnivore: { icon: '🦡', label: 'Omnivore' },
   predator: { icon: '🦁', label: 'Predator' },
-  aquatic: { icon: '🐠', label: 'Aquatic' }
+  aquatic: { icon: '🐠', label: 'Aquatic' },
+  flying: { icon: '🦅', label: 'Flying' },
+  burrowing: { icon: '🦔', label: 'Burrowing' }
 };
 export const DEFAULT_SPAWN_TYPE = 'herbivore';
 
@@ -140,6 +143,9 @@ export function applyUiSpawnMethods(UIController) {
       });
     }
     const creature = this.world.spawnCreatureType(safeType, x, y);
+    if (creature) {
+      eventSystem.emit(GameEvents.CREATURE_SPAWN, { creatureId: creature.id, type: safeType, x, y });
+    }
     this.applySpawnSelection(safeType, { silent: true });
     this.dismissInteractionHint();
     if (creature && this.hasNotifications()) {

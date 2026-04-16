@@ -125,6 +125,8 @@ export function makeGenes(seed={}) {
     grit: createDiploidTrait(seed.grit, predator ? 0.65 : 0.1, 0, 1),
     nocturnal: createDiploidTrait(seed.nocturnal, 0.5, 0, 1),
     aquatic: createDiploidTrait(seed.aquatic, predator ? 0.04 : 0.12, 0, 1),
+    flying: createDiploidTrait(seed.flying, predator ? 0.04 : 0.08, 0, 1),
+    burrowing: createDiploidTrait(seed.burrowing, predator ? 0.04 : 0.08, 0, 1),
 
     // Legacy compatibility
     predator: predator,

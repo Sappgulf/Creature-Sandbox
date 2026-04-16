@@ -356,6 +356,9 @@ export const GameEvents = {
   SANDBOX_PROP_PLACED: 'sandbox:prop_placed',
   SANDBOX_PROP_TRIGGERED: 'sandbox:prop_triggered',
 
+  // Creature spawn events
+  CREATURE_SPAWN: 'creature:spawn',
+
   // God mode events
   GOD_MODE_ACTION: 'god:action',
   GOD_MODE_TOGGLE: 'god:toggle',

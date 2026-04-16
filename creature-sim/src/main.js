@@ -696,10 +696,10 @@ function initializeApp() {
   saveFileInput.className = 'hidden';
   document.body.appendChild(saveFileInput);
 
-  const handleSaveToFile = () => {
+  const handleSaveToFile = async () => {
     if (!saveSystem) return;
     try {
-      saveSystem.saveToFile(world, camera, analytics, lineageTracker);
+      await saveSystem.saveToFile(world, camera, analytics, lineageTracker);
       notifyUI('💾 Save file downloaded', 'success');
     } catch (err) {
       console.error('Save failed:', err);
@@ -1026,10 +1026,10 @@ function initializeApp() {
     // Handle continue button
     errorHandler.safeExecute(() => {
       if (continueBtn) {
-        continueBtn.addEventListener('click', () => {
-          errorHandler.safeExecute(() => {
+        continueBtn.addEventListener('click', async () => {
+          try {
             initAudioOnInteraction();
-            const loaded = saveSystem.loadAutoSave(
+            const loaded = await saveSystem.loadAutoSave(
               World,
               Creature,
               Camera,
@@ -1043,11 +1043,12 @@ function initializeApp() {
               notifyUI('✅ Continue loaded', 'success');
               if (audio) audio.playUISound('success');
             }
-          }, 'Auto-save loading', () => {
-            console.error('Failed to load auto-save:', 'unknown error');
+          } catch (err) {
+            console.error('Failed to load auto-save:', err);
             alert('Failed to load save. Starting new game.');
             if (audio) audio.playUISound('error');
-          });
+            showHomePage();
+          }
 
           errorHandler.safeExecute(() => {
             setElementHidden(homePage, true);

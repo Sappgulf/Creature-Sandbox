@@ -40,8 +40,20 @@ export function updateAgentSenses(creature, world) {
   const dietRole = creature.traits?.dietRole ?? 'herbivore';
   const diet = creature.genes.diet ?? (creature.genes.predator ? 1.0 : 0.0);
 
+  const dayNight = world?.dayNightState;
+  const isNight = dayNight?.phase === 'night' || dayNight?.light < 0.4;
+  const nocturnalPref = creature.genes.nocturnal ?? 0.5;
+  const isNocturnal = nocturnalPref > 0.5;
+
+  let senseMultiplier = 1;
+  if (isNight && isNocturnal) {
+    senseMultiplier = 1 + CreatureAgentTuning.NOCTURNAL.NIGHT_SENSE_BONUS * nocturnalPref;
+  } else if (isNight && !isNocturnal) {
+    senseMultiplier = 1 - CreatureAgentTuning.NOCTURNAL.DIURNAL_NIGHT_SPEED_PENALTY * (1 - nocturnalPref);
+  }
+
   const foodRadius = clamp(
-    creature.genes.sense * CreatureAgentTuning.SENSES.FOOD_RADIUS_MULT,
+    creature.genes.sense * CreatureAgentTuning.SENSES.FOOD_RADIUS_MULT * senseMultiplier,
     CreatureAgentTuning.SENSES.FOOD_RADIUS_MIN,
     CreatureAgentTuning.SENSES.FOOD_RADIUS_MAX
   );
@@ -75,7 +87,7 @@ export function updateAgentSenses(creature, world) {
     creature.homeRegionId = world.getRegionId(creature.x, creature.y);
   }
 
-  const mateRadius = creature.genes.sense * CreatureAgentTuning.SENSES.MATE_RADIUS_MULT;
+  const mateRadius = creature.genes.sense * CreatureAgentTuning.SENSES.MATE_RADIUS_MULT * senseMultiplier;
   const candidates = world?.creatureManager?.queryCreaturesFast
     ? world.creatureManager.queryCreaturesFast(creature.x, creature.y, mateRadius)
     : world?.queryCreatures?.(creature.x, creature.y, mateRadius) || [];

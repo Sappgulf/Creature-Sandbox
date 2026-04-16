@@ -660,7 +660,7 @@ test('ParticlePool: creates particle objects', () => {
   const p = pool.get();
   assert.ok('x' in p && 'y' in p && 'vx' in p && 'vy' in p, 'particle should have position/velocity');
   assert.ok('life' in p && 'maxLife' in p, 'particle should have life properties');
-  assert.ok('color' in p && 'size' in p && 'alpha' in p, 'particle should have visual properties');
+  assert.ok('color' in p && 'size' in p && 'opacity' in p, 'particle should have visual properties');
 });
 
 test('ObjectPool: expand increases pool size up to maxSize', () => {

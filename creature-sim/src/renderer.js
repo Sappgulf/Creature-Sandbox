@@ -466,58 +466,163 @@ export class Renderer {
     ctx.restore();
   }
 
+  _getDecorationSpriteAsset(dec) {
+    switch (dec.type) {
+      case 'tree': return 'env_trees';
+      case 'rock': return 'env_rocks';
+      case 'flower': return 'env_flowers';
+      case 'grass': return 'env_flowers';
+      default: return null;
+    }
+  }
+
   _drawDecoration(dec) {
+    const assetKey = this._getDecorationSpriteAsset(dec);
+
+    if (assetKey && assetLoader) {
+      const spriteInfo = assetLoader.spriteSheets?.get(assetKey);
+      if (spriteInfo) {
+        this._drawDecorationFromSprite(dec, spriteInfo, assetKey);
+        return;
+      }
+    }
+
+    this._drawDecorationFallback(dec);
+  }
+
+  _drawDecorationFromSprite(dec, spriteInfo, assetKey) {
+    const ctx = this.ctx;
+    const { frameWidth, frameHeight } = spriteInfo;
+    const spriteIndex = dec.sprite || 0;
+
+    ctx.save();
+    ctx.translate(dec.x, dec.y);
+
+    const scale = (dec.size || 40) / frameHeight;
+    ctx.scale(scale, scale);
+
+    ctx.globalAlpha = 0.85;
+
+    const frame = assetLoader.getSpriteFrameSync(assetKey, spriteIndex, frameWidth, dec.hue);
+    if (frame) {
+      ctx.drawImage(frame, -frameWidth / 2, -frameHeight);
+    } else {
+      ctx.restore();
+      this._drawDecorationFallback(dec);
+      return;
+    }
+
+    ctx.restore();
+  }
+
+  _drawDecorationFallback(dec) {
     const ctx = this.ctx;
     ctx.save();
     ctx.translate(dec.x, dec.y);
-    ctx.globalAlpha = 0.4;
+    ctx.globalAlpha = 0.6;
+
+    const size = dec.size || 30;
 
     switch (dec.type) {
       case 'tree':
-        // Simple tree silhouette
-        ctx.fillStyle = `hsl(${dec.hue}, 45%, 25%)`;
+        ctx.fillStyle = `hsl(${dec.hue}, 35%, 25%)`;
+        ctx.fillRect(-size * 0.1, -size * 0.1, size * 0.2, size * 0.75);
+        ctx.fillStyle = `hsl(${dec.hue}, 45%, 32%)`;
         ctx.beginPath();
-        ctx.arc(0, -dec.size * 0.4, dec.size * 0.6, 0, Math.PI * 2);
+        ctx.arc(0, -size * 0.35, size * 0.5, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillRect(-dec.size * 0.15, -dec.size * 0.2, dec.size * 0.3, dec.size);
+        ctx.fillStyle = `hsl(${dec.hue + 10}, 40%, 28%)`;
+        ctx.beginPath();
+        ctx.arc(-size * 0.18, -size * 0.28, size * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(size * 0.15, -size * 0.32, size * 0.32, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `hsl(${dec.hue + 5}, 50%, 38%)`;
+        ctx.beginPath();
+        ctx.arc(size * 0.05, -size * 0.48, size * 0.22, 0, Math.PI * 2);
+        ctx.fill();
         break;
 
       case 'rock':
-        // Jagged rock
-        ctx.fillStyle = `hsl(${dec.hue}, 20%, 40%)`;
+        ctx.fillStyle = `hsl(${dec.hue}, 12%, 40%)`;
         ctx.beginPath();
-        ctx.moveTo(-dec.size * 0.4, dec.size * 0.3);
-        ctx.lineTo(0, -dec.size * 0.5);
-        ctx.lineTo(dec.size * 0.5, 0);
-        ctx.lineTo(dec.size * 0.2, dec.size * 0.3);
+        ctx.moveTo(-size * 0.4, size * 0.2);
+        ctx.lineTo(-size * 0.1, -size * 0.4);
+        ctx.lineTo(size * 0.3, -size * 0.2);
+        ctx.lineTo(size * 0.4, size * 0.15);
         ctx.closePath();
         ctx.fill();
-        break;
-
-      case 'cactus':
-        // Simple cactus
-        ctx.fillStyle = `hsl(${dec.hue}, 50%, 35%)`;
-        ctx.fillRect(-dec.size * 0.2, -dec.size * 0.8, dec.size * 0.4, dec.size);
-        ctx.fillRect(-dec.size * 0.5, -dec.size * 0.4, dec.size * 0.3, dec.size * 0.3);
-        break;
-
-      case 'reed':
-        // Tall grass/reed
-        ctx.strokeStyle = `hsl(${dec.hue}, 40%, 40%)`;
-        ctx.lineWidth = dec.size * 0.1;
+        ctx.fillStyle = `hsl(${dec.hue}, 10%, 52%)`;
         ctx.beginPath();
-        ctx.moveTo(0, dec.size * 0.3);
-        ctx.lineTo(dec.size * 0.1, -dec.size * 0.5);
-        ctx.stroke();
-        break;
-
-      case 'flower':
-        // Small flower
-        ctx.fillStyle = `hsl(${dec.hue}, 70%, 55%)`;
+        ctx.moveTo(-size * 0.15, size * 0.08);
+        ctx.lineTo(size * 0.05, -size * 0.2);
+        ctx.lineTo(size * 0.28, size * 0.05);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = `hsl(${dec.hue}, 8%, 60%)`;
         ctx.beginPath();
-        ctx.arc(0, -dec.size * 0.3, dec.size * 0.4, 0, Math.PI * 2);
+        ctx.arc(-size * 0.1, -size * 0.15, size * 0.08, 0, Math.PI * 2);
         ctx.fill();
         break;
+
+      case 'flower': {
+        ctx.strokeStyle = `hsl(${dec.hue}, 45%, 35%)`;
+        ctx.lineWidth = size * 0.07;
+        ctx.beginPath();
+        ctx.moveTo(0, size * 0.45);
+        ctx.lineTo(0, -size * 0.05);
+        ctx.stroke();
+        const petalCount = 5 + (Math.floor(dec.hue) % 3);
+        const petalSize = size * 0.2;
+        const petalRadius = size * 0.28;
+        for (let i = 0; i < petalCount; i++) {
+          const angle = (i / petalCount) * Math.PI * 2 - Math.PI / 2;
+          const px = Math.cos(angle) * petalRadius;
+          const py = -size * 0.1 + Math.sin(angle) * petalRadius;
+          ctx.fillStyle = `hsl(${dec.hue}, 70%, 55%)`;
+          ctx.beginPath();
+          ctx.ellipse(px, py, petalSize, petalSize * 0.6, angle, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = `hsl(${dec.hue + 40}, 85%, 65%)`;
+        ctx.beginPath();
+        ctx.arc(0, -size * 0.1, size * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `hsl(${dec.hue + 50}, 90%, 75%)`;
+        ctx.beginPath();
+        ctx.arc(0, -size * 0.1, size * 0.06, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'grass':
+        ctx.strokeStyle = `hsl(${dec.hue}, 50%, 30%)`;
+        ctx.lineWidth = size * 0.07;
+        for (let i = 0; i < 6; i++) {
+          const offset = (i - 2.5) * size * 0.12;
+          const lean = (i - 2.5) * 0.15;
+          ctx.beginPath();
+          ctx.moveTo(offset, size * 0.35);
+          ctx.quadraticCurveTo(
+            offset + lean * size * 0.2,
+            -size * 0.05,
+            offset + lean * size * 0.15 + Math.sin(i) * size * 0.05,
+            -size * 0.45
+          );
+          ctx.stroke();
+        }
+        ctx.fillStyle = `hsl(${dec.hue + 20}, 55%, 25%)`;
+        ctx.beginPath();
+        ctx.ellipse(0, size * 0.35, size * 0.15, size * 0.08, 0, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+
+      default:
+        ctx.fillStyle = `hsl(${dec.hue}, 40%, 40%)`;
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 0.3, 0, Math.PI * 2);
+        ctx.fill();
     }
 
     ctx.restore();
@@ -668,13 +773,11 @@ export class Renderer {
     const bounds = this._viewBounds;
     const zoom = this.camera.zoom;
 
-    // Skip water effects if zoomed out too far (performance)
     if (zoom < 0.25) return;
 
     const worldTime = world.t || 0;
     const sampleSize = Math.max(40, 100 / zoom);
 
-    // Sample the visible area for water biomes
     const startX = Math.max(0, Math.floor(bounds.x1 / sampleSize) * sampleSize);
     const startY = Math.max(0, Math.floor(bounds.y1 / sampleSize) * sampleSize);
     const endX = Math.min(world.width, bounds.x2);
@@ -689,20 +792,18 @@ export class Renderer {
 
         const depth = biome.depth || 0.5;
         const isDeep = depth > 0.7;
+        const isShallow = depth < 0.3;
 
-        // Base water color
-        const baseColor = isDeep ? 'rgba(30, 64, 175, 0.6)' : 'rgba(59, 130, 246, 0.5)';
+        const baseColor = isDeep ? 'rgba(30, 64, 175, 0.6)' : isShallow ? 'rgba(96, 165, 250, 0.45)' : 'rgba(59, 130, 246, 0.5)';
         ctx.fillStyle = baseColor;
         ctx.fillRect(x, y, sampleSize, sampleSize);
 
-        // Animated wave highlights (only when zoomed in enough)
         if (zoom > 0.5) {
           const waveOffset = Math.sin(worldTime * 2 + x * 0.02 + y * 0.01) * 0.5 + 0.5;
           const waveAlpha = 0.1 + waveOffset * 0.15;
 
           ctx.fillStyle = `rgba(147, 197, 253, ${waveAlpha})`;
 
-          // Draw wavy lines
           const waveY = y + sampleSize * 0.3 + Math.sin(worldTime * 1.5 + x * 0.03) * sampleSize * 0.1;
           ctx.beginPath();
           ctx.moveTo(x, waveY);
@@ -718,22 +819,50 @@ export class Renderer {
           ctx.fill();
         }
 
-        // Deep water caustic pattern (extra visual for deep water)
-        if (isDeep && zoom > 0.7) {
-          const causticTime = worldTime * 0.5;
+        if (zoom > 0.6) {
+          const t = worldTime * 0.4;
           const cx = x + sampleSize / 2;
           const cy = y + sampleSize / 2;
 
-          ctx.strokeStyle = `rgba(147, 197, 253, ${0.15 + Math.sin(causticTime) * 0.05})`;
+          ctx.strokeStyle = `rgba(147, 197, 253, ${0.12 + Math.sin(t) * 0.04})`;
           ctx.lineWidth = 1;
+
+          for (let i = 0; i < 3; i++) {
+            const offset = i * Math.PI * 0.66;
+            const radius = sampleSize * (0.2 + i * 0.12);
+            const driftX = Math.sin(t * 1.3 + offset) * 4;
+            const driftY = Math.cos(t * 0.9 + offset) * 4;
+
+            ctx.beginPath();
+            ctx.arc(cx + driftX, cy + driftY, radius, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        }
+
+        if (zoom > 0.7) {
+          ctx.fillStyle = `rgba(255, 255, 255, ${0.03 + Math.sin(worldTime * 3 + x * 0.1 + y * 0.1) * 0.02})`;
+          const ripplePhase = worldTime * 1.5 + x * 0.05 + y * 0.03;
+          const rippleCount = 2;
+          for (let r = 0; r < rippleCount; r++) {
+            const phase = ripplePhase + r * Math.PI;
+            const rx = x + sampleSize * 0.5 + Math.sin(phase) * sampleSize * 0.25;
+            const ry = y + sampleSize * 0.5 + Math.cos(phase * 0.7) * sampleSize * 0.2;
+            const rr = sampleSize * (0.08 + Math.sin(phase * 2) * 0.04);
+
+            ctx.beginPath();
+            ctx.arc(rx, ry, rr, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        if (zoom > 0.8 && !isShallow) {
+          ctx.strokeStyle = `rgba(186, 230, 253, ${0.08 + Math.sin(worldTime * 2.5 + x * 0.02) * 0.03})`;
+          ctx.lineWidth = 0.5;
           ctx.beginPath();
-          ctx.arc(
-            cx + Math.sin(causticTime * 1.3) * 5,
-            cy + Math.cos(causticTime * 0.9) * 5,
-            sampleSize * 0.3,
-            0,
-            Math.PI * 2
-          );
+          const wlx = x + Math.sin(worldTime + x * 0.01) * sampleSize * 0.3;
+          ctx.moveTo(wlx, y);
+          ctx.lineTo(wlx + sampleSize * 0.4, y + sampleSize * 0.6);
+          ctx.lineTo(wlx + sampleSize * 0.1, y + sampleSize);
           ctx.stroke();
         }
       }

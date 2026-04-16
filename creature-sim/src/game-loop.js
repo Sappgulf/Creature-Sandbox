@@ -738,21 +738,26 @@ export class GameLoop {
 
     // Semi-transparent background
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(8, 8, 280, 130);
+    ctx.fillRect(8, 8, 320, 160);
 
-    // Text content
+    const perfStats = this.renderer.performance?.stats || {};
+    const totalObjs = perfStats.totalObjects || 0;
+    const totalRendered = perfStats.rendered || 0;
+    const totalCulled = perfStats.culled || 0;
+    const cullPct = totalObjs > 0 ? ((totalCulled / totalObjs) * 100).toFixed(0) : 0;
+
     ctx.fillStyle = '#0f0';
     let y = 14;
     const line = (text) => { ctx.fillText(text, 14, y); y += 14; };
 
-    line(`Creatures: ${this.world.creatures?.length || 0} in world`);
-    line(`Rendered: ${this.renderer.renderedCount || 0} | Culled: ${this.renderer.culledCount || 0}`);
+    line(`Grid Cull: ${cullPct}% | ${totalRendered} rendered / ${totalObjs} total`);
+    line(`Creatures: ${this.world.creatures?.length || 0} (R:${this.renderer.renderedCount || 0} C:${this.renderer.culledCount || 0})`);
+    line(`Food: ${this.world.food?.length || 0} | Corpses: ${this.world.corpses?.length || 0}`);
     line(`Camera: (${cam.x.toFixed(0)}, ${cam.y.toFixed(0)}) zoom=${cam.zoom.toFixed(2)}`);
     line(`ViewBounds: (${bounds?.x1?.toFixed(0) || '?'}, ${bounds?.y1?.toFixed(0) || '?'}) to (${bounds?.x2?.toFixed(0) || '?'}, ${bounds?.y2?.toFixed(0) || '?'})`);
     line(`Canvas: ${canvas.width}x${canvas.height}`);
     line(`World: ${this.world.width}x${this.world.height}`);
     line(`FPS: ${gameState.fps.toFixed(1)} | gameStarted: ${gameState.gameStarted}`);
-    line(`Food: ${this.world.food?.length || 0} | Corpses: ${this.world.corpses?.length || 0}`);
 
     ctx.restore();
   }

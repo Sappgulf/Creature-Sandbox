@@ -5,6 +5,7 @@
 
 const DEFAULT_SPRITE_FPS = 8;
 const DEFAULT_SPRITE_SIZE = 64;
+const ZOOM_SIZES = [32, 48, 64, 96, 128];
 
 function clampPositiveInt(value, fallback = 1) {
   const parsed = Number(value);
@@ -422,6 +423,20 @@ export class AssetLoader {
     return `${name}|${size}|${color}`;
   }
 
+  getNearestSpriteSize(requestedSize) {
+    if (!requestedSize || requestedSize <= 0) return DEFAULT_SPRITE_SIZE;
+    let nearest = ZOOM_SIZES[0];
+    let minDiff = Math.abs(requestedSize - nearest);
+    for (let i = 1; i < ZOOM_SIZES.length; i++) {
+      const diff = Math.abs(requestedSize - ZOOM_SIZES[i]);
+      if (diff < minDiff) {
+        minDiff = diff;
+        nearest = ZOOM_SIZES[i];
+      }
+    }
+    return nearest;
+  }
+
   getSpriteSheet(name) {
     return this.spriteSheets.get(name) || null;
   }
@@ -610,6 +625,23 @@ export class AssetLoader {
     }
 
     return start + (frameStep % count);
+  }
+
+  async getSpriteFrame(name, frameIndex = 0, size = 64, hue = null) {
+    if (typeof document === 'undefined') return null;
+    const color = hue !== null ? `hsl(${hue}, 50%, 50%)` : null;
+    const frames = await this.requestSpriteFrames(name, { size, color });
+    if (!frames || !frames.frames) return null;
+    const idx = Math.max(0, Math.min(frameIndex, frames.frames.length - 1));
+    return frames.frames[idx] || null;
+  }
+
+  getSpriteFrameSync(name, frameIndex = 0, size = 64, hue = null) {
+    const color = hue !== null ? `hsl(${hue}, 50%, 50%)` : '';
+    const frames = this.getSpriteFramesSync(name, { size, color });
+    if (!frames || !frames.frames) return null;
+    const idx = Math.max(0, Math.min(frameIndex, frames.frames.length - 1));
+    return frames.frames[idx] || null;
   }
 
   /**
