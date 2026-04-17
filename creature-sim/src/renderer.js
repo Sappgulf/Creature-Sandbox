@@ -41,7 +41,7 @@ export class Renderer {
     this.dayNightSpeed = RendererConfig.DAY_NIGHT.SPEED;
 
     // Mini-map state
-    this.miniMapAutoHide = RendererConfig.MINIMAP.AUTO_HIDE;
+    this.miniMapAutoHide = RendererConfig.FEATURES.MINIMAP_AUTO_HIDE;
     this.miniMapOpacity = RendererConfig.MINIMAP.OPACITY;
     this.miniMapTargetOpacity = RendererConfig.MINIMAP.TARGET_OPACITY;
 

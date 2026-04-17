@@ -133,7 +133,8 @@ export function applyMinimapMethods(Renderer) {
           const hx = Math.floor((c.x / world.width) * heatmapW);
           const hy = Math.floor((c.y / world.height) * heatmapH);
           if (hx >= 0 && hx < heatmapW && hy >= 0 && hy < heatmapH) {
-            cache.data[hy * heatmapW + hx]++;
+            const index = hy * heatmapW + hx;
+            cache.data[index] = Math.min(cache.data[index] + 1, 255);
           }
         }
       }

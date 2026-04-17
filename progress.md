@@ -83,3 +83,23 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - `node "$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js" --url "http://127.0.0.1:4173/" --click-selector "#btn-new-game" --actions-json '{"steps":[{"buttons":[],"frames":12},{"buttons":["left_mouse_button"],"frames":2,"mouse_x":420,"mouse_y":320},{"buttons":[],"frames":12}]}' --iterations 1 --pause-ms 250 --screenshot-dir output/web-game/palette-pass-final` ✅
 - `npm test` ✅
 - `npm run build` ✅
+
+2026-04-17
+- New request: broad test/polish pass with subagents, then commit and push when finished.
+- Baseline verification before edits:
+- `npm test` ✅
+- `npm run build` ✅
+- Subagent findings used for the patch:
+- visual audit found `RendererConfig.MINIMAP.AUTO_HIDE` was a missing config path, so minimap auto-hide never activated
+- visual audit also flagged the home page as too easy to clip on short viewports
+- test audit flagged the smoke path as unit-only and called out stale recovery-report metadata
+- Implemented fixes:
+- `renderer.js` now reads `RendererConfig.FEATURES.MINIMAP_AUTO_HIDE`
+- `renderer-minimap.js` now clamps heatmap cell counts to avoid `Uint8Array` wraparound in dense hotspots
+- `styles.css` now gives the home page its own scrollable, safe-area-aware overflow so short screens can reach the CTA/footer
+- Verification after patch:
+- `npx eslint creature-sim/src/renderer.js creature-sim/src/renderer-minimap.js` ✅
+- `npm test` ✅
+- `npm run build` ✅
+- `node "$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js" --url http://127.0.0.1:4173/ --click-selector '#btn-new-game' --actions-json '{"steps":[{"buttons":[],"frames":12},{"buttons":[],"frames":12}]}' --iterations 1 --pause-ms 250 --screenshot-dir output/web-game/post-fix` ✅
+- Residual note: the repo still only has unit tests plus browser smoke via the Codex client; promoting that browser smoke into a checked-in repo script would make the next pass easier to repeat.

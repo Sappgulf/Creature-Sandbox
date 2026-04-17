@@ -3480,6 +3480,15 @@ body.mobile-focus-mode #watch-strip {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+  padding:
+    clamp(24px, 6vh, 64px)
+    24px
+    max(24px, env(safe-area-inset-bottom, 0))
+    24px;
   background: linear-gradient(135deg, #060810 0%, #0a1020 50%, #0d1528 100%);
   animation: homePageFadeIn 0.6s ease-out;
 }
