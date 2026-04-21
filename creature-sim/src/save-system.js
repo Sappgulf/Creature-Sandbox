@@ -14,7 +14,7 @@ const COMPRESSION_SUPPORTED = typeof CompressionStream !== 'undefined';
 
 async function compressJson(jsonString) {
   if (!COMPRESSION_SUPPORTED) {
-    throw new Error('Compression not supported in this environment');
+    return jsonString;
   }
   const encoder = new TextEncoder();
   const inputData = encoder.encode(jsonString);
@@ -32,7 +32,7 @@ async function decompressJson(compressedString) {
     return null;
   }
   if (!COMPRESSION_SUPPORTED) {
-    throw new Error('Compression not supported in this environment');
+    return null;
   }
   const base64 = compressedString.slice(COMPRESSED_MARKER.length);
   const binaryString = atob(base64);

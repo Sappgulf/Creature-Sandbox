@@ -13,11 +13,14 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+.claude/
+.cursor/
 *.swp
 *.swo
 *~
 
 # Logs
+bundle-stats.html
 *.log
 npm-debug.log*
 

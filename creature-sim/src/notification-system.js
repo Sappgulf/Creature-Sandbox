@@ -20,6 +20,7 @@ export class NotificationSystem {
     this.showAchievements = true;
     this.maxVisible = 3;
     this.defaultDuration = 2500;
+    this.queue = [];
   }
 
   checkMilestones(world) {
@@ -101,11 +102,20 @@ export class NotificationSystem {
       slideIn: 0
     };
 
-    this.notifications.push(notification);
+    if (this.notifications.length >= this.maxVisible) {
+      this.queue.push(notification);
+    } else {
+      this.notifications.push(notification);
+      this._announce(notification);
+    }
+  }
 
-    // Limit notifications
-    while (this.notifications.length > this.maxVisible) {
-      this.notifications.shift();
+  _announce(notif) {
+    const announcer = document.getElementById('sim-announcer');
+    if (!announcer) return;
+    const text = notif.title ? `${notif.title} ${notif.message}`.trim() : notif.message;
+    if (notif.type === 'warning' || notif.type === 'milestone' || notif.type === 'achievement') {
+      announcer.textContent = text;
     }
   }
 
@@ -157,6 +167,12 @@ export class NotificationSystem {
       // Remove expired notifications
       if (age >= notif.duration) {
         this.notifications.splice(i, 1);
+        if (this.queue.length > 0) {
+          const next = this.queue.shift();
+          next.createdAt = performance.now();
+          this.notifications.push(next);
+          this._announce(next);
+        }
       }
     }
   }
@@ -252,6 +268,7 @@ export class NotificationSystem {
 
   reset() {
     this.notifications = [];
+    this.queue = [];
     this.triggeredMilestones.clear();
     this._firstEventToasts.clear();
     this._lastPopulations = { herbivores: 0, predators: 0 };

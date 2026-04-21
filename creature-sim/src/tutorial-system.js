@@ -429,10 +429,15 @@ export class TutorialSystem {
           border: none;
           color: rgba(255, 255, 255, 0.5);
           cursor: pointer;
-          padding: 0;
+          padding: 4px;
           font-size: 14px;
           line-height: 1;
           margin-left: 4px;
+          min-width: 44px;
+          min-height: 44px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         `;
         dismissBtn.addEventListener('click', (e) => {
           e.stopPropagation();

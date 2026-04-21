@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node scripts/save-system.test.mjs && node scripts/core-modules.test.mjs",
+    "test:coverage": "npm test",
     "lint": "eslint creature-sim/src",
     "lint:fix": "eslint creature-sim/src --fix"
   },

@@ -13,6 +13,22 @@ import { generateTemperament } from './creature-traits.js';
 import { pickNameSuggestion, determineSenseType, resolveDietRole, calculateAttractiveness, pickDesiredTraits } from './creature-genetics-helpers.js';
 import { updateAgeStage, getAgeSizeMultiplier, getAgeSpeedMultiplier, getAgeMetabolismMultiplier } from './creature-age.js';
 import { getBadges as _getBadges, drawCreature as _drawCreature, getCachedSpriteFrame as _getCachedSpriteFrame, updateCachedCanvas as _updateCachedCanvas, drawBehaviorState as _drawBehaviorState, drawTraits as _drawTraits } from './creature-render.js';
+import {
+  reactToPoke,
+  reactToGrab,
+  reactToDrop,
+  reactToCollision,
+  setMood,
+  baseBurn,
+  hasQuirk,
+  getQuirkMultiplier
+} from './creature-reactions.js';
+import {
+  recordDamage,
+  applyImpactDamage,
+  applyImpulse,
+  calculateCurrentSpeed
+} from './creature-combat.js';
 
 // Destructure commonly-used constants for cleaner code
 const { TRAIL_INTERVAL, TRAIL_MAX, LOG_MAX } = CreatureConfig;
@@ -347,58 +363,11 @@ export class Creature {
     this.behaviorSystem = new CreatureBehaviorSystem(this);
   }
 
-  baseBurn() {
-    // Cache this expensive calculation since genes don't change
-    if (this._cachedBaseBurn === null) {
-      const g = this.genes;
-      const moveCost = 0.35 * g.speed * g.speed;
-      const senseCost = 0.08 * (g.fov / 90) + 0.06 * (g.sense / 100);
-      this._cachedBaseBurn = (0.4 * g.metabolism) + moveCost + senseCost;
-    }
-    return this._cachedBaseBurn;
-  }
+  baseBurn() { return baseBurn(this); }
 
-  hasQuirk(id) {
-    return Array.isArray(this.quirks) && this.quirks.includes(id);
-  }
+  hasQuirk(id) { return hasQuirk(this, id); }
 
-  getQuirkMultiplier(kind) {
-    if (!this.quirks || !this.quirks.length) return 1;
-    let mult = 1;
-    for (const q of this.quirks) {
-      switch (kind) {
-        case 'wander':
-          if (q === 'wanderer') mult *= 1.25;
-          if (q === 'homebody') mult *= 0.85;
-          break;
-        case 'home_pull':
-          if (q === 'homebody') mult *= 1.35;
-          break;
-        case 'stress_crowd':
-          if (q === 'squeamish') mult *= 1.25;
-          if (q === 'social_butterfly') mult *= 0.85;
-          break;
-        case 'damage_resist':
-          if (q === 'sturdy') mult *= 0.9;
-          break;
-        case 'night_speed':
-          if (q === 'night_owl') mult *= 1.15;
-          break;
-        case 'day_speed':
-          if (q === 'night_owl') mult *= 0.92;
-          break;
-        case 'cohesion':
-          if (q === 'social_butterfly') mult *= 1.2;
-          break;
-        case 'hunger_bias':
-          if (q === 'greedy') mult *= 1.15;
-          break;
-        default:
-          break;
-      }
-    }
-    return mult;
-  }
+  getQuirkMultiplier(kind) { return getQuirkMultiplier(this, kind); }
 
   seek(foodList, pheromone) {
     let best = null, bestD2 = Infinity;
@@ -1738,73 +1707,7 @@ export class Creature {
    * @param {number} amount - Initial damage amount
    * @param {Object} ctx - Damage context (attacker, type, etc.)
    */
-  recordDamage(amount, ctx = {}) {
-    if (!this.alive) return 0;
-
-    // Safety check for invincibility frames
-    const now = this._lastWorld?.t ?? 0;
-    if (now < (this.damageFx?.iframesUntil ?? -Infinity) && !ctx.ignoreIframes) {
-      return 0;
-    }
-
-    // Unify visual feedback block
-    if (!this.damageFx) {
-      this.damageFx = { recentDamage: 0, hitFlash: 0, iframesUntil: -Infinity, lastDamageTime: -Infinity };
-    }
-    const ratio = clamp(amount / 10, 0.05, 1);
-    this.damageFx.recentDamage = Math.min(2.6, (this.damageFx.recentDamage ?? 0) + ratio * 1.5);
-    this.damageFx.hitFlash = Math.max(this.damageFx.hitFlash ?? 0, 0.18 + ratio * 0.35);
-
-    // Apply global damage cap (Max 35% of max health per hit)
-    const maxDamage = this.maxHealth * (CreatureConfig.COMBAT.MAX_DAMAGE_PERCENT || 0.35);
-    const finalDamage = Math.min(amount, maxDamage);
-
-    // Apply health reduction
-    this.health = Math.max(0, this.health - finalDamage);
-    this.stats.damageTaken += finalDamage;
-
-    if (ctx.attacker) {
-      this.killedBy = ctx.attacker.id;
-    }
-
-    // Set invincibility frames
-    if (!ctx.ignoreIframes) {
-      const iframes = CreatureConfig.COMBAT.INVINCIBILITY_DURATION || 0.8;
-      this.damageFx.iframesUntil = now + iframes;
-    }
-    this.damageFx.lastDamageTime = now;
-
-    // Trigger visual/collision reaction
-    this.reactToCollision(finalDamage, { skipDamage: true });
-
-    // Handle memory of danger
-    if (this.memory && finalDamage > 0.6 &&
-      now - (this.memory.lastDangerAt ?? -Infinity) >= CreatureConfig.MEMORY.DANGER_COOLDOWN) {
-      const strength = clamp(0.3 + (finalDamage / 12) * 0.6, 0.3, 0.9);
-      this.rememberLocation?.(this.x, this.y, 'danger', strength, now);
-      this.memory.lastDangerAt = now;
-    }
-
-    // Check for death
-    if (this.health <= 0) {
-      this.alive = false;
-      this.deathCause = ctx.type || 'combat';
-    } else {
-      // "Second Wind" - Adrenaline surge at critical health
-      const healthRatio = this.health / this.maxHealth;
-      if (healthRatio < 0.15 && (this.cooldowns.adrenaline ?? 0) <= 0) {
-        this.applyStatus('adrenaline', {
-          duration: 3.5,
-          intensity: 0.6,
-          metadata: { boost: 0.6, source: 'second_wind' }
-        });
-        this.cooldowns.adrenaline = 15;
-        this.logEvent('Unleashed Second Wind!', now);
-      }
-    }
-
-    return finalDamage;
-  }
+  recordDamage(amount, ctx = {}) { return recordDamage(this, amount, ctx); }
 
   /**
    * Calculates the current speed of the creature based on genes, biome, state, and boosters.
@@ -1812,94 +1715,7 @@ export class Creature {
    * @param {Object} world - Simulation world
    * @returns {number} The current speed in px/s
    */
-  calculateCurrentSpeed(dt, world) {
-    const biome = world.getBiomeAt ? world.getBiomeAt(this.x, this.y) : null;
-    const inWater = biome?.type === 'water';
-    const inWetland = biome?.type === 'wetland';
-    const goal = this.goal?.current || 'WANDER';
-
-    const restFactor = BehaviorConfig.restWeight * clamp(1 - this.energy / 36, 0, 1);
-    const aggressionFactor = this.genes.predator ? clamp(this.personality.aggression, 0.4, 2.2) : 1;
-
-    // Scale genes.speed to baseline simulation speeds
-    let baseSpeed = this.genes.speed * (this.genes.predator ? 46 : 40);
-    if (this.genes.predator) baseSpeed *= 0.85 + aggressionFactor * 0.25;
-
-    // Environmental/Biome modifiers
-    if (inWater) {
-      if (this.aquaticAffinity > 0.5) {
-        baseSpeed *= biome.aquaticSpeed || (1.2 + this.aquaticAffinity * 0.3);
-      } else if (this.aquaticAffinity > 0.2) {
-        baseSpeed *= 0.7 + this.aquaticAffinity * 0.5;
-      } else {
-        baseSpeed *= biome.movementSpeed || 0.3;
-      }
-    } else if (inWetland) {
-      if (this.aquaticAffinity > 0.1) {
-        baseSpeed *= 1 + this.aquaticAffinity * 0.32;
-      } else {
-        baseSpeed *= 0.88;
-      }
-    } else if (this.aquaticAffinity > 0.5) {
-      baseSpeed *= 0.9 - Math.min(0.2, (this.aquaticAffinity - 0.5) * 0.25);
-    }
-
-    // Nocturnal advantage at night
-    const dayNight = world?.dayNightState;
-    const isNight = dayNight?.phase === 'night' || (dayNight?.light ?? 1) < 0.4;
-    if (isNight && this.genes.nocturnal !== undefined) {
-      const nocturnalPref = this.genes.nocturnal;
-      const isNocturnal = nocturnalPref > 0.5;
-      if (isNocturnal) {
-        baseSpeed *= 1 + CreatureAgentTuning.NOCTURNAL.NIGHT_SPEED_BONUS * nocturnalPref;
-      } else {
-        baseSpeed *= 1 - CreatureAgentTuning.NOCTURNAL.DIURNAL_NIGHT_SPEED_PENALTY * (1 - nocturnalPref);
-      }
-    }
-
-    // Age stage speed modifiers
-    baseSpeed *= getAgeSpeedMultiplier(this.age);
-
-    let speedBoost = 1;
-    const herdBuff = this.getStatus('herd-buff');
-    const adrenaline = this.getStatus('adrenaline');
-    const playBurst = this.getStatus('play-burst');
-    const elderAid = this.getStatus('elder-aid');
-    const bleed = this.getStatus('bleeding');
-
-    if (herdBuff && !this.genes.predator) speedBoost += herdBuff.intensity ?? 0;
-    if (adrenaline) speedBoost += adrenaline.metadata?.boost ?? adrenaline.intensity ?? 0;
-    if (playBurst) speedBoost += playBurst.intensity ?? 0.25;
-    if (elderAid) speedBoost += (elderAid.intensity ?? 0) * 0.08;
-    if (bleed) speedBoost -= Math.min(0.3, 0.08 * (bleed.stacks ?? 1));
-
-    // Arrive/Target factor
-    let arriveFactor = 1;
-    if (this.target) {
-      const dist = Math.hypot(this.target.x - this.x, this.target.y - this.y);
-      if (dist < CreatureAgentTuning.MOVEMENT.SLOW_RADIUS) {
-        arriveFactor = clamp(dist / CreatureAgentTuning.MOVEMENT.SLOW_RADIUS, CreatureAgentTuning.MOVEMENT.MIN_ARRIVE_SPEED, 1);
-      }
-    }
-
-    const goalSpeedFactor = goal === 'REST' ? 0.4 : goal === 'SEEK_MATE' ? 1.15 : 1;
-    let speedScalar = clamp(1 - restFactor * 0.6, 0.15, 1) * clamp(speedBoost, 0.6, 1.9) * arriveFactor * goalSpeedFactor;
-
-    if (this.genes.predator) {
-      if (this.personality.ambushTimer > 0 && this.target && this.target.creatureId != null) {
-        speedScalar *= 0.25 + 0.15 * aggressionFactor;
-      } else if (this.target && this.target.creatureId != null) {
-        speedScalar *= 1.05 + aggressionFactor * 0.15;
-      } else if (this.target && this.target.signal) {
-        speedScalar *= 0.9 + this.personality.packInstinct * 0.35;
-      }
-    }
-
-    const recallUntil = this.memory?.focus?.recallUntil ?? -Infinity;
-    if (world.t < recallUntil) speedScalar *= CreatureConfig.MEMORY.RECALL_SLOW;
-
-    return baseSpeed * speedScalar;
-  }
+  calculateCurrentSpeed(dt, world) { return calculateCurrentSpeed(this, dt, world); }
 
   _calculateCollisionDamage(amount) {
     const threshold = CreatureTuning.COLLISION_DAMAGE_THRESHOLD;
@@ -1908,59 +1724,9 @@ export class Creature {
     return normalized * (CreatureTuning.DAMAGE_CLAMP_MAX * 0.45);
   }
 
-  applyImpactDamage(amount, { cause = 'impact', intensity = 0.4 } = {}) {
-    if (!this.alive || amount <= 0) return 0;
-    const worldTime = this._lastWorld?.t ?? 0;
-    const iframes = CreatureTuning.DAMAGE_IFRAMES_MS / 1000;
-    if (worldTime < (this.damageFx?.iframesUntil ?? -Infinity)) return 0;
+  applyImpactDamage(amount, opts = {}) { return applyImpactDamage(this, amount, opts); }
 
-    const clamped = clamp(amount, 0, CreatureTuning.DAMAGE_CLAMP_MAX);
-    const finalDamage = typeof this.recordDamage === 'function'
-      ? this.recordDamage(clamped, { type: cause, ignoreIframes: true })
-      : 0;
-    if (finalDamage <= 0) return 0;
-
-    if (this.damageFx) {
-      this.damageFx.iframesUntil = worldTime + iframes;
-      this.damageFx.lastDamageTime = worldTime;
-    }
-
-    if (this.memory && finalDamage > 0.6 &&
-      worldTime - (this.memory.lastDangerAt ?? -Infinity) >= CreatureConfig.MEMORY.DANGER_COOLDOWN) {
-      const strength = clamp(0.3 + (finalDamage / CreatureTuning.DAMAGE_CLAMP_MAX) * 0.6, 0.3, 0.9);
-      this.rememberLocation?.(this.x, this.y, 'danger', strength, worldTime);
-      this.memory.lastDangerAt = worldTime;
-    }
-
-    this._lastWorld?.creatureEcosystem?.registerEvent?.(this, 'impact', { intensity });
-    return finalDamage;
-  }
-
-  applyImpulse(vx, vy, { decay = 6, cap = 360 } = {}) {
-    if (!this.externalImpulse) {
-      this.externalImpulse = { vx: 0, vy: 0, decay, cap };
-    }
-    const baseSize = this.size ?? 4;
-    const weight = clamp(baseSize / 4, 0.7, 1.35);
-    const bounce = this.traits?.bounce ?? 1;
-    const scaledVX = (vx * bounce) / weight;
-    const scaledVY = (vy * bounce) / weight;
-    const effectiveCap = clamp(cap / weight, 180, 420);
-    this.externalImpulse.vx = clamp(this.externalImpulse.vx + scaledVX, -effectiveCap, effectiveCap);
-    this.externalImpulse.vy = clamp(this.externalImpulse.vy + scaledVY, -effectiveCap, effectiveCap);
-    this.externalImpulse.decay = decay;
-    this.externalImpulse.cap = effectiveCap;
-
-    const projected = Math.hypot(this.externalImpulse.vx, this.externalImpulse.vy);
-    const ragdollThreshold = 165 + Math.max(0, (this._lastWorld?.chaos?.reactionBoost ?? 1) - 1) * 20;
-    if (projected > ragdollThreshold && this._ragdollCooldown <= 0) {
-      this._ragdollCooldown = 0.6;
-      this._triggerReaction('ragdoll', clamp(projected / 220, 0.6, 1.4), 0.5);
-      this.setMood('😵', 0.9);
-      this.recoveryPoseTimer = Math.max(this.recoveryPoseTimer, 0.6);
-      this.funStats.goofyFails += 1;
-    }
-  }
+  applyImpulse(vx, vy, opts = {}) { return applyImpulse(this, vx, vy, opts); }
 
   _applyExternalImpulse(dt) {
     const impulse = this.externalImpulse;
@@ -1978,88 +1744,13 @@ export class Creature {
     impulse.vy *= decayFactor;
   }
 
-  reactToPoke({ x = null, y = null } = {}) {
-    const intensity = clamp(0.35 + this.personality.reactivity * 0.7, 0.3, 1.3);
-    const worldTime = this._lastWorld?.t ?? 0;
-    if (worldTime - this._lastPokeAt < 0.75) {
-      this._pokeCombo += 1;
-    } else {
-      this._pokeCombo = 1;
-    }
-    this._lastPokeAt = worldTime;
+  reactToPoke(opts = {}) { return reactToPoke(this, opts); }
 
-    if (this._pokeCombo >= 3) {
-      this._triggerReaction('overreact', intensity + 0.4, 0.55);
-      this.setMood('😵', 1.1);
-      this._pokeCombo = 0;
-    } else {
-      this._triggerReaction('poke', intensity, 0.35);
-    }
-    if (this.emotions) {
-      this.emotions.curiosity = clamp(this.emotions.curiosity + 0.08, 0, 1);
-      this.emotions.confidence = clamp(this.emotions.confidence + 0.03, 0, 1);
-    }
-    if (x !== null && y !== null) {
-      this.dir = Math.atan2(y - this.y, x - this.x);
-    }
-    if (this._lastWorld) {
-      this.logEvent('Poked', this._lastWorld.t, { source: 'player' });
-    }
-    this._lastWorld?.creatureEcosystem?.registerEvent?.(this, 'poke', { intensity });
-  }
+  reactToGrab(opts = {}) { return reactToGrab(this, opts); }
 
-  reactToGrab({ x = null, y = null } = {}) {
-    const intensity = clamp(0.3 + this.personality.playfulness * 0.5 + this.personality.reactivity * 0.3, 0.25, 1.2);
-    this._triggerReaction('grab', intensity, 0.4);
-    this.setMood('😮', 0.6);
-    if (this.emotions) {
-      this.emotions.curiosity = clamp(this.emotions.curiosity + 0.06, 0, 1);
-      this.emotions.stress = clamp(this.emotions.stress + 0.04, 0, 1);
-    }
-    if (x !== null && y !== null) {
-      this.dir = Math.atan2(y - this.y, x - this.x);
-    }
-  }
+  reactToDrop(opts = {}) { return reactToDrop(this, opts); }
 
-  reactToDrop({ x = null, y = null } = {}) {
-    const intensity = clamp(0.3 + this.personality.playfulness * 0.7, 0.25, 1.2);
-    this._triggerReaction('drop', intensity, 0.45);
-    this.setMood('😄', 0.7);
-    if (this.emotions) {
-      this.emotions.curiosity = clamp(this.emotions.curiosity + 0.12, 0, 1);
-    }
-    if (x !== null && y !== null) {
-      this.dir = Math.atan2(y - this.y, x - this.x);
-    }
-  }
-
-  reactToCollision(amount = 0.5, { skipDamage = false } = {}) {
-    const worldTime = this._lastWorld?.t ?? 0;
-    if (worldTime - this._lastCollisionReactAt < 0.33) return;
-    this._lastCollisionReactAt = worldTime;
-    const intensity = clamp(0.25 + amount * 0.08 + this.personality.reactivity * 0.25, 0.2, 1.2);
-    this._triggerReaction('collision', intensity, 0.25);
-    if (this.emotions) {
-      this.emotions.fear = clamp(this.emotions.fear + 0.08, 0, 1);
-      this.emotions.stress = clamp(this.emotions.stress + 0.05, 0, 1);
-    }
-    if (amount > 0.8 && this._lastWorld?.audio?.playCreatureSound) {
-      this._lastWorld.audio.playCreatureSound(this, 'impact');
-    }
-    if (amount > 0.7 && this._lastWorld?.particles?.addImpactRing) {
-      this._lastWorld.particles.addImpactRing(this.x, this.y, { color: 'rgba(248, 250, 252, 1)', size: 10 });
-    }
-    if (amount > 0.9 && this._lastWorld?.particles?.triggerShake) {
-      this._lastWorld.particles.triggerShake(2.5);
-    }
-
-    if (!skipDamage) {
-      const damage = this._calculateCollisionDamage(amount);
-      if (damage > 0) {
-        this.applyImpactDamage(damage, { cause: 'collision', intensity: amount });
-      }
-    }
-  }
+  reactToCollision(amount, opts = {}) { return reactToCollision(this, amount, opts); }
 
   _triggerReaction(type, intensity = 0.5, duration = 0.35) {
     const reaction = this.animation?.reaction;
@@ -2088,11 +1779,7 @@ export class Creature {
     }
   }
 
-  setMood(icon, duration = 0.6) {
-    if (!icon) return;
-    this.mood.icon = icon;
-    this.mood.timer = Math.max(this.mood.timer, duration);
-  }
+  setMood(icon, duration = 0.6) { return setMood(this, icon, duration); }
 
   _updateMood(dt) {
     if (!this.mood || this.mood.timer <= 0) return;
