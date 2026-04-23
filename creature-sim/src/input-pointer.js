@@ -414,6 +414,9 @@ export function applyInputPointerMethods(InputManager) {
     this.dragState.pending = false;
     creature.isGrabbed = true;
     this.canvas.style.cursor = 'grabbing';
+    if (typeof navigator.vibrate === 'function') {
+      navigator.vibrate(12);
+    }
     if (typeof creature.reactToGrab === 'function') {
       creature.reactToGrab({ x: worldX, y: worldY });
     }
@@ -491,6 +494,9 @@ export function applyInputPointerMethods(InputManager) {
         });
         creature.dir = Math.atan2(scaledVY, scaledVX);
         eventSystem.emit(GameEvents.CREATURE_THROWN, { creatureId: creature.id, speed: clampedSpeed });
+        if (typeof navigator.vibrate === 'function') {
+          navigator.vibrate([20, 30, 40]);
+        }
         const intensity = clamp((clampedSpeed - this.throwSpeedMin) / (this.throwSpeedMax - this.throwSpeedMin), 0, 1);
         const ringSize = 6 + intensity * 12;
         this.world?.particles?.addImpactRing?.(creature.x, creature.y, { color: '#facc15', size: ringSize });

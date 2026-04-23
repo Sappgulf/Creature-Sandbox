@@ -12,6 +12,7 @@ import { eventSystem, GameEvents } from './event-system.js';
 import { generateTemperament } from './creature-traits.js';
 import { pickNameSuggestion, determineSenseType, resolveDietRole, calculateAttractiveness, pickDesiredTraits } from './creature-genetics-helpers.js';
 import { updateAgeStage, getAgeSizeMultiplier, getAgeSpeedMultiplier, getAgeMetabolismMultiplier } from './creature-age.js';
+import { AdvancedGenetics } from './advanced-genetics.js';
 import { getBadges as _getBadges, drawCreature as _drawCreature, getCachedSpriteFrame as _getCachedSpriteFrame, updateCachedCanvas as _updateCachedCanvas, drawBehaviorState as _drawBehaviorState, drawTraits as _drawTraits } from './creature-render.js';
 import {
   reactToPoke,
@@ -560,6 +561,9 @@ export class Creature {
     this.statusSystem.tick(dt);
     this.behaviorSystem.update(dt, world);
     updateAgentState(this, dt, world);
+
+    // Apply rare mutation effects (regeneration, photosynthesis, bioluminescence, etc.)
+    AdvancedGenetics.applyMutationEffects(this, world, dt);
 
     // Nocturnal "Night Owl" status at night
     const dayNight = world?.dayNightState;
@@ -1157,7 +1161,7 @@ export class Creature {
 
             if (world.audio && world.audio.ctx) {
               try {
-                world.audio.playCreatureSound(this, 'eat');
+                world.audio.playCreatureSound(this, 'eat', world.camera);
               } catch {
                 // Ignore audio errors (non-critical)
               }
@@ -1394,8 +1398,6 @@ export class Creature {
       this.goal.bondAnnounced = false;
     }
 
-    this.energy -= energyDrain * dt;
-
     // Starvation mechanic: loss of health when energy is empty
     if (this.energy <= 0) {
       this.energy = 0;
@@ -1538,7 +1540,7 @@ export class Creature {
         }
         if (world.audio && world.audio.ctx) {
           try {
-            world.audio.playCreatureSound?.(this, 'play');
+            world.audio.playCreatureSound?.(this, 'play', world.camera);
           } catch {
             // Ignore audio errors
           }

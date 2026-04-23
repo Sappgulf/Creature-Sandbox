@@ -1340,8 +1340,7 @@ export class GameLoop {
    */
   stepOnce() {
     gameState.paused = true;
-    gameState.accumulator += this.fixedDt;
-
+    this.step(this.fixedDt);
   }
 
   /**

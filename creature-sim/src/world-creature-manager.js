@@ -8,6 +8,7 @@ import { SpatialGrid } from './spatial-grid.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { generateTemperament, blendTemperament, rollQuirks, inheritQuirks } from './creature-traits.js';
 import { getDebugFlags } from './debug-flags.js';
+import { AdvancedGenetics } from './advanced-genetics.js';
 
 export class WorldCreatureManager {
   constructor(world) {
@@ -148,6 +149,14 @@ export class WorldCreatureManager {
       }
     }
 
+    // Apply rare mutations and chimera
+    const rareMuts = AdvancedGenetics.applyRareMutations(childGenes, 0.05);
+    const chimera = AdvancedGenetics.applyChimeraMutation(childGenes);
+    if (chimera) rareMuts.push(chimera);
+    if (rareMuts.length > 0) {
+      childGenes.rareMutations = rareMuts;
+    }
+
     const child = new Creature(clampedX, clampedY, childGenes, true);
     child.temperament = blendTemperament(parent1?.temperament, parent2?.temperament);
     child.quirks = inheritQuirks(parent1, parent2);
@@ -183,6 +192,10 @@ export class WorldCreatureManager {
   spawnManual(x, y, predator = false) {
     // Pass predator as object property, not boolean
     const genes = makeGenes({ predator: predator ? 1 : 0 });
+    const rareMuts = AdvancedGenetics.applyRareMutations(genes, 0.05);
+    const chimera = AdvancedGenetics.applyChimeraMutation(genes);
+    if (chimera) rareMuts.push(chimera);
+    if (rareMuts.length > 0) genes.rareMutations = rareMuts;
     const creature = new Creature(x, y, genes);
     creature.temperament = generateTemperament();
     creature.quirks = rollQuirks();
@@ -194,6 +207,10 @@ export class WorldCreatureManager {
     if (!genes) return null;
 
     const safeGenes = { ...(genes.genesRaw || genes) };
+    const rareMuts = AdvancedGenetics.applyRareMutations(safeGenes, 0.05);
+    const chimera = AdvancedGenetics.applyChimeraMutation(safeGenes);
+    if (chimera) rareMuts.push(chimera);
+    if (rareMuts.length > 0) safeGenes.rareMutations = rareMuts;
     const clampedX = clamp(x, 0, this.world.width);
     const clampedY = clamp(y, 0, this.world.height);
     const creature = new Creature(clampedX, clampedY, safeGenes, true);
@@ -206,6 +223,10 @@ export class WorldCreatureManager {
   cloneCreature(source) {
     if (!source) return null;
     const genes = { ...(source.genesRaw || source.genes) };
+    const rareMuts = AdvancedGenetics.applyRareMutations(genes, 0.05);
+    const chimera = AdvancedGenetics.applyChimeraMutation(genes);
+    if (chimera) rareMuts.push(chimera);
+    if (rareMuts.length > 0) genes.rareMutations = rareMuts;
     const offset = 20;
     const nx = clamp(source.x + (Math.random() - 0.5) * offset, 0, this.world.width);
     const ny = clamp(source.y + (Math.random() - 0.5) * offset, 0, this.world.height);

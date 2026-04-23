@@ -177,7 +177,7 @@ export class WorldDisaster {
 
     if (readyDisasters.length > 0) {
       const disaster = readyDisasters[0];
-      this.pendingDisasters.splice(this.pendingDisasters.indexOf(disaster), 0, 1);
+      this.pendingDisasters.splice(this.pendingDisasters.indexOf(disaster), 1);
       this.beginDisaster(disaster.type, disaster);
     }
 
@@ -241,7 +241,7 @@ export class WorldDisaster {
     for (let i = this.world.food.length - 1; i >= 0; i--) {
       const food = this.world.food[i];
       if (rand() < destroyRate / this.world.food.length) {
-        this.world.ecosystem?.world.food.splice(i, 1);
+        this.world.food.splice(i, 1);
         this.world.foodGrid?.remove(food);
       }
     }

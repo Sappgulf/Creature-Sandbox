@@ -957,7 +957,8 @@ input[type="range"]:focus-visible {
   opacity: 0;
   transform: translateY(10px) scale(0.98);
   pointer-events: none;
-  display: none;
+  visibility: hidden;
+  transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0s linear var(--transition-fast);
 }
 @keyframes panelSlideIn {
   from {
@@ -3170,7 +3171,11 @@ body.home-active #btn-show-inspector {
   animation: watchStripSlideUp var(--transition-slow) ease-out;
 }
 .watch-strip.hidden {
-  display: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+  pointer-events: none;
+  transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0s linear var(--transition-fast);
 }
 @keyframes watchStripSlideUp {
   from {
@@ -3236,7 +3241,11 @@ body.home-active #btn-show-inspector {
   animation: momentsSlideIn var(--transition-slow) ease-out;
 }
 .moments-panel.hidden {
-  display: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(20px);
+  pointer-events: none;
+  transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0s linear var(--transition-fast);
 }
 @keyframes momentsSlideIn {
   from {
@@ -3427,7 +3436,13 @@ body.home-active #btn-show-inspector {
   pointer-events: none;
 }
 .bottom-drawer.hidden {
-  display: none;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity var(--transition-fast), visibility 0s linear var(--transition-fast);
+}
+.bottom-drawer.hidden .drawer-content {
+  transform: translateY(20px);
+  transition: transform var(--transition-slow);
 }
 .bottom-drawer .drawer-backdrop {
   position: absolute;

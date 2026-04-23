@@ -108,6 +108,9 @@ export class NotificationSystem {
       this.notifications.push(notification);
       this._announce(notification);
     }
+
+    // Also create an accessible DOM toast
+    this._createDomToast(notification);
   }
 
   _announce(notif) {
@@ -117,6 +120,56 @@ export class NotificationSystem {
     if (notif.type === 'warning' || notif.type === 'milestone' || notif.type === 'achievement') {
       announcer.textContent = text;
     }
+  }
+
+  _createDomToast(notif) {
+    if (typeof document === 'undefined') return;
+    let container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.setAttribute('role', 'region');
+      container.setAttribute('aria-live', 'polite');
+      container.setAttribute('aria-label', 'Notifications');
+      container.style.cssText = 'position:fixed;top:100px;left:50%;transform:translateX(-50%);z-index:3000;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
+      document.body.appendChild(container);
+    }
+
+    const el = document.createElement('div');
+    el.className = `toast toast-${notif.type}`;
+    el.style.cssText = 'padding:10px 18px;border-radius:999px;font:600 13px system-ui,sans-serif;box-shadow:0 4px 12px rgba(0,0,0,0.4);backdrop-filter:blur(8px);opacity:0;transform:translateY(-12px);transition:opacity 0.25s ease,transform 0.25s ease;max-width:320px;text-align:center;pointer-events:auto;';
+
+    const colors = {
+      warning: { bg: 'rgba(245,158,11,0.92)', text: '#1a1a1a' },
+      milestone: { bg: 'rgba(34,197,94,0.92)', text: '#ffffff' },
+      achievement: { bg: 'rgba(139,92,246,0.92)', text: '#ffffff' },
+      success: { bg: 'rgba(34,197,94,0.92)', text: '#ffffff' },
+      error: { bg: 'rgba(239,68,68,0.92)', text: '#ffffff' },
+      info: { bg: 'rgba(15,23,42,0.94)', text: '#e2e8f0' },
+      performance: { bg: 'rgba(220,38,38,0.9)', text: '#ffffff' }
+    };
+    const color = colors[notif.type] || colors.info;
+    el.style.background = color.bg;
+    el.style.color = color.text;
+    el.style.border = '1px solid rgba(255,255,255,0.15)';
+
+    const text = notif.title ? `${notif.title} ${notif.message}`.trim() : notif.message;
+    el.textContent = text;
+
+    container.appendChild(el);
+
+    // Animate in
+    requestAnimationFrame(() => {
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    });
+
+    // Remove after duration
+    setTimeout(() => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(-12px)';
+      setTimeout(() => el.remove(), 300);
+    }, notif.duration);
   }
 
   /**

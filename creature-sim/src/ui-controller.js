@@ -217,6 +217,7 @@ export class UIController {
     this.bindGameplayModeControls();
     this.bindSessionGoalControls();
     this.bindWatchControls();
+    this.bindSliderFills();
     this.applyMobileDefaults();
     this.bindResponsiveLayoutSync();
     this.updateInspectorVisibility();
@@ -690,6 +691,41 @@ export class UIController {
 
     if (ctrlSpeedIcon) {
       ctrlSpeedIcon.textContent = `${gameState.fastForward}×`;
+    }
+  }
+
+  bindSliderFills() {
+    const updateSliderFill = (slider) => {
+      const min = Number(slider.min) || 0;
+      const max = Number(slider.max) || 100;
+      const val = Number(slider.value) || 0;
+      const pct = max === min ? 0 : ((val - min) / (max - min)) * 100;
+      slider.style.setProperty('--value', `${pct}%`);
+    };
+
+    const sliders = document.querySelectorAll('input[type="range"]');
+    for (const slider of sliders) {
+      updateSliderFill(slider);
+      slider.addEventListener('input', () => updateSliderFill(slider));
+    }
+
+    if (typeof MutationObserver !== 'undefined') {
+      const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          for (const node of mutation.addedNodes) {
+            if (node.nodeType === 1) {
+              const newSliders = node.matches?.('input[type="range"]')
+                ? [node]
+                : node.querySelectorAll?.('input[type="range"]') || [];
+              for (const slider of newSliders) {
+                updateSliderFill(slider);
+                slider.addEventListener('input', () => updateSliderFill(slider));
+              }
+            }
+          }
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
     }
   }
 }

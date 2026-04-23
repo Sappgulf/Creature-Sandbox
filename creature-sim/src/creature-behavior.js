@@ -4,6 +4,8 @@
 import { rand, clamp } from './utils.js';
 import { CreatureConfig } from './creature-config.js';
 import { TempObjectPool } from './object-pool.js';
+import { AdvancedPredatorPreyAI } from './advanced-predator-prey-ai.js';
+import { EnhancedBehaviors } from './enhanced-behaviors.js';
 
 export class CreatureBehaviorSystem {
   constructor(creature) {
@@ -38,6 +40,9 @@ export class CreatureBehaviorSystem {
     } else {
       this.updateHerbivoreBehavior(world, dt);
     }
+
+    // Advanced AI integrations
+    this.updateAdvancedAI(world, dt);
 
     // Handle lifecycle behaviors
     this.updateLifecycleBehavior(dt, world);
@@ -775,6 +780,24 @@ export class CreatureBehaviorSystem {
   updatePredatorBehavior(world, dt) {
     if (this.creature.traits?.dietRole === 'predator-lite') return;
 
+    // Advanced hunting strategy selection
+    const prey = world.getAnyCreatureById?.(this.creature.personality.currentTargetId);
+    if (prey && prey.alive) {
+      const strategyResult = AdvancedPredatorPreyAI.applyHuntingStrategy(this.creature, prey, world, dt);
+      if (strategyResult && strategyResult.x != null && strategyResult.y != null) {
+        this.creature.target = {
+          x: strategyResult.x,
+          y: strategyResult.y,
+          creatureId: prey.id,
+          priority: 0.95,
+          strategy: strategyResult.strategy
+        };
+      }
+      if (strategyResult?.speedBoost) {
+        this.creature.speedBoost = strategyResult.speedBoost;
+      }
+    }
+
     // Pack hunting coordination
     if (this.creature.genes.packInstinct > 0.5 && this.creature.personality.currentTargetId) {
       this.updatePackHunting(world, dt);
@@ -881,6 +904,27 @@ export class CreatureBehaviorSystem {
     if (this.creature.genes.herdInstinct > 0.5) {
       this.updateHerdBehavior(world, dt);
     }
+
+    // Advanced evasion when predators are nearby
+    const nearbyPredators = world.creatureManager?.queryCreaturesFast(
+      this.creature.x, this.creature.y, 120
+    )?.filter(c => c.alive && c.genes?.predator) || [];
+    if (nearbyPredators.length > 0) {
+      const evasion = AdvancedPredatorPreyAI.applyEvasionStrategy(
+        this.creature, nearbyPredators, world, dt
+      );
+      if (evasion && evasion.x != null && evasion.y != null) {
+        this.creature.target = {
+          x: evasion.x,
+          y: evasion.y,
+          priority: 0.9,
+          strategy: evasion.strategy
+        };
+        if (evasion.speedBoost) {
+          this.creature.speedBoost = (this.creature.speedBoost || 1) * evasion.speedBoost;
+        }
+      }
+    }
   }
 
   /**
@@ -953,6 +997,53 @@ export class CreatureBehaviorSystem {
   /**
    * Update lifecycle behaviors (play, elder aid, etc.)
    */
+  updateAdvancedAI(world, dt) {
+    // Schooling for non-predators
+    if (!this.creature.genes.predator) {
+      const nearby = world.creatureManager?.queryCreaturesFast(
+        this.creature.x, this.creature.y, 100
+      ) || [];
+      EnhancedBehaviors.applySchooling(this.creature, nearby, dt);
+    }
+
+    // Pack hunting flanking for predators
+    if (this.creature.genes.predator && this.creature.target?.creatureId) {
+      const prey = world.getAnyCreatureById?.(this.creature.target.creatureId);
+      const nearbyPredators = world.creatureManager?.queryCreaturesFast(
+        this.creature.x, this.creature.y, 150
+      )?.filter(c => c.alive && c.genes?.predator && c.id !== this.creature.id) || [];
+      const flank = EnhancedBehaviors.applyPackHunting(
+        this.creature, nearbyPredators, prey, dt
+      );
+      if (flank && flank.x != null && flank.y != null) {
+        this.creature.target.x = flank.x;
+        this.creature.target.y = flank.y;
+      }
+    }
+
+    // Herding protection for adults
+    if (this.creature.ageStage === 'adult' && !this.creature.genes.predator) {
+      const juveniles = world.creatures?.filter(c =>
+        c.alive && c.ageStage === 'juvenile' && !c.genes?.predator
+      ) || [];
+      EnhancedBehaviors.applyHerding(this.creature, juveniles, dt);
+    }
+
+    // Scavenging for omnivores and carnivores
+    if ((this.creature.genes.diet ?? 0) > 0.3) {
+      const corpse = EnhancedBehaviors.findCorpses(this.creature, world);
+      if (corpse && !this.creature.target) {
+        this.creature.target = {
+          x: corpse.x,
+          y: corpse.y,
+          isCorpse: true,
+          corpse: corpse,
+          priority: 0.5
+        };
+      }
+    }
+  }
+
   updateLifecycleBehavior(dt, world) {
     // Juvenile play behavior
     if (this.creature.ageStage === 'juvenile' && !this.creature.genes.predator) {

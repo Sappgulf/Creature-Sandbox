@@ -42,6 +42,14 @@ export class AudioSystem {
 
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      // Master effects chain: compressor -> destination
+      this.masterCompressor = this.ctx.createDynamicsCompressor();
+      this.masterCompressor.threshold.value = -24;
+      this.masterCompressor.knee.value = 12;
+      this.masterCompressor.ratio.value = 6;
+      this.masterCompressor.attack.value = 0.003;
+      this.masterCompressor.release.value = 0.1;
+      this.masterCompressor.connect(this.ctx.destination);
       // Audio system initialized
     } catch (e) {
       console.warn('Audio not supported:', e);
@@ -75,7 +83,7 @@ export class AudioSystem {
     );
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.masterCompressor || this.ctx.destination);
 
     const soundId = Math.random();
     this.playingSounds.add(soundId);
@@ -88,8 +96,58 @@ export class AudioSystem {
     };
   }
 
+  // Play a tone with spatial panning
+  playSpatialTone(frequency, duration, type = 'sine', volume = 1.0, category = 'ui', pan = 0) {
+    if (!this.soundsEnabled || !this.ctx) return;
+    if (this.playingSounds.size >= this.maxConcurrent) return;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = type;
+    osc.frequency.value = frequency;
+
+    gain.gain.setValueAtTime(0, this.ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(
+      volume * this.volumes[category] * this.masterVolume,
+      this.ctx.currentTime + 0.01
+    );
+    gain.gain.exponentialRampToValueAtTime(
+      0.001,
+      this.ctx.currentTime + duration
+    );
+
+    osc.connect(gain);
+    const dest = this._spatialNode(gain, pan) || (this.masterCompressor || this.ctx.destination);
+    if (!dest) gain.connect(this.masterCompressor || this.ctx.destination);
+
+    const soundId = Math.random();
+    this.playingSounds.add(soundId);
+
+    osc.start(this.ctx.currentTime);
+    osc.stop(this.ctx.currentTime + duration);
+
+    osc.onended = () => {
+      this.playingSounds.delete(soundId);
+    };
+  }
+
+  // Create a spatial panner node chain; returns the last node to connect to master
+  _spatialNode(sourceGain, pan) {
+    if (!this.ctx || typeof this.ctx.createStereoPanner !== 'function') return null;
+    try {
+      const panner = this.ctx.createStereoPanner();
+      panner.pan.value = Math.max(-1, Math.min(1, pan));
+      sourceGain.connect(panner);
+      panner.connect(this.masterCompressor || this.ctx.destination);
+      return panner;
+    } catch {
+      return null;
+    }
+  }
+
   // Generate creature sound based on genes
-  playCreatureSound(creature, event = 'idle') {
+  playCreatureSound(creature, event = 'idle', camera = null) {
     if (!this.soundsEnabled || !this.ctx) return;
     if (!creature || !creature.genes) return; // Safety check
 
@@ -109,16 +167,28 @@ export class AudioSystem {
       // Volume based on size (larger = louder)
       const volume = Math.min(1.0, 0.3 + size / 15);
 
+      // Spatial attenuation and panning
+      let spatialVolume = 1;
+      let pan = 0;
+      if (camera && typeof creature.x === 'number') {
+        const dx = creature.x - camera.x;
+        const halfW = (camera.viewportWidth || 800) / 2;
+        pan = Math.max(-1, Math.min(1, dx / Math.max(halfW, 1)));
+        const dist = Math.sqrt(dx * dx + (creature.y - camera.y) ** 2);
+        const maxAudible = Math.max(halfW * 2, 600);
+        spatialVolume = Math.max(0.1, 1 - dist / maxAudible);
+      }
+
       const _duration = 0.1;
       const _type = 'sine';
 
       switch (event) {
         case 'impact':
-          this.playTone(pitch * 1.8, 0.06, 'triangle', volume * 0.45, 'creatures');
+          this.playSpatialTone(pitch * 1.8, 0.06, 'triangle', volume * 0.45 * spatialVolume, 'creatures', pan);
           break;
         case 'birth':
         // Cute high-pitched chirp
-          this.playTone(pitch * 1.5, 0.15, 'sine', volume * 0.6, 'creatures');
+          this.playSpatialTone(pitch * 1.5, 0.15, 'sine', volume * 0.6 * spatialVolume, 'creatures', pan);
           break;
 
         case 'death':
@@ -130,10 +200,11 @@ export class AudioSystem {
             const now = this.ctx.currentTime;
             osc.frequency.setValueAtTime(pitch, now);
             osc.frequency.exponentialRampToValueAtTime(pitch * 0.3, now + 0.4);
-            gain.gain.setValueAtTime(volume * 0.4 * this.volumes.creatures * this.masterVolume, now);
+            gain.gain.setValueAtTime(volume * 0.4 * this.volumes.creatures * this.masterVolume * spatialVolume, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
             osc.connect(gain);
-            gain.connect(this.ctx.destination);
+            const dest = this._spatialNode(gain, pan) || (this.masterCompressor || this.ctx.destination);
+            if (!dest) gain.connect(this.masterCompressor || this.ctx.destination);
             osc.start();
             osc.stop(now + 0.4);
           } catch {
@@ -143,7 +214,7 @@ export class AudioSystem {
 
         case 'eat':
         // Quick nom sound (low frequency crunch)
-          this.playTone(pitch * 0.6, 0.08, 'square', volume * 0.5, 'creatures');
+          this.playSpatialTone(pitch * 0.6, 0.08, 'square', volume * 0.5 * spatialVolume, 'creatures', pan);
           break;
 
         case 'attack':
@@ -155,10 +226,11 @@ export class AudioSystem {
             const now = this.ctx.currentTime;
             attackOsc.frequency.setValueAtTime(pitch * 0.7, now);
             attackOsc.frequency.linearRampToValueAtTime(pitch * 0.5, now + 0.1);
-            attackGain.gain.setValueAtTime(volume * 0.7 * this.volumes.creatures * this.masterVolume, now);
+            attackGain.gain.setValueAtTime(volume * 0.7 * this.volumes.creatures * this.masterVolume * spatialVolume, now);
             attackGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
             attackOsc.connect(attackGain);
-            attackGain.connect(this.ctx.destination);
+            const dest = this._spatialNode(attackGain, pan) || (this.masterCompressor || this.ctx.destination);
+            if (!dest) attackGain.connect(this.masterCompressor || this.ctx.destination);
             attackOsc.start();
             attackOsc.stop(now + 0.15);
           } catch {
@@ -286,7 +358,7 @@ export class AudioSystem {
     this.musicGain.gain.value = this.volumes.music * this.masterVolume * 0.15; // Very subtle
 
     this.musicOscillator.connect(this.musicGain);
-    this.musicGain.connect(this.ctx.destination);
+    this.musicGain.connect(this.masterCompressor || this.ctx.destination);
 
     // Add subtle variation
     this.musicOscillator.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);

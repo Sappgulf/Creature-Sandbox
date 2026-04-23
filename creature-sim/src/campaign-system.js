@@ -444,6 +444,9 @@ export class CampaignSystem {
     // This would typically be called when the world is reset/initialized
     // Store config for world initialization
     this.pendingWorldConfig = config;
+    if (world) {
+      world.pendingCampaignConfig = config;
+    }
   }
 
   /**

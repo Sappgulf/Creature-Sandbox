@@ -125,7 +125,7 @@ export function reactToCollision(creature, amount = 0.5, { skipDamage = false } 
     creature.emotions.stress = clamp(creature.emotions.stress + 0.05, 0, 1);
   }
   if (amount > 0.8 && creature._lastWorld?.audio?.playCreatureSound) {
-    creature._lastWorld.audio.playCreatureSound(creature, 'impact');
+    creature._lastWorld.audio.playCreatureSound(creature, 'impact', creature._lastWorld.camera);
   }
   if (amount > 0.7 && creature._lastWorld?.particles?.addImpactRing) {
     creature._lastWorld.particles.addImpactRing(creature.x, creature.y, { color: 'rgba(248, 250, 252, 1)', size: 10 });

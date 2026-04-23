@@ -923,6 +923,9 @@ export class ParticleSystem {
     // Limit particle count by removing oldest (from start)
     if (particles.length > this.maxParticles) {
       const excess = particles.length - this.maxParticles;
+      for (let i = 0; i < excess; i++) {
+        this._releaseParticle(particles[i]);
+      }
       particles.splice(0, excess);
     }
   }

@@ -91,8 +91,7 @@ export class WorldCombat {
       const damage = this.calculateDamage(predator, prey);
       const appliedDamage = this.applyDamage(prey, damage, { attacker: predator, attackType: 'predation' });
 
-      predator.energy = Math.min(predator.energy + appliedDamage * 0.7, predator.energy * 1.2); // Energy gain
-      predator.stats.kills++;
+      predator.energy = Math.min(predator.energy + appliedDamage * 0.7, predator.maxEnergy || 100); // Energy gain
       this.setAttackCooldown(predator, 0.9);
 
       // Predator signals (pheromone communication)
@@ -145,6 +144,10 @@ export class WorldCombat {
     // Check if target died (recordDamage sets alive=false)
     if (!target.alive) {
       if (ctx.attacker) {
+        ctx.attacker.stats.kills = (ctx.attacker.stats.kills || 0) + 1;
+        if (typeof navigator.vibrate === 'function') {
+          navigator.vibrate([30, 50, 30]);
+        }
         try {
           eventSystem.emit(GameEvents.CREATURE_KILLED, {
             attacker: ctx.attacker,

@@ -383,22 +383,54 @@ export class World {
 
   // Seed initial world state with diverse creature types
   seed(nHerb = 60, nPred = 6, nFood = 180) {
+    // Check for campaign pending config before resetting
+    const campaignConfig = this.pendingCampaignConfig || null;
+
     // Clear existing state
     this.reset();
 
-    // Calculate diverse creature distribution.
-    // Non-predator pool now includes herbivores, omnivores, and aquatic scavengers.
-    const nAquatic = Math.max(1, Math.floor(nHerb * 0.12));
-    const remainingLand = Math.max(0, nHerb - nAquatic);
-    const nOmnivores = Math.floor(remainingLand * 0.35);
-    const nPureHerbivores = Math.max(0, remainingLand - nOmnivores);
+    // Apply campaign config if available
+    if (campaignConfig) {
+      if (campaignConfig.width) this.width = campaignConfig.width;
+      if (campaignConfig.height) this.height = campaignConfig.height;
+      if (campaignConfig.seasonSpeed != null && this.environment) {
+        this.environment.seasonSpeed = campaignConfig.seasonSpeed;
+      }
+      if (campaignConfig.startSeason && this.environment) {
+        this.environment.currentSeason = campaignConfig.startSeason;
+      }
+      if (campaignConfig.disastersEnabled === false) {
+        this.disaster.disasterCooldown = Infinity;
+      }
+      if (campaignConfig.triggerDisease) {
+        setTimeout(() => {
+          this.disaster.triggerDisaster('plague', {
+            intensity: 1.0,
+            duration: campaignConfig.triggerDisease.delay || 15,
+            manual: true
+          });
+        }, (campaignConfig.triggerDisease.delay || 15) * 1000);
+      }
+      if (campaignConfig.waterBiomeBoost) {
+        this.biomeGenerator.waterBoost = 1.5;
+      }
+    }
+
+    // Use campaign creature counts if available
+    const initialCreatures = campaignConfig?.initialCreatures ?? nHerb;
+    const initialPredators = campaignConfig?.initialPredators ?? nPred;
+    const initialFood = campaignConfig?.initialFood ?? nFood;
+    const initialAquatic = campaignConfig?.initialAquaticCreatures ?? Math.max(1, Math.floor(initialCreatures * 0.12));
+    const remainingLand = Math.max(0, initialCreatures - initialAquatic);
+    const nOmnivoresFinal = Math.floor(remainingLand * 0.35);
+    const nPureHerbivoresFinal = Math.max(0, remainingLand - nOmnivoresFinal);
 
     // Spawn pure herbivores in clusters (natural herding)
-    const herbivoreClusterCount = Math.max(3, Math.floor(nPureHerbivores / 12));
+    const herbivoreClusterCount = Math.max(3, Math.floor(nPureHerbivoresFinal / 12));
     for (let cluster = 0; cluster < herbivoreClusterCount; cluster++) {
       const clusterX = Math.random() * this.width;
       const clusterY = Math.random() * this.height;
-      const clusterSize = Math.floor(nPureHerbivores / herbivoreClusterCount);
+      const clusterSize = Math.floor(nPureHerbivoresFinal / herbivoreClusterCount);
 
       for (let i = 0; i < clusterSize; i++) {
         const offsetX = (Math.random() - 0.5) * 200;
@@ -410,14 +442,14 @@ export class World {
     }
 
     // Spawn omnivores scattered (more solitary)
-    for (let i = 0; i < nOmnivores; i++) {
+    for (let i = 0; i < nOmnivoresFinal; i++) {
       const x = Math.random() * this.width;
       const y = Math.random() * this.height;
       this.creatureManager.spawnOmnivore(x, y);
     }
 
     // Spawn aquatic scavengers near wetland/water-biased regions.
-    for (let i = 0; i < nAquatic; i++) {
+    for (let i = 0; i < initialAquatic; i++) {
       const spot = this.findBiomeSpot('wetland', 8);
       const x = clamp(spot.x + rand(-80, 80), 30, this.width - 30);
       const y = clamp(spot.y + rand(-80, 80), 30, this.height - 30);
@@ -425,18 +457,18 @@ export class World {
     }
 
     // Spawn predators strategically (not too close to start)
-    for (let i = 0; i < nPred; i++) {
+    for (let i = 0; i < initialPredators; i++) {
       const x = Math.random() * this.width;
       const y = Math.random() * this.height;
       this.creatureManager.spawnManual(x, y, true); // Predator
     }
 
     // Spawn food in patches (more realistic distribution)
-    const foodPatchCount = Math.max(8, Math.floor(nFood / 25));
+    const foodPatchCount = Math.max(8, Math.floor(initialFood / 25));
     for (let patch = 0; patch < foodPatchCount; patch++) {
       const patchX = Math.random() * this.width;
       const patchY = Math.random() * this.height;
-      const patchSize = Math.floor(nFood / foodPatchCount);
+      const patchSize = Math.floor(initialFood / foodPatchCount);
 
       for (let i = 0; i < patchSize; i++) {
         const offsetX = (Math.random() - 0.5) * 120;
@@ -447,7 +479,10 @@ export class World {
       }
     }
 
-    console.debug(`🌱 Seeded diverse world: ${nPureHerbivores} herbivores, ${nOmnivores} omnivores, ${nAquatic} aquatic, ${nPred} predators, ${nFood} food`);
+    console.debug(`🌱 Seeded diverse world: ${nPureHerbivoresFinal} herbivores, ${nOmnivoresFinal} omnivores, ${initialAquatic} aquatic, ${initialPredators} predators, ${initialFood} food`);
+
+    // Clear campaign config so it doesn't persist across resets
+    this.pendingCampaignConfig = null;
 
     // Generate environmental decorations
     this.generateDecorations();
@@ -887,7 +922,7 @@ export class World {
 
     if (this.audio && this.audio.ctx && scavenger) {
       try {
-        this.audio.playCreatureSound(scavenger, 'eat');
+        this.audio.playCreatureSound(scavenger, 'eat', this.camera);
       } catch {
         // Non-critical
       }

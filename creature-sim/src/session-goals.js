@@ -100,7 +100,7 @@ export class SessionGoals {
     this.propPlacements = 0;
     this.godActions = 0;
     eventSystem.on(GameEvents.CREATURE_BORN, (event) => {
-      if (!event || event.parentId !== null) return;
+      if (!event || event.parentId != null) return;
       this.manualSpawns += 1;
     });
     eventSystem.on(GameEvents.CREATURE_THROWN, () => {
@@ -176,6 +176,12 @@ export class SessionGoals {
 
     if (changed) {
       eventSystem.emit(GameEvents.SESSION_GOAL_UPDATED, this.getGoals());
+    }
+
+    // Auto-refresh goals when all are completed
+    const allCompleted = this.goals.length > 0 && this.goals.every(g => g.completed);
+    if (allCompleted) {
+      this.refresh();
     }
   }
 

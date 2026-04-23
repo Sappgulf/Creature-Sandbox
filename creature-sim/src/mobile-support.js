@@ -138,7 +138,13 @@ export class MobileSupport {
   }
 
   handleTouchStart(e) {
-    e.preventDefault();
+    // Only prevent default for canvas touches when no UI overlay is open
+    const target = e.target;
+    const isCanvas = target === this.canvas || (target && target.closest && target.closest('canvas'));
+    const isOverlayOpen = document.body.classList.contains('panel-open');
+    if (isCanvas && !isOverlayOpen) {
+      e.preventDefault();
+    }
 
     // Store all touches
     for (const touch of e.changedTouches) {
@@ -161,7 +167,13 @@ export class MobileSupport {
   }
 
   handleTouchMove(e) {
-    e.preventDefault();
+    // Only prevent default for canvas touches when no UI overlay is open
+    const target = e.target;
+    const isCanvas = target === this.canvas || (target && target.closest && target.closest('canvas'));
+    const isOverlayOpen = document.body.classList.contains('panel-open');
+    if (isCanvas && !isOverlayOpen) {
+      e.preventDefault();
+    }
 
     // Update touch positions
     for (const touch of e.changedTouches) {
@@ -180,7 +192,13 @@ export class MobileSupport {
   }
 
   handleTouchEnd(e) {
-    e.preventDefault();
+    // Only prevent default for canvas touches when no UI overlay is open
+    const target = e.target;
+    const isCanvas = target === this.canvas || (target && target.closest && target.closest('canvas'));
+    const isOverlayOpen = document.body.classList.contains('panel-open');
+    if (isCanvas && !isOverlayOpen) {
+      e.preventDefault();
+    }
 
     // Check for tap
     for (const touch of e.changedTouches) {
