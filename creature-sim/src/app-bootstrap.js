@@ -98,9 +98,9 @@ function createDevFpsOverlay(enabled) {
 
 console.debug('🚀 Starting Creature Sandbox...');
 
-const DESKTOP_STARTUP_SEED = { herbivores: 72, predators: 10, food: 320 };
-const MOBILE_STARTUP_SEED = { herbivores: 60, predators: 8, food: 260 };
-const COMPACT_MOBILE_STARTUP_SEED = { herbivores: 52, predators: 6, food: 220 };
+const DESKTOP_STARTUP_SEED = { herbivores: 64, predators: 8, food: 280 };
+const MOBILE_STARTUP_SEED = { herbivores: 54, predators: 7, food: 230 };
+const COMPACT_MOBILE_STARTUP_SEED = { herbivores: 44, predators: 5, food: 190 };
 
 let scenarioEditorInstance = null;
 let scenarioEditorPromise = null;
@@ -1195,54 +1195,53 @@ export function initializeApp() {
     if (!world) return;
     const startX = world.width * 0.5;
     const startY = world.height * 0.5;
-    const roll = Math.floor(Math.random() * 4);
+    const roll = Math.random();
     let label = 'Balanced opener';
 
-    if (roll === 0) {
+    if (roll < 0.45) {
       label = 'Bloom opener';
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 2; i++) {
         const x = startX + (Math.random() - 0.5) * 520;
         const y = startY + (Math.random() - 0.5) * 420;
         const patch = world.ecosystem?.addFoodPatch?.(x, y, {
-          radius: 95 + Math.random() * 55,
-          fertility: 1.15,
-          stock: 7
+          radius: 90 + Math.random() * 40,
+          fertility: 1.12,
+          stock: 6
         });
         if (patch && world.ecosystem?.spawnFoodFromPatch) {
-          for (let j = 0; j < 3; j++) {
+          for (let j = 0; j < 2; j++) {
             world.ecosystem.spawnFoodFromPatch(patch);
           }
         } else if (typeof world.addFood === 'function') {
-          world.addFood(x, y, 36, 'grass');
+          world.addFood(x, y, 28, 'grass');
         }
       }
-    } else if (roll === 1) {
+    } else if (roll < 0.75) {
       label = 'Wildfront opener';
       const offsets = [
-        [-210, -120, 'predator'],
-        [220, -30, 'omnivore'],
-        [120, 170, 'aquatic'],
-        [-150, 140, 'herbivore']
+        [-180, -100, 'predator'],
+        [190, -20, 'omnivore'],
+        [-130, 150, 'herbivore']
       ];
       for (const [dx, dy, type] of offsets) {
         world.spawnCreatureType?.(type, startX + dx, startY + dy);
       }
-      world.addCalmZone?.(startX, startY, 120, 14, 0.5);
-    } else if (roll === 2) {
+      world.addCalmZone?.(startX, startY, 140, 16, 0.55);
+    } else if (roll < 0.92) {
       label = 'Toybox opener';
-      const props = ['bounce', 'spinner', 'spring', 'fan', 'button'];
+      const props = ['bounce', 'spinner', 'spring'];
       for (let i = 0; i < props.length; i++) {
         const theta = (Math.PI * 2 * i) / props.length;
-        const radius = 180 + Math.random() * 60;
+        const radius = 160 + Math.random() * 45;
         const x = startX + Math.cos(theta) * radius;
         const y = startY + Math.sin(theta) * radius;
         world.sandbox?.addProp?.(props[i], x, y);
       }
     } else {
       label = 'Storm opener';
-      world.triggerChaosNudge?.(0.22, 4.5);
-      world.environment?.triggerWindBurst?.(0.26, 5.5);
-      for (let i = 0; i < 2; i++) {
+      world.triggerChaosNudge?.(0.16, 3.2);
+      world.environment?.triggerWindBurst?.(0.18, 4.2);
+      for (let i = 0; i < 1; i++) {
         world.spawnCreatureType?.('aquatic', startX + (Math.random() - 0.5) * 420, startY + (Math.random() - 0.5) * 320);
       }
     }

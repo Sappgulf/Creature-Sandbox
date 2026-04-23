@@ -7,69 +7,69 @@ const DEFAULT_STEPS = [
   {
     id: 'welcome',
     title: 'Welcome to Creature Sandbox',
-    text: 'Follow five quick moves to get oriented, then explore the world at your own pace.',
+    text: 'Follow a few quick steps, then explore at your own pace.',
     highlight: null,
     autoAdvance: true,
-    autoAdvanceDelay: 2400
+    autoAdvanceDelay: 1800
   },
   {
     id: 'spawn',
     title: 'Spawn Your First Creature',
-    text: 'Tap the spawn button or press S to add creatures to the world. Every ecosystem starts with just one!',
+    text: 'Use Spawn or press S to add creatures to the world.',
     highlight: ['#ctrl-spawn'],
     waitFor: { type: 'spawn', count: 1 },
     autoAdvance: true,
-    autoAdvanceDelay: 12000
+    autoAdvanceDelay: 9000
   },
   {
     id: 'camera',
     title: 'Move the Camera',
-    text: 'Scroll to zoom. Middle-click or Alt-drag to pan across the world.',
+    text: 'Scroll to zoom. Middle-click or Alt-drag to pan.',
     highlight: ['#view'],
     waitFor: { type: 'zoom', count: 1 },
     autoAdvance: true,
-    autoAdvanceDelay: 9000
+    autoAdvanceDelay: 7000
   },
   {
     id: 'inspect',
     title: 'Inspect a Creature',
-    text: 'Click or tap any creature to follow it, inspect its stats, and see what it is doing.',
+    text: 'Tap any creature to inspect its stats and behavior.',
     highlight: ['#view'],
     waitFor: { type: 'select', count: 1 },
     autoAdvance: true,
-    autoAdvanceDelay: 10000
+    autoAdvanceDelay: 8000
   },
   {
     id: 'pause',
     title: 'Pause and Compare',
-    text: 'Press Space or tap Pause to freeze time, then compare how the ecosystem changes.',
+    text: 'Press Space or tap Pause to freeze time.',
     highlight: ['#ctrl-pause', '#watch-pause'],
     waitFor: { type: 'keypress', key: 'Space', count: 1 },
     autoAdvance: true,
-    autoAdvanceDelay: 9000
+    autoAdvanceDelay: 7000
   },
   {
     id: 'god-mode',
     title: 'Try God Mode',
-    text: 'Open God Mode to place food, calm the world, or nudge chaos. More holds Analytics, Moments, and Help.',
-    highlight: ['#ctrl-god', '#watch-god-mode'],
+    text: 'Open More, then God Mode, to place food, calm the world, or nudge chaos.',
+    highlight: ['#ctrl-more', '#menu-god-mode', '#watch-god-mode'],
     waitFor: { type: 'god_mode_action', count: 1 },
     autoAdvance: true,
-    autoAdvanceDelay: 11000
+    autoAdvanceDelay: 9000
   }
 ];
 
 const TOOLTIP_CONFIG = {
   '#ctrl-pause': { text: 'Pause or resume simulation', shortcut: 'Space' },
   '#ctrl-speed': { text: 'Adjust simulation speed', shortcut: '1-4' },
-  '#ctrl-food': { text: 'Paint food on the world', shortcut: 'F' },
   '#ctrl-spawn': { text: 'Spawn creatures', shortcut: 'S' },
   '#ctrl-watch': { text: 'Follow creatures automatically', shortcut: 'W' },
-  '#ctrl-god': { text: 'God mode tools', shortcut: 'G' },
   '#ctrl-more': { text: 'More options menu', shortcut: 'M' },
+  '#menu-food': { text: 'Paint food on the world', shortcut: 'F' },
+  '#menu-god-mode': { text: 'God mode tools', shortcut: 'G' },
   '#watch-pause': { text: 'Pause or resume', shortcut: 'Space' },
   '#watch-speed': { text: 'Adjust watch speed', shortcut: '1-4' },
-  '#watch-follow': { text: 'Toggle creature follow', shortcut: 'F' },
+  '#watch-follow': { text: 'Toggle creature follow', shortcut: 'Shift+F' },
   '#watch-moments': { text: 'View notable events', shortcut: 'M' },
   '#watch-god-mode': { text: 'Toggle god mode', shortcut: 'G' },
   '#god-tool-food': { text: 'Place food sources', shortcut: null },
@@ -557,18 +557,18 @@ export class TutorialSystem {
     const content = overlay.querySelector('#tutorial-content');
     content.style.cssText = `
       position: absolute;
-      top: clamp(16px, 16vh, 180px);
+      top: clamp(14px, 14vh, 160px);
       left: 50%;
       transform: translateX(-50%);
-      width: min(520px, calc(100vw - 24px));
-      max-width: 520px;
-      padding: 20px 22px 18px;
-      border-radius: 18px;
-      background: rgba(10, 14, 22, 0.92);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      width: min(480px, calc(100vw - 24px));
+      max-width: 480px;
+      padding: 18px 20px 16px;
+      border-radius: 16px;
+      background: rgba(10, 14, 22, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       color: #f8fafc;
       pointer-events: auto;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
       backdrop-filter: blur(16px);
     `;
 
@@ -576,52 +576,52 @@ export class TutorialSystem {
     progress.style.cssText = `
       display: inline-flex;
       align-items: center;
-      padding: 4px 10px;
-      margin-bottom: 10px;
+      padding: 3px 9px;
+      margin-bottom: 8px;
       border-radius: 999px;
       background: rgba(74, 222, 128, 0.16);
       color: #bbf7d0;
-      font-size: 12px;
+      font-size: 11px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
     `;
 
     const title = overlay.querySelector('#tutorial-title');
     title.style.cssText = `
-      font-size: 24px;
+      font-size: 22px;
       line-height: 1.1;
       font-weight: 700;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       letter-spacing: -0.02em;
     `;
 
     const text = overlay.querySelector('#tutorial-text');
     text.style.cssText = `
-      font-size: 14px;
-      line-height: 1.55;
+      font-size: 13px;
+      line-height: 1.45;
       color: rgba(226, 232, 240, 0.9);
     `;
 
     const actions = overlay.querySelector('#tutorial-actions');
     actions.style.cssText = `
       display: flex;
-      gap: 10px;
+      gap: 8px;
       justify-content: flex-end;
       flex-wrap: wrap;
-      margin-top: 16px;
+      margin-top: 14px;
     `;
 
     const buttons = overlay.querySelectorAll('#tutorial-actions button');
     buttons.forEach((btn, index) => {
       btn.style.cssText = `
         margin: 0;
-        padding: 9px 14px;
+        padding: 8px 12px;
         border-radius: 10px;
         border: 1px solid ${index === 0 ? 'rgba(74, 222, 128, 0.35)' : 'rgba(255,255,255,0.12)'};
         background: ${index === 0 ? 'linear-gradient(135deg, #4ade80, #22c55e)' : 'rgba(255,255,255,0.05)'};
         color: #f8fafc;
         cursor: pointer;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
       `;
     });
@@ -656,7 +656,7 @@ export class TutorialSystem {
       const presets = {
         canvas: ['#view', 'canvas'],
         'btn-pause': ['#ctrl-pause', '#watch-pause'],
-        'god-mode-buttons': ['#ctrl-god', '#watch-god-mode', '#god-mode-panel'],
+        'god-mode-buttons': ['#ctrl-more', '#menu-god-mode', '#watch-god-mode', '#god-mode-panel'],
         'analytics-toggle': ['#analytics-dashboard-toggle', '#menu-analytics'],
         'moments-toggle': ['#watch-moments']
       };

@@ -47,9 +47,6 @@
         <span class="ctrl-icon">1×</span>
       </button>
       <div class="ctrl-divider"></div>
-      <button id="ctrl-food" class="ctrl-btn" title="Spawn Food (F)" aria-label="Spawn food">
-        <span class="ctrl-icon">🌿</span>
-      </button>
       <button id="ctrl-spawn" class="ctrl-btn ctrl-spawn-btn" title="Spawn Creature" aria-label="Spawn creature"
         aria-haspopup="true">
         <span class="ctrl-icon">🦌</span>
@@ -58,9 +55,6 @@
       <div class="ctrl-divider"></div>
       <button id="ctrl-watch" class="ctrl-btn" title="Watch Mode" aria-label="Toggle watch mode">
         <span class="ctrl-icon">👁️</span>
-      </button>
-      <button id="ctrl-god" class="ctrl-btn" title="God Mode" aria-label="Toggle god mode">
-        <span class="ctrl-icon">✨</span>
       </button>
       <button id="ctrl-more" class="ctrl-btn" title="More options" aria-label="Open menu" aria-haspopup="menu"
         aria-expanded="false">
@@ -149,11 +143,13 @@
         <div class="menu-section">
           <div class="menu-section-title">Simulation</div>
           <button class="menu-item" data-action="step">⏭️ Single Step</button>
+          <button class="menu-item" id="menu-food" data-action="food">🌿 Paint Food</button>
+          <button class="menu-item" id="menu-god-mode" data-action="god-mode">✨ God Mode</button>
           <button class="menu-item" data-action="props">🟣 Sandbox Props</button>
         </div>
         <div class="menu-section">
           <div class="menu-section-title">Gameplay</div>
-          <button class="menu-item" id="menu-mode" data-action="mode">🎛️ Game Mode</button>
+          <button class="menu-item" id="menu-mode" data-action="mode">🎛️ Modes & Goals</button>
           <button class="menu-item" id="menu-campaign" data-action="campaign">🏆 Campaign</button>
           <button class="menu-item" id="menu-achievements" data-action="achievements">🏅 Achievements</button>
         </div>
@@ -298,7 +294,7 @@
       <header class="home-hero">
         <div class="home-logo">🧬</div>
         <h1 class="home-title">Creature Sandbox</h1>
-        <p class="home-tagline">Build playful critters, drop them in, and watch the sandbox come alive.</p>
+        <p class="home-tagline">Watch creatures evolve, adapt, and settle into a living ecosystem.</p>
       </header>
 
       <!-- Feature Highlights -->
@@ -306,17 +302,17 @@
         <div class="home-feature">
           <span class="home-feature-icon">🧬</span>
           <h3>Genetic Evolution</h3>
-          <p>Shape traits, personalities, and quirky behaviors</p>
+          <p>Traits, personalities, and quirks shape each generation</p>
         </div>
         <div class="home-feature">
           <span class="home-feature-icon">🌿</span>
           <h3>Living Ecosystems</h3>
-          <p>Living biomes, surprises, and emergent moments</p>
+          <p>Biomes, seasons, and pressure keep the world moving</p>
         </div>
         <div class="home-feature">
           <span class="home-feature-icon">🏆</span>
           <h3>Campaigns & Goals</h3>
-          <p>Friendly goals that nudge new experiments</p>
+          <p>Friendly goals and tools that guide new experiments</p>
         </div>
       </div>
 

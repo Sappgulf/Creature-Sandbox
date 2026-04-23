@@ -53,11 +53,11 @@ export class GameState {
     this.curiosityPromptDismissed = new Set();
 
     // UI state
-    this.inspectorVisible = true;
+    this.inspectorVisible = false;
     this.inspectorAutoOpen = true;
     this.scenarioPanelVisible = false;
     this.featuresPanelVisible = false;
-    this.sessionMetaVisible = true;
+    this.sessionMetaVisible = false;
 
     // Spawn state
     this.selectedCreatureType = null;

@@ -474,6 +474,8 @@ export class UIController {
     if (modeBtn) {
       modeBtn.setAttribute('aria-pressed', isVisible ? 'true' : 'false');
       modeBtn.setAttribute('aria-expanded', isVisible ? 'true' : 'false');
+      modeBtn.setAttribute('aria-label', isVisible ? 'Hide modes and goals' : 'Show modes and goals');
+      modeBtn.title = isVisible ? 'Hide modes and goals' : 'Show modes and goals';
     }
   }
 

@@ -94,6 +94,8 @@ export class DOMCache {
 
     // Gameplay modes + goals
     this.cacheElement('session-meta', 'sessionMeta');
+    this.cacheElement('menu-mode', 'modeBtn');
+    this.cacheElement('menu-god-mode', 'godModeMenuBtn');
     this.cacheElement('mode-select', 'modeSelect');
     this.cacheElement('mode-apply', 'modeApplyBtn');
     this.cacheElement('mode-cycle', 'modeCycleBtn');

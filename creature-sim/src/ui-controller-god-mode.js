@@ -77,6 +77,7 @@ export function applyUiGodModeMethods(UIController) {
   UIController.prototype.updateGodModeUI = function() {
     const panel = domCache.get('godModePanel');
     const indicator = domCache.get('godModeIndicator');
+    const menuBtn = domCache.get('godModeMenuBtn');
     const toolButtons = [
       domCache.get('godToolFood'),
       domCache.get('godToolCalm'),
@@ -95,6 +96,12 @@ export function applyUiGodModeMethods(UIController) {
     }
     if (indicator) {
       indicator.classList.toggle('hidden', !gameState.godModeActive);
+    }
+    if (menuBtn) {
+      menuBtn.classList.toggle('active', gameState.godModeActive);
+      menuBtn.setAttribute('aria-pressed', gameState.godModeActive ? 'true' : 'false');
+      menuBtn.setAttribute('aria-label', gameState.godModeActive ? 'Disable god mode' : 'Enable god mode');
+      menuBtn.title = gameState.godModeActive ? 'Disable god mode' : 'Enable god mode';
     }
 
     for (const btn of toolButtons) {

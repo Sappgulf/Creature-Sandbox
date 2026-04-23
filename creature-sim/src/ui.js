@@ -115,7 +115,7 @@ export function renderInteractionHint(el, {
   tool = 'inspect',
   propType = null,
   hasSelection = false,
-  hintDurationMs = 4500,
+  hintDurationMs = 3200,
   customMessage = null,
   customId = null
 } = {}) {
@@ -137,24 +137,24 @@ export function renderInteractionHint(el, {
   let message = '';
   switch (tool) {
     case 'food':
-      message = 'Drag to paint food · Tap to drop a cluster';
+      message = 'Paint food · drag to brush';
       break;
     case 'spawn':
-      message = 'Tap to spawn creatures · Use the spawn menu to switch types';
+      message = 'Spawn creatures · tap the world';
       break;
     case 'erase':
-      message = 'Tap to erase creatures or props';
+      message = 'Erase creatures or props';
       break;
     case 'prop': {
       const label = propLabels[propType] || 'Prop';
-      message = `Tap to place ${label} · Switch types from the props menu`;
+      message = `Place ${label} · use the props menu`;
       break;
     }
     case 'inspect':
     default:
       message = hasSelection
-        ? 'Drag a creature to move it · Tap to inspect'
-        : 'Tap a creature to inspect · Drag to move and throw';
+        ? 'Drag to move · tap to inspect'
+        : 'Tap a creature to inspect';
       break;
   }
 
@@ -195,13 +195,13 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     el.innerHTML = isMobile
       ? `
         <div class="empty-title">No creature selected</div>
-        <div class="muted">Tap a creature to inspect or use spawn to drop a new one.</div>
+        <div class="muted">Tap a creature to inspect or use Spawn.</div>
       `
       : `
         <div class="empty-title">No creature selected</div>
-        <div class="muted">Tap a creature to inspect, or spawn one to get started.</div>
+        <div class="muted">Tap a creature to inspect. Use Spawn to add one.</div>
         <ul class="empty-list">
-          <li>Use <strong>S</strong> or the spawn button to place creatures.</li>
+          <li>Use <strong>S</strong> or Spawn to place creatures.</li>
           <li>Shift+click sets a lineage root.</li>
         </ul>
       `;

@@ -103,3 +103,15 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - `npm run build` ✅
 - `node "$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js" --url http://127.0.0.1:4173/ --click-selector '#btn-new-game' --actions-json '{"steps":[{"buttons":[],"frames":12},{"buttons":[],"frames":12}]}' --iterations 1 --pause-ms 250 --screenshot-dir output/web-game/post-fix` ✅
 - Residual note: the repo still only has unit tests plus browser smoke via the Codex client; promoting that browser smoke into a checked-in repo script would make the next pass easier to repeat.
+
+2026-04-23
+- Continuing the broad polish pass requested for the browser game shell.
+- Current edits tightened the control strip and overflow drawer, moved rare tools into the drawer, lowered startup density, shortened onboarding/hint copy, and hid the session-meta rail by default to protect the playfield.
+- Follow-up sync patch keeps God Mode truthful across the strip, overflow menu, watch strip, and panel controller when the state changes from any entry point.
+- Desktop inspector now starts collapsed as well, which keeps the right edge from crowding the first gameplay view while still auto-opening on creature selection.
+- Verification completed:
+- `npm test` ✅
+- `npm run build` ✅
+- Desktop Playwright states checked: home, gameplay, watch mode, overflow open, food action, god mode, and modes/goals visible.
+- Mobile Playwright states checked: home, gameplay, overflow open, and god mode.
+- No console or page errors were emitted during the browser passes.

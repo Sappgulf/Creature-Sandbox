@@ -45,6 +45,8 @@ export class ControlStripController {
     this.ctrlWatch = document.getElementById('ctrl-watch');
     this.ctrlGod = document.getElementById('ctrl-god');
     this.ctrlMore = document.getElementById('ctrl-more');
+    this.menuFood = document.getElementById('menu-food');
+    this.menuGodMode = document.getElementById('menu-god-mode');
 
     // Spawn drawer
     this.spawnDrawer = document.getElementById('spawn-drawer');
@@ -286,9 +288,10 @@ export class ControlStripController {
   activateFoodTool() {
     if (this.uiController?.onFood) {
       this.uiController.onFood();
-      if (this.ctrlFood) {
-        this.ctrlFood.classList.add('pulse');
-        setTimeout(() => this.ctrlFood?.classList.remove('pulse'), 250);
+      const pulseTarget = this.ctrlFood || this.menuFood || document.getElementById('menu-food');
+      if (pulseTarget) {
+        pulseTarget.classList.add('pulse');
+        setTimeout(() => pulseTarget.classList.remove('pulse'), 250);
       }
       return;
     }
@@ -376,6 +379,16 @@ export class ControlStripController {
       const shortcutsOverlay = document.getElementById('shortcuts-overlay');
       shortcutsOverlay?.classList.remove('hidden');
       shortcutsOverlay?.setAttribute('aria-hidden', 'false');
+      return;
+    }
+
+    if (action === 'food') {
+      this.activateFoodTool();
+      return;
+    }
+
+    if (action === 'god-mode') {
+      this.toggleGodMode();
       return;
     }
 
@@ -572,9 +585,10 @@ export class ControlStripController {
     }
     this.isGodMode = !!gameState.godModeActive;
 
-    this.ctrlGod?.classList.toggle('active', this.isGodMode);
+    const godTarget = this.ctrlGod || this.menuGodMode || document.getElementById('menu-god-mode');
+    godTarget?.classList.toggle('active', this.isGodMode);
     this.watchGodMode?.classList.toggle('active', this.isGodMode);
-    this.ctrlGod?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
+    godTarget?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
     this.watchGodMode?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
     this.buzz(this.isGodMode ? [12, 20, 12] : 10);
   }
@@ -628,8 +642,10 @@ export class ControlStripController {
     this.updateSpawnSelection();
     this.watchFollow?.classList.toggle('active', this.camera?.followMode !== 'free');
     this.ctrlGod?.classList.toggle('active', this.isGodMode);
+    this.menuGodMode?.classList.toggle('active', this.isGodMode);
     this.watchGodMode?.classList.toggle('active', this.isGodMode);
     this.ctrlGod?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
+    this.menuGodMode?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
     this.watchGodMode?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
     this.lastUIStateSignature = this.computeUIStateSignature();
   }
