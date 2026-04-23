@@ -1161,6 +1161,10 @@ export class ParticleSystem {
   }
 
   _getParticleSpriteFrame(p) {
+    if (!assetLoader.getSpriteSheet('particle_sparkle')) {
+      return null;
+    }
+
     const sprite = assetLoader.getSpriteFramesSync('particle_sparkle', { size: 32 });
     if (!sprite) {
       assetLoader.requestSpriteFrames('particle_sparkle', { size: 32 }).catch((error) => {

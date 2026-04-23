@@ -159,3 +159,17 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - In-app browser desktop: fresh New Sandbox had a nonblank 1200x800 canvas, 29 loaded sprite entries, 0 missing runtime asset keys, and 0 recent app errors.
 - In-app browser mobile: 390x844 New Sandbox had a nonblank canvas, 29 loaded sprite entries, no recent app errors, and compact visible controls.
 - `web_game_playwright_client.js` was attempted with generic and targeted New Sandbox click selectors; both runs stalled and were stopped after Playwright failed/hung, matching the known local-client issue from the previous pass.
+- New request: keep working.
+- Automation/release-confidence pass:
+- added a smoke-only startup URL path (`?smoke=1`, `?autostart`, or `?autosandbox`) that starts a fresh sandbox directly while preserving the normal home/continue flow for users.
+- added a smoke-only `advanceTime` handshake in the HTML so the external web-game client does not race the app before the real deterministic hook is installed.
+- added a smoke-only canvas snapshot guard so the bundled client can capture the gameplay canvas reliably without changing normal rendering.
+- fixed an early particle sprite race where `particle_sparkle` could be requested before the manifest was registered, producing a false missing-asset warning and poisoning that sprite variant.
+- Verification after smoke pass:
+- `git diff --check` ✅
+- `npx eslint creature-sim/src/app-bootstrap.js creature-sim/src/main.js creature-sim/src/game-loop.js creature-sim/src/particle-system.js` ✅
+- `npm test` ✅ (148 passing)
+- `npm run build` ✅
+- `node "$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js" --url "http://127.0.0.1:8000/?smoke=1&v=20260423-smoke3-client-final2" --actions-json '{"steps":[{"buttons":[],"frames":8},{"buttons":["left_mouse_button"],"frames":2,"mouse_x":420,"mouse_y":320},{"buttons":[],"frames":8}]}' --iterations 1 --pause-ms 250 --screenshot-dir output/web-game/smoke-direct` ✅
+- inspected `output/web-game/smoke-direct/shot-0.png`; gameplay canvas rendered visible creatures/particles/food on the dark field, and `state-0.json` reported home hidden, 70 creatures, 298 food, and 0 console errors.
+- mobile smoke at `390x844` reported home hidden, mobile layout true, 319x692 canvas, 47 creatures, 188 food, and no console warnings/errors.

@@ -14,7 +14,7 @@ import { AnalyticsTracker } from './analytics.js';
 import { LineageTracker } from './lineage-tracker.js';
 import { MiniGraphs } from './mini-graphs.js';
 import { SaveSystem } from './save-system.js';
-import { ParticleSystem } from './particle-system.js?v=20260423-assets1';
+import { ParticleSystem } from './particle-system.js?v=20260423-smoke3';
 import { NotificationSystem } from './notification-system.js?v=20260423-contrast3';
 import { HeatmapSystem } from './heatmap-system.js';
 import { GeneEditor } from './gene-editor.js';
@@ -36,7 +36,7 @@ import { domCache } from './dom-cache.js';
 import { gameState } from './game-state.js';
 import { InputManager } from './input-manager.js';
 import { UIController } from './ui-controller.js';
-import { GameLoop } from './game-loop.js?v=20260423-assets1';
+import { GameLoop } from './game-loop.js?v=20260423-smoke2';
 import { errorHandler } from './error-handler.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
@@ -970,8 +970,55 @@ export function initializeApp() {
   // STARTUP LOGIC
   // ============================================================================
 
+  const startupParams = new URLSearchParams(window.location.search);
+  const shouldAutoStartSandbox = startupParams.has('autostart') ||
+    startupParams.has('autosandbox') ||
+    startupParams.has('smoke');
+
+  if (shouldAutoStartSandbox) {
+    installSmokeCanvasSnapshotGuard();
+  }
+
+  function installSmokeCanvasSnapshotGuard() {
+    if (window.__creatureSmokeCanvasSnapshotGuardInstalled) return;
+    if (typeof HTMLCanvasElement === 'undefined') return;
+    const originalToDataUrl = HTMLCanvasElement.prototype.toDataURL;
+    if (typeof originalToDataUrl !== 'function') return;
+
+    window.__creatureSmokeCanvasSnapshotGuardInstalled = true;
+    HTMLCanvasElement.prototype.toDataURL = function smokeSafeToDataURL(type, quality) {
+      if (this.id !== 'view') {
+        return originalToDataUrl.call(this, type, quality);
+      }
+
+      const maxCaptureWidth = 720;
+      const scale = Math.min(1, maxCaptureWidth / Math.max(1, this.width || this.clientWidth || maxCaptureWidth));
+      if (scale >= 1) {
+        return originalToDataUrl.call(this, type, quality);
+      }
+
+      const preview = document.createElement('canvas');
+      preview.width = Math.max(1, Math.round((this.width || this.clientWidth || maxCaptureWidth) * scale));
+      preview.height = Math.max(1, Math.round((this.height || this.clientHeight || maxCaptureWidth) * scale));
+      const previewCtx = preview.getContext('2d');
+      if (!previewCtx) {
+        return originalToDataUrl.call(this, type, quality);
+      }
+      previewCtx.drawImage(this, 0, 0, preview.width, preview.height);
+      return originalToDataUrl.call(preview, type, quality);
+    };
+  }
+
   // Check for auto-save and show home page
   errorHandler.safeExecute(() => {
+    if (shouldAutoStartSandbox) {
+      const homePage = domCache.get('homePage') || document.getElementById('home-page');
+      setElementHidden(homePage, true);
+      setHomePageActive(false);
+      startNewGame();
+      return;
+    }
+
     // Always show home page first (handles both new game and continue)
     showHomePage();
   }, 'Startup logic', () => startNewGame());
@@ -1457,6 +1504,11 @@ export function initializeApp() {
       paused: gameState.paused
     };
   };
+
+  if (shouldAutoStartSandbox) {
+    window.__creatureSmokeAdvanceTime = advanceTime;
+    window.__creatureSmokeReady = true;
+  }
 
   // ============================================================================
   // START GAME LOOP
