@@ -1,5 +1,5 @@
 import { clamp } from './utils.js';
-import { RendererConfig } from './renderer-config.js';
+import { RendererConfig } from './renderer-config.js?v=20260423-contrast3';
 import { RendererFeatureManager } from './renderer-features.js';
 import { RendererPerformanceMonitor } from './renderer-performance.js';
 import { getDebugFlags } from './debug-flags.js';
@@ -17,7 +17,7 @@ import {
   drawWindStreaks,
   drawDecoration,
   getBiomeTint
-} from './renderer-biome.js';
+} from './renderer-biome.js?v=20260423-contrast3';
 import { drawWeatherEffects } from './renderer-weather.js';
 
 // SPLIT: biome and weather rendering extracted to renderer-biome.js / renderer-weather.js

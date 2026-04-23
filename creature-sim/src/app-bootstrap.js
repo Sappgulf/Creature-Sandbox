@@ -8,14 +8,14 @@ import { Creature } from './creature.js';
 import './creature-features.js'; // Load feature extensions
 import { makeGenes } from './genetics.js';
 import { Camera } from './camera.js';
-import { Renderer } from './renderer.js';
+import { Renderer } from './renderer.js?v=20260423-contrast3';
 import { ToolController } from './tools.js';
 import { AnalyticsTracker } from './analytics.js';
 import { LineageTracker } from './lineage-tracker.js';
 import { MiniGraphs } from './mini-graphs.js';
 import { SaveSystem } from './save-system.js';
 import { ParticleSystem } from './particle-system.js';
-import { NotificationSystem } from './notification-system.js';
+import { NotificationSystem } from './notification-system.js?v=20260423-contrast3';
 import { HeatmapSystem } from './heatmap-system.js';
 import { GeneEditor } from './gene-editor.js';
 import { EcosystemHealth } from './ecosystem-health.js';

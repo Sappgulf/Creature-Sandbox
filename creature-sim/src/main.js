@@ -1,4 +1,4 @@
-import { initializeApp } from './app-bootstrap.js';
+import { initializeApp } from './app-bootstrap.js?v=20260423-contrast3';
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeApp);

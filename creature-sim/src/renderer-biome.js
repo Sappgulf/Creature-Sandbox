@@ -2,26 +2,26 @@ import { clamp } from './utils.js';
 import { assetLoader } from './asset-loader.js';
 
 const biomeColors = {
-  forest: [72, 96, 84],
-  desert: [150, 118, 84],
-  tundra: [122, 137, 156],
-  swamp: [74, 102, 97],
-  ocean: [62, 98, 132],
-  mountain: [111, 102, 96],
-  jungle: [74, 112, 98],
-  savanna: [148, 133, 89],
-  meadow: [129, 143, 104],
-  grassland: [114, 124, 92],
-  water: [76, 112, 146],
-  wetland: [86, 122, 111]
+  forest: [36, 68, 58],
+  desert: [98, 76, 46],
+  tundra: [70, 86, 108],
+  swamp: [34, 72, 66],
+  ocean: [28, 62, 104],
+  mountain: [74, 66, 62],
+  jungle: [34, 78, 66],
+  savanna: [96, 86, 48],
+  meadow: [72, 94, 60],
+  grassland: [62, 82, 52],
+  water: [34, 74, 116],
+  wetland: [42, 82, 74]
 };
 
 export function getSeasonalGroundTint(season, phase) {
   const tintFactors = {
-    spring: { r: 0.03, g: 0.05, b: -0.02 },
-    summer: { r: 0.05, g: 0.02, b: -0.03 },
-    autumn: { r: 0.08, g: -0.03, b: -0.05 },
-    winter: { r: -0.05, g: -0.02, b: 0.08 }
+    spring: { r: 0.01, g: 0.02, b: -0.01 },
+    summer: { r: 0.02, g: 0.01, b: -0.01 },
+    autumn: { r: 0.03, g: -0.01, b: -0.02 },
+    winter: { r: -0.02, g: -0.01, b: 0.03 }
   };
 
   const t = tintFactors[season];
@@ -66,9 +66,9 @@ export function drawBiomeGround(renderer, ctx, world) {
     bounds.x2,
     bounds.y2
   );
-  atmosphereGradient.addColorStop(0, 'rgba(248, 218, 178, 0.18)');
-  atmosphereGradient.addColorStop(0.45, 'rgba(142, 163, 191, 0.08)');
-  atmosphereGradient.addColorStop(1, 'rgba(52, 64, 88, 0.14)');
+  atmosphereGradient.addColorStop(0, 'rgba(40, 64, 92, 0.12)');
+  atmosphereGradient.addColorStop(0.48, 'rgba(5, 8, 18, 0.04)');
+  atmosphereGradient.addColorStop(1, 'rgba(0, 0, 0, 0.16)');
   ctx.fillStyle = atmosphereGradient;
   ctx.fillRect(
     bounds.x1 - extendAmount,
@@ -81,7 +81,7 @@ export function drawBiomeGround(renderer, ctx, world) {
   // checkerboard look of one-fill-per-cell terrain blocks.
   if (world.getBiomeAt && renderer.camera.zoom > 0.18) {
     const sampleSpacing = Math.max(110, 250 / renderer.camera.zoom);
-    const overlayAlpha = clamp(0.2 + renderer.camera.zoom * 0.13, 0.2, 0.32);
+    const overlayAlpha = clamp(0.08 + renderer.camera.zoom * 0.08, 0.08, 0.18);
     const influenceRadius = sampleSpacing * 0.92;
     const startX = Math.floor(bounds.x1 / sampleSpacing) * sampleSpacing;
     const startY = Math.floor(bounds.y1 / sampleSpacing) * sampleSpacing;
@@ -367,10 +367,10 @@ export function drawSeasonOverlay(renderer, ctx, world) {
   const phase = world.seasonPhase || 0;
 
   const seasonColors = {
-    spring: { r: 255, g: 214, b: 168, baseAlpha: 0.035 },
-    summer: { r: 255, g: 196, b: 118, baseAlpha: 0.04 },
-    autumn: { r: 214, g: 124, b: 68, baseAlpha: 0.055 },
-    winter: { r: 187, g: 214, b: 240, baseAlpha: 0.08 }
+    spring: { r: 128, g: 202, b: 180, baseAlpha: 0.018 },
+    summer: { r: 246, g: 196, b: 118, baseAlpha: 0.02 },
+    autumn: { r: 214, g: 124, b: 68, baseAlpha: 0.026 },
+    winter: { r: 150, g: 190, b: 240, baseAlpha: 0.034 }
   };
 
   const seasonOrder = ['spring', 'summer', 'autumn', 'winter'];

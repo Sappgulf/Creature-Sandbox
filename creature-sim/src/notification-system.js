@@ -20,6 +20,7 @@ export class NotificationSystem {
     this.showAchievements = true;
     this.maxVisible = 3;
     this.defaultDuration = 2500;
+    this.renderDomToasts = false;
     this.queue = [];
   }
 
@@ -124,6 +125,7 @@ export class NotificationSystem {
 
   _createDomToast(notif) {
     if (typeof document === 'undefined') return;
+    if (!this.renderDomToasts) return;
     let container = document.getElementById('toast-container');
     if (!container) {
       container = document.createElement('div');
@@ -236,15 +238,16 @@ export class NotificationSystem {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-    // Position at top center - less intrusive, out of gameplay area
-    const startY = 100;
-    const spacing = 44;  // Tighter spacing for compact pills
+    const compactViewport = viewportWidth <= 520;
+    const visibleCount = Math.min(this.notifications.length, compactViewport ? 2 : this.maxVisible);
+    const startY = compactViewport ? 72 : 100;
+    const spacing = compactViewport ? 36 : 44;
 
-    for (let i = 0; i < this.notifications.length; i++) {
+    for (let i = 0; i < visibleCount; i++) {
       const notif = this.notifications[i];
       const y = startY + (i * spacing);
 
-      this._drawNotification(ctx, notif, viewportWidth / 2, y);
+      this._drawNotification(ctx, notif, viewportWidth / 2, y, viewportWidth);
     }
 
     ctx.restore();
@@ -260,7 +263,7 @@ export class NotificationSystem {
     ctx.closePath();
   }
 
-  _drawNotification(ctx, notif, x, y) {
+  _drawNotification(ctx, notif, x, y, viewportWidth = 1024) {
     ctx.save();
     ctx.globalAlpha = notif.opacity * 0.95;
 
@@ -269,9 +272,10 @@ export class NotificationSystem {
     y += slideOffset;
 
     // Compact pill design
-    const width = 260;
-    const height = 38;
-    const radius = 19;
+    const compactViewport = viewportWidth <= 520;
+    const width = compactViewport ? Math.min(236, viewportWidth - 96) : 260;
+    const height = compactViewport ? 34 : 38;
+    const radius = height / 2;
 
     // Enhanced colors with better contrast
     const colors = {
@@ -307,14 +311,14 @@ export class NotificationSystem {
 
     // Combined title + message on single line
     ctx.fillStyle = color.text;
-    ctx.font = '600 13px system-ui, -apple-system, sans-serif';
+    ctx.font = `${compactViewport ? '600 12px' : '600 13px'} system-ui, -apple-system, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
     const displayText = notif.title
       ? `${notif.title} ${notif.message}`.trim()
       : notif.message;
-    ctx.fillText(displayText, x, y);
+    ctx.fillText(displayText, x, y, width - 28);
 
     ctx.restore();
   }

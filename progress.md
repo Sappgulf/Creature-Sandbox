@@ -129,3 +129,18 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - `npm test` ✅ (147 passing)
 - `npm run build` ✅
 - In-app browser: fresh New Sandbox path completed with 0 recent console errors; final gameplay screenshot confirmed sprite rendering at the start camera scale.
+- New request: continue UI/UX polish, make the gameplay background clean/black for asset readability, test in the in-app browser, then commit and push.
+- Implemented a high-contrast world pass:
+- renderer base background is now near-black, with biome/season overlays reduced to restrained low-alpha glows so sprites, food, and particle cues stay readable.
+- cache-busted the static CSS/module entrypoints touched by the pass so the local static server and deployed browsers pick up the updated presentation cleanly.
+- Implemented mobile/web UX cleanup:
+- mobile home screen now keeps the feature cards compact and keeps Continue/New Sandbox visible side-by-side on narrow viewports.
+- compact gameplay hides the empty selected-creature card until an actual creature is selected, leaving the stats row and tool hint without crowding the playfield.
+- notifications now render as a compact canvas stack only; the duplicate visible DOM toast path is disabled to stop startup messages from piling up over gameplay.
+- Verification after contrast/mobile pass:
+- `git diff --check` ✅
+- `npx eslint creature-sim/src/app-bootstrap.js creature-sim/src/main.js creature-sim/src/renderer.js creature-sim/src/renderer-biome.js creature-sim/src/renderer-config.js creature-sim/src/notification-system.js` ✅
+- `npm test` ✅ (147 passing)
+- `npm run build` ✅
+- In-app browser: cache-busted home and fresh New Sandbox flows checked in the open browser; final compact gameplay screenshot had a black readable field, no duplicate DOM toast, and 0 recent warning/error logs.
+- `web_game_playwright_client.js` was attempted against the live local server but hung before producing artifacts; the hung process was stopped.
