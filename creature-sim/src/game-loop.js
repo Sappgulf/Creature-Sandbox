@@ -138,6 +138,7 @@ export class GameLoop {
     // STABILITY: Watchdog to detect if game loop stops
     this._lastLoopTime = 0;
     this._watchdogInterval = null;
+    this._watchdogMisses = 0;
 
     // Profiling report controls
     this.profileReportEnabled = !!configManager.get('performance', 'profiling.enabled', false);
@@ -362,9 +363,16 @@ export class GameLoop {
 
       // If more than 3 seconds have passed since last loop, something is wrong
       if (elapsed > 3000 && gameState.isReady()) {
-        console.warn('⚠️ Game loop watchdog: Loop appears stalled, attempting restart...');
+        this._watchdogMisses += 1;
+        if (this._watchdogMisses >= 2) {
+          console.warn('⚠️ Game loop watchdog: Loop appears stalled, attempting restart...');
+        } else {
+          console.debug('Game loop watchdog recovered a delayed frame.');
+        }
         this._lastLoopTime = now;
         requestAnimationFrame(this.boundLoop);
+      } else {
+        this._watchdogMisses = 0;
       }
     }, 2000);
   }
@@ -385,6 +393,7 @@ export class GameLoop {
    * STABILITY: Added defensive guards to prevent crashes
    */
   loop(now) {
+    this._watchdogMisses = 0;
     // PERFORMANCE: Skip frames when tab is hidden
     if (!this._isVisible) {
       requestAnimationFrame(this.boundLoop);

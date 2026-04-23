@@ -3,6 +3,7 @@
 // OPTIMIZED: Uses object pooling to reduce GC pressure
 
 import { poolManager } from './object-pool.js';
+import { assetLoader } from './asset-loader.js?v=20260423-assets1';
 
 export class ParticleSystem {
   constructor() {
@@ -1159,6 +1160,49 @@ export class ParticleSystem {
     this.particles.push(p);
   }
 
+  _getParticleSpriteFrame(p) {
+    const sprite = assetLoader.getSpriteFramesSync('particle_sparkle', { size: 32 });
+    if (!sprite) {
+      assetLoader.requestSpriteFrames('particle_sparkle', { size: 32 }).catch((error) => {
+        console.debug('[ParticleSystem] particle sprite load failed:', error);
+      });
+      return null;
+    }
+
+    const groupBaseByType = {
+      sparkle: 0,
+      food: 0,
+      evolution: 0,
+      heal: 4,
+      play: 4,
+      dust: 8,
+      blood: 8,
+      venom: 8,
+      ring: 12,
+      puff: 12,
+      fade: 12,
+      elder: 12,
+      ripple: 12
+    };
+    const base = groupBaseByType[p.category] ?? groupBaseByType[p.type];
+    if (base === undefined) return null;
+
+    const progress = p.maxLife > 0 ? 1 - Math.max(0, Math.min(1, p.life / p.maxLife)) : 0;
+    const offset = Math.min(3, Math.max(0, Math.floor(progress * 4)));
+    const frame = sprite.frames[(base + offset) % sprite.frames.length] || sprite.frames[base] || sprite.frames[0];
+    return frame ? { frame, anchor: sprite.anchor || { x: 0.5, y: 0.5 } } : null;
+  }
+
+  _drawParticleSprite(ctx, p, scale = 1) {
+    const sprite = this._getParticleSpriteFrame(p);
+    if (!sprite) return false;
+    const size = Math.max(6, (p.size || 2) * 4 * scale);
+    const anchorX = Number.isFinite(Number(sprite.anchor.x)) ? Number(sprite.anchor.x) : 0.5;
+    const anchorY = Number.isFinite(Number(sprite.anchor.y)) ? Number(sprite.anchor.y) : 0.5;
+    ctx.drawImage(sprite.frame, p.x - size * anchorX, p.y - size * anchorY, size, size);
+    return true;
+  }
+
   draw(ctx, _camera = null) {
     // Camera parameter is optional - particles are drawn in world space
     // If camera transform is needed, it should be applied before calling draw
@@ -1170,10 +1214,12 @@ export class ParticleSystem {
         ctx.save();
         ctx.shadowColor = p.color;
         ctx.shadowBlur = 6;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
+        if (!this._drawParticleSprite(ctx, p, 1.05)) {
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
         ctx.restore();
       } else if (p.type === 'ring') {
         // Expanding ring
@@ -1184,10 +1230,12 @@ export class ParticleSystem {
         ctx.stroke();
       } else if (p.type === 'dust') {
         // Dust cloud particles
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
+        if (!this._drawParticleSprite(ctx, p, 1.1)) {
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
       } else if (p.type === 'gravestone') {
         // Draw gravestone symbol
         const fadeIn = p.fadeInTime ? Math.min(1, (p.maxLife - p.life) / p.fadeInTime) : 1;
@@ -1234,19 +1282,23 @@ export class ParticleSystem {
         ctx.save();
         ctx.shadowColor = p.color;
         ctx.shadowBlur = 5;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
+        if (!this._drawParticleSprite(ctx, p, 1)) {
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
         ctx.restore();
       } else if (p.type === 'evolution') {
         ctx.save();
         ctx.shadowColor = p.color;
         ctx.shadowBlur = 12;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
+        if (!this._drawParticleSprite(ctx, p, 1.25)) {
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
         ctx.restore();
       } else if (p.type === 'heal') {
         ctx.fillStyle = p.color;
@@ -1303,10 +1355,12 @@ export class ParticleSystem {
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.stroke();
       } else if (p.type === 'venom') {
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
+        if (!this._drawParticleSprite(ctx, p, 1)) {
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
       } else if (p.type === 'weather') {
         // Enhanced weather particle rendering using category
         if (p.category === 'rain') {
@@ -1375,10 +1429,12 @@ export class ParticleSystem {
         }
         ctx.globalAlpha = 1;
       } else if (p.type === 'play') {
-        ctx.fillStyle = `rgba(154,217,255,${p.opacity})`;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
+        if (!this._drawParticleSprite(ctx, p, 1)) {
+          ctx.fillStyle = `rgba(154,217,255,${p.opacity})`;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
       } else if (p.type === 'elder') {
         const gradient = ctx.createRadialGradient(p.x, p.y, p.size * 0.1, p.x, p.y, p.size);
         gradient.addColorStop(0, `rgba(255,245,200,${p.opacity})`);

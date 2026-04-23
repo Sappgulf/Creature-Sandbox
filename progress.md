@@ -144,3 +144,18 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - `npm run build` ✅
 - In-app browser: cache-busted home and fresh New Sandbox flows checked in the open browser; final compact gameplay screenshot had a black readable field, no duplicate DOM toast, and 0 recent warning/error logs.
 - `web_game_playwright_client.js` was attempted against the live local server but hung before producing artifacts; the hung process was stopped.
+- New request: ensure the correct creature, environment, food, prop, and particle assets are wired everywhere, keep polishing, then commit and push.
+- Asset wiring pass:
+- manifest anchors now flow through prepared sprite sets, so runtime sprite placement can respect each asset's intended origin.
+- food, sandbox props, and biome decorations now draw using manifest anchors instead of always center/bottom guessing.
+- particle_sparkle is now used for sparkle, dust, food/evolution burst, venom, and play particles with procedural fallbacks still intact.
+- added a core test that validates every runtime creature/environment/food/prop/particle manifest key exists, has frame metadata, has anchors, and points to a real file.
+- Polished the game-loop watchdog to recover a single delayed browser frame quietly and warn only on repeated stalls.
+- Verification after asset wiring pass:
+- `git diff --check` ✅
+- `npx eslint creature-sim/src/asset-loader.js creature-sim/src/renderer.js creature-sim/src/renderer-biome.js creature-sim/src/particle-system.js creature-sim/src/creature.js creature-sim/src/creature-render.js creature-sim/src/game-loop.js creature-sim/src/app-bootstrap.js` ✅
+- `npm test` ✅ (148 passing)
+- `npm run build` ✅
+- In-app browser desktop: fresh New Sandbox had a nonblank 1200x800 canvas, 29 loaded sprite entries, 0 missing runtime asset keys, and 0 recent app errors.
+- In-app browser mobile: 390x844 New Sandbox had a nonblank canvas, 29 loaded sprite entries, no recent app errors, and compact visible controls.
+- `web_game_playwright_client.js` was attempted with generic and targeted New Sandbox click selectors; both runs stalled and were stopped after Playwright failed/hung, matching the known local-client issue from the previous pass.

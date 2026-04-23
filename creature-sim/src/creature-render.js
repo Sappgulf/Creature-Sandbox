@@ -1,7 +1,7 @@
 import { clamp } from './utils.js';
 import { CreatureConfig } from './creature-config.js';
 import { ECOSYSTEM_STATES } from './creature-ecosystem.js';
-import { assetLoader } from './asset-loader.js';
+import { assetLoader } from './asset-loader.js?v=20260423-assets1';
 import { getDebugFlags } from './debug-flags.js';
 
 import { getAgeStageIcon, getElderFadeAlpha } from './creature-age.js';

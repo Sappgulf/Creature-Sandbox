@@ -1,9 +1,9 @@
 import { clamp } from './utils.js';
-import { RendererConfig } from './renderer-config.js?v=20260423-contrast3';
+import { RendererConfig } from './renderer-config.js?v=20260423-assets1';
 import { RendererFeatureManager } from './renderer-features.js';
 import { RendererPerformanceMonitor } from './renderer-performance.js';
 import { getDebugFlags } from './debug-flags.js';
-import { assetLoader } from './asset-loader.js';
+import { assetLoader } from './asset-loader.js?v=20260423-assets1';
 import { applyFeatureVizMethods } from './renderer-features-viz.js';
 import { applyMinimapMethods } from './renderer-minimap.js';
 import { applyCreatureMethods } from './renderer-creatures.js';
@@ -17,7 +17,7 @@ import {
   drawWindStreaks,
   drawDecoration,
   getBiomeTint
-} from './renderer-biome.js?v=20260423-contrast3';
+} from './renderer-biome.js?v=20260423-assets1';
 import { drawWeatherEffects } from './renderer-weather.js';
 
 // SPLIT: biome and weather rendering extracted to renderer-biome.js / renderer-weather.js
@@ -617,9 +617,11 @@ export class Renderer {
     return null;
   }
 
-  _drawSpriteAt(frame, x, y, size) {
+  _drawSpriteAt(frame, x, y, size, anchor = null) {
     if (!frame || !size || size <= 0) return;
-    this.ctx.drawImage(frame, x - size * 0.5, y - size * 0.5, size, size);
+    const anchorX = Number.isFinite(Number(anchor?.x)) ? Number(anchor.x) : 0.5;
+    const anchorY = Number.isFinite(Number(anchor?.y)) ? Number(anchor.y) : 0.5;
+    this.ctx.drawImage(frame, x - size * anchorX, y - size * anchorY, size, size);
   }
 
   _shouldUseFoodSprites(visibleFoodCount) {
@@ -690,7 +692,7 @@ export class Renderer {
       ctx.save();
       ctx.shadowBlur = 6 + pulse * 4;
       ctx.shadowColor = glowColors[type] || glowColors.grass;
-      this._drawSpriteAt(frame, f.x, f.y, drawSize);
+      this._drawSpriteAt(frame, f.x, f.y, drawSize, sprite.anchor);
       ctx.restore();
 
       if (type === 'golden_fruit') {
@@ -744,12 +746,14 @@ export class Renderer {
       this.ctx.save();
       this.ctx.translate(prop.x, prop.y);
       this.ctx.rotate(angle);
-      this.ctx.drawImage(frame, -drawSize * 0.5, -drawSize * 0.5, drawSize, drawSize);
+      const anchorX = Number.isFinite(Number(sprite.anchor?.x)) ? Number(sprite.anchor.x) : 0.5;
+      const anchorY = Number.isFinite(Number(sprite.anchor?.y)) ? Number(sprite.anchor.y) : 0.5;
+      this.ctx.drawImage(frame, -drawSize * anchorX, -drawSize * anchorY, drawSize, drawSize);
       this.ctx.restore();
       return true;
     }
 
-    this._drawSpriteAt(frame, prop.x, prop.y, drawSize);
+    this._drawSpriteAt(frame, prop.x, prop.y, drawSize, sprite.anchor);
     return true;
   }
 

@@ -13,6 +13,18 @@ function clampPositiveInt(value, fallback = 1) {
   return Math.max(1, Math.floor(parsed));
 }
 
+function normalizePoint(value, fallback = { x: 0.5, y: 0.5 }) {
+  if (!value || typeof value !== 'object') return { ...fallback };
+  const rawX = Array.isArray(value) ? value[0] : value.x;
+  const rawY = Array.isArray(value) ? value[1] : value.y;
+  const x = Number(rawX);
+  const y = Number(rawY);
+  return {
+    x: Number.isFinite(x) ? Math.min(1, Math.max(0, x)) : fallback.x,
+    y: Number.isFinite(y) ? Math.min(1, Math.max(0, y)) : fallback.y
+  };
+}
+
 function normalizeAnimationClip(rawClip, frameCount, defaultFps) {
   if (!rawClip) return null;
 
@@ -168,6 +180,8 @@ export class AssetLoader {
     const defaultAnimation = rawConfig.defaultAnimation || rawConfig.default || 'idle';
     const tintable = rawConfig.tintable === true || rawConfig.tint === true;
     const format = String(rawConfig.format || path.split('.').pop() || 'svg').toLowerCase();
+    const anchor = normalizePoint(rawConfig.anchor, { x: 0.5, y: 0.5 });
+    const pivot = normalizePoint(rawConfig.pivot, anchor);
 
     const sourceWidth = clampPositiveInt(rawConfig.sheetWidth ?? rawConfig.widthTotal ?? (frameWidth * framesHint), frameWidth);
     const sourceHeight = clampPositiveInt(rawConfig.sheetHeight ?? rawConfig.heightTotal ?? frameHeight, frameHeight);
@@ -204,6 +218,8 @@ export class AssetLoader {
       fps,
       defaultAnimation,
       animations,
+      anchor,
+      pivot,
       sourceWidth,
       sourceHeight,
       image: null,
@@ -484,6 +500,8 @@ export class AssetLoader {
       fps: sheet?.fps ?? DEFAULT_SPRITE_FPS,
       defaultAnimation: sheet?.defaultAnimation || 'idle',
       animations: sheet?.animations || null,
+      anchor: normalizePoint(sheet?.anchor, { x: 0.5, y: 0.5 }),
+      pivot: normalizePoint(sheet?.pivot, sheet?.anchor || { x: 0.5, y: 0.5 }),
       frames
     };
   }
@@ -502,6 +520,8 @@ export class AssetLoader {
       frameCount: 1,
       fps: DEFAULT_SPRITE_FPS,
       defaultAnimation: 'idle',
+      anchor: { x: 0.5, y: 0.5 },
+      pivot: { x: 0.5, y: 0.5 },
       animations: {
         idle: { start: 0, count: 1, fps: DEFAULT_SPRITE_FPS, loop: true, pingPong: false }
       },

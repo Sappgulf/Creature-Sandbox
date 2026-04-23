@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { performance as nodePerformance } from 'node:perf_hooks';
+import { fileURLToPath } from 'node:url';
 
 if (!globalThis.performance) {
   globalThis.performance = nodePerformance;
@@ -18,6 +21,7 @@ import { AdvancedGenetics } from '../creature-sim/src/advanced-genetics.js';
 
 let passed = 0;
 let failed = 0;
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function test(name, fn) {
   try {
@@ -1253,6 +1257,63 @@ test('Creature: deserialize restores key properties', () => {
   assert.equal(parsed.y, 100);
   assert.equal(parsed.alive, true);
   assert.ok(parsed.energy > 0, 'energy should be positive');
+});
+
+// ============================================================================
+// Asset manifest
+// ============================================================================
+console.log('\n=== Asset manifest ===');
+
+test('Sprite manifest: runtime asset keys are present and point to files', () => {
+  const manifestPath = path.join(repoRoot, 'creature-sim/assets/sprites/sprite-manifest.json');
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  const entries = Array.isArray(manifest.sprites) ? manifest.sprites : [];
+  const byKey = new Map(entries.map(entry => [entry.key, entry]));
+  const expectedKeys = [
+    'creature_herbivore',
+    'creature_omnivore',
+    'creature_predator',
+    'creature_baby',
+    'creature_elder',
+    'creature_alpha',
+    'creature_aquatic',
+    'creature_flying',
+    'creature_burrowing',
+    'env_trees',
+    'env_rocks',
+    'env_flowers',
+    'env_seasonal',
+    'particle_sparkle',
+    'food_grass',
+    'food_berries',
+    'food_fruit',
+    'food_golden_fruit',
+    'prop_bounce',
+    'prop_spring',
+    'prop_spinner',
+    'prop_seesaw',
+    'prop_conveyor',
+    'prop_slope',
+    'prop_fan',
+    'prop_sticky',
+    'prop_gravity',
+    'prop_button',
+    'prop_launch'
+  ];
+
+  const missingKeys = expectedKeys.filter(key => !byKey.has(key));
+  assert.deepEqual(missingKeys, []);
+
+  for (const key of expectedKeys) {
+    const entry = byKey.get(key);
+    assert.ok(entry.path, `${key} should declare a path`);
+    assert.ok(fs.existsSync(path.join(repoRoot, 'creature-sim', entry.path)), `${key} asset file should exist`);
+    assert.ok(Number(entry.frameCount) > 0, `${key} should declare frameCount`);
+    assert.ok(Number(entry.frameWidth) > 0, `${key} should declare frameWidth`);
+    assert.ok(Number(entry.frameHeight) > 0, `${key} should declare frameHeight`);
+    assert.ok(Number.isFinite(Number(entry.anchor?.x)), `${key} should declare anchor.x`);
+    assert.ok(Number.isFinite(Number(entry.anchor?.y)), `${key} should declare anchor.y`);
+  }
 });
 
 // ============================================================================

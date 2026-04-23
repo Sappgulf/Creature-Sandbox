@@ -1,5 +1,5 @@
 import { clamp } from './utils.js';
-import { assetLoader } from './asset-loader.js';
+import { assetLoader } from './asset-loader.js?v=20260423-assets1';
 
 const biomeColors = {
   forest: [36, 68, 58],
@@ -562,7 +562,10 @@ export function drawDecorationFromSprite(renderer, ctx, dec, spriteInfo, assetKe
 
   const frame = assetLoader.getSpriteFrameSync(assetKey, spriteIndex, frameWidth, dec.hue);
   if (frame) {
-    ctx.drawImage(frame, -frameWidth / 2, -frameHeight);
+    const anchor = spriteInfo.anchor || { x: 0.5, y: 1 };
+    const anchorX = Number.isFinite(Number(anchor.x)) ? Number(anchor.x) : 0.5;
+    const anchorY = Number.isFinite(Number(anchor.y)) ? Number(anchor.y) : 1;
+    ctx.drawImage(frame, -frameWidth * anchorX, -frameHeight * anchorY);
   } else {
     ctx.restore();
     drawDecorationFallback(renderer, ctx, dec, world);
