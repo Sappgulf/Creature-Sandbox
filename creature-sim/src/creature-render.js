@@ -1135,7 +1135,9 @@ export function drawCreature(creature, ctx, opts = {}) {
     eatScale = 1 + Math.sin(eatPhase) * 0.15;
   }
 
-  const renderSize = r * 5 * eatScale;
+  const zoom = Math.max(0.01, opts.zoom || 1);
+  const minimumSpriteScreenSize = (isSelected || isPinned) ? 22 : 14;
+  const renderSize = Math.max(r * 5 * eatScale, minimumSpriteScreenSize / zoom);
   const spriteFrame = getCachedSpriteFrame(creature, worldTime, renderSize);
   if (spriteFrame) {
     ctx.drawImage(spriteFrame, -renderSize / 2, -renderSize / 2, renderSize, renderSize);

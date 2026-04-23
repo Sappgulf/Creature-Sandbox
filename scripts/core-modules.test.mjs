@@ -14,6 +14,7 @@ import { updateAgeStage, updateLifeStage, getAgeSizeMultiplier, getAgeSpeedMulti
 import { NAME_SUGGESTIONS, pickNameSuggestion, determineSenseType, resolveDietRole, calculateAttractiveness, pickDesiredTraits } from '../creature-sim/src/creature-genetics-helpers.js';
 import { World } from '../creature-sim/src/world-core.js';
 import { Creature } from '../creature-sim/src/creature.js';
+import { AdvancedGenetics } from '../creature-sim/src/advanced-genetics.js';
 
 let passed = 0;
 let failed = 0;
@@ -314,6 +315,22 @@ test('applyDisorderEffects: disorders modify expressed genes', () => {
   const result = applyDisorderEffects(genes);
   assert.equal(result.hue.expressed, 0);
   assert.ok(result.sense.expressed <= originalSense, 'ALBINISM should reduce sense');
+});
+
+test('AdvancedGenetics: rare color mutation preserves diploid spawn compatibility', () => {
+  const originalRandom = Math.random;
+  const randomValues = [0.5, 0.5, 0];
+  Math.random = () => randomValues.shift() ?? 0.5;
+
+  try {
+    const genes = makeGenes({ predator: 0 });
+    AdvancedGenetics.applyRareMutations(genes, 1);
+    genes.disorders = ['ALBINISM'];
+    assert.doesNotThrow(() => new Creature(10, 20, genes));
+    assert.equal(genes.hue.expressed, 0);
+  } finally {
+    Math.random = originalRandom;
+  }
 });
 
 test('getExpressedGenes: returns simplified gene object', () => {

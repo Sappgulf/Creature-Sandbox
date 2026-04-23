@@ -182,7 +182,7 @@
         "x": 0.5,
         "y": 0.5
       },
-      "notes": "Environmental tree sprites: forest oak, pine, autumn tree, bush, winter pine, cherry blossom, dead tree, palm."
+      "notes": "Environmental tree sprites: forest oak, pine, autumn tree, bush, winter pine, blossom, deadwood, wetland tree."
     },
     {
       "key": "env_rocks",
@@ -200,7 +200,7 @@
         "x": 0.5,
         "y": 0.5
       },
-      "notes": "Environmental rock sprites: boulder, stone, rock cluster, flat rock, mossy rock, crystal, stump, standing stone."
+      "notes": "Environmental rock sprites: boulder, stone, rock cluster, flat rock, mossy rock, crystal, stump-like stone, standing stone."
     },
     {
       "key": "env_flowers",
@@ -230,13 +230,13 @@
       "fps": 0,
       "anchor": {
         "x": 0.5,
-        "y": 0.9
+        "y": 0.95
       },
       "pivot": {
         "x": 0.5,
         "y": 0.5
       },
-      "notes": "Seasonal decorations: autumn leaves (maple, oak, gold), falling leaves, snowflake, snow pile, ice crystal, flower bud."
+      "notes": "Seasonal decorations: autumn leaves, snowflakes, snow piles, ice crystals, and spring buds."
     },
     {
       "key": "particle_sparkle",
@@ -254,7 +254,7 @@
         "x": 0.5,
         "y": 0.5
       },
-      "notes": "Particle sprites: sparkles (star, round, diamond, cross), hearts (classic, small, bouncy), dust (cloud, dirt, smoke), bursts, rings, ZZZ."
+      "notes": "Particle sprites: sparkles, hearts, dust puffs, and energy rings."
     },
     {
       "key": "food_grass",

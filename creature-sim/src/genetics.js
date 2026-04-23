@@ -274,7 +274,11 @@ export function applyDisorderEffects(genes) {
       const multiplier = effects[trait];
 
       if (trait === 'hue') {
-        modifiedGenes.hue.expressed = multiplier;
+        if (modifiedGenes.hue && typeof modifiedGenes.hue === 'object' && 'expressed' in modifiedGenes.hue) {
+          modifiedGenes.hue.expressed = multiplier;
+        } else {
+          modifiedGenes.hue = multiplier;
+        }
       } else if (trait === 'size' || trait === 'health') {
         // These are applied in creature.js
         modifiedGenes[trait + 'Modifier'] = multiplier;

@@ -3,6 +3,30 @@
  */
 
 export class AdvancedGenetics {
+  static _readTraitValue(genes, trait, fallback) {
+    const value = genes?.[trait];
+    if (value && typeof value === 'object' && 'expressed' in value) {
+      return Number.isFinite(value.expressed) ? value.expressed : fallback;
+    }
+    return Number.isFinite(value) ? value : fallback;
+  }
+
+  static _writeTraitValue(genes, trait, value) {
+    const target = genes?.[trait];
+    if (target && typeof target === 'object' && 'expressed' in target) {
+      target.expressed = value;
+      if ('allele1' in target) target.allele1 = value;
+      if ('allele2' in target) target.allele2 = value;
+      return;
+    }
+    genes[trait] = value;
+  }
+
+  static _multiplyTraitValue(genes, trait, fallback, multiplier) {
+    const current = AdvancedGenetics._readTraitValue(genes, trait, fallback);
+    AdvancedGenetics._writeTraitValue(genes, trait, current * multiplier);
+  }
+
   /**
    * Rare mutation system - special genetic variants
    */
@@ -13,7 +37,7 @@ export class AdvancedGenetics {
     if (Math.random() < 0.01 * mutationRate) {
       genes.gigantism = true;
       genes.size = (genes.size ?? 6) * 1.5;
-      genes.metabolism = (genes.metabolism ?? 1) * 0.8; // Slower metabolism
+      AdvancedGenetics._multiplyTraitValue(genes, 'metabolism', 1, 0.8); // Slower metabolism
       mutations.push({ name: 'Gigantism', type: 'size', rarity: 'rare' });
     }
 
@@ -21,14 +45,14 @@ export class AdvancedGenetics {
     if (Math.random() < 0.01 * mutationRate && !genes.gigantism) {
       genes.dwarfism = true;
       genes.size = (genes.size ?? 6) * 0.6;
-      genes.metabolism = (genes.metabolism ?? 1) * 1.3; // Faster metabolism
+      AdvancedGenetics._multiplyTraitValue(genes, 'metabolism', 1, 1.3); // Faster metabolism
       mutations.push({ name: 'Dwarfism', type: 'size', rarity: 'rare' });
     }
 
     // Albinism - 2% chance (pure white coloration)
     if (Math.random() < 0.02 * mutationRate) {
       genes.albinism = true;
-      genes.hue = 0;
+      AdvancedGenetics._writeTraitValue(genes, 'hue', 0);
       genes.saturation = 0;
       mutations.push({ name: 'Albinism', type: 'color', rarity: 'rare' });
     }
@@ -93,7 +117,11 @@ export class AdvancedGenetics {
     // Super Senses - 2% chance
     if (Math.random() < 0.02 * mutationRate) {
       genes.superSenses = true;
-      genes.sense = Math.min(300, (genes.sense ?? 100) * 1.8);
+      AdvancedGenetics._writeTraitValue(
+        genes,
+        'sense',
+        Math.min(300, AdvancedGenetics._readTraitValue(genes, 'sense', 100) * 1.8)
+      );
       mutations.push({ name: 'Super Senses', type: 'perception', rarity: 'uncommon' });
     }
 

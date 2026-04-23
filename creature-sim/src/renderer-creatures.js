@@ -128,7 +128,7 @@ export function applyCreatureMethods(Renderer) {
       };
 
       // PERFORMANCE: Level of Detail (LOD) handling
-      if (zoom < 0.25 && !isSelected && !isPinned) {
+      if (zoom < 0.05 && !isSelected && !isPinned) {
         // ULTRA LOW LOD: Colored dot with outline, sized by creature
         const hue = clusterHue ?? c.genes?.hue ?? 0;
         const creatureR = ((c.energy || 40) / 40) * (3 + (c.size || 5));
@@ -141,8 +141,8 @@ export function applyCreatureMethods(Renderer) {
         ctx.strokeStyle = `hsl(${hue}, 60%, 85%)`;
         ctx.lineWidth = 1;
         ctx.stroke();
-      } else if (zoom < 0.6 && !isSelected && !isPinned) {
-        // MEDIUM LOD: Simplified shape (Triangle) with outline for better visibility
+      } else if (zoom < 0.08 && !isSelected && !isPinned) {
+        // MEDIUM LOD: Simplified directional shape for very distant flock reads.
         ctx.save();
         ctx.translate(c.x, c.y);
         ctx.rotate(c.dir || 0);

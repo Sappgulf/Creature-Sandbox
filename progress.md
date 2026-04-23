@@ -115,3 +115,17 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Desktop Playwright states checked: home, gameplay, watch mode, overflow open, food action, god mode, and modes/goals visible.
 - Mobile Playwright states checked: home, gameplay, overflow open, and god mode.
 - No console or page errors were emitted during the browser passes.
+- New request: use imagegen to improve the game assets by name/type, test in-browser, fix issues, then commit and push to main.
+- Generated a cohesive Creature Sandbox asset style reference with imagegen, then rebuilt the checked-in SVG sprite pipeline around that direction.
+- Asset pass:
+- `creature-sim/scripts/generate-sprite-sheets.mjs` now regenerates the full manifest surface: herbivore, omnivore, predator, baby, elder, alpha, aquatic, flying, burrowing, food, props, environment sheets, and particles.
+- Regenerated tracked sprite sheets with stronger shadows, highlights, and more readable type silhouettes.
+- Gameplay visibility pass:
+- default/mobile camera scales now keep high-detail creature sprites readable instead of collapsing immediately to the old dot/triangle LOD.
+- Runtime fix found during browser testing:
+- rare color mutations could flatten diploid `hue`/`sense`/`metabolism` traits and crash new sandbox initialization when disorder effects ran; fixed the trait helpers and added a regression test.
+- Verification after asset pass:
+- `npx eslint creature-sim/src/advanced-genetics.js creature-sim/src/genetics.js creature-sim/src/renderer-creatures.js creature-sim/src/creature-render.js creature-sim/scripts/generate-sprite-sheets.mjs scripts/core-modules.test.mjs` ✅
+- `npm test` ✅ (147 passing)
+- `npm run build` ✅
+- In-app browser: fresh New Sandbox path completed with 0 recent console errors; final gameplay screenshot confirmed sprite rendering at the start camera scale.
