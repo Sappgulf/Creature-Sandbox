@@ -219,6 +219,14 @@
 
 ## Automated / Scripted Checks
 
+Run the checked-in browser smoke before shipping gameplay/UI changes:
+
+```bash
+npm run smoke:browser
+```
+
+The script starts Vite if needed, opens desktop plus compact/large mobile browser contexts, verifies the smoke sandbox starts, starts the `First Ecosystem` playable scenario, checks Director guidance, selects a creature, spawns a predator, paints food, toggles Watch Mode and God Mode, runs an in-page save/load roundtrip, captures screenshots/state under `output/browser-smoke/`, and fails on browser warnings or page errors.
+
 - **Save/load serialization test**
   - `npm test`
   - Validates save-system serialization/deserialization stability.

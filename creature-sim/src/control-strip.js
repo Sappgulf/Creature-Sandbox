@@ -18,7 +18,7 @@ export class ControlStripController {
     this.renderer = options.renderer;
 
     // State
-    this.currentSpawnType = 'herbivore';
+    this.currentSpawnType = this.loadLastSpawnType();
     this.speedIndex = 1; // Default to 1×
     this.isWatchMode = !!gameState.watchModeEnabled;
     this.isGodMode = !!gameState.godModeActive;
@@ -168,6 +168,16 @@ export class ControlStripController {
     }
   }
 
+  loadLastSpawnType() {
+    const allowed = new Set(['herbivore', 'omnivore', 'predator', 'aquatic', 'flying', 'burrowing']);
+    try {
+      const stored = localStorage.getItem('creature-last-spawn-type');
+      return allowed.has(stored) ? stored : 'herbivore';
+    } catch {
+      return 'herbivore';
+    }
+  }
+
   saveMobilePref(key, value) {
     try {
       localStorage.setItem(key, String(value));
@@ -286,19 +296,16 @@ export class ControlStripController {
 
   // === FOOD TOOL ===
   activateFoodTool() {
-    if (this.uiController?.onFood) {
-      this.uiController.onFood();
-      const pulseTarget = this.ctrlFood || this.menuFood || document.getElementById('menu-food');
-      if (pulseTarget) {
-        pulseTarget.classList.add('pulse');
-        setTimeout(() => pulseTarget.classList.remove('pulse'), 250);
-      }
-      return;
-    }
-
     if (this.tools) {
       this.tools.setMode('food');
       eventSystem.emit('tool:changed', { mode: 'food' });
+    }
+    this.uiController?.updateToolIndicator?.('food');
+
+    const pulseTarget = this.ctrlFood || this.menuFood || document.getElementById('menu-food');
+    if (pulseTarget) {
+      pulseTarget.classList.add('pulse');
+      setTimeout(() => pulseTarget.classList.remove('pulse'), 250);
     }
   }
 
@@ -324,6 +331,12 @@ export class ControlStripController {
 
   selectSpawnType(type) {
     this.currentSpawnType = type;
+    gameState.selectedCreatureType = type;
+    try {
+      localStorage.setItem('creature-last-spawn-type', type);
+    } catch {
+      // Storage may be unavailable in private browsing contexts.
+    }
     this.updateSpawnSelection();
   }
 
@@ -335,7 +348,14 @@ export class ControlStripController {
     });
 
     // Update spawn button icon
-    const icons = { herbivore: '🦌', omnivore: '🦡', predator: '🦁', aquatic: '🐠' };
+    const icons = {
+      herbivore: '🦌',
+      omnivore: '🦡',
+      predator: '🦁',
+      aquatic: '🐠',
+      flying: '🦅',
+      burrowing: '🦔'
+    };
     if (this.ctrlSpawn) {
       this.ctrlSpawn.querySelector('.ctrl-icon').textContent = icons[this.currentSpawnType] || '🦌';
     }
@@ -349,6 +369,11 @@ export class ControlStripController {
     }
     // Use gameState.setSpawnMode which properly sets selectedCreatureType and spawnMode
     gameState.setSpawnMode(this.currentSpawnType);
+    try {
+      localStorage.setItem('creature-last-spawn-type', this.currentSpawnType);
+    } catch {
+      // Storage may be unavailable in private browsing contexts.
+    }
     this.closeSpawnDrawer();
   }
 

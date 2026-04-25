@@ -2,10 +2,12 @@
 
 ## Active
 
-- [ ] Add tutorial tooltips for UI elements (hover tooltips explaining buttons/controls)
-- [ ] Complete smoke test verification in browser (now use `npm run dev` instead of python http.server)
-- [ ] Verify core loop: spawn → select → interact → save/load
-- [ ] Verify mobile touch controls work correctly
+- [x] Add tutorial tooltips for UI elements (hover tooltips explaining buttons/controls)
+- [x] Complete smoke test verification in browser (`npm run smoke:browser`)
+- [x] Verify core loop: spawn → select → interact → save/load
+- [x] Verify mobile touch controls at compact and large mobile viewports
+- [x] Add playable scenarios, scenario goals, and Director guidance
+- [ ] Continue measuring real-device touch feel outside desktop browser emulation
 
 ## Done
 

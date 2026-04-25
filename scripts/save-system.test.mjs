@@ -157,4 +157,50 @@ multiWorld.spawnCreatureType('omnivore', 50, 30);
 const multiSave = saveSystem.serialize(multiWorld, camera, null, null);
 assert.equal(multiSave.world.creatures.length, 3, 'should save 3 creatures');
 
+// High-value regression: active systems round-trip together.
+const systemsWorld = new World(400, 300);
+systemsWorld.reset();
+systemsWorld.spawnCreatureType('herbivore', 120, 140);
+const remembered = systemsWorld.creatures[0];
+remembered.temperament = {
+  boldness: 0.2,
+  sociability: 0.7,
+  calmness: 0.8,
+  curiosity: 0.4
+};
+remembered.quirks = ['homebody', 'night_owl'];
+remembered.memory = {
+  capacity: 12,
+  nextId: 3,
+  locations: [
+    { id: 1, x: 130, y: 144, type: 'food', tag: 'food', strength: 0.9, timestamp: 4 },
+    { id: 2, x: 90, y: 100, type: 'danger', tag: 'danger', strength: 0.5, timestamp: 5 }
+  ]
+};
+systemsWorld.food = [{ x: 155, y: 165, energy: 2.5, bites: 3, biteEnergy: 0.5, type: 'berry', scentRadius: 110 }];
+systemsWorld.sandbox?.addProp?.('spring', 180, 190, { strength: 1.7 });
+if (systemsWorld.events) {
+  systemsWorld.events.activeEvent = {
+    type: 'food_bloom',
+    label: 'Food bloom',
+    remaining: 12,
+    duration: 30
+  };
+  systemsWorld.events.cooldown = 6;
+  systemsWorld.eventModifiers = { foodGrowth: 1.4, stress: 0.8 };
+}
+
+const systemsSave = saveSystem.serialize(systemsWorld, camera, null, null);
+const systemsResult = saveSystem.deserialize(systemsSave, World, Creature, Camera, makeGenes, BiomeGenerator);
+const restoredCreature = systemsResult.world.creatures[0];
+assert.deepEqual(restoredCreature.quirks, ['homebody', 'night_owl'], 'quirks should round-trip');
+assert.equal(restoredCreature.temperament.calmness, 0.8, 'temperament should round-trip');
+assert.equal(restoredCreature.memory.locations.length, 2, 'memory locations should round-trip');
+assert.equal(restoredCreature.memory.locations[0].type, 'food', 'memory type should round-trip');
+assert.equal(systemsResult.world.food[0].bites, 3, 'food bites should round-trip');
+assert.equal(systemsResult.world.sandbox.props.length, 1, 'sandbox props should round-trip');
+assert.equal(systemsResult.world.sandbox.props[0].type, 'spring', 'sandbox prop type should round-trip');
+assert.equal(systemsResult.world.events.activeEvent.type, 'food_bloom', 'active world event should round-trip');
+assert.equal(systemsResult.world.eventModifiers.foodGrowth, 1.4, 'event modifiers should round-trip');
+
 console.log('Save system tests passed.');

@@ -8,6 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node scripts/save-system.test.mjs && node scripts/core-modules.test.mjs",
+    "smoke:browser": "node scripts/browser-smoke.mjs",
+    "smoke:browser:headed": "node scripts/browser-smoke.mjs --headed",
     "test:coverage": "npm test",
     "lint": "eslint creature-sim/src",
     "lint:fix": "eslint creature-sim/src --fix"
@@ -15,6 +17,7 @@
   "devDependencies": {
     "eslint": "^10.2.0",
     "globals": "^17.5.0",
+    "playwright": "^1.57.0",
     "vite": "^8.0.8"
   },
   "keywords": [

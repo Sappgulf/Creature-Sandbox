@@ -276,6 +276,28 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
   };
   const quirkLine = showQuirks ? `<div class="subline quirks">Quirks: ${quirks.map(q => quirkLabelMap[q] || q).join(', ')}</div>` : '';
   const quirkHint = quirks.length ? '<div class="hint">Press Q to toggle quirks</div>' : '';
+  const hunger = Number(creature.needs?.hunger ?? 0);
+  const stress = Number(creature.needs?.stress ?? creature.ecosystem?.stress ?? 0);
+  const energyNeed = Number(creature.needs?.energy ?? creature.energy ?? 0);
+  const goal = creature.goal?.current || creature.currentGoal || creature.state || 'exploring';
+  const readableState = (() => {
+    if (!creature.alive) return 'Gone';
+    if (hunger > 72 || creature.energy < 14) return 'Hungry';
+    if (stress > 64) return 'Scared';
+    if (goal === 'rest' || energyNeed < 32) return 'Resting';
+    if (goal === 'mate') return 'Looking for mate';
+    if (goal === 'eat') return 'Seeking food';
+    if (goal === 'wander') return 'Exploring';
+    return String(goal).replaceAll('_', ' ');
+  })();
+  const memoryCount = Array.isArray(creature.memory?.locations) ? creature.memory.locations.length : 0;
+  const stateTags = [
+    readableState,
+    `Hunger ${Math.round(hunger)}`,
+    `Stress ${Math.round(stress)}`,
+    memoryCount ? `${memoryCount} memories` : null
+  ].filter(Boolean);
+  const stateTagMarkup = `<div class="state-tags">${stateTags.map(tag => `<span>${tag}</span>`).join('')}</div>`;
 
   if (isMobile) {
     el.innerHTML = `
@@ -286,6 +308,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
       <div class="subline">${sublineParts.join(' · ')}</div>
       ${nameSuggestion ? `<div class="muted tiny">${nameSuggestion}</div>` : ''}
       ${showQuirks ? `<div class="hint">Quirks: ${quirks.map(q => quirkLabelMap[q] || q).join(', ')}</div>` : quirkHint}
+      ${stateTagMarkup}
       <div class="metrics compact">
         <span><span>Energy</span><span>${energy}</span></span>
         <span><span>Health</span><span>${health}</span></span>
@@ -306,6 +329,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     ${nameSuggestion ? `<div class="muted tiny">${nameSuggestion}</div>` : ''}
     ${quirkLine || ''}
     ${quirkHint}
+    ${stateTagMarkup}
     <div class="metrics">
       <span><span>Energy</span><span>${energy}</span></span>
       <span><span>Health</span><span>${health}</span></span>

@@ -4,20 +4,21 @@ Status legend: Y = present/wired; N = missing or not wired. Mobile/Save/Load mar
 
 | System | Exists | Wired into UI | Works on Mobile | Save/Load Supported | Known Issues |
 | --- | --- | --- | --- | --- | --- |
-| Creature creation/editing (gene editor + presets) | Y | Y | Y | Y | Gene editor settings not persisted; needs device validation. |
-| Creature selection + spawn (mobile) | Y | Y | Y | Y | Spawn dropdown is desktop; mobile has quick spawn only. |
-| Sandbox interactions / physics | Y | Y | Y | Y | Touch camera + tap selection need device validation. |
+| Playable scenarios + Director | Y | Y | Y | Partial | Scenario completion progress persists locally; active run state is not yet part of save files. |
+| Creature creation/editing (gene editor + presets) | Y | Y | Y | Y | Gene editor settings are not persisted as UI preferences. |
+| Creature selection + spawn (mobile) | Y | Y | Y | Y | Browser smoke covers compact/large mobile spawn; physical-device feel still worth checking. |
+| Sandbox interactions / physics | Y | Y | Y | Y | Browser smoke covers tap/select/food; extended drag/throw remains a manual feel check. |
 | Health/damage/death/knockout + starting health tuning | Y | Y | Y | Y | Needs verification: damage debounce and starting maxHealth. |
 | Needs/behavior (hunger/energy/stress/social) | Y | Y | Y | Y | Needs verification for throttling/hysteresis. |
-| Memory/learning | Y | N | Y | N | Memory not serialized; UI only via render overlay. |
+| Memory/learning | Y | Partial | Y | Y | Serialized and exposed in selected-creature smoke state; still needs richer player-facing UI. |
 | Life stages (baby/adult/elder) + reproduction/offspring + population guardrails | Y | N | Y | Y | Guardrails exist in config/auto-balance; need runtime verification. |
 | Day/night + resource regrowth | Y | N | Y | Y | Day/night visuals depend on renderer settings. |
-| Watch Mode controls | N | N | N | N | No explicit watch mode system found. |
-| Auto-camera director | N | N | N | N | No director system found. |
-| Moments log + session summary | N | N | N | N | No UI or storage found; activity feed appears unused. |
-| God mode + tools | Y | Y | Y | Y | Needs mobile tap target + focus verification. |
-| Nests/territory/migration | Y | N | Y | Y | Migration exists; territory/nest systems not implemented. |
-| UI navigation/condensed menus | Y | Y | Y | N | UI panels exist; no persisted UI state. |
-| Help/hints lifecycle | Y | Y | Y | N | Tutorial overlay lifecycle needs verification; no persistent dismissal on save. |
-| Save/load schema versioning + migrations | Y | N | N | Y | Version migrations present; needs regression validation. |
-| Performance guardrails (throttling, spatial partitioning) | Y | N | Y | N | Throttling/spatial grids exist; needs perf validation. |
+| Watch Mode controls | Y | Y | Y | N | Browser smoke verifies toggle and watch-strip controls. |
+| Auto-camera director | Y | Y | Y | N | Re-center/follow controls exist; long-session prioritization still needs tuning. |
+| Moments log + session summary | Y | Y | Y | N | Moments panel exists; coverage should grow around event priority and summary accuracy. |
+| God mode + tools | Y | Y | Y | Y | Browser smoke verifies watch-strip god toggle; tool-by-tool previews remain a polish target. |
+| Nests/territory/migration | Y | Partial | Y | Y | Migration and nests serialize; richer UI surfacing remains open. |
+| UI navigation/condensed menus | Y | Y | Y | Partial | Mobile preferences and last spawn type persist; broader panel state is not fully persisted. |
+| Help/hints lifecycle | Y | Y | Y | N | Tooltip dismissal persists locally but is not part of save files. |
+| Save/load schema versioning + migrations | Y | N | Y | Y | Regression covers zero values, older fixture, memory, props, food bites, and active events. |
+| Performance guardrails (throttling, spatial partitioning) | Y | Partial | Y | N | Browser smoke records perf budget; no hard FPS threshold yet. |

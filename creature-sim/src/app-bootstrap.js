@@ -26,6 +26,7 @@ import { AchievementSystem } from './achievement-system.js';
 import { BiomeGenerator } from './perlin-noise.js';
 import { GameplayModes } from './gameplay-modes.js';
 import { SessionGoals } from './session-goals.js';
+import { PlayableScenarios } from './playable-scenarios.js';
 import { MobileSupport } from './mobile-support.js';
 import { AutoDirector } from './auto-director.js';
 import { MomentsSystem } from './moments-system.js';
@@ -494,6 +495,19 @@ export function initializeApp() {
     return new SessionGoals({ notifications, audio });
   }, 'Session goals initialization', null);
 
+  const playableScenarios = errorHandler.safeExecute(() => {
+    return new PlayableScenarios({
+      world,
+      camera,
+      gameplayModes,
+      sessionGoals,
+      notifications,
+      audio,
+      moments,
+      autoDirector
+    });
+  }, 'Playable scenarios initialization', null);
+
   const tutorial = errorHandler.safeExecute(() => {
     return new TutorialSystem();
   }, 'Tutorial system initialization', null);
@@ -570,6 +584,8 @@ export function initializeApp() {
   };
 
   const startTutorialIfNeeded = (delay = 1000) => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('smoke') || params.has('autostart') || params.has('autosandbox')) return;
     if (!tutorial || !tutorial.shouldShow?.()) return;
     window.setTimeout(() => {
       tutorial.start();
@@ -623,6 +639,7 @@ export function initializeApp() {
       ecoHealth,
       gameplayModes,
       sessionGoals,
+      playableScenarios,
       autoDirector,
       moments
     });
@@ -671,6 +688,7 @@ export function initializeApp() {
       ecoHealth,
       gameplayModes,
       sessionGoals,
+      playableScenarios,
       autoDirector,
       moments,
       devTools,
@@ -1422,9 +1440,13 @@ export function initializeApp() {
         tutorialVisible: !!tutorialOverlay && tutorialOverlay.style.display !== 'none',
         paused: !!gameState.paused,
         tool: tools?.mode ?? null,
+        brushSize: Number(tools?.brushSize?.toFixed?.(0) ?? tools?.brushSize ?? 0),
+        spawnType: gameState.selectedCreatureType ?? null,
+        propType: tools?.propType ?? gameState.selectedPropType ?? null,
         speed: gameState.fastForward,
         watchMode: !!gameState.watchModeEnabled,
         godMode: !!gameState.godModeActive,
+        godTool: gameState.godModeTool ?? null,
         mobileLayout: document.body.classList.contains('mobile-device'),
         focusMode: document.body.classList.contains('mobile-focus-mode')
       },
@@ -1456,8 +1478,24 @@ export function initializeApp() {
         y: Number(focusCreature.y?.toFixed?.(1) ?? 0),
         energy: Number(focusCreature.energy?.toFixed?.(1) ?? 0),
         age: Number(focusCreature.age?.toFixed?.(1) ?? 0),
-        status: focusCreature.currentGoal || focusCreature.state || null
+        status: focusCreature.currentGoal || focusCreature.state || null,
+        memories: Array.isArray(focusCreature.memory?.locations)
+          ? focusCreature.memory.locations.slice(0, 5).map(memory => ({
+            type: memory.type || memory.tag || 'memory',
+            strength: Number(memory.strength?.toFixed?.(2) ?? memory.strength ?? 0),
+            x: Number(memory.x?.toFixed?.(1) ?? 0),
+            y: Number(memory.y?.toFixed?.(1) ?? 0)
+          }))
+          : []
       } : null,
+      systems: {
+        activeEvent: world.events?.activeEvent?.type ?? null,
+        activeDisaster: world.disaster?.activeDisaster?.type ?? null,
+        registeredSprites: assetLoader.spriteSheets?.size ?? 0,
+        legacySprites: assetLoader.assets?.size ?? 0,
+        particles: world.particles?.particles?.length ?? notifications?.particles?.length ?? 0
+      },
+      playable: playableScenarios?.getSnapshot?.() ?? null,
       visibleCreatures: getVisibleCreatures(),
       visibleFood: getVisibleFood()
     });
@@ -1508,6 +1546,87 @@ export function initializeApp() {
   if (shouldAutoStartSandbox) {
     window.__creatureSmokeAdvanceTime = advanceTime;
     window.__creatureSmokeReady = true;
+  }
+
+  if (shouldAutoStartSandbox || devTools.enabled) {
+    window.__creatureSmoke = {
+      saveRoundTrip: async () => {
+        if (!saveSystem) {
+          return { ok: false, reason: 'save-system-unavailable' };
+        }
+
+        const before = {
+          creatures: world.creatures?.length || 0,
+          food: world.food?.length || 0,
+          props: world.sandbox?.props?.length || 0,
+          t: Number(world.t?.toFixed?.(2) ?? world.t ?? 0)
+        };
+        const data = saveSystem.serialize(world, camera, analytics, lineageTracker, {
+          source: 'browser-smoke'
+        });
+        const loaded = saveSystem.deserialize(data, World, Creature, Camera, makeGenes, BiomeGenerator, world);
+        const applied = applyLoadedState(loaded, 'browser-smoke');
+        const after = {
+          creatures: world.creatures?.length || 0,
+          food: world.food?.length || 0,
+          props: world.sandbox?.props?.length || 0,
+          t: Number(world.t?.toFixed?.(2) ?? world.t ?? 0)
+        };
+
+        return {
+          ok: !!applied &&
+            after.creatures === before.creatures &&
+            after.food >= Math.min(before.food, 1) &&
+            Number.isFinite(after.t),
+          before,
+          after
+        };
+      },
+      selectVisibleCreature: () => {
+        const [visible] = getVisibleCreatures(1);
+        if (!visible) return { ok: false, reason: 'no-visible-creature' };
+        gameState.selectCreature(visible.id);
+        const creature = world.registry?.get?.(visible.id) ||
+          world.creatures?.find(item => item.id === visible.id);
+        if (creature && camera?.travelTo) {
+          camera.travelTo(creature.x, creature.y, { zoom: 0.92, duration: 0.25 });
+        }
+        uiController?.updateSelectedInfo?.();
+        return { ok: true, id: visible.id };
+      },
+      setPaused: (paused = true) => {
+        gameState.paused = !!paused;
+        return { paused: gameState.paused };
+      },
+      startScenario: (id = 'first_ecosystem') => {
+        const snapshot = playableScenarios?.startScenario?.(id, { announce: false }) || null;
+        uiController?.updateSessionMetaVisibility?.();
+        uiController?.renderPlayableDirector?.(snapshot);
+        return snapshot;
+      },
+      perfBudget: () => ({
+        fps: Number(gameState.fps?.toFixed?.(1) ?? 0),
+        rendered: gameState.renderedCount || 0,
+        culled: gameState.culledCount || 0,
+        canvas: {
+          width: canvas.width,
+          height: canvas.height,
+          cssWidth: Number(canvas.getBoundingClientRect().width.toFixed(0)),
+          cssHeight: Number(canvas.getBoundingClientRect().height.toFixed(0))
+        },
+        world: {
+          creatures: world.creatures?.length || 0,
+          food: world.food?.length || 0,
+          particles: world.particles?.particles?.length || 0
+        },
+        assets: {
+          registeredSprites: assetLoader.spriteSheets?.size ?? 0,
+          legacySprites: assetLoader.assets?.size ?? 0,
+          tintedSpriteVariants: assetLoader.tintedSpriteCache?.size ?? 0,
+          untintedSpriteVariants: assetLoader.untintedSpriteCache?.size ?? 0
+        }
+      })
+    };
   }
 
   // ============================================================================
@@ -1595,7 +1714,8 @@ export function initializeApp() {
     campaignSystemInstance,
     diseaseSystem,
     gameplayModes,
-    sessionGoals
+    sessionGoals,
+    playableScenarios
   });
 
   console.debug('🎉 Creature Sandbox initialized successfully!');

@@ -12,6 +12,7 @@ import { BehaviorConfig, setBehaviorWeights } from './behavior.js';
 
 import { applyUiExportMethods } from './ui-controller-exports.js';
 import { applyUiGameModeMethods } from './ui-controller-game-mode.js';
+import { applyUiPlayableMethods } from './ui-controller-playable.js';
 import { applyUiWatchMethods } from './ui-controller-watch.js';
 import { applyUiGodModeMethods } from './ui-controller-god-mode.js';
 import { DEFAULT_SPAWN_TYPE, applyUiSpawnMethods } from './ui-controller-spawn.js';
@@ -47,6 +48,7 @@ export class UIController {
     this.ecoHealth = subsystems.ecoHealth;
     this.gameplayModes = subsystems.gameplayModes;
     this.sessionGoals = subsystems.sessionGoals;
+    this.playableScenarios = subsystems.playableScenarios;
     this.autoDirector = subsystems.autoDirector;
     this.moments = subsystems.moments;
 
@@ -74,6 +76,7 @@ export class UIController {
       onModeChange: this.onModeChange.bind(this),
       onModeCycle: this.onModeCycle.bind(this),
       onRefreshGoals: this.onRefreshGoals.bind(this),
+      onPlayableScenarioStart: this.onPlayableScenarioStart.bind(this),
 
       onWatchModeToggle: this.onWatchModeToggle.bind(this),
       onWatchPause: this.onWatchPause.bind(this),
@@ -180,6 +183,13 @@ export class UIController {
       if (this.audio) this.audio.playUISound?.('success');
     });
 
+    eventSystem.on('playable:updated', (snapshot) => {
+      this.renderPlayableDirector(snapshot);
+      if (snapshot?.active) {
+        this.updateSessionMetaVisibility();
+      }
+    });
+
     // Listen for game pause/resume events (from blur/focus)
     eventSystem.on('game:paused', () => {
       this.updatePauseButton();
@@ -216,6 +226,7 @@ export class UIController {
     this.bindFeaturesEnhancements();
     this.bindGameplayModeControls();
     this.bindSessionGoalControls();
+    this.bindPlayableControls();
     this.bindWatchControls();
     this.bindSliderFills();
     this.applyMobileDefaults();
@@ -735,6 +746,7 @@ export class UIController {
 // Apply prototype methods from focused modules
 applyUiExportMethods(UIController);
 applyUiGameModeMethods(UIController);
+applyUiPlayableMethods(UIController);
 applyUiWatchMethods(UIController);
 applyUiGodModeMethods(UIController);
 applyUiSpawnMethods(UIController);

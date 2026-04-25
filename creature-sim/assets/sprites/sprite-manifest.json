@@ -525,6 +525,24 @@
         "y": 0.5
       },
       "notes": "Sandbox prop loop. Primary shape is currentColor-driven so runtime can preserve prop-color semantics."
+    },
+    {
+      "key": "ui_scenario_cards",
+      "category": "ui",
+      "path": "assets/sprites/ui/ui_scenario_cards.svg",
+      "frameCount": 7,
+      "frameWidth": 320,
+      "frameHeight": 180,
+      "fps": 0,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Playable scenario key-art strip. Frames map to the scenario order in playable-scenarios.js."
     }
   ]
 }

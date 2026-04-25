@@ -700,6 +700,96 @@ function particleFrame(_type, ctx) {
   `;
 }
 
+function scenarioCardFrame(ctx) {
+  const { i, phase, frameWidth: w, frameHeight: h } = ctx;
+  const cx = w * 0.5;
+  const cy = h * 0.5;
+  const scenario = [
+    { sky: '#123426', glow: '#62e6a6', accent: '#d5ff7d', creatures: 4, predators: 1, food: 9, props: ['spring'], water: false },
+    { sky: '#163f2b', glow: '#87efac', accent: '#f6d365', creatures: 6, predators: 1, food: 12, props: ['bounce'], water: true },
+    { sky: '#3a1d2d', glow: '#fb7185', accent: '#fbbf24', creatures: 5, predators: 3, food: 8, props: ['fan'], water: false },
+    { sky: '#17243b', glow: '#bae6fd', accent: '#e0f2fe', creatures: 5, predators: 1, food: 5, props: ['calm'], water: false, snow: true },
+    { sky: '#14384a', glow: '#67e8f9', accent: '#fde68a', creatures: 4, predators: 1, food: 6, props: ['conveyor', 'spring'], water: true },
+    { sky: '#251547', glow: '#c084fc', accent: '#5eead4', creatures: 6, predators: 1, food: 9, props: ['dna'], water: true },
+    { sky: '#1f2937', glow: '#38bdf8', accent: '#f472b6', creatures: 6, predators: 1, food: 10, props: ['bounce', 'fan', 'launch'], water: false }
+  ][i % 7];
+
+  const foodDots = Array.from({ length: scenario.food }, (_, index) => {
+    const angle = index * 2.399 + i * 0.6;
+    const radius = 32 + (index % 4) * 14;
+    const x = cx + Math.cos(angle) * radius;
+    const y = cy + Math.sin(angle * 1.17) * radius * 0.46 + 18;
+    return `<circle cx="${toFixed2(x)}" cy="${toFixed2(y)}" r="${2.1 + (index % 3) * 0.35}" fill="${scenario.accent}" opacity="0.86"/>`;
+  }).join('');
+
+  const creatureDots = Array.from({ length: scenario.creatures }, (_, index) => {
+    const angle = index * 1.73 + 0.7;
+    const x = cx - 34 + Math.cos(angle) * 44 + index * 6;
+    const y = cy + 10 + Math.sin(angle + phase) * 16;
+    const tail = x - 7 - Math.sin(phase + index) * 2;
+    return `
+      <g opacity="0.96">
+        <ellipse cx="${toFixed2(x)}" cy="${toFixed2(y + 8)}" rx="10" ry="3.4" fill="rgba(0,0,0,0.22)"/>
+        <path d="M ${toFixed2(x - 8)} ${toFixed2(y)} Q ${toFixed2(tail - 9)} ${toFixed2(y - 5)} ${toFixed2(tail)} ${toFixed2(y + 2)} Q ${toFixed2(tail - 8)} ${toFixed2(y + 7)} ${toFixed2(x - 8)} ${toFixed2(y)} Z" fill="${scenario.glow}" opacity="0.78"/>
+        <ellipse cx="${toFixed2(x)}" cy="${toFixed2(y)}" rx="12" ry="8" fill="${scenario.glow}"/>
+        <ellipse cx="${toFixed2(x + 4)}" cy="${toFixed2(y - 3)}" rx="2.3" ry="2" fill="white"/>
+        <circle cx="${toFixed2(x + 4.7)}" cy="${toFixed2(y - 3)}" r="0.9" fill="#0f172a"/>
+      </g>
+    `;
+  }).join('');
+
+  const predatorDots = Array.from({ length: scenario.predators }, (_, index) => {
+    const x = cx + 44 + index * 18 - Math.sin(phase + index) * 4;
+    const y = cy + 18 - index * 15 + Math.cos(phase * 1.3 + index) * 4;
+    return `
+      <g opacity="0.9">
+        <ellipse cx="${toFixed2(x)}" cy="${toFixed2(y + 9)}" rx="12" ry="3.8" fill="rgba(0,0,0,0.26)"/>
+        <path d="M ${toFixed2(x - 13)} ${toFixed2(y)} L ${toFixed2(x - 2)} ${toFixed2(y - 9)} L ${toFixed2(x + 14)} ${toFixed2(y - 2)} L ${toFixed2(x + 10)} ${toFixed2(y + 8)} L ${toFixed2(x - 8)} ${toFixed2(y + 8)} Z" fill="#fb7185"/>
+        <circle cx="${toFixed2(x + 6)}" cy="${toFixed2(y - 3)}" r="2" fill="white"/>
+        <path d="M ${toFixed2(x + 6)} ${toFixed2(y + 4)} l 4 -2 l -1 4 Z" fill="#fef2f2"/>
+      </g>
+    `;
+  }).join('');
+
+  const propGlyphs = scenario.props.map((prop, index) => {
+    const x = 40 + index * 36;
+    const y = h - 36;
+    if (prop === 'fan') {
+      return `<g transform="translate(${x} ${y}) rotate(${toFixed2((phase / TAU) * 360)})"><path d="M 0 -12 C 9 -9 13 -3 7 0 C 13 3 9 9 0 12 C -9 9 -13 3 -7 0 C -13 -3 -9 -9 0 -12 Z" fill="${scenario.accent}"/></g>`;
+    }
+    if (prop === 'launch') {
+      return `<path d="M ${x - 7} ${y + 12} L ${x + 7} ${y + 12} L ${x + 5} ${y - 12} L ${x} ${y - 20} L ${x - 5} ${y - 12} Z" fill="${scenario.accent}"/>`;
+    }
+    if (prop === 'dna') {
+      return `<path d="M ${x - 8} ${y - 14} C ${x + 12} ${y - 7} ${x - 12} ${y + 7} ${x + 8} ${y + 14} M ${x + 8} ${y - 14} C ${x - 12} ${y - 7} ${x + 12} ${y + 7} ${x - 8} ${y + 14}" stroke="${scenario.accent}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    }
+    return `<ellipse cx="${x}" cy="${y}" rx="13" ry="7" fill="${scenario.accent}" opacity="0.88"/><circle cx="${x}" cy="${y - 2}" r="4" fill="rgba(255,255,255,0.7)"/>`;
+  }).join('');
+
+  const water = scenario.water
+    ? `<path d="M 0 ${toFixed2(h * 0.68)} C 52 ${toFixed2(h * 0.58)} 98 ${toFixed2(h * 0.78)} 150 ${toFixed2(h * 0.66)} C 205 ${toFixed2(h * 0.54)} 248 ${toFixed2(h * 0.7)} ${w} ${toFixed2(h * 0.6)} L ${w} ${h} L 0 ${h} Z" fill="rgba(56,189,248,0.2)"/>`
+    : '';
+  const snow = scenario.snow
+    ? '<g fill="rgba(255,255,255,0.72)"><circle cx="34" cy="32" r="2"/><circle cx="120" cy="24" r="1.7"/><circle cx="204" cy="42" r="2.3"/><circle cx="256" cy="26" r="1.8"/></g>'
+    : '';
+
+  return `
+    <rect x="0" y="0" width="${w}" height="${h}" rx="18" fill="${scenario.sky}"/>
+    <rect x="0" y="0" width="${w}" height="${h}" rx="18" fill="rgba(255,255,255,0.06)"/>
+    <rect x="0" y="${toFixed2(h * 0.58)}" width="${w}" height="${toFixed2(h * 0.42)}" rx="18" fill="rgba(0,0,0,0.26)"/>
+    <circle cx="${toFixed2(cx + 22)}" cy="${toFixed2(cy + 10)}" r="92" fill="${scenario.glow}" opacity="0.13"/>
+    ${water}
+    <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(h * 0.68)}" rx="118" ry="46" fill="rgba(34,197,94,0.2)" stroke="${scenario.glow}" stroke-width="1.3" opacity="0.82"/>
+    <ellipse cx="${toFixed2(cx + 44)}" cy="${toFixed2(h * 0.67)}" rx="44" ry="24" fill="none" stroke="${scenario.accent}" stroke-width="1.2" opacity="0.48"/>
+    ${foodDots}
+    ${creatureDots}
+    ${predatorDots}
+    ${propGlyphs}
+    ${snow}
+    <path d="M 18 24 C 54 6 86 10 118 25" stroke="rgba(255,255,255,0.16)" stroke-width="2" fill="none"/>
+  `;
+}
+
 const creatureProfiles = [
   {
     key: 'creature_herbivore',
@@ -1007,6 +1097,7 @@ function generate() {
   ensureDir(path.join(spritesRoot, 'props'));
   ensureDir(path.join(spritesRoot, 'environment'));
   ensureDir(path.join(spritesRoot, 'particles'));
+  ensureDir(path.join(spritesRoot, 'ui'));
 
   const manifestEntries = [];
 
@@ -1129,6 +1220,21 @@ function generate() {
       })
     );
   }
+
+  manifestEntries.push(
+    renderSheet({
+      key: 'ui_scenario_cards',
+      category: 'ui',
+      frameWidth: 320,
+      frameHeight: 180,
+      frameCount: 7,
+      fps: 0,
+      anchor: { x: 0.5, y: 0.5 },
+      pivot: { x: 0.5, y: 0.5 },
+      notes: 'Playable scenario key-art strip. Frames map to the scenario order in playable-scenarios.js.',
+      drawFrame: scenarioCardFrame
+    })
+  );
 
   const manifest = {
     version: 2,

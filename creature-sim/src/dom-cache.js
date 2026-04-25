@@ -105,6 +105,10 @@ export class DOMCache {
     this.cacheElement('session-goals-card', 'goalCard');
     this.cacheElement('session-goal-list', 'goalList');
     this.cacheElement('refresh-goals', 'refreshGoalsBtn');
+    this.cacheElement('playable-card', 'playableCard');
+    this.cacheElement('playable-scenario-select', 'playableScenarioSelect');
+    this.cacheElement('playable-scenario-start', 'playableScenarioStart');
+    this.cacheElement('playable-director', 'playableDirector');
 
     // Home page elements
     this.cacheElement('home-page', 'homePage');

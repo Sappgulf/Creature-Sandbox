@@ -139,6 +139,22 @@ export class SessionGoals {
     return this.goals.map(g => ({ ...g }));
   }
 
+  setGoals(goals = [], { announce = true } = {}) {
+    this.goals = goals.map(goal => ({
+      id: goal.id,
+      type: goal.type,
+      icon: goal.icon || '🎯',
+      target: Math.max(1, Number(goal.target) || 1),
+      description: goal.description || 'Complete the objective',
+      progress: clamp(Number(goal.progress) || 0, 0, 1),
+      completed: !!goal.completed
+    }));
+    eventSystem.emit(GameEvents.SESSION_GOAL_UPDATED, this.getGoals());
+    if (announce && this.notifications?.show) {
+      this.notifications.show('🎯 Scenario goals loaded', 'info', 1800);
+    }
+  }
+
   refresh() {
     this.generateGoals();
     if (this.notifications?.show) {
@@ -207,7 +223,11 @@ export class SessionGoals {
       propTriggers: this.propTriggers,
       propPlacements: this.propPlacements,
       godActions: this.godActions,
-      aquaticAlive: 0
+      aquaticAlive: 0,
+      flyingAlive: 0,
+      burrowingAlive: 0,
+      variantsAlive: 0,
+      foodAvailable: world.food?.length || 0
     };
 
     for (const creature of world.creatures || []) {
@@ -216,11 +236,23 @@ export class SessionGoals {
       if (creature.alive && geneValue(creature.genes, 'aquatic', 0) >= 0.6) {
         metrics.aquaticAlive += 1;
       }
+      if (creature.alive && (geneValue(creature.genes, 'flying', 0) >= 0.6 || creature.traits?.creatureType === 'flying')) {
+        metrics.flyingAlive += 1;
+      }
+      if (creature.alive && (geneValue(creature.genes, 'burrowing', 0) >= 0.6 || creature.traits?.creatureType === 'burrowing')) {
+        metrics.burrowingAlive += 1;
+      }
       const stats = creature.stats || {};
       if (creature.genes?.predator) metrics.predatorKills += stats.kills || 0;
       metrics.foodCollected += stats.food || 0;
       metrics.births += stats.births || 0;
     }
+
+    metrics.variantsAlive = [
+      metrics.aquaticAlive > 0,
+      metrics.flyingAlive > 0,
+      metrics.burrowingAlive > 0
+    ].filter(Boolean).length;
 
     return metrics;
   }
@@ -249,6 +281,10 @@ export class SessionGoals {
         return metrics.godActions / goal.target;
       case 'aquatic_alive':
         return metrics.aquaticAlive / goal.target;
+      case 'food_available':
+        return metrics.foodAvailable / goal.target;
+      case 'variant_alive':
+        return metrics.variantsAlive / goal.target;
       default:
         return 0;
     }

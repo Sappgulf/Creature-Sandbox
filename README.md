@@ -329,7 +329,7 @@ See `OPTIMIZATION_REPORT.md` for detailed analysis.
 - **HTML5 Canvas** (2D rendering)
 - **Vite** (dev server + production bundler)
 - **ESLint** (code quality)
-- **118 unit tests** (core modules)
+- **148 unit tests** (core modules)
 - **Static hosting** (Vercel, Netlify, GitHub Pages compatible)
 
 ---
@@ -340,7 +340,8 @@ See `OPTIMIZATION_REPORT.md` for detailed analysis.
 npm run dev        # Start dev server with HMR on port 8000
 npm run build     # Build for production (outputs to dist/)
 npm run preview   # Preview production build
-npm test         # Run all unit tests (118 tests)
+npm test         # Run all unit tests (148 tests)
+npm run smoke:browser # Run desktop/mobile browser smoke proof
 npm run lint     # Check code quality
 npm run lint:fix # Auto-fix lint issues
 ```

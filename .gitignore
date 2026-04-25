@@ -23,6 +23,9 @@ Thumbs.db
 bundle-stats.html
 *.log
 npm-debug.log*
+output/
+.playwright-mcp/
+.playwright-cli/
 
 # Environment
 .env
@@ -32,4 +35,3 @@ npm-debug.log*
 # Build
 dist/
 build/
-

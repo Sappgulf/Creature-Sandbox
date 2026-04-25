@@ -49,6 +49,7 @@ export class GameLoop {
     this.ecoHealth = subsystems.ecoHealth;
     this.gameplayModes = subsystems.gameplayModes;
     this.sessionGoals = subsystems.sessionGoals;
+    this.playableScenarios = subsystems.playableScenarios;
     this.devTools = subsystems.devTools || {};
 
     // New advanced systems
@@ -890,6 +891,10 @@ export class GameLoop {
       this.sessionGoals.update(this.world, dt);
     }
 
+    if (this.playableScenarios) {
+      this.playableScenarios.update(dt);
+    }
+
     // Throttled milestone checks (every 2s)
     if (this.hasNotifications()) {
       this._milestoneTimer = (this._milestoneTimer || 0) + dt;
@@ -1004,6 +1009,9 @@ export class GameLoop {
         focusCreature.lifeStage || '',
         focusCreature.age?.toFixed?.(1) ?? 0,
         focusCreature.energy?.toFixed?.(1) ?? 0,
+        focusCreature.needs?.hunger?.toFixed?.(0) ?? 0,
+        focusCreature.needs?.stress?.toFixed?.(0) ?? 0,
+        focusCreature.goal?.current || focusCreature.currentGoal || '',
         focusCreature.health?.toFixed?.(0) ?? 0,
         focusCreature.maxHealth?.toFixed?.(0) ?? 0,
         focusCreature.x?.toFixed?.(1) ?? 0,

@@ -1298,7 +1298,8 @@ test('Sprite manifest: runtime asset keys are present and point to files', () =>
     'prop_sticky',
     'prop_gravity',
     'prop_button',
-    'prop_launch'
+    'prop_launch',
+    'ui_scenario_cards'
   ];
 
   const missingKeys = expectedKeys.filter(key => !byKey.has(key));
