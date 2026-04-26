@@ -49,20 +49,22 @@ export function drawRain(renderer, ctx, world, weatherIntensity) {
 
   const time = performance.now() * 0.001;
   const streakCount = Math.floor(20 + (weatherIntensity - 0.5) * 60);
+  const fallSpeed = 300 + weatherIntensity * 200;
   ctx.save();
   ctx.strokeStyle = `rgba(150, 180, 255, ${0.08 + (weatherIntensity - 0.5) * 0.15})`;
   ctx.lineWidth = 1;
   ctx.lineCap = 'round';
   for (let i = 0; i < streakCount; i++) {
     const seed = i * 73.1;
-    const x = bounds.x1 + ((seed * 31) % 1) * visibleWidth;
-    const y = bounds.y1 + ((seed * 17) % 1) * visibleHeight;
+    const baseX = bounds.x1 + ((seed * 31) % 1) * visibleWidth;
+    const baseY = bounds.y1 + ((seed * 17) % 1) * visibleHeight;
+    const x = baseX + Math.sin(time * 2 + seed) * 5;
+    const y = ((baseY + time * fallSpeed + seed * 50) % (visibleHeight + 80)) - 40 + bounds.y1;
     const length = 30 + weatherIntensity * 50 + Math.sin(time * 3 + seed) * 10;
-    const offsetX = Math.sin(time * 2 + seed) * 5;
     ctx.globalAlpha = 0.3 + Math.sin(time * 4 + seed) * 0.15;
     ctx.beginPath();
-    ctx.moveTo(x + offsetX, y);
-    ctx.lineTo(x - 3 + offsetX, y + length);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 3, y + length);
     ctx.stroke();
   }
   ctx.restore();
@@ -75,11 +77,15 @@ export function drawSnow(renderer, ctx, world, weatherIntensity) {
 
   const time = performance.now() * 0.001;
   const snowCount = Math.floor(30 + (weatherIntensity - 0.6) * 50);
+  const fallSpeed = 40 + weatherIntensity * 30;
   ctx.save();
   for (let i = 0; i < snowCount; i++) {
     const seed = i * 91.3;
-    const x = bounds.x1 + ((seed * 23) % 1) * visibleWidth;
-    const y = bounds.y1 + ((seed * 41) % 1) * visibleHeight;
+    const baseX = bounds.x1 + ((seed * 23) % 1) * visibleWidth;
+    const baseY = bounds.y1 + ((seed * 41) % 1) * visibleHeight;
+    const drift = Math.sin(time * 0.8 + seed) * 15;
+    const x = baseX + drift;
+    const y = ((baseY + time * fallSpeed + seed * 30) % (visibleHeight + 40)) - 20 + bounds.y1;
     const size = 2 + Math.sin(time * 2 + seed) * 1 + weatherIntensity * 2;
     const alpha = 0.15 + Math.sin(time * 3 + seed) * 0.1;
     ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;

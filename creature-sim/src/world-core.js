@@ -342,6 +342,7 @@ export class World {
 
     // Patch-based food growth handled by ecosystem
     this.ecosystem.updateFoodPatches?.(dt);
+    this.ecosystem.update?.(dt);
 
     // Baseline food growth safety net
     const minReserve = this.ecosystem.minFoodReserve ?? Math.max(40, Math.round(this.maxFood * 0.2));

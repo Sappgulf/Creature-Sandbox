@@ -61,6 +61,10 @@
 * {
   box-sizing: border-box;
 }
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
 html,
 body {
   margin: 0;
@@ -68,6 +72,7 @@ body {
   height: calc(var(--vh, 1vh) * 100);
   width: 100vw;
   overflow: hidden;
+  color-scheme: dark;
 }
 body {
   background: var(--bg-deep);
@@ -3655,6 +3660,7 @@ body.home-active #btn-show-inspector {
   /* Prevent drawer interactions from panning the world */
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 @keyframes slideUp {
   from {

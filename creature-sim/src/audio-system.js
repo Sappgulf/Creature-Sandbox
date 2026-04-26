@@ -193,6 +193,7 @@ export class AudioSystem {
 
         case 'death':
         // Descending sad tone
+          if (this.playingSounds.size >= this.maxConcurrent) break;
           try {
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
@@ -219,6 +220,7 @@ export class AudioSystem {
 
         case 'attack':
         // Aggressive growl/roar
+          if (this.playingSounds.size >= this.maxConcurrent) break;
           try {
             const attackOsc = this.ctx.createOscillator();
             const attackGain = this.ctx.createGain();
@@ -240,6 +242,7 @@ export class AudioSystem {
 
         case 'mating':
         // Love chime (harmonic tones)
+          if (this.playingSounds.size >= this.maxConcurrent) break;
           try {
             this.playTone(pitch * 1.2, 0.2, 'sine', volume * 0.5, 'creatures');
             setTimeout(() => {
@@ -431,11 +434,72 @@ export class AudioSystem {
       case 'disaster':
         this.playUISound('error');
         break;
+      case 'disease':
+        this.playUISound('error');
+        break;
+      case 'play':
+        this.playUISound('click');
+        break;
       case 'seasonChange':
         this.playUISound('toggle');
         break;
       default:
-        this.playUISound('click');
+        if (soundName.startsWith('disaster_')) {
+          this.playDisasterSound(soundName);
+        } else {
+          this.playUISound('click');
+        }
+    }
+  }
+
+  // Play disaster-specific sounds
+  playDisasterSound(soundName) {
+    if (!this.soundsEnabled || !this.ctx) return;
+    if (this.playingSounds.size >= this.maxConcurrent) return;
+
+    try {
+      const type = soundName.replace('disaster_', '');
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      switch (type) {
+        case 'fire':
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(200, now);
+          osc.frequency.exponentialRampToValueAtTime(80, now + 0.5);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+          break;
+        case 'flood':
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(60, now);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+          break;
+        case 'plague':
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, now);
+          osc.frequency.linearRampToValueAtTime(660, now + 0.15);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          break;
+        default:
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(300, now);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      }
+
+      osc.connect(gain);
+      gain.connect(this.masterCompressor || this.ctx.destination);
+      const soundId = Math.random();
+      this.playingSounds.add(soundId);
+      osc.start(now);
+      osc.stop(now + 0.6);
+      osc.onended = () => this.playingSounds.delete(soundId);
+    } catch {
+      // Ignore audio errors
     }
   }
 

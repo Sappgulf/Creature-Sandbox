@@ -1211,7 +1211,6 @@ export class ParticleSystem {
     // Camera parameter is optional - particles are drawn in world space
     // If camera transform is needed, it should be applied before calling draw
     for (const p of this.particles) {
-      ctx.save();
       ctx.globalAlpha = p.opacity || 1.0;
 
       if (p.type === 'sparkle') {
@@ -1461,8 +1460,8 @@ export class ParticleSystem {
         ctx.restore();
       }
 
-      ctx.restore();
     }
+    ctx.globalAlpha = 1.0;
   }
 
   // Trigger screen shake

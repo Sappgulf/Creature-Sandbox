@@ -425,6 +425,18 @@ export class MemoryLearningSystem {
   }
 
   /**
+   * Update all creature memories each frame
+   */
+  update(world, dt) {
+    for (const creature of world.creatures) {
+      if (creature.alive) {
+        this.applyMemoryBehaviors(creature, world, dt);
+      }
+    }
+    this.cleanup(world);
+  }
+
+  /**
    * Clean up memories for dead creatures
    */
   cleanup(world) {

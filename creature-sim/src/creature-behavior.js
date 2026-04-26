@@ -68,8 +68,28 @@ export class CreatureBehaviorSystem {
       }
     }
 
-    // Find new targets if needed
+    // Use memory-based targets when no direct target exists
     if (!this.creature.target) {
+      if (this.creature.fleeTarget) {
+        this.creature.target = {
+          x: this.creature.fleeTarget.x,
+          y: this.creature.fleeTarget.y,
+          priority: 0.9,
+          memory: true
+        };
+        this.creature.fleeTarget = null;
+        return;
+      }
+      if (this.creature.rememberedFoodTarget) {
+        this.creature.target = {
+          x: this.creature.rememberedFoodTarget.x,
+          y: this.creature.rememberedFoodTarget.y,
+          priority: 0.7,
+          memory: true
+        };
+        this.creature.rememberedFoodTarget = null;
+        return;
+      }
       this.selectNewTarget(world);
     }
   }
@@ -221,13 +241,13 @@ export class CreatureBehaviorSystem {
 
       // Remember this hunting location
       if (world.memoryLearning) {
-        world.memoryLearning.rememberFood(this.creature, this.creature.x, this.creature.y, 0.5);
+        world.memoryLearning.rememberFood(this.creature, prey.x, prey.y, 0.5);
       }
     }
   }
 
   selectPredatorLiteTarget(world) {
-    const prey = world.findPrey?.(this.creature, 140);
+    const prey = world.combat?.findPrey?.(this.creature, 140);
     if (prey) {
       this.creature.target = {
         x: prey.x,

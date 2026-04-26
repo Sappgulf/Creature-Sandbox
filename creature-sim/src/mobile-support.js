@@ -13,7 +13,7 @@ export class MobileSupport {
     this.tapCount = 0;
     this.panSensitivity = 0.75;
     this.pinchSensitivity = 0.8;
-    this.panThreshold = 1.2;
+    this.panThreshold = Math.max(6, 4 * (window.devicePixelRatio || 1));
     this.compactBreakpoint = 430;
     this.landscapeBreakpoint = 900;
     this.cleanupCallbacks = [];

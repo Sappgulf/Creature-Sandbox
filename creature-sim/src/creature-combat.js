@@ -133,6 +133,9 @@ export function calculateCurrentSpeed(creature, dt, world) {
     }
   }
 
+  // Seasonal speed modifier
+  baseSpeed *= creature.seasonalSpeedBonus || 1;
+
   // Age stage speed modifiers
   baseSpeed *= getAgeSpeedMultiplier(creature.age);
 

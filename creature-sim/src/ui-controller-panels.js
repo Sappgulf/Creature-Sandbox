@@ -18,6 +18,12 @@ export function applyUiPanelMethods(UIController) {
     } else {
       document.body.classList.remove('panel-open');
     }
+    if (isVisible) {
+      requestAnimationFrame(() => {
+        const firstFocusable = panel.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (firstFocusable) firstFocusable.focus();
+      });
+    }
     return isVisible;
   };
 

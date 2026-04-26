@@ -12,6 +12,7 @@ import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
 import { poolManager } from './object-pool.js';
 import { getEnhancedAnalyticsModule } from './enhanced-analytics-loader.js';
+import { VisualEffects } from './visual-effects.js';
 // STATIC UI IMPORTS - avoids dynamic import() latency in hot path
 import { renderStats, renderSelectedInfo, renderAnalyticsCharts, renderInteractionHint } from './ui.js';
 
@@ -57,6 +58,7 @@ export class GameLoop {
     this.unlockableAchievements = subsystems.unlockableAchievements;
     this.familyBonds = subsystems.familyBonds;
     this.memoryLearning = subsystems.memoryLearning;
+    this.challengeSystem = subsystems.challengeSystem;
     this.seasonalEvents = subsystems.seasonalEvents;
     this.advancedAI = subsystems.advancedAI;
     this.godPowers = subsystems.godPowers;
@@ -88,6 +90,9 @@ export class GameLoop {
     // Weather particle emission timer
     this._weatherParticleTimer = 0;
     this._weatherParticleInterval = 0.25; // Emit weather particles every 0.25 seconds
+
+    // Visual effects system
+    this.visualEffects = new VisualEffects();
 
     // Track pause state for UI sync
     this._lastPausedState = false;
@@ -222,7 +227,10 @@ export class GameLoop {
     // Creature events
     eventSystem.on(GameEvents.CREATURE_BORN, (data) => {
       if (this.lineageTracker) this.lineageTracker.onCreatureBorn(data.creature, this.world);
-      if (this.audio) this.audio.playSound('creatureBorn');
+      if (this.audio) this.audio.playCreatureSound(data.creature, 'birth', this.camera);
+      if (this.visualEffects && data.creature) {
+        this.visualEffects.createBirthEffect(data.creature.x, data.creature.y, data.creature.genes?.hue ?? 0);
+      }
       if (this.particles && data.creature) {
         const diet = data.creature.genes?.diet ?? (data.creature.genes?.predator ? 1.0 : 0.0);
         this.particles.emit(data.creature.x, data.creature.y, 'birth', { diet });
@@ -231,7 +239,10 @@ export class GameLoop {
 
     eventSystem.on(GameEvents.CREATURE_DIED, (data) => {
       if (this.lineageTracker) this.lineageTracker.onCreatureDied(data.creature);
-      if (this.audio) this.audio.playSound('creatureDied');
+      if (this.audio) this.audio.playCreatureSound(data.creature, 'death', this.camera);
+      if (this.visualEffects && data.creature) {
+        this.visualEffects.createDeathEffect(data.creature.x, data.creature.y, data.creature.genes?.hue ?? 0, data.creature.genes?.predator);
+      }
       if (this.particles && data.creature) {
         const diet = data.creature.genes?.diet ?? (data.creature.genes?.predator ? 1.0 : 0.0);
         const name = data.creature.name || data.creature.id || 'Unknown';
@@ -249,15 +260,30 @@ export class GameLoop {
     });
 
     eventSystem.on(GameEvents.CREATURE_BOND, (data) => {
+      if (this.audio && data?.creature) {
+        this.audio.playCreatureSound(data.creature, 'mating', this.camera);
+      }
+      if (this.visualEffects && data?.creature) {
+        this.visualEffects.createMatingEffect(data.creature.x, data.creature.y);
+      }
       emitParticleEffect('bond', data, { color: '#ff9ad5' });
     });
 
     eventSystem.on(GameEvents.CREATURE_PANIC, (data) => {
+      if (this.audio && data?.creature) {
+        this.audio.playCreatureSound(data.creature, 'play', this.camera);
+      }
       emitParticleEffect('panic', data, { color: '#ffb347' });
       this.particles?.triggerShake?.(2.4);
     });
 
     eventSystem.on(GameEvents.CREATURE_KILLED, (data) => {
+      if (this.audio && data?.attacker) {
+        this.audio.playCreatureSound(data.attacker, 'attack', this.camera);
+      }
+      if (this.visualEffects && data?.prey) {
+        this.visualEffects.createHitEffect(data.prey.x, data.prey.y, Math.max(6, Number(data?.damage || data?.prey?.size || 0) * 1.5));
+      }
       const point = emitParticleEffect('combat', data, {
         damage: Math.max(6, Number(data?.damage || data?.prey?.size || 0) * 1.5),
         isKill: true
@@ -621,6 +647,10 @@ export class GameLoop {
       this.memoryLearning.update(this.world, dt);
     }
 
+    if (this.challengeSystem?.update) {
+      this.challengeSystem.update(this.world);
+    }
+
     if (this.unlockableAchievements?.update) {
       this.unlockableAchievements.update(this.world, {
         analytics: this.analytics,
@@ -713,6 +743,19 @@ export class GameLoop {
     opts.godModePointer = gameState.lastPointerWorld;
 
     this.renderer.drawWorld(this.world, opts);
+
+    // Draw challenge system UI overlay
+    if (this.challengeSystem?.draw) {
+      const ctx = this.renderer.ctx;
+      this.challengeSystem.draw(ctx, 12, 120);
+    }
+
+    // Draw visual effects (damage numbers, starbursts, hearts)
+    if (this.visualEffects?.draw) {
+      const ctx = this.renderer.ctx;
+      this.visualEffects.update(dt);
+      this.visualEffects.draw(ctx);
+    }
 
     const drawEstimate = (this.renderer.renderedCount || 0) +
       (this.world.food?.length || 0) +

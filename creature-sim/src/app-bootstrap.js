@@ -49,10 +49,10 @@ import { assetLoader } from './asset-loader.js?v=20260423-assets1';
 import { seasonalEventsSystem } from './seasonal-events.js';
 import { advancedAI } from './advanced-predator-prey-ai.js';
 import { godPowers } from './god-powers.js';
-import { ProceduralSounds } from './procedural-sounds.js';
 import { UnlockableAchievements } from './unlockable-achievements.js';
 import { FamilyBondsSystem } from './family-bonds.js';
 import { MemoryLearningSystem } from './memory-learning.js';
+import { ChallengeSystem } from './challenge-system.js';
 import { getDebugFlags } from './debug-flags.js';
 import { setupDevExports } from './dev-exports.js';
 
@@ -517,11 +517,8 @@ export function initializeApp() {
   }, 'Achievement system initialization', null);
 
   // Initialize new advanced systems
-  const proceduralSounds = errorHandler.safeExecute(() => {
-    const ps = new ProceduralSounds();
-    ps.init();
-    return ps;
-  }, 'Procedural sounds initialization', null);
+  // ProceduralSounds is deprecated - its generators merged into AudioSystem
+  const proceduralSounds = null;
 
   const unlockableAchievements = errorHandler.safeExecute(() => {
     return new UnlockableAchievements();
@@ -534,6 +531,10 @@ export function initializeApp() {
   const memoryLearning = errorHandler.safeExecute(() => {
     return new MemoryLearningSystem();
   }, 'Memory learning system initialization', null);
+
+  const challengeSystem = errorHandler.safeExecute(() => {
+    return new ChallengeSystem();
+  }, 'Challenge system initialization', null);
 
   const notifyUI = (message, type = 'info', duration = 2200) => {
     eventSystem.emit(GameEvents.NOTIFICATION, { message, type, duration });
@@ -697,6 +698,7 @@ export function initializeApp() {
       unlockableAchievements,
       familyBonds,
       memoryLearning,
+      challengeSystem,
       seasonalEvents: seasonalEventsSystem,
       advancedAI,
       godPowers
@@ -1111,7 +1113,7 @@ export function initializeApp() {
             }
           } catch (err) {
             console.error('Failed to load auto-save:', err);
-            alert('Failed to load save. Starting new game.');
+            notifyUI('Failed to load save. Starting new game.', 'error', 4000);
             if (audio) audio.playUISound('error');
             showHomePage();
           }

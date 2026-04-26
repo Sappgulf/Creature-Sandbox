@@ -240,6 +240,7 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   // Day/night aware lighting
   const rareMutations = creature.rareMutations || creature.mutations || [];
+  const mutationSet = creature._mutationSet || (creature._mutationSet = new Set(rareMutations.map(m => m.name)));
   const worldTime = opts.worldTime ?? creature._lastWorld?.t ?? 0;
 
   const dayLight = opts.dayLight ?? 1;
@@ -259,7 +260,7 @@ export function drawCreature(creature, ctx, opts = {}) {
     // Creatures glow slightly at night to remain visible
     dayNightAdjust = -10 + (1 - dayLight) * 15;
     // Bioluminescent creatures glow brighter at night
-    const bioGlow = rareMutations.find(m => m.name === 'Bioluminescence');
+    const bioGlow = mutationSet.has('Bioluminescence');
     if (bioGlow) {
       dayNightAdjust += 20 * (1 - dayLight);
     }
@@ -392,27 +393,18 @@ export function drawCreature(creature, ctx, opts = {}) {
         ctx.stroke();
       }
 
-      // Fear contagion: nearby creatures show subtle fear tint
+      // Fear contagion: skip drawing on other creatures during individual render
+      // (moved to a separate post-pass in renderer-features-viz.js to avoid O(n²))
       if (opts.world?.creatureManager && zoom > 0.4) {
         const nearbyRadius = 60 + fear * 30;
         const nearby = opts.world.creatureManager.queryCreaturesFast(
           creature.x, creature.y, nearbyRadius
         ).filter(c => c !== creature && c.alive && c.emotions);
-
-        const invCos = Math.cos(-creature.dir);
-        const invSin = Math.sin(-creature.dir);
         for (const other of nearby) {
           const dist = Math.sqrt((other.x - creature.x) ** 2 + (other.y - creature.y) ** 2);
           const influence = (1 - dist / nearbyRadius) * (fear - 0.5) * 0.15;
           if (influence > 0.01) {
-            const dx = other.x - creature.x;
-            const dy = other.y - creature.y;
-            const localX = dx * invCos - dy * invSin;
-            const localY = dx * invSin + dy * invCos;
-            ctx.beginPath();
-            ctx.arc(localX, localY, other.size || 5, 0, TAU);
-            ctx.fillStyle = `rgba(160, 80, 150, ${influence})`;
-            ctx.fill();
+            other._fearTint = Math.max(other._fearTint || 0, influence);
           }
         }
       }
@@ -463,7 +455,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   // Enhanced Bioluminescence glow effect with pulsing animation
-  const bioGlow = rareMutations.find(m => m.name === 'Bioluminescence');
+  const bioGlow = mutationSet.has('Bioluminescence');
   if (bioGlow) {
     const pulsePhase = (worldTime * 3) + (creature.id % 100) * 0.1;
     const pulseIntensity = 0.5 + Math.sin(pulsePhase) * 0.3;
@@ -523,7 +515,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   // Chameleon camouflage shimmer effect
-  const chameleonMut = rareMutations.find(m => m.name === 'Chameleon');
+  const chameleonMut = mutationSet.has('Chameleon');
   if (chameleonMut && creature.camouflageActive) {
     const shimmerPhase = worldTime * 8;
     const shimmerCount = 3;
@@ -546,7 +538,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   // Regeneration healing particle effect
-  const regenMut = rareMutations.find(m => m.name === 'Regeneration');
+  const regenMut = mutationSet.has('Regeneration');
   if (regenMut && creature.health < creature.maxHealth) {
     const healPhase = worldTime * 4;
     const particleCount = 3;
@@ -572,7 +564,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   // Armored shell plates visual
-  const armorMut = rareMutations.find(m => m.name === 'Armored Shell');
+  const armorMut = mutationSet.has('Armored Shell');
   if (armorMut) {
     const armorStrength = g.armorStrength || 0.5;
     ctx.save();
@@ -719,7 +711,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   // Telepathy brain wave rings
-  const telepathyMut = rareMutations.find(m => m.name === 'Telepathy');
+  const telepathyMut = mutationSet.has('Telepathy');
   if (telepathyMut) {
     const telepathyPhase = worldTime * 3;
     for (let i = 0; i < 3; i++) {
@@ -735,7 +727,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   // Venomous poison drip effect
-  const venomMut = rareMutations.find(m => m.name === 'Venomous');
+  const venomMut = mutationSet.has('Venomous');
   if (venomMut) {
     const venomPhase = worldTime * 2;
     // Dripping poison drops
@@ -759,7 +751,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   // Gigantism power aura with massive ripple rings
-  const gigantismMut = rareMutations.find(m => m.name === 'Gigantism');
+  const gigantismMut = mutationSet.has('Gigantism');
   if (gigantismMut) {
     const gigPhase = worldTime * 2;
     const gigStrength = g.size ? Math.min(2, g.size / 6) : 1.5;
@@ -795,7 +787,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   // Dwarfism cute sparkle effect with heart particles
-  const dwarfismMut = rareMutations.find(m => m.name === 'Dwarfism');
+  const dwarfismMut = mutationSet.has('Dwarfism');
   if (dwarfismMut) {
     const dwarfPhase = worldTime * 4;
     // Soft pink/purple cute aura
@@ -835,7 +827,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   // Albinism UV damage sparks and pale glow
-  const albinismMut = rareMutations.find(m => m.name === 'Albinism');
+  const albinismMut = mutationSet.has('Albinism');
   if (albinismMut) {
     const albinoPhase = worldTime * 3;
     // Pale UV-sensitive glow
@@ -872,7 +864,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   // Melanism night vision eye glow
-  const melanismMut = rareMutations.find(m => m.name === 'Melanism');
+  const melanismMut = mutationSet.has('Melanism');
   if (melanismMut) {
     const melanoPhase = worldTime * 2;
     // Dark aura with subtle purple/blue night vision tint
@@ -911,7 +903,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   // Longevity golden age rings
-  const longevityMut = rareMutations.find(m => m.name === 'Longevity');
+  const longevityMut = mutationSet.has('Longevity');
   if (longevityMut) {
     const longevPhase = worldTime;
     // Golden aura
@@ -951,7 +943,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   // Accelerated Aging rapid decay effect
-  const accelAgingMut = rareMutations.find(m => m.name === 'Accelerated Aging');
+  const accelAgingMut = mutationSet.has('Accelerated Aging');
   if (accelAgingMut) {
     const accelPhase = worldTime * 8;
     // Rapid ticking rings
@@ -990,7 +982,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   // Super Senses radar wave effect
-  const superSensesMut = rareMutations.find(m => m.name === 'Super Senses');
+  const superSensesMut = mutationSet.has('Super Senses');
   if (superSensesMut) {
     const sensePhase = worldTime * 4;
     const senseRange = g.sense ? Math.min(3, g.sense / 100) : 1.8;
@@ -1033,7 +1025,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   // Photosynthesis sun energy absorption
-  const photosynMut = rareMutations.find(m => m.name === 'Photosynthesis');
+  const photosynMut = mutationSet.has('Photosynthesis');
   if (photosynMut && !g.predator) {
     const photoPhase = worldTime * 2;
     const photoIntensity = opts.dayLight !== undefined ? opts.dayLight : 0.5;
@@ -1077,7 +1069,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   // Chimera hybrid trait markers
-  const chimeraMut = rareMutations.find(m => m.name === 'Chimera');
+  const chimeraMut = mutationSet.has('Chimera');
   if (chimeraMut) {
     const chimPhase = worldTime * 2;
     const hybridTraits = g.hybridTraits || {};

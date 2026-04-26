@@ -205,6 +205,7 @@ export function selectGoal(creature, world) {
   if (!needs || !senses || !goal) return;
 
   const dietRole = creature.traits?.dietRole ?? 'herbivore';
+  const diet = creature.genes.diet ?? (creature.genes.predator ? 1.0 : 0.0);
   const roleTuning = CreatureAgentTuning.ROLES?.[dietRole] ?? {};
 
   const hungerScore = clamp(needs.hunger / 100, 0, 1);
@@ -265,7 +266,21 @@ export function selectGoal(creature, world) {
   mateScore *= roleTuning.mateBias ?? 1;
   wanderScore *= roleTuning.wanderBias ?? 1;
 
+  // FLEE goal when threatened
+  let fleeScore = 0;
+  if (stressScore > 0.8 || (senses.threat && senses.threat.length > 0)) {
+    fleeScore = stressScore * 2.5 * CreatureAgentTuning.GOALS.SCORE_BIAS.WANDER;
+  }
+
+  // HUNT goal for predators
+  let huntScore = 0;
+  if (diet > 0.7 && hungerScore > 0.3) {
+    huntScore = hungerScore * 1.2 * CreatureAgentTuning.GOALS.SCORE_BIAS.EAT;
+  }
+
   const scores = [
+    { key: 'FLEE', score: fleeScore },
+    { key: 'HUNT', score: huntScore },
     { key: 'EAT', score: eatScore },
     { key: 'REST', score: restScore },
     { key: 'SEEK_MATE', score: mateScore },

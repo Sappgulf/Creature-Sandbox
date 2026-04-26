@@ -13,6 +13,7 @@ import { generateTemperament } from './creature-traits.js';
 import { pickNameSuggestion, determineSenseType, resolveDietRole, calculateAttractiveness, pickDesiredTraits } from './creature-genetics-helpers.js';
 import { updateAgeStage, getAgeSizeMultiplier, getAgeSpeedMultiplier, getAgeMetabolismMultiplier } from './creature-age.js';
 import { AdvancedGenetics } from './advanced-genetics.js';
+import { BiomeInteractions } from './biome-interactions.js';
 import { getBadges as _getBadges, drawCreature as _drawCreature, getCachedSpriteFrame as _getCachedSpriteFrame, updateCachedCanvas as _updateCachedCanvas, drawBehaviorState as _drawBehaviorState, drawTraits as _drawTraits } from './creature-render.js?v=20260423-assets1';
 import {
   reactToPoke,
@@ -665,6 +666,10 @@ export class Creature {
     const currentBiome = world.getBiomeAt ? world.getBiomeAt(this.x, this.y) : null;
     this.currentBiome = currentBiome;
     this.currentBiomeType = currentBiome?.type ?? this.currentBiomeType ?? null;
+    if (currentBiome) {
+      BiomeInteractions.applyBiomeEffects(this, currentBiome, world, dt);
+      BiomeInteractions.applyAdaptationBonuses(this);
+    }
     const inWetland = currentBiome?.type === 'wetland';
     const inWater = currentBiome?.type === 'water';
     const waterDepth = currentBiome?.depth || 0;
@@ -1318,6 +1323,9 @@ export class Creature {
         energyDrain *= (1.0 + penalty * 0.2); // Up to 20% increase
       }
     }
+
+    // Apply seasonal energy modifier
+    energyDrain *= this.seasonalEnergyMod || 1;
 
     this.energy -= energyDrain * dt;
 

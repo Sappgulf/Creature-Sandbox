@@ -113,7 +113,7 @@ export class WorldCombat {
   // Calculate damage for attack
   calculateDamage(attacker, defender) {
     const baseDamage = attacker.size * 1.6;
-    const strengthBonus = clamp(attacker.energy / attacker.maxHealth, 0.6, 1.35);
+    const strengthBonus = clamp(attacker.energy / (attacker.maxEnergy || 100), 0.6, 1.35);
     const defensePenalty = clamp(defender.health / defender.maxHealth, 0.2, 1);
 
     return baseDamage * strengthBonus * (1 - defensePenalty * 0.45);
@@ -191,7 +191,7 @@ export class WorldCombat {
 
     // Bleeding effect
     if (rand() < 0.3) {
-      this.inflictBleed(predator, damage * 0.2);
+      this.inflictBleed(victim, damage * 0.2);
     }
   }
 
@@ -216,7 +216,7 @@ export class WorldCombat {
     const nearby = this.world.creatureManager?.queryCreatures(victim.x, victim.y, 100) || [];
 
     for (const creature of nearby) {
-      if (creature.alive && creature !== victim) {
+      if (creature.alive && creature !== victim && !creature.genes?.predator && creature !== predator) {
         creature.statuses.set('panic', {
           duration: 8 + rand() * 4,
           speedMultiplier: 1.5,
@@ -237,8 +237,8 @@ export class WorldCombat {
   }
 
   // Inflict bleeding on target
-  inflictBleed(attacker, severity) {
-    attacker.statuses.set('bleeding', {
+  inflictBleed(victim, severity) {
+    victim.statuses.set('bleeding', {
       duration: 10 + rand() * 5,
       damagePerSecond: severity,
       stacks: 1
