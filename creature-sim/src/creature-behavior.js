@@ -6,6 +6,7 @@ import { CreatureConfig } from './creature-config.js';
 import { TempObjectPool } from './object-pool.js';
 import { AdvancedPredatorPreyAI } from './advanced-predator-prey-ai.js';
 import { EnhancedBehaviors } from './enhanced-behaviors.js';
+import { BiomeInteractions } from './biome-interactions.js';
 
 export class CreatureBehaviorSystem {
   constructor(creature) {
@@ -425,6 +426,10 @@ export class CreatureBehaviorSystem {
     let best = null;
     let bestD2 = Infinity;
 
+    // Biome food preference weighting
+    const currentBiome = world.getBiomeAt?.(this.creature.x, this.creature.y);
+    const biomePreference = BiomeInteractions.getBiomeFoodPreference(this.creature, currentBiome);
+
     // Check visible food
     for (const food of foodList) {
       const dx = food.x - this.creature.x;
@@ -439,8 +444,8 @@ export class CreatureBehaviorSystem {
 
       if (Math.abs(normalizedDelta) > halfFov) continue;
 
-      // Bias toward closer food
-      const bias = d2 * (1 + Math.abs(normalizedDelta) / halfFov * 0.5);
+      // Bias toward closer food, weighted by biome preference
+      const bias = d2 * (1 + Math.abs(normalizedDelta) / halfFov * 0.5) / biomePreference;
       if (bias < bestD2) {
         bestD2 = bias;
         best = food;

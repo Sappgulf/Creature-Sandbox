@@ -1207,10 +1207,22 @@ export class ParticleSystem {
     return true;
   }
 
-  draw(ctx, _camera = null) {
+  draw(ctx, camera = null) {
     // Camera parameter is optional - particles are drawn in world space
     // If camera transform is needed, it should be applied before calling draw
+    // Frustum culling: skip off-screen particles when camera is provided
+    let cx, cy, halfW, halfH;
+    if (camera) {
+      cx = camera.x;
+      cy = camera.y;
+      halfW = (camera.viewportWidth || 800) / (2 * (camera.zoom || 1));
+      halfH = (camera.viewportHeight || 600) / (2 * (camera.zoom || 1));
+    }
     for (const p of this.particles) {
+      // Frustum culling
+      if (camera && (p.x < cx - halfW || p.x > cx + halfW || p.y < cy - halfH || p.y > cy + halfH)) {
+        continue;
+      }
       ctx.globalAlpha = p.opacity || 1.0;
 
       if (p.type === 'sparkle') {

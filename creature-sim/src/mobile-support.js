@@ -156,6 +156,20 @@ export class MobileSupport {
         currentY: touch.clientY,
         startTime: Date.now()
       });
+
+      // Long-press detection
+      this._longPressTimer = setTimeout(() => {
+        const stored = this.touches.get(touch.identifier);
+        if (stored) {
+          const distance = Math.hypot(
+            stored.currentX - stored.startX,
+            stored.currentY - stored.startY
+          );
+          if (distance < 10) {
+            this.handleLongPress(stored.currentX, stored.currentY);
+          }
+        }
+      }, 600);
     }
 
     // Handle different gestures based on touch count
@@ -181,6 +195,15 @@ export class MobileSupport {
       if (stored) {
         stored.currentX = touch.clientX;
         stored.currentY = touch.clientY;
+        // Cancel long-press if moved too far
+        const distance = Math.hypot(
+          stored.currentX - stored.startX,
+          stored.currentY - stored.startY
+        );
+        if (distance > 10 && this._longPressTimer) {
+          clearTimeout(this._longPressTimer);
+          this._longPressTimer = null;
+        }
       }
     }
 
@@ -217,6 +240,12 @@ export class MobileSupport {
 
         this.touches.delete(touch.identifier);
       }
+    }
+
+    // Clear long-press timer
+    if (this._longPressTimer) {
+      clearTimeout(this._longPressTimer);
+      this._longPressTimer = null;
     }
 
     // Reset pinch/pan state
@@ -325,6 +354,13 @@ export class MobileSupport {
 
     // Emit tap event for creature selection
     this.canvas.dispatchEvent(new CustomEvent('mobiletap', {
+      detail: { x, y }
+    }));
+  }
+
+  handleLongPress(x, y) {
+    // Emit long-press event for creature inspect/context menu
+    this.canvas.dispatchEvent(new CustomEvent('mobilelongpress', {
       detail: { x, y }
     }));
   }

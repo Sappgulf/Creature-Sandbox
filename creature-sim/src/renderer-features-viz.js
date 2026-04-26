@@ -181,9 +181,12 @@ export function applyFeatureVizMethods(Renderer) {
 
   Renderer.prototype.drawSocialBonds = function(world) {
     const ctx = this.ctx;
+    const bounds = this._viewBounds;
 
     for (const creature of world.creatures) {
       if (!creature.social || !creature.alive) continue;
+      // Spatial culling: skip creatures outside viewport
+      if (creature.x < bounds.x1 || creature.x > bounds.x2 || creature.y < bounds.y1 || creature.y > bounds.y2) continue;
 
       // Draw herding connections for herbivores
       if (!creature.genes.predator && creature.social.herdMates.length > 0) {

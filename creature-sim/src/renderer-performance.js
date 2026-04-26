@@ -20,6 +20,8 @@ export class RendererPerformanceMonitor {
     this.fpsHistoryIndex = 0;
     this.currentFps = 60;
     this.frameCount = 0;
+    this._lastFrameTimestamp = performance.now();
+    this._fpsFrameCounter = 0;
 
     // ENHANCEMENT: Quality preset tracking
     this.currentQuality = 'high';
@@ -57,6 +59,9 @@ export class RendererPerformanceMonitor {
     this.renderer.enableMiniMap = preset.miniMapEnabled;
     this.renderer.enableNameLabels = preset.nameLabelsEnabled;
     this.renderer.enableTraitVisualization = preset.traitVisualizationEnabled;
+    this.renderer.enableShadows = preset.shadowsEnabled;
+    this.renderer.enableHeatmap = preset.heatmapEnabled;
+    RendererConfig.THRESHOLDS.MAX_RENDERED_OBJECTS = preset.maxRenderedCreatures;
 
     // Update heatmap cache interval
     if (this.renderer._heatmapCache) {
@@ -75,6 +80,18 @@ export class RendererPerformanceMonitor {
   beginFrame() {
     this.reset();
     this.stats.lastFrameTime = performance.now();
+
+    // Track real FPS using frame timestamps
+    this._fpsFrameCounter++;
+    const now = performance.now();
+    const elapsed = now - this._lastFrameTimestamp;
+    if (elapsed >= 1000) {
+      const realFps = (this._fpsFrameCounter * 1000) / elapsed;
+      this.fpsHistory[this.fpsHistoryIndex] = realFps;
+      this.fpsHistoryIndex = (this.fpsHistoryIndex + 1) % this.fpsHistory.length;
+      this._lastFrameTimestamp = now;
+      this._fpsFrameCounter = 0;
+    }
   }
 
   endFrame() {
@@ -166,11 +183,7 @@ export class RendererPerformanceMonitor {
     const stats = this.getStats();
     this.frameCount++;
 
-    // Update FPS history
-    const fps = stats.frameTime > 0 ? 1000 / stats.frameTime : 60;
-    this.fpsHistory[this.fpsHistoryIndex] = fps;
-    this.fpsHistoryIndex = (this.fpsHistoryIndex + 1) % this.fpsHistory.length;
-
+    // FPS is now updated in beginFrame() using real frame counting
     // Calculate rolling average FPS
     let sum = 0;
     for (let i = 0; i < this.fpsHistory.length; i++) {
@@ -201,20 +214,21 @@ export class RendererPerformanceMonitor {
 
     }
 
-    // Legacy threshold adjustments (fine-tuning)
+    // Legacy threshold adjustments (fine-tuning) - use local copies instead of mutating global config
+    let cullDistance = RendererConfig.THRESHOLDS.CULL_DISTANCE;
     if (stats.cullRatio > 0.7) {
-      RendererConfig.THRESHOLDS.CULL_DISTANCE *= 0.95;
+      cullDistance *= 0.95;
     }
     if (stats.frameTime > 20) {
-      RendererConfig.THRESHOLDS.CULL_DISTANCE *= 0.98;
+      cullDistance *= 0.98;
     }
     if (stats.frameTime < 12) {
-      RendererConfig.THRESHOLDS.CULL_DISTANCE *= 1.01;
+      cullDistance *= 1.01;
     }
 
     // Clamp values to reasonable ranges
-    RendererConfig.THRESHOLDS.CULL_DISTANCE = Math.max(500,
-      Math.min(2000, RendererConfig.THRESHOLDS.CULL_DISTANCE));
+    cullDistance = Math.max(500, Math.min(2000, cullDistance));
+    RendererConfig.THRESHOLDS.CULL_DISTANCE = cullDistance;
     RendererConfig.THRESHOLDS.MAX_RENDERED_OBJECTS = Math.max(500,
       Math.min(2000, RendererConfig.THRESHOLDS.MAX_RENDERED_OBJECTS));
   }

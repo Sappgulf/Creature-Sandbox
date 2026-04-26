@@ -343,7 +343,7 @@ export class AudioSystem {
   startMusic(type) {
     if (!this.musicEnabled || !this.ctx) return;
 
-    // Simple drone music using oscillators
+    // Rich ambient drone with multiple oscillators
     const baseFreq = {
       peaceful: 220, // A3
       tension: 185,  // F#3
@@ -351,33 +351,117 @@ export class AudioSystem {
       thriving: 247  // B3
     }[type] || 220;
 
-    // Create subtle ambient drone
+    // Main drone
     this.musicOscillator = this.ctx.createOscillator();
     this.musicGain = this.ctx.createGain();
-
     this.musicOscillator.type = 'sine';
     this.musicOscillator.frequency.value = baseFreq;
-
-    this.musicGain.gain.value = this.volumes.music * this.masterVolume * 0.15; // Very subtle
-
+    this.musicGain.gain.value = this.volumes.music * this.masterVolume * 0.1;
     this.musicOscillator.connect(this.musicGain);
     this.musicGain.connect(this.masterCompressor || this.ctx.destination);
 
-    // Add subtle variation
-    this.musicOscillator.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);
-    this.musicOscillator.frequency.linearRampToValueAtTime(baseFreq * 1.02, this.ctx.currentTime + 2);
-    this.musicOscillator.frequency.linearRampToValueAtTime(baseFreq, this.ctx.currentTime + 4);
+    // Detuned second oscillator for beating/warmth
+    this.musicOscillator2 = this.ctx.createOscillator();
+    this.musicGain2 = this.ctx.createGain();
+    this.musicOscillator2.type = 'sine';
+    this.musicOscillator2.frequency.value = baseFreq * 1.003; // ~3Hz beating at 220Hz
+    this.musicGain2.gain.value = this.volumes.music * this.masterVolume * 0.06;
+    this.musicOscillator2.connect(this.musicGain2);
+    this.musicGain2.connect(this.masterCompressor || this.ctx.destination);
+
+    // Fifth interval for harmonic context
+    this.musicOscillator3 = this.ctx.createOscillator();
+    this.musicGain3 = this.ctx.createGain();
+    this.musicOscillator3.type = 'triangle';
+    this.musicOscillator3.frequency.value = baseFreq * 1.5; // Perfect fifth
+    this.musicGain3.gain.value = this.volumes.music * this.masterVolume * 0.04;
+    this.musicOscillator3.connect(this.musicGain3);
+    this.musicGain3.connect(this.masterCompressor || this.ctx.destination);
+
+    // Subtle variation
+    const now = this.ctx.currentTime;
+    this.musicOscillator.frequency.setValueAtTime(baseFreq, now);
+    this.musicOscillator.frequency.linearRampToValueAtTime(baseFreq * 1.02, now + 2);
+    this.musicOscillator.frequency.linearRampToValueAtTime(baseFreq, now + 4);
 
     this.musicOscillator.start();
+    this.musicOscillator2.start();
+    this.musicOscillator3.start();
   }
 
   stopMusic() {
-    if (this.musicOscillator) {
-      try {
-        this.musicOscillator.stop();
-      } catch {}
-      this.musicOscillator = null;
-      this.musicGain = null;
+    const stopOsc = (osc) => {
+      if (osc) {
+        try { osc.stop(); } catch {}
+      }
+    };
+    stopOsc(this.musicOscillator);
+    stopOsc(this.musicOscillator2);
+    stopOsc(this.musicOscillator3);
+    this.musicOscillator = null;
+    this.musicGain = null;
+    this.musicOscillator2 = null;
+    this.musicGain2 = null;
+    this.musicOscillator3 = null;
+    this.musicGain3 = null;
+  }
+
+  // Play weather sounds
+  playWeatherSound(type, intensity = 0.5) {
+    if (!this.soundsEnabled || !this.ctx) return;
+    if (this.playingSounds.size >= this.maxConcurrent) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const vol = intensity * 0.3 * this.volumes.effects * this.masterVolume;
+
+      switch (type) {
+        case 'rain': {
+          // White noise burst for rain
+          const bufferSize = this.ctx.sampleRate * 0.1;
+          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * 0.5;
+          }
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = buffer;
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(vol * 0.4, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.value = 800 + intensity * 1200;
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.masterCompressor || this.ctx.destination);
+          noise.start();
+          noise.stop(now + 0.1);
+          break;
+        }
+        case 'snow': {
+          // Soft filtered noise for snow
+          this.playTone(200 + Math.random() * 100, 0.15, 'sine', vol * 0.3, 'effects');
+          break;
+        }
+        case 'wind': {
+          // Sweeping tone for wind
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(150 + Math.random() * 80, now);
+          osc.frequency.linearRampToValueAtTime(120 + Math.random() * 60, now + 0.3);
+          gain.gain.setValueAtTime(vol * 0.35, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+          osc.connect(gain);
+          gain.connect(this.masterCompressor || this.ctx.destination);
+          osc.start();
+          osc.stop(now + 0.4);
+          break;
+        }
+      }
+    } catch {
+      // Ignore weather audio errors
     }
   }
 
@@ -407,8 +491,17 @@ export class AudioSystem {
    * Update method called each frame - currently handles adaptive music
    * @param {number} dt - Delta time (unused but kept for interface consistency)
    */
-  update(_dt) {
-    // Adaptive music is handled via playAdaptiveMusic() when called explicitly
+  update(_dt, world = null) {
+    // Adaptive music
+    if (world && this.musicEnabled) {
+      this.playAdaptiveMusic(world);
+    }
+    // Ambient biome sounds (throttled)
+    if (world && this.soundsEnabled) {
+      const biome = world.getBiomeAt?.(world.width / 2, world.height / 2)?.type || 'grassland';
+      this.playAmbientSound(biome, 0.3);
+      this.playEcosystemAmbient(world);
+    }
   }
 
   /**

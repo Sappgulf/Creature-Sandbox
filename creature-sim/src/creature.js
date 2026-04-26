@@ -716,6 +716,20 @@ export class Creature {
     const goal = this.goal?.current ?? 'WANDER';
     this.target = null;
 
+    // Migration target takes priority during seasonal migration
+    if (this.migrationTarget) {
+      const distToTarget = Math.hypot(this.migrationTarget.x - this.x, this.migrationTarget.y - this.y);
+      if (distToTarget < 30) {
+        this.migrationTarget = null; // Reached waypoint
+      } else {
+        this.target = {
+          x: this.migrationTarget.x,
+          y: this.migrationTarget.y,
+          priority: 0.95,
+          migration: true
+        };
+      }
+    }
     if (goal === 'SEEK_MATE' && this.senses?.mate) {
       const mate = this.senses.mate;
       this.target = { x: mate.x, y: mate.y, creatureId: mate.id, mate: true };
@@ -1047,6 +1061,22 @@ export class Creature {
       : false;
     const nest = this.senses?.homeNest || this.senses?.nest;
     const inNest = nest ? Math.hypot(nest.x - this.x, nest.y - this.y) <= nest.radius : false;
+
+    // Sleep cycle: diurnal creatures sleep at night, nocturnal creatures sleep during day
+    const nocturnalPref = this.genes.nocturnal ?? 0.5;
+    const shouldSleep = (isNight && nocturnalPref < 0.5) || (!isNight && nocturnalPref > 0.7);
+    if (shouldSleep && (inRestZone || inNest) && spd < 8) {
+      // Sleeping: faster energy recovery, reduced senses
+      applyRestRecovery(this, dt * 1.5, world, { inRestZone, nest: inNest ? nest : null });
+      updateRestHome(this, dt, world, inNest ? nest : null);
+      this.isSleeping = true;
+      if (Math.random() < 0.03) {
+        this.setMood('💤', 0.8);
+      }
+    } else {
+      this.isSleeping = false;
+    }
+
     if ((goal === 'REST' || (this.needs?.energy ?? 100) < 30) && (inRestZone || inNest) && spd < 12) {
       applyRestRecovery(this, dt, world, { inRestZone, nest: inNest ? nest : null });
       updateRestHome(this, dt, world, inNest ? nest : null);

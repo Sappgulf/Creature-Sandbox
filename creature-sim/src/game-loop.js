@@ -1438,10 +1438,20 @@ export class GameLoop {
       if (weatherType === 'storm' && intensity > 0.4) {
         this.particles.emitStormDebris(emitX, emitY, intensity);
       }
+      // Weather audio
+      if (this.audio && Math.random() < 0.05) {
+        this.audio.playWeatherSound('rain', intensity);
+      }
     } else if (weatherType === 'snow') {
       this.particles.emit(emitX, emitY, 'weather_snow', { intensity });
+      if (this.audio && Math.random() < 0.03) {
+        this.audio.playWeatherSound('snow', intensity);
+      }
     } else if (weatherType === 'wind') {
       this.particles.emit(emitX, emitY, 'weather_wind', { intensity });
+      if (this.audio && Math.random() < 0.04) {
+        this.audio.playWeatherSound('wind', intensity);
+      }
     } else if (weatherType === 'aurora') {
       // Aurora is handled via screen effect in renderer, not particles
     }
