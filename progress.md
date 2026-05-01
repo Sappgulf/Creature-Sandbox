@@ -196,3 +196,24 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Inspected `output/browser-smoke/desktop.png`: challenge overlay is now compact and no longer covers the playfield with three large cards.
 - Inspected `output/browser-smoke/mobile-compact.png`: mobile canvas remains readable in god/watch state with the compact challenge overlay.
 - Tried `$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js` against `http://127.0.0.1:8000/?smoke=1&v=audit-final-client`; it still hung and was stopped, matching the known local-client issue from earlier passes. The checked-in Playwright smoke is now the reliable browser gate.
+
+- New request: use the attached generated asset sheet as art direction and perform a full asset/UI polish pass without expanding mechanics.
+- Implemented asset/style pass:
+- deterministic sprite generator now adds stronger tiny-read silhouettes, feet/contact shadows, creature spots, collectible scenario-card framing, upgraded food/prop base shadows, and broader particle categories (sparkle, magic, dust/leaves, bubbles/embers).
+- regenerated tracked SVG strips for creatures, food, environment, props, particles, and scenario cards while preserving existing manifest keys, frame sizes, frame counts, anchors, pivots, and FPS.
+- Implemented UI/UX pass:
+- bottom control strip now exposes Food and Inspect as first-class actions beside Pause, Speed, Spawn, Watch, and More.
+- control-strip state now syncs active Food/Inspect buttons with the current tool mode.
+- dark UI chrome, cards, drawers, scenario art frame, selected states, and menu hover states now use a more premium game-panel treatment with clearer borders/glow.
+- Verification:
+- `git diff --check` ✅
+- `npm run lint` ✅
+- `npm test` ✅ (148 passing)
+- `npm run build` ✅
+- `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
+- Visual artifacts generated/inspected:
+- `output/browser-smoke/desktop.png`
+- `output/browser-smoke/mobile-compact.png`
+- `output/browser-smoke/mobile-large.png`
+- `output/browser-smoke/polish/home-desktop.png`
+- Residual note: smoke screenshots finish in watch/god state by design, so primary-strip screenshots were partly limited by a local Playwright screenshot timeout after gameplay start; the checked-in smoke state still confirmed 30 registered sprites, no missing asset errors, and no console errors.

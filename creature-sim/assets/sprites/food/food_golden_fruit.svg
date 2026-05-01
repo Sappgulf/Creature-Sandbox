@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="384" height="48" viewBox="0 0 384 48" fill="none"><defs><filter id="food_golden_fruit-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
     <rect x="0" y="0" width="48" height="48" fill="none"/>
+    <ellipse cx="24" cy="38.92" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
     <path d="M 24 10.92 L 24 18.92"
           stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
     <circle cx="24" cy="26.42" r="9.2" fill="currentColor"/>
@@ -11,6 +12,7 @@
     <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
   </g><g transform="translate(48 0)">
     <rect x="0" y="0" width="48" height="48" fill="none"/>
+    <ellipse cx="24" cy="38.92" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
     <path d="M 24 10.92 L 24 18.92"
           stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
     <circle cx="24" cy="26.42" r="9.42" fill="currentColor"/>
@@ -22,6 +24,7 @@
     <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
   </g><g transform="translate(96 0)">
     <rect x="0" y="0" width="48" height="48" fill="none"/>
+    <ellipse cx="24" cy="38.92" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
     <path d="M 24 10.92 L 24 18.92"
           stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
     <circle cx="24" cy="26.42" r="8.87" fill="currentColor"/>
@@ -33,6 +36,7 @@
     <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
   </g><g transform="translate(144 0)">
     <rect x="0" y="0" width="48" height="48" fill="none"/>
+    <ellipse cx="24" cy="38.92" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
     <path d="M 24 10.92 L 24 18.92"
           stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
     <circle cx="24" cy="26.42" r="9.48" fill="currentColor"/>
@@ -44,6 +48,7 @@
     <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
   </g><g transform="translate(192 0)">
     <rect x="0" y="0" width="48" height="48" fill="none"/>
+    <ellipse cx="24" cy="38.92" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
     <path d="M 24 10.92 L 24 18.92"
           stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
     <circle cx="24" cy="26.42" r="9.1" fill="currentColor"/>
@@ -55,6 +60,7 @@
     <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
   </g><g transform="translate(240 0)">
     <rect x="0" y="0" width="48" height="48" fill="none"/>
+    <ellipse cx="24" cy="38.92" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
     <path d="M 24 10.92 L 24 18.92"
           stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
     <circle cx="24" cy="26.42" r="9.07" fill="currentColor"/>
@@ -66,6 +72,7 @@
     <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
   </g><g transform="translate(288 0)">
     <rect x="0" y="0" width="48" height="48" fill="none"/>
+    <ellipse cx="24" cy="38.92" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
     <path d="M 24 10.92 L 24 18.92"
           stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
     <circle cx="24" cy="26.42" r="9.5" fill="currentColor"/>
@@ -77,6 +84,7 @@
     <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
   </g><g transform="translate(336 0)">
     <rect x="0" y="0" width="48" height="48" fill="none"/>
+    <ellipse cx="24" cy="38.92" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
     <path d="M 24 10.92 L 24 18.92"
           stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
     <circle cx="24" cy="26.42" r="8.88" fill="currentColor"/>

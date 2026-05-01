@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="384" height="48" viewBox="0 0 384 48" fill="none"><defs><filter id="food_grass-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
       <rect x="0" y="0" width="48" height="48" fill="none"/>
+      <ellipse cx="24" cy="37.92" rx="15" ry="4.4" fill="rgba(0,0,0,0.2)"/>
       <path d="M 17 34.92
                Q 15 26.92
                  19 18.92
@@ -24,6 +25,7 @@
             stroke="rgba(255,255,255,0.24)" stroke-width="1" fill="none"/>
     </g><g transform="translate(48 0)">
       <rect x="0" y="0" width="48" height="48" fill="none"/>
+      <ellipse cx="24" cy="37.92" rx="15" ry="4.4" fill="rgba(0,0,0,0.2)"/>
       <path d="M 17 34.92
                Q 16.09 26.92
                  19 18.92
@@ -48,6 +50,7 @@
             stroke="rgba(255,255,255,0.24)" stroke-width="1" fill="none"/>
     </g><g transform="translate(96 0)">
       <rect x="0" y="0" width="48" height="48" fill="none"/>
+      <ellipse cx="24" cy="37.92" rx="15" ry="4.4" fill="rgba(0,0,0,0.2)"/>
       <path d="M 17 34.92
                Q 15.34 26.92
                  19 18.92
@@ -72,6 +75,7 @@
             stroke="rgba(255,255,255,0.24)" stroke-width="1" fill="none"/>
     </g><g transform="translate(144 0)">
       <rect x="0" y="0" width="48" height="48" fill="none"/>
+      <ellipse cx="24" cy="37.92" rx="15" ry="4.4" fill="rgba(0,0,0,0.2)"/>
       <path d="M 17 34.92
                Q 14.02 26.92
                  19 18.92
@@ -96,6 +100,7 @@
             stroke="rgba(255,255,255,0.24)" stroke-width="1" fill="none"/>
     </g><g transform="translate(192 0)">
       <rect x="0" y="0" width="48" height="48" fill="none"/>
+      <ellipse cx="24" cy="37.92" rx="15" ry="4.4" fill="rgba(0,0,0,0.2)"/>
       <path d="M 17 34.92
                Q 14.35 26.92
                  19 18.92
@@ -120,6 +125,7 @@
             stroke="rgba(255,255,255,0.24)" stroke-width="1" fill="none"/>
     </g><g transform="translate(240 0)">
       <rect x="0" y="0" width="48" height="48" fill="none"/>
+      <ellipse cx="24" cy="37.92" rx="15" ry="4.4" fill="rgba(0,0,0,0.2)"/>
       <path d="M 17 34.92
                Q 15.78 26.92
                  19 18.92
@@ -144,6 +150,7 @@
             stroke="rgba(255,255,255,0.24)" stroke-width="1" fill="none"/>
     </g><g transform="translate(288 0)">
       <rect x="0" y="0" width="48" height="48" fill="none"/>
+      <ellipse cx="24" cy="37.92" rx="15" ry="4.4" fill="rgba(0,0,0,0.2)"/>
       <path d="M 17 34.92
                Q 15.89 26.92
                  19 18.92
@@ -168,6 +175,7 @@
             stroke="rgba(255,255,255,0.24)" stroke-width="1" fill="none"/>
     </g><g transform="translate(336 0)">
       <rect x="0" y="0" width="48" height="48" fill="none"/>
+      <ellipse cx="24" cy="37.92" rx="15" ry="4.4" fill="rgba(0,0,0,0.2)"/>
       <path d="M 17 34.92
                Q 14.5 26.92
                  19 18.92

@@ -91,7 +91,7 @@ function renderSheet({
 function frameBackdrop(w, h, shadowY = 0.74, shadowRx = 17, shadowRy = 4.2) {
   return `
     <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-    <ellipse cx="${toFixed2(w * 0.5)}" cy="${toFixed2(h * shadowY)}" rx="${shadowRx}" ry="${shadowRy}" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="${toFixed2(w * 0.5)}" cy="${toFixed2(h * shadowY)}" rx="${shadowRx}" ry="${shadowRy}" fill="rgba(0,0,0,0.24)"/>
   `;
 }
 
@@ -128,6 +128,17 @@ function creatureFrame(profile, ctx) {
   const pupilY = eyeY + Math.sin(phase * 1.6) * 0.2;
 
   const cheekOpacity = profile.cheeks ? toFixed2(0.26 + Math.sin(phase * 1.9) * 0.06) : 0;
+  const feet = profile.feet === false ? '' : `
+    <ellipse cx="${toFixed2(cx - rx * 0.45)}" cy="${toFixed2(cy + ry * 0.78)}" rx="${toFixed2(rx * 0.2)}" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="${toFixed2(cx + rx * 0.32)}" cy="${toFixed2(cy + ry * 0.8)}" rx="${toFixed2(rx * 0.22)}" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+  `;
+  const microSpots = profile.spots
+    ? `
+      <circle cx="${toFixed2(cx - rx * 0.26)}" cy="${toFixed2(cy - ry * 0.16)}" r="1.7" fill="rgba(255,255,255,0.24)"/>
+      <circle cx="${toFixed2(cx + rx * 0.06)}" cy="${toFixed2(cy + ry * 0.18)}" r="1.45" fill="rgba(0,0,0,0.13)"/>
+      <circle cx="${toFixed2(cx - rx * 0.08)}" cy="${toFixed2(cy + ry * 0.44)}" r="1.2" fill="rgba(255,255,255,0.18)"/>
+    `
+    : '';
 
   const bodyShape = profile.angular
     ? `<path d="
@@ -259,10 +270,12 @@ function creatureFrame(profile, ctx) {
     ${tail}
     ${dorsalFin}
     ${ventralFin}
+    ${feet}
     ${bodyShape}
     ${premiumHighlight}
     ${premiumRim}
     ${stripes}
+    ${microSpots}
     ${gills}
     ${wrinkles}
     ${jaw}
@@ -285,6 +298,7 @@ function foodFrame(type, ctx) {
   if (type === 'grass') {
     return `
       <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
+      <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 12)}" rx="15" ry="4.4" fill="rgba(0,0,0,0.2)"/>
       <path d="M ${toFixed2(cx - 7)} ${toFixed2(cy + 9)}
                Q ${toFixed2(cx - 9 + sway * 1.1)} ${toFixed2(cy + 1)}
                  ${toFixed2(cx - 5)} ${toFixed2(cy - 7)}
@@ -314,6 +328,7 @@ function foodFrame(type, ctx) {
     const offset = Math.sin(phase * 2) * 0.9;
     return `
       <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
+      <ellipse cx="${toFixed2(cx + 1)}" cy="${toFixed2(cy + 11)}" rx="15" ry="4.2" fill="rgba(0,0,0,0.2)"/>
       <path d="M ${toFixed2(cx)} ${toFixed2(cy - 16)} Q ${toFixed2(cx - 5 + sway)} ${toFixed2(cy - 10)} ${toFixed2(cx - 8)} ${toFixed2(cy - 3)}"
             stroke="currentColor" stroke-width="2" fill="none" opacity="0.55"/>
       <ellipse cx="${toFixed2(cx + 4)}" cy="${toFixed2(cy - 13 + sway * 0.7)}" rx="4.4" ry="2.8" fill="currentColor" opacity="0.78"/>
@@ -329,6 +344,7 @@ function foodFrame(type, ctx) {
     const leafSwing = Math.sin(phase * 1.7) * 2.6;
     return `
       <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
+      <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 12)}" rx="14" ry="4.4" fill="rgba(0,0,0,0.2)"/>
       <path d="M ${toFixed2(cx)} ${toFixed2(cy - 15)} L ${toFixed2(cx)} ${toFixed2(cy - 7)}"
             stroke="#7a4e27" stroke-width="2.1" stroke-linecap="round"/>
       <path d="M ${toFixed2(cx)} ${toFixed2(cy - 13)}
@@ -350,6 +366,7 @@ function foodFrame(type, ctx) {
   const starTilt = phase * 57.2958;
   return `
     <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
+    <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 13)}" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
     <path d="M ${toFixed2(cx)} ${toFixed2(cy - 15)} L ${toFixed2(cx)} ${toFixed2(cy - 7)}"
           stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
     <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy + 0.5)}" r="${toFixed2(9.2 * (1 + shimmer * 0.08))}" fill="currentColor"/>
@@ -366,12 +383,17 @@ function propFrame(type, ctx) {
   const { phase, frameWidth: w, frameHeight: h } = ctx;
   const cx = w * 0.5;
   const cy = h * 0.5;
+  const propBase = `
+    <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 31)}" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 26)}" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
+  `;
 
   if (type === 'bounce') {
     const squash = 1 - Math.max(0, Math.sin(phase * 2.2)) * 0.14;
     const padRy = 11 * squash;
     return `
       <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
+      ${propBase}
       <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 22)}" rx="23" ry="5.8" fill="rgba(0,0,0,0.16)"/>
       <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 8)}" rx="28" ry="${toFixed2(padRy)}" fill="currentColor"/>
       <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 6.5)}" rx="22.5" ry="${toFixed2(padRy * 0.55)}" fill="rgba(255,255,255,0.26)"/>
@@ -383,6 +405,7 @@ function propFrame(type, ctx) {
     const bounce = Math.sin(phase * 2.1) * 4.5;
     return `
       <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
+      ${propBase}
       <rect x="${toFixed2(cx - 23)}" y="${toFixed2(cy + 21)}" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
       <path d="M ${toFixed2(cx - 14)} ${toFixed2(cy + 20)}
                Q ${toFixed2(cx - 6)} ${toFixed2(cy + 15 + bounce * 0.18)} ${toFixed2(cx - 1)} ${toFixed2(cy + 9)}
@@ -399,6 +422,7 @@ function propFrame(type, ctx) {
     const angle = toFixed2((phase / TAU) * 360);
     return `
       <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
+      ${propBase}
       <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="6.5" fill="currentColor"/>
       <g transform="translate(${toFixed2(cx)} ${toFixed2(cy)}) rotate(${angle})">
         <path d="M 0 -27 L 7 -9 L -7 -9 Z" fill="currentColor"/>
@@ -414,6 +438,7 @@ function propFrame(type, ctx) {
     const tilt = Math.sin(phase * 1.4) * 14;
     return `
       <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
+      ${propBase}
       <path d="M ${toFixed2(cx)} ${toFixed2(cy + 15)} L ${toFixed2(cx - 8)} ${toFixed2(cy + 30)} L ${toFixed2(cx + 8)} ${toFixed2(cy + 30)} Z"
             fill="rgba(0,0,0,0.24)"/>
       <g transform="translate(${toFixed2(cx)} ${toFixed2(cy + 14)}) rotate(${toFixed2(tilt)})">
@@ -428,6 +453,7 @@ function propFrame(type, ctx) {
     const flow = (phase / TAU) * 20;
     return `
       <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
+      ${propBase}
       <rect x="${toFixed2(cx - 30)}" y="${toFixed2(cy - 12)}" width="60" height="24" rx="7" fill="currentColor"/>
       <rect x="${toFixed2(cx - 26)}" y="${toFixed2(cy - 8)}" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
       <g fill="rgba(255,255,255,0.82)">
@@ -442,6 +468,7 @@ function propFrame(type, ctx) {
     const glide = Math.sin(phase * 1.5) * 1.6;
     return `
       <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
+      ${propBase}
       <path d="M ${toFixed2(cx - 30)} ${toFixed2(cy + 18)} L ${toFixed2(cx + 28)} ${toFixed2(cy - 12)} L ${toFixed2(cx + 28)} ${toFixed2(cy + 18)} Z"
             fill="currentColor"/>
       <path d="M ${toFixed2(cx - 21)} ${toFixed2(cy + 10 - glide)} L ${toFixed2(cx - 4)} ${toFixed2(cy + 1 - glide)} L ${toFixed2(cx - 4)} ${toFixed2(cy + 8 - glide)} Z"
@@ -455,6 +482,7 @@ function propFrame(type, ctx) {
     const angle = toFixed2((phase / TAU) * 540);
     return `
       <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
+      ${propBase}
       <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="23" fill="currentColor" opacity="0.2"/>
       <g transform="translate(${toFixed2(cx)} ${toFixed2(cy)}) rotate(${angle})">
         <path d="M 0 -4 C 9 -20 21 -23 24 -20 C 17 -8 8 -2 0 0 Z" fill="currentColor"/>
@@ -470,6 +498,7 @@ function propFrame(type, ctx) {
     const wobble = Math.sin(phase * 2.2) * 3.2;
     return `
       <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
+      ${propBase}
       <path d="M ${toFixed2(cx - 25)} ${toFixed2(cy + 12)}
                Q ${toFixed2(cx - 28)} ${toFixed2(cy - 12 + wobble)} ${toFixed2(cx - 7)} ${toFixed2(cy - 18)}
                Q ${toFixed2(cx + 16)} ${toFixed2(cy - 24 - wobble)} ${toFixed2(cx + 25)} ${toFixed2(cy - 4)}
@@ -485,6 +514,7 @@ function propFrame(type, ctx) {
     const swirl = (phase / TAU) * 360;
     return `
       <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
+      ${propBase}
       <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="24" fill="currentColor" opacity="0.2"/>
       <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="11" fill="rgba(0,0,0,0.45)"/>
       <g transform="translate(${toFixed2(cx)} ${toFixed2(cy)}) rotate(${toFixed2(swirl)})">
@@ -499,6 +529,7 @@ function propFrame(type, ctx) {
     const press = Math.max(0, Math.sin(phase * 2.1));
     return `
       <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
+      ${propBase}
       <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 20)}" rx="22" ry="5" fill="rgba(0,0,0,0.18)"/>
       <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 12 + press * 1.8)}" rx="19" ry="7" fill="currentColor" opacity="0.62"/>
       <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy + 2 + press * 5)}" r="13" fill="currentColor"/>
@@ -509,6 +540,7 @@ function propFrame(type, ctx) {
   const blast = Math.max(0, Math.sin(phase * 2.4)) * 1.25;
   return `
     <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
+    ${propBase}
     <path d="M ${toFixed2(cx - 10)} ${toFixed2(cy + 15)} L ${toFixed2(cx + 10)} ${toFixed2(cy + 15)} L ${toFixed2(cx + 8)} ${toFixed2(cy + 25)} L ${toFixed2(cx - 8)} ${toFixed2(cy + 25)} Z"
           fill="rgba(0,0,0,0.24)"/>
     <path d="M ${toFixed2(cx)} ${toFixed2(cy - 22)}
@@ -679,24 +711,29 @@ function particleFrame(_type, ctx) {
     `;
   }
   if (group === 1) {
+    const magicHue = i % 2 === 0 ? '#d946ef' : '#8b5cf6';
     return `
       <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-      <path d="M ${cx} ${cy + 10} C ${cx - 16} ${cy - 1} ${cx - 11} ${cy - 15} ${cx} ${cy - 7} C ${cx + 11} ${cy - 15} ${cx + 16} ${cy - 1} ${cx} ${cy + 10} Z" fill="#ff7aa8" opacity="0.92"/>
-      <ellipse cx="${cx - 4}" cy="${cy - 4}" rx="3" ry="2" fill="white" opacity="0.38"/>
+      <circle cx="${cx}" cy="${cy}" r="${toFixed2(8.5 * pulse)}" fill="${magicHue}" opacity="0.72"/>
+      <circle cx="${cx}" cy="${cy}" r="${toFixed2(12 * pulse)}" fill="none" stroke="${magicHue}" stroke-width="1.7" opacity="0.72"/>
+      <path d="M ${cx} ${cy - 14} l 0 5 M ${cx} ${cy + 9} l 0 5 M ${cx - 14} ${cy} l 5 0 M ${cx + 9} ${cy} l 5 0" stroke="white" stroke-width="1.2" stroke-linecap="round" opacity="0.75"/>
     `;
   }
   if (group === 2) {
+    const leaf = i % 2 === 1;
     return `
       <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-      <ellipse cx="${cx}" cy="${cy + 3}" rx="${toFixed2(10 * pulse)}" ry="${toFixed2(6 * pulse)}" fill="#9b7650" opacity="0.42"/>
-      <circle cx="${cx - 6}" cy="${cy}" r="4.5" fill="#b89166" opacity="0.55"/>
-      <circle cx="${cx + 4}" cy="${cy - 2}" r="5.3" fill="#c8a376" opacity="0.45"/>
+      ${leaf
+        ? `<path d="M ${cx - 11} ${cy + 4} C ${cx - 4} ${cy - 10} ${cx + 8} ${cy - 11} ${cx + 12} ${cy + 2} C ${cx + 2} ${cy + 4} ${cx - 2} ${cy + 10} ${cx - 11} ${cy + 4} Z" fill="#86ef70" opacity="0.78"/><path d="M ${cx - 8} ${cy + 3} Q ${cx + 2} ${cy + 1} ${cx + 10} ${cy - 1}" stroke="rgba(255,255,255,0.45)" stroke-width="1" fill="none"/>`
+        : `<ellipse cx="${cx}" cy="${cy + 3}" rx="${toFixed2(10 * pulse)}" ry="${toFixed2(6 * pulse)}" fill="#9b7650" opacity="0.42"/><circle cx="${cx - 6}" cy="${cy}" r="4.5" fill="#b89166" opacity="0.55"/><circle cx="${cx + 4}" cy="${cy - 2}" r="5.3" fill="#c8a376" opacity="0.45"/>`}
     `;
   }
+  const ember = i % 2 === 1;
   return `
     <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-    <circle cx="${cx}" cy="${cy}" r="${toFixed2(10 * pulse)}" fill="none" stroke="#9fe8ff" stroke-width="2.2" opacity="0.8"/>
-    <path d="M ${cx - 9} ${cy - 1} Q ${cx} ${cy - 11} ${cx + 9} ${cy - 1}" stroke="white" stroke-width="1.3" fill="none" opacity="0.65"/>
+    ${ember
+      ? `<path d="M ${cx} ${cy + 12} C ${cx - 8} ${cy + 3} ${cx - 2} ${cy - 7} ${cx + 1} ${cy - 13} C ${cx + 10} ${cy - 3} ${cx + 8} ${cy + 7} ${cx} ${cy + 12} Z" fill="#fb923c" opacity="0.88"/><path d="M ${cx} ${cy + 6} C ${cx - 3} ${cy + 1} ${cx + 1} ${cy - 5} ${cx + 3} ${cy - 8} C ${cx + 6} ${cy - 1} ${cx + 5} ${cy + 4} ${cx} ${cy + 6} Z" fill="#fde68a" opacity="0.82"/>`
+      : `<circle cx="${cx}" cy="${cy}" r="${toFixed2(10 * pulse)}" fill="none" stroke="#9fe8ff" stroke-width="2.2" opacity="0.8"/><path d="M ${cx - 9} ${cy - 1} Q ${cx} ${cy - 11} ${cx + 9} ${cy - 1}" stroke="white" stroke-width="1.3" fill="none" opacity="0.65"/>`}
   `;
 }
 
@@ -705,13 +742,13 @@ function scenarioCardFrame(ctx) {
   const cx = w * 0.5;
   const cy = h * 0.5;
   const scenario = [
-    { sky: '#123426', glow: '#62e6a6', accent: '#d5ff7d', creatures: 4, predators: 1, food: 9, props: ['spring'], water: false },
-    { sky: '#163f2b', glow: '#87efac', accent: '#f6d365', creatures: 6, predators: 1, food: 12, props: ['bounce'], water: true },
-    { sky: '#3a1d2d', glow: '#fb7185', accent: '#fbbf24', creatures: 5, predators: 3, food: 8, props: ['fan'], water: false },
-    { sky: '#17243b', glow: '#bae6fd', accent: '#e0f2fe', creatures: 5, predators: 1, food: 5, props: ['calm'], water: false, snow: true },
-    { sky: '#14384a', glow: '#67e8f9', accent: '#fde68a', creatures: 4, predators: 1, food: 6, props: ['conveyor', 'spring'], water: true },
-    { sky: '#251547', glow: '#c084fc', accent: '#5eead4', creatures: 6, predators: 1, food: 9, props: ['dna'], water: true },
-    { sky: '#1f2937', glow: '#38bdf8', accent: '#f472b6', creatures: 6, predators: 1, food: 10, props: ['bounce', 'fan', 'launch'], water: false }
+    { sky: '#103021', glow: '#62e6a6', accent: '#d5ff7d', creatures: 4, predators: 0, food: 11, props: ['spring'], water: false },
+    { sky: '#173a2b', glow: '#86efac', accent: '#f6d365', creatures: 6, predators: 1, food: 13, props: ['bounce'], water: true },
+    { sky: '#3a1720', glow: '#fb7185', accent: '#fbbf24', creatures: 4, predators: 3, food: 7, props: ['fan'], water: false, ember: true },
+    { sky: '#15233a', glow: '#bae6fd', accent: '#e0f2fe', creatures: 5, predators: 1, food: 5, props: ['calm'], water: false, snow: true },
+    { sky: '#12394b', glow: '#67e8f9', accent: '#fde68a', creatures: 4, predators: 1, food: 7, props: ['conveyor', 'spring'], water: true },
+    { sky: '#24123f', glow: '#c084fc', accent: '#5eead4', creatures: 6, predators: 1, food: 10, props: ['dna'], water: true },
+    { sky: '#372416', glow: '#fbbf24', accent: '#38bdf8', creatures: 5, predators: 1, food: 8, props: ['bounce', 'fan', 'launch'], water: false }
   ][i % 7];
 
   const foodDots = Array.from({ length: scenario.food }, (_, index) => {
@@ -772,11 +809,15 @@ function scenarioCardFrame(ctx) {
   const snow = scenario.snow
     ? '<g fill="rgba(255,255,255,0.72)"><circle cx="34" cy="32" r="2"/><circle cx="120" cy="24" r="1.7"/><circle cx="204" cy="42" r="2.3"/><circle cx="256" cy="26" r="1.8"/></g>'
     : '';
+  const ember = scenario.ember
+    ? '<g fill="rgba(251,146,60,0.82)"><circle cx="42" cy="128" r="2.2"/><circle cx="226" cy="118" r="1.8"/><circle cx="275" cy="132" r="2.6"/></g>'
+    : '';
 
   return `
-    <rect x="0" y="0" width="${w}" height="${h}" rx="18" fill="${scenario.sky}"/>
-    <rect x="0" y="0" width="${w}" height="${h}" rx="18" fill="rgba(255,255,255,0.06)"/>
-    <rect x="0" y="${toFixed2(h * 0.58)}" width="${w}" height="${toFixed2(h * 0.42)}" rx="18" fill="rgba(0,0,0,0.26)"/>
+    <rect x="0" y="0" width="${w}" height="${h}" rx="18" fill="#07101c"/>
+    <rect x="5" y="5" width="${w - 10}" height="${h - 10}" rx="15" fill="${scenario.sky}" stroke="rgba(255,255,255,0.16)" stroke-width="1.4"/>
+    <rect x="5" y="5" width="${w - 10}" height="${h - 10}" rx="15" fill="rgba(255,255,255,0.06)"/>
+    <rect x="5" y="${toFixed2(h * 0.58)}" width="${w - 10}" height="${toFixed2(h * 0.42 - 5)}" rx="15" fill="rgba(0,0,0,0.28)"/>
     <circle cx="${toFixed2(cx + 22)}" cy="${toFixed2(cy + 10)}" r="92" fill="${scenario.glow}" opacity="0.13"/>
     ${water}
     <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(h * 0.68)}" rx="118" ry="46" fill="rgba(34,197,94,0.2)" stroke="${scenario.glow}" stroke-width="1.3" opacity="0.82"/>
@@ -786,7 +827,9 @@ function scenarioCardFrame(ctx) {
     ${predatorDots}
     ${propGlyphs}
     ${snow}
+    ${ember}
     <path d="M 18 24 C 54 6 86 10 118 25" stroke="rgba(255,255,255,0.16)" stroke-width="2" fill="none"/>
+    <rect x="10" y="10" width="${w - 20}" height="${h - 20}" rx="12" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
   `;
 }
 
@@ -815,6 +858,7 @@ const creatureProfiles = [
     eyeTone: '#111',
     cheeks: true,
     stripes: false,
+    spots: true,
     gills: false,
     wrinkles: false,
     jaw: false,
@@ -857,6 +901,7 @@ const creatureProfiles = [
     eyeTone: '#121212',
     cheeks: false,
     stripes: true,
+    spots: true,
     gills: false,
     wrinkles: false,
     jaw: false,
@@ -899,6 +944,7 @@ const creatureProfiles = [
     eyeTone: '#740b18',
     cheeks: false,
     stripes: false,
+    spots: true,
     gills: false,
     wrinkles: false,
     jaw: true,
@@ -941,6 +987,7 @@ const creatureProfiles = [
     eyeTone: '#111',
     cheeks: true,
     stripes: false,
+    spots: false,
     gills: false,
     wrinkles: false,
     jaw: false,
@@ -983,6 +1030,7 @@ const creatureProfiles = [
     eyeTone: '#171717',
     cheeks: false,
     stripes: false,
+    spots: false,
     gills: false,
     wrinkles: true,
     jaw: false,
@@ -1025,6 +1073,7 @@ const creatureProfiles = [
     eyeTone: '#101010',
     cheeks: false,
     stripes: true,
+    spots: true,
     gills: false,
     wrinkles: false,
     jaw: false,
@@ -1067,6 +1116,7 @@ const creatureProfiles = [
     eyeTone: '#121212',
     cheeks: false,
     stripes: true,
+    spots: true,
     gills: true,
     wrinkles: false,
     jaw: false,

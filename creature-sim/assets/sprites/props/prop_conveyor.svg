@@ -1,5 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1152" height="96" viewBox="0 0 1152 96" fill="none"><defs><filter id="prop_conveyor-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
       <rect x="0" y="0" width="96" height="96" fill="none"/>
+
+    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
+
       <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
       <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
       <g fill="rgba(255,255,255,0.82)">
@@ -9,6 +13,10 @@
       </g>
     </g><g transform="translate(96 0)">
       <rect x="0" y="0" width="96" height="96" fill="none"/>
+
+    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
+
       <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
       <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
       <g fill="rgba(255,255,255,0.82)">
@@ -18,6 +26,10 @@
       </g>
     </g><g transform="translate(192 0)">
       <rect x="0" y="0" width="96" height="96" fill="none"/>
+
+    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
+
       <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
       <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
       <g fill="rgba(255,255,255,0.82)">
@@ -27,6 +39,10 @@
       </g>
     </g><g transform="translate(288 0)">
       <rect x="0" y="0" width="96" height="96" fill="none"/>
+
+    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
+
       <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
       <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
       <g fill="rgba(255,255,255,0.82)">
@@ -36,6 +52,10 @@
       </g>
     </g><g transform="translate(384 0)">
       <rect x="0" y="0" width="96" height="96" fill="none"/>
+
+    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
+
       <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
       <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
       <g fill="rgba(255,255,255,0.82)">
@@ -45,6 +65,10 @@
       </g>
     </g><g transform="translate(480 0)">
       <rect x="0" y="0" width="96" height="96" fill="none"/>
+
+    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
+
       <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
       <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
       <g fill="rgba(255,255,255,0.82)">
@@ -54,6 +78,10 @@
       </g>
     </g><g transform="translate(576 0)">
       <rect x="0" y="0" width="96" height="96" fill="none"/>
+
+    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
+
       <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
       <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
       <g fill="rgba(255,255,255,0.82)">
@@ -63,6 +91,10 @@
       </g>
     </g><g transform="translate(672 0)">
       <rect x="0" y="0" width="96" height="96" fill="none"/>
+
+    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
+
       <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
       <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
       <g fill="rgba(255,255,255,0.82)">
@@ -72,6 +104,10 @@
       </g>
     </g><g transform="translate(768 0)">
       <rect x="0" y="0" width="96" height="96" fill="none"/>
+
+    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
+
       <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
       <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
       <g fill="rgba(255,255,255,0.82)">
@@ -81,6 +117,10 @@
       </g>
     </g><g transform="translate(864 0)">
       <rect x="0" y="0" width="96" height="96" fill="none"/>
+
+    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
+
       <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
       <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
       <g fill="rgba(255,255,255,0.82)">
@@ -90,6 +130,10 @@
       </g>
     </g><g transform="translate(960 0)">
       <rect x="0" y="0" width="96" height="96" fill="none"/>
+
+    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
+
       <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
       <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
       <g fill="rgba(255,255,255,0.82)">
@@ -99,6 +143,10 @@
       </g>
     </g><g transform="translate(1056 0)">
       <rect x="0" y="0" width="96" height="96" fill="none"/>
+
+    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
+
       <rect x="18" y="36" width="60" height="24" rx="7" fill="currentColor"/>
       <rect x="22" y="40" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
       <g fill="rgba(255,255,255,0.82)">

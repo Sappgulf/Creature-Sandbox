@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="640" height="64" viewBox="0 0 640 64" fill="none"><defs><filter id="creature_elder-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -19,9 +19,14 @@
       Z
     " fill="currentColor" opacity="0.78"/>
 
+
+    <ellipse cx="21.44" cy="46.65" rx="4.13" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.32" cy="46.96" rx="4.54" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+
     <ellipse cx="30.72" cy="34.86" rx="20.63" ry="15.12" fill="currentColor" filter="url(#creature_elder-soft-shadow)"/>
     <ellipse cx="34.43" cy="30.63" rx="9.9" ry="5.14" fill="rgba(255,255,255,0.18)"/>
     <ellipse cx="30.72" cy="34.86" rx="20.88" ry="15.37" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+
 
 
 
@@ -48,7 +53,7 @@
   </g><g transform="translate(64 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -66,9 +71,14 @@
       Z
     " fill="currentColor" opacity="0.78"/>
 
+
+    <ellipse cx="21.48" cy="46.14" rx="4.11" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.29" cy="46.45" rx="4.52" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+
     <ellipse cx="30.72" cy="34.31" rx="20.53" ry="15.18" fill="currentColor" filter="url(#creature_elder-soft-shadow)"/>
     <ellipse cx="34.41" cy="30.06" rx="9.85" ry="5.16" fill="rgba(255,255,255,0.18)"/>
     <ellipse cx="30.72" cy="34.31" rx="20.78" ry="15.43" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+
 
 
 
@@ -95,7 +105,7 @@
   </g><g transform="translate(128 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -113,9 +123,14 @@
       Z
     " fill="currentColor" opacity="0.78"/>
 
+
+    <ellipse cx="21.58" cy="45.78" rx="4.06" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.22" cy="46.08" rx="4.47" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+
     <ellipse cx="30.72" cy="33.85" rx="20.31" ry="15.3" fill="currentColor" filter="url(#creature_elder-soft-shadow)"/>
     <ellipse cx="34.37" cy="29.56" rx="9.75" ry="5.2" fill="rgba(255,255,255,0.18)"/>
     <ellipse cx="30.72" cy="33.85" rx="20.56" ry="15.55" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+
 
 
 
@@ -142,7 +157,7 @@
   </g><g transform="translate(192 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -160,9 +175,14 @@
       Z
     " fill="currentColor" opacity="0.78"/>
 
+
+    <ellipse cx="21.68" cy="45.69" rx="4.02" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.15" cy="46" rx="4.42" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+
     <ellipse cx="30.72" cy="33.66" rx="20.08" ry="15.42" fill="currentColor" filter="url(#creature_elder-soft-shadow)"/>
     <ellipse cx="34.33" cy="29.34" rx="9.64" ry="5.24" fill="rgba(255,255,255,0.18)"/>
     <ellipse cx="30.72" cy="33.66" rx="20.33" ry="15.67" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+
 
 
 
@@ -189,7 +209,7 @@
   </g><g transform="translate(256 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -207,9 +227,14 @@
       Z
     " fill="currentColor" opacity="0.78"/>
 
+
+    <ellipse cx="21.73" cy="45.89" rx="3.99" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.11" cy="46.2" rx="4.39" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+
     <ellipse cx="30.72" cy="33.82" rx="19.97" ry="15.48" fill="currentColor" filter="url(#creature_elder-soft-shadow)"/>
     <ellipse cx="34.31" cy="29.48" rx="9.58" ry="5.26" fill="rgba(255,255,255,0.18)"/>
     <ellipse cx="30.72" cy="33.82" rx="20.22" ry="15.73" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+
 
 
 
@@ -236,7 +261,7 @@
   </g><g transform="translate(320 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -254,9 +279,14 @@
       Z
     " fill="currentColor" opacity="0.78"/>
 
+
+    <ellipse cx="21.71" cy="46.31" rx="4" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.13" cy="46.62" rx="4.4" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+
     <ellipse cx="30.72" cy="34.26" rx="20.02" ry="15.45" fill="currentColor" filter="url(#creature_elder-soft-shadow)"/>
     <ellipse cx="34.32" cy="29.93" rx="9.61" ry="5.25" fill="rgba(255,255,255,0.18)"/>
     <ellipse cx="30.72" cy="34.26" rx="20.27" ry="15.7" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+
 
 
 
@@ -283,7 +313,7 @@
   </g><g transform="translate(384 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -301,9 +331,14 @@
       Z
     " fill="currentColor" opacity="0.78"/>
 
+
+    <ellipse cx="21.62" cy="46.79" rx="4.04" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.19" cy="47.09" rx="4.45" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+
     <ellipse cx="30.72" cy="34.81" rx="20.21" ry="15.35" fill="currentColor" filter="url(#creature_elder-soft-shadow)"/>
     <ellipse cx="34.36" cy="30.52" rx="9.7" ry="5.22" fill="rgba(255,255,255,0.18)"/>
     <ellipse cx="30.72" cy="34.81" rx="20.46" ry="15.6" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+
 
 
 
@@ -330,7 +365,7 @@
   </g><g transform="translate(448 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -348,9 +383,14 @@
       Z
     " fill="currentColor" opacity="0.78"/>
 
+
+    <ellipse cx="21.52" cy="47.14" rx="4.09" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.26" cy="47.45" rx="4.5" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+
     <ellipse cx="30.72" cy="35.27" rx="20.45" ry="15.22" fill="currentColor" filter="url(#creature_elder-soft-shadow)"/>
     <ellipse cx="34.4" cy="31.01" rx="9.81" ry="5.17" fill="rgba(255,255,255,0.18)"/>
     <ellipse cx="30.72" cy="35.27" rx="20.7" ry="15.47" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+
 
 
 
@@ -377,7 +417,7 @@
   </g><g transform="translate(512 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -395,9 +435,14 @@
       Z
     " fill="currentColor" opacity="0.78"/>
 
+
+    <ellipse cx="21.45" cy="47.26" rx="4.12" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.31" cy="47.56" rx="4.53" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+
     <ellipse cx="30.72" cy="35.46" rx="20.61" ry="15.13" fill="currentColor" filter="url(#creature_elder-soft-shadow)"/>
     <ellipse cx="34.43" cy="31.22" rx="9.89" ry="5.14" fill="rgba(255,255,255,0.18)"/>
     <ellipse cx="30.72" cy="35.46" rx="20.86" ry="15.38" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+
 
 
 
@@ -424,7 +469,7 @@
   </g><g transform="translate(576 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -442,9 +487,14 @@
       Z
     " fill="currentColor" opacity="0.78"/>
 
+
+    <ellipse cx="21.44" cy="47.1" rx="4.12" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.32" cy="47.4" rx="4.54" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+
     <ellipse cx="30.72" cy="35.3" rx="20.62" ry="15.13" fill="currentColor" filter="url(#creature_elder-soft-shadow)"/>
     <ellipse cx="34.43" cy="31.07" rx="9.9" ry="5.14" fill="rgba(255,255,255,0.18)"/>
     <ellipse cx="30.72" cy="35.3" rx="20.87" ry="15.38" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+
 
 
 

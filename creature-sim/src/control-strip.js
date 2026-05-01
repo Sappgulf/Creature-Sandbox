@@ -42,6 +42,7 @@ export class ControlStripController {
     this.ctrlSpeed = document.getElementById('ctrl-speed');
     this.ctrlFood = document.getElementById('ctrl-food');
     this.ctrlSpawn = document.getElementById('ctrl-spawn');
+    this.ctrlInspect = document.getElementById('ctrl-inspect');
     this.ctrlWatch = document.getElementById('ctrl-watch');
     this.ctrlGod = document.getElementById('ctrl-god');
     this.ctrlMore = document.getElementById('ctrl-more');
@@ -76,6 +77,7 @@ export class ControlStripController {
     this.ctrlSpeed?.addEventListener('click', () => this.cycleSpeed());
     this.ctrlFood?.addEventListener('click', () => this.activateFoodTool());
     this.ctrlSpawn?.addEventListener('click', () => this.openSpawnDrawer());
+    this.ctrlInspect?.addEventListener('click', () => this.activateInspectTool());
     this.ctrlWatch?.addEventListener('click', () => this.toggleWatchMode());
     this.ctrlGod?.addEventListener('click', () => this.toggleGodMode());
     this.ctrlMore?.addEventListener('click', () => this.openOverflowDrawer());
@@ -142,6 +144,7 @@ export class ControlStripController {
     eventSystem.on('game:paused', () => this.updatePauseButton());
     eventSystem.on('game:resumed', () => this.updatePauseButton());
     this.applyMobilePrefs({ syncMenu: true });
+    eventSystem.on('tool:changed', () => this.updateToolButtons());
   }
 
   loadMobilePrefs() {
@@ -307,6 +310,24 @@ export class ControlStripController {
       pulseTarget.classList.add('pulse');
       setTimeout(() => pulseTarget.classList.remove('pulse'), 250);
     }
+  }
+
+  activateInspectTool() {
+    if (this.tools) {
+      this.tools.setMode('inspect');
+      eventSystem.emit('tool:changed', { mode: 'inspect' });
+    }
+    this.uiController?.updateToolIndicator?.('inspect');
+    this.updateToolButtons();
+    this.buzz(8);
+  }
+
+  updateToolButtons() {
+    const mode = this.tools?.mode || 'inspect';
+    this.ctrlFood?.classList.toggle('active', mode === 'food');
+    this.ctrlFood?.setAttribute('aria-pressed', mode === 'food' ? 'true' : 'false');
+    this.ctrlInspect?.classList.toggle('active', mode === 'inspect');
+    this.ctrlInspect?.setAttribute('aria-pressed', mode === 'inspect' ? 'true' : 'false');
   }
 
   // === SPAWN DRAWER ===
@@ -645,6 +666,7 @@ export class ControlStripController {
       gameState.fastForward,
       gameState.watchModeEnabled ? 1 : 0,
       gameState.godModeActive ? 1 : 0,
+      this.tools?.mode || 'inspect',
       selectedType,
       followMode
     ].join('|');
@@ -665,6 +687,7 @@ export class ControlStripController {
     this.updateSpeedButton();
     this.updateWatchMode();
     this.updateSpawnSelection();
+    this.updateToolButtons();
     this.watchFollow?.classList.toggle('active', this.camera?.followMode !== 'free');
     this.ctrlGod?.classList.toggle('active', this.isGodMode);
     this.menuGodMode?.classList.toggle('active', this.isGodMode);

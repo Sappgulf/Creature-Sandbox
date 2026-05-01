@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="768" height="96" viewBox="0 0 768 96" fill="none"><defs><filter id="env_trees-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
 
     <rect x="0" y="0" width="96" height="96" fill="none"/>
-    <ellipse cx="48" cy="82.56" rx="20" ry="5" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="82.56" rx="20" ry="5" fill="rgba(0,0,0,0.24)"/>
 
       <rect x="44" y="47.88" width="8" height="30" rx="3" fill="#6b4b31"/>
       <path d="M 44 64.88 Q 32 50.88 26 30.88" stroke="#6b4b31" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.7"/>
@@ -13,7 +13,7 @@
     </g><g transform="translate(96 0)">
 
     <rect x="0" y="0" width="96" height="96" fill="none"/>
-    <ellipse cx="48" cy="82.56" rx="20" ry="5" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="82.56" rx="20" ry="5" fill="rgba(0,0,0,0.24)"/>
 
       <rect x="44" y="47.88" width="8" height="30" rx="3" fill="#765236"/>
       <path d="M 44 64.88 Q 32 50.88 26 30.88" stroke="#765236" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.7"/>
@@ -25,7 +25,7 @@
     </g><g transform="translate(192 0)">
 
     <rect x="0" y="0" width="96" height="96" fill="none"/>
-    <ellipse cx="48" cy="82.56" rx="20" ry="5" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="82.56" rx="20" ry="5" fill="rgba(0,0,0,0.24)"/>
 
       <rect x="44" y="47.88" width="8" height="30" rx="3" fill="#6c4a32"/>
       <path d="M 44 64.88 Q 32 50.88 26 30.88" stroke="#6c4a32" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.7"/>
@@ -37,7 +37,7 @@
     </g><g transform="translate(288 0)">
 
     <rect x="0" y="0" width="96" height="96" fill="none"/>
-    <ellipse cx="48" cy="82.56" rx="20" ry="5" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="82.56" rx="20" ry="5" fill="rgba(0,0,0,0.24)"/>
 
       <rect x="44" y="47.88" width="8" height="30" rx="3" fill="#69503a"/>
       <path d="M 44 64.88 Q 32 50.88 26 30.88" stroke="#69503a" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.7"/>
@@ -49,7 +49,7 @@
     </g><g transform="translate(384 0)">
 
     <rect x="0" y="0" width="96" height="96" fill="none"/>
-    <ellipse cx="48" cy="82.56" rx="20" ry="5" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="82.56" rx="20" ry="5" fill="rgba(0,0,0,0.24)"/>
 
       <rect x="44" y="47.88" width="8" height="30" rx="3" fill="#79523a"/>
       <path d="M 44 64.88 Q 32 50.88 26 30.88" stroke="#79523a" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.7"/>
@@ -61,7 +61,7 @@
     </g><g transform="translate(480 0)">
 
     <rect x="0" y="0" width="96" height="96" fill="none"/>
-    <ellipse cx="48" cy="82.56" rx="20" ry="5" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="82.56" rx="20" ry="5" fill="rgba(0,0,0,0.24)"/>
 
       <rect x="44" y="47.88" width="8" height="30" rx="3" fill="#6e5135"/>
       <path d="M 44 64.88 Q 32 50.88 26 30.88" stroke="#6e5135" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.7"/>
@@ -73,7 +73,7 @@
     </g><g transform="translate(576 0)">
 
     <rect x="0" y="0" width="96" height="96" fill="none"/>
-    <ellipse cx="48" cy="82.56" rx="20" ry="5" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="82.56" rx="20" ry="5" fill="rgba(0,0,0,0.24)"/>
 
       <rect x="44" y="47.88" width="8" height="30" rx="3" fill="#4d3c30"/>
       <path d="M 44 64.88 Q 32 50.88 26 30.88" stroke="#4d3c30" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.7"/>
@@ -85,7 +85,7 @@
     </g><g transform="translate(672 0)">
 
     <rect x="0" y="0" width="96" height="96" fill="none"/>
-    <ellipse cx="48" cy="82.56" rx="20" ry="5" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="48" cy="82.56" rx="20" ry="5" fill="rgba(0,0,0,0.24)"/>
 
       <rect x="44" y="47.88" width="8" height="30" rx="3" fill="#765236"/>
       <path d="M 44 64.88 Q 32 50.88 26 30.88" stroke="#765236" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.7"/>

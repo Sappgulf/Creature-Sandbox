@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="64" viewBox="0 0 512 64" fill="none"><defs><filter id="env_seasonal-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="52.48" rx="15" ry="3.2" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="52.48" rx="15" ry="3.2" fill="rgba(0,0,0,0.24)"/>
 
     <g transform="translate(32 25.92) rotate(0)">
       <path d="M 0 -26 C 14 -16 19 -4 6 9 C 0 16 -6 18 -12 18 C -8 8 -14 -2 0 -26 Z" fill="#e36f3f"/><path d="M -1 -18 Q 3 -2 -8 14" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" fill="none"/>
@@ -9,7 +9,7 @@
   </g><g transform="translate(64 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="52.48" rx="15" ry="3.2" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="52.48" rx="15" ry="3.2" fill="rgba(0,0,0,0.24)"/>
 
     <g transform="translate(32 25.92) rotate(18)">
       <path d="M 0 -26 C 14 -16 19 -4 6 9 C 0 16 -6 18 -12 18 C -8 8 -14 -2 0 -26 Z" fill="#c85f32"/><path d="M -1 -18 Q 3 -2 -8 14" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" fill="none"/>
@@ -17,7 +17,7 @@
   </g><g transform="translate(128 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="52.48" rx="15" ry="3.2" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="52.48" rx="15" ry="3.2" fill="rgba(0,0,0,0.24)"/>
 
     <g transform="translate(32 25.92) rotate(36)">
       <path d="M 0 -26 C 14 -16 19 -4 6 9 C 0 16 -6 18 -12 18 C -8 8 -14 -2 0 -26 Z" fill="#f1b53d"/><path d="M -1 -18 Q 3 -2 -8 14" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" fill="none"/>
@@ -25,7 +25,7 @@
   </g><g transform="translate(192 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="52.48" rx="15" ry="3.2" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="52.48" rx="15" ry="3.2" fill="rgba(0,0,0,0.24)"/>
 
     <g transform="translate(32 25.92) rotate(54)">
       <path d="M 0 -26 C 14 -16 19 -4 6 9 C 0 16 -6 18 -12 18 C -8 8 -14 -2 0 -26 Z" fill="#e88452"/><path d="M -1 -18 Q 3 -2 -8 14" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" fill="none"/>
@@ -33,7 +33,7 @@
   </g><g transform="translate(256 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="52.48" rx="15" ry="3.2" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="52.48" rx="15" ry="3.2" fill="rgba(0,0,0,0.24)"/>
 
     <g transform="translate(32 25.92) rotate(72)">
       <path d="M 0 -22 L 0 22 M -19 -11 L 19 11 M -19 11 L 19 -11" stroke="#dff5ff" stroke-width="4" stroke-linecap="round"/><circle cx="0" cy="0" r="5" fill="white"/>
@@ -41,7 +41,7 @@
   </g><g transform="translate(320 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="52.48" rx="15" ry="3.2" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="52.48" rx="15" ry="3.2" fill="rgba(0,0,0,0.24)"/>
 
     <g transform="translate(32 25.92) rotate(90)">
       <path d="M 0 -22 L 0 22 M -19 -11 L 19 11 M -19 11 L 19 -11" stroke="#eef7fb" stroke-width="4" stroke-linecap="round"/><circle cx="0" cy="0" r="5" fill="white"/>
@@ -49,7 +49,7 @@
   </g><g transform="translate(384 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="52.48" rx="15" ry="3.2" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="52.48" rx="15" ry="3.2" fill="rgba(0,0,0,0.24)"/>
 
     <g transform="translate(32 25.92) rotate(108)">
       <path d="M 0 -22 L 0 22 M -19 -11 L 19 11 M -19 11 L 19 -11" stroke="#9fd7ff" stroke-width="4" stroke-linecap="round"/><circle cx="0" cy="0" r="5" fill="white"/>
@@ -57,7 +57,7 @@
   </g><g transform="translate(448 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="52.48" rx="15" ry="3.2" fill="rgba(0,0,0,0.18)"/>
+    <ellipse cx="32" cy="52.48" rx="15" ry="3.2" fill="rgba(0,0,0,0.24)"/>
 
     <g transform="translate(32 25.92) rotate(126)">
       <path d="M 0 -26 C 14 -16 19 -4 6 9 C 0 16 -6 18 -12 18 C -8 8 -14 -2 0 -26 Z" fill="#7adf91"/><path d="M -1 -18 Q 3 -2 -8 14" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" fill="none"/>
