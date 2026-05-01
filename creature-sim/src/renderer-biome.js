@@ -121,6 +121,33 @@ export function drawBiomeGround(renderer, ctx, world) {
       }
     }
   }
+
+  if (renderer.camera.zoom > 0.3) {
+    const textureSpacing = Math.max(90, 150 / renderer.camera.zoom);
+    const dotRadius = clamp(0.9 / renderer.camera.zoom, 0.65, 1.8);
+    const startX = Math.floor(bounds.x1 / textureSpacing) * textureSpacing;
+    const startY = Math.floor(bounds.y1 / textureSpacing) * textureSpacing;
+    ctx.save();
+    for (let gx = startX; gx < bounds.x2 + textureSpacing; gx += textureSpacing) {
+      for (let gy = startY; gy < bounds.y2 + textureSpacing; gy += textureSpacing) {
+        const jitterX = Math.sin(gx * 0.031 + gy * 0.017) * textureSpacing * 0.28;
+        const jitterY = Math.cos(gx * 0.021 - gy * 0.029) * textureSpacing * 0.22;
+        const x = gx + textureSpacing * 0.5 + jitterX;
+        const y = gy + textureSpacing * 0.5 + jitterY;
+        const biome = world.getBiomeAt?.(x, y);
+        const tint = biome?.type === 'water'
+          ? 'rgba(120, 190, 230, 0.12)'
+          : biome?.type === 'desert'
+            ? 'rgba(244, 190, 120, 0.1)'
+            : 'rgba(170, 210, 170, 0.08)';
+        ctx.fillStyle = tint;
+        ctx.beginPath();
+        ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
 }
 
 /**
@@ -290,14 +317,14 @@ export function drawCreatureTerritoryZones(renderer, ctx, world) {
       // Determine dominant type
       let dominantColor, dominantAlpha;
       if (cell.predator >= cell.herbivore && cell.predator >= cell.omnivore && cell.predator >= 2) {
-        dominantColor = 'rgba(220, 60, 60, 0.08)';
-        dominantAlpha = Math.min(0.18, cell.predator * 0.03);
+        dominantColor = 'rgba(220, 60, 60, 0.035)';
+        dominantAlpha = Math.min(0.08, cell.predator * 0.014);
       } else if (cell.omnivore >= cell.herbivore && cell.omnivore >= 2) {
-        dominantColor = 'rgba(200, 160, 80, 0.07)';
-        dominantAlpha = Math.min(0.15, cell.omnivore * 0.025);
+        dominantColor = 'rgba(200, 160, 80, 0.032)';
+        dominantAlpha = Math.min(0.07, cell.omnivore * 0.012);
       } else if (cell.herbivore >= 3) {
-        dominantColor = 'rgba(80, 180, 80, 0.06)';
-        dominantAlpha = Math.min(0.12, cell.herbivore * 0.02);
+        dominantColor = 'rgba(80, 180, 80, 0.028)';
+        dominantAlpha = Math.min(0.06, cell.herbivore * 0.01);
       } else {
         continue;
       }

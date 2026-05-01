@@ -66,7 +66,7 @@ export class Renderer {
     // NEW: Name labels & trait visualization
     this.enableNameLabels = true;
     this.enableTraitVisualization = true;
-    this.enableCreatureZones = true; // Show creature territory zones
+    this.enableCreatureZones = false; // Advanced overlay; keep gameplay assets readable by default.
     this.hoveredCreatureId = null;
     this.enableNests = false;
 
@@ -572,35 +572,36 @@ export class Renderer {
     if (!pointer) return;
     const ctx = this.ctx;
     const tool = opts.godModeTool || 'food';
-    let radius = 120;
-    let color = 'rgba(120, 255, 180, 0.35)';
-    let stroke = 'rgba(120, 255, 180, 0.6)';
+    let radius = 82;
+    let color = 'rgba(120, 255, 180, 0.12)';
+    let stroke = 'rgba(120, 255, 180, 0.34)';
     if (tool === 'calm') {
-      radius = 140;
-      color = 'rgba(120, 210, 255, 0.25)';
-      stroke = 'rgba(120, 210, 255, 0.6)';
+      radius = 96;
+      color = 'rgba(120, 210, 255, 0.1)';
+      stroke = 'rgba(120, 210, 255, 0.34)';
     } else if (tool === 'chaos') {
-      radius = 160;
-      color = 'rgba(200, 120, 255, 0.2)';
-      stroke = 'rgba(200, 120, 255, 0.55)';
+      radius = 108;
+      color = 'rgba(200, 120, 255, 0.09)';
+      stroke = 'rgba(200, 120, 255, 0.32)';
     } else if (tool === 'spawn') {
       radius = 26;
-      color = 'rgba(130, 200, 255, 0.25)';
-      stroke = 'rgba(130, 200, 255, 0.7)';
+      color = 'rgba(130, 200, 255, 0.14)';
+      stroke = 'rgba(130, 200, 255, 0.44)';
     } else if (tool === 'prop') {
-      radius = 58;
-      color = 'rgba(180, 140, 255, 0.2)';
-      stroke = 'rgba(180, 140, 255, 0.62)';
+      radius = 48;
+      color = 'rgba(180, 140, 255, 0.1)';
+      stroke = 'rgba(180, 140, 255, 0.38)';
     } else if (tool === 'remove') {
       radius = 28;
-      color = 'rgba(255, 120, 120, 0.22)';
-      stroke = 'rgba(255, 120, 120, 0.7)';
+      color = 'rgba(255, 120, 120, 0.12)';
+      stroke = 'rgba(255, 120, 120, 0.44)';
     }
 
     ctx.save();
     ctx.fillStyle = color;
     ctx.strokeStyle = stroke;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([10, 8]);
     ctx.beginPath();
     ctx.arc(pointer.x, pointer.y, radius, 0, Math.PI * 2);
     ctx.fill();

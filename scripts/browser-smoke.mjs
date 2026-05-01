@@ -80,6 +80,23 @@ async function readGameState(page) {
   return JSON.parse(text);
 }
 
+async function waitForPageCondition(page, condition, label, timeoutMs = 12000) {
+  const started = Date.now();
+  let lastError = null;
+
+  while (Date.now() - started < timeoutMs) {
+    try {
+      if (await page.evaluate(condition)) return;
+    } catch (error) {
+      lastError = error;
+    }
+    await page.waitForTimeout(120);
+  }
+
+  const suffix = lastError ? ` Last error: ${lastError.message}` : '';
+  throw new Error(`Timed out waiting for ${label}.${suffix}`);
+}
+
 async function advance(page, ms = 600) {
   const totalMs = Math.max(0, Number(ms) || 0);
   const chunkMs = 120;
@@ -144,13 +161,13 @@ async function runScenario(browser, scenario) {
   });
 
   const url = `${baseUrl}/?smoke=1&v=${Date.now()}-${scenario.name}`;
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => typeof window.render_game_to_text === 'function', null, { timeout: 12000 });
-  await page.waitForFunction(() => typeof window.__creatureSmoke?.saveRoundTrip === 'function', null, { timeout: 12000 });
-  await page.waitForFunction(() => {
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 12000 });
+  await waitForPageCondition(page, () => typeof window.render_game_to_text === 'function', 'render_game_to_text');
+  await waitForPageCondition(page, () => typeof window.__creatureSmoke?.saveRoundTrip === 'function', 'creature smoke hooks');
+  await waitForPageCondition(page, () => {
     const state = JSON.parse(window.render_game_to_text());
     return state.ui && state.ui.homeVisible === false && state.summary.totalCreatures > 0;
-  }, null, { timeout: 12000 });
+  }, 'seeded smoke world');
   await page.evaluate(() => window.__creatureSmoke?.setPaused?.(true));
 
   console.log(`  ${scenario.name}: startup`);

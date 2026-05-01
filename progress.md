@@ -217,3 +217,27 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - `output/browser-smoke/mobile-large.png`
 - `output/browser-smoke/polish/home-desktop.png`
 - Residual note: smoke screenshots finish in watch/god state by design, so primary-strip screenshots were partly limited by a local Playwright screenshot timeout after gameplay start; the checked-in smoke state still confirmed 30 registered sprites, no missing asset errors, and no console errors.
+
+- Continued asset/UI polish pass:
+- Replaced home feature emoji tiles with scenario-card art panels on the cards themselves so first-run desktop and mobile screens show actual game art.
+- Replaced spawn picker emoji icons with compact creature badges after Chromium proved unreliable with external SVG sprite masks in CSS.
+- Disabled territory-zone overlays by default and softened their fallback alpha so creature/food/prop assets stay readable.
+- Added subtle biome texture dots to the canvas background for a more finished ecosystem floor without overpowering sprites.
+- Hardened `scripts/browser-smoke.mjs` by replacing fragile `page.waitForFunction` startup waits with bounded `page.evaluate` polling; the old wait path could hang even when smoke hooks were already present.
+- Verification after this continuation:
+- `git diff --check` ✅
+- `npm run lint` ✅
+- `npx eslint scripts/browser-smoke.mjs` ✅
+- `npm test` ✅ (148 passing)
+- `npm run build` ✅
+- `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
+- Final visual adjustment after screenshot review: god-mode brush preview is now smaller, dashed, and lower alpha so it reads as a tool guide instead of covering the ecosystem.
+- Browser/visual QA:
+- In-app browser confirmed the running sandbox no longer shows the huge territory overlay and spawn drawer opens.
+- Clean Playwright screenshots inspected:
+- `output/asset-polish/home-desktop.png`
+- `output/asset-polish/home-mobile.png`
+- `output/browser-smoke/desktop.png`
+- `output/browser-smoke/mobile-compact.png`
+- `output/browser-smoke/mobile-large.png`
+- `$WEB_GAME_CLIENT` was run with a bounded 30s wrapper against the live server; it exited without artifacts, matching the known local-client issue. Keep using `npm run smoke:browser` as the reliable automated gate unless the client script is repaired.
