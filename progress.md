@@ -173,3 +173,26 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - `node "$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js" --url "http://127.0.0.1:8000/?smoke=1&v=20260423-smoke3-client-final2" --actions-json '{"steps":[{"buttons":[],"frames":8},{"buttons":["left_mouse_button"],"frames":2,"mouse_x":420,"mouse_y":320},{"buttons":[],"frames":8}]}' --iterations 1 --pause-ms 250 --screenshot-dir output/web-game/smoke-direct` ✅
 - inspected `output/web-game/smoke-direct/shot-0.png`; gameplay canvas rendered visible creatures/particles/food on the dark field, and `state-0.json` reported home hidden, 70 creatures, 298 food, and 0 console errors.
 - mobile smoke at `390x844` reported home hidden, mobile layout true, 319x692 canvas, 47 creatures, 188 food, and no console warnings/errors.
+
+2026-04-30
+- New request: audit everything using skills and browser for gameplay, visuals, performance, and polish fixes.
+- Baseline before edits:
+- `npm test` ✅ (148 passing)
+- `npm run build` ✅ (main JS `532.34 kB`, CSS `73.41 kB`)
+- In-app browser desktop home loaded with 0 recent warning/error logs.
+- In-app browser New Sandbox exposed two issues: the legacy challenge overlay occupied the upper-left playfield with three large cards, and the FPS readout was low while renderer logs showed quality had promoted to `ultra`.
+- `npm run smoke:browser` failed on desktop at `#watch-god-mode` because the element existed but was not visible when clicked.
+- Implemented audit fixes:
+- `ChallengeSystem.draw()` now renders a compact translucent level/goal summary instead of a large card stack over gameplay.
+- `RendererPerformanceMonitor` now tracks real FPS sample count and does not promote quality upward from seeded placeholder FPS history.
+- `scripts/browser-smoke.mjs` now waits for the watch strip and watch god-mode control to be visible before clicking.
+- Found the smoke failure was partly environmental: port `4173` was occupied by an unrelated Python server, and the smoke server probe accepted it because any HTTP status under 500 counted as ready. Tightened the probe to require Creature Sandbox HTML before reusing a server.
+- Verification after fixes:
+- `git diff --check` ✅
+- `npx eslint creature-sim/src/renderer-performance.js creature-sim/src/challenge-system.js creature-sim/src/game-loop.js scripts/browser-smoke.mjs` ✅
+- `npm test` ✅ (148 passing)
+- `npm run build` ✅ (main JS `532.51 kB`, CSS `73.41 kB`)
+- `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
+- Inspected `output/browser-smoke/desktop.png`: challenge overlay is now compact and no longer covers the playfield with three large cards.
+- Inspected `output/browser-smoke/mobile-compact.png`: mobile canvas remains readable in god/watch state with the compact challenge overlay.
+- Tried `$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js` against `http://127.0.0.1:8000/?smoke=1&v=audit-final-client`; it still hung and was stopped, matching the known local-client issue from earlier passes. The checked-in Playwright smoke is now the reliable browser gate.

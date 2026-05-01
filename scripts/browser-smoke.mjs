@@ -23,8 +23,16 @@ const scenarios = [
 function requestOk(url) {
   return new Promise((resolve) => {
     const req = http.get(url, (res) => {
-      res.resume();
-      resolve(res.statusCode >= 200 && res.statusCode < 500);
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => {
+        if (body.length < 4096) body += chunk;
+      });
+      res.on('end', () => {
+        const statusOk = res.statusCode >= 200 && res.statusCode < 500;
+        const appOk = body.includes('Creature Sandbox') && body.includes('./src/main.js');
+        resolve(statusOk && appOk);
+      });
     });
     req.on('error', () => resolve(false));
     req.setTimeout(800, () => {
@@ -73,7 +81,28 @@ async function readGameState(page) {
 }
 
 async function advance(page, ms = 600) {
-  await page.evaluate((duration) => window.advanceTime?.(duration), ms);
+  const totalMs = Math.max(0, Number(ms) || 0);
+  const chunkMs = 120;
+  let remaining = totalMs;
+
+  while (remaining > 0) {
+    const duration = Math.min(chunkMs, remaining);
+    await page.evaluate((stepMs) => window.advanceTime?.(stepMs), duration);
+    remaining -= duration;
+  }
+}
+
+async function captureCanvasSnapshot(page, filePath) {
+  const dataUrl = await page.evaluate(() => {
+    const canvas = document.getElementById('view');
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      throw new Error('Game canvas is missing');
+    }
+    return canvas.toDataURL('image/png');
+  });
+  const [, base64] = dataUrl.split(',');
+  assert.ok(base64, 'canvas snapshot should return base64 image data');
+  await fs.writeFile(filePath, Buffer.from(base64, 'base64'));
 }
 
 async function clickWorld(page, x, y) {
@@ -180,6 +209,8 @@ async function runScenario(browser, scenario) {
   await advance(page, 240);
   state = await readGameState(page);
   assert.equal(state.ui.watchMode, true, `${scenario.name}: watch mode should toggle on`);
+  await page.locator('#watch-strip').waitFor({ state: 'visible', timeout: 5000 });
+  await page.locator('#watch-god-mode').waitFor({ state: 'visible', timeout: 5000 });
   await page.locator('#watch-god-mode').click();
   await advance(page, 240);
   state = await readGameState(page);
@@ -195,7 +226,7 @@ async function runScenario(browser, scenario) {
   assert.ok(perf.canvas.width > 0 && perf.canvas.height > 0, `${scenario.name}: canvas should be measurable`);
   assert.ok(perf.assets.registeredSprites >= 20, `${scenario.name}: sprite manifest should be loaded`);
 
-  await page.screenshot({ path: path.join(outDir, `${scenario.name}.png`), fullPage: true });
+  await captureCanvasSnapshot(page, path.join(outDir, `${scenario.name}.png`));
   await fs.writeFile(path.join(outDir, `${scenario.name}.json`), JSON.stringify({ state, perf, errors }, null, 2));
 
   assert.deepEqual(errors, [], `${scenario.name}: browser console should stay warning/error free`);

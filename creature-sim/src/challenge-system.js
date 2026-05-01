@@ -193,55 +193,54 @@ export class ChallengeSystem {
   /**
    * Draw challenge UI
    */
-  draw(ctx, x, y) {
+  draw(ctx, x, y, options = {}) {
     const active = this.getActiveChallenges();
     const recent = this.getRecentCompletions();
+    const viewportWidth = Number(options.viewportWidth || ctx.canvas?.width || 0);
+    const compact = viewportWidth > 0 && viewportWidth < 760;
+    const maxVisible = compact ? 1 : 2;
+    const visibleActive = active.slice(0, maxVisible);
 
     ctx.save();
-    ctx.font = '14px sans-serif';
+    ctx.textBaseline = 'top';
 
-    // Draw level and points
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(`Level ${this.level} - ${this.points}/${this.nextLevelPoints} pts`, x, y);
+    const panelWidth = compact ? Math.min(220, viewportWidth - 24) : 230;
+    const rowHeight = 26;
+    const panelHeight = 28 + visibleActive.length * rowHeight + (recent.length ? 24 : 0);
+    ctx.fillStyle = 'rgba(8, 12, 20, 0.58)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.09)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(x, y, panelWidth, panelHeight, 12);
+    ctx.fill();
+    ctx.stroke();
 
-    let offsetY = y + 25;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.82)';
+    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.fillText(`Level ${this.level} · ${this.points}/${this.nextLevelPoints} pts`, x + 10, y + 8);
 
-    // Draw active challenges
-    for (const challenge of active) {
-      ctx.fillStyle = 'rgba(40, 40, 60, 0.8)';
-      ctx.fillRect(x, offsetY, 250, 40);
+    let offsetY = y + 31;
 
-      ctx.fillStyle = '#ffdd88';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillText(challenge.title, x + 5, offsetY + 15);
+    for (const challenge of visibleActive) {
+      ctx.fillStyle = 'rgba(250, 204, 21, 0.92)';
+      ctx.font = '700 11px system-ui, sans-serif';
+      ctx.fillText(challenge.title, x + 10, offsetY);
 
-      ctx.fillStyle = '#cccccc';
-      ctx.font = '11px sans-serif';
-      ctx.fillText(challenge.description, x + 5, offsetY + 30);
-
-      // Progress bar if applicable
-      if (challenge.progress) {
-        ctx.fillStyle = 'rgba(100, 200, 100, 0.3)';
-        ctx.fillRect(x + 5, offsetY + 35, 240 * challenge.progress, 3);
+      if (challenge.progress > 0) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.fillRect(x + 10, offsetY + 15, panelWidth - 20, 3);
+        ctx.fillStyle = 'rgba(74, 222, 128, 0.8)';
+        ctx.fillRect(x + 10, offsetY + 15, (panelWidth - 20) * challenge.progress, 3);
       }
 
-      offsetY += 45;
+      offsetY += rowHeight;
     }
 
-    // Draw recently completed
-    for (const challenge of recent) {
-      ctx.fillStyle = 'rgba(60, 180, 60, 0.9)';
-      ctx.fillRect(x, offsetY, 250, 35);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillText(`✓ ${challenge.title}`, x + 5, offsetY + 15);
-
-      ctx.fillStyle = '#ffff88';
-      ctx.font = '11px sans-serif';
-      ctx.fillText(`+${challenge.points} points!`, x + 5, offsetY + 28);
-
-      offsetY += 40;
+    if (recent.length) {
+      const latest = recent[0];
+      ctx.fillStyle = 'rgba(74, 222, 128, 0.9)';
+      ctx.font = '700 11px system-ui, sans-serif';
+      ctx.fillText(`✓ ${latest.title} +${latest.points}`, x + 10, offsetY);
     }
 
     ctx.restore();

@@ -747,7 +747,11 @@ export class GameLoop {
     // Draw challenge system UI overlay
     if (this.challengeSystem?.draw) {
       const ctx = this.renderer.ctx;
-      this.challengeSystem.draw(ctx, 12, 120);
+      const challengeY = canvas.width <= 520 ? 150 : 112;
+      this.challengeSystem.draw(ctx, 12, challengeY, {
+        viewportWidth: canvas.width,
+        viewportHeight: canvas.height
+      });
     }
 
     // Draw visual effects (damage numbers, starbursts, hearts)

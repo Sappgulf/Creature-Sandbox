@@ -22,6 +22,7 @@ export class RendererPerformanceMonitor {
     this.frameCount = 0;
     this._lastFrameTimestamp = performance.now();
     this._fpsFrameCounter = 0;
+    this._fpsSampleCount = 0;
 
     // ENHANCEMENT: Quality preset tracking
     this.currentQuality = 'high';
@@ -89,6 +90,7 @@ export class RendererPerformanceMonitor {
       const realFps = (this._fpsFrameCounter * 1000) / elapsed;
       this.fpsHistory[this.fpsHistoryIndex] = realFps;
       this.fpsHistoryIndex = (this.fpsHistoryIndex + 1) % this.fpsHistory.length;
+      this._fpsSampleCount = Math.min(this._fpsSampleCount + 1, this.fpsHistory.length);
       this._lastFrameTimestamp = now;
       this._fpsFrameCounter = 0;
     }
@@ -183,13 +185,15 @@ export class RendererPerformanceMonitor {
     const stats = this.getStats();
     this.frameCount++;
 
-    // FPS is now updated in beginFrame() using real frame counting
-    // Calculate rolling average FPS
+    // FPS is now updated in beginFrame() using real frame counting.
+    // Use only real samples so startup does not promote quality from the
+    // initial all-60 placeholder history before the browser has settled.
+    const sampleCount = Math.max(1, this._fpsSampleCount);
     let sum = 0;
-    for (let i = 0; i < this.fpsHistory.length; i++) {
+    for (let i = 0; i < sampleCount; i++) {
       sum += this.fpsHistory[i];
     }
-    this.currentFps = sum / this.fpsHistory.length;
+    this.currentFps = sum / sampleCount;
 
     // Decrement quality lock timer
     if (this.qualityLockTimer > 0) {
@@ -208,7 +212,7 @@ export class RendererPerformanceMonitor {
 
     }
     // Upgrade quality if FPS is good
-    else if (this.currentFps > 55 && currentIndex < presets.length - 1) {
+    else if (this._fpsSampleCount >= 3 && this.currentFps > 55 && currentIndex < presets.length - 1) {
       this.applyQualityPreset(presets[currentIndex + 1]);
       this.qualityLockTimer = this.qualityLockDuration;
 
