@@ -18,6 +18,7 @@ export class InputManager {
     this.tools = tools;
     this.world = world;
     this.tutorial = null;
+    this.gameLoop = null;
 
     this.boundHandlers = {
       onKeyDown: this.onKeyDown.bind(this),
@@ -141,6 +142,8 @@ export class InputManager {
         e.preventDefault();
         if (e.shiftKey) {
           this.tools?.redo?.();
+        } else if (gameState.godModeActive && this.gameLoop?.undoGodMode) {
+          this.gameLoop.undoGodMode();
         } else {
           this.tools?.undo?.();
         }

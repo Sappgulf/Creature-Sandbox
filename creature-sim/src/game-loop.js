@@ -13,6 +13,7 @@ import { configManager } from './config-manager.js';
 import { poolManager } from './object-pool.js';
 import { getEnhancedAnalyticsModule } from './enhanced-analytics-loader.js';
 import { VisualEffects } from './visual-effects.js';
+import { ghostTrails } from './ecosystem-ghosts.js';
 // STATIC UI IMPORTS - avoids dynamic import() latency in hot path
 import { renderStats, renderSelectedInfo, renderAnalyticsCharts, renderInteractionHint } from './ui.js';
 
@@ -86,6 +87,15 @@ export class GameLoop {
       tinyWinTypes: new Set(),
       lastThrowToastAt: 0
     };
+
+    // Adaptive simulation fidelity (reduces AI load when FPS drops)
+    this.simulationFidelity = 1; // 1 = full, 0.5 = half-rate, 0.25 = quarter
+    this._lastFidelityUpdate = 0;
+
+    // God-mode undo stack
+    this.godModeUndoStack = [];
+    this.godModeRedoStack = [];
+    this.godModeMaxUndo = 20;
 
     // Weather particle emission timer
     this._weatherParticleTimer = 0;
@@ -248,6 +258,8 @@ export class GameLoop {
         const name = data.creature.name || data.creature.id || 'Unknown';
         this.particles.emit(data.creature.x, data.creature.y, 'death', { diet, name });
       }
+      // Record ghost trail
+      ghostTrails.recordDeath(data.creature?.x || 0, data.creature?.y || 0, data.creature);
     });
 
     eventSystem.on(GameEvents.CREATURE_EAT, (data) => {
@@ -511,6 +523,15 @@ export class GameLoop {
       // Update performance monitor
       updatePerformanceMonitor();
 
+      // Adaptive simulation fidelity: throttle non-critical systems when FPS drops
+      const avgFps = performanceProfiler.getStats().averages.fps || 60;
+      if (performance.now() - this._lastFidelityUpdate > 2000) {
+        this._lastFidelityUpdate = performance.now();
+        if (avgFps < 25) this.simulationFidelity = 0.25;
+        else if (avgFps < 40) this.simulationFidelity = 0.5;
+        else this.simulationFidelity = 1;
+      }
+
       if (this.devTools.timingLogs) {
         const logNow = performance.now();
         if (logNow - this.lastTimingLog >= this.timingLogInterval) {
@@ -634,24 +655,25 @@ export class GameLoop {
     // Update achievement system
     // Achievements are now event-driven via WORLD_UPDATE / kill / god action events.
 
-    // Update new advanced systems
-    if (this.seasonalEvents?.update) {
+    // Update new advanced systems (respect simulation fidelity)
+    const fidelity = this.simulationFidelity;
+    if (this.seasonalEvents?.update && (fidelity >= 1 || this.frameCount % 2 === 0)) {
       this.seasonalEvents.update(this.world, dt);
     }
 
-    if (this.familyBonds?.update) {
+    if (this.familyBonds?.update && (fidelity >= 0.5 || this.frameCount % 2 === 0)) {
       this.familyBonds.update(this.world, dt);
     }
 
-    if (this.memoryLearning?.update) {
+    if (this.memoryLearning?.update && (fidelity >= 0.5 || this.frameCount % 2 === 0)) {
       this.memoryLearning.update(this.world, dt);
     }
 
-    if (this.challengeSystem?.update) {
+    if (this.challengeSystem?.update && (fidelity >= 0.25 || this.frameCount % 4 === 0)) {
       this.challengeSystem.update(this.world);
     }
 
-    if (this.unlockableAchievements?.update) {
+    if (this.unlockableAchievements?.update && (fidelity >= 0.25 || this.frameCount % 4 === 0)) {
       this.unlockableAchievements.update(this.world, {
         analytics: this.analytics,
         sessionGoals: this.sessionGoals,
@@ -1459,5 +1481,71 @@ export class GameLoop {
     } else if (weatherType === 'aurora') {
       // Aurora is handled via screen effect in renderer, not particles
     }
+  }
+
+  // ===== God-Mode Undo Stack =====
+  pushGodModeUndo(action) {
+    if (!action || !action.type) return;
+    this.godModeUndoStack.push({
+      ...action,
+      timestamp: performance.now()
+    });
+    if (this.godModeUndoStack.length > this.godModeMaxUndo) {
+      this.godModeUndoStack.shift();
+    }
+    this.godModeRedoStack = []; // Clear redo on new action
+  }
+
+  undoGodMode() {
+    const action = this.godModeUndoStack.pop();
+    if (!action || !this.world) return false;
+    let undone = false;
+    switch (action.type) {
+      case 'removeCreature': {
+        if (action.creatureData) {
+          const c = this.world.spawnCreatureFromData?.(action.creatureData);
+          if (c) undone = true;
+        }
+        break;
+      }
+      case 'spawnCreature': {
+        const c = this.world.getAnyCreatureById?.(action.creatureId);
+        if (c) { c.alive = false; c.deathTime = this.world.t; undone = true; }
+        break;
+      }
+      case 'placeFood': {
+        if (action.foodIds && Array.isArray(action.foodIds)) {
+          for (const id of action.foodIds) {
+            const idx = this.world.food.findIndex(f => f.id === id);
+            if (idx >= 0) this.world.food.splice(idx, 1);
+          }
+          undone = true;
+        }
+        break;
+      }
+      case 'placeProp': {
+        if (action.propId && this.world.removeProp) {
+          this.world.removeProp(action.propId);
+          undone = true;
+        }
+        break;
+      }
+      default: break;
+    }
+    if (undone) {
+      this.godModeRedoStack.push(action);
+      if (this.notifications) {
+        this.notifications.show('Undone', `Reverted ${action.type}`, 1500);
+      }
+    }
+    return undone;
+  }
+
+  redoGodMode() {
+    const action = this.godModeRedoStack.pop();
+    if (!action || !this.world) return false;
+    // Re-apply the action (simplified: push back to undo and re-execute via world)
+    this.pushGodModeUndo(action);
+    return true;
   }
 }

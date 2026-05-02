@@ -241,3 +241,22 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - `output/browser-smoke/mobile-compact.png`
 - `output/browser-smoke/mobile-large.png`
 - `$WEB_GAME_CLIENT` was run with a bounded 30s wrapper against the live server; it exited without artifacts, matching the known local-client issue. Keep using `npm run smoke:browser` as the reliable automated gate unless the client script is repaired.
+
+2026-05-02
+- New request: audit everything and implement polish/upgrades across 11 categories.
+- Implemented DevEx (11): `npm run analyze` with rollup-plugin-visualizer, `.prettierrc`, and `@ts-check` on 4 new modules.
+- Implemented Accessibility (7): high-contrast CSS toggle in Features panel with persistence, enhanced `sim-announcer` narrative events with auto-clear.
+- Implemented UI Micro-polish (8): `animateNumber()` in `ui.js` for smooth stat counters, god-mode undo stack (`push/undo/redo`) wired to `Ctrl+Z` when god mode is active.
+- Implemented Performance (9): `GameLoop.simulationFidelity` throttles advanced subsystems (seasonal, bonds, memory, challenges, achievements) based on rolling FPS; LOD `lodLevel` passed to creature draw based on zoom.
+- Implemented Bundle/Runtime (1): `sw.js` service worker with shell + dynamic caching; registered in `index.html`.
+- Implemented Save/Resume (2): `save-migration.js` with declarative pipeline (1.0→2.0→2.5→3.0), integrated into `SaveSystem.deserialize()`; rotating auto-save slots (3 slots) added alongside legacy single autosave.
+- Implemented Mobile (3): `mobile-gesture-tutorial.js` one-time overlay for pan/zoom/long-press on first mobile launch.
+- Implemented Visual (4): `drawRainLens()` sliding drops and `drawHeatShimmer()` wave bands in `renderer-weather.js`.
+- Implemented Audio (5): dynamic music layer system (`ambience`, `rhythm`, `tension`) with crossfading based on predator ratio, disaster state, and ecosystem health in `audio-system.js`.
+- Implemented Simulation (6): `AutoDirector.storyMode` for slower cinematic pans on dramatic events; `ecosystem-ghosts.js` records deaths and renders faint spectral trails behind creatures.
+- Implemented Social (10): `seed-utils.js` with compact URL-safe seed encoding/decoding; New Sandbox seeds are written to URL hash for sharing; `leaderboard.js` for local campaign high scores.
+- Verification:
+- `npm run lint` ✅ (0 errors, 0 warnings)
+- `npm test` ✅ (148 passing)
+- `npm run build` ✅ (117 modules, main JS `542.99 kB` pre-gzip)
+- `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)

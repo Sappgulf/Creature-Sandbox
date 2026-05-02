@@ -8,6 +8,7 @@ import { createEcosystemState } from './creature-ecosystem.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
 import { CreatureConfig } from './creature-config.js';
 import { clamp, rand } from './utils.js';
+import { migrateSaveData } from './save-migration.js';
 
 const COMPRESSED_MARKER = 'C2:';
 const COMPRESSION_SUPPORTED = typeof CompressionStream !== 'undefined';
@@ -57,6 +58,8 @@ export class SaveSystem {
     this.saveSlots = 3;
     this._autoSaveScheduled = false;
     this.compressionEnabled = true;
+    this._autoSaveSlotIndex = 0; // Rotating slot for auto-save
+    this._autoSaveSlotCount = 3; // 3 rotating auto-save slots
   }
 
   /**
@@ -69,9 +72,20 @@ export class SaveSystem {
       : (world.creatureManager?.childrenOf instanceof Map ? world.creatureManager.childrenOf : new Map());
 
     const saveData = {
-      version: '2.5',
+      version: '3.0',
       timestamp: Date.now(),
       savedAt: new Date().toISOString(),
+      meta: {
+        slotIndex: additionalData.slotNumber || 0,
+        sessionSeed: additionalData.sessionSeed || Math.floor(Math.random() * 1e9).toString(36),
+        playTime: additionalData.playTime || 0,
+        saveCount: (additionalData.saveCount || 0) + 1
+      },
+      settings: {
+        highContrast: additionalData.highContrast || false,
+        reducedMotion: additionalData.reducedMotion || false,
+        chaosLevel: additionalData.chaosLevel || 0.5
+      },
 
       // World state
       world: {
@@ -303,9 +317,18 @@ export class SaveSystem {
       throw new Error('Save file is empty or corrupted');
     }
 
-    // Handle version migration
+    // Handle version migration (new declarative system first, then legacy fallback)
     const version = saveData.version || '1.0';
-    const migratedData = this._migrateSaveData(saveData, version);
+    let migratedData;
+    try {
+      const migrationResult = migrateSaveData(saveData);
+      migratedData = migrationResult.data;
+      if (migrationResult.migrated) {
+        console.debug(`[SaveSystem] Migrated save via pipeline: ${migrationResult.path.join(', ')}`);
+      }
+    } catch {
+      migratedData = this._migrateSaveData(saveData, version);
+    }
 
     const data = migratedData.world;
     const toNumber = (value, fallback) => {
@@ -804,16 +827,21 @@ export class SaveSystem {
     const runSave = async () => {
       this._autoSaveScheduled = false;
       try {
+        this._autoSaveSlotIndex = (this._autoSaveSlotIndex % this._autoSaveSlotCount) + 1;
+        const slotKey = `creature-sim-autosave-${this._autoSaveSlotIndex}`;
         const saveData = this.serialize(world, camera, analytics, lineageTracker, {
-          isAutoSave: true
+          isAutoSave: true,
+          slotNumber: this._autoSaveSlotIndex
         });
         const json = JSON.stringify(saveData);
         if (this.compressionEnabled && COMPRESSION_SUPPORTED) {
           const compressed = await compressJson(json);
-          localStorage.setItem('creature-sim-autosave', compressed);
+          localStorage.setItem(slotKey, compressed);
         } else {
-          localStorage.setItem('creature-sim-autosave', json);
+          localStorage.setItem(slotKey, json);
         }
+        // Also keep the legacy single autosave for backwards compatibility
+        localStorage.setItem('creature-sim-autosave', json);
       } catch (err) {
         console.warn('Auto-save failed:', err);
       }

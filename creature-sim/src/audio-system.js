@@ -27,6 +27,15 @@ export class AudioSystem {
     this.musicOscillator = null;
     this.musicGain = null;
 
+    // Dynamic music layers
+    this.musicLayers = {
+      ambience: { gain: null, osc: null, active: false, targetVol: 0 },
+      rhythm: { gain: null, osc: null, active: false, targetVol: 0 },
+      tension: { gain: null, osc: null, active: false, targetVol: 0 }
+    };
+    this.musicLayerUpdateInterval = 2; // seconds
+    this.musicLayerTimer = 0;
+
     // Ambient sound state
     this.ambientTimer = 0;
     this.ambientInterval = 8; // Play ambient sound every 8 seconds
@@ -761,18 +770,101 @@ export class AudioSystem {
     }
   }
 
-  // Update method - call this regularly to trigger ambient sounds
+  // Update method - call this regularly to trigger ambient sounds and dynamic music
   update(dt, world) {
     if (!this.soundsEnabled || !this.ctx) return;
 
     this.ambientTimer += dt;
+    this.musicLayerTimer += dt;
 
     // Play ambient sounds periodically
     if (this.ambientTimer >= this.ambientInterval) {
       this.ambientTimer = 0;
-
-      // Use ecosystem health-based ambient sounds
       this.playEcosystemAmbient(world);
+    }
+
+    // Dynamic music layer crossfading based on tension
+    if (this.musicLayerTimer >= this.musicLayerUpdateInterval) {
+      this.musicLayerTimer = 0;
+      this._updateMusicLayers(world);
+    }
+  }
+
+  /**
+   * Crossfade music layers based on ecosystem tension (predator density, disasters, health)
+   */
+  _updateMusicLayers(world) {
+    if (!this.ctx || !this.musicEnabled) return;
+    const population = world?.creatures?.length || 0;
+    if (population === 0) return;
+
+    let predators = 0;
+    for (const c of world.creatures) {
+      const diet = c.genes?.diet ?? (c.genes?.predator ? 1 : 0);
+      if (diet > 0.7) predators++;
+    }
+    const predatorRatio = predators / population;
+    const health = world?.ecoHealth?.metrics?.overall ?? 50;
+    const disasterActive = world?.getActiveEvents?.().length > 0 || world?.environment?.weatherIntensity > 0.5;
+
+    // Compute target volumes for each layer
+    const targets = {
+      ambience: 0.6,
+      rhythm: 0,
+      tension: 0
+    };
+    if (predatorRatio > 0.15 || disasterActive) {
+      targets.rhythm = Math.min(0.5, predatorRatio * 2);
+      targets.tension = disasterActive ? 0.6 : Math.min(0.4, predatorRatio * 1.5);
+      targets.ambience = Math.max(0.2, 0.6 - targets.tension * 0.5);
+    } else if (population > 50) {
+      targets.rhythm = 0.2;
+    }
+    if (health < 30) {
+      targets.tension = Math.max(targets.tension, 0.4);
+      targets.ambience = Math.max(0.15, targets.ambience - 0.2);
+    }
+
+    const now = this.ctx.currentTime;
+    for (const [key, layer] of Object.entries(this.musicLayers)) {
+      const target = targets[key] || 0;
+      // If target > 0 but layer not active, spawn oscillator
+      if (target > 0.05 && !layer.osc) {
+        try {
+          layer.osc = this.ctx.createOscillator();
+          layer.gain = this.ctx.createGain();
+          const freqs = { ambience: 220, rhythm: 110, tension: 55 };
+          layer.osc.frequency.value = freqs[key];
+          layer.osc.type = key === 'tension' ? 'sawtooth' : (key === 'rhythm' ? 'triangle' : 'sine');
+          layer.gain.gain.value = 0;
+          layer.osc.connect(layer.gain);
+          layer.gain.connect(this.masterCompressor || this.ctx.destination);
+          layer.osc.start();
+          layer.active = true;
+        } catch {
+          layer.osc = null;
+          layer.gain = null;
+        }
+      }
+      // Crossfade volume toward target
+      if (layer.gain) {
+        const rampTime = 1.5;
+        layer.gain.gain.linearRampToValueAtTime(
+          target * this.volumes.music * this.masterVolume * 0.5,
+          now + rampTime
+        );
+      }
+      // If target is near zero and volume is low, stop oscillator
+      if (target <= 0.05 && layer.osc && layer.gain && layer.gain.gain.value < 0.001) {
+        try {
+          layer.osc.stop();
+        } catch {
+          // Ignore
+        }
+        layer.osc = null;
+        layer.gain = null;
+        layer.active = false;
+      }
     }
   }
 

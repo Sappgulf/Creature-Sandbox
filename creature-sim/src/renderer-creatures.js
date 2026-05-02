@@ -169,11 +169,13 @@ export function applyCreatureMethods(Renderer) {
           this._drawCreatureShadow(c);
         }
 
+        // LOD: pass zoom to creature draw so it can skip fine details when far out
+        const lodRenderOpts = { ...renderOpts, lodLevel: zoom < 0.25 ? 'low' : (zoom < 0.5 ? 'medium' : 'high') };
         if (c.draw) {
-          c.draw(ctx, renderOpts);
+          c.draw(ctx, lodRenderOpts);
         } else {
           // Fallback if creature is just a data object (Proxy Mode)
-          this._drawExplicit(ctx, c, renderOpts);
+          this._drawExplicit(ctx, c, lodRenderOpts);
         }
 
         if (c.statuses?.has?.('disease') && zoom > 0.3) {

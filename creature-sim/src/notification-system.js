@@ -118,9 +118,29 @@ export class NotificationSystem {
     const announcer = document.getElementById('sim-announcer');
     if (!announcer) return;
     const text = notif.title ? `${notif.title} ${notif.message}`.trim() : notif.message;
-    if (notif.type === 'warning' || notif.type === 'milestone' || notif.type === 'achievement') {
+    // Narrative events for screen readers: milestones, warnings, achievements, and key ecosystem events
+    const narrativeTypes = new Set(['warning', 'milestone', 'achievement', 'info', 'event']);
+    if (narrativeTypes.has(notif.type)) {
       announcer.textContent = text;
+      // Auto-clear after a short delay so repeated events are announced
+      setTimeout(() => {
+        if (announcer.textContent === text) announcer.textContent = '';
+      }, 6000);
     }
+  }
+
+  /**
+   * Announce a narrative ecosystem event for screen readers.
+   * @param {string} message
+   * @param {string} [type='info']
+   */
+  announceNarrative(message, _type = 'info') {
+    const announcer = document.getElementById('sim-announcer');
+    if (!announcer) return;
+    announcer.textContent = message;
+    setTimeout(() => {
+      if (announcer.textContent === message) announcer.textContent = '';
+    }, 8000);
   }
 
   _createDomToast(notif) {

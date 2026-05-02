@@ -12,12 +12,15 @@
     "smoke:browser:headed": "node scripts/browser-smoke.mjs --headed",
     "test:coverage": "npm test",
     "lint": "eslint creature-sim/src",
-    "lint:fix": "eslint creature-sim/src --fix"
+    "lint:fix": "eslint creature-sim/src --fix",
+    "analyze": "vite build --mode analyze"
   },
   "devDependencies": {
     "eslint": "^10.2.0",
     "globals": "^17.5.0",
     "playwright": "^1.57.0",
+    "prettier": "^3.8.3",
+    "rollup-plugin-visualizer": "^7.0.1",
     "vite": "^8.0.8"
   },
   "keywords": [

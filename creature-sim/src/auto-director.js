@@ -28,6 +28,11 @@ export class AutoDirector {
       [GameEvents.PREDATOR_LITE_CHASE]: 5.0
     };
 
+    // Story mode: slower, more cinematic camera work for dramatic events
+    this.storyMode = false;
+    this._storyEvents = new Set(['CREATURE_KILLED', 'CREATURE_BORN', 'WORLD_MIGRATION_START']);
+    this._lastStoryFocus = null;
+
     this._bindEvents();
   }
 
@@ -190,7 +195,11 @@ export class AutoDirector {
     const maxStep = 0.35;
     const nextZoom = clamp(currentZoom + clamp(desired - currentZoom, -maxStep, maxStep), this.camera.minZoom, this.camera.maxZoom);
     this.camera.targetZoom = nextZoom;
-    const duration = reason === GameEvents.CREATURE_PANIC ? 1.1 : 1.6;
+    let duration = reason === GameEvents.CREATURE_PANIC ? 1.1 : 1.6;
+    if (this.storyMode && this._storyEvents.has(reason)) {
+      duration = 2.8; // Slower cinematic pan
+      this._lastStoryFocus = { x, y, reason, at: performance.now() };
+    }
     if (typeof this.camera.startTravel === 'function') {
       this.camera.startTravel(x, y, duration);
     } else {

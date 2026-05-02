@@ -24,6 +24,14 @@ export function drawWeatherEffects(renderer, ctx, world) {
   if (weatherType === 'aurora') {
     drawAurora(renderer, ctx, world, weatherIntensity);
   }
+
+  // Screen-space weather lens effects
+  if ((weatherType === 'rain' || weatherType === 'storm') && weatherIntensity > 0.3) {
+    drawRainLens(renderer, ctx, world, weatherIntensity);
+  }
+  if (world?.currentBiome === 'desert' || world?.currentBiome === 'mountain') {
+    drawHeatShimmer(renderer, ctx, world);
+  }
 }
 
 export function drawStorm(renderer, ctx, world, weatherIntensity) {
@@ -144,5 +152,66 @@ export function drawAurora(renderer, ctx, world, weatherIntensity) {
     ctx.fill();
   }
 
+  ctx.restore();
+}
+
+export function drawRainLens(renderer, ctx, world, weatherIntensity) {
+  const bounds = renderer._viewBounds;
+  const visibleWidth = bounds.x2 - bounds.x1;
+  const visibleHeight = bounds.y2 - bounds.y1;
+  const time = performance.now() * 0.001;
+
+  // Raindrops on "camera lens" - semi-transparent circles sliding down
+  const dropCount = Math.floor(4 + weatherIntensity * 10);
+  ctx.save();
+  for (let i = 0; i < dropCount; i++) {
+    const seed = i * 137.5;
+    const x = bounds.x1 + ((seed * 53) % 1) * visibleWidth;
+    const speed = 20 + ((seed * 31) % 1) * 40;
+    const y = ((seed * 100 + time * speed) % (visibleHeight + 60)) - 30 + bounds.y1;
+    const size = 1.5 + ((seed * 19) % 1) * 2.5;
+    const alpha = 0.08 + ((seed * 7) % 1) * 0.12;
+
+    ctx.fillStyle = `rgba(180, 210, 255, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Tiny trail below drop
+    ctx.strokeStyle = `rgba(180, 210, 255, ${alpha * 0.5})`;
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(x, y + size);
+    ctx.lineTo(x, y + size + size * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+export function drawHeatShimmer(renderer, ctx, _world) {
+  const bounds = renderer._viewBounds;
+  const visibleHeight = bounds.y2 - bounds.y1;
+  const time = performance.now() * 0.001;
+
+  // Subtle horizontal wave distortion bands near the ground
+  ctx.save();
+  const bandCount = 3;
+  for (let i = 0; i < bandCount; i++) {
+    const yBase = bounds.y1 + visibleHeight * (0.55 + i * 0.12);
+    const waveHeight = 2 + Math.sin(time * 2 + i) * 1.5;
+    const alpha = 0.02 + Math.sin(time * 1.5 + i * 0.8) * 0.015;
+
+    ctx.fillStyle = `rgba(255, 200, 120, ${alpha})`;
+    ctx.beginPath();
+    ctx.moveTo(bounds.x1, yBase);
+    for (let x = bounds.x1; x <= bounds.x2; x += 30) {
+      const y = yBase + Math.sin(x * 0.02 + time * 3 + i * 1.3) * waveHeight;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(bounds.x2, yBase + 8);
+    ctx.lineTo(bounds.x1, yBase + 8);
+    ctx.closePath();
+    ctx.fill();
+  }
   ctx.restore();
 }

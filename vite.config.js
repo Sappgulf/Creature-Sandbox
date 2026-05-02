@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 const chunkMap = [
   {
@@ -35,7 +36,7 @@ function manualChunks(id) {
   }
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   root: 'creature-sim',
   server: {
     port: 8000,
@@ -48,7 +49,8 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks
-      }
+      },
+      plugins: mode === 'analyze' ? [visualizer({ open: true, gzipSize: true, filename: '../dist/stats.html' })] : []
     }
   },
-});
+}));

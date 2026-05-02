@@ -1,6 +1,29 @@
 import { gameState } from './game-state.js';
 
-
+// Animated number counter helper
+const _counterState = new Map();
+function animateNumber(key, target, duration = 400) {
+  const now = performance.now();
+  const state = _counterState.get(key);
+  if (!state) {
+    _counterState.set(key, { value: target, target, startTime: now, from: target });
+    return target;
+  }
+  if (state.target !== target) {
+    state.from = state.value;
+    state.target = target;
+    state.startTime = now;
+  }
+  const elapsed = now - state.startTime;
+  if (elapsed >= duration) {
+    state.value = target;
+    return target;
+  }
+  const t = elapsed / duration;
+  const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  state.value = state.from + (target - state.from) * ease;
+  return Math.round(state.value);
+}
 
 export function renderStats(el, world, fps, extra = {}) {
   if (!el) return;
@@ -25,10 +48,13 @@ export function renderStats(el, world, fps, extra = {}) {
   // Build minimal, clean stats line
   const statParts = [];
 
-  // Core metrics - always show
-  statParts.push(`<span>🐾 <span class="value">${n}</span></span>`);
-  statParts.push(`<span>🦁 <span class="value">${preds}</span></span>`);
-  statParts.push(`<span>🌿 <span class="value">${world.food.length}</span></span>`);
+  // Core metrics - always show (animated counters)
+  const animPop = animateNumber('pop', n);
+  const animPreds = animateNumber('preds', preds);
+  const animFood = animateNumber('food', world.food.length);
+  statParts.push(`<span>🐾 <span class="value">${animPop}</span></span>`);
+  statParts.push(`<span>🦁 <span class="value">${animPreds}</span></span>`);
+  statParts.push(`<span>🌿 <span class="value">${animFood}</span></span>`);
 
   // Tool indicator
   if (extra.tool) {

@@ -17,6 +17,31 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-05-02 — all-systems — Implemented
+- **Issues:** Broad audit requested across all 11 categories (DevEx, accessibility, UI polish, performance, runtime, save system, mobile, visuals, audio, simulation, social).
+- **Root Causes:** Missing developer tooling (no bundle analyzer, no Prettier); no high-contrast mode or structured screen-reader narratives; stats UI snapped numbers instantly; no undo for god-mode actions; simulation ran full fidelity even when FPS dropped below 30; no offline support; save schema had no declarative migration pipeline and only one auto-save slot; mobile first-run users had no gesture guidance; weather lacked screen-space effects; music was a single monophonic drone; no way to share world seeds; no visual record of creature deaths.
+- **Fixes:**
+  - Added `npm run analyze` with `rollup-plugin-visualizer` and `.prettierrc`.
+  - Added `@ts-check` to `save-migration.js`, `leaderboard.js`, `seed-utils.js`, `ecosystem-ghosts.js`.
+  - Added high-contrast CSS mode with toggle in Features panel and `localStorage` persistence.
+  - Enhanced `NotificationSystem._announce()` with auto-clear and added `announceNarrative()` for screen-reader ecosystem storytelling.
+  - Added `animateNumber()` helper in `ui.js` so population/predator/food stats tick smoothly.
+  - Added `GameLoop.godModeUndoStack` / `redoStack` with `pushGodModeUndo()`, `undoGodMode()`, `redoGodMode()`; wired `Ctrl+Z` in `InputManager` to trigger god-mode undo when active.
+  - Added `GameLoop.simulationFidelity` (1 / 0.5 / 0.25) that throttles advanced subsystem updates (`seasonalEvents`, `familyBonds`, `memoryLearning`, `challengeSystem`, `unlockableAchievements`) based on rolling FPS.
+  - Added creature LOD culling in `renderer-creatures.js`: `lodLevel` is passed to `c.draw()` based on zoom.
+  - Added `sw.js` service worker with shell + dynamic caching; registered in `index.html`.
+  - Created `save-migration.js` with declarative `SaveMigrations` pipeline (1.0 → 2.0 → 2.5 → 3.0).
+  - Integrated `migrateSaveData()` into `SaveSystem.deserialize()`.
+  - Added rotating auto-save slots (`creature-sim-autosave-1/2/3`) in addition to legacy single autosave.
+  - Added `mobile-gesture-tutorial.js` with one-time overlay for pan/zoom/long-press on first mobile launch.
+  - Added `drawRainLens()` (sliding lens drops) and `drawHeatShimmer()` (desert/mountain wave bands) to `renderer-weather.js`.
+  - Added dynamic music layer system in `audio-system.js` (`musicLayers`: ambience/rhythm/tension) with crossfading based on predator ratio, disaster state, and ecosystem health.
+  - Added `AutoDirector.storyMode` with slower cinematic pans for dramatic events.
+  - Created `ecosystem-ghosts.js` (`GhostTrailSystem`) that records deaths and renders faint spectral pulses; wired into `GameLoop` death events and `Renderer` draw loop.
+  - Created `seed-utils.js` with `encodeSeed()` / `decodeSeed()` / `getSeedFromUrl()` / `setSeedInUrl()`; wired into `app-bootstrap.js` so New Sandbox seeds are shareable via URL hash.
+  - Created `leaderboard.js` with local `localStorage` high-score tracking for campaign levels.
+- **Verification:** `npm run lint` (0 errors, 0 warnings); `npm test` (148 passing); `npm run build` (pass, 117 modules, main JS `542.99 kB` pre-gzip); `npm run smoke:browser` (pass: desktop, mobile-compact, mobile-large).
+
 ### 2026-04-30 — ui/render/perf/testing — Planned
 - **Issues:** Broad audit requested for gameplay fixes, visual clarity, and performance; live play showed legacy challenge chrome occupying the playfield, the initial desktop run promoted render quality to `ultra` before real FPS samples existed, and the checked-in browser smoke failed at the watch-mode god toggle.
 - **Root Causes:** The legacy `ChallengeSystem.draw()` painted three large canvas cards every frame despite newer session-goal UI existing elsewhere; `RendererPerformanceMonitor` averaged placeholder `60 FPS` samples and allowed immediate quality upgrades; `scripts/browser-smoke.mjs` clicked the watch god-mode button without first asserting that the watch strip had become visible.

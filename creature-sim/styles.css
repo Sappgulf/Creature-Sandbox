@@ -96,6 +96,35 @@ body.reduced-motion * {
     scroll-behavior: auto !important;
   }
 }
+
+/* === HIGH CONTRAST MODE === */
+body.high-contrast {
+  --bg-deep: #000000;
+  --bg-surface: #0a0a0a;
+  --bg-elevated: #111111;
+  --bg-hover: #1a1a1a;
+  --glass-bg: rgba(0, 0, 0, 0.95);
+  --glass-border: rgba(255, 255, 255, 0.35);
+  --glass-border-hover: rgba(255, 255, 255, 0.6);
+  --accent-primary: #00e5ff;
+  --accent-success: #00ff66;
+  --accent-warning: #ffcc00;
+  --accent-danger: #ff3333;
+  --text-primary: #ffffff;
+  --text-secondary: #dddddd;
+  --text-tertiary: #bbbbbb;
+  --text-muted: #999999;
+}
+body.high-contrast canvas {
+  filter: contrast(1.15) saturate(1.1);
+}
+body.high-contrast .creature-nameplate,
+body.high-contrast .stats-line,
+body.high-contrast .panel {
+  text-shadow: 0 0 2px rgba(0,0,0,0.9);
+  border-width: 2px;
+}
+
 /* === CANVAS === */
 #view {
   display: block;

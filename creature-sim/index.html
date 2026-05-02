@@ -809,6 +809,10 @@
           <input type="checkbox" id="toggle-reduced-motion" />
           <span>🧘 Reduced Motion</span>
         </label>
+        <label class="feature-toggle">
+          <input type="checkbox" id="toggle-high-contrast" />
+          <span>🔲 High Contrast</span>
+        </label>
       </div>
 
       <div class="features-section">
@@ -1018,6 +1022,15 @@
   </div>
 
   </main>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {
+          // Silent fail: offline mode is optional
+        });
+      });
+    }
+  </script>
   <script type="module" src="./src/main.js?v=20260423-smoke3"></script>
 </body>
 

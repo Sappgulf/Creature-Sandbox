@@ -31,6 +31,8 @@ import { MobileSupport } from './mobile-support.js';
 import { AutoDirector } from './auto-director.js';
 import { MomentsSystem } from './moments-system.js';
 import { ControlStripController } from './control-strip.js';
+import { encodeSeed, getSeedFromUrl, setSeedInUrl } from './seed-utils.js';
+import { mobileGestureTutorial } from './mobile-gesture-tutorial.js';
 
 // Import new modular systems
 import { domCache } from './dom-cache.js';
@@ -209,6 +211,18 @@ export function initializeApp() {
     document.body.classList.add('dev-tools');
   }
 
+  // Restore accessibility preferences
+  try {
+    if (localStorage.getItem('creature-sim-high-contrast') === 'true') {
+      document.body.classList.add('high-contrast');
+    }
+    if (localStorage.getItem('creature-sim-reduced-motion') === 'true' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.body.classList.add('reduced-motion');
+    }
+  } catch {
+    // Ignore storage errors
+  }
+
   const devFpsOverlay = createDevFpsOverlay(devTools.fpsOverlay);
   if (devFpsOverlay) {
     domCache.add('devFps', devFpsOverlay);
@@ -364,6 +378,22 @@ export function initializeApp() {
         const enabled = reducedMotionToggle.checked;
         applyReducedMotion(enabled);
         window.localStorage?.setItem('creatureSandboxReducedMotion', String(enabled));
+      });
+    }
+
+    // High-contrast toggle
+    const highContrastToggle = document.getElementById('toggle-high-contrast');
+    if (highContrastToggle) {
+      const initialHighContrast = document.body.classList.contains('high-contrast');
+      highContrastToggle.checked = initialHighContrast;
+      highContrastToggle.addEventListener('change', () => {
+        const enabled = highContrastToggle.checked;
+        document.body.classList.toggle('high-contrast', enabled);
+        try {
+          localStorage.setItem('creature-sim-high-contrast', String(enabled));
+        } catch {
+          // Ignore
+        }
       });
     }
   }, 'Reduced motion accessibility toggle');
@@ -708,6 +738,11 @@ export function initializeApp() {
   if (!gameLoop) {
     errorHandler.criticalError(new Error('Failed to create game loop'), 'Game loop initialization');
     throw new Error('Cannot continue without game loop');
+  }
+
+  // Wire game loop back to input manager for god-mode undo and other loop-level actions
+  if (inputManager) {
+    inputManager.gameLoop = gameLoop;
   }
 
   // Save/load hotkeys (Ctrl/⌘ + S / O)
@@ -1329,11 +1364,18 @@ export function initializeApp() {
     errorHandler.safeExecute(() => {
       console.debug('🔄 Resetting world for new game...');
 
+      // Check for shared seed in URL
+      const urlSeed = getSeedFromUrl();
+      const runtimeProfile = getRuntimeProfile();
+      const nextSeed = urlSeed || runtimeProfile.startupSeed;
+
       // Reset the world with fresh creatures
       if (world && world.seed) {
-        const nextSeed = getRuntimeProfile().startupSeed;
         world.seed(nextSeed.herbivores, nextSeed.predators, nextSeed.food);
       }
+
+      // Share seed in URL for easy linking
+      setSeedInUrl(encodeSeed(nextSeed));
 
       applyReplayKickoff();
 
@@ -1363,6 +1405,9 @@ export function initializeApp() {
 
       // Start tutorial for new players
       startTutorialIfNeeded();
+
+      // Show mobile gesture tutorial on first mobile launch
+      setTimeout(() => mobileGestureTutorial.show(), 800);
     }, 'New game initialization');
   }
 

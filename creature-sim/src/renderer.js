@@ -19,6 +19,7 @@ import {
   getBiomeTint
 } from './renderer-biome.js?v=20260423-assets1';
 import { drawWeatherEffects } from './renderer-weather.js';
+import { ghostTrails } from './ecosystem-ghosts.js';
 
 // SPLIT: biome and weather rendering extracted to renderer-biome.js / renderer-weather.js
 
@@ -254,6 +255,10 @@ export class Renderer {
     if (this.enableMating) {
       this.drawMatingDisplays(world);
     }
+
+    // Draw ecosystem ghost trails (behind creatures)
+    ghostTrails.update();
+    ghostTrails.draw(ctx, camera, worldTime);
 
     this.drawCreatures(world, { selectedId, pinnedId, hoveredId, lineageSet, worldTime, selectionPulseUntil: opts.selectionPulseUntil });
     if (spawnDebug && this._pendingDebugSpawn) {
