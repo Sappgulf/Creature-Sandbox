@@ -25,6 +25,10 @@
     content="Watch creatures evolve in real-time with genetic inheritance and natural selection" />
   <link rel="icon" type="image/svg+xml"
     href="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2064%2064%27%3E%3Crect%20width=%2764%27%20height=%2764%27%20rx=%2714%27%20ry=%2714%27%20fill=%27%230a0f1e%27/%3E%3Cpath%20d=%27M16%2020h32M16%2032h32M24%2044h24%27%20stroke=%27%23a5f3fc%27%20stroke-width=%276%27%20stroke-linecap=%27round%27/%3E%3Ccircle%20cx=%2720%27%20cy=%2744%27%20r=%274%27%20fill=%27%23facc15%27/%3E%3C/svg%3E" />
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#0b1019" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
   <link rel="stylesheet" href="styles.css?v=20260423-assets1" />
   <script>
@@ -183,6 +187,7 @@
           <button class="menu-item" id="menu-gene-editor" data-action="gene-editor">🧬 Gene Editor</button>
           <button class="menu-item" id="menu-scenario" data-action="scenario">🧪 Scenario Lab</button>
           <button class="menu-item" id="menu-features" data-action="features">🎨 Features</button>
+          <button class="menu-item" id="menu-sound" data-action="sound">🔊 Sound</button>
         </div>
         <div class="menu-section">
           <div class="menu-section-title">Insights</div>
@@ -813,6 +818,15 @@
           <input type="checkbox" id="toggle-high-contrast" />
           <span>🔲 High Contrast</span>
         </label>
+        <label class="feature-toggle">
+          <span>🎨 Color Vision</span>
+          <select id="colorblind-select" class="meta-select" style="margin-left: auto; min-width: 120px;">
+            <option value="">Standard</option>
+            <option value="protanopia">Protanopia</option>
+            <option value="deuteranopia">Deuteranopia</option>
+            <option value="tritanopia">Tritanopia</option>
+          </select>
+        </label>
       </div>
 
       <div class="features-section">
@@ -852,6 +866,76 @@
           <input type="checkbox" id="toggle-minigraphs" />
           <span>📊 Mini-Graphs (H)</span>
         </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sound Panel -->
+  <div id="sound-panel" class="panel hidden">
+    <div class="panel-header" data-panel="sound">
+      <span class="panel-title">
+        <span class="panel-collapse-icon">▼</span>
+        🔊 Sound
+      </span>
+      <button id="btn-sound-close" class="panel-close" title="Close" aria-label="Close sound panel"
+        onclick="event.stopPropagation()">×</button>
+    </div>
+    <div class="panel-body">
+      <div class="features-section">
+        <div class="features-section-title">Master</div>
+        <div class="feature-slider">
+          <div class="feature-slider-row">
+            <span>🔊 Master Volume</span>
+            <span class="muted tiny" id="sound-master-value">25%</span>
+          </div>
+          <input type="range" id="sound-master" min="0" max="100" step="1" value="25" aria-label="Master volume" />
+        </div>
+        <label class="feature-toggle">
+          <input type="checkbox" id="toggle-sound-enabled" checked />
+          <span>🔔 Sounds On</span>
+        </label>
+        <label class="feature-toggle">
+          <input type="checkbox" id="toggle-music-enabled" checked />
+          <span>🎵 Music On</span>
+        </label>
+      </div>
+      <div class="features-section">
+        <div class="features-section-title">Categories</div>
+        <div class="feature-slider">
+          <div class="feature-slider-row">
+            <span>🎵 Music</span>
+            <span class="muted tiny" id="sound-music-value">18%</span>
+          </div>
+          <input type="range" id="sound-music" min="0" max="100" step="1" value="18" aria-label="Music volume" />
+        </div>
+        <div class="feature-slider">
+          <div class="feature-slider-row">
+            <span>🐾 Creatures</span>
+            <span class="muted tiny" id="sound-creatures-value">25%</span>
+          </div>
+          <input type="range" id="sound-creatures" min="0" max="100" step="1" value="25" aria-label="Creature volume" />
+        </div>
+        <div class="feature-slider">
+          <div class="feature-slider-row">
+            <span>🌿 Ambient</span>
+            <span class="muted tiny" id="sound-ambient-value">15%</span>
+          </div>
+          <input type="range" id="sound-ambient" min="0" max="100" step="1" value="15" aria-label="Ambient volume" />
+        </div>
+        <div class="feature-slider">
+          <div class="feature-slider-row">
+            <span>🖱️ UI</span>
+            <span class="muted tiny" id="sound-ui-value">35%</span>
+          </div>
+          <input type="range" id="sound-ui" min="0" max="100" step="1" value="35" aria-label="UI volume" />
+        </div>
+        <div class="feature-slider">
+          <div class="feature-slider-row">
+            <span>✨ Effects</span>
+            <span class="muted tiny" id="sound-effects-value">30%</span>
+          </div>
+          <input type="range" id="sound-effects" min="0" max="100" step="1" value="30" aria-label="Effects volume" />
+        </div>
       </div>
     </div>
   </div>

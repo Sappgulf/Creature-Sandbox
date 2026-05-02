@@ -260,3 +260,16 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - `npm test` ✅ (148 passing)
 - `npm run build` ✅ (117 modules, main JS `542.99 kB` pre-gzip)
 - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
+
+2026-05-02 (continued)
+- New request: implement follow-up polish round 2 (PWA, color-blind, sound volumes, camera bookmarks, lifetime stats).
+- Implemented PWA (1): `manifest.json` with icons/screenshots, linked in `index.html` with `theme-color` and `apple-mobile-web-app` meta tags.
+- Implemented Accessibility (2): CSS color-blind modes (`protanopia`, `deuteranopia`, `tritanopia`) with canvas `hue-rotate` filters; selector in Features panel with `localStorage` persistence.
+- Implemented Sound (3): new Sound panel with per-category volume sliders (Master, Music, Creatures, Ambient, UI, Effects) and master/mute toggles; wired to `audio-system.js`.
+- Implemented Navigation (4): `camera-bookmarks.js` with save/load slots 1-5; `Shift+1-5` saves, `1-5` teleports; persisted in `localStorage`.
+- Implemented Persistence (5): `lifetime-stats.js` tracking playtime, creatures born/died, predator kills, food eaten, matings, highest population, oldest creature, most successful predator; wired into game-loop event listeners.
+- Verification:
+- `npm run lint` ✅ (0 errors, 0 warnings)
+- `npm test` ✅ (148 passing)
+- `npm run build` ✅ (119 modules, main JS `547.90 kB` pre-gzip)
+- `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)

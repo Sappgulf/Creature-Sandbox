@@ -154,6 +154,19 @@ export function createHudMenuActions(handlers = {}) {
       risk: 'Low'
     },
     {
+      id: 'btn-sound',
+      label: 'Sound',
+      icon: '🔊',
+      group: 'tools',
+      shortcut: '',
+      handler: handlers.onSoundToggle,
+      enabledWhen: () => true,
+      primary: false,
+      context: 'Global',
+      frequency: 'Rare',
+      risk: 'Low'
+    },
+    {
       id: 'btn-god-mode',
       label: 'God Mode',
       icon: '✨',

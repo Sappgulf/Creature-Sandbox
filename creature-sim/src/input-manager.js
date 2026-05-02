@@ -7,6 +7,7 @@ import { domCache } from './dom-cache.js';
 import { eventSystem } from './event-system.js';
 
 import { CreatureAgentTuning } from './creature-agent-constants.js';
+import { CameraBookmarks } from './camera-bookmarks.js';
 
 import { applyInputPointerMethods } from './input-pointer.js';
 import { applyInputTouchMethods } from './input-touch.js';
@@ -19,6 +20,7 @@ export class InputManager {
     this.world = world;
     this.tutorial = null;
     this.gameLoop = null;
+    this.cameraBookmarks = new CameraBookmarks(camera);
 
     this.boundHandlers = {
       onKeyDown: this.onKeyDown.bind(this),
@@ -182,6 +184,23 @@ export class InputManager {
         e.preventDefault();
         return;
       }
+    }
+
+    // Camera bookmarks: Shift+1-5 to save, 1-5 to load (when not in god mode)
+    const digit = e.key.match(/^[1-5]$/);
+    if (digit && !gameState.godModeActive) {
+      const slot = parseInt(digit[0], 10);
+      if (e.shiftKey) {
+        this.cameraBookmarks.save(slot);
+        eventSystem.emit('ui:toast', { message: `📍 Bookmark ${slot} saved`, duration: 1200 });
+      } else {
+        const loaded = this.cameraBookmarks.load(slot);
+        if (loaded) {
+          eventSystem.emit('ui:toast', { message: `📍 Bookmark ${slot}`, duration: 1200 });
+        }
+      }
+      e.preventDefault();
+      return;
     }
 
     switch (e.key.toLowerCase()) {

@@ -63,6 +63,7 @@ export class UIController {
       onGodModeExit: this.onGodModeExit.bind(this),
       onGodToolSelect: this.onGodToolSelect.bind(this),
       onFeaturesToggle: this.onFeaturesToggle.bind(this),
+      onSoundToggle: this.onSoundToggle.bind(this),
       onScenarioToggle: this.onScenarioToggle.bind(this),
       onAchievementsToggle: this.onAchievementsToggle.bind(this),
       onAchievementsReset: this.onAchievementsReset.bind(this),

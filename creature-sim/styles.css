@@ -125,6 +125,25 @@ body.high-contrast .panel {
   border-width: 2px;
 }
 
+/* === COLOR-BLIND MODES === */
+/* Protanopia (red-blind): shift reds toward yellow/blue */
+body.colorblind-protanopia canvas {
+  filter: hue-rotate(-40deg) saturate(1.2);
+}
+/* Deuteranopia (green-blind): shift greens toward blue/yellow */
+body.colorblind-deuteranopia canvas {
+  filter: hue-rotate(40deg) saturate(1.2);
+}
+/* Tritanopia (blue-blind): shift blues toward red/green */
+body.colorblind-tritanopia canvas {
+  filter: hue-rotate(180deg) saturate(1.1);
+}
+/* Common: boost shapes/borders for all color-blind modes */
+body[class*="colorblind-"] .creature-nameplate,
+body[class*="colorblind-"] .stats-line {
+  border-width: 1.5px;
+}
+
 /* === CANVAS === */
 #view {
   display: block;

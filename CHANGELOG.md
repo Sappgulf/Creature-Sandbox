@@ -17,6 +17,17 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-05-02 — polish-round-2 — Implemented
+- **Issues:** Follow-up polish requested: PWA installability, color-blind support, per-category sound volume, camera bookmarks, lifetime stats.
+- **Root Causes:** No `manifest.json` prevented Add to Home Screen; no color-blind modes blocked ~8% of male players; sound volumes were hardcoded per category; large worlds had no quick navigation; no persistent cross-session stats existed.
+- **Fixes:**
+  - Added `manifest.json` with icons, theme color, and screenshots; linked in `index.html` with `apple-mobile-web-app` meta tags.
+  - Added CSS color-blind modes (`protanopia`, `deuteranopia`, `tritanopia`) with canvas hue-rotate filters; added selector in Features panel with persistence.
+  - Created Sound panel with per-category volume sliders (Master, Music, Creatures, Ambient, UI, Effects) plus master/mute toggles; wired to `audio-system.js`.
+  - Created `camera-bookmarks.js` with save/load slots 1-5; `Shift+1-5` saves, `1-5` teleports; persisted in `localStorage`.
+  - Created `lifetime-stats.js` tracking playtime, creatures born/died, predator kills, food eaten, matings, highest population, oldest creature, most successful predator; wired into game-loop event listeners.
+- **Verification:** `npm run lint` (0 errors, 0 warnings); `npm test` (148 passing); `npm run build` (pass, 119 modules, main JS `547.90 kB` pre-gzip); `npm run smoke:browser` (pass: desktop, mobile-compact, mobile-large).
+
 ### 2026-05-02 — all-systems — Implemented
 - **Issues:** Broad audit requested across all 11 categories (DevEx, accessibility, UI polish, performance, runtime, save system, mobile, visuals, audio, simulation, social).
 - **Root Causes:** Missing developer tooling (no bundle analyzer, no Prettier); no high-contrast mode or structured screen-reader narratives; stats UI snapped numbers instantly; no undo for god-mode actions; simulation ran full fidelity even when FPS dropped below 30; no offline support; save schema had no declarative migration pipeline and only one auto-save slot; mobile first-run users had no gesture guidance; weather lacked screen-space effects; music was a single monophonic drone; no way to share world seeds; no visual record of creature deaths.

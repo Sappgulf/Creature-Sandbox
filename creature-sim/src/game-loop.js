@@ -14,6 +14,7 @@ import { poolManager } from './object-pool.js';
 import { getEnhancedAnalyticsModule } from './enhanced-analytics-loader.js';
 import { VisualEffects } from './visual-effects.js';
 import { ghostTrails } from './ecosystem-ghosts.js';
+import { lifetimeStats } from './lifetime-stats.js';
 // STATIC UI IMPORTS - avoids dynamic import() latency in hot path
 import { renderStats, renderSelectedInfo, renderAnalyticsCharts, renderInteractionHint } from './ui.js';
 
@@ -245,6 +246,8 @@ export class GameLoop {
         const diet = data.creature.genes?.diet ?? (data.creature.genes?.predator ? 1.0 : 0.0);
         this.particles.emit(data.creature.x, data.creature.y, 'birth', { diet });
       }
+      lifetimeStats.increment('totalCreaturesBorn');
+      lifetimeStats.updateMax('highestPopulation', this.world?.creatures?.length || 0);
     });
 
     eventSystem.on(GameEvents.CREATURE_DIED, (data) => {
@@ -260,6 +263,12 @@ export class GameLoop {
       }
       // Record ghost trail
       ghostTrails.recordDeath(data.creature?.x || 0, data.creature?.y || 0, data.creature);
+      lifetimeStats.increment('totalCreaturesDied');
+      const age = data.creature?.age || 0;
+      if (age > lifetimeStats.data.oldestCreature.age) {
+        lifetimeStats.updateRecord('oldestCreature', { name: data.creature?.name || 'Unknown', age });
+      }
+      lifetimeStats.updateMax('longestCreatureLived', age);
     });
 
     eventSystem.on(GameEvents.CREATURE_EAT, (data) => {
@@ -269,6 +278,7 @@ export class GameLoop {
       if (point && data?.hungry) {
         this.particles?.triggerShake?.(0.7);
       }
+      lifetimeStats.increment('totalFoodEaten');
     });
 
     eventSystem.on(GameEvents.CREATURE_BOND, (data) => {
@@ -279,6 +289,7 @@ export class GameLoop {
         this.visualEffects.createMatingEffect(data.creature.x, data.creature.y);
       }
       emitParticleEffect('bond', data, { color: '#ff9ad5' });
+      lifetimeStats.increment('totalMatings');
     });
 
     eventSystem.on(GameEvents.CREATURE_PANIC, (data) => {
@@ -302,6 +313,12 @@ export class GameLoop {
       }, data?.prey || data?.attacker || null);
       if (point) {
         this.particles?.triggerShake?.(1.6);
+      }
+      lifetimeStats.increment('totalPredatorKills');
+      const attacker = data?.attacker;
+      const kills = attacker?.stats?.kills || 0;
+      if (kills > lifetimeStats.data.mostSuccessfulPredator.kills) {
+        lifetimeStats.updateRecord('mostSuccessfulPredator', { name: attacker?.name || 'Unknown', kills });
       }
     });
 
@@ -448,6 +465,12 @@ export class GameLoop {
       return;
     }
 
+    // Lifetime stats: start session on first frame
+    if (!this._lifetimeStatsStarted) {
+      this._lifetimeStatsStarted = true;
+      lifetimeStats.startSession();
+    }
+
     // STABILITY: Wrap entire loop in try-catch to prevent complete game freeze
     try {
       // Performance profiling
@@ -522,6 +545,12 @@ export class GameLoop {
 
       // Update performance monitor
       updatePerformanceMonitor();
+
+      // Lifetime stats: accumulate play time
+      if (!this._lastPlayTimeUpdate || performance.now() - this._lastPlayTimeUpdate > 1000) {
+        this._lastPlayTimeUpdate = performance.now();
+        lifetimeStats.addPlayTime(1);
+      }
 
       // Adaptive simulation fidelity: throttle non-critical systems when FPS drops
       const avgFps = performanceProfiler.getStats().averages.fps || 60;

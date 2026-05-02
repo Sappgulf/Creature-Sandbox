@@ -396,6 +396,27 @@ export function initializeApp() {
         }
       });
     }
+
+    // Color-blind mode selector
+    const colorblindSelect = document.getElementById('colorblind-select');
+    if (colorblindSelect) {
+      const storedMode = localStorage.getItem('creature-sim-colorblind') || '';
+      colorblindSelect.value = storedMode;
+      const applyColorblind = (mode) => {
+        document.body.classList.remove('colorblind-protanopia', 'colorblind-deuteranopia', 'colorblind-tritanopia');
+        if (mode) document.body.classList.add(`colorblind-${mode}`);
+      };
+      applyColorblind(storedMode);
+      colorblindSelect.addEventListener('change', () => {
+        const mode = colorblindSelect.value;
+        applyColorblind(mode);
+        try {
+          localStorage.setItem('creature-sim-colorblind', mode);
+        } catch {
+          // Ignore
+        }
+      });
+    }
   }, 'Reduced motion accessibility toggle');
 
   // Nameplates toggle
@@ -516,6 +537,53 @@ export function initializeApp() {
   const audio = errorHandler.safeExecute(() => {
     return new AudioSystem();
   }, 'Audio system initialization', null);
+
+  // Sound panel volume controls (must be after audio init)
+  errorHandler.safeExecute(() => {
+    if (!audio) return;
+    const bindVolumeSlider = (id, category, displayId) => {
+      const slider = document.getElementById(id);
+      const display = displayId ? document.getElementById(displayId) : null;
+      if (!slider) return;
+      const initial = Math.round((audio.volumes[category] || 0) * 100);
+      slider.value = initial;
+      if (display) display.textContent = `${initial}%`;
+      slider.addEventListener('input', () => {
+        const val = Number(slider.value) / 100;
+        audio.volumes[category] = val;
+        if (display) display.textContent = `${slider.value}%`;
+      });
+    };
+    bindVolumeSlider('sound-master', 'master', 'sound-master-value');
+    bindVolumeSlider('sound-music', 'music', 'sound-music-value');
+    bindVolumeSlider('sound-creatures', 'creatures', 'sound-creatures-value');
+    bindVolumeSlider('sound-ambient', 'ambient', 'sound-ambient-value');
+    bindVolumeSlider('sound-ui', 'ui', 'sound-ui-value');
+    bindVolumeSlider('sound-effects', 'effects', 'sound-effects-value');
+
+    const masterSlider = document.getElementById('sound-master');
+    if (masterSlider) {
+      masterSlider.addEventListener('input', () => {
+        audio.masterVolume = Number(masterSlider.value) / 100;
+      });
+    }
+
+    const soundToggle = document.getElementById('toggle-sound-enabled');
+    if (soundToggle) {
+      soundToggle.checked = audio.soundsEnabled;
+      soundToggle.addEventListener('change', () => {
+        audio.soundsEnabled = soundToggle.checked;
+      });
+    }
+    const musicToggle = document.getElementById('toggle-music-enabled');
+    if (musicToggle) {
+      musicToggle.checked = audio.musicEnabled;
+      musicToggle.addEventListener('change', () => {
+        audio.musicEnabled = musicToggle.checked;
+        if (!audio.musicEnabled) audio.stopMusic?.();
+      });
+    }
+  }, 'Sound panel controls');
 
   const gameplayModes = errorHandler.safeExecute(() => {
     return new GameplayModes(world, { notifications, audio });

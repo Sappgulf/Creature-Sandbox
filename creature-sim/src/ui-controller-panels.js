@@ -30,6 +30,7 @@ export function applyUiPanelMethods(UIController) {
   UIController.prototype.closeMajorPanels = function(exceptPanelId = null) {
     const panelIds = [
       'features-panel',
+      'sound-panel',
       'scenario-panel',
       'achievements-panel',
       'gene-editor-panel',
@@ -59,6 +60,7 @@ export function applyUiPanelMethods(UIController) {
 
   UIController.prototype.bindPanelControls = function() {
     const featuresCloseBtn = domCache.get('featuresCloseBtn') || document.getElementById('btn-features-close');
+    const soundCloseBtn = document.getElementById('btn-sound-close');
     const scenarioCloseBtn = domCache.get('scenarioCloseBtn') || document.getElementById('btn-scenario-close');
     const achievementsCloseBtn = domCache.get('achievementsCloseBtn') || document.getElementById('btn-achievements-close');
     const geneEditorCloseBtn = domCache.get('geneEditorCloseBtn') || document.getElementById('btn-gene-editor-close');
@@ -66,6 +68,8 @@ export function applyUiPanelMethods(UIController) {
     const shortcutsCloseBtn = document.getElementById('btn-shortcuts-close');
 
     if (featuresCloseBtn) featuresCloseBtn.addEventListener('click', this.boundHandlers.onFeaturesToggle);
+
+    if (soundCloseBtn) soundCloseBtn.addEventListener('click', this.boundHandlers.onSoundToggle);
 
     if (scenarioCloseBtn) scenarioCloseBtn.addEventListener('click', this.boundHandlers.onScenarioToggle);
 
@@ -210,6 +214,18 @@ export function applyUiPanelMethods(UIController) {
       }
       gameState.featuresPanelVisible = willShow;
       this.setPanelVisibility(featuresPanel, gameState.featuresPanelVisible);
+    }
+    this.dismissInteractionHint();
+  };
+
+  UIController.prototype.onSoundToggle = function() {
+    const soundPanel = document.getElementById('sound-panel');
+    if (soundPanel) {
+      const willShow = soundPanel.classList.contains('hidden');
+      if (willShow) {
+        this.closeMajorPanels('sound-panel');
+      }
+      this.setPanelVisibility(soundPanel, willShow);
     }
     this.dismissInteractionHint();
   };
