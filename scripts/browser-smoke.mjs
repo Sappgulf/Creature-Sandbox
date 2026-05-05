@@ -214,12 +214,34 @@ async function runScenario(browser, scenario) {
   console.log(`  ${scenario.name}: food`);
   const beforeFood = state.summary.totalFood;
   await page.locator('#ctrl-more').click();
+  const overflowBox = await page.locator('#overflow-drawer .drawer-content').boundingBox();
+  assert.ok(overflowBox, `${scenario.name}: overflow menu should have a measurable drawer`);
+  if (scenario.mobile) {
+    assert.ok(
+      overflowBox.width >= scenario.viewport.width * 0.9,
+      `${scenario.name}: mobile overflow menu should use bottom-sheet width`
+    );
+  } else {
+    assert.ok(
+      overflowBox.width <= 500,
+      `${scenario.name}: desktop overflow menu should stay compact`
+    );
+  }
+  await page.screenshot({ path: path.join(outDir, `${scenario.name}-overflow.png`) });
   await page.locator('#menu-food').click();
   await clickWorld(page, scenario.viewport.width * 0.54, scenario.viewport.height * 0.48);
   await advance(page, 400);
   state = await readGameState(page);
   assert.ok(state.summary.totalFood >= beforeFood, `${scenario.name}: food tool should not reduce food count`);
   assert.equal(state.ui.tool, 'food', `${scenario.name}: food tool should be reflected in text state`);
+  await page.locator('#ctrl-more').click();
+  await page.locator('#menu-food').waitFor({ state: 'visible', timeout: 5000 });
+  assert.equal(
+    await page.locator('#menu-food').getAttribute('aria-pressed'),
+    'true',
+    `${scenario.name}: food menu item should reflect active tool state`
+  );
+  await page.locator('#overflow-drawer-close').click();
 
   console.log(`  ${scenario.name}: watch and god`);
   await page.locator('#ctrl-watch').click();

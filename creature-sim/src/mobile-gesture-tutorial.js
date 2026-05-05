@@ -12,6 +12,10 @@ export class MobileGestureTutorial {
 
   shouldShow() {
     if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('smoke') || params.has('autostart') || params.has('autosandbox')) {
+      return false;
+    }
     const isMobile = window.matchMedia?.('(pointer: coarse)').matches || ('ontouchstart' in window);
     if (!isMobile) return false;
     try {

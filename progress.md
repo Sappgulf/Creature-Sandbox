@@ -238,6 +238,27 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - `output/asset-polish/home-desktop.png`
 - `output/asset-polish/home-mobile.png`
 - `output/browser-smoke/desktop.png`
+
+2026-05-04
+- New request: use Browser, web-game foundations, develop-web-game, and game UI frontend skills across the app; improve features, menus, and overall polish; test everything; commit and push when finished.
+- Starting from `main...origin/main` with one pre-existing untracked image (`asset-polish-mcp-home.png`).
+- Architectural frame for this pass: keep the canvas as the playfield, keep simulation state outside renderer/UI, protect the center/lower playfield with compact DOM HUD surfaces, preserve `window.render_game_to_text` and `window.advanceTime`, and verify both checked-in browser smoke plus the external web-game client where possible.
+- Baseline gates: `npm test` ✅ and `npm run build` ✅ before edits.
+- Baseline `npm run smoke:browser` failed on mobile-large because the one-time mobile gesture tutorial intercepted `#ctrl-spawn`.
+- Implemented menu/UI reliability pass:
+  - smoke/autostart URLs now suppress the mobile gesture tutorial so automated mobile gameplay can interact with controls.
+  - control strip drawers now close competing drawers before opening, restore focus, support Escape/arrow/Home/End keyboard navigation, and set a body drawer-open state.
+  - overflow menu items now show active/pressed state for current tools, modes, panels, and mobile preferences.
+  - bumped static CSS/module cache keys and service-worker cache version so local/static browser sessions pick up the changed UI code.
+- Browser/plugin QA:
+  - in-app Browser verified the live sandbox and exposed that the desktop overflow drawer was full-width and covered too much of the playfield.
+  - desktop drawer CSS is now compact/centered while mobile keeps the bottom-sheet treatment.
+  - Browser runtime timed out on reload after the first inspection, so the follow-up proof was moved into checked-in Playwright smoke.
+- Smoke coverage upgrade:
+  - `scripts/browser-smoke.mjs` now asserts desktop overflow width stays compact, mobile overflow width stays bottom-sheet sized, captures per-viewport overflow screenshots, and confirms the Food menu item reports active state after selection.
+  - `npm run smoke:browser` ✅ after the fixes; inspected `output/browser-smoke/desktop-overflow.png`, `mobile-compact-overflow.png`, and `desktop.png`.
+- External develop-web-game client:
+  - attempted twice against the local Vite smoke URL; both runs hung in the known bundled client action loop and were killed. Checked-in browser smoke remained the reliable automation lane.
 - `output/browser-smoke/mobile-compact.png`
 - `output/browser-smoke/mobile-large.png`
 - `$WEB_GAME_CLIENT` was run with a bounded 30s wrapper against the live server; it exited without artifacts, matching the known local-client issue. Keep using `npm run smoke:browser` as the reliable automated gate unless the client script is repaired.

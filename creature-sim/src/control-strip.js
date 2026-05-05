@@ -8,6 +8,18 @@ import { eventSystem } from './event-system.js';
 // Speed multipliers for cycling
 const SPEED_OPTIONS = [0.5, 1, 2, 4];
 const SPEED_LABELS = ['0.5×', '1×', '2×', '4×'];
+const DRAWER_FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+function getDrawerFocusableElements(container) {
+  if (!container) return [];
+  return Array.from(container.querySelectorAll(DRAWER_FOCUSABLE_SELECTOR))
+    .filter((element) => !element.disabled && element.getAttribute('aria-hidden') !== 'true');
+}
+
+function isPanelVisible(id) {
+  const panel = document.getElementById(id);
+  return !!panel && !panel.classList.contains('hidden') && panel.getAttribute('aria-hidden') !== 'true';
+}
 
 export class ControlStripController {
   constructor(options = {}) {
@@ -27,6 +39,7 @@ export class ControlStripController {
     this.spawnDrawerOpen = false;
     this.overflowDrawerOpen = false;
     this.mobilePrefs = this.loadMobilePrefs();
+    this.lastDrawerTrigger = null;
 
     // Initialize
     this.lastUIStateSignature = '';
@@ -48,6 +61,14 @@ export class ControlStripController {
     this.ctrlMore = document.getElementById('ctrl-more');
     this.menuFood = document.getElementById('menu-food');
     this.menuGodMode = document.getElementById('menu-god-mode');
+    this.menuMode = document.getElementById('menu-mode');
+    this.menuScenario = document.getElementById('menu-scenario');
+    this.menuFeatures = document.getElementById('menu-features');
+    this.menuSound = document.getElementById('menu-sound');
+    this.menuEcoHealth = document.getElementById('menu-eco-health');
+    this.menuMobileFocus = document.getElementById('menu-mobile-focus');
+    this.menuMobileBattery = document.getElementById('menu-mobile-battery');
+    this.menuMobileHaptics = document.getElementById('menu-mobile-haptics');
 
     // Spawn drawer
     this.spawnDrawer = document.getElementById('spawn-drawer');
@@ -106,6 +127,8 @@ export class ControlStripController {
         this.handleMenuAction(action);
       }
     });
+    this.spawnDrawer?.addEventListener('keydown', (event) => this.handleDrawerKeydown(event, this.spawnDrawer));
+    this.overflowDrawer?.addEventListener('keydown', (event) => this.handleDrawerKeydown(event, this.overflowDrawer));
 
     // Watch strip buttons are delegated so bindings survive UI refreshes.
     this.watchStrip?.addEventListener('click', (event) => {
@@ -215,9 +238,9 @@ export class ControlStripController {
   }
 
   syncMobileMenuLabels() {
-    const focusBtn = document.getElementById('menu-mobile-focus');
-    const batteryBtn = document.getElementById('menu-mobile-battery');
-    const hapticsBtn = document.getElementById('menu-mobile-haptics');
+    const focusBtn = this.menuMobileFocus || document.getElementById('menu-mobile-focus');
+    const batteryBtn = this.menuMobileBattery || document.getElementById('menu-mobile-battery');
+    const hapticsBtn = this.menuMobileHaptics || document.getElementById('menu-mobile-haptics');
     if (focusBtn) {
       focusBtn.textContent = `${this.mobilePrefs.focusMode ? '✅' : '🧭'} Focus Mode`;
       focusBtn.setAttribute('aria-pressed', this.mobilePrefs.focusMode ? 'true' : 'false');
@@ -237,6 +260,74 @@ export class ControlStripController {
     if (container && active instanceof HTMLElement && container.contains(active)) {
       active.blur();
     }
+  }
+
+  restoreDrawerFocus() {
+    if (this.lastDrawerTrigger instanceof HTMLElement && document.body.contains(this.lastDrawerTrigger)) {
+      this.lastDrawerTrigger.focus({ preventScroll: true });
+    }
+    this.lastDrawerTrigger = null;
+  }
+
+  focusDrawer(container, preferredSelector = null) {
+    window.requestAnimationFrame(() => {
+      const preferred = preferredSelector ? container?.querySelector(preferredSelector) : null;
+      if (preferred instanceof HTMLElement && !preferred.disabled) {
+        preferred.focus({ preventScroll: true });
+        return;
+      }
+      const [first] = getDrawerFocusableElements(container);
+      first?.focus?.({ preventScroll: true });
+    });
+  }
+
+  syncDrawerOpenClass() {
+    document.body.classList.toggle('drawer-open', this.spawnDrawerOpen || this.overflowDrawerOpen);
+  }
+
+  setMenuActive(button, active, { pressed = active } = {}) {
+    if (!button) return;
+    button.classList.toggle('active', !!active);
+    button.setAttribute('aria-pressed', pressed ? 'true' : 'false');
+  }
+
+  syncMenuState() {
+    const toolMode = this.tools?.mode || 'inspect';
+    this.setMenuActive(this.menuFood, toolMode === 'food');
+    this.setMenuActive(this.menuGodMode, gameState.godModeActive);
+    this.setMenuActive(this.menuMode, gameState.sessionMetaVisible !== false);
+    this.setMenuActive(this.menuScenario, !!gameState.scenarioPanelVisible);
+    this.setMenuActive(this.menuFeatures, !!gameState.featuresPanelVisible);
+    this.setMenuActive(this.menuSound, isPanelVisible('sound-panel'));
+    this.setMenuActive(this.menuEcoHealth, isPanelVisible('eco-health-panel'));
+    this.setMenuActive(this.menuMobileFocus, this.mobilePrefs.focusMode);
+    this.setMenuActive(this.menuMobileBattery, this.mobilePrefs.batterySaver);
+    this.setMenuActive(this.menuMobileHaptics, this.mobilePrefs.haptics);
+  }
+
+  handleDrawerKeydown(event, drawer) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      if (drawer === this.spawnDrawer) this.closeSpawnDrawer();
+      if (drawer === this.overflowDrawer) this.closeOverflowDrawer();
+      return;
+    }
+
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    const focusable = getDrawerFocusableElements(drawer);
+    if (!focusable.length) return;
+    const currentIndex = Math.max(0, focusable.indexOf(document.activeElement));
+    let nextIndex = currentIndex;
+
+    if (event.key === 'ArrowDown') nextIndex = currentIndex + 1;
+    if (event.key === 'ArrowUp') nextIndex = currentIndex - 1;
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = focusable.length - 1;
+    if (nextIndex < 0) nextIndex = focusable.length - 1;
+    if (nextIndex >= focusable.length) nextIndex = 0;
+
+    event.preventDefault();
+    focusable[nextIndex]?.focus({ preventScroll: true });
   }
 
   // === PAUSE / PLAY ===
@@ -304,6 +395,8 @@ export class ControlStripController {
       eventSystem.emit('tool:changed', { mode: 'food' });
     }
     this.uiController?.updateToolIndicator?.('food');
+    this.updateToolButtons();
+    this.syncMenuState();
 
     const pulseTarget = this.ctrlFood || this.menuFood || document.getElementById('menu-food');
     if (pulseTarget) {
@@ -326,6 +419,10 @@ export class ControlStripController {
     const mode = this.tools?.mode || 'inspect';
     this.ctrlFood?.classList.toggle('active', mode === 'food');
     this.ctrlFood?.setAttribute('aria-pressed', mode === 'food' ? 'true' : 'false');
+    this.menuFood?.classList.toggle('active', mode === 'food');
+    this.menuFood?.setAttribute('aria-pressed', mode === 'food' ? 'true' : 'false');
+    this.ctrlSpawn?.classList.toggle('active', mode === 'spawn');
+    this.ctrlSpawn?.setAttribute('aria-pressed', mode === 'spawn' ? 'true' : 'false');
     this.ctrlInspect?.classList.toggle('active', mode === 'inspect');
     this.ctrlInspect?.setAttribute('aria-pressed', mode === 'inspect' ? 'true' : 'false');
   }
@@ -333,21 +430,27 @@ export class ControlStripController {
   // === SPAWN DRAWER ===
   openSpawnDrawer() {
     if (!this.spawnDrawer) return;
+    if (this.overflowDrawerOpen) this.closeOverflowDrawer({ restoreFocus: false });
+    this.lastDrawerTrigger = document.activeElement;
     this.spawnDrawer.classList.remove('hidden');
     this.spawnDrawer.setAttribute('aria-hidden', 'false');
     this.spawnDrawerOpen = true;
     this.ctrlSpawn?.setAttribute('aria-expanded', 'true');
     this.updateSpawnSelection();
+    this.syncDrawerOpenClass();
+    this.focusDrawer(this.spawnDrawer, '.spawn-card.selected');
     this.buzz([10, 24, 10]);
   }
 
-  closeSpawnDrawer() {
+  closeSpawnDrawer({ restoreFocus = true } = {}) {
     if (!this.spawnDrawer) return;
     this.blurFocusedDescendant(this.spawnDrawer);
     this.spawnDrawer.classList.add('hidden');
     this.spawnDrawer.setAttribute('aria-hidden', 'true');
     this.spawnDrawerOpen = false;
     this.ctrlSpawn?.setAttribute('aria-expanded', 'false');
+    this.syncDrawerOpenClass();
+    if (restoreFocus) this.restoreDrawerFocus();
   }
 
   selectSpawnType(type) {
@@ -396,30 +499,39 @@ export class ControlStripController {
       // Storage may be unavailable in private browsing contexts.
     }
     this.closeSpawnDrawer();
+    this.updateToolButtons();
+    this.syncMenuState();
   }
 
   // === OVERFLOW DRAWER ===
   openOverflowDrawer() {
     if (!this.overflowDrawer) return;
+    if (this.spawnDrawerOpen) this.closeSpawnDrawer({ restoreFocus: false });
+    this.lastDrawerTrigger = document.activeElement;
     this.overflowDrawer.classList.remove('hidden');
     this.overflowDrawer.setAttribute('aria-hidden', 'false');
     this.overflowDrawerOpen = true;
     this.ctrlMore?.setAttribute('aria-expanded', 'true');
     this.syncMobileMenuLabels();
+    this.syncMenuState();
+    this.syncDrawerOpenClass();
+    this.focusDrawer(this.overflowDrawer, '.menu-item.active');
     this.buzz([8, 18, 8]);
   }
 
-  closeOverflowDrawer() {
+  closeOverflowDrawer({ restoreFocus = true } = {}) {
     if (!this.overflowDrawer) return;
     this.blurFocusedDescendant(this.overflowDrawer);
     this.overflowDrawer.classList.add('hidden');
     this.overflowDrawer.setAttribute('aria-hidden', 'true');
     this.overflowDrawerOpen = false;
     this.ctrlMore?.setAttribute('aria-expanded', 'false');
+    this.syncDrawerOpenClass();
+    if (restoreFocus) this.restoreDrawerFocus();
   }
 
   handleMenuAction(action) {
-    this.closeOverflowDrawer();
+    this.closeOverflowDrawer({ restoreFocus: false });
 
     if (action === 'help') {
       const shortcutsOverlay = document.getElementById('shortcuts-overlay');
@@ -461,6 +573,7 @@ export class ControlStripController {
       case 'mode':
         // Toggle session meta visibility which contains mode selection
         this.uiController?.onSessionMetaToggle();
+        this.syncMenuState();
         break;
       case 'campaign':
         // Campaign toggle is handled by ID in main currently, but we can try generic event or check controller
@@ -481,12 +594,15 @@ export class ControlStripController {
         break;
       case 'scenario':
         this.uiController?.onScenarioToggle();
+        this.syncMenuState();
         break;
       case 'features':
         this.uiController?.onFeaturesToggle();
+        this.syncMenuState();
         break;
       case 'eco-health':
         this.uiController?.onEcoHealthToggle();
+        this.syncMenuState();
         break;
       case 'analytics':
         this.uiController?.onAnalyticsToggle();
@@ -498,6 +614,7 @@ export class ControlStripController {
         this.mobilePrefs.focusMode = !this.mobilePrefs.focusMode;
         this.saveMobilePref('creature-mobile-focus', this.mobilePrefs.focusMode);
         this.applyMobilePrefs({ syncMenu: true });
+        this.syncMenuState();
         this.buzz(this.mobilePrefs.focusMode ? [12, 20, 16] : 10);
         break;
       case 'mobile-battery':
@@ -505,12 +622,14 @@ export class ControlStripController {
         this.saveMobilePref('creature-mobile-battery', this.mobilePrefs.batterySaver);
         this.applyMobilePrefs({ syncMenu: true });
         this.updateSpeedButton();
+        this.syncMenuState();
         this.buzz(this.mobilePrefs.batterySaver ? [16, 24, 24] : 10);
         break;
       case 'mobile-haptics':
         this.mobilePrefs.haptics = !this.mobilePrefs.haptics;
         this.saveMobilePref('creature-mobile-haptics', this.mobilePrefs.haptics);
         this.syncMobileMenuLabels();
+        this.syncMenuState();
         this.buzz(14);
         break;
     }
@@ -575,6 +694,7 @@ export class ControlStripController {
 
     this.ctrlWatch?.classList.toggle('active', this.isWatchMode);
     this.ctrlWatch?.setAttribute('aria-pressed', this.isWatchMode ? 'true' : 'false');
+    this.syncMenuState();
   }
 
   toggleFollow() {
@@ -636,6 +756,7 @@ export class ControlStripController {
     this.watchGodMode?.classList.toggle('active', this.isGodMode);
     godTarget?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
     this.watchGodMode?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
+    this.syncMenuState();
     this.buzz(this.isGodMode ? [12, 20, 12] : 10);
   }
 
@@ -650,6 +771,11 @@ export class ControlStripController {
         this.toggleWatchMode();
         break;
       case 'escape':
+        if (this.spawnDrawerOpen || this.overflowDrawerOpen) {
+          this.closeSpawnDrawer();
+          this.closeOverflowDrawer();
+          return;
+        }
         this.closeSpawnDrawer();
         this.closeOverflowDrawer();
         if (gameState.godModeActive) this.toggleGodMode();
@@ -695,6 +821,7 @@ export class ControlStripController {
     this.ctrlGod?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
     this.menuGodMode?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
     this.watchGodMode?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
+    this.syncMenuState();
     this.lastUIStateSignature = this.computeUIStateSignature();
   }
 

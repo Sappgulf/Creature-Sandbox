@@ -30,9 +30,9 @@ import { PlayableScenarios } from './playable-scenarios.js';
 import { MobileSupport } from './mobile-support.js';
 import { AutoDirector } from './auto-director.js';
 import { MomentsSystem } from './moments-system.js';
-import { ControlStripController } from './control-strip.js';
+import { ControlStripController } from './control-strip.js?v=20260504-menu1';
 import { encodeSeed, getSeedFromUrl, setSeedInUrl } from './seed-utils.js';
-import { mobileGestureTutorial } from './mobile-gesture-tutorial.js';
+import { mobileGestureTutorial } from './mobile-gesture-tutorial.js?v=20260504-menu1';
 
 // Import new modular systems
 import { domCache } from './dom-cache.js';

@@ -2,8 +2,8 @@
  * Service Worker for Creature Sandbox
  * Provides offline caching for the game shell and lazy caching for chunks.
  */
-const CACHE_SHELL = 'creature-sandbox-shell-v1';
-const CACHE_DYNAMIC = 'creature-sandbox-dynamic-v1';
+const CACHE_SHELL = 'creature-sandbox-shell-v2';
+const CACHE_DYNAMIC = 'creature-sandbox-dynamic-v2';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
