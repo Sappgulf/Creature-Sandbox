@@ -324,6 +324,53 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     memoryCount ? `${memoryCount} memories` : null
   ].filter(Boolean);
   const stateTagMarkup = `<div class="state-tags">${stateTags.map(tag => `<span>${tag}</span>`).join('')}</div>`;
+  const memoryTypeLabel = (memory) => {
+    const type = memory?.type || memory?.tag || 'memory';
+    const labels = {
+      food: 'Food source',
+      calm: 'Calm place',
+      nest: 'Nest',
+      danger: 'Danger',
+      social: 'Social spot'
+    };
+    return labels[type] || String(type).replaceAll('_', ' ');
+  };
+  const memoryLocations = Array.isArray(creature.memory?.locations)
+    ? [...creature.memory.locations]
+      .sort((a, b) => (b.strength ?? 0) - (a.strength ?? 0))
+      .slice(0, isMobile ? 2 : 3)
+    : [];
+  const focusMemory = creature.memory?.focus;
+  const whyLine = (() => {
+    if (focusMemory?.tag) return `Recalling ${memoryTypeLabel(focusMemory)} while ${readableState.toLowerCase()}.`;
+    if (hunger > 72) return 'Moving because hunger is high.';
+    if (stress > 64) return 'Moving because stress is high.';
+    if (goal === 'mate') return 'Looking for a compatible mate.';
+    if (goal === 'rest') return 'Conserving energy and seeking safety.';
+    if (goal === 'eat') return 'Searching for food using scent and memory.';
+    return `Current drive: ${readableState.toLowerCase()}.`;
+  })();
+  const memoryRowsMarkup = memoryLocations.map(memory => {
+    const strength = Math.round((memory.strength ?? 0) * 100);
+    const age = Number.isFinite(memory.timestamp) && world?.t != null
+      ? `${Math.max(0, Math.round(world.t - memory.timestamp))}s ago`
+      : 'recent';
+    return `<span><strong>${memoryTypeLabel(memory)}</strong><em>${strength}% · ${age}</em></span>`;
+  }).join('');
+  const memoryTrailMarkup = `
+    <div class="memory-trail">
+      <div class="memory-trail-head">
+        <span>Why it moved</span>
+        <strong>${focusMemory?.tag ? 'Recall' : readableState}</strong>
+      </div>
+      <div class="memory-reason">${whyLine}</div>
+      ${memoryLocations.length ? `
+        <div class="memory-list">
+          ${memoryRowsMarkup}
+        </div>
+      ` : '<div class="memory-list empty">No learned places yet.</div>'}
+    </div>
+  `;
 
   if (isMobile) {
     el.innerHTML = `
@@ -342,6 +389,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
         <span><span>Senses</span><span>${sense}px</span></span>
       </div>
       <div class="subline compact-meta">${biome} biome · ${dietLabel} · Aquatic ${aquatic}</div>
+      ${memoryTrailMarkup}
     `;
     return;
   }
@@ -366,6 +414,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
       <span><span>Aquatic</span><span>${aquatic}</span></span>
       <span><span>Biome</span><span>${biome}</span></span>
     </div>
+    ${memoryTrailMarkup}
   `;
 }
 

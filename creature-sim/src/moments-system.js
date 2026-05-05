@@ -164,6 +164,53 @@ export class MomentsSystem {
     }
   }
 
+  serialize() {
+    return {
+      moments: this.moments.slice(0, this.maxMoments).map(moment => ({
+        id: moment.id,
+        type: moment.type,
+        icon: moment.icon,
+        text: moment.text,
+        x: Number(moment.x ?? 0),
+        y: Number(moment.y ?? 0),
+        worldTime: Number(moment.worldTime ?? 0)
+      })),
+      summary: { ...this.summary },
+      cooldowns: Array.from(this.cooldowns.entries()).slice(-80),
+      migrationCooldowns: Array.from(this._migrationCooldowns.entries()).slice(-80)
+    };
+  }
+
+  restore(data) {
+    if (!data || typeof data !== 'object') return false;
+    if (Array.isArray(data.moments)) {
+      this.moments = data.moments.slice(0, this.maxMoments).filter(Boolean).map((moment, index) => ({
+        id: moment.id || `moment-restored-${index}`,
+        type: moment.type || 'restored',
+        icon: moment.icon || '✨',
+        text: String(moment.text || 'Saved moment'),
+        x: Number(moment.x ?? 0),
+        y: Number(moment.y ?? 0),
+        worldTime: Number(moment.worldTime ?? 0)
+      }));
+    }
+    if (data.summary && typeof data.summary === 'object') {
+      this.summary = {
+        ...this.summary,
+        ...data.summary
+      };
+    }
+    if (Array.isArray(data.cooldowns)) {
+      this.cooldowns = new Map(data.cooldowns);
+    }
+    if (Array.isArray(data.migrationCooldowns)) {
+      this._migrationCooldowns = new Map(data.migrationCooldowns);
+    }
+    this.render();
+    this.storeSummary();
+    return true;
+  }
+
   _buildSummaryNarrative() {
     const summary = this.summary;
     const currentPopulation = this.world?.creatures?.length ?? 0;

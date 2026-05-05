@@ -81,6 +81,7 @@
 10. **God mode (optional)**
     - Open **⋯ More Actions** and toggle **✨ God Mode** (or long-press the world).
     - Press **1-6** to switch god tools and confirm the active tool updates in the panel/hud.
+    - Confirm each tool shows a matching hint and brush preview: green food, blue calm, purple chaos, violet prop, red remove.
     - Place a food source, a calm zone, and a chaos nudge; confirm clear visual previews.
     - Drag with **Food**, **Calm**, **Prop**, and **Remove** tools to confirm paint-style application works smoothly.
     - Select **🧱 Prop** in god mode and place at least one sandbox prop directly from god tools.
@@ -96,6 +97,8 @@
     - Confirm hunger/energy/social/stress values load without NaNs (inspect a creature).
     - Confirm food patches keep remaining bites after reload.
     - With `debug.observe()` enabled, confirm life-stage labels and memory markers persist after reload.
+    - Start a playable scenario, open Moments, then save/load. Confirm scenario progress, Director guidance, Moments entries, and session summary restore.
+    - Confirm the Continue hint or save-slot preview includes population, elapsed time, and active scenario.
     - Optional: use **Ctrl/⌘ + S** to download a save file and **Ctrl/⌘ + O** to load it back.
     - Confirm diet roles and moments summary still load without errors.
 
@@ -134,6 +137,7 @@
     - Confirm entries appear for birth/eat/panic/food scarcity, nest creation, and migration.
     - Tap a moment and confirm the camera jumps to that location.
     - Confirm the session summary shows peak population, births, end-of-life count, stress peak, and biggest migration.
+    - Save and reload while the panel has entries; confirm the log and summary remain accurate.
 
 19. **Ecosystem tension roles**
     - Observe herbivore, scavenger, and predator-lite behaviors over 1–2 minutes.
@@ -225,8 +229,16 @@ Run the checked-in browser smoke before shipping gameplay/UI changes:
 npm run smoke:browser
 ```
 
-The script starts Vite if needed, opens desktop plus compact/large mobile browser contexts, verifies the smoke sandbox starts, starts the `First Ecosystem` playable scenario, checks Director guidance, selects a creature, spawns a predator, paints food, toggles Watch Mode and God Mode, runs an in-page save/load roundtrip, captures screenshots/state under `output/browser-smoke/`, and fails on browser warnings or page errors.
+The script starts Vite if needed, opens desktop plus compact/large mobile browser contexts, verifies the smoke sandbox starts, starts the `First Ecosystem` playable scenario, checks Director guidance, selects a creature, spawns a predator, paints food, toggles Watch Mode and God Mode, opens Moments, exercises food/calm/chaos/prop/remove god tools, runs in-page save/load plus slot-preview roundtrips, captures screenshots/state under `output/browser-smoke/`, and fails on browser warnings or page errors.
+
+Run the post-build bundle guard after `npm run build`:
+
+```bash
+npm run check:bundle
+```
+
+It fails if any generated JS chunk exceeds the configured raw or gzip budget.
 
 - **Save/load serialization test**
   - `npm test`
-  - Validates save-system serialization/deserialization stability.
+  - Validates save-system serialization/deserialization stability, including runtime metadata providers.

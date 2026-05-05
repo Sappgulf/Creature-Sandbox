@@ -1115,6 +1115,9 @@ export class GameLoop {
         focusCreature.x?.toFixed?.(1) ?? 0,
         focusCreature.y?.toFixed?.(1) ?? 0,
         focusCreature.currentBiomeType || this.world.getBiomeAt?.(focusCreature.x, focusCreature.y)?.type || '',
+        focusCreature.memory?.focus?.tag || '',
+        focusCreature.memory?.locations?.length || 0,
+        focusCreature.memory?.locations?.[0]?.strength?.toFixed?.(2) ?? '',
         gameState.showQuirks ? 1 : 0,
         (focusCreature.quirks || []).join(',')
       ].join('|')

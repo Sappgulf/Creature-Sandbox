@@ -157,6 +157,18 @@ multiWorld.spawnCreatureType('omnivore', 50, 30);
 const multiSave = saveSystem.serialize(multiWorld, camera, null, null);
 assert.equal(multiSave.world.creatures.length, 3, 'should save 3 creatures');
 
+// Runtime metadata provider should feed every save path without overriding explicit metadata.
+const metadataSaveSystem = new SaveSystem();
+metadataSaveSystem.setMetadataProvider(() => ({
+  playable: { activeRun: { id: 'first_ecosystem' } },
+  preview: { population: 99, scenario: { id: 'first_ecosystem', name: 'First Ecosystem', progress: 42 } },
+  source: 'provider'
+}));
+const metadataSave = metadataSaveSystem.serialize(multiWorld, camera, null, null, { source: 'test' });
+assert.equal(metadataSave.metadata.playable.activeRun.id, 'first_ecosystem', 'runtime playable metadata should serialize');
+assert.equal(metadataSave.metadata.preview.scenario.progress, 42, 'runtime preview metadata should serialize');
+assert.equal(metadataSave.metadata.source, 'test', 'explicit metadata should override provider metadata');
+
 // High-value regression: active systems round-trip together.
 const systemsWorld = new World(400, 300);
 systemsWorld.reset();

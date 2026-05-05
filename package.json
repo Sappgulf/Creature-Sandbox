@@ -10,6 +10,7 @@
     "test": "node scripts/save-system.test.mjs && node scripts/core-modules.test.mjs",
     "smoke:browser": "node scripts/browser-smoke.mjs",
     "smoke:browser:headed": "node scripts/browser-smoke.mjs --headed",
+    "check:bundle": "node scripts/bundle-budget.mjs",
     "test:coverage": "npm test",
     "lint": "eslint creature-sim/src",
     "lint:fix": "eslint creature-sim/src --fix",

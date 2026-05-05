@@ -1,6 +1,6 @@
 # Implementation Status - Current Surface
 
-## ✅ Audio System - IN PROGRESS (85% complete)
+## ✅ Audio System - IMPLEMENTED
 
 **Created**: `audio-system.js`
 **Features**:
@@ -17,11 +17,9 @@
 - ✅ Creature attack/combat
 - ✅ Creature eating
 - ✅ UI button clicks and toggles
-- ⏳ More god-mode tools and settings polish
+- ✅ Sound panel volume and mute controls
 
 **Remaining**:
-- Add dedicated volume controls to the settings UI
-- Add a mute button to the HUD
 - Tidy up any remaining edge-case audio hooks
 
 ---
@@ -64,6 +62,30 @@
 - ✅ Level-up feedback tied into the UI and particles
 
 **Current**: Achievements now feed visible XP grants and level-up feedback instead of only saving hidden counters.
+
+---
+
+## ✅ Playable Runtime Persistence - IMPLEMENTED
+
+**Implemented**: `runtime-save-metadata.js`, `playable-scenarios.js`, `moments-system.js`
+
+**Features**:
+- ✅ Active playable scenario id, elapsed time, progress, and Director snapshot saved with file/auto/slot saves
+- ✅ Moments log and session summary save/restore
+- ✅ Continue/save-slot previews show population, elapsed time, and active scenario
+- ✅ Browser smoke verifies playable and moments survive save/load roundtrips
+
+---
+
+## ✅ Inspection + God Mode Polish - IMPLEMENTED
+
+**Implemented**: `ui.js`, `ui-controller-god-mode.js`, `renderer.js`
+
+**Features**:
+- ✅ Selected-creature panel explains why the creature is moving
+- ✅ Strongest memory locations are visible in the selected-creature panel
+- ✅ God tools expose pressed state, clear tool hints, and matching brush previews
+- ✅ Browser smoke exercises food, calm, chaos, prop, and remove tools
 
 ---
 

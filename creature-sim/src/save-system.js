@@ -60,6 +60,21 @@ export class SaveSystem {
     this.compressionEnabled = true;
     this._autoSaveSlotIndex = 0; // Rotating slot for auto-save
     this._autoSaveSlotCount = 3; // 3 rotating auto-save slots
+    this.metadataProvider = null;
+  }
+
+  setMetadataProvider(provider) {
+    this.metadataProvider = typeof provider === 'function' ? provider : null;
+  }
+
+  _collectRuntimeMetadata() {
+    if (!this.metadataProvider) return {};
+    try {
+      return this.metadataProvider() || {};
+    } catch (error) {
+      console.warn('Failed to collect save metadata:', error);
+      return {};
+    }
   }
 
   /**
@@ -67,6 +82,11 @@ export class SaveSystem {
    * @returns {SaveData}
    */
   serialize(world, camera, analytics, lineageTracker, additionalData = {}) {
+    const runtimeMetadata = this._collectRuntimeMetadata();
+    const extra = {
+      ...runtimeMetadata,
+      ...additionalData
+    };
     const childrenOfMap = world.childrenOf instanceof Map
       ? world.childrenOf
       : (world.creatureManager?.childrenOf instanceof Map ? world.creatureManager.childrenOf : new Map());
@@ -76,15 +96,15 @@ export class SaveSystem {
       timestamp: Date.now(),
       savedAt: new Date().toISOString(),
       meta: {
-        slotIndex: additionalData.slotNumber || 0,
-        sessionSeed: additionalData.sessionSeed || Math.floor(Math.random() * 1e9).toString(36),
-        playTime: additionalData.playTime || 0,
-        saveCount: (additionalData.saveCount || 0) + 1
+        slotIndex: extra.slotNumber || 0,
+        sessionSeed: extra.sessionSeed || Math.floor(Math.random() * 1e9).toString(36),
+        playTime: extra.playTime || 0,
+        saveCount: (extra.saveCount || 0) + 1
       },
       settings: {
-        highContrast: additionalData.highContrast || false,
-        reducedMotion: additionalData.reducedMotion || false,
-        chaosLevel: additionalData.chaosLevel || 0.5
+        highContrast: extra.highContrast || false,
+        reducedMotion: extra.reducedMotion || false,
+        chaosLevel: extra.chaosLevel || 0.5
       },
 
       // World state
@@ -301,7 +321,7 @@ export class SaveSystem {
         populationSize: world.creatures.length,
         timeElapsed: world.t,
         generationsElapsed: Math.floor(world.t / 30), // Rough estimate
-        ...additionalData
+        ...extra
       }
     };
 
@@ -834,6 +854,11 @@ export class SaveSystem {
           slotNumber: this._autoSaveSlotIndex
         });
         const json = JSON.stringify(saveData);
+        localStorage.setItem('creature-sim-autosave-preview', JSON.stringify({
+          timestamp: saveData.timestamp,
+          savedAt: saveData.savedAt,
+          metadata: saveData.metadata
+        }));
         if (this.compressionEnabled && COMPRESSION_SUPPORTED) {
           const compressed = await compressJson(json);
           localStorage.setItem(slotKey, compressed);
@@ -892,6 +917,7 @@ export class SaveSystem {
    */
   clearAutoSave() {
     localStorage.removeItem('creature-sim-autosave');
+    localStorage.removeItem('creature-sim-autosave-preview');
   }
 
   /**
@@ -909,6 +935,11 @@ export class SaveSystem {
     });
 
     const json = JSON.stringify(saveData);
+    localStorage.setItem(`creature-sim-slot-${slotNumber}-preview`, JSON.stringify({
+      timestamp: saveData.timestamp,
+      savedAt: saveData.savedAt,
+      metadata: saveData.metadata
+    }));
     if (this.compressionEnabled && COMPRESSION_SUPPORTED) {
       const compressed = await compressJson(json);
       localStorage.setItem(`creature-sim-slot-${slotNumber}`, compressed);
@@ -948,9 +979,28 @@ export class SaveSystem {
   getSaveSlots() {
     const slots = [];
     for (let i = 1; i <= this.saveSlots; i++) {
-      const json = localStorage.getItem(`creature-sim-slot-${i}`);
+      let json = localStorage.getItem(`creature-sim-slot-${i}`);
+      const previewJson = localStorage.getItem(`creature-sim-slot-${i}-preview`);
       if (json) {
         try {
+          if (previewJson) {
+            const data = JSON.parse(previewJson);
+            slots.push({
+              slot: i,
+              name: data.metadata?.saveName || `Save ${i}`,
+              timestamp: data.timestamp,
+              savedAt: data.savedAt,
+              population: data.metadata?.populationSize,
+              timeElapsed: data.metadata?.timeElapsed,
+              preview: data.metadata?.preview ?? null,
+              playable: data.metadata?.playable ?? null,
+              moments: data.metadata?.moments ?? null
+            });
+            continue;
+          }
+          if (json.startsWith(COMPRESSED_MARKER)) {
+            json = this._tryReadCompressedSync(json);
+          }
           const data = JSON.parse(json);
           slots.push({
             slot: i,
@@ -958,7 +1008,10 @@ export class SaveSystem {
             timestamp: data.timestamp,
             savedAt: data.savedAt,
             population: data.metadata.populationSize,
-            timeElapsed: data.metadata.timeElapsed
+            timeElapsed: data.metadata.timeElapsed,
+            preview: data.metadata.preview ?? null,
+            playable: data.metadata.playable ?? null,
+            moments: data.metadata.moments ?? null
           });
         } catch {
           slots.push({ slot: i, error: true });
@@ -968,6 +1021,48 @@ export class SaveSystem {
       }
     }
     return slots;
+  }
+
+  getAutoSaveInfo() {
+    const previewJson = localStorage.getItem('creature-sim-autosave-preview');
+    let json = localStorage.getItem('creature-sim-autosave');
+    if (!json) return null;
+    try {
+      if (previewJson) {
+        const data = JSON.parse(previewJson);
+        return {
+          timestamp: data.timestamp,
+          savedAt: data.savedAt,
+          population: data.metadata?.populationSize ?? 0,
+          timeElapsed: data.metadata?.timeElapsed ?? 0,
+          preview: data.metadata?.preview ?? null,
+          playable: data.metadata?.playable ?? null,
+          moments: data.metadata?.moments ?? null,
+          metadata: data.metadata ?? {}
+        };
+      }
+      if (json.startsWith(COMPRESSED_MARKER)) {
+        json = this._tryReadCompressedSync(json);
+      }
+      const data = JSON.parse(json);
+      return {
+        timestamp: data.timestamp,
+        savedAt: data.savedAt,
+        population: data.metadata?.populationSize ?? 0,
+        timeElapsed: data.metadata?.timeElapsed ?? 0,
+        preview: data.metadata?.preview ?? null,
+        playable: data.metadata?.playable ?? null,
+        moments: data.metadata?.moments ?? null,
+        metadata: data.metadata ?? {}
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  _tryReadCompressedSync(stored) {
+    if (!stored.startsWith(COMPRESSED_MARKER)) return stored;
+    throw new Error('Compressed save preview requires async load');
   }
 
   /**

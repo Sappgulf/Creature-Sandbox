@@ -216,6 +216,79 @@ export class PlayableScenarios {
     return this.lastSnapshot || this._emptySnapshot();
   }
 
+  serialize() {
+    return {
+      progress: this.progress,
+      activeRun: this.activeRun ? {
+        id: this.activeRun.id,
+        startedAt: Number(this.activeRun.startedAt ?? 0),
+        elapsed: Number(this.activeRun.elapsed ?? 0),
+        progress: Number(this.activeRun.progress ?? 0),
+        completed: !!this.activeRun.completed,
+        failed: !!this.activeRun.failed,
+        state: this.activeRun.state || 'running',
+        scenario: {
+          id: this.activeRun.scenario?.id,
+          name: this.activeRun.scenario?.name,
+          objective: this.activeRun.scenario?.objective,
+          icon: this.activeRun.scenario?.icon
+        }
+      } : null,
+      lastSnapshot: this.lastSnapshot
+    };
+  }
+
+  restore(data, { announce = false } = {}) {
+    if (!data || typeof data !== 'object') return false;
+    if (data.progress && typeof data.progress === 'object') {
+      this.progress = { ...this.progress, ...data.progress };
+      this._saveProgress();
+    }
+
+    const savedRun = data.activeRun;
+    if (!savedRun?.id) {
+      this.activeRun = null;
+      this.lastSnapshot = this._emptySnapshot();
+      this._emitUpdate();
+      return true;
+    }
+
+    const scenario = PLAYABLE_SCENARIOS.find(item => item.id === savedRun.id);
+    if (!scenario) return false;
+
+    const worldTime = Number(this.world?.t ?? 0);
+    const elapsed = Math.max(0, Number(savedRun.elapsed ?? 0));
+    const startedAt = Number.isFinite(Number(savedRun.startedAt))
+      ? Number(savedRun.startedAt)
+      : Math.max(0, worldTime - elapsed);
+
+    this._applyTuning(scenario);
+    this.activeRun = {
+      id: scenario.id,
+      scenario,
+      startedAt,
+      completed: !!savedRun.completed,
+      failed: !!savedRun.failed,
+      state: savedRun.state || 'running',
+      elapsed,
+      progress: Number(savedRun.progress ?? 0)
+    };
+
+    gameState.sessionMetaVisible = true;
+    gameState.autoDirectorEnabled = true;
+
+    if (this.sessionGoals) {
+      this.sessionGoals.setGoals?.(this._scenarioGoals(scenario), { announce: false });
+    }
+
+    this.lastSnapshot = data.lastSnapshot?.active ? data.lastSnapshot : this._buildSnapshot();
+    if (announce) {
+      this.notifications?.show?.(`${scenario.icon} ${scenario.name} restored`, 'info', 2200);
+    }
+    this._emitUpdate();
+    return true;
+  }
+
   _resetWorldForScenario(scenario) {
     this.world.reset?.();
     this.world.food = [];

@@ -816,6 +816,58 @@ input[type="range"]:focus-visible {
   color: var(--text-muted);
   margin-top: -6px;
 }
+#selected-info .memory-trail {
+  display: grid;
+  gap: 7px;
+  padding: 9px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+#selected-info .memory-trail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+#selected-info .memory-trail-head strong {
+  color: var(--text-primary);
+  text-transform: none;
+  font-size: 11px;
+}
+#selected-info .memory-reason {
+  color: var(--text-primary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+#selected-info .memory-list {
+  display: grid;
+  gap: 5px;
+}
+#selected-info .memory-list span {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+#selected-info .memory-list strong {
+  color: var(--text-primary);
+  font-weight: 650;
+}
+#selected-info .memory-list em {
+  color: var(--text-muted);
+  font-style: normal;
+  white-space: nowrap;
+}
+#selected-info .memory-list.empty {
+  color: var(--text-muted);
+  font-size: 10px;
+}
 /* Tool indicator label */
 #tool-indicator {
   position: fixed;

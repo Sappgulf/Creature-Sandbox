@@ -57,6 +57,11 @@ import { MemoryLearningSystem } from './memory-learning.js';
 import { ChallengeSystem } from './challenge-system.js';
 import { getDebugFlags } from './debug-flags.js';
 import { setupDevExports } from './dev-exports.js';
+import {
+  buildRuntimeSaveMetadata,
+  formatSavePreview,
+  restoreRuntimeSaveMetadata
+} from './runtime-save-metadata.js';
 
 // Local helper to validate notification subsystem shape
 function isNotificationSystem(candidate) {
@@ -654,6 +659,17 @@ export function initializeApp() {
     document.body.classList.toggle('home-active', !!active);
   };
 
+  const getRuntimeSaveMetadata = () => buildRuntimeSaveMetadata({
+    world,
+    camera,
+    playableScenarios,
+    moments,
+    gameState,
+    tools
+  });
+
+  saveSystem?.setMetadataProvider?.(getRuntimeSaveMetadata);
+
   const applyLoadedState = (loaded, source = 'save') => {
     if (!loaded) return false;
 
@@ -673,6 +689,12 @@ export function initializeApp() {
     if (loaded.lineageNames && lineageTracker) {
       lineageTracker.names = loaded.lineageNames;
     }
+    restoreRuntimeSaveMetadata(loaded.metadata || {}, {
+      playableScenarios,
+      moments,
+      gameState,
+      uiController
+    });
     if (tutorial) {
       tutorial.loadProgress();
     }
@@ -1170,7 +1192,12 @@ export function initializeApp() {
         if (continueHint) {
           try {
             const saveInfo = saveSystem.getAutoSaveInfo?.();
-            if (saveInfo?.timestamp) {
+            const previewText = saveInfo
+              ? formatSavePreview(saveInfo.metadata || {}, saveInfo.timestamp)
+              : '';
+            if (previewText) {
+              continueHint.textContent = previewText;
+            } else if (saveInfo?.timestamp) {
               const date = new Date(saveInfo.timestamp);
               const timeStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               continueHint.textContent = timeStr;
@@ -1581,6 +1608,7 @@ export function initializeApp() {
       summary: {
         totalCreatures: world.creatures?.length || 0,
         totalFood: world.food?.length || 0,
+        totalProps: world.sandbox?.props?.length || 0,
         totalCorpses: world.corpses?.length || 0,
         worldTime: Number(world.t?.toFixed?.(2) ?? world.t ?? 0),
         fps: Number(gameState.fps?.toFixed?.(1) ?? 0)
@@ -1594,12 +1622,18 @@ export function initializeApp() {
         energy: Number(focusCreature.energy?.toFixed?.(1) ?? 0),
         age: Number(focusCreature.age?.toFixed?.(1) ?? 0),
         status: focusCreature.currentGoal || focusCreature.state || null,
+        why: focusCreature.goal?.reason || focusCreature.goal?.current || focusCreature.currentGoal || focusCreature.state || null,
+        memoryFocus: focusCreature.memory?.focus ? {
+          type: focusCreature.memory.focus.tag || focusCreature.memory.focus.entry?.type || 'memory',
+          recallUntil: Number(focusCreature.memory.focus.recallUntil?.toFixed?.(2) ?? focusCreature.memory.focus.recallUntil ?? 0)
+        } : null,
         memories: Array.isArray(focusCreature.memory?.locations)
           ? focusCreature.memory.locations.slice(0, 5).map(memory => ({
             type: memory.type || memory.tag || 'memory',
             strength: Number(memory.strength?.toFixed?.(2) ?? memory.strength ?? 0),
             x: Number(memory.x?.toFixed?.(1) ?? 0),
-            y: Number(memory.y?.toFixed?.(1) ?? 0)
+            y: Number(memory.y?.toFixed?.(1) ?? 0),
+            age: Number(Math.max(0, (world.t ?? 0) - (memory.timestamp ?? world.t ?? 0)).toFixed(1))
           }))
           : []
       } : null,
@@ -1608,7 +1642,15 @@ export function initializeApp() {
         activeDisaster: world.disaster?.activeDisaster?.type ?? null,
         registeredSprites: assetLoader.spriteSheets?.size ?? 0,
         legacySprites: assetLoader.assets?.size ?? 0,
-        particles: world.particles?.particles?.length ?? notifications?.particles?.length ?? 0
+        particles: world.particles?.particles?.length ?? notifications?.particles?.length ?? 0,
+        props: world.sandbox?.props?.length || 0,
+        calmZones: world.environment?.calmZones?.length ?? 0,
+        chaosNudge: Number(world.chaosNudge?.timer?.toFixed?.(2) ?? world.chaosNudge?.timer ?? 0)
+      },
+      moments: {
+        count: moments?.moments?.length ?? 0,
+        summary: moments?.summary ?? null,
+        latest: moments?.moments?.[0] ?? null
       },
       playable: playableScenarios?.getSnapshot?.() ?? null,
       visibleCreatures: getVisibleCreatures(),
@@ -1674,7 +1716,10 @@ export function initializeApp() {
           creatures: world.creatures?.length || 0,
           food: world.food?.length || 0,
           props: world.sandbox?.props?.length || 0,
-          t: Number(world.t?.toFixed?.(2) ?? world.t ?? 0)
+          t: Number(world.t?.toFixed?.(2) ?? world.t ?? 0),
+          playable: playableScenarios?.getSnapshot?.()?.scenario?.id ?? null,
+          moments: moments?.moments?.length ?? 0,
+          watchMode: !!gameState.watchModeEnabled
         };
         const data = saveSystem.serialize(world, camera, analytics, lineageTracker, {
           source: 'browser-smoke'
@@ -1685,13 +1730,21 @@ export function initializeApp() {
           creatures: world.creatures?.length || 0,
           food: world.food?.length || 0,
           props: world.sandbox?.props?.length || 0,
-          t: Number(world.t?.toFixed?.(2) ?? world.t ?? 0)
+          t: Number(world.t?.toFixed?.(2) ?? world.t ?? 0),
+          playable: playableScenarios?.getSnapshot?.()?.scenario?.id ?? null,
+          moments: moments?.moments?.length ?? 0,
+          watchMode: !!gameState.watchModeEnabled,
+          metadata: data.metadata?.preview ?? null
         };
 
         return {
           ok: !!applied &&
             after.creatures === before.creatures &&
             after.food >= Math.min(before.food, 1) &&
+            after.props === before.props &&
+            after.playable === before.playable &&
+            after.moments >= before.moments &&
+            after.watchMode === before.watchMode &&
             Number.isFinite(after.t),
           before,
           after
@@ -1718,6 +1771,24 @@ export function initializeApp() {
         uiController?.updateSessionMetaVisibility?.();
         uiController?.renderPlayableDirector?.(snapshot);
         return snapshot;
+      },
+      setGodTool: (tool = 'food') => {
+        uiController?.setGodModeActive?.(true, { source: 'smoke' });
+        uiController?.setGodTool?.(tool, { source: 'smoke', announce: false });
+        return {
+          active: !!gameState.godModeActive,
+          tool: gameState.godModeTool || null,
+          hint: document.querySelector('.god-mode-hint')?.textContent || ''
+        };
+      },
+      saveSlotPreview: async (slot = 1) => {
+        if (!saveSystem) return { ok: false, reason: 'save-system-unavailable' };
+        await saveSystem.saveToSlot(slot, world, camera, analytics, lineageTracker, 'Smoke preview');
+        const info = saveSystem.getSaveSlots?.().find(item => item.slot === slot);
+        return {
+          ok: !!info && !info.empty && !info.error,
+          info
+        };
       },
       perfBudget: () => ({
         fps: Number(gameState.fps?.toFixed?.(1) ?? 0),

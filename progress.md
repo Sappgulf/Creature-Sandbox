@@ -297,3 +297,29 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - `npm run build` ✅
   - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
   - committed and pushed menu-flow polish to `origin/main`.
+
+2026-05-05
+- New request: after repo audit, implement items 1-10 from the proposed backlog.
+- Implemented active playable runtime persistence:
+  - Added shared runtime save metadata for playable scenario state, UI state, moments, and preview summaries.
+  - Save files, autosaves, save slots, and smoke roundtrips now preserve active scenario id, elapsed/progress state, Director snapshot, Moments entries, and session summary.
+  - Continue/save-slot previews now include population, elapsed time, and active scenario context.
+- Implemented selected-creature memory/readability polish:
+  - Selected creature panel now explains why the creature is moving and lists strongest remembered places with age/strength.
+  - Smoke text state exposes selected-creature memory focus, why text, props, moments, calm zones, and chaos nudge state.
+- Implemented god-mode and coverage polish:
+  - God tool buttons now expose pressed state and clearer hints for food/calm/chaos/spawn/prop/remove.
+  - Browser smoke now opens Moments, exercises food/calm/chaos/prop/remove god tools, validates playable save/load metadata, validates save-slot previews, and asserts basic perf budgets.
+  - Added `npm run check:bundle` post-build JS chunk budget guard.
+- Docs/status updated:
+  - `docs/FEATURE_MATRIX.md`
+  - `docs/SMOKE_TESTS.md`
+  - `creature-sim/IMPLEMENTATION_STATUS.md`
+- Verification so far:
+  - `npm test` ✅ (148 passing)
+  - `npm run lint` ✅
+  - `npx eslint scripts/browser-smoke.mjs scripts/bundle-budget.mjs` ✅
+  - `npm run build` ✅ (120 modules, main app JS `576.45 kB` pre-gzip / `166.05 kB` gzip)
+  - `npm run check:bundle` ✅
+  - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
+  - Screenshot review: `output/browser-smoke/desktop.png`, `mobile-large.png`, and `desktop-overflow.png`

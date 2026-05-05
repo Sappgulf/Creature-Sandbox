@@ -93,6 +93,7 @@ export function applyUiGodModeMethods(UIController) {
       }
       panel.classList.toggle('hidden', !gameState.godModeActive);
       panel.setAttribute('aria-hidden', gameState.godModeActive ? 'false' : 'true');
+      panel.dataset.activeTool = gameState.godModeTool || '';
     }
     if (indicator) {
       indicator.classList.toggle('hidden', !gameState.godModeActive);
@@ -108,18 +109,19 @@ export function applyUiGodModeMethods(UIController) {
       if (!btn) continue;
       const tool = btn.dataset.godTool;
       btn.classList.toggle('active', gameState.godModeTool === tool);
+      btn.setAttribute('aria-pressed', gameState.godModeTool === tool ? 'true' : 'false');
     }
 
     if (panel) {
       const hint = panel.querySelector('.god-mode-hint');
       if (hint) {
         const hints = {
-          food: '1 Food: paint nourishment into the world.',
-          calm: '2 Calm: paint soothing zones.',
-          chaos: '3 Chaos: pulse the ecosystem.',
-          spawn: '4 Spawn: place selected creature type.',
-          prop: '5 Prop: place selected sandbox prop.',
-          remove: '6 Remove: erase creature or nearby prop.'
+          food: '1 Food: green brush preview. Tap for a patch, drag for scattered bites.',
+          calm: '2 Calm: blue radius preview. Paint rest zones around stressed groups.',
+          chaos: '3 Chaos: purple pulse preview. Tap once, then watch recovery.',
+          spawn: '4 Spawn: small placement preview. Places the selected creature type.',
+          prop: '5 Prop: violet placement preview. Uses the selected sandbox prop.',
+          remove: '6 Remove: red eraser preview. Removes the nearest creature or prop.'
         };
         hint.textContent = hints[gameState.godModeTool] || 'Tap world to use selected tool. Tap Done to return.';
       }

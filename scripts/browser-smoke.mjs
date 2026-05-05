@@ -255,15 +255,57 @@ async function runScenario(browser, scenario) {
   state = await readGameState(page);
   assert.equal(state.ui.godMode, true, `${scenario.name}: god mode should toggle from watch strip`);
 
+  console.log(`  ${scenario.name}: moments and god tools`);
+  await page.locator('#watch-moments').click();
+  await page.locator('#moments-panel').waitFor({ state: 'visible', timeout: 5000 });
+  await advance(page, 240);
+  state = await readGameState(page);
+  assert.ok(state.moments.count >= 1, `${scenario.name}: moments panel should have recorded scenario moments`);
+  assert.ok(state.moments.summary?.peakPopulation >= state.summary.totalCreatures, `${scenario.name}: moments summary should track population`);
+
+  const godTools = ['food', 'calm', 'chaos', 'prop', 'remove'];
+  const beforeGod = {
+    food: state.summary.totalFood,
+    props: state.summary.totalProps,
+    calmZones: state.systems.calmZones,
+    chaosNudge: state.systems.chaosNudge
+  };
+  const actionPoint = {
+    x: scenario.viewport.width * 0.58,
+    y: scenario.viewport.height * 0.46
+  };
+  for (const tool of godTools) {
+    const toolState = await page.evaluate((nextTool) => window.__creatureSmoke.setGodTool(nextTool), tool);
+    assert.equal(toolState.active, true, `${scenario.name}: god tool ${tool} should activate god mode`);
+    assert.equal(toolState.tool, tool, `${scenario.name}: god tool ${tool} should be reflected in smoke state`);
+    assert.ok(toolState.hint.toLowerCase().includes(tool), `${scenario.name}: god tool ${tool} should update the panel hint`);
+    await clickWorld(page, actionPoint.x, actionPoint.y);
+    await advance(page, 260);
+  }
+  state = await readGameState(page);
+  assert.ok(state.summary.totalFood >= beforeGod.food, `${scenario.name}: god food should preserve or increase food`);
+  assert.ok(state.systems.calmZones >= beforeGod.calmZones, `${scenario.name}: god calm should add calm coverage`);
+  assert.ok(state.systems.chaosNudge >= beforeGod.chaosNudge, `${scenario.name}: god chaos should register a nudge`);
+  assert.ok(state.summary.totalProps >= beforeGod.props, `${scenario.name}: god prop/remove should leave prop accounting valid`);
+
   console.log(`  ${scenario.name}: save/load and perf`);
   const roundTrip = await page.evaluate(() => window.__creatureSmoke.saveRoundTrip());
   assert.equal(roundTrip.ok, true, `${scenario.name}: save/load roundtrip should report ok`);
   assert.ok(roundTrip.after.creatures >= beforeSpawn, `${scenario.name}: roundtrip should preserve creatures`);
   assert.ok(roundTrip.after.food >= beforeFood, `${scenario.name}: roundtrip should preserve food`);
+  assert.equal(roundTrip.after.playable, 'first_ecosystem', `${scenario.name}: roundtrip should preserve active playable scenario`);
+  assert.ok(roundTrip.after.metadata?.scenario?.id === 'first_ecosystem', `${scenario.name}: roundtrip metadata should expose scenario preview`);
+
+  const slotPreview = await page.evaluate(() => window.__creatureSmoke.saveSlotPreview(1));
+  assert.equal(slotPreview.ok, true, `${scenario.name}: save slot preview should be readable`);
+  assert.equal(slotPreview.info.preview.scenario.id, 'first_ecosystem', `${scenario.name}: slot preview should include scenario`);
+  assert.ok(slotPreview.info.preview.population >= beforeSpawn, `${scenario.name}: slot preview should include population`);
 
   const perf = await page.evaluate(() => window.__creatureSmoke.perfBudget());
   assert.ok(perf.canvas.width > 0 && perf.canvas.height > 0, `${scenario.name}: canvas should be measurable`);
   assert.ok(perf.assets.registeredSprites >= 20, `${scenario.name}: sprite manifest should be loaded`);
+  assert.ok(perf.assets.tintedSpriteVariants <= 260, `${scenario.name}: tinted sprite cache should stay bounded`);
+  assert.ok(perf.world.creatures <= 220, `${scenario.name}: smoke population should stay inside perf budget`);
 
   await captureCanvasSnapshot(page, path.join(outDir, `${scenario.name}.png`));
   await fs.writeFile(path.join(outDir, `${scenario.name}.json`), JSON.stringify({ state, perf, errors }, null, 2));
