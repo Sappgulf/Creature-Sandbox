@@ -30,7 +30,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-  <link rel="stylesheet" href="styles.css?v=20260504-menu1" />
+  <link rel="stylesheet" href="styles.css?v=20260510-upgrades1" />
   <script>
     (() => {
       const params = new URLSearchParams(window.location.search);
@@ -179,6 +179,7 @@
         <div class="menu-section">
           <div class="menu-section-title">Gameplay</div>
           <button class="menu-item" id="menu-mode" data-action="mode">🎛️ Modes & Goals</button>
+          <button class="menu-item" id="menu-upgrades" data-action="upgrades">✨ Upgrade Hub</button>
           <button class="menu-item" id="menu-campaign" data-action="campaign">🏆 Campaign</button>
           <button class="menu-item" id="menu-achievements" data-action="achievements">🏅 Achievements</button>
         </div>
@@ -265,6 +266,7 @@
     <span class="interaction-hint-text"></span>
     <button id="interaction-hint-close" class="interaction-hint-close" aria-label="Dismiss hint">×</button>
   </div>
+  <div id="objective-rail" class="objective-rail" aria-live="polite"></div>
 
   <!-- Meta overlays: game mode + goals -->
   <div id="session-meta">
@@ -322,6 +324,26 @@
       </div>
       <div id="session-goal-list" class="goal-list muted tiny">
         Progress updates as creatures evolve...
+      </div>
+    </div>
+  </div>
+
+  <div id="upgrade-panel" class="panel hidden" aria-hidden="true">
+    <div class="panel-header" data-panel="upgrade">
+      <span class="panel-title">
+        <span class="panel-collapse-icon">▼</span>
+        ✨ Upgrade Hub
+      </span>
+      <button id="btn-upgrade-close" class="panel-close" title="Close" aria-label="Close upgrade hub"
+        onclick="event.stopPropagation()">×</button>
+    </div>
+    <div class="panel-body">
+      <div id="upgrade-panel-body" class="upgrade-panel-body">
+        Loading upgrade systems...
+      </div>
+      <div class="upgrade-actions">
+        <button id="upgrade-postcard-export" class="scenario-btn primary">Make Postcard</button>
+        <button id="upgrade-save-seed" class="scenario-btn">Save Seed</button>
       </div>
     </div>
   </div>
@@ -1115,7 +1137,7 @@
       });
     }
   </script>
-  <script type="module" src="./src/main.js?v=20260504-menu1"></script>
+  <script type="module" src="./src/main.js?v=20260510-upgrades1"></script>
 </body>
 
 </html>

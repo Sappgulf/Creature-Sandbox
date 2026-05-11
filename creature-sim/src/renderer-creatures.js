@@ -1,4 +1,5 @@
 import { clamp } from './utils.js';
+import { getCreatureEmotion, getLifeStageDisplay } from './upgrade-data.js';
 
 export function applyCreatureMethods(Renderer) {
   Renderer.prototype.drawCreatures = function(world, opts) {
@@ -197,6 +198,10 @@ export function applyCreatureMethods(Renderer) {
         this._drawCreatureName(c, isSelected, isPinned, opts, nameCache);
       }
 
+      if (zoom > 0.55 && (isSelected || isPinned || c.needs?.stress > 68 || c.needs?.hunger > 72)) {
+        this._drawCreatureStatusCue(c, { isSelected, isPinned });
+      }
+
       if (alpha < 0.99) {
         ctx.restore();
       }
@@ -205,6 +210,41 @@ export function applyCreatureMethods(Renderer) {
     this.culledCount = creatures.length - this.renderedCount;
     this.performance.stats.rendered += this.renderedCount;
     this.performance.stats.culled += this.culledCount;
+  };
+
+  Renderer.prototype._drawCreatureStatusCue = function(c, { isSelected = false, isPinned = false } = {}) {
+    const ctx = this.ctx;
+    const emotion = getCreatureEmotion(c);
+    const stage = getLifeStageDisplay(c);
+    const x = c.x;
+    const y = c.y - Math.max(16, (c.size || 8) * 2.1);
+    const label = isSelected || isPinned ? `${stage.icon} ${emotion.icon}` : emotion.icon;
+    const color = emotion.tone === 'danger'
+      ? 'rgba(255, 120, 120, 0.95)'
+      : emotion.tone === 'warning'
+        ? 'rgba(255, 214, 102, 0.95)'
+        : emotion.tone === 'warm'
+          ? 'rgba(255, 158, 197, 0.95)'
+          : 'rgba(139, 216, 255, 0.92)';
+
+    ctx.save();
+    ctx.font = '700 11px system-ui, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const width = Math.max(18, ctx.measureText(label).width + 10);
+    ctx.fillStyle = 'rgba(5, 8, 14, 0.72)';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect?.(x - width / 2, y - 8, width, 16, 8);
+    if (!ctx.roundRect) {
+      ctx.rect(x - width / 2, y - 8, width, 16);
+    }
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.fillText(label, x, y + 0.5);
+    ctx.restore();
   };
 
   /**

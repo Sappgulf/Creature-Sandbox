@@ -16,7 +16,13 @@ import { VisualEffects } from './visual-effects.js';
 import { ghostTrails } from './ecosystem-ghosts.js';
 import { lifetimeStats } from './lifetime-stats.js';
 // STATIC UI IMPORTS - avoids dynamic import() latency in hot path
-import { renderStats, renderSelectedInfo, renderAnalyticsCharts, renderInteractionHint } from './ui.js';
+import {
+  renderStats,
+  renderSelectedInfo,
+  renderInspector,
+  renderAnalyticsCharts,
+  renderInteractionHint
+} from './ui.js';
 
 // Local helper to validate notification subsystem shape without depending on cross-module export availability
 function isNotificationSystem(candidate) {
@@ -60,6 +66,7 @@ export class GameLoop {
     this.unlockableAchievements = subsystems.unlockableAchievements;
     this.familyBonds = subsystems.familyBonds;
     this.memoryLearning = subsystems.memoryLearning;
+    this.upgradeController = subsystems.upgradeController;
     this.challengeSystem = subsystems.challengeSystem;
     this.seasonalEvents = subsystems.seasonalEvents;
     this.advancedAI = subsystems.advancedAI;
@@ -110,6 +117,7 @@ export class GameLoop {
     this._uiCache = new Map();
     this._statsUiSignature = '';
     this._selectedInfoSignature = '';
+    this._inspectorSignature = '';
     this._interactionHintSignature = '';
 
     // Reusable event objects to reduce allocations
@@ -993,6 +1001,10 @@ export class GameLoop {
       this.playableScenarios.update(dt);
     }
 
+    if (this.upgradeController) {
+      this.upgradeController.update(dt);
+    }
+
     // Throttled milestone checks (every 2s)
     if (this.hasNotifications()) {
       this._milestoneTimer = (this._milestoneTimer || 0) + dt;
@@ -1142,6 +1154,18 @@ export class GameLoop {
       this._selectedInfoSignature = selectedSignature;
     }
 
+    const inspectorSignature = [
+      gameState.inspectorVisible ? 1 : 0,
+      gameState.pinnedId ?? '',
+      gameState.lineageRootId ?? '',
+      selectedSignature,
+      this.lineageTracker?.events?.length ?? 0
+    ].join('|');
+    if (gameState.inspectorVisible && inspectorSignature !== this._inspectorSignature) {
+      this.renderInspectorPanel(focusCreature);
+      this._inspectorSignature = inspectorSignature;
+    }
+
     if (interactionHintEl) {
       this.updateCuriosityPrompt();
       const refreshedHintSignature = [
@@ -1169,6 +1193,120 @@ export class GameLoop {
     if (this.uiController?.updateWatchModeUI) {
       this.uiController.updateWatchModeUI();
     }
+  }
+
+  renderInspectorPanel(focusCreature) {
+    const focusId = focusCreature?.id ?? null;
+    const lineageRootId = gameState.lineageRootId ?? null;
+    const rootId = lineageRootId || (focusCreature && this.lineageTracker?.getRoot
+      ? this.lineageTracker.getRoot(this.world, focusCreature.id)
+      : null);
+    const events = Array.isArray(this.lineageTracker?.events) ? this.lineageTracker.events : [];
+    const activity = focusCreature && rootId
+      ? events
+        .filter(event => event.rootId === rootId || event.creatureId === focusCreature.id)
+        .slice(0, 4)
+        .map(event => ({
+          time: Number(event.time ?? this.world?.t ?? 0),
+          message: event.title || event.message || 'Activity recorded'
+        }))
+      : [];
+    const ancestors = focusCreature && this.world?.getAncestors
+      ? this.world.getAncestors(focusCreature.id, 8).map(entry => entry.creature ?? entry).filter(Boolean)
+      : [];
+
+    const inspectId = (id) => {
+      const creature = this.world?.getAnyCreatureById?.(id);
+      if (!creature) return;
+      gameState.selectCreature(creature.id);
+      gameState.setInspectorVisible(true);
+      this.camera?.focusOn?.(creature.x, creature.y);
+      this.uiController?.updateInspectorVisibility?.();
+      this._selectedInfoSignature = '';
+      this._inspectorSignature = '';
+    };
+
+    renderInspector({
+      creature: focusCreature,
+      stats: focusCreature?.stats ?? null,
+      world: this.world,
+      badges: [],
+      activity,
+      pinned: !!(focusId && gameState.pinnedId === focusId),
+      isRoot: !!(focusId && lineageRootId === focusId),
+      lineageRootId,
+      lineage: this.buildInspectorLineage(lineageRootId),
+      ancestors,
+      lineageStories: this.lineageTracker?.getStories?.() ?? [],
+      lineageLeaders: this.buildLineageLeaders()
+    }, {
+      onClose: () => {
+        gameState.setInspectorVisible(false);
+        gameState.setInspectorAutoOpen(false);
+        this.uiController?.updateInspectorVisibility?.();
+      },
+      onMinimize: () => document.getElementById('inspector')?.classList.toggle('minimized'),
+      onTogglePin: () => {
+        gameState.togglePin();
+        this._inspectorSignature = '';
+      },
+      onSetRoot: () => {
+        if (!focusId) return;
+        gameState.setLineageRoot(focusId);
+        this._inspectorSignature = '';
+      },
+      onSetRootId: (id) => {
+        gameState.setLineageRoot(id);
+        this._inspectorSignature = '';
+      },
+      onInspectId: inspectId,
+      onFocusParent: inspectId
+    });
+  }
+
+  buildInspectorLineage(rootId) {
+    if (!rootId || !this.world?.buildLineageOverview) return null;
+    const overview = this.world.buildLineageOverview(rootId, 4);
+    const levels = new Map();
+
+    for (const entry of overview?.descendants ?? []) {
+      const depth = entry.depth ?? 0;
+      if (!levels.has(depth)) {
+        levels.set(depth, { depth, alive: 0, total: 0, sample: [] });
+      }
+      const level = levels.get(depth);
+      level.total += 1;
+      if (entry.alive) level.alive += 1;
+      if (level.sample.length < 4) level.sample.push(entry.creature?.id ?? null);
+    }
+
+    return {
+      totalDesc: overview?.totalDescendants ?? 0,
+      aliveDesc: overview?.livingDescendants ?? 0,
+      levels: [...levels.values()].sort((a, b) => a.depth - b.depth)
+    };
+  }
+
+  buildLineageLeaders() {
+    if (!this.world?.creatures?.length || !this.lineageTracker?.getRoot) return [];
+    const counts = new Map();
+    for (const creature of this.world.creatures) {
+      const rootId = this.lineageTracker.getRoot(this.world, creature.id);
+      const entry = counts.get(rootId) || { rootId, alive: 0, total: 0 };
+      entry.total += 1;
+      if (creature.alive !== false) entry.alive += 1;
+      counts.set(rootId, entry);
+    }
+
+    return [...counts.values()]
+      .sort((a, b) => b.alive - a.alive || b.total - a.total)
+      .slice(0, 4)
+      .map(entry => ({
+        ...entry,
+        name: this.lineageTracker.ensureName?.(entry.rootId) || `#${entry.rootId}`,
+        peak: entry.total,
+        delta: 0
+      }));
   }
 
   updateCuriosityPrompt() {

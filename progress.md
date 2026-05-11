@@ -323,3 +323,32 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - `npm run check:bundle` ✅
   - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
   - Screenshot review: `output/browser-smoke/desktop.png`, `mobile-large.png`, and `desktop-overflow.png`
+
+2026-05-10
+- New request: implement the full 1-38 upgrade list, create a tracked todo, use Codex skills, and use subagents.
+- Created `docs/superpowers/plans/2026-05-10-creature-sandbox-full-upgrade.md` with the approved 38-item checklist and phase map.
+- Used Codex skills: `superpowers:writing-plans`, `superpowers:subagent-driven-development`, `develop-web-game`, and `game-playtest`; dispatched focused subagents for runtime and docs/release review.
+- Implemented player clarity and Upgrade Hub:
+  - life stage, emotion, and bonds now show in selected cards, smoke text, in-world selected/status cues, and the tabbed desktop inspector.
+  - Upgrade Hub adds ecosystem story, action cards, recipe presets, follow modes, readability modes, scenario result medals, discovery journal, selected-creature nickname/bonds, seed gallery, world postcards, and balance probe state.
+  - added lineage, season, tool-mastery, and mutation-showcase playable scenarios plus a lineage-generation session goal metric.
+- Implemented release confidence:
+  - save metadata now includes upgrade state and canvas thumbnails.
+  - browser smoke now verifies recipe/readability/action-card/nickname/postcard/balance-probe paths, real renderer counters, thumbnail previews, and captures home/clean/selected/drawer/watch/god screenshots.
+  - simulation proxy attachment methods now store real subsystem references instead of no-op stubs.
+  - notification toasts now dedupe repeated messages and prioritize higher-severity events.
+- Docs/status updated:
+  - `README.md`
+  - `docs/FEATURE_MATRIX.md`
+  - `docs/SMOKE_TESTS.md`
+  - `docs/KNOWN_ISSUES.md`
+  - `creature-sim/IMPLEMENTATION_STATUS.md`
+- Verification:
+  - `npm audit --audit-level=moderate` ✅ (0 vulnerabilities)
+  - `npm run lint` ✅
+  - `npx eslint scripts/browser-smoke.mjs` ✅
+  - `npm test` ✅ (148 passing)
+  - `npm run build` ✅ (main app JS `598.92 kB` pre-gzip / `172.32 kB` gzip)
+  - `npm run check:bundle` ✅
+  - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
+  - Screenshot coverage: `home-desktop.png`, `desktop-clean.png`, `desktop-selected.png`, `desktop-overflow.png`, `desktop-watch.png`, `desktop-god.png`, plus compact/large mobile equivalents under `output/browser-smoke/`.

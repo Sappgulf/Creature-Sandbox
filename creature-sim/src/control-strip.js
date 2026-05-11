@@ -62,6 +62,7 @@ export class ControlStripController {
     this.menuFood = document.getElementById('menu-food');
     this.menuGodMode = document.getElementById('menu-god-mode');
     this.menuMode = document.getElementById('menu-mode');
+    this.menuUpgrades = document.getElementById('menu-upgrades');
     this.menuScenario = document.getElementById('menu-scenario');
     this.menuFeatures = document.getElementById('menu-features');
     this.menuSound = document.getElementById('menu-sound');
@@ -296,6 +297,7 @@ export class ControlStripController {
     this.setMenuActive(this.menuFood, toolMode === 'food');
     this.setMenuActive(this.menuGodMode, gameState.godModeActive);
     this.setMenuActive(this.menuMode, gameState.sessionMetaVisible !== false);
+    this.setMenuActive(this.menuUpgrades, isPanelVisible('upgrade-panel'));
     this.setMenuActive(this.menuScenario, !!gameState.scenarioPanelVisible);
     this.setMenuActive(this.menuFeatures, !!gameState.featuresPanelVisible);
     this.setMenuActive(this.menuSound, isPanelVisible('sound-panel'));
@@ -573,6 +575,10 @@ export class ControlStripController {
       case 'mode':
         // Toggle session meta visibility which contains mode selection
         this.uiController?.onSessionMetaToggle();
+        this.syncMenuState();
+        break;
+      case 'upgrades':
+        window.dispatchEvent(new CustomEvent('creature:toggle-upgrades-panel'));
         this.syncMenuState();
         break;
       case 'campaign':

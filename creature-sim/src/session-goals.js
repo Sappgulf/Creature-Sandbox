@@ -227,7 +227,8 @@ export class SessionGoals {
       flyingAlive: 0,
       burrowingAlive: 0,
       variantsAlive: 0,
-      foodAvailable: world.food?.length || 0
+      foodAvailable: world.food?.length || 0,
+      maxGeneration: 0
     };
 
     for (const creature of world.creatures || []) {
@@ -246,6 +247,9 @@ export class SessionGoals {
       if (creature.genes?.predator) metrics.predatorKills += stats.kills || 0;
       metrics.foodCollected += stats.food || 0;
       metrics.births += stats.births || 0;
+      if (world.lineageTracker?.generation) {
+        metrics.maxGeneration = Math.max(metrics.maxGeneration, world.lineageTracker.generation(world, creature.id));
+      }
     }
 
     metrics.variantsAlive = [
@@ -285,6 +289,8 @@ export class SessionGoals {
         return metrics.foodAvailable / goal.target;
       case 'variant_alive':
         return metrics.variantsAlive / goal.target;
+      case 'lineage_generation':
+        return metrics.maxGeneration / goal.target;
       default:
         return 0;
     }

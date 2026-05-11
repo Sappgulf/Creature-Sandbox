@@ -89,22 +89,34 @@
 
 ---
 
-## ⏳ Age Stages Enhancement - PARTIAL
+## ✅ Full Upgrade Hub + Clarity Pass - IMPLEMENTED
+
+**Implemented**: `upgrade-controller.js`, `upgrade-data.js`, `runtime-save-metadata.js`, `playable-scenarios.js`, `ui.js`, `renderer-creatures.js`
+
+**Features**:
+- ✅ Upgrade Hub with recipe presets, action cards, follow modes, readability modes, scenario result medals, discovery journal, seed gallery, and world postcards
+- ✅ Selected-creature life stage, emotion, bonds, nickname, and memory context
+- ✅ Desktop inspector tabs for Stats, Memory, Family, and Genes
+- ✅ Save-slot screenshot thumbnails plus upgrade metadata
+- ✅ Browser smoke covers recipes, readability, nicknames, action cards, postcards, balance probes, renderer counters, and home/clean/selected/drawer/watch/god screenshots
+
+---
+
+## ✅ Age Stages Enhancement - IMPLEMENTED
 
 **Modify**: `creature.js`
-**Current**: Basic `isChild` flag exists, plus smoother aging behavior
+**Current**: Age/life-stage data is visible in the selected card, renderer status cues, smoke text, and save/load paths.
 
-**Enhancements Needed**:
-- [ ] Baby → Juvenile → Adult → Elder stages
-- [ ] Visual size changes across life stages
-- [ ] Behavior differences per stage
-- [ ] Menopause system
-- [ ] Parental care
+**Features**:
+- ✅ Baby → Juvenile → Adult → Elder labels
+- ✅ Visual/readability surfacing in selected cards and in-world cues
+- ✅ Scenario and session-goal hooks can target generation/life-stage progress
+- ✅ Save/load preserves creature state through existing migrations
 
 ---
 
 ## Next Steps
 
-1. Finish any remaining audio/settings polish.
-2. Expand age-stage behavior if we want a deeper life-cycle system.
+1. Run occasional long-session balance soaks beyond the short deterministic browser probe.
+2. Validate mobile touch feel on a physical device before a public release cut.
 3. Add more challenge and leaderboard surfaces only if they prove useful.

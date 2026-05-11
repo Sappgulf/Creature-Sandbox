@@ -7,7 +7,7 @@ List issues that could not be fixed quickly, with severity and reproduction step
    - **Description:** Camera clamping uses a 200px margin beyond world edges. Creatures very near the border may still appear partially off-screen after aggressive panning.
    - **Workaround:** Use focus-on-creature or the re-center button to snap back.
 
-2. **Simulation proxy attachment stubs are no-ops**
+2. **Worker simulation mode remains opt-in**
    - **Severity:** Low
-   - **Description:** `simulation-proxy.js` has 7 empty attachment methods (attachHeatmapSystem, attachAudioSystem, etc.) that are called but do nothing outside worker mode.
-   - **Impact:** No runtime errors; subsystems attach directly on the main thread instead.
+   - **Description:** `?worker=1` now exposes the same attachment contract as the main-thread world for lineage, particles, heatmaps, audio, notifications, achievements, family bonds, and memory learning, but worker mode is still not the default shipping path.
+   - **Impact:** Main-thread play is the release path. Worker mode should be smoke-tested explicitly before using it as a primary runtime.

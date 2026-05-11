@@ -1,7 +1,9 @@
 import { gameState } from './game-state.js';
+import { buildBondsSummary, getCreatureEmotion, getLifeStageDisplay } from './upgrade-data.js';
 
 // Animated number counter helper
 const _counterState = new Map();
+let inspectorActiveTab = 'stats';
 function animateNumber(key, target, duration = 400) {
   const now = performance.now();
   const state = _counterState.get(key);
@@ -269,8 +271,12 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
   }).join('');
 
   const headline = lineageName ? `${lineageName} · #${creature.id}${sexEmoji}${disorderEmojis}` : `Creature #${creature.id}${sexEmoji}${disorderEmojis}`;
+  const lifeStage = getLifeStageDisplay(creature);
+  const emotion = getCreatureEmotion(creature);
+  const bonds = buildBondsSummary(creature, world);
   const sublineParts = [
     dietLabel,
+    `${lifeStage.icon} ${lifeStage.label}`,
     `Age ${creature.age.toFixed(1)}s`
   ];
   if (creature.parentId) {
@@ -318,6 +324,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
   })();
   const memoryCount = Array.isArray(creature.memory?.locations) ? creature.memory.locations.length : 0;
   const stateTags = [
+    `${emotion.icon} ${emotion.label}`,
     readableState,
     `Hunger ${Math.round(hunger)}`,
     `Stress ${Math.round(stress)}`,
@@ -383,11 +390,12 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
       ${showQuirks ? `<div class="hint">Quirks: ${quirks.map(q => quirkLabelMap[q] || q).join(', ')}</div>` : quirkHint}
       ${stateTagMarkup}
       <div class="metrics compact">
+        <span><span>Stage</span><span>${lifeStage.label}</span></span>
         <span><span>Energy</span><span>${energy}</span></span>
         <span><span>Health</span><span>${health}</span></span>
         <span><span>Speed</span><span>${speed}</span></span>
-        <span><span>Senses</span><span>${sense}px</span></span>
       </div>
+      <div class="subline compact-meta">${bonds.label}</div>
       <div class="subline compact-meta">${biome} biome · ${dietLabel} · Aquatic ${aquatic}</div>
       ${memoryTrailMarkup}
     `;
@@ -407,6 +415,8 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     <div class="metrics">
       <span><span>Energy</span><span>${energy}</span></span>
       <span><span>Health</span><span>${health}</span></span>
+      <span><span>Stage</span><span>${lifeStage.label}</span></span>
+      <span><span>Emotion</span><span>${emotion.label}</span></span>
       <span><span>Speed</span><span>${speed}</span></span>
       <span><span>Senses</span><span>${sense}px</span></span>
       <span><span>Metabolism</span><span>${metabolism}</span></span>
@@ -414,6 +424,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
       <span><span>Aquatic</span><span>${aquatic}</span></span>
       <span><span>Biome</span><span>${biome}</span></span>
     </div>
+    <div class="subline compact-meta">${bonds.label}</div>
     ${memoryTrailMarkup}
   `;
 }
@@ -515,37 +526,83 @@ export function renderInspector(model = {}, handlers = {}) {
     const mutationBadge = (creature.mutations && creature.mutations.length > 0) ?
       ` <span class="chip" style="font-size:9px;padding:2px 6px;">🧬 ${creature.mutations.length}</span>` : '';
 
-    body.innerHTML = `
-      <div class="row"><div>ID</div><div>#${creature.id}${creature.alive ? '' : ' †'}${mutationBadge}</div></div>
+    const memoryLocations = Array.isArray(creature.memory?.locations)
+      ? [...creature.memory.locations].sort((a, b) => (b.strength ?? 0) - (a.strength ?? 0)).slice(0, 4)
+      : [];
+    const memoryMarkup = memoryLocations.length
+      ? memoryLocations.map(memory => {
+        const label = String(memory.type || memory.tag || 'memory').replaceAll('_', ' ');
+        const strength = Math.round((memory.strength ?? 0) * 100);
+        return `<div class="row"><div>${label}</div><div>${strength}%</div></div>`;
+      }).join('')
+      : '<div class="muted tiny">No learned places yet.</div>';
+    const childMarkup = Array.isArray(creature.children) && creature.children.length
+      ? creature.children.slice(0, 6).map(id => `<button class="btn-link family-jump-body" data-id="${id}">#${id}</button>`).join(', ')
+      : '—';
+    const familyMarkup = `
       <div class="row"><div>Parent</div><div>${parentCell}</div></div>
+      <div class="row"><div>Children</div><div>${childMarkup}</div></div>
+      <div class="row"><div>Births</div><div>${stats?.births ?? 0}</div></div>
+    `;
+    const statsMarkup = `
+      <div class="row"><div>ID</div><div>#${creature.id}${creature.alive ? '' : ' †'}${mutationBadge}</div></div>
       <div class="row"><div>Sex</div><div>${sexEmoji} ${sexLabel}</div></div>
       <div class="row"><div>Type</div><div><span class="tag">${creature.genes.predator ? 'Predator' : 'Herbivore'}</span></div></div>
       <div class="row"><div>Age</div><div>${creature.age.toFixed(1)}s</div></div>
       <div class="row"><div>Energy</div><div>${creature.energy.toFixed(1)}</div></div>
       <div class="row"><div>Health</div><div>${creature.health.toFixed(1)} / ${creature.maxHealth.toFixed(0)}</div></div>
       ${(creature.disorders && creature.disorders.length > 0) ? `<div class="row"><div>Disorders</div><div style="color:#ff6b6b;">${disorderLabels}</div></div>` : ''}
-      <hr style="border-color:#2b2e41;opacity:.45;margin:6px 0;">
+      <div class="row"><div>Food eaten</div><div>${stats?.food ?? 0}</div></div>
+      <div class="row"><div>Kills</div><div>${stats?.kills ?? 0}</div></div>
+      <div class="row"><div>Damage</div><div>${(stats?.damageDealt ?? 0).toFixed(1)} / ${(stats?.damageTaken ?? 0).toFixed(1)}</div></div>
+    `;
+    const genesMarkup = `
       <div class="row"><div>Speed</div><div>${creature.genes.speed.toFixed(2)}</div></div>
       <div class="row"><div>FOV</div><div>${creature.genes.fov.toFixed(0)}°</div></div>
       <div class="row"><div>Sense</div><div>${creature.genes.sense.toFixed(0)}px</div></div>
       <div class="row"><div>Metabolism</div><div>${creature.genes.metabolism.toFixed(2)}</div></div>
       <div class="row"><div>Hue</div><div>${creature.genes.hue}</div></div>
       <div class="row"><div>Spines</div><div>${((creature.genes.spines ?? 0) * 100).toFixed(0)}%</div></div>
-      <div class="row"><div>Herd Instinct</div><div>${((creature.genes.herdInstinct ?? 0) * 100).toFixed(0)}%</div></div>
-      <div class="row"><div>Panic Trail</div><div>${((creature.genes.panicPheromone ?? 0) * 100).toFixed(0)}%</div></div>
+      <div class="row"><div>Herd</div><div>${((creature.genes.herdInstinct ?? 0) * 100).toFixed(0)}%</div></div>
+      <div class="row"><div>Panic</div><div>${((creature.genes.panicPheromone ?? 0) * 100).toFixed(0)}%</div></div>
       <div class="row"><div>Grit</div><div>${((creature.genes.grit ?? 0) * 100).toFixed(0)}%</div></div>
       ${creature.genes.predator ? `
-        <div class="row"><div>Pack Instinct</div><div>${(creature.genes.packInstinct * 100).toFixed(0)}%</div></div>
-        <div class="row"><div>Ambush Delay</div><div>${creature.genes.ambushDelay.toFixed(1)}s</div></div>
+        <div class="row"><div>Pack</div><div>${(creature.genes.packInstinct * 100).toFixed(0)}%</div></div>
+        <div class="row"><div>Ambush</div><div>${creature.genes.ambushDelay.toFixed(1)}s</div></div>
         <div class="row"><div>Aggression</div><div>${creature.genes.aggression.toFixed(2)}</div></div>
       ` : ''}
-      <hr style="border-color:#2b2e41;opacity:.45;margin:6px 0;">
-      <div class="row"><div>Food eaten</div><div>${stats?.food ?? 0}</div></div>
-      <div class="row"><div>Kills</div><div>${stats?.kills ?? 0}</div></div>
-      <div class="row"><div>Births</div><div>${stats?.births ?? 0}</div></div>
-      <div class="row"><div>Damage Dealt</div><div>${(stats?.damageDealt ?? 0).toFixed(1)}</div></div>
-      <div class="row"><div>Damage Taken</div><div>${(stats?.damageTaken ?? 0).toFixed(1)}</div></div>
     `;
+
+    body.innerHTML = `
+      <div class="inspector-tabs" role="tablist" aria-label="Inspector sections">
+        <button class="inspector-tab" data-tab="stats" role="tab">Stats</button>
+        <button class="inspector-tab" data-tab="memory" role="tab">Memory</button>
+        <button class="inspector-tab" data-tab="family" role="tab">Family</button>
+        <button class="inspector-tab" data-tab="genes" role="tab">Genes</button>
+      </div>
+      <div class="inspector-tab-panel" data-tab-panel="stats">${statsMarkup}</div>
+      <div class="inspector-tab-panel" data-tab-panel="memory">${memoryMarkup}</div>
+      <div class="inspector-tab-panel" data-tab-panel="family">${familyMarkup}</div>
+      <div class="inspector-tab-panel" data-tab-panel="genes">${genesMarkup}</div>
+    `;
+    const showInspectorTab = (tab) => {
+      inspectorActiveTab = tab;
+      body.querySelectorAll('.inspector-tab').forEach(button => {
+        const active = button.dataset.tab === tab;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      body.querySelectorAll('.inspector-tab-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.dataset.tabPanel === tab);
+      });
+    };
+    body.querySelectorAll('.inspector-tab').forEach(button => {
+      button.onclick = () => showInspectorTab(button.dataset.tab || 'stats');
+    });
+    showInspectorTab(inspectorActiveTab);
+    body.querySelectorAll('.family-jump-body').forEach(btn => {
+      btn.onclick = () => handlers.onInspectId?.(Number(btn.dataset.id));
+    });
   }
 
   if (pinBtn) {

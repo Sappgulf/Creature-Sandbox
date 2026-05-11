@@ -57,6 +57,7 @@ import { MemoryLearningSystem } from './memory-learning.js';
 import { ChallengeSystem } from './challenge-system.js';
 import { getDebugFlags } from './debug-flags.js';
 import { setupDevExports } from './dev-exports.js';
+import { UpgradeController } from './upgrade-controller.js';
 import {
   buildRuntimeSaveMetadata,
   formatSavePreview,
@@ -659,13 +660,17 @@ export function initializeApp() {
     document.body.classList.toggle('home-active', !!active);
   };
 
+  let upgradeController = null;
+
   const getRuntimeSaveMetadata = () => buildRuntimeSaveMetadata({
     world,
     camera,
     playableScenarios,
     moments,
     gameState,
-    tools
+    tools,
+    upgradeController,
+    canvas
   });
 
   saveSystem?.setMetadataProvider?.(getRuntimeSaveMetadata);
@@ -693,7 +698,8 @@ export function initializeApp() {
       playableScenarios,
       moments,
       gameState,
-      uiController
+      uiController,
+      upgradeController
     });
     if (tutorial) {
       tutorial.loadProgress();
@@ -792,6 +798,24 @@ export function initializeApp() {
     });
   }
 
+  upgradeController = errorHandler.safeExecute(() => {
+    const controller = new UpgradeController({
+      world,
+      camera,
+      playableScenarios,
+      sessionGoals,
+      notifications,
+      audio,
+      moments,
+      renderer,
+      canvas,
+      tools,
+      uiController
+    });
+    controller.init();
+    return controller;
+  }, 'Upgrade controller initialization', null);
+
   // Game loop (handles main simulation loop and rendering)
   const gameLoop = errorHandler.safeExecute(() => {
     return new GameLoop(world, camera, renderer, analytics, uiController, {
@@ -818,6 +842,7 @@ export function initializeApp() {
       unlockableAchievements,
       familyBonds,
       memoryLearning,
+      upgradeController,
       challengeSystem,
       seasonalEvents: seasonalEventsSystem,
       advancedAI,
@@ -1623,6 +1648,7 @@ export function initializeApp() {
         age: Number(focusCreature.age?.toFixed?.(1) ?? 0),
         status: focusCreature.currentGoal || focusCreature.state || null,
         why: focusCreature.goal?.reason || focusCreature.goal?.current || focusCreature.currentGoal || focusCreature.state || null,
+        presentation: upgradeController?.getCreaturePresentation?.(focusCreature) ?? null,
         memoryFocus: focusCreature.memory?.focus ? {
           type: focusCreature.memory.focus.tag || focusCreature.memory.focus.entry?.type || 'memory',
           recallUntil: Number(focusCreature.memory.focus.recallUntil?.toFixed?.(2) ?? focusCreature.memory.focus.recallUntil ?? 0)
@@ -1654,7 +1680,8 @@ export function initializeApp() {
       },
       playable: playableScenarios?.getSnapshot?.() ?? null,
       visibleCreatures: getVisibleCreatures(),
-      visibleFood: getVisibleFood()
+      visibleFood: getVisibleFood(),
+      upgrades: upgradeController?.getSnapshot?.() ?? null
     });
   };
 
@@ -1790,28 +1817,64 @@ export function initializeApp() {
           info
         };
       },
-      perfBudget: () => ({
-        fps: Number(gameState.fps?.toFixed?.(1) ?? 0),
-        rendered: gameState.renderedCount || 0,
-        culled: gameState.culledCount || 0,
-        canvas: {
-          width: canvas.width,
-          height: canvas.height,
-          cssWidth: Number(canvas.getBoundingClientRect().width.toFixed(0)),
-          cssHeight: Number(canvas.getBoundingClientRect().height.toFixed(0))
-        },
-        world: {
-          creatures: world.creatures?.length || 0,
-          food: world.food?.length || 0,
-          particles: world.particles?.particles?.length || 0
-        },
-        assets: {
-          registeredSprites: assetLoader.spriteSheets?.size ?? 0,
-          legacySprites: assetLoader.assets?.size ?? 0,
-          tintedSpriteVariants: assetLoader.tintedSpriteCache?.size ?? 0,
-          untintedSpriteVariants: assetLoader.untintedSpriteCache?.size ?? 0
-        }
-      })
+      upgradeState: () => upgradeController?.getSnapshot?.() ?? null,
+      applyRecipe: (id = 'peaceful_meadow') => upgradeController?.applyRecipe?.(id) ?? false,
+      setReadabilityMode: (id = 'normal') => {
+        upgradeController?.setReadabilityMode?.(id, { announce: false });
+        return upgradeController?.getSnapshot?.() ?? null;
+      },
+      setFollowMode: (id = 'youngest') => {
+        const target = upgradeController?.setFollowMode?.(id) ?? null;
+        return target ? { ok: true, id: target.id } : { ok: false };
+      },
+      createPostcard: () => upgradeController?.createPostcard?.() ?? null,
+      runBalanceProbe: (seconds = 180) => upgradeController?.runBalanceProbe?.(seconds) ?? null,
+      runUpgradeAction: (id = 'paint_food') => upgradeController?.runQuickAction?.(id) ?? false,
+      setSelectedNickname: (name = 'Scout') => {
+        const id = gameState.selectedId || gameState.pinnedId;
+        return upgradeController?.setNickname?.(id, name) ?? false;
+      },
+      perfBudget: () => {
+        const rendererStats = renderer?.performance?.getStats?.() ?? renderer?.performance?.stats ?? {};
+        const rendered = Number(rendererStats.rendered ?? renderer?.renderedCount ?? 0) || 0;
+        const culled = Number(rendererStats.culled ?? renderer?.culledCount ?? 0) || 0;
+        const totalObjects = Number(rendererStats.totalObjects ?? rendered + culled) || 0;
+
+        return {
+          fps: Number(gameState.fps?.toFixed?.(1) ?? 0),
+          rendered,
+          culled,
+          totalObjects,
+          renderer: {
+            rendered: Number(rendererStats.rendered ?? rendered) || 0,
+            culled: Number(rendererStats.culled ?? culled) || 0,
+            totalObjects,
+            cullRatio: Number(rendererStats.cullRatio?.toFixed?.(3) ?? rendererStats.cullRatio ?? 0),
+            renderEfficiency: Number(rendererStats.renderEfficiency?.toFixed?.(3) ?? rendererStats.renderEfficiency ?? 0)
+          },
+          gameStateCounters: {
+            rendered: gameState.renderedCount || 0,
+            culled: gameState.culledCount || 0
+          },
+          canvas: {
+            width: canvas.width,
+            height: canvas.height,
+            cssWidth: Number(canvas.getBoundingClientRect().width.toFixed(0)),
+            cssHeight: Number(canvas.getBoundingClientRect().height.toFixed(0))
+          },
+          world: {
+            creatures: world.creatures?.length || 0,
+            food: world.food?.length || 0,
+            particles: world.particles?.particles?.length || 0
+          },
+          assets: {
+            registeredSprites: assetLoader.spriteSheets?.size ?? 0,
+            legacySprites: assetLoader.assets?.size ?? 0,
+            tintedSpriteVariants: assetLoader.tintedSpriteCache?.size ?? 0,
+            untintedSpriteVariants: assetLoader.untintedSpriteCache?.size ?? 0
+          }
+        };
+      }
     };
   }
 
@@ -1901,7 +1964,8 @@ export function initializeApp() {
     diseaseSystem,
     gameplayModes,
     sessionGoals,
-    playableScenarios
+    playableScenarios,
+    upgradeController
   });
 
   console.debug('🎉 Creature Sandbox initialized successfully!');

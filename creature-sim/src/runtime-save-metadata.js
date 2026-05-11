@@ -4,7 +4,9 @@ export function buildRuntimeSaveMetadata({
   playableScenarios,
   moments,
   gameState,
-  tools
+  tools,
+  upgradeController,
+  canvas
 } = {}) {
   const playable = playableScenarios?.serialize?.() ?? null;
   const momentState = moments?.serialize?.() ?? null;
@@ -14,9 +16,10 @@ export function buildRuntimeSaveMetadata({
   const food = world?.food?.length ?? 0;
   const props = world?.sandbox?.props?.length ?? 0;
 
-  return {
+  const metadata = {
     playable,
     moments: momentState,
+    upgrades: upgradeController?.serialize?.() ?? null,
     uiState: {
       watchModeEnabled: !!gameState?.watchModeEnabled,
       godModeActive: !!gameState?.godModeActive,
@@ -44,18 +47,35 @@ export function buildRuntimeSaveMetadata({
       summary: momentState?.summary ?? null
     }
   };
+
+  if (canvas?.toDataURL) {
+    try {
+      const thumb = document.createElement('canvas');
+      thumb.width = 220;
+      thumb.height = 124;
+      const ctx = thumb.getContext('2d');
+      ctx.drawImage(canvas, 0, 0, thumb.width, thumb.height);
+      metadata.preview.thumbnail = thumb.toDataURL('image/png', 0.7);
+    } catch {
+      metadata.preview.thumbnail = null;
+    }
+  }
+
+  return metadata;
 }
 
 export function restoreRuntimeSaveMetadata(metadata = {}, {
   playableScenarios,
   moments,
   gameState,
-  uiController
+  uiController,
+  upgradeController
 } = {}) {
   const restored = {
     playable: false,
     moments: false,
-    uiState: false
+    uiState: false,
+    upgrades: false
   };
 
   if (metadata.playable && playableScenarios?.restore) {
@@ -64,6 +84,10 @@ export function restoreRuntimeSaveMetadata(metadata = {}, {
 
   if (metadata.moments && moments?.restore) {
     restored.moments = !!moments.restore(metadata.moments);
+  }
+
+  if (metadata.upgrades && upgradeController?.restore) {
+    restored.upgrades = !!upgradeController.restore(metadata.upgrades);
   }
 
   if (metadata.uiState && gameState) {

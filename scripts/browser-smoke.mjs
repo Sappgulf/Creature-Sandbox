@@ -122,10 +122,14 @@ async function captureCanvasSnapshot(page, filePath) {
   await fs.writeFile(filePath, Buffer.from(base64, 'base64'));
 }
 
-async function clickWorld(page, x, y) {
+async function clickWorld(page, x, y, { touch = false } = {}) {
   const canvas = page.locator('#view');
   const box = await canvas.boundingBox();
   assert.ok(box, 'canvas should have a bounding box');
+  if (touch) {
+    await canvas.tap({ position: { x, y } });
+    return;
+  }
   await page.mouse.click(box.x + x, box.y + y);
 }
 
@@ -138,6 +142,20 @@ async function clickVisibleCreature(page, state) {
   };
   await clickWorld(page, point.x, point.y);
   await advance(page, 320);
+}
+
+async function captureHomeSnapshot(browser) {
+  const context = await browser.newContext({
+    viewport: { width: 1280, height: 800 },
+    deviceScaleFactor: 1
+  });
+  const page = await context.newPage();
+  const url = `${baseUrl}/?v=${Date.now()}-home`;
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 12000 });
+  await page.locator('#home-page:not(.hidden)').waitFor({ state: 'visible', timeout: 12000 });
+  await page.waitForTimeout(1100);
+  await page.screenshot({ path: path.join(outDir, 'home-desktop.png') });
+  await context.close();
 }
 
 async function runScenario(browser, scenario) {
@@ -178,6 +196,7 @@ async function runScenario(browser, scenario) {
   assert.ok(state.summary.totalCreatures >= (scenario.mobile ? 35 : 55), `${scenario.name}: should seed creatures`);
   assert.ok(state.summary.totalFood >= (scenario.mobile ? 120 : 200), `${scenario.name}: should seed food`);
   assert.ok(state.visibleCreatures.length > 0, `${scenario.name}: should report visible creatures`);
+  await page.screenshot({ path: path.join(outDir, `${scenario.name}-clean.png`) });
 
   const playable = await page.evaluate(() => window.__creatureSmoke.startScenario('first_ecosystem'));
   assert.ok(playable?.active, `${scenario.name}: playable scenario should start`);
@@ -199,13 +218,16 @@ async function runScenario(browser, scenario) {
     state = await readGameState(page);
   }
   assert.ok(state.selectedCreature, `${scenario.name}: creature selection should be reflected in text state`);
+  await page.screenshot({ path: path.join(outDir, `${scenario.name}-selected.png`) });
 
   console.log(`  ${scenario.name}: spawn`);
   const beforeSpawn = state.summary.totalCreatures;
   await page.locator('#ctrl-spawn').click();
   await page.locator('.spawn-card[data-creature="predator"]').click();
   await page.locator('#spawn-drawer-confirm').click();
-  await clickWorld(page, scenario.viewport.width * 0.5, scenario.viewport.height * 0.45);
+  await page.locator('#spawn-drawer').waitFor({ state: 'hidden', timeout: 5000 });
+  await advance(page, 120);
+  await clickWorld(page, scenario.viewport.width * 0.5, scenario.viewport.height * 0.45, { touch: scenario.mobile });
   await advance(page, 400);
   state = await readGameState(page);
   assert.ok(state.summary.totalCreatures > beforeSpawn, `${scenario.name}: spawn flow should add a creature`);
@@ -229,7 +251,7 @@ async function runScenario(browser, scenario) {
   }
   await page.screenshot({ path: path.join(outDir, `${scenario.name}-overflow.png`) });
   await page.locator('#menu-food').click();
-  await clickWorld(page, scenario.viewport.width * 0.54, scenario.viewport.height * 0.48);
+  await clickWorld(page, scenario.viewport.width * 0.54, scenario.viewport.height * 0.48, { touch: scenario.mobile });
   await advance(page, 400);
   state = await readGameState(page);
   assert.ok(state.summary.totalFood >= beforeFood, `${scenario.name}: food tool should not reduce food count`);
@@ -250,10 +272,12 @@ async function runScenario(browser, scenario) {
   assert.equal(state.ui.watchMode, true, `${scenario.name}: watch mode should toggle on`);
   await page.locator('#watch-strip').waitFor({ state: 'visible', timeout: 5000 });
   await page.locator('#watch-god-mode').waitFor({ state: 'visible', timeout: 5000 });
+  await page.screenshot({ path: path.join(outDir, `${scenario.name}-watch.png`) });
   await page.locator('#watch-god-mode').click();
   await advance(page, 240);
   state = await readGameState(page);
   assert.equal(state.ui.godMode, true, `${scenario.name}: god mode should toggle from watch strip`);
+  await page.screenshot({ path: path.join(outDir, `${scenario.name}-god.png`) });
 
   console.log(`  ${scenario.name}: moments and god tools`);
   await page.locator('#watch-moments').click();
@@ -262,6 +286,11 @@ async function runScenario(browser, scenario) {
   state = await readGameState(page);
   assert.ok(state.moments.count >= 1, `${scenario.name}: moments panel should have recorded scenario moments`);
   assert.ok(state.moments.summary?.peakPopulation >= state.summary.totalCreatures, `${scenario.name}: moments summary should track population`);
+  await page.evaluate(() => {
+    const panel = document.getElementById('moments-panel');
+    panel?.classList.add('hidden');
+    panel?.setAttribute('aria-hidden', 'true');
+  });
 
   const godTools = ['food', 'calm', 'chaos', 'prop', 'remove'];
   const beforeGod = {
@@ -279,7 +308,7 @@ async function runScenario(browser, scenario) {
     assert.equal(toolState.active, true, `${scenario.name}: god tool ${tool} should activate god mode`);
     assert.equal(toolState.tool, tool, `${scenario.name}: god tool ${tool} should be reflected in smoke state`);
     assert.ok(toolState.hint.toLowerCase().includes(tool), `${scenario.name}: god tool ${tool} should update the panel hint`);
-    await clickWorld(page, actionPoint.x, actionPoint.y);
+    await clickWorld(page, actionPoint.x, actionPoint.y, { touch: scenario.mobile });
     await advance(page, 260);
   }
   state = await readGameState(page);
@@ -300,9 +329,33 @@ async function runScenario(browser, scenario) {
   assert.equal(slotPreview.ok, true, `${scenario.name}: save slot preview should be readable`);
   assert.equal(slotPreview.info.preview.scenario.id, 'first_ecosystem', `${scenario.name}: slot preview should include scenario`);
   assert.ok(slotPreview.info.preview.population >= beforeSpawn, `${scenario.name}: slot preview should include population`);
+  assert.match(slotPreview.info.preview.thumbnail || '', /^data:image\/png;base64,/, `${scenario.name}: slot preview should include a canvas thumbnail`);
+
+  const upgrades = await page.evaluate(() => {
+    const recipeOk = window.__creatureSmoke.applyRecipe('peaceful_meadow');
+    const mode = window.__creatureSmoke.setReadabilityMode('contrast');
+    const follow = window.__creatureSmoke.setFollowMode('youngest');
+    const postcard = window.__creatureSmoke.createPostcard();
+    const balance = window.__creatureSmoke.runBalanceProbe(120);
+    const nicknameOk = window.__creatureSmoke.setSelectedNickname('Scout');
+    const actionOk = window.__creatureSmoke.runUpgradeAction('paint_food');
+    return { recipeOk, mode, follow, postcard, balance, nicknameOk, actionOk, state: window.__creatureSmoke.upgradeState() };
+  });
+  assert.equal(upgrades.recipeOk, true, `${scenario.name}: sandbox recipe should apply`);
+  assert.equal(upgrades.mode.readabilityMode, 'contrast', `${scenario.name}: readability mode should update smoke state`);
+  assert.equal(upgrades.follow.ok, true, `${scenario.name}: follow mode should select a creature`);
+  assert.ok(upgrades.postcard.population > 0, `${scenario.name}: postcard should include population`);
+  assert.equal(typeof upgrades.balance.pass, 'boolean', `${scenario.name}: balance probe should report pass/fail`);
+  assert.equal(upgrades.nicknameOk, true, `${scenario.name}: selected creature nickname should save`);
+  assert.equal(upgrades.actionOk, true, `${scenario.name}: upgrade action card should run`);
+  assert.ok(upgrades.state.recipes.length >= 4, `${scenario.name}: upgrade state should expose recipe presets`);
 
   const perf = await page.evaluate(() => window.__creatureSmoke.perfBudget());
   assert.ok(perf.canvas.width > 0 && perf.canvas.height > 0, `${scenario.name}: canvas should be measurable`);
+  assert.ok(perf.rendered > 0, `${scenario.name}: smoke perf should report live rendered objects`);
+  assert.ok(perf.totalObjects >= perf.rendered, `${scenario.name}: smoke perf total should cover rendered objects`);
+  assert.equal(perf.rendered, perf.renderer.rendered, `${scenario.name}: smoke rendered count should come from renderer stats`);
+  assert.equal(perf.culled, perf.renderer.culled, `${scenario.name}: smoke culled count should come from renderer stats`);
   assert.ok(perf.assets.registeredSprites >= 20, `${scenario.name}: sprite manifest should be loaded`);
   assert.ok(perf.assets.tintedSpriteVariants <= 260, `${scenario.name}: tinted sprite cache should stay bounded`);
   assert.ok(perf.world.creatures <= 220, `${scenario.name}: smoke population should stay inside perf budget`);
@@ -321,6 +374,7 @@ const server = await startServerIfNeeded();
 let browser;
 try {
   browser = await chromium.launch({ headless: !headed });
+  await captureHomeSnapshot(browser);
   const results = [];
   for (const scenario of scenarios) {
     results.push(await runScenario(browser, scenario));

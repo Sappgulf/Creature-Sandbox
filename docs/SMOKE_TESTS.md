@@ -77,8 +77,18 @@
 9. **Top menu navigation**
    - Click **🎛️ Modes & Goals** and confirm the Game Mode + Session Goals card toggles.
    - Open **⋯ More Actions** and verify every item opens its respective panel or toggle.
+   - Open **✨ Upgrade Hub** and confirm recipe presets, action cards, follow modes, readability modes, discovery journal, seed gallery, and postcard controls render without covering the playfield.
 
-10. **God mode (optional)**
+10. **Upgrade Hub + creature clarity**
+    - Select a creature and open **✨ Upgrade Hub**.
+    - Confirm the selected creature shows life stage, emotion, bonds/family copy, and a nickname input.
+    - Save a nickname, close/reopen the panel, and confirm it persists.
+    - Use **Paint Food**, **Calm Zone**, and **Watch Herd** action cards; confirm each switches to the expected tool/view.
+    - Apply **Peaceful Meadow** or **Predator Stress Test** and confirm the camera recenters on the seeded cluster.
+    - Switch readability modes (Normal, Cozy, High Contrast, Analytics, Minimal) and confirm the canvas remains readable.
+    - Make a postcard and save a seed; confirm population, season, strongest event, and seed gallery entry are shown.
+
+11. **God mode (optional)**
     - Open **⋯ More Actions** and toggle **✨ God Mode** (or long-press the world).
     - Press **1-6** to switch god tools and confirm the active tool updates in the panel/hud.
     - Confirm each tool shows a matching hint and brush preview: green food, blue calm, purple chaos, violet prop, red remove.
@@ -88,7 +98,7 @@
     - Spawn and remove a creature; confirm population guardrails prevent overpopulation.
     - Exit god mode and confirm creatures resume autonomous behavior with normal time flow.
 
-11. **Save/load roundtrip**
+12. **Save/load roundtrip**
     - Use **Ctrl+S** to save the game.
     - Refresh the page.
     - Use **Ctrl+O** to load the save.
@@ -98,65 +108,71 @@
     - Confirm food patches keep remaining bites after reload.
     - With `debug.observe()` enabled, confirm life-stage labels and memory markers persist after reload.
     - Start a playable scenario, open Moments, then save/load. Confirm scenario progress, Director guidance, Moments entries, and session summary restore.
-    - Confirm the Continue hint or save-slot preview includes population, elapsed time, and active scenario.
+    - Confirm the Continue hint or save-slot preview includes population, elapsed time, active scenario, upgrade metadata, and a canvas thumbnail.
     - Optional: use **Ctrl/⌘ + S** to download a save file and **Ctrl/⌘ + O** to load it back.
     - Confirm diet roles and moments summary still load without errors.
 
-12. **Help section**
+13. **Help section**
     - Open **⋯ More Actions**.
     - Confirm the Help section lists controls, shortcuts, and where features live.
 
-13. **Session goals**
+14. **Session goals**
     - Open **🎛️ Modes & Goals**.
     - Confirm a goal appears for manual creature spawns and progresses when you spawn creatures.
 
-14. **Balance pass: grab/throw consistency**
+15. **Upgrade Hub**
+    - Open **✨ Upgrade Hub** from **⋯ More Actions**.
+    - Apply a recipe preset and confirm the world resets with a new readable creature/food mix.
+    - Toggle a readability mode, choose a follow camera mode, create a postcard, and save the seed.
+    - Select a creature and confirm nickname, bonds, life stage, and emotion state are displayed without overlapping the panel.
+
+16. **Balance pass: grab/throw consistency**
     - Switch to **Inspect** mode and grab a creature with a short drag.
     - Confirm gentle drags release without huge launches.
     - Flick a longer drag and confirm throws feel capped and predictable (no extreme launches).
 
-15. **Balance pass: camera stability**
+17. **Balance pass: camera stability**
     - Pan and zoom quickly, then release.
     - Confirm the camera settles without lingering jitter and overlays reappear after it stops.
 
-16. **Balance pass: creature reactions**
+18. **Balance pass: creature reactions**
     - Trigger a bounce pad or spinner on a creature.
     - Drop a creature from a height and confirm a squish/landing reaction.
     - Poke a creature repeatedly and confirm an overreaction triggers but resets quickly.
     - Confirm collision reactions are readable but not rapid-fire flashing.
 
-17. **Watch mode + auto-director**
+19. **Watch mode + auto-director**
     - Toggle **Watch Mode** from **⋯ More Actions**.
     - Confirm the watch strip appears and quick actions hide.
     - Use the watch strip to **Pause/Play**, **Follow**, and cycle speed **0.5×/1×/2×**.
     - Trigger a birth/eat/mating interaction and confirm the camera gently recenters.
     - Drag to pan; confirm auto-director pauses, then use **Re-center** to resume.
 
-18. **Moments log + session summary**
+20. **Moments log + session summary**
     - Tap **Moments** in the watch strip to open the log.
     - Confirm entries appear for birth/eat/panic/food scarcity, nest creation, and migration.
     - Tap a moment and confirm the camera jumps to that location.
     - Confirm the session summary shows peak population, births, end-of-life count, stress peak, and biggest migration.
     - Save and reload while the panel has entries; confirm the log and summary remain accurate.
 
-19. **Ecosystem tension roles**
+21. **Ecosystem tension roles**
     - Observe herbivore, scavenger, and predator-lite behaviors over 1–2 minutes.
     - Confirm predator-lite chases cause stress + scattering without rapid deaths.
     - Confirm food scarcity events nudge movement without collapsing the population.
 
-20. **Individuality (Temperaments + Quirks)**
+22. **Individuality (Temperaments + Quirks)**
     - Spawn 5+ creatures; observe varied wander/approach speeds (bold/curious vs cautious).
     - Toggle quirks display (press `Q`); selected creature shows quirks when enabled.
     - Quirk effects are bounded: no runaway speed/stress; homebody stays near anchor; wanderer roams further.
     - Offspring inherit blended temperaments; quirks carry over or roll new defaults.
 
-21. **Seasons + Events**
+23. **Seasons + Events**
     - Run through at least one season transition; food and reproduction stay stable (no collapse in winter).
     - Seasonal tint/particle cues visible but not distracting.
     - Rare event triggers (or manual wait): food bloom/dry spell/storm/calm night/migration wave adjusts biases then recovers.
     - Event banner text appears in stats strip; timer counts down; state returns to baseline after end.
 
-22. **Persistence (Individuality)**
+24. **Persistence (Individuality)**
     - Save/Load preserves temperament, quirks, and active event state (if mid-event).
     - Old save (pre-2.0) loads with safe temperament defaults and empty quirks.
 
@@ -229,7 +245,7 @@ Run the checked-in browser smoke before shipping gameplay/UI changes:
 npm run smoke:browser
 ```
 
-The script starts Vite if needed, opens desktop plus compact/large mobile browser contexts, verifies the smoke sandbox starts, starts the `First Ecosystem` playable scenario, checks Director guidance, selects a creature, spawns a predator, paints food, toggles Watch Mode and God Mode, opens Moments, exercises food/calm/chaos/prop/remove god tools, runs in-page save/load plus slot-preview roundtrips, captures screenshots/state under `output/browser-smoke/`, and fails on browser warnings or page errors.
+The script starts Vite if needed, captures the home screen, opens desktop plus compact/large mobile browser contexts, verifies the smoke sandbox starts, starts the `First Ecosystem` playable scenario, checks Director guidance, selects a creature, spawns a predator, paints food, toggles Watch Mode and God Mode, opens Moments, exercises food/calm/chaos/prop/remove god tools, applies an Upgrade Hub recipe, switches readability mode, saves a nickname, runs an action card, creates a postcard and balance probe, runs in-page save/load plus slot-preview thumbnail roundtrips, captures screenshots/state under `output/browser-smoke/`, and fails on browser warnings or page errors.
 
 Run the post-build bundle guard after `npm run build`:
 

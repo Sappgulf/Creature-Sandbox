@@ -6,8 +6,8 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Sappgulf/Creature-Sandbox)
 
-## 🎮 [Live Demo](#) 
-*Deploy your own instance with the button above!*
+## 🎮 [Live Demo](https://creature-sandbox.vercel.app)
+Run the current hosted build, or deploy your own instance with the button above.
 
 ---
 
@@ -103,6 +103,9 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 - **Condensed top HUD**: Primary controls plus a ⋯ overflow menu for all panels
 - **Moments log**: Tap a moment to jump the camera and review a session summary
 - **Narrative summaries**: The moments panel now explains what the ecosystem is doing in plain language
+- **Upgrade Hub**: Open recipe presets, action cards, readability modes, discovery journal, seed gallery, and world postcards from the More menu
+- **Creature clarity**: Selected creatures show life stage, emotion, bonds, memory reasons, and compact inspector tabs for Stats, Memory, Family, and Genes
+- **Save previews**: Save slots include population, scenario context, runtime metadata, and canvas thumbnails
 
 ### ⚡ Performance Optimized
 - **Spatial partitioning**: O(1) proximity queries with grid-based optimization
@@ -126,13 +129,12 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 git clone https://github.com/Sappgulf/Creature-Sandbox.git
 cd Creature-Sandbox
 
-# Serve the static files (choose one):
-python3 -m http.server 8000 --directory creature-sim
-# or
-npx serve creature-sim -p 8000
+# Install dependencies and run the Vite dev server:
+npm install
+npm run dev
 
 # Open in browser
-open http://localhost:8000
+open http://localhost:5173
 ```
 
 ---
@@ -151,6 +153,7 @@ open http://localhost:8000
 - **Ctrl/⌘ + S / Ctrl/⌘ + O**: Save to file / load from file
 - **God Mode**: Open **⋯ More Actions** → **✨ God Mode** or long-press the world (touch)
 - **Watch Mode**: Use the bottom control strip for pause, follow, speed, moments, and re-center
+- **Upgrade Hub**: Open **⋯ More Actions** → **✨ Upgrade Hub** for recipe presets, action cards, readability, seed gallery, and postcards
 
 ### Tool Modes (Keyboard Shortcuts)
 - **X**: Inspect mode (default)
@@ -237,11 +240,12 @@ Creatures earn badges for achievements:
 ## 📐 Architecture
 
 ### Core Systems
-- **World** (`world.js`): Main simulation loop, spatial grid, lineage registry
+- **World** (`world-core.js` and `world-*` modules): Main simulation state, spatial grids, environment, ecosystem, combat, disaster, and lineage attachment points
 - **Creature** (`creature.js`): Individual behavior, pathfinding, energy management
 - **Genetics** (`genetics.js`): Gene generation and mutation
 - **Renderer** (`renderer.js`): Canvas drawing with camera transforms
 - **Analytics** (`analytics.js`): Time-series data collection and aggregation
+- **Bootstrap** (`app-bootstrap.js` plus focused controllers): Wires systems, UI controllers, save metadata, smoke hooks, and startup/home flow
 
 ### Creature State (Centralized)
 - **Memory + learning**: Stored on each creature (`creature.js` + `creature-features.js`) and persisted via `save-system.js`.
@@ -265,20 +269,20 @@ Creatures earn badges for achievements:
 ## 🎨 Customization
 
 ### Modify Initial Population
-Edit `main.js`:
+Edit scenario setup in `creature-sim/src/playable-scenarios.js` or seed calls in `creature-sim/src/app-bootstrap.js`:
 ```javascript
 world.seed(70, 6, 200);  // (herbivores, predators, food)
 ```
 
 ### Adjust World Parameters
-Edit `world.js`:
+Edit `creature-sim/src/world-core.js` or subsystem constants:
 ```javascript
 this.seasonSpeed = 0.015;  // Season cycle rate
 this.maxFood = Math.floor((width * height) / 320);  // Food cap
 ```
 
 ### Change Mutation Rate
-Edit `world.js` in `spawnChild()`:
+Edit the reproduction path in `creature-sim/src/world-creature-manager.js`:
 ```javascript
 const childGenes = mutateGenes(parent.genes, 0.05);  // Mutation amount
 ```
@@ -355,7 +359,7 @@ The codebase is organized into focused modules:
 - `creature-sim/src/renderer*.js` — Renderer (features-viz, minimap, creatures)
 - `creature-sim/src/ui-controller*.js` — UI (spawn, god-mode, watch, panels, game-mode, exports)
 - `creature-sim/src/input*.js` — Input (pointer, touch handlers)
-- `scripts/*.test.mjs` — Unit tests (146 tests)
+- `scripts/*.test.mjs` — Unit tests (148 tests)
 
 **Large files split:**
 - `creature.js`: 3377 → 2266 lines

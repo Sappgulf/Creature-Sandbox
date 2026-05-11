@@ -118,6 +118,63 @@ export const PLAYABLE_SCENARIOS = [
     setup: { herbivore: 32, omnivore: 5, predator: 2, food: 240, props: ['bounce', 'spring', 'fan', 'conveyor', 'launch'] },
     tuning: { mode: 'chill', foodRate: 1.3, disasters: false },
     steps: ['Place props at the edge of herds', 'Use gentle throws', 'Calm stressed creatures after chaos']
+  },
+  {
+    id: 'lineage_guardian',
+    artFrame: 0,
+    icon: '🧬',
+    name: 'Lineage Guardian',
+    fantasy: 'Protect one family line long enough for a fifth generation to emerge.',
+    objective: 'Reach generation 5 while keeping 26+ creatures alive.',
+    targetSeconds: 300,
+    minAlive: 26,
+    minGeneration: 5,
+    setup: { herbivore: 30, omnivore: 8, predator: 3, food: 250, props: ['calm', 'spring'] },
+    tuning: { mode: 'balanced', foodRate: 1.2, disasters: false },
+    steps: ['Pin a founder', 'Feed their descendants', 'Avoid predator pressure near nests']
+  },
+  {
+    id: 'season_cycle',
+    artFrame: 3,
+    icon: '🍂',
+    name: 'Four Season Chain',
+    fantasy: 'Guide a herd through changing resource pressure.',
+    objective: 'Survive 4 minutes with stable food and stress.',
+    targetSeconds: 240,
+    minAlive: 34,
+    minFood: 120,
+    maxStress: 60,
+    setup: { herbivore: 40, omnivore: 6, predator: 4, food: 210, props: ['calm'] },
+    tuning: { mode: 'balanced', foodRate: 0.95, disasters: true },
+    steps: ['Build food buffer in spring', 'Calm crowded summer clusters', 'Protect elders in winter']
+  },
+  {
+    id: 'tool_mastery',
+    artFrame: 6,
+    icon: '🛠️',
+    name: 'Tool Mastery',
+    fantasy: 'Learn each intervention without drowning the world in UI.',
+    objective: 'Use props and calm zones while keeping 25+ creatures alive.',
+    targetSeconds: 150,
+    minAlive: 25,
+    minProps: 5,
+    setup: { herbivore: 28, omnivore: 5, predator: 2, food: 210, props: ['bounce', 'fan', 'gravity', 'spring'] },
+    tuning: { mode: 'chill', foodRate: 1.25, disasters: false },
+    steps: ['Place a bounce pad', 'Place a fan', 'Drop a calm zone near stress']
+  },
+  {
+    id: 'mutation_showcase',
+    artFrame: 5,
+    icon: '✨',
+    name: 'Mutation Showcase',
+    fantasy: 'Inspect unusual variants in a controlled lab setup.',
+    objective: 'Keep 5+ variants alive for 3 minutes.',
+    targetSeconds: 180,
+    minAlive: 24,
+    minVariants: 5,
+    setup: { herbivore: 14, omnivore: 4, predator: 2, aquatic: 6, flying: 6, burrowing: 6, food: 240, props: ['calm'] },
+    tuning: { mode: 'chill', foodRate: 1.3, disasters: false },
+    steps: ['Follow each variant type', 'Use the inspector to compare traits', 'Save the seed if the mix is interesting']
   }
 ];
 
@@ -407,6 +464,16 @@ export class PlayableScenarios {
         progress: 0,
         completed: false
       });
+    } else if (scenario.minGeneration) {
+      goals.push({
+        id: `${scenario.id}_generation`,
+        type: 'lineage_generation',
+        icon: '🧬',
+        target: scenario.minGeneration,
+        description: `Reach generation ${scenario.minGeneration}`,
+        progress: 0,
+        completed: false
+      });
     }
 
     return goals.slice(0, 3);
@@ -421,6 +488,7 @@ export class PlayableScenarios {
     let aquatic = 0;
     let flying = 0;
     let burrowing = 0;
+    let maxGeneration = 0;
     let stressTotal = 0;
     let hungerTotal = 0;
     let energyTotal = 0;
@@ -436,6 +504,9 @@ export class PlayableScenarios {
       if (expressed(creature.genes, 'aquatic', 0) >= 0.6) aquatic += 1;
       if (expressed(creature.genes, 'flying', 0) >= 0.6 || creature.traits?.creatureType === 'flying') flying += 1;
       if (expressed(creature.genes, 'burrowing', 0) >= 0.6 || creature.traits?.creatureType === 'burrowing') burrowing += 1;
+      if (this.world?.lineageTracker?.generation) {
+        maxGeneration = Math.max(maxGeneration, this.world.lineageTracker.generation(this.world, creature.id));
+      }
       stressTotal += Number(creature.needs?.stress ?? creature.ecosystem?.stress ?? 0);
       hungerTotal += Number(creature.needs?.hunger ?? 0);
       energyTotal += Number(creature.energy ?? creature.needs?.energy ?? 0);
@@ -458,6 +529,7 @@ export class PlayableScenarios {
       averageHunger: alive ? hungerTotal / alive : 0,
       averageEnergy: alive ? energyTotal / alive : 0,
       hunts,
+      maxGeneration,
       foodPerCreature: 0
     };
   }
@@ -475,7 +547,8 @@ export class PlayableScenarios {
     const stressProgress = scenario.maxStress ? clamp(1 - Math.max(0, metrics.averageStress - scenario.maxStress) / 60, 0, 1) : 1;
     const variantProgress = scenario.minVariants ? clamp(metrics.variants / scenario.minVariants, 0, 1) : 1;
     const propProgress = scenario.minProps ? clamp(metrics.props / scenario.minProps, 0, 1) : 1;
-    const progress = Math.min(timeProgress, populationProgress, foodProgress, predatorProgress, stressProgress, variantProgress, propProgress);
+    const generationProgress = scenario.minGeneration ? clamp(metrics.maxGeneration / scenario.minGeneration, 0, 1) : 1;
+    const progress = Math.min(timeProgress, populationProgress, foodProgress, predatorProgress, stressProgress, variantProgress, propProgress, generationProgress);
 
     this.activeRun.elapsed = elapsed;
     this.activeRun.progress = progress;
@@ -491,7 +564,8 @@ export class PlayableScenarios {
       (!scenario.minPredators || metrics.predators >= scenario.minPredators) &&
       (!scenario.maxStress || metrics.averageStress <= scenario.maxStress) &&
       (!scenario.minVariants || metrics.variants >= scenario.minVariants) &&
-      (!scenario.minProps || metrics.props >= scenario.minProps);
+      (!scenario.minProps || metrics.props >= scenario.minProps) &&
+      (!scenario.minGeneration || metrics.maxGeneration >= scenario.minGeneration);
 
     if (complete) {
       this._completeRun();

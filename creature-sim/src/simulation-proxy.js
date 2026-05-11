@@ -315,6 +315,15 @@ export class SimulationProxy {
   get ecosystem() { return this.worldSnapshot.ecosystem; }
   get foodGridDirty() { return this.worldSnapshot.foodGridDirty; }
   get corpseGridDirty() { return this.worldSnapshot.corpseGridDirty; }
+  get lineageTracker() { return this.worldSnapshot.lineageTracker; }
+  get particles() { return this.worldSnapshot.particles; }
+  get heatmaps() { return this.worldSnapshot.heatmaps; }
+  get audio() { return this.worldSnapshot.audio; }
+  get notificationSystem() { return this.worldSnapshot.notificationSystem; }
+  get proceduralSounds() { return this.worldSnapshot.proceduralSounds; }
+  get unlockableAchievements() { return this.worldSnapshot.unlockableAchievements; }
+  get familyBonds() { return this.worldSnapshot.familyBonds; }
+  get memoryLearning() { return this.worldSnapshot.memoryLearning; }
 
   get randomDisasters() { return this.worldSnapshot.randomDisasters; }
   set randomDisasters(val) {
@@ -359,14 +368,22 @@ export class SimulationProxy {
     return this.getAnyCreatureById(id);
   }
 
-  // Stubs for World attachment methods
-  attachLineageTracker() { }
-  attachParticleSystem(p) { this.worldSnapshot.particles = p; }
-  attachHeatmapSystem() { }
-  attachAudioSystem() { }
-  attachNotificationSystem() { }
-  attachProceduralSounds() { }
-  attachUnlockableAchievements() { }
-  attachFamilyBonds() { }
-  attachMemoryLearning() { }
+  // World attachment contract for systems that need to read the active runtime.
+  attachLineageTracker(tracker) {
+    this.worldSnapshot.lineageTracker = tracker;
+    this.worldSnapshot.creatureManager.lineageTracker = tracker;
+    this.worldSnapshot.creatureManager.attachLineageTracker = (nextTracker) => {
+      this.worldSnapshot.lineageTracker = nextTracker;
+      this.worldSnapshot.creatureManager.lineageTracker = nextTracker;
+    };
+  }
+
+  attachParticleSystem(particles) { this.worldSnapshot.particles = particles; }
+  attachHeatmapSystem(heatmaps) { this.worldSnapshot.heatmaps = heatmaps; }
+  attachAudioSystem(audio) { this.worldSnapshot.audio = audio; }
+  attachNotificationSystem(notifications) { this.worldSnapshot.notificationSystem = notifications; }
+  attachProceduralSounds(proceduralSounds) { this.worldSnapshot.proceduralSounds = proceduralSounds; }
+  attachUnlockableAchievements(unlockableAchievements) { this.worldSnapshot.unlockableAchievements = unlockableAchievements; }
+  attachFamilyBonds(familyBonds) { this.worldSnapshot.familyBonds = familyBonds; }
+  attachMemoryLearning(memoryLearning) { this.worldSnapshot.memoryLearning = memoryLearning; }
 }

@@ -161,11 +161,18 @@ assert.equal(multiSave.world.creatures.length, 3, 'should save 3 creatures');
 const metadataSaveSystem = new SaveSystem();
 metadataSaveSystem.setMetadataProvider(() => ({
   playable: { activeRun: { id: 'first_ecosystem' } },
+  upgrades: {
+    activeReadabilityMode: 'contrast',
+    discoveryJournal: [{ id: 'first_birth', label: 'First Birth' }],
+    seedGallery: [{ id: 'seed-1', label: 'Peaceful Meadow', population: 42 }]
+  },
   preview: { population: 99, scenario: { id: 'first_ecosystem', name: 'First Ecosystem', progress: 42 } },
   source: 'provider'
 }));
 const metadataSave = metadataSaveSystem.serialize(multiWorld, camera, null, null, { source: 'test' });
 assert.equal(metadataSave.metadata.playable.activeRun.id, 'first_ecosystem', 'runtime playable metadata should serialize');
+assert.equal(metadataSave.metadata.upgrades.activeReadabilityMode, 'contrast', 'upgrade metadata should serialize');
+assert.equal(metadataSave.metadata.upgrades.discoveryJournal[0].id, 'first_birth', 'discovery metadata should serialize');
 assert.equal(metadataSave.metadata.preview.scenario.progress, 42, 'runtime preview metadata should serialize');
 assert.equal(metadataSave.metadata.source, 'test', 'explicit metadata should override provider metadata');
 

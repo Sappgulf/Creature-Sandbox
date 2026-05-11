@@ -22,6 +22,7 @@ export class NotificationSystem {
     this.defaultDuration = 2500;
     this.renderDomToasts = false;
     this.queue = [];
+    this.recentMessages = new Map();
   }
 
   checkMilestones(world) {
@@ -91,6 +92,7 @@ export class NotificationSystem {
     if (type === 'warning' && message.includes('FPS') && !this.showPerformanceAlerts) return;
     if (type === 'milestone' && !this.showMilestones) return;
     if (type === 'achievement' && !this.showAchievements) return;
+    if (this._isDuplicateToast(type, message)) return;
 
     const notification = {
       id: Date.now() + Math.random(),
@@ -99,12 +101,21 @@ export class NotificationSystem {
       message,
       createdAt: performance.now(),
       duration: duration || this.defaultDuration,
+      priority: this._priorityForType(type),
       opacity: 0,
       slideIn: 0
     };
 
     if (this.notifications.length >= this.maxVisible) {
-      this.queue.push(notification);
+      const lowestIndex = this._lowestVisiblePriorityIndex();
+      const lowest = this.notifications[lowestIndex];
+      if (lowest && notification.priority > lowest.priority) {
+        const [deferred] = this.notifications.splice(lowestIndex, 1, notification);
+        this.queue.unshift(deferred);
+        this._announce(notification);
+      } else if (this.queue.length < 8) {
+        this.queue.push(notification);
+      }
     } else {
       this.notifications.push(notification);
       this._announce(notification);
@@ -112,6 +123,44 @@ export class NotificationSystem {
 
     // Also create an accessible DOM toast
     this._createDomToast(notification);
+  }
+
+  _priorityForType(type) {
+    const priorities = {
+      error: 6,
+      warning: 5,
+      achievement: 4,
+      milestone: 4,
+      success: 3,
+      event: 3,
+      info: 2,
+      performance: 1
+    };
+    return priorities[type] ?? 2;
+  }
+
+  _lowestVisiblePriorityIndex() {
+    let lowestIndex = 0;
+    let lowestPriority = Infinity;
+    this.notifications.forEach((notification, index) => {
+      const priority = notification.priority ?? this._priorityForType(notification.type);
+      if (priority < lowestPriority) {
+        lowestPriority = priority;
+        lowestIndex = index;
+      }
+    });
+    return lowestIndex;
+  }
+
+  _isDuplicateToast(type, message) {
+    const key = `${type}:${message}`;
+    const now = performance.now();
+    const last = this.recentMessages.get(key) || 0;
+    for (const [existingKey, timestamp] of this.recentMessages) {
+      if (now - timestamp > 10000) this.recentMessages.delete(existingKey);
+    }
+    this.recentMessages.set(key, now);
+    return now - last < 1400;
   }
 
   _announce(notif) {
@@ -346,6 +395,7 @@ export class NotificationSystem {
   reset() {
     this.notifications = [];
     this.queue = [];
+    this.recentMessages.clear();
     this.triggeredMilestones.clear();
     this._firstEventToasts.clear();
     this._lastPopulations = { herbivores: 0, predators: 0 };

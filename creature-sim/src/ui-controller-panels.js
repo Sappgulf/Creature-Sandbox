@@ -31,6 +31,7 @@ export function applyUiPanelMethods(UIController) {
     const panelIds = [
       'features-panel',
       'sound-panel',
+      'upgrade-panel',
       'scenario-panel',
       'achievements-panel',
       'gene-editor-panel',
