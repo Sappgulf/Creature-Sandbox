@@ -385,7 +385,8 @@ export class CampaignSystem {
   /**
    * Start a campaign level
    */
-  startLevel(levelId, world) {
+  startLevel(levelId, world, options = {}) {
+    const applyWorldConfig = options.applyWorldConfig !== false;
     const level = this.getLevel(levelId);
     if (!level) {
       console.error('Invalid level ID:', levelId);
@@ -413,8 +414,11 @@ export class CampaignSystem {
       failReason: null
     };
 
-    // Apply world configuration
-    this.applyWorldConfig(world, level.worldConfig);
+    if (applyWorldConfig) {
+      this.applyWorldConfig(world, level.worldConfig);
+    } else if (world?.pendingCampaignConfig === level.worldConfig) {
+      world.pendingCampaignConfig = null;
+    }
 
     // Emit event
     eventSystem?.emit(GameEvents.NOTIFICATION, {

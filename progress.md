@@ -344,11 +344,45 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - `docs/KNOWN_ISSUES.md`
   - `creature-sim/IMPLEMENTATION_STATUS.md`
 - Verification:
-  - `npm audit --audit-level=moderate` ✅ (0 vulnerabilities)
+- `npm audit --audit-level=moderate` ✅ (0 vulnerabilities)
+- `npm run lint` ✅
+- `npx eslint scripts/browser-smoke.mjs` ✅
+- `npm test` ✅ (148 passing)
+- `npm run build` ✅ (main app JS `598.92 kB` pre-gzip / `172.32 kB` gzip)
+- `npm run check:bundle` ✅
+- `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
+- Screenshot coverage: `home-desktop.png`, `desktop-clean.png`, `desktop-selected.png`, `desktop-overflow.png`, `desktop-watch.png`, `desktop-god.png`, plus compact/large mobile equivalents under `output/browser-smoke/`.
+
+2026-05-13
+- New request: repo-wide audit follow-through for smooth web/mobile gameplay with subagents.
+- Implemented focused stability/input fixes:
+  - `World.step()` no longer calls `WorldEcosystem.update()` twice per tick, avoiding doubled balance work and unintended ecosystem drift.
+  - `GameLoop.step()` now tolerates unavailable analytics instead of throwing every fifth frame.
+  - mobile touch pan, pinch, and double-tap now claim camera ownership so auto-director/follow behavior does not fight direct gestures.
+  - More → Sandbox Props now emits the same tool-change signal as the primary tools and smoke verifies the prop tool state.
+- Verification pending for this pass.
+
+2026-05-14
+- Continued the full redo mission as a non-destructive architecture/gameplay consolidation pass.
+- Baseline audit map:
+  - working core to preserve: Canvas 2D renderer, `World` subsystem split, creature behavior/genetics modules, manifest sprite loader, runtime save migration, mobile support, control strip, Playable Scenarios, Session Goals, Moments, and browser smoke hooks.
+  - overlap to consolidate: `GameplayModes`/`PlayableScenarios`/`CampaignSystem`, `SessionGoals`/`ChallengeSystem`, `AchievementSystem`/`UnlockableAchievements`, `AutoDirector`/`MomentsSystem`, and `ToolController`/god-mode input/upgrades.
+  - risks found: duplicate objective metrics, campaign resize order, save metadata gaps for active goals/challenges/selection, prop tool state drift, direct mobile gestures fighting watch camera, and smoke not asserting director objective output.
+- Implemented consolidation:
+  - added `creature-sim/src/game/` facades for `GameDirector`, `ObjectiveSystem`, `ProgressionSystem`, `ScenarioRegistry`, `StoryDirector`, and `GodToolSystem`.
+  - added `core`, `game`, `render`, `input`, `ui`, and `platform` index modules as safe future boundaries without moving legacy files.
+  - wired `GameDirector` through `app-bootstrap`, `GameLoop`, smoke exports, save metadata, and debug exports.
+  - centralized objective metric collection in `gameplay-objectives.js` and reused it from scenarios, session goals, director objective cards, and tests.
+  - persisted session goals, challenge state, director/progression/tool state, selected creature id, favorite/pinned creature id, scenario preview, and share seed.
+  - upgraded the playable director UI with compact objective cards; improved selected-creature profile details with generation, family, strength, social drive, and curiosity.
+  - routed God Tool facade selections through the canonical God Mode UI and used `ToolController` undo paths for food/spawn/remove where possible.
+  - added Copy Share Seed in the overflow menu and added sprite/audio manifest files with procedural audio fallback metadata.
+- Verification:
+  - `git diff --check` ✅
   - `npm run lint` ✅
-  - `npx eslint scripts/browser-smoke.mjs` ✅
-  - `npm test` ✅ (148 passing)
-  - `npm run build` ✅ (main app JS `598.92 kB` pre-gzip / `172.32 kB` gzip)
-  - `npm run check:bundle` ✅
+  - `npm test` ✅ (154 passing)
+  - `npm run build` ✅ (130 modules, main app JS `620.51 kB` / `178.48 kB` gzip)
   - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
-  - Screenshot coverage: `home-desktop.png`, `desktop-clean.png`, `desktop-selected.png`, `desktop-overflow.png`, `desktop-watch.png`, `desktop-god.png`, plus compact/large mobile equivalents under `output/browser-smoke/`.
+  - `npm run check:bundle` ✅ (`index-PXjxgWPU.js` `620514B` / `177002B` gzip under budget)
+  - inspected `output/browser-smoke/desktop.png`, `mobile-compact.png`, and `mobile-large.png`.
+  - external `$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js` failed before launch because its cached Playwright Chromium executable was missing; the checked-in browser smoke remained the reliable browser lane.

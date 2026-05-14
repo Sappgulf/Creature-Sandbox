@@ -17,6 +17,26 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-05-14 — director-architecture-gameplay-loop — Planned
+- **Issues:** The repo-level redo request identified overlapping scenario, goal, achievement/progression, moment/director, and god-tool systems; active scenario objectives were partly split between UI panels and runtime state; saves did not preserve the newly requested favorite/selected creature context; and browser smoke did not verify the consolidated director/objective surface.
+- **Root Causes:** Creature Sandbox had grown useful systems in parallel (`PlayableScenarios`, `CampaignSystem`, `SessionGoals`, `ChallengeSystem`, `AchievementSystem`, `UnlockableAchievements`, `AutoDirector`, `MomentsSystem`, `ToolController`, god-mode input), but no single adapter boundary described the playable loop or coordinated persistence/testing.
+- **Fixes:** Add non-destructive `src/game` facades for director, objectives, progression, story moments, scenario registry, and god tools; keep Canvas 2D and existing simulation modules; preserve old modules behind adapters; add save/test/smoke coverage around the consolidated loop.
+- **Verification:** Planned: `git diff --check`; `npm run lint`; `npm test`; `npm run build`; `npm run smoke:browser`; `npm run check:bundle`; local browser screenshot review.
+
+### 2026-05-14 — director-architecture-gameplay-loop — Implemented
+- **Issues:** Scenario/objective/progression/god-tool ownership was not explicit; objective metrics were duplicated; campaign seeding could resize the world after subsystem grids had already been initialized; direct mobile camera gestures could fight watch/auto-director control; and the prop/god-tool smoke path exposed a stale panel-hint bug after the new facade was introduced.
+- **Root Causes:** Older systems were individually functional but wired side-by-side from `app-bootstrap.js`; objective calculations lived in multiple places; `World.seed()` reset dimensions too late for campaign configs; God Mode UI state was not refreshed when a facade-selected tool mapped to an existing canvas tool.
+- **Fixes:**
+  - Added `src/game/` facades: `GameDirector`, `ObjectiveSystem`, `ProgressionSystem`, `ScenarioRegistry`, `StoryDirector`, and `GodToolSystem`.
+  - Added boundary index modules for `core`, `game`, `render`, `input`, `ui`, and `platform` without moving runtime files.
+  - Centralized gameplay objective metrics in `gameplay-objectives.js` and reused them from sessions, scenarios, tests, and the new objective cards.
+  - Persisted session goals, challenge progress, director/progression/tool state, selected creature id, favorite/pinned creature id, camera preview, scenario preview, and share seed metadata.
+  - Upgraded the scenario director panel with compact objective cards and wired browser smoke/text state to assert them.
+  - Improved selected-creature profile data with generation, family, strength, social drive, and curiosity.
+  - Routed God Tool facade changes through the canonical God Mode UI and made undo-capable food/spawn/remove actions use `ToolController` where possible.
+  - Added share-seed copy action and explicit `assets/manifests/sprites.json` / `audio.json` with procedural fallback metadata.
+- **Verification:** `git diff --check` (pass); `npm run lint` (pass); `npm test` (pass, 154 checks); `npm run build` (pass, 130 modules, main app JS `620.51 kB` / `178.48 kB` gzip); `npm run smoke:browser` (pass: desktop, mobile-compact, mobile-large); `npm run check:bundle` (pass, main JS `620514B` / `177002B` gzip under budget); screenshot inspection passed for `output/browser-smoke/desktop.png`, `mobile-compact.png`, and `mobile-large.png`. External `web_game_playwright_client.js` could not launch because its cached Playwright Chromium executable was missing.
+
 ### 2026-05-02 — polish-round-2 — Implemented
 - **Issues:** Follow-up polish requested: PWA installability, color-blind support, per-category sound volume, camera bookmarks, lifetime stats.
 - **Root Causes:** No `manifest.json` prevented Add to Home Screen; no color-blind modes blocked ~8% of male players; sound volumes were hardcoded per category; large worlds had no quick navigation; no persistent cross-session stats existed.

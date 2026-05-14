@@ -43,9 +43,9 @@ export function applyUiPlayableMethods(UIController) {
     if (!this.playableScenarios) return;
     const select = domCache.get('playableScenarioSelect');
     const id = select?.value || this.playableScenarios.getScenarios()[0]?.id;
-    this.playableScenarios.startScenario(id);
+    const snapshot = this.gameDirector?.startScenario?.(id) || this.playableScenarios.startScenario(id);
     this.updateSessionMetaVisibility?.();
-    this.renderPlayableDirector();
+    this.renderPlayableDirector(snapshot);
     this.dismissInteractionHint?.();
   };
 
@@ -53,12 +53,16 @@ export function applyUiPlayableMethods(UIController) {
     const root = domCache.get('playableDirector');
     const select = domCache.get('playableScenarioSelect');
     if (!root || !this.playableScenarios) return;
-    const data = snapshot || this.playableScenarios.getSnapshot();
+    const directorSnapshot = snapshot?.playable ? snapshot : (this.gameDirector?.getSnapshot?.() || null);
+    const data = snapshot?.playable
+      ? snapshot.playable
+      : snapshot || directorSnapshot?.playable || this.playableScenarios.getSnapshot();
     const scenario = data.scenario;
     const director = data.director || {};
     const metrics = data.metrics || {};
     const progress = Math.max(0, Math.min(100, Number(data.progress || 0)));
     const artFrame = Math.max(0, Math.min(6, Number(scenario?.artFrame || 0)));
+    const objectiveCards = directorSnapshot?.objectives?.cards || [];
     document.body?.classList.toggle('playable-run-active', !!data.active);
 
     if (select && scenario?.id) {
@@ -71,6 +75,20 @@ export function applyUiPlayableMethods(UIController) {
 
     const steps = scenario?.steps?.length
       ? `<div class="director-steps">${scenario.steps.map(step => `<span>${escapeHtml(step)}</span>`).join('')}</div>`
+      : '';
+    const objectives = objectiveCards.length
+      ? `<div class="director-objectives" aria-label="Current objectives">
+          ${objectiveCards.slice(0, 4).map(card => `
+            <div class="director-objective-card ${escapeHtml(card.level || 'active')}">
+              <span class="objective-mark">${escapeHtml(card.icon || '🎯')}</span>
+              <span class="objective-text">
+                <strong>${escapeHtml(card.description || card.label)}</strong>
+                <em>${escapeHtml(card.value || `${Math.round((card.progress || 0) * 100)}%`)}</em>
+              </span>
+              <span class="objective-ring" style="--objective-progress:${Math.round((card.progress || 0) * 100)}%"></span>
+            </div>
+          `).join('')}
+        </div>`
       : '';
 
     root.innerHTML = `
@@ -90,6 +108,7 @@ export function applyUiPlayableMethods(UIController) {
         <span><b>${metrics.food ?? 0}</b> food</span>
         <span><b>${Math.round(metrics.averageStress ?? 0)}</b> stress</span>
       </div>
+      ${objectives}
       ${steps}
     `;
   };

@@ -198,14 +198,18 @@ async function runScenario(browser, scenario) {
   assert.ok(state.visibleCreatures.length > 0, `${scenario.name}: should report visible creatures`);
   await page.screenshot({ path: path.join(outDir, `${scenario.name}-clean.png`) });
 
-  const playable = await page.evaluate(() => window.__creatureSmoke.startScenario('first_ecosystem'));
+  const director = await page.evaluate(() => window.__creatureSmoke.startScenario('first_ecosystem'));
+  const playable = director?.playable || director;
   assert.ok(playable?.active, `${scenario.name}: playable scenario should start`);
   assert.equal(playable.scenario.id, 'first_ecosystem', `${scenario.name}: playable scenario id should be reflected`);
+  assert.ok((director?.objectives?.cards?.length || 0) >= 2, `${scenario.name}: director should expose objective cards`);
   await advance(page, 600);
   state = await readGameState(page);
   assert.ok(state.playable?.active, `${scenario.name}: text state should include playable scenario`);
+  assert.ok(state.director?.objectives?.cards?.length >= 2, `${scenario.name}: text state should include director objectives`);
   assert.ok(state.playable.director?.nextAction, `${scenario.name}: director should provide a next action`);
   assert.ok(state.playable.metrics.alive >= 25, `${scenario.name}: scenario should seed a viable population`);
+  await page.locator('.director-art').waitFor({ state: 'visible', timeout: 5000 });
   assert.equal(await page.locator('.director-art').count(), 1, `${scenario.name}: scenario art node should render`);
 
   console.log(`  ${scenario.name}: select creature`);
@@ -263,7 +267,10 @@ async function runScenario(browser, scenario) {
     'true',
     `${scenario.name}: food menu item should reflect active tool state`
   );
-  await page.locator('#overflow-drawer-close').click();
+  await page.locator('[data-action="props"]').click();
+  await advance(page, 180);
+  state = await readGameState(page);
+  assert.equal(state.ui.tool, 'prop', `${scenario.name}: props menu action should activate prop tool`);
 
   console.log(`  ${scenario.name}: watch and god`);
   await page.locator('#ctrl-watch').click();

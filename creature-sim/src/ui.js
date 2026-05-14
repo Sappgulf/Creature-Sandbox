@@ -241,10 +241,16 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
 
   // Resolve lineage-friendly name if available
   let lineageName = null;
+  let familyRootId = null;
+  let generation = Number.isFinite(creature.generation) ? creature.generation : null;
   if (world && lineageTracker && typeof lineageTracker.getRoot === 'function' && typeof lineageTracker.ensureName === 'function') {
     const rootId = lineageTracker.getRoot(world, creature.id);
     if (rootId != null) {
+      familyRootId = rootId;
       lineageName = lineageTracker.ensureName(rootId);
+    }
+    if (typeof lineageTracker.generation === 'function') {
+      generation = lineageTracker.generation(world, creature.id);
     }
   }
 
@@ -290,6 +296,10 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
   const sense = creature.genes?.sense?.toFixed(0) ?? '0';
   const metabolism = creature.genes?.metabolism?.toFixed(2) ?? '0.00';
   const aquatic = (creature.genes?.aquatic ?? 0).toFixed(2);
+  const aggression = Number(creature.genes?.aggression ?? creature.personality?.aggression ?? 0).toFixed(2);
+  const socialDrive = Math.round(Number(creature.needs?.socialDrive ?? creature.social?.bondStrength ?? 0));
+  const curiosityRaw = Number(creature.ecosystem?.curiosity ?? creature.personality?.curiosity ?? 0);
+  const curiosity = Math.round(curiosityRaw <= 1 ? curiosityRaw * 100 : curiosityRaw);
   const biomeInfo = world?.getBiomeAt?.(creature.x, creature.y);
   const biome = biomeInfo?.name ?? biomeInfo?.type ?? 'Unknown';
   const nameSuggestion = creature.nameSuggestion ? `💡 ${creature.nameSuggestion}` : null;
@@ -391,12 +401,14 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
       ${stateTagMarkup}
       <div class="metrics compact">
         <span><span>Stage</span><span>${lifeStage.label}</span></span>
+        <span><span>Gen</span><span>${generation ?? '—'}</span></span>
         <span><span>Energy</span><span>${energy}</span></span>
         <span><span>Health</span><span>${health}</span></span>
         <span><span>Speed</span><span>${speed}</span></span>
+        <span><span>Social</span><span>${socialDrive}</span></span>
       </div>
       <div class="subline compact-meta">${bonds.label}</div>
-      <div class="subline compact-meta">${biome} biome · ${dietLabel} · Aquatic ${aquatic}</div>
+      <div class="subline compact-meta">${biome} biome · ${dietLabel} · Family ${familyRootId ?? '—'}</div>
       ${memoryTrailMarkup}
     `;
     return;
@@ -416,9 +428,14 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
       <span><span>Energy</span><span>${energy}</span></span>
       <span><span>Health</span><span>${health}</span></span>
       <span><span>Stage</span><span>${lifeStage.label}</span></span>
+      <span><span>Generation</span><span>${generation ?? '—'}</span></span>
+      <span><span>Family</span><span>${familyRootId ?? '—'}</span></span>
       <span><span>Emotion</span><span>${emotion.label}</span></span>
       <span><span>Speed</span><span>${speed}</span></span>
       <span><span>Senses</span><span>${sense}px</span></span>
+      <span><span>Strength</span><span>${aggression}</span></span>
+      <span><span>Social</span><span>${socialDrive}</span></span>
+      <span><span>Curiosity</span><span>${curiosity}</span></span>
       <span><span>Metabolism</span><span>${metabolism}</span></span>
       <span><span>Children</span><span>${creature.stats?.births ?? 0}</span></span>
       <span><span>Aquatic</span><span>${aquatic}</span></span>

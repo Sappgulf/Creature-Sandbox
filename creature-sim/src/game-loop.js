@@ -68,6 +68,11 @@ export class GameLoop {
     this.memoryLearning = subsystems.memoryLearning;
     this.upgradeController = subsystems.upgradeController;
     this.challengeSystem = subsystems.challengeSystem;
+    this.gameDirector = subsystems.gameDirector;
+    this.objectiveSystem = subsystems.objectiveSystem;
+    this.progressionSystem = subsystems.progressionSystem;
+    this.storyDirector = subsystems.storyDirector;
+    this.godToolSystem = subsystems.godToolSystem;
     this.seasonalEvents = subsystems.seasonalEvents;
     this.advancedAI = subsystems.advancedAI;
     this.godPowers = subsystems.godPowers;
@@ -661,7 +666,7 @@ export class GameLoop {
     this.profileEnd();
 
     // Update analytics (throttled)
-    if (this.frameCount % 5 === 0) {
+    if (this.analytics?.update && this.frameCount % 5 === 0) {
       this.profileStart('analytics');
       this.analytics.update(this.world, dt * 5);
 
@@ -707,7 +712,7 @@ export class GameLoop {
     }
 
     if (this.challengeSystem?.update && (fidelity >= 0.25 || this.frameCount % 4 === 0)) {
-      this.challengeSystem.update(this.world);
+      this.challengeSystem.update(this.world, dt);
     }
 
     if (this.unlockableAchievements?.update && (fidelity >= 0.25 || this.frameCount % 4 === 0)) {
@@ -1003,6 +1008,10 @@ export class GameLoop {
 
     if (this.upgradeController) {
       this.upgradeController.update(dt);
+    }
+
+    if (this.gameDirector) {
+      this.gameDirector.update(dt);
     }
 
     // Throttled milestone checks (every 2s)

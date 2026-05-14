@@ -1,12 +1,6 @@
 import { clamp } from './utils.js';
 import { eventSystem, GameEvents } from './event-system.js';
-
-function geneValue(genes, key, fallback = 0) {
-  const value = genes?.[key];
-  if (typeof value === 'number') return value;
-  if (value && typeof value === 'object' && Number.isFinite(value.expressed)) return value.expressed;
-  return fallback;
-}
+import { collectGameplayMetrics, getObjectiveProgress } from './gameplay-objectives.js';
 
 const GOAL_POOL = [
   {
@@ -155,6 +149,37 @@ export class SessionGoals {
     }
   }
 
+  serialize() {
+    return {
+      goals: this.getGoals(),
+      counters: {
+        manualSpawns: this.manualSpawns,
+        creatureThrows: this.creatureThrows,
+        propTriggers: this.propTriggers,
+        propPlacements: this.propPlacements,
+        godActions: this.godActions
+      }
+    };
+  }
+
+  restore(data, { announce = false } = {}) {
+    if (!data || typeof data !== 'object') return false;
+
+    if (Array.isArray(data.goals)) {
+      this.setGoals(data.goals, { announce });
+    }
+
+    const counters = data.counters || {};
+    this.manualSpawns = Number(counters.manualSpawns || 0);
+    this.creatureThrows = Number(counters.creatureThrows || 0);
+    this.propTriggers = Number(counters.propTriggers || 0);
+    this.propPlacements = Number(counters.propPlacements || 0);
+    this.godActions = Number(counters.godActions || 0);
+
+    eventSystem.emit(GameEvents.SESSION_GOAL_UPDATED, this.getGoals());
+    return true;
+  }
+
   refresh() {
     this.generateGoals();
     if (this.notifications?.show) {
@@ -212,87 +237,16 @@ export class SessionGoals {
   }
 
   _collectMetrics(world) {
-    const metrics = {
-      population: 0,
-      predatorKills: 0,
-      foodCollected: 0,
-      births: 0,
-      time: world.t ?? 0,
+    return collectGameplayMetrics(world, {
       manualSpawns: this.manualSpawns,
       creatureThrows: this.creatureThrows,
       propTriggers: this.propTriggers,
       propPlacements: this.propPlacements,
-      godActions: this.godActions,
-      aquaticAlive: 0,
-      flyingAlive: 0,
-      burrowingAlive: 0,
-      variantsAlive: 0,
-      foodAvailable: world.food?.length || 0,
-      maxGeneration: 0
-    };
-
-    for (const creature of world.creatures || []) {
-      if (!creature) continue;
-      if (creature.alive) metrics.population += 1;
-      if (creature.alive && geneValue(creature.genes, 'aquatic', 0) >= 0.6) {
-        metrics.aquaticAlive += 1;
-      }
-      if (creature.alive && (geneValue(creature.genes, 'flying', 0) >= 0.6 || creature.traits?.creatureType === 'flying')) {
-        metrics.flyingAlive += 1;
-      }
-      if (creature.alive && (geneValue(creature.genes, 'burrowing', 0) >= 0.6 || creature.traits?.creatureType === 'burrowing')) {
-        metrics.burrowingAlive += 1;
-      }
-      const stats = creature.stats || {};
-      if (creature.genes?.predator) metrics.predatorKills += stats.kills || 0;
-      metrics.foodCollected += stats.food || 0;
-      metrics.births += stats.births || 0;
-      if (world.lineageTracker?.generation) {
-        metrics.maxGeneration = Math.max(metrics.maxGeneration, world.lineageTracker.generation(world, creature.id));
-      }
-    }
-
-    metrics.variantsAlive = [
-      metrics.aquaticAlive > 0,
-      metrics.flyingAlive > 0,
-      metrics.burrowingAlive > 0
-    ].filter(Boolean).length;
-
-    return metrics;
+      godActions: this.godActions
+    });
   }
 
   _calculateProgress(goal, metrics) {
-    switch (goal.type) {
-      case 'population':
-        return metrics.population / goal.target;
-      case 'predator_kills':
-        return metrics.predatorKills / goal.target;
-      case 'food_collected':
-        return metrics.foodCollected / goal.target;
-      case 'births':
-        return metrics.births / goal.target;
-      case 'survival_time':
-        return metrics.time / goal.target;
-      case 'manual_spawns':
-        return metrics.manualSpawns / goal.target;
-      case 'creature_throws':
-        return metrics.creatureThrows / goal.target;
-      case 'prop_triggers':
-        return metrics.propTriggers / goal.target;
-      case 'prop_places':
-        return metrics.propPlacements / goal.target;
-      case 'god_actions':
-        return metrics.godActions / goal.target;
-      case 'aquatic_alive':
-        return metrics.aquaticAlive / goal.target;
-      case 'food_available':
-        return metrics.foodAvailable / goal.target;
-      case 'variant_alive':
-        return metrics.variantsAlive / goal.target;
-      case 'lineage_generation':
-        return metrics.maxGeneration / goal.target;
-      default:
-        return 0;
-    }
+    return getObjectiveProgress(goal.type, goal.target, metrics);
   }
 }

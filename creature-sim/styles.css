@@ -3022,6 +3022,57 @@ body.mobile-focus-mode #watch-strip {
 .director-metrics b {
   color: #f8fafc;
 }
+.director-objectives {
+  display: grid;
+  gap: 6px;
+}
+.director-objective-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+}
+.director-objective-card.complete {
+  border-color: rgba(74, 222, 128, 0.38);
+  background: rgba(34, 197, 94, 0.10);
+}
+.director-objective-card.watch {
+  border-color: rgba(250, 204, 21, 0.34);
+}
+.director-objective-card .objective-mark {
+  font-size: 14px;
+  line-height: 1;
+}
+.director-objective-card .objective-text {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.director-objective-card .objective-text strong,
+.director-objective-card .objective-text em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.director-objective-card .objective-text strong {
+  color: rgba(248, 250, 252, 0.95);
+  font-size: 11px;
+}
+.director-objective-card .objective-text em {
+  color: rgba(203, 213, 225, 0.78);
+  font-size: 10px;
+  font-style: normal;
+}
+.director-objective-card .objective-ring {
+  width: 28px;
+  height: 5px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.88) var(--objective-progress), rgba(255, 255, 255, 0.10) 0);
+}
 .director-steps {
   display: flex;
   flex-direction: column;

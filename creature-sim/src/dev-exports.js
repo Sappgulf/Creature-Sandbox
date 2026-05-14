@@ -24,7 +24,8 @@ export function setupDevExports({
   campaignSystemInstance,
   diseaseSystem,
   gameplayModes,
-  sessionGoals
+  sessionGoals,
+  gameDirector
 }) {
   window.render_game_to_text = renderGameToText;
   window.advanceTime = advanceTime;
@@ -52,6 +53,7 @@ export function setupDevExports({
       window.diseaseSystem = diseaseSystem;
       window.gameplayModes = gameplayModes;
       window.sessionGoals = sessionGoals;
+      window.gameDirector = gameDirector;
     }, 'Debug exports');
   }
 }

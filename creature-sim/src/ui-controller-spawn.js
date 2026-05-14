@@ -205,6 +205,7 @@ export function applyUiSpawnMethods(UIController) {
 
   UIController.prototype.onPropTool = function() {
     this.tools?.setMode?.('prop');
+    eventSystem.emit('tool:changed', { mode: 'prop' });
     if (!gameState.selectedPropType) {
       this.setPropType('bounce');
     }

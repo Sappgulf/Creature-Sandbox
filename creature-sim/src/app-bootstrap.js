@@ -59,6 +59,14 @@ import { getDebugFlags } from './debug-flags.js';
 import { setupDevExports } from './dev-exports.js';
 import { UpgradeController } from './upgrade-controller.js';
 import {
+  GameDirector,
+  GodToolSystem,
+  ObjectiveSystem,
+  ProgressionSystem,
+  ScenarioRegistry,
+  StoryDirector
+} from './game/index.js';
+import {
   buildRuntimeSaveMetadata,
   formatSavePreview,
   restoreRuntimeSaveMetadata
@@ -637,8 +645,13 @@ export function initializeApp() {
   }, 'Memory learning system initialization', null);
 
   const challengeSystem = errorHandler.safeExecute(() => {
-    return new ChallengeSystem();
+    return new ChallengeSystem({ sessionGoals, notifications, audio });
   }, 'Challenge system initialization', null);
+
+  const scenarioRegistry = new ScenarioRegistry();
+  const objectiveSystem = new ObjectiveSystem();
+  const progressionSystem = new ProgressionSystem();
+  const storyDirector = new StoryDirector({ world, moments, notifications });
 
   const notifyUI = (message, type = 'info', duration = 2200) => {
     eventSystem.emit(GameEvents.NOTIFICATION, { message, type, duration });
@@ -661,15 +674,20 @@ export function initializeApp() {
   };
 
   let upgradeController = null;
+  let godToolSystem = null;
+  let gameDirector = null;
 
   const getRuntimeSaveMetadata = () => buildRuntimeSaveMetadata({
     world,
     camera,
     playableScenarios,
+    sessionGoals,
+    challengeSystem,
     moments,
     gameState,
     tools,
     upgradeController,
+    gameDirector,
     canvas
   });
 
@@ -696,10 +714,13 @@ export function initializeApp() {
     }
     restoreRuntimeSaveMetadata(loaded.metadata || {}, {
       playableScenarios,
+      sessionGoals,
+      challengeSystem,
       moments,
       gameState,
       uiController,
-      upgradeController
+      upgradeController,
+      gameDirector
     });
     if (tutorial) {
       tutorial.loadProgress();
@@ -776,6 +797,10 @@ export function initializeApp() {
     console.warn('⚠️ UI controller failed to initialize, UI may not work');
   }
 
+  godToolSystem = errorHandler.safeExecute(() => {
+    return new GodToolSystem({ tools, uiController });
+  }, 'God tool system initialization', null);
+
   // Control strip controller (new mobile-first bottom control bar)
   const controlStrip = errorHandler.safeExecute(() => {
     return new ControlStripController({
@@ -816,6 +841,26 @@ export function initializeApp() {
     return controller;
   }, 'Upgrade controller initialization', null);
 
+  gameDirector = errorHandler.safeExecute(() => {
+    return new GameDirector({
+      world,
+      playableScenarios,
+      sessionGoals,
+      challengeSystem,
+      achievements,
+      unlockableAchievements,
+      scenarioRegistry,
+      objectiveSystem,
+      progressionSystem,
+      storyDirector,
+      godToolSystem
+    });
+  }, 'Game director initialization', null);
+
+  if (uiController) {
+    uiController.gameDirector = gameDirector;
+  }
+
   // Game loop (handles main simulation loop and rendering)
   const gameLoop = errorHandler.safeExecute(() => {
     return new GameLoop(world, camera, renderer, analytics, uiController, {
@@ -844,6 +889,11 @@ export function initializeApp() {
       memoryLearning,
       upgradeController,
       challengeSystem,
+      gameDirector,
+      objectiveSystem,
+      progressionSystem,
+      storyDirector,
+      godToolSystem,
       seasonalEvents: seasonalEventsSystem,
       advancedAI,
       godPowers
@@ -1011,19 +1061,17 @@ export function initializeApp() {
       const level = campaignSystem.getLevel(levelId);
       if (!level) return;
 
-      // Reset world with level configuration
       const config = level.worldConfig;
-      world.reset(config.width || 4000, config.height || 2800);
-
-      // Seed creatures based on config
-      const herbivores = config.initialCreatures || 10;
-      const predators = config.initialPredators || 0;
-      const food = config.initialFood || 100;
-
-      world.seed(herbivores, predators, food);
+      world.pendingCampaignConfig = config;
+      world.seed(
+        config.initialCreatures ?? 10,
+        config.initialPredators ?? 0,
+        config.initialFood ?? 100
+      );
 
       // Start campaign tracking
-      campaignSystem.startLevel(levelId, world);
+      const started = campaignSystem.startLevel(levelId, world, { applyWorldConfig: false });
+      if (!started) return;
 
       // Update camera
       camera.x = world.width / 2;
@@ -1679,6 +1727,7 @@ export function initializeApp() {
         latest: moments?.moments?.[0] ?? null
       },
       playable: playableScenarios?.getSnapshot?.() ?? null,
+      director: gameDirector?.getSnapshot?.() ?? null,
       visibleCreatures: getVisibleCreatures(),
       visibleFood: getVisibleFood(),
       upgrades: upgradeController?.getSnapshot?.() ?? null
@@ -1794,14 +1843,20 @@ export function initializeApp() {
         return { paused: gameState.paused };
       },
       startScenario: (id = 'first_ecosystem') => {
-        const snapshot = playableScenarios?.startScenario?.(id, { announce: false }) || null;
+        const snapshot = gameDirector?.startScenario?.(id, { announce: false }) ||
+          playableScenarios?.startScenario?.(id, { announce: false }) ||
+          null;
         uiController?.updateSessionMetaVisibility?.();
-        uiController?.renderPlayableDirector?.(snapshot);
+        uiController?.renderPlayableDirector?.(snapshot?.playable || snapshot);
         return snapshot;
       },
+      directorState: () => gameDirector?.getSnapshot?.() ?? null,
       setGodTool: (tool = 'food') => {
-        uiController?.setGodModeActive?.(true, { source: 'smoke' });
-        uiController?.setGodTool?.(tool, { source: 'smoke', announce: false });
+        godToolSystem?.setTool?.(tool, { source: 'smoke', announce: false });
+        if (!godToolSystem) {
+          uiController?.setGodModeActive?.(true, { source: 'smoke' });
+          uiController?.setGodTool?.(tool, { source: 'smoke', announce: false });
+        }
         return {
           active: !!gameState.godModeActive,
           tool: gameState.godModeTool || null,
@@ -1965,6 +2020,7 @@ export function initializeApp() {
     gameplayModes,
     sessionGoals,
     playableScenarios,
+    gameDirector,
     upgradeController
   });
 

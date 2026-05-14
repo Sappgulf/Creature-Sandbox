@@ -9,6 +9,7 @@ if (!globalThis.performance) {
 }
 
 import { rand, clamp, dist2, lerp, invLerp, remap, randn, wrap } from '../creature-sim/src/utils.js';
+import { collectGameplayMetrics, getObjectiveProgress } from '../creature-sim/src/gameplay-objectives.js';
 import { makeGenes, mutateGenes, GENETIC_DISORDERS, MUTATION_TYPES, applyDisorderEffects, getExpressedGenes, getGeneticInfo, breedGenes, applyMutations } from '../creature-sim/src/genetics.js';
 import { SpatialGrid } from '../creature-sim/src/spatial-grid.js';
 import { ObjectPool, Vector2DPool, ArrayPool, ParticlePool, PoolManager, TempObjectPool } from '../creature-sim/src/object-pool.js';
@@ -18,6 +19,7 @@ import { NAME_SUGGESTIONS, pickNameSuggestion, determineSenseType, resolveDietRo
 import { World } from '../creature-sim/src/world-core.js';
 import { Creature } from '../creature-sim/src/creature.js';
 import { AdvancedGenetics } from '../creature-sim/src/advanced-genetics.js';
+import { GameDirector, GodToolSystem, ObjectiveSystem, ProgressionSystem, ScenarioRegistry } from '../creature-sim/src/game/index.js';
 
 let passed = 0;
 let failed = 0;
@@ -176,6 +178,147 @@ test('randn: returns numbers (distribution smoke test)', () => {
     values.push(randn(0, 1));
   }
   assert.ok(values.every(v => typeof v === 'number' && isFinite(v)), 'randn should return finite numbers');
+});
+
+// ============================================================================
+// gameplay-objectives.js
+// ============================================================================
+console.log('\n=== gameplay-objectives.js ===');
+
+test('collectGameplayMetrics: centralizes objective metrics', () => {
+  const world = {
+    t: 42,
+    food: [{}, {}, {}],
+    restZones: [{}],
+    sandbox: { props: [{}, {}] },
+    lineageTracker: {
+      generation: (_world, id) => id === 2 ? 4 : 1
+    },
+    creatures: [
+      {
+        id: 1,
+        alive: true,
+        genes: { predator: 1, diet: 1, aquatic: { expressed: 0.2 } },
+        stats: { kills: 3, food: 2, births: 1 },
+        needs: { stress: 20, hunger: 30 },
+        energy: 40
+      },
+      {
+        id: 2,
+        alive: true,
+        genes: { predator: 0, diet: 0.1, flying: { expressed: 0.7 } },
+        traits: { creatureType: 'flying' },
+        stats: { kills: 0, food: 4, births: 2 },
+        needs: { stress: 40, hunger: 50 },
+        energy: 30
+      },
+      {
+        id: 3,
+        alive: false,
+        genes: { predator: 0 },
+        stats: { food: 1 }
+      }
+    ]
+  };
+
+  const metrics = collectGameplayMetrics(world, { manualSpawns: 2, propPlacements: 1 });
+  assert.equal(metrics.population, 2);
+  assert.equal(metrics.predators, 1);
+  assert.equal(metrics.herbivores, 1);
+  assert.equal(metrics.foodAvailable, 3);
+  assert.equal(metrics.props, 2);
+  assert.equal(metrics.predatorKills, 3);
+  assert.equal(metrics.foodCollected, 7);
+  assert.equal(metrics.variantsAlive, 1);
+  assert.equal(metrics.maxGeneration, 4);
+  assert.equal(metrics.manualSpawns, 2);
+  assert.equal(metrics.propPlacements, 1);
+  assert.equal(getObjectiveProgress('population', 4, metrics), 0.5);
+  assert.equal(getObjectiveProgress('lineage_generation', 8, metrics), 0.5);
+});
+
+test('ObjectiveSystem: evaluates scenario cards with biome and predator objectives', () => {
+  const objectiveSystem = new ObjectiveSystem();
+  const world = {
+    t: 90,
+    food: new Array(40).fill({}),
+    restZones: [{}, {}],
+    creatures: [
+      { alive: true, genes: { predator: 1, diet: 1 }, needs: { stress: 15, hunger: 20 }, energy: 85, stats: { kills: 1 } },
+      { alive: true, genes: { predator: 0, diet: 0.1 }, needs: { stress: 20, hunger: 18 }, energy: 82, stats: { births: 1 } },
+      { alive: true, genes: { predator: 0, diet: 0.1, aquatic: { expressed: 0.9 } }, needs: { stress: 18, hunger: 25 }, energy: 80, stats: {} }
+    ],
+    sandbox: { props: [] }
+  };
+
+  const snapshot = objectiveSystem.evaluate(world, [
+    { id: 'survive', type: 'survival_time', target: 120 },
+    { id: 'population', type: 'population', target: 3 },
+    { id: 'health', type: 'biome_health', target: { score: 0.5 } },
+    { id: 'predator', type: 'predator_control', target: { maxPredators: 2 } }
+  ], {}, { elapsed: 90 });
+
+  assert.equal(snapshot.cards.length, 4);
+  assert.ok(snapshot.cards.find(card => card.id === 'population').completed, 'population objective should complete');
+  assert.ok(snapshot.cards.find(card => card.id === 'health').progress > 0.5, 'biome health should score from metrics');
+  assert.ok(snapshot.mobileSummary.includes('Survive'), 'mobile summary should name active objective');
+});
+
+test('GameDirector: wraps playable scenarios, objectives, progression, and tools', () => {
+  const world = {
+    t: 12,
+    food: new Array(12).fill({}),
+    creatures: [
+      { alive: true, genes: { predator: 0, diet: 0.1 }, needs: { stress: 20, hunger: 20 }, energy: 70, stats: {} },
+      { alive: true, genes: { predator: 1, diet: 1 }, needs: { stress: 30, hunger: 30 }, energy: 75, stats: { kills: 1 } }
+    ],
+    sandbox: { props: [] }
+  };
+  const playableScenarios = {
+    progress: {},
+    getSnapshot: () => ({
+      active: true,
+      elapsed: 12,
+      scenario: { id: 'first_ecosystem', name: 'First Ecosystem' },
+      metrics: { maxGeneration: 1, variantsAlive: 0 }
+    }),
+    startScenario: () => ({
+      active: true,
+      elapsed: 0,
+      scenario: { id: 'first_ecosystem', name: 'First Ecosystem' }
+    })
+  };
+  const sessionGoals = {
+    getGoals: () => [{ id: 'pop', type: 'population', target: 2, description: 'Keep two creatures alive' }],
+    serialize: () => ({ counters: {} })
+  };
+
+  const director = new GameDirector({
+    world,
+    playableScenarios,
+    sessionGoals,
+    scenarioRegistry: new ScenarioRegistry(),
+    objectiveSystem: new ObjectiveSystem(),
+    progressionSystem: new ProgressionSystem({ storageKey: 'test-progression' }),
+    godToolSystem: new GodToolSystem()
+  });
+
+  const snapshot = director.update(1, { force: true });
+  assert.equal(snapshot.mode, 'scenario');
+  assert.equal(snapshot.objectives.cards.length, 1);
+  assert.equal(snapshot.objectives.cards[0].completed, true);
+  assert.ok(snapshot.tools.tools.some(tool => tool.id === 'food'), 'god tool registry should be exposed');
+});
+
+test('ProgressionSystem: preserves sandbox tools and serializes unlocks', () => {
+  const progression = new ProgressionSystem({ storageKey: 'test-progression-serialize' });
+  progression.unlock('tools', 'weather');
+  progression.recordScenarioComplete('first_ecosystem', { seconds: 120 });
+
+  const snapshot = progression.serialize();
+  assert.ok(snapshot.unlocks.tools.includes('food'), 'sandbox keeps core tools unlocked');
+  assert.ok(snapshot.unlocks.tools.includes('weather'), 'new unlock should persist in snapshot');
+  assert.equal(snapshot.completedScenarios.first_ecosystem.completions, 1);
 });
 
 // ============================================================================
@@ -1087,6 +1230,20 @@ test('World: constructor initializes time', () => {
   assert.equal(world.t, 0, 'time should start at 0');
 });
 
+test('World: step updates ecosystem balance once per tick', () => {
+  const world = new World(800, 600);
+  let updates = 0;
+  world.ecosystem.update = () => {
+    updates++;
+  };
+  world.ecosystem.updateFoodPatches = () => {};
+  world.ecosystem.foodGrowthRate = () => 0;
+
+  world.step(0.01);
+
+  assert.equal(updates, 1, 'ecosystem.update should not run twice in one world step');
+});
+
 test('World: spawnCreatureType returns creature', () => {
   const world = new World(800, 600);
   const creature = world.spawnCreatureType('herbivore', 400, 300);
@@ -1137,6 +1294,34 @@ test('World: clampPosition handles normal positions', () => {
   const clamped = world._sanitizeSpawnPoint(400, 300);
   assert.equal(clamped.x, 400);
   assert.equal(clamped.y, 300);
+});
+
+test('World: pending campaign config resizes world before seeding', () => {
+  const world = new World(4000, 2800);
+  world.pendingCampaignConfig = {
+    width: 2000,
+    height: 1400,
+    initialCreatures: 5,
+    initialPredators: 0,
+    initialFood: 30,
+    startSeason: 'winter',
+    seasonSpeed: 0.01,
+    disastersEnabled: false
+  };
+
+  world.seed(60, 6, 180);
+
+  assert.equal(world.width, 2000);
+  assert.equal(world.height, 1400);
+  assert.equal(world.creatureManager.creatureGrid.worldWidth, 2000);
+  assert.equal(world.creatureManager.creatureGrid.worldHeight, 1400);
+  assert.equal(world.foodGrid.worldWidth, 2000);
+  assert.equal(world.foodGrid.worldHeight, 1400);
+  assert.equal(world.environment.currentSeason, 'winter');
+  assert.equal(world.environment.seasonSpeed, 0.01);
+  assert.equal(world.pendingCampaignConfig, null);
+  assert.equal(world.creatures.length, 5);
+  assert.ok(world.food.length <= world.ecosystem.maxFood, 'food should respect resized ecosystem capacity');
 });
 
 // ============================================================================

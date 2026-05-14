@@ -2,13 +2,17 @@ export function buildRuntimeSaveMetadata({
   world,
   camera,
   playableScenarios,
+  sessionGoals,
+  challengeSystem,
   moments,
   gameState,
   tools,
   upgradeController,
+  gameDirector,
   canvas
 } = {}) {
   const playable = playableScenarios?.serialize?.() ?? null;
+  const director = gameDirector?.serialize?.() ?? null;
   const momentState = moments?.serialize?.() ?? null;
   const activeScenario = playable?.activeRun?.scenario ?? playableScenarios?.getSnapshot?.()?.scenario ?? null;
   const worldTime = Number(world?.t ?? 0);
@@ -18,12 +22,17 @@ export function buildRuntimeSaveMetadata({
 
   const metadata = {
     playable,
+    sessionGoals: sessionGoals?.serialize?.() ?? null,
+    challenge: challengeSystem?.serialize?.() ?? null,
+    director,
     moments: momentState,
     upgrades: upgradeController?.serialize?.() ?? null,
     uiState: {
       watchModeEnabled: !!gameState?.watchModeEnabled,
       godModeActive: !!gameState?.godModeActive,
       godModeTool: gameState?.godModeTool ?? null,
+      selectedCreatureId: gameState?.selectedId ?? null,
+      favoriteCreatureId: gameState?.pinnedId ?? null,
       selectedCreatureType: gameState?.selectedCreatureType ?? null,
       selectedPropType: gameState?.selectedPropType ?? tools?.propType ?? null,
       tool: tools?.mode ?? null
@@ -45,6 +54,13 @@ export function buildRuntimeSaveMetadata({
         state: playable?.activeRun?.state ?? null
       } : null,
       summary: momentState?.summary ?? null
+    },
+    share: {
+      seed: typeof window !== 'undefined'
+        ? window.location.hash?.replace(/^#seed=/, '').replace(/^#/, '') || null
+        : null,
+      selectedCreatureId: gameState?.selectedId ?? null,
+      favoriteCreatureId: gameState?.pinnedId ?? null
     }
   };
 
@@ -66,13 +82,19 @@ export function buildRuntimeSaveMetadata({
 
 export function restoreRuntimeSaveMetadata(metadata = {}, {
   playableScenarios,
+  sessionGoals,
+  challengeSystem,
   moments,
   gameState,
   uiController,
-  upgradeController
+  upgradeController,
+  gameDirector
 } = {}) {
   const restored = {
     playable: false,
+    sessionGoals: false,
+    challenge: false,
+    director: false,
     moments: false,
     uiState: false,
     upgrades: false
@@ -80,6 +102,18 @@ export function restoreRuntimeSaveMetadata(metadata = {}, {
 
   if (metadata.playable && playableScenarios?.restore) {
     restored.playable = !!playableScenarios.restore(metadata.playable, { announce: false });
+  }
+
+  if (metadata.sessionGoals && sessionGoals?.restore) {
+    restored.sessionGoals = !!sessionGoals.restore(metadata.sessionGoals, { announce: false });
+  }
+
+  if (metadata.challenge && challengeSystem?.restore) {
+    restored.challenge = !!challengeSystem.restore(metadata.challenge);
+  }
+
+  if (metadata.director && gameDirector?.restore) {
+    restored.director = !!gameDirector.restore(metadata.director);
   }
 
   if (metadata.moments && moments?.restore) {
@@ -95,6 +129,8 @@ export function restoreRuntimeSaveMetadata(metadata = {}, {
     gameState.watchModeEnabled = !!(uiState.watchModeEnabled ?? uiState.watchMode);
     gameState.godModeActive = !!uiState.godModeActive;
     gameState.godModeTool = uiState.godModeTool || gameState.godModeTool || null;
+    gameState.selectedId = uiState.selectedCreatureId ?? metadata.share?.selectedCreatureId ?? gameState.selectedId;
+    gameState.pinnedId = uiState.favoriteCreatureId ?? metadata.share?.favoriteCreatureId ?? gameState.pinnedId;
     gameState.selectedCreatureType = uiState.selectedCreatureType || gameState.selectedCreatureType;
     gameState.selectedPropType = uiState.selectedPropType || gameState.selectedPropType;
     restored.uiState = true;

@@ -81,17 +81,8 @@ export function applyInputTouchMethods(InputManager) {
         if (isDrag) {
           this.world.addFood?.(x, y, 2.2, 'grass');
         } else {
-          const patch = this.world.ecosystem?.addFoodPatch?.(x, y, {
-            radius: CreatureAgentTuning.GOD_MODE.FOOD_RADIUS,
-            fertility: 1.2,
-            stock: CreatureAgentTuning.FOOD_PATCHES.START_STOCK * 1.8,
-            tag: 'god'
-          });
-          if (patch && this.world.ecosystem?.spawnFoodFromPatch) {
-            for (let i = 0; i < 4; i++) {
-              this.world.ecosystem.spawnFoodFromPatch(patch);
-            }
-          }
+          if (this.tools?.scatterFood) this.tools.scatterFood(x, y, 12);
+          else this.world.addFood?.(x, y, 2.2, 'grass');
         }
         eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'food', x, y });
         break;
@@ -130,8 +121,13 @@ export function applyInputTouchMethods(InputManager) {
           break;
         }
         const type = gameState.selectedCreatureType || 'herbivore';
-        this.world.spawnCreatureType(type, x, y);
-        eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'spawn', x, y });
+        const before = this.world.creatures.length;
+        if (this.tools?.spawnCreature) this.tools.spawnCreature(x, y, { type });
+        else this.world.spawnCreatureType?.(type, x, y);
+        const spawned = this.world.creatures.length > before
+          ? this.world.creatures[this.world.creatures.length - 1]
+          : null;
+        eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'spawn', x, y, id: spawned?.id ?? null });
         break;
       }
       case 'prop': {
@@ -143,6 +139,19 @@ export function applyInputTouchMethods(InputManager) {
         break;
       }
       case 'remove': {
+        if (this.tools?.eraseAt) {
+          const creatureCount = this.world.creatures.length;
+          const propCount = this.world.sandbox?.props?.length || 0;
+          this.tools.eraseAt(x, y);
+          const nextCreatureCount = this.world.creatures.length;
+          const nextPropCount = this.world.sandbox?.props?.length || 0;
+          if (nextCreatureCount < creatureCount) {
+            eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'remove', x, y });
+          } else if (nextPropCount < propCount) {
+            eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'remove-prop', x, y });
+          }
+          break;
+        }
         const target = this._findCreatureAt(x, y, 34 / this.camera.zoom);
         if (target) {
           target.alive = false;

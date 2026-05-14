@@ -2,13 +2,25 @@
  * Dynamic Challenge System - Procedural objectives and rewards
  */
 
+import { eventSystem, GameEvents } from './event-system.js';
+import { clamp } from './utils.js';
+
 export class ChallengeSystem {
-  constructor() {
+  constructor({ sessionGoals = null, notifications = null, audio = null } = {}) {
+    this.sessionGoals = sessionGoals;
+    this.notifications = notifications;
+    this.audio = audio;
     this.challenges = [];
     this.completedChallenges = [];
+    this.completedGoalIds = new Set();
+    this.recentGoalCompletions = [];
     this.points = 0;
     this.level = 1;
     this.nextLevelPoints = 100;
+
+    this._unsubscribeGoalCompleted = eventSystem.on(GameEvents.SESSION_GOAL_COMPLETED, (goal) => {
+      this.completeSessionGoal(goal);
+    });
   }
 
   /**
@@ -30,12 +42,14 @@ export class ChallengeSystem {
         title: 'Predator Balance',
         description: 'Maintain {target} predators for 60 seconds',
         target: () => 5 + Math.floor(Math.random() * 10),
-        check: (world, target, challenge) => {
+        check: (world, target, challenge, dt) => {
           const predCount = world.creatures.filter(c => c.genes.predator).length;
           if (predCount >= target) {
-            challenge.progress = (challenge.progress || 0) + 1/60;
+            challenge.elapsed = (challenge.elapsed || 0) + dt;
+            challenge.progress = clamp(challenge.elapsed / 60, 0, 1);
             return challenge.progress >= 1;
           }
+          challenge.elapsed = 0;
           challenge.progress = 0;
           return false;
         },
@@ -70,12 +84,14 @@ export class ChallengeSystem {
         title: 'Thriving Ecosystem',
         description: 'Maintain ecosystem health above {target}% for 30s',
         target: () => 70 + Math.floor(Math.random() * 20),
-        check: (world, target, challenge) => {
+        check: (world, target, challenge, dt) => {
           const health = world.ecosystemHealth?.overall ?? 0;
           if (health >= target) {
-            challenge.progress = (challenge.progress || 0) + 1/30;
+            challenge.elapsed = (challenge.elapsed || 0) + dt;
+            challenge.progress = clamp(challenge.elapsed / 30, 0, 1);
             return challenge.progress >= 1;
           }
+          challenge.elapsed = 0;
           challenge.progress = 0;
           return false;
         },
@@ -124,7 +140,12 @@ export class ChallengeSystem {
   /**
    * Update active challenges
    */
-  update(world) {
+  update(world, dt = 1 / 60) {
+    if (this.sessionGoals) {
+      this.pruneRecentGoalCompletions();
+      return;
+    }
+
     // Generate new challenges if needed
     if (this.challenges.length < 3) {
       this.challenges.push(this.generateChallenge(world));
@@ -134,7 +155,7 @@ export class ChallengeSystem {
     for (const challenge of this.challenges) {
       if (challenge.completed) continue;
 
-      if (challenge.check(world, challenge.target, challenge)) {
+      if (challenge.check(world, challenge.target, challenge, dt)) {
         this.completeChallenge(challenge);
       }
     }
@@ -167,6 +188,48 @@ export class ChallengeSystem {
     }
   }
 
+  completeSessionGoal(goal) {
+    if (!goal?.id || this.completedGoalIds.has(goal.id)) return;
+    this.completedGoalIds.add(goal.id);
+
+    const points = this.pointsForGoal(goal);
+    const completion = {
+      id: goal.id,
+      type: goal.type,
+      title: 'Goal complete',
+      description: goal.description || 'Session goal complete',
+      points,
+      progress: 1,
+      completed: true,
+      completedTime: Date.now()
+    };
+
+    this.points += points;
+    this.completedChallenges.push(completion);
+    this.recentGoalCompletions.unshift(completion);
+    this.recentGoalCompletions = this.recentGoalCompletions.slice(0, 3);
+
+    if (this.points >= this.nextLevelPoints) {
+      this.levelUp();
+    }
+  }
+
+  pointsForGoal(goal) {
+    const target = Number(goal?.target || 0);
+    const baseByType = {
+      survival_time: 45,
+      population: 40,
+      predator_kills: 55,
+      prop_places: 35,
+      god_actions: 30,
+      variant_alive: 50,
+      lineage_generation: 60
+    };
+    const base = baseByType[goal?.type] || 35;
+    const scale = Number.isFinite(target) ? Math.min(35, Math.floor(target / 8)) : 0;
+    return Math.max(20, base + scale);
+  }
+
   /**
    * Level up
    */
@@ -174,12 +237,27 @@ export class ChallengeSystem {
     this.level++;
     this.nextLevelPoints = Math.floor(this.nextLevelPoints * 1.5);
     console.debug(`⭐ Level up! Now level ${this.level}`);
+    this.notifications?.show?.(`Challenge level ${this.level}`, 'achievement', 2400);
+    this.audio?.playUISound?.('success');
   }
 
   /**
    * Get current active challenges
    */
   getActiveChallenges() {
+    if (this.sessionGoals) {
+      return this.sessionGoals.getGoals()
+        .filter(goal => !goal.completed)
+        .map(goal => ({
+          id: goal.id,
+          type: goal.type,
+          title: 'Goal',
+          description: goal.description,
+          points: this.pointsForGoal(goal),
+          progress: clamp(Number(goal.progress || 0), 0, 1),
+          completed: false
+        }));
+    }
     return this.challenges.filter(c => !c.completed);
   }
 
@@ -187,7 +265,50 @@ export class ChallengeSystem {
    * Get recently completed challenges
    */
   getRecentCompletions() {
+    if (this.sessionGoals) {
+      this.pruneRecentGoalCompletions();
+      return this.recentGoalCompletions;
+    }
     return this.challenges.filter(c => c.completed);
+  }
+
+  pruneRecentGoalCompletions() {
+    const now = Date.now();
+    this.recentGoalCompletions = this.recentGoalCompletions.filter(item => {
+      const completedTime = Number(item.completedTime || 0);
+      return now - completedTime < 5000;
+    });
+  }
+
+  serialize() {
+    return {
+      points: this.points,
+      level: this.level,
+      nextLevelPoints: this.nextLevelPoints,
+      completedGoalIds: Array.from(this.completedGoalIds),
+      completedChallenges: this.completedChallenges.slice(-20).map(challenge => ({
+        id: challenge.id,
+        type: challenge.type,
+        title: challenge.title,
+        description: challenge.description,
+        points: challenge.points,
+        completed: !!challenge.completed,
+        completedTime: Number(challenge.completedTime || 0)
+      }))
+    };
+  }
+
+  restore(data) {
+    if (!data || typeof data !== 'object') return false;
+    this.points = Math.max(0, Number(data.points || 0));
+    this.level = Math.max(1, Number(data.level || 1));
+    this.nextLevelPoints = Math.max(100, Number(data.nextLevelPoints || 100));
+    this.completedGoalIds = new Set(Array.isArray(data.completedGoalIds) ? data.completedGoalIds : []);
+    this.completedChallenges = Array.isArray(data.completedChallenges)
+      ? data.completedChallenges.filter(Boolean).slice(-20)
+      : [];
+    this.recentGoalCompletions = [];
+    return true;
   }
 
   /**
@@ -230,7 +351,7 @@ export class ChallengeSystem {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
         ctx.fillRect(x + 10, offsetY + 15, panelWidth - 20, 3);
         ctx.fillStyle = 'rgba(74, 222, 128, 0.8)';
-        ctx.fillRect(x + 10, offsetY + 15, (panelWidth - 20) * challenge.progress, 3);
+        ctx.fillRect(x + 10, offsetY + 15, (panelWidth - 20) * clamp(challenge.progress, 0, 1), 3);
       }
 
       offsetY += rowHeight;

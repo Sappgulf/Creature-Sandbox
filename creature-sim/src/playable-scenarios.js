@@ -1,13 +1,7 @@
 import { gameState } from './game-state.js';
 import { eventSystem } from './event-system.js';
 import { clamp } from './utils.js';
-
-function expressed(genes, key, fallback = 0) {
-  const value = genes?.[key];
-  if (typeof value === 'number') return value;
-  if (value && typeof value === 'object' && Number.isFinite(value.expressed)) return value.expressed;
-  return fallback;
-}
+import { collectGameplayMetrics } from './gameplay-objectives.js';
 
 function randAround(center, radius) {
   const angle = Math.random() * Math.PI * 2;
@@ -480,58 +474,7 @@ export class PlayableScenarios {
   }
 
   _collectMetrics() {
-    const creatures = this.world?.creatures || [];
-    let alive = 0;
-    let predators = 0;
-    let herbivores = 0;
-    let babies = 0;
-    let aquatic = 0;
-    let flying = 0;
-    let burrowing = 0;
-    let maxGeneration = 0;
-    let stressTotal = 0;
-    let hungerTotal = 0;
-    let energyTotal = 0;
-    let hunts = 0;
-
-    for (const creature of creatures) {
-      if (!creature?.alive) continue;
-      alive += 1;
-      const predator = !!creature.genes?.predator || (creature.genes?.diet ?? 0) >= 0.7;
-      if (predator) predators += 1;
-      else herbivores += 1;
-      if (creature.lifeStage === 'baby' || creature.ageStage === 'baby') babies += 1;
-      if (expressed(creature.genes, 'aquatic', 0) >= 0.6) aquatic += 1;
-      if (expressed(creature.genes, 'flying', 0) >= 0.6 || creature.traits?.creatureType === 'flying') flying += 1;
-      if (expressed(creature.genes, 'burrowing', 0) >= 0.6 || creature.traits?.creatureType === 'burrowing') burrowing += 1;
-      if (this.world?.lineageTracker?.generation) {
-        maxGeneration = Math.max(maxGeneration, this.world.lineageTracker.generation(this.world, creature.id));
-      }
-      stressTotal += Number(creature.needs?.stress ?? creature.ecosystem?.stress ?? 0);
-      hungerTotal += Number(creature.needs?.hunger ?? 0);
-      energyTotal += Number(creature.energy ?? creature.needs?.energy ?? 0);
-      hunts += Number(creature.stats?.kills ?? 0);
-    }
-
-    return {
-      alive,
-      predators,
-      herbivores,
-      babies,
-      aquatic,
-      flying,
-      burrowing,
-      variants: [aquatic > 0, flying > 0, burrowing > 0].filter(Boolean).length,
-      food: this.world?.food?.length || 0,
-      props: this.world?.sandbox?.props?.length || 0,
-      restZones: this.world?.restZones?.length || 0,
-      averageStress: alive ? stressTotal / alive : 0,
-      averageHunger: alive ? hungerTotal / alive : 0,
-      averageEnergy: alive ? energyTotal / alive : 0,
-      hunts,
-      maxGeneration,
-      foodPerCreature: 0
-    };
+    return collectGameplayMetrics(this.world);
   }
 
   _evaluateRun() {

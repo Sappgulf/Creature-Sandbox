@@ -1,4 +1,6 @@
 // Mobile Support & Touch Handling
+import { gameState } from './game-state.js';
+
 export class MobileSupport {
   constructor(canvas, camera) {
     this.canvas = canvas;
@@ -29,6 +31,11 @@ export class MobileSupport {
 
   init() {
     this.applyMobileStyles();
+  }
+
+  noteCameraOverride(durationMs = 6000) {
+    gameState.autoDirectorOverrideUntil = performance.now() + durationMs;
+    this.camera?.setUserOverride?.(true);
   }
 
   registerListener(target, eventName, handler, options) {
@@ -271,6 +278,7 @@ export class MobileSupport {
     const dy = touch.clientY - this.lastPanCenter.y;
     if (Math.abs(dx) + Math.abs(dy) < this.panThreshold) return;
 
+    this.noteCameraOverride();
     this.camera.targetX -= (dx * this.panSensitivity) / this.camera.zoom;
     this.camera.targetY -= (dy * this.panSensitivity) / this.camera.zoom;
 
@@ -293,6 +301,7 @@ export class MobileSupport {
   }
 
   handlePinchMove(touches) {
+    this.noteCameraOverride();
     const distance = Math.hypot(
       touches[1].clientX - touches[0].clientX,
       touches[1].clientY - touches[0].clientY
@@ -334,6 +343,7 @@ export class MobileSupport {
       this.tapCount++;
       if (this.tapCount === 2) {
         // Double tap = zoom to location
+        this.noteCameraOverride();
         const rect = this.canvas.getBoundingClientRect();
         // Use rect dimensions (CSS size) not canvas dimensions (buffer size)
         const sx = x - rect.left - rect.width / 2;

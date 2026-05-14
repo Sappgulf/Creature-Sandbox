@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "proceduralFallback": true,
+  "preload": [],
+  "packs": {
+    "ui": [],
+    "creatures": [],
+    "ambient": []
+  }
+}

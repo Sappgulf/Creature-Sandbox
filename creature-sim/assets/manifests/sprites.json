@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "source": "../sprites/sprite-manifest.json",
+  "preload": [
+    "creature_herbivore",
+    "creature_predator",
+    "creature_omnivore",
+    "food_grass",
+    "food_berries",
+    "prop_bounce",
+    "particle_sparkle"
+  ],
+  "fallback": "canvas-shapes"
+}

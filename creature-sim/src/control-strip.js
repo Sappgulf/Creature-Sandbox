@@ -564,6 +564,11 @@ export class ControlStripController {
       return;
     }
 
+    if (action === 'copy-seed') {
+      this.copyShareSeed();
+      return;
+    }
+
     // Direct controller actions
     switch (action) {
       case 'step':
@@ -571,6 +576,8 @@ export class ControlStripController {
         break;
       case 'props':
         this.uiController?.onPropTool();
+        this.updateToolButtons();
+        this.syncMenuState();
         break;
       case 'mode':
         // Toggle session meta visibility which contains mode selection
@@ -638,6 +645,16 @@ export class ControlStripController {
         this.syncMenuState();
         this.buzz(14);
         break;
+    }
+  }
+
+  async copyShareSeed() {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard?.writeText?.(url);
+      this.uiController?.notifications?.show?.('Share seed copied', 'success', 1400);
+    } catch {
+      this.uiController?.notifications?.show?.('Share URL ready in the address bar', 'info', 1800);
     }
   }
 

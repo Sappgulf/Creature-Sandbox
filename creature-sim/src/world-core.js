@@ -342,7 +342,6 @@ export class World {
 
     // Patch-based food growth handled by ecosystem
     this.ecosystem.updateFoodPatches?.(dt);
-    this.ecosystem.update?.(dt);
 
     // Baseline food growth safety net
     const minReserve = this.ecosystem.minFoodReserve ?? Math.max(40, Math.round(this.maxFood * 0.2));
@@ -387,13 +386,14 @@ export class World {
     // Check for campaign pending config before resetting
     const campaignConfig = this.pendingCampaignConfig || null;
 
-    // Clear existing state
-    this.reset();
+    const nextWidth = campaignConfig?.width ?? this.width;
+    const nextHeight = campaignConfig?.height ?? this.height;
+
+    // Clear existing state, applying level/world dimensions before subsystem reinitialization.
+    this.reset(nextWidth, nextHeight);
 
     // Apply campaign config if available
     if (campaignConfig) {
-      if (campaignConfig.width) this.width = campaignConfig.width;
-      if (campaignConfig.height) this.height = campaignConfig.height;
       if (campaignConfig.seasonSpeed != null && this.environment) {
         this.environment.seasonSpeed = campaignConfig.seasonSpeed;
       }
@@ -606,7 +606,25 @@ export class World {
   }
 
   // Reset world to empty state
-  reset() {
+  reset(width = this.width, height = this.height) {
+    const nextWidth = Number.isFinite(width) && width > 0 ? width : this.width;
+    const nextHeight = Number.isFinite(height) && height > 0 ? height : this.height;
+    const dimensionsChanged = nextWidth !== this.width || nextHeight !== this.height;
+
+    if (dimensionsChanged) {
+      this.width = nextWidth;
+      this.height = nextHeight;
+      this.pheromone = new ScalarField(this.width, this.height, 20, 0.992, 0.18);
+      this.temperature = new ScalarField(this.width, this.height, 40, 1.0, 0.0);
+      this.foodGrid = new SpatialGrid(36, this.width, this.height);
+      this.corpseGrid = new SpatialGrid(40, this.width, this.height);
+      this.restGrid = new SpatialGrid(120, this.width, this.height);
+      this.nestGrid = new SpatialGrid(140, this.width, this.height);
+      this.maxFood = Math.floor((this.width * this.height) / 180);
+      this.biomeMap = this.biomeGenerator.generateBiomeMap(this.width, this.height, 50);
+      this.biomeCache = new Map();
+    }
+
     this.creatures = [];
     this.food = [];
     this.corpses = [];
