@@ -11,6 +11,7 @@ export class AutoDirector {
     this.cooldownSeconds = 4.0; // Increased from 2.4 to reduce frequency
     this.lastFocusAt = -Infinity;
     this.lastFocus = null;
+    this.highPriorityFocusHoldMs = 9000;
     this.eventCooldowns = new Map();
     // Per-event cooldowns - increased across the board
     this.eventCooldownSeconds = {
@@ -29,9 +30,23 @@ export class AutoDirector {
     };
 
     // Story mode: slower, more cinematic camera work for dramatic events
-    this.storyMode = false;
+    this.storyMode = true;
     this._storyEvents = new Set(['CREATURE_KILLED', 'CREATURE_BORN', 'WORLD_MIGRATION_START']);
     this._lastStoryFocus = null;
+    this.eventPriority = {
+      [GameEvents.CREATURE_BORN]: 4,
+      [GameEvents.CREATURE_EAT]: 1,
+      [GameEvents.CREATURE_BOND]: 2,
+      [GameEvents.CREATURE_PANIC]: 5,
+      [GameEvents.CREATURE_OVERCROWD]: 3,
+      [GameEvents.WORLD_FOOD_SCARCITY]: 4,
+      [GameEvents.WORLD_MIGRATION_START]: 5,
+      [GameEvents.WORLD_MIGRATION_SETTLED]: 4,
+      [GameEvents.NEST_ESTABLISHED]: 3,
+      [GameEvents.WORLD_REGION_DEPLETED]: 4,
+      [GameEvents.WORLD_REGION_THRIVING]: 2,
+      [GameEvents.PREDATOR_LITE_CHASE]: 3
+    };
 
     this._bindEvents();
   }
@@ -178,13 +193,15 @@ export class AutoDirector {
 
   focusOnEvent(eventKey, x, y, { creatureId = null, zoomMultiplier = 1 } = {}) {
     if (!this.canDirect() || x == null || y == null) return;
-    if (!this._cooldownReady(eventKey)) return;
+    const priority = this._eventPriority(eventKey);
+    if (!this._cooldownReady(eventKey, priority)) return;
 
     const now = performance.now();
-    if (now - this.lastFocusAt < this.cooldownSeconds * 1000) return;
+    if (this._shouldYieldToRecentFocus(priority, now)) return;
+    if (now - this.lastFocusAt < this._focusGapFor(priority)) return;
 
     this.lastFocusAt = now;
-    this.lastFocus = { x, y, creatureId, reason: eventKey };
+    this.lastFocus = { x, y, creatureId, reason: eventKey, priority };
     this._travelTo(x, y, { zoomMultiplier, reason: eventKey });
   }
 
@@ -207,9 +224,37 @@ export class AutoDirector {
     }
   }
 
-  _cooldownReady(eventKey) {
+  _eventPriority(eventKey) {
+    return this.eventPriority[eventKey] ?? 1;
+  }
+
+  _longSessionMultiplier() {
+    const worldSeconds = Number(this.world?.t || 0);
+    if (worldSeconds >= 900) return 1.5;
+    if (worldSeconds >= 420) return 1.25;
+    return 1;
+  }
+
+  _focusGapFor(priority) {
+    const baseSeconds = priority >= 5 ? 2.2 : priority >= 4 ? 3.0 : priority >= 3 ? 4.6 : 6.2;
+    const multiplier = priority >= 4 ? 1 : this._longSessionMultiplier();
+    return baseSeconds * multiplier * 1000;
+  }
+
+  _shouldYieldToRecentFocus(priority, now) {
+    const lastPriority = this.lastFocus?.priority ?? 0;
+    if (lastPriority > priority && now - this.lastFocusAt < this.highPriorityFocusHoldMs) return true;
+    if (lastPriority >= 4 && priority <= 2 && now - this.lastFocusAt < this.highPriorityFocusHoldMs * this._longSessionMultiplier()) {
+      return true;
+    }
+    return false;
+  }
+
+  _cooldownReady(eventKey, priority = 1) {
     const now = performance.now();
-    const cooldown = (this.eventCooldownSeconds[eventKey] ?? 2.5) * 1000;
+    const baseCooldown = this.eventCooldownSeconds[eventKey] ?? 2.5;
+    const priorityMultiplier = priority >= 4 ? 0.85 : 1;
+    const cooldown = baseCooldown * this._longSessionMultiplier() * priorityMultiplier * 1000;
     const last = this.eventCooldowns.get(eventKey) ?? -Infinity;
     if (now - last < cooldown) return false;
     this.eventCooldowns.set(eventKey, now);

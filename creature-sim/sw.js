@@ -1,20 +1,27 @@
 /**
  * Service Worker for Creature Sandbox
- * Provides offline caching for the game shell and lazy caching for chunks.
+ * Provides offline caching for the game shell and lazy caching for static assets.
  */
-const CACHE_SHELL = 'creature-sandbox-shell-v2';
-const CACHE_DYNAMIC = 'creature-sandbox-dynamic-v2';
-const SHELL_ASSETS = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/src/main.js'
+const CACHE_VERSION = '2026-05-16-realtime-pwa';
+const CACHE_PREFIX = 'creature-sandbox';
+const CACHE_SHELL = `${CACHE_PREFIX}-shell-${CACHE_VERSION}`;
+const CACHE_DYNAMIC = `${CACHE_PREFIX}-dynamic-${CACHE_VERSION}`;
+const APP_SHELL_ASSETS = [
+  './',
+  './index.html',
+  './styles.css?v=20260516-audit1',
+  './src/main.js?v=20260516-audit1',
+  './manifest.json'
 ];
 
+function appUrl(relativePath) {
+  return new URL(relativePath, self.registration.scope).toString();
+}
+
+const SHELL_ASSETS = APP_SHELL_ASSETS.map(appUrl);
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_SHELL).then((cache) => cache.addAll(SHELL_ASSETS))
-  );
+  event.waitUntil(precacheShell());
   self.skipWaiting();
 });
 
@@ -22,52 +29,91 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys.filter((k) => k !== CACHE_SHELL && k !== CACHE_DYNAMIC).map((k) => caches.delete(k))
+        keys
+          .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_SHELL && key !== CACHE_DYNAMIC)
+          .map((key) => caches.delete(key))
       )
     )
   );
   self.clients.claim();
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
 
-  // Network-first for HTML, cache-first for assets
-  if (request.destination === 'document' || request.url.endsWith('.html')) {
-    event.respondWith(networkFirst(request));
-  } else {
-    event.respondWith(cacheFirst(request));
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  if (request.mode === 'navigate' || request.destination === 'document' || url.pathname.endsWith('.html')) {
+    event.respondWith(networkFirstDocument(request));
+    return;
+  }
+
+  if (shouldCacheAsset(request, url)) {
+    event.respondWith(staleWhileRevalidate(request));
   }
 });
 
-async function networkFirst(request) {
+function shouldCacheAsset(request, url) {
+  if (request.destination && request.destination !== 'document') return true;
+  return /\.(?:css|js|mjs|json|svg|png|jpg|jpeg|webp|ico|woff2?)$/i.test(url.pathname);
+}
+
+async function precacheShell() {
+  const cache = await caches.open(CACHE_SHELL);
+  await Promise.allSettled(
+    SHELL_ASSETS.map(async (url) => {
+      const response = await fetch(url, { cache: 'reload' });
+      if (response && response.ok) {
+        await cache.put(url, response);
+      }
+    })
+  );
+}
+
+async function networkFirstDocument(request) {
+  const cache = await caches.open(CACHE_SHELL);
   try {
-    const networkResponse = await fetch(request);
+    const networkResponse = await fetch(request, { cache: 'no-store' });
     if (networkResponse && networkResponse.status === 200) {
-      const cache = await caches.open(CACHE_DYNAMIC);
-      cache.put(request, networkResponse.clone());
+      await cache.put(appUrl('./index.html'), networkResponse.clone());
+      await cache.put(appUrl('./'), networkResponse.clone());
     }
     return networkResponse;
   } catch (err) {
-    const cached = await caches.match(request);
+    const cached = await cache.match(request) ||
+      await cache.match(appUrl('./index.html')) ||
+      await caches.match(request);
     if (cached) return cached;
     throw err;
   }
 }
 
-async function cacheFirst(request) {
-  const cached = await caches.match(request);
-  if (cached) return cached;
-  try {
-    const networkResponse = await fetch(request);
+async function staleWhileRevalidate(request) {
+  const cache = await caches.open(CACHE_DYNAMIC);
+  const cached = await cache.match(request);
+  const networkFetch = fetch(request).then((networkResponse) => {
     if (networkResponse && networkResponse.status === 200) {
-      const cache = await caches.open(CACHE_DYNAMIC);
       cache.put(request, networkResponse.clone());
     }
     return networkResponse;
+  });
+
+  if (cached) {
+    networkFetch.catch(() => null);
+    return cached;
+  }
+
+  try {
+    return await networkFetch;
   } catch (err) {
-    // Return a simple offline fallback for failed fetches
     if (request.destination === 'image') {
       return new Response('', { status: 204 });
     }

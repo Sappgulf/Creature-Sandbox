@@ -17,6 +17,27 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-05-16 — audit-items-1-15 — Planned
+- **Issues:** The approved 1-15 polish tranche called for broader first-run presentation, compact mobile overlays, clearer drawer hierarchy, unified gameplay surface, live performance/PWA proof, accessibility summary output, save/profile truth, long-session director tuning, and docs/status cleanup before commit and push.
+- **Root Causes:** Prior proof emphasized deterministic browser smoke and source build health, but realtime animation-frame behavior, service-worker offline reload, profile-vs-save separation, and screen-reader world summaries were not first-class release gates; several visible controls still leaned on mixed icon/text treatments and compact mobile objective copy could clip.
+- **Fixes:** Audit the real runtime surfaces; apply surgical UI/runtime/PWA/accessibility/save-profile improvements; add checked-in realtime smoke coverage; update docs; verify with source gates, deterministic browser smoke, realtime PWA smoke, and screenshot inspection.
+- **Verification:** Planned: `git diff --check`; `npm run lint`; script/config ESLint; `npm test`; `npm run build`; `npm run check:bundle`; `npm run smoke:browser`; `npm run smoke:realtime`; screenshot inspection.
+
+### 2026-05-16 — audit-items-1-15 — Implemented
+- **Issues:** The home screen still read more like an abstract landing view than the living sim; the More drawer used inconsistent icon/text structure and cramped hierarchy; mini-graphs appeared before useful data; realtime/PWA behavior lacked a checked-in proof lane; saves did not explicitly state profile-preference boundaries; the screen-reader state was only partly inferable from deterministic smoke text; and long-session auto-director focus could still jump to low-value events too often.
+- **Root Causes:** Runtime hooks, docs, service-worker behavior, and visual polish had evolved in separate passes. The deterministic smoke lane intentionally paused and advanced time, which left service-worker caching and live frame pacing outside the normal release checklist.
+- **Fixes:**
+  - Reworked the home background/logo into a deterministic ecosystem scene and tightened compact objective text clamping.
+  - Converted drawer rows to stable icon/label spans, tightened overflow drawer sizing, and preserved mobile preference labels when runtime state changes.
+  - Defaulted mini-graphs off until toggled and hid graph rendering until data exists.
+  - Added `accessibility-summary.js` and `player-profile.js`, wired `render_game_to_text`, `window.__creatureSmoke.accessibilitySummary()`, `window.__creatureSmoke.profileState()`, and optional `?a11ySummary` announcements.
+  - Added save metadata profile summaries while keeping browser-local preferences intentionally non-restored from world saves.
+  - Tuned AutoDirector event priorities/cooldowns for longer sessions.
+  - Hardened `sw.js` with versioned app-relative caches, safe cache cleanup, network-first documents, stale-while-revalidate assets, and offline reload support.
+  - Added `scripts/realtime-smoke.mjs`, `npm run smoke:realtime`, `npm run smoke:all`, and build-time copying of `sw.js`, `manifest.json`, and sprite assets into `dist/`.
+  - Updated feature matrix, smoke docs, known issues, package dependency floors, and runtime summary tests.
+- **Verification:** `git diff --check` (pass); `npm run lint` (pass); `npx eslint scripts/realtime-smoke.mjs scripts/core-modules.test.mjs vite.config.js` (pass); `npm test` (pass, 156 checks); `npm outdated --depth=0` (no outdated packages reported); `npm run build` (pass, 132 modules, main app JS `632.98 kB` / `183.07 kB` gzip); `npm run check:bundle` (pass, main bundle `632988B` / `181550B` gzip under budget); `npm run smoke:browser` (pass: desktop, mobile-compact, mobile-large; deterministic-step mode, 30 registered sprites); `npm run smoke:realtime` (pass: average `20.4fps`, threshold `18fps`, service worker active/controller true, shell and dynamic caches present, 30 registered sprites, no console errors); inspected `output/browser-smoke/home-desktop.png`, `desktop-clean.png`, `mobile-compact-overflow.png`, `mobile-compact-god.png`, and `output/realtime-smoke/realtime-desktop.png`.
+
 ### 2026-05-14 — director-architecture-gameplay-loop — Planned
 - **Issues:** The repo-level redo request identified overlapping scenario, goal, achievement/progression, moment/director, and god-tool systems; active scenario objectives were partly split between UI panels and runtime state; saves did not preserve the newly requested favorite/selected creature context; and browser smoke did not verify the consolidated director/objective surface.
 - **Root Causes:** Creature Sandbox had grown useful systems in parallel (`PlayableScenarios`, `CampaignSystem`, `SessionGoals`, `ChallengeSystem`, `AchievementSystem`, `UnlockableAchievements`, `AutoDirector`, `MomentsSystem`, `ToolController`, god-mode input), but no single adapter boundary described the playable loop or coordinated persistence/testing.

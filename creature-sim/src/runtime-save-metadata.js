@@ -1,3 +1,5 @@
+import { buildBrowserProfileSnapshot } from './player-profile.js';
+
 export function buildRuntimeSaveMetadata({
   world,
   camera,
@@ -27,6 +29,7 @@ export function buildRuntimeSaveMetadata({
     director,
     moments: momentState,
     upgrades: upgradeController?.serialize?.() ?? null,
+    profile: buildBrowserProfileSnapshot(),
     uiState: {
       watchModeEnabled: !!gameState?.watchModeEnabled,
       godModeActive: !!gameState?.godModeActive,
@@ -98,6 +101,7 @@ export function restoreRuntimeSaveMetadata(metadata = {}, {
     moments: false,
     uiState: false,
     upgrades: false
+    // Browser-local profile preferences are intentionally summarized only, not restored from world saves.
   };
 
   if (metadata.playable && playableScenarios?.restore) {

@@ -10,6 +10,9 @@
     "test": "node scripts/save-system.test.mjs && node scripts/core-modules.test.mjs",
     "smoke:browser": "node scripts/browser-smoke.mjs",
     "smoke:browser:headed": "node scripts/browser-smoke.mjs --headed",
+    "smoke:realtime": "node scripts/realtime-smoke.mjs",
+    "smoke:realtime:headed": "node scripts/realtime-smoke.mjs --headed",
+    "smoke:all": "npm run smoke:browser && npm run smoke:realtime",
     "check:bundle": "node scripts/bundle-budget.mjs",
     "test:coverage": "npm test",
     "lint": "eslint creature-sim/src",
@@ -17,12 +20,12 @@
     "analyze": "vite build --mode analyze"
   },
   "devDependencies": {
-    "eslint": "^10.2.0",
+    "eslint": "^10.4.0",
     "globals": "^17.5.0",
-    "playwright": "^1.57.0",
+    "playwright": "^1.60.0",
     "prettier": "^3.8.3",
     "rollup-plugin-visualizer": "^7.0.1",
-    "vite": "^8.0.8"
+    "vite": "^8.0.13"
   },
   "keywords": [
     "simulation",

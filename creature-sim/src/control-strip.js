@@ -242,16 +242,26 @@ export class ControlStripController {
     const focusBtn = this.menuMobileFocus || document.getElementById('menu-mobile-focus');
     const batteryBtn = this.menuMobileBattery || document.getElementById('menu-mobile-battery');
     const hapticsBtn = this.menuMobileHaptics || document.getElementById('menu-mobile-haptics');
+    const setIconLabel = (button, icon, label) => {
+      const iconEl = button?.querySelector?.('.menu-item-icon');
+      const labelEl = button?.querySelector?.('.menu-item-label');
+      if (iconEl && labelEl) {
+        iconEl.textContent = icon;
+        labelEl.textContent = label;
+        return;
+      }
+      if (button) button.textContent = `${icon} ${label}`;
+    };
     if (focusBtn) {
-      focusBtn.textContent = `${this.mobilePrefs.focusMode ? '✅' : '🧭'} Focus Mode`;
+      setIconLabel(focusBtn, this.mobilePrefs.focusMode ? '✓' : '⌖', 'Focus Mode');
       focusBtn.setAttribute('aria-pressed', this.mobilePrefs.focusMode ? 'true' : 'false');
     }
     if (batteryBtn) {
-      batteryBtn.textContent = `${this.mobilePrefs.batterySaver ? '✅' : '🔋'} Battery Saver`;
+      setIconLabel(batteryBtn, this.mobilePrefs.batterySaver ? '✓' : '▱', 'Battery Saver');
       batteryBtn.setAttribute('aria-pressed', this.mobilePrefs.batterySaver ? 'true' : 'false');
     }
     if (hapticsBtn) {
-      hapticsBtn.textContent = `${this.mobilePrefs.haptics ? '✅' : '📳'} Haptics`;
+      setIconLabel(hapticsBtn, this.mobilePrefs.haptics ? '✓' : '≋', 'Haptics');
       hapticsBtn.setAttribute('aria-pressed', this.mobilePrefs.haptics ? 'true' : 'false');
     }
   }

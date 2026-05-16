@@ -1,5 +1,7 @@
 import { defineConfig } from 'vite';
 import { visualizer } from 'rollup-plugin-visualizer';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 const chunkMap = [
   {
@@ -36,6 +38,34 @@ function manualChunks(id) {
   }
 }
 
+async function copyRecursive(src, dest) {
+  const stat = await fs.stat(src);
+  if (stat.isDirectory()) {
+    await fs.mkdir(dest, { recursive: true });
+    const entries = await fs.readdir(src);
+    await Promise.all(entries.map((entry) => copyRecursive(path.join(src, entry), path.join(dest, entry))));
+    return;
+  }
+  await fs.mkdir(path.dirname(dest), { recursive: true });
+  await fs.copyFile(src, dest);
+}
+
+function copyCreatureStaticAssets() {
+  return {
+    name: 'copy-creature-static-assets',
+    apply: 'build',
+    async closeBundle() {
+      const root = path.resolve('creature-sim');
+      const outDir = path.resolve('dist');
+      await Promise.all([
+        copyRecursive(path.join(root, 'sw.js'), path.join(outDir, 'sw.js')),
+        copyRecursive(path.join(root, 'manifest.json'), path.join(outDir, 'manifest.json')),
+        copyRecursive(path.join(root, 'assets', 'sprites'), path.join(outDir, 'assets', 'sprites'))
+      ]);
+    }
+  };
+}
+
 export default defineConfig(({ mode }) => ({
   root: 'creature-sim',
   server: {
@@ -53,4 +83,5 @@ export default defineConfig(({ mode }) => ({
       plugins: mode === 'analyze' ? [visualizer({ open: true, gzipSize: true, filename: '../dist/stats.html' })] : []
     }
   },
+  plugins: [copyCreatureStaticAssets()],
 }));

@@ -3,7 +3,7 @@
 
 export class MiniGraphs {
   constructor() {
-    this.enabled = true;
+    this.enabled = false;
     this.autoHide = true; // Auto-hide when camera is moving
     this.opacity = 1.0; // Current opacity for fading
     this.targetOpacity = 1.0;
@@ -35,6 +35,12 @@ export class MiniGraphs {
 
     this.updateInterval = 1.0; // Update every second
     this.lastUpdate = 0;
+  }
+
+  hasRenderableData() {
+    return this.graphs.population.data.length > 1 ||
+      this.graphs.traits.data.length > 1 ||
+      this.graphs.diversity.data.length > 1;
   }
 
   update(world, dt) {
@@ -110,6 +116,7 @@ export class MiniGraphs {
 
   draw(ctx, opts) {
     if (!this.enabled) return;
+    if (!this.hasRenderableData()) return;
 
     // Auto-hide when camera is moving
     if (this.autoHide && opts.cameraMoving) {
@@ -147,7 +154,7 @@ export class MiniGraphs {
       yOffset -= graphHeight + spacing;
     }
 
-    if (this.graphs.energy.enabled) {
+    if (this.graphs.energy.enabled && this.graphs.population.data.length > 1) {
       this._drawEnergyHistogram(ctx, padding, yOffset, graphWidth, graphHeight);
       yOffset -= graphHeight + spacing;
     }

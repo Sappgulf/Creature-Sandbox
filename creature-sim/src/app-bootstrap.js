@@ -33,6 +33,8 @@ import { MomentsSystem } from './moments-system.js';
 import { ControlStripController } from './control-strip.js?v=20260504-menu1';
 import { encodeSeed, getSeedFromUrl, setSeedInUrl } from './seed-utils.js';
 import { mobileGestureTutorial } from './mobile-gesture-tutorial.js?v=20260504-menu1';
+import { buildAccessibilitySummary } from './accessibility-summary.js';
+import { buildBrowserProfileSnapshot } from './player-profile.js';
 
 // Import new modular systems
 import { domCache } from './dom-cache.js';
@@ -118,6 +120,7 @@ console.debug('🚀 Starting Creature Sandbox...');
 const DESKTOP_STARTUP_SEED = { herbivores: 64, predators: 8, food: 280 };
 const MOBILE_STARTUP_SEED = { herbivores: 54, predators: 7, food: 230 };
 const COMPACT_MOBILE_STARTUP_SEED = { herbivores: 44, predators: 5, food: 190 };
+const REALTIME_SMOKE_STARTUP_SEED = { herbivores: 28, predators: 3, food: 140 };
 
 let scenarioEditorInstance = null;
 let scenarioEditorPromise = null;
@@ -137,20 +140,24 @@ function getRuntimeProfile() {
   }
 
   const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches || ('ontouchstart' in window);
+  const params = new URLSearchParams(window.location.search);
+  const realtimeSmoke = params.has('realtime');
   const mobileViewport = coarsePointer || window.matchMedia?.('(max-width: 768px)').matches;
   const shortEdge = Math.min(window.innerWidth || 0, window.innerHeight || 0);
   const compactViewport = mobileViewport && shortEdge > 0 && shortEdge <= 430;
   const deviceMemory = Number(navigator.deviceMemory || 0);
   const lowMemory = mobileViewport && deviceMemory > 0 && deviceMemory <= 4;
-  const renderScale = mobileViewport ? (compactViewport || lowMemory ? 0.82 : 0.9) : 1;
+  const renderScale = realtimeSmoke ? 0.8 : (mobileViewport ? (compactViewport || lowMemory ? 0.82 : 0.9) : 1);
 
   return {
     mobile: mobileViewport,
     compact: compactViewport,
     lowMemory,
     renderScale,
-    defaultZoom: mobileViewport ? 0.28 : 0.25,
-    startupSeed: compactViewport || lowMemory ? COMPACT_MOBILE_STARTUP_SEED : (mobileViewport ? MOBILE_STARTUP_SEED : DESKTOP_STARTUP_SEED)
+    defaultZoom: realtimeSmoke ? 0.32 : (mobileViewport ? 0.28 : 0.25),
+    startupSeed: realtimeSmoke
+      ? REALTIME_SMOKE_STARTUP_SEED
+      : (compactViewport || lowMemory ? COMPACT_MOBILE_STARTUP_SEED : (mobileViewport ? MOBILE_STARTUP_SEED : DESKTOP_STARTUP_SEED))
   };
 }
 
@@ -494,6 +501,15 @@ export function initializeApp() {
   const miniGraphs = errorHandler.safeExecute(() => {
     return new MiniGraphs();
   }, 'Mini-graphs initialization', null);
+
+  errorHandler.safeExecute(() => {
+    const miniGraphToggle = document.getElementById('toggle-minigraphs');
+    if (!miniGraphs || !miniGraphToggle) return;
+    miniGraphToggle.checked = !!miniGraphs.enabled;
+    miniGraphToggle.addEventListener('change', () => {
+      miniGraphs.enabled = !!miniGraphToggle.checked;
+    });
+  }, 'Mini-graphs toggle binding');
 
   const particles = errorHandler.safeExecute(() => {
     return new ParticleSystem();
@@ -1378,77 +1394,93 @@ export function initializeApp() {
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
-    const particles = [];
+    let creatures = [];
+    let food = [];
     let animationId = null;
 
-    // Resize canvas to fill screen
+    const rebuildScene = () => {
+      const width = Math.max(1, canvas.width);
+      const height = Math.max(1, canvas.height);
+      creatures = Array.from({ length: 18 }, (_, index) => ({
+        x: width * (0.12 + ((index * 37) % 78) / 100),
+        y: height * (0.5 + ((index * 23) % 36) / 100),
+        size: 7 + (index % 4) * 2,
+        speed: 0.18 + (index % 5) * 0.035,
+        hue: [88, 42, 196, 12][index % 4],
+        phase: index * 0.73
+      }));
+      food = Array.from({ length: 38 }, (_, index) => ({
+        x: width * (((index * 29) % 92) / 100 + 0.04),
+        y: height * (0.54 + ((index * 17) % 38) / 100),
+        r: 2 + (index % 3)
+      }));
+    };
+
     function resize() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      rebuildScene();
     }
     resize();
     window.addEventListener('resize', resize);
 
-    // Create floating particles (creature-like blobs)
-    const numParticles = 25;
-    for (let i = 0; i < numParticles; i++) {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        size: 8 + Math.random() * 20,
-        speedX: (Math.random() - 0.5) * 0.5,
-        speedY: (Math.random() - 0.5) * 0.5,
-        hue: Math.random() * 360,
-        alpha: 0.1 + Math.random() * 0.3,
-        wobble: Math.random() * Math.PI * 2,
-        wobbleSpeed: 0.02 + Math.random() * 0.03
-      });
+    function drawCreature(creature, time) {
+      const driftX = Math.sin(time * creature.speed + creature.phase) * 28;
+      const driftY = Math.cos(time * creature.speed * 0.8 + creature.phase) * 12;
+      const x = creature.x + driftX;
+      const y = creature.y + driftY;
+      const angle = Math.sin(time * creature.speed + creature.phase) * 0.28;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, creature.size * 1.55, creature.size, 0, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${creature.hue}, 74%, 58%, 0.38)`;
+      ctx.fill();
+      ctx.strokeStyle = `hsla(${creature.hue}, 85%, 70%, 0.28)`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+      ctx.beginPath();
+      ctx.arc(creature.size * 0.48, -creature.size * 0.22, Math.max(1.2, creature.size * 0.18), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
 
-    function drawParticle(p) {
-      const wobbleOffset = Math.sin(p.wobble) * 3;
-
-      // Draw creature-like blob
-      ctx.beginPath();
-      ctx.ellipse(
-        p.x + wobbleOffset,
-        p.y,
-        p.size,
-        p.size * 0.8,
-        0, 0, Math.PI * 2
-      );
-      ctx.fillStyle = `hsla(${p.hue}, 60%, 50%, ${p.alpha})`;
-      ctx.fill();
-
-      // Draw simple eyes
-      const eyeSize = p.size * 0.15;
-      const eyeOffset = p.size * 0.3;
-      ctx.fillStyle = `rgba(255,255,255,${p.alpha * 1.5})`;
-      ctx.beginPath();
-      ctx.arc(p.x + eyeOffset + wobbleOffset, p.y - p.size * 0.2, eyeSize, 0, Math.PI * 2);
-      ctx.arc(p.x + eyeOffset * 0.6 + wobbleOffset, p.y - p.size * 0.2, eyeSize, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    function animate() {
+    function drawScene(time = 0) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      for (const p of particles) {
-        // Update position
-        p.x += p.speedX;
-        p.y += p.speedY;
-        p.wobble += p.wobbleSpeed;
-
-        // Wrap around edges
-        if (p.x < -p.size) p.x = canvas.width + p.size;
-        if (p.x > canvas.width + p.size) p.x = -p.size;
-        if (p.y < -p.size) p.y = canvas.height + p.size;
-        if (p.y > canvas.height + p.size) p.y = -p.size;
-
-        drawParticle(p);
+      const horizon = canvas.height * 0.49;
+      const ground = ctx.createLinearGradient(0, horizon, 0, canvas.height);
+      ground.addColorStop(0, 'rgba(34, 197, 94, 0.05)');
+      ground.addColorStop(0.35, 'rgba(31, 85, 62, 0.2)');
+      ground.addColorStop(1, 'rgba(7, 16, 14, 0.65)');
+      ctx.fillStyle = ground;
+      ctx.fillRect(0, horizon, canvas.width, canvas.height - horizon);
+      ctx.strokeStyle = 'rgba(125, 211, 252, 0.06)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 8; i += 1) {
+        const y = horizon + i * 34 + Math.sin(time * 0.2 + i) * 4;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        for (let x = 0; x <= canvas.width; x += 80) {
+          ctx.lineTo(x, y + Math.sin(x * 0.008 + time * 0.18 + i) * 8);
+        }
+        ctx.stroke();
       }
+      for (const patch of food) {
+        ctx.beginPath();
+        ctx.arc(patch.x, patch.y, patch.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(163, 230, 53, 0.5)';
+        ctx.fill();
+      }
+      for (const creature of creatures) {
+        drawCreature(creature, time);
+      }
+    }
 
-      // Check if home page still visible
+    function animate(timestamp = 0) {
+      drawScene(timestamp / 1000);
+
       const homePage = domCache.get('homePage');
       if (homePage && !homePage.classList.contains('hidden')) {
         animationId = requestAnimationFrame(animate);
@@ -1704,6 +1736,26 @@ export function initializeApp() {
       }));
   };
 
+  const buildCurrentAccessibilitySummary = (focusCreature = getFocusCreature(), focusPresentation = null) => {
+    const presentation = focusPresentation ||
+      (focusCreature ? upgradeController?.getCreaturePresentation?.(focusCreature) ?? null : null);
+    return buildAccessibilitySummary({
+      world,
+      gameState,
+      camera,
+      focusCreature,
+      focusPresentation: presentation,
+      playableSnapshot: playableScenarios?.getSnapshot?.() ?? null,
+      directorSnapshot: gameDirector?.getSnapshot?.() ?? null,
+      momentsSnapshot: {
+        count: moments?.moments?.length ?? 0,
+        summary: moments?.summary ?? null,
+        latest: moments?.moments?.[0] ?? null
+      },
+      profileSnapshot: buildBrowserProfileSnapshot()
+    });
+  };
+
   const renderGameToText = () => {
     const focusCreature = getFocusCreature();
     const focusPresentation = focusCreature
@@ -1721,6 +1773,7 @@ export function initializeApp() {
     const selectedGeneration = focusCreature && lineageTracker?.generation
       ? lineageTracker.generation(world, focusCreature.id)
       : (Number.isFinite(focusCreature?.generation) ? focusCreature.generation : null);
+    const accessibility = buildCurrentAccessibilitySummary(focusCreature, focusPresentation);
 
     return JSON.stringify({
       coordinateSystem: 'World coordinates use a top-left origin with +x to the right and +y downward.',
@@ -1832,6 +1885,8 @@ export function initializeApp() {
         summary: moments?.summary ?? null,
         latest: moments?.moments?.[0] ?? null
       },
+      accessibility,
+      profile: buildBrowserProfileSnapshot(),
       playable: playableScenarios?.getSnapshot?.() ?? null,
       director: gameDirector?.getSnapshot?.() ?? null,
       visibleCreatures: getVisibleCreatures(),
@@ -1884,6 +1939,22 @@ export function initializeApp() {
       paused: gameState.paused
     };
   };
+
+  errorHandler.safeExecute(() => {
+    const params = new URLSearchParams(window.location.search);
+    const enabled = params.has('a11ySummary') ||
+      params.has('screenReader') ||
+      localStorage.getItem('creature-sim-a11y-summary') === 'true';
+    if (!enabled) return;
+    let lastSummary = '';
+    setInterval(() => {
+      if (!gameState.gameStarted || gameState.paused) return;
+      const summary = buildCurrentAccessibilitySummary();
+      if (!summary.text || summary.text === lastSummary) return;
+      lastSummary = summary.text;
+      notifications?.announceNarrative?.(summary.text, 'info');
+    }, 12000);
+  }, 'Accessibility summary announcer');
 
   if (shouldAutoStartSandbox) {
     window.__creatureSmokeAdvanceTime = advanceTime;
@@ -2017,6 +2088,8 @@ export function initializeApp() {
         const id = gameState.selectedId || gameState.pinnedId;
         return upgradeController?.setNickname?.(id, name) ?? false;
       },
+      accessibilitySummary: () => buildCurrentAccessibilitySummary(),
+      profileState: () => buildBrowserProfileSnapshot(),
       perfBudget: () => {
         const rendererStats = renderer?.performance?.getStats?.() ?? renderer?.performance?.stats ?? {};
         const profilerStats = performanceProfiler.getStats?.() ?? {};

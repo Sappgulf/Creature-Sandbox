@@ -1,4 +1,4 @@
-import { initializeApp } from './app-bootstrap.js?v=20260504-menu1';
+import { initializeApp } from './app-bootstrap.js?v=20260516-audit1';
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeApp);

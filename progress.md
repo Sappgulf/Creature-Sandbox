@@ -411,3 +411,34 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large; default port fallback exercised from `4173` to `4175`)
   - live browser check selected a creature, verified selected story text, and confirmed no visible `NaN`/`undefined` text.
   - manifest/icon check: `/icons/icon.svg` serves `200 OK` as `image/svg+xml`; manifest lists the tracked SVG icon.
+
+2026-05-16
+- Follow-up request: execute audit ideas 1-15, create a goal, use applicable Codex skills, then commit and push everything.
+- Implemented presentation/UI polish:
+  - home screen now uses a deterministic ecosystem-style background and CSS creature logo instead of the previous abstract DNA mark.
+  - More drawer rows now use stable icon/label structure, tighter section hierarchy, and compact desktop/mobile sizing.
+  - mobile objective rail now clamps long objective copy cleanly with an ellipsis instead of clipping mid-phrase.
+  - mini-graphs now start off and stay hidden until enabled and enough data exists.
+- Implemented runtime/proof upgrades:
+  - added `accessibility-summary.js` and exposed the runtime summary through `render_game_to_text`, `window.__creatureSmoke.accessibilitySummary()`, and optional `?a11ySummary` announcements.
+  - added `player-profile.js` and save metadata profile summaries that make browser-local profile/preferences distinct from world save restoration.
+  - tuned AutoDirector priority/cooldown handling for longer sessions so high-value events are not quickly displaced by low-value focus changes.
+  - rebuilt service-worker caching around versioned app-relative shell/dynamic caches, network-first documents, stale-while-revalidate assets, safe cache cleanup, and offline reload support.
+  - added `scripts/realtime-smoke.mjs`, `npm run smoke:realtime`, `npm run smoke:all`, and build-time copying of `sw.js`, manifest, and sprite assets into `dist`.
+- Docs/status updated:
+  - `CHANGELOG.md`
+  - `docs/FEATURE_MATRIX.md`
+  - `docs/SMOKE_TESTS.md`
+  - `docs/KNOWN_ISSUES.md`
+  - `progress.md`
+- Verification:
+  - `git diff --check` ✅
+  - `npm run lint` ✅
+  - `npx eslint scripts/realtime-smoke.mjs scripts/core-modules.test.mjs vite.config.js` ✅
+  - `npm test` ✅ (156 passing)
+  - `npm outdated --depth=0` ✅ (no outdated packages reported)
+  - `npm run build` ✅ (132 modules, main app JS `632.98 kB` / `183.07 kB` gzip)
+  - `npm run check:bundle` ✅ (`index-XBPAmjiZ.js` `632988B` / `181550B` gzip under budget)
+  - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
+  - `npm run smoke:realtime` ✅ (average `20.4fps`, service worker active/controller true, shell + dynamic caches present, 30 registered sprites, no console errors)
+  - Screenshot coverage inspected: `home-desktop.png`, `desktop-clean.png`, `mobile-compact-overflow.png`, `mobile-compact-god.png`, and `realtime-desktop.png`.

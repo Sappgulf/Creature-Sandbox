@@ -245,7 +245,23 @@ Run the checked-in browser smoke before shipping gameplay/UI changes:
 npm run smoke:browser
 ```
 
-The script starts Vite if needed, captures the home screen, opens desktop plus compact/large mobile browser contexts, verifies the smoke sandbox starts, starts the `First Ecosystem` playable scenario, checks Director guidance, selects a creature, spawns a predator, paints food, toggles Watch Mode and God Mode, opens Moments, exercises food/calm/chaos/prop/remove god tools, applies an Upgrade Hub recipe, switches readability mode, saves a nickname, runs an action card, creates a postcard and balance probe, runs in-page save/load plus slot-preview thumbnail roundtrips, captures screenshots/state under `output/browser-smoke/`, and fails on browser warnings or page errors.
+This deterministic script starts Vite if needed, captures the home screen, opens desktop plus compact/large mobile browser contexts, verifies the smoke sandbox starts, starts the `First Ecosystem` playable scenario, checks Director guidance, selects a creature, spawns a predator, paints food, toggles Watch Mode and God Mode, opens Moments, exercises food/calm/chaos/prop/remove god tools, applies an Upgrade Hub recipe, switches readability mode, saves a nickname, runs an action card, creates a postcard and balance probe, runs in-page save/load plus slot-preview thumbnail roundtrips, captures screenshots/state under `output/browser-smoke/`, and fails on browser warnings or page errors. It intentionally pauses the live loop and advances simulation through `window.advanceTime`, so it proves deterministic gameplay wiring rather than real frame pacing.
+
+Run the real-time smoke when changing runtime performance, service-worker behavior, PWA install/offline support, or broad rendering behavior:
+
+```bash
+npm run smoke:realtime
+```
+
+This script builds production preview assets, serves them with `vite preview`, keeps the animation-frame loop running, samples `window.__creatureSmoke.perfBudget()` for live FPS/frame-time data, asserts that no deterministic `advanceTime` calls were used, verifies the copied service worker activates, checks copied manifest/sprite assets through the registered sprite count, reloads once under service-worker control, then reloads offline to prove the app shell is available from cache. It writes `output/realtime-smoke/summary.json` and `output/realtime-smoke/realtime-desktop.png`.
+
+Use the combined lane for release-oriented browser proof:
+
+```bash
+npm run smoke:all
+```
+
+Real-time thresholds can be adjusted for slower CI machines with `CREATURE_REALTIME_MIN_FPS`, `CREATURE_REALTIME_MAX_FRAME_MS`, and `CREATURE_REALTIME_SMOKE_MS`. Set `CREATURE_REALTIME_REUSE_BUILD=1` only when a fresh `dist/` build is already known current. Do not use this lane as a substitute for physical-device feel checks; drag/throw feel, touch comfort, notch/home-indicator spacing, and long-session heat/battery behavior still need a real phone or tablet pass.
 
 Run the post-build bundle guard after `npm run build`:
 
@@ -258,3 +274,11 @@ It fails if any generated JS chunk exceeds the configured raw or gzip budget.
 - **Save/load serialization test**
   - `npm test`
   - Validates save-system serialization/deserialization stability, including runtime metadata providers.
+
+## Persistence + Storage Truth
+
+- Runtime save files and save-slot previews are game-state artifacts. They cover creatures, food, props, scenario/director metadata, Moments summary, upgrade metadata, and thumbnails.
+- Profile/preferences remain browser-local unless explicitly serialized into a save. This includes tutorial completion, tooltip dismissal, high-contrast/reduced-motion/colorblind preferences, mobile focus/battery/haptics preferences, last spawn type, camera bookmarks, playable progress, and the last Moments summary cache.
+- Current storage is `localStorage` plus downloadable save files. IndexedDB is not the active save backend.
+- The service worker caches the app shell and static assets for offline reload. It does not sync saves across browsers or devices.
+- `window.__creatureSmoke.profileState()` returns a structured save/profile separation summary, and `window.__creatureSmoke.accessibilitySummary()` returns the current screen-reader world summary. Use `?a11ySummary` to enable periodic live announcements through the hidden announcer.

@@ -20,6 +20,8 @@ import { World } from '../creature-sim/src/world-core.js';
 import { Creature } from '../creature-sim/src/creature.js';
 import { AdvancedGenetics } from '../creature-sim/src/advanced-genetics.js';
 import { GameDirector, GodToolSystem, ObjectiveSystem, ProgressionSystem, ScenarioRegistry } from '../creature-sim/src/game/index.js';
+import { buildAccessibilitySummary } from '../creature-sim/src/accessibility-summary.js';
+import { buildBrowserProfileSnapshot } from '../creature-sim/src/player-profile.js';
 
 let passed = 0;
 let failed = 0;
@@ -1322,6 +1324,61 @@ test('World: pending campaign config resizes world before seeding', () => {
   assert.equal(world.pendingCampaignConfig, null);
   assert.equal(world.creatures.length, 5);
   assert.ok(world.food.length <= world.ecosystem.maxFood, 'food should respect resized ecosystem capacity');
+});
+
+// ============================================================================
+// Runtime summaries
+// ============================================================================
+console.log('\n=== Runtime summaries ===');
+
+test('Accessibility summary: describes world, run, selection, and profile truth', () => {
+  const world = {
+    t: 75,
+    food: new Array(12).fill({}),
+    creatures: [
+      { id: 1, alive: true, genes: { diet: 0.1 }, needs: { hunger: 30, stress: 20 }, energy: 44, goal: { current: 'wander' } },
+      { id: 2, alive: true, genes: { diet: 1, predator: true }, needs: { hunger: 80, stress: 12 }, energy: 36, goal: { current: 'eat' } }
+    ]
+  };
+  const summary = buildAccessibilitySummary({
+    world,
+    gameState: { paused: false },
+    camera: { x: 120, y: 240, zoom: 0.8 },
+    focusCreature: world.creatures[1],
+    focusPresentation: { nickname: 'Scout' },
+    playableSnapshot: { scenario: { id: 'first_ecosystem', name: 'First Ecosystem' }, progress: 42 },
+    directorSnapshot: { nextAction: { label: 'Paint food', description: 'stabilize the run' } },
+    profileSnapshot: { scope: 'browser-local-profile', relationship: { worldSavesIncludeProfile: false } }
+  });
+
+  assert.ok(summary.text.includes('World time 75 seconds'), 'summary should include time');
+  assert.ok(summary.text.includes('First Ecosystem'), 'summary should include active run');
+  assert.ok(summary.text.includes('Scout'), 'summary should include selected creature');
+  assert.equal(summary.profile.worldSavesIncludeProfile, false, 'profile relationship should stay explicit');
+});
+
+test('Profile snapshot: separates save files from browser-local preferences', () => {
+  const backing = new Map([
+    ['creature-sim-high-contrast', 'true'],
+    ['creature-mobile-focus', 'false'],
+    ['creature-last-spawn-type', 'aquatic'],
+    ['tutorial_completed', JSON.stringify(['intro', 'spawn'])],
+    ['creature-sim-autosave', '{"version":"3.0"}'],
+    ['creature-sim-slot-1-preview', '{}']
+  ]);
+  const storage = {
+    getItem: (key) => backing.has(key) ? backing.get(key) : null
+  };
+  const snapshot = buildBrowserProfileSnapshot({ storage });
+
+  assert.equal(snapshot.relationship.worldSavesIncludeProfile, false);
+  assert.equal(snapshot.preferences.accessibility.highContrast, true);
+  assert.equal(snapshot.preferences.mobile.lastSpawnType, 'aquatic');
+  assert.equal(snapshot.browserProgress.tutorialStepsCompleted, 2);
+  assert.equal(snapshot.browserSaves.hasAutosave, true);
+  assert.equal(snapshot.browserSaves.occupiedSlots, 1);
+  assert.ok(snapshot.storageKeys.profile.includes('creature-last-spawn-type'));
+  assert.ok(snapshot.storageKeys.saveFiles.includes('creature-sim-slot-1-preview'));
 });
 
 // ============================================================================
