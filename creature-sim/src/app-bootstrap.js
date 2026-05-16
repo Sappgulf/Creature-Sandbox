@@ -1582,9 +1582,72 @@ export function initializeApp() {
   // Expose startNewGame globally for fallback usage
   window.startNewGame = startNewGame;
 
+  const finiteNumber = (value, fallback = 0) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : fallback;
+  };
+
+  const roundedNumber = (value, digits = 1, fallback = 0) => {
+    const number = finiteNumber(value, fallback);
+    return Number(number.toFixed(digits));
+  };
+
+  const percentValue = (value, fallback = 0) => {
+    const number = finiteNumber(value, fallback);
+    const percent = number <= 1 ? number * 100 : number;
+    return Math.round(Math.max(0, Math.min(100, percent)));
+  };
+
   const getFocusCreature = () => {
-    const focusId = gameState.pinnedId ?? gameState.selectedId ?? null;
+    const focusId = gameState.selectedId ?? gameState.pinnedId ?? null;
     return focusId ? world.getAnyCreatureById?.(focusId) ?? null : null;
+  };
+
+  const getDietLabel = (creature) => {
+    const rawDiet = creature?.genes?.diet ?? (creature?.genes?.predator ? 1 : 0);
+    if (creature?.traits?.dietRole === 'scavenger') return 'Scavenger';
+    if (creature?.traits?.dietRole === 'predator-lite') return 'Predator-lite';
+    if (creature?.genes?.predator || rawDiet >= 0.7) return 'Predator';
+    if (rawDiet >= 0.3) return 'Omnivore';
+    return 'Herbivore';
+  };
+
+  const getReadableCreatureState = (creature) => {
+    if (!creature) return null;
+    if (creature.alive === false) return 'Gone';
+    const hunger = finiteNumber(creature.needs?.hunger, 0);
+    const stress = finiteNumber(creature.needs?.stress ?? creature.ecosystem?.stress, 0);
+    const energyNeed = finiteNumber(creature.needs?.energy ?? creature.energy, 0);
+    const goal = creature.goal?.current || creature.currentGoal || creature.state || 'exploring';
+    if (hunger > 72 || finiteNumber(creature.energy, 0) < 14) return 'Hungry';
+    if (stress > 64) return 'Scared';
+    if (goal === 'rest' || energyNeed < 32) return 'Resting';
+    if (goal === 'mate') return 'Looking for mate';
+    if (goal === 'eat' || goal === 'EAT') return 'Seeking food';
+    if (goal === 'wander') return 'Exploring';
+    return String(goal).replaceAll('_', ' ');
+  };
+
+  const buildSelectedCreatureStory = (creature, presentation, memoryCount) => {
+    const readableState = getReadableCreatureState(creature);
+    const hunger = finiteNumber(creature.needs?.hunger, 0);
+    const stress = finiteNumber(creature.needs?.stress ?? creature.ecosystem?.stress, 0);
+    const focusMemory = creature?.memory?.focus;
+    let reason = `Current drive: ${String(readableState || 'steady').toLowerCase()}.`;
+    if (focusMemory?.tag) reason = `Recalling ${String(focusMemory.tag).replaceAll('_', ' ')}.`;
+    else if (hunger > 72) reason = 'Moving because hunger is high.';
+    else if (stress > 64) reason = 'Moving because stress is high.';
+    else if (creature?.goal?.current === 'mate') reason = 'Looking for a compatible mate.';
+    else if (creature?.goal?.current === 'rest') reason = 'Conserving energy and seeking safety.';
+    else if (creature?.goal?.current === 'eat' || creature?.currentGoal === 'EAT') reason = 'Searching for food using scent and memory.';
+
+    return {
+      state: readableState,
+      reason,
+      emotion: presentation?.emotion?.label ?? null,
+      bonds: presentation?.bonds?.label ?? null,
+      memoryCount
+    };
   };
 
   const getViewportBounds = () => {
@@ -1643,9 +1706,21 @@ export function initializeApp() {
 
   const renderGameToText = () => {
     const focusCreature = getFocusCreature();
+    const focusPresentation = focusCreature
+      ? upgradeController?.getCreaturePresentation?.(focusCreature) ?? null
+      : null;
+    const focusMemories = Array.isArray(focusCreature?.memory?.locations)
+      ? focusCreature.memory.locations.slice(0, 5)
+      : [];
     const homePage = domCache.get('homePage') || document.getElementById('home-page');
     const tutorialOverlay = document.getElementById('tutorial-overlay');
     const bounds = getViewportBounds();
+    const selectedFamilyRootId = focusCreature && lineageTracker?.getRoot
+      ? lineageTracker.getRoot(world, focusCreature.id)
+      : null;
+    const selectedGeneration = focusCreature && lineageTracker?.generation
+      ? lineageTracker.generation(world, focusCreature.id)
+      : (Number.isFinite(focusCreature?.generation) ? focusCreature.generation : null);
 
     return JSON.stringify({
       coordinateSystem: 'World coordinates use a top-left origin with +x to the right and +y downward.',
@@ -1663,7 +1738,10 @@ export function initializeApp() {
         godMode: !!gameState.godModeActive,
         godTool: gameState.godModeTool ?? null,
         mobileLayout: document.body.classList.contains('mobile-device'),
-        focusMode: document.body.classList.contains('mobile-focus-mode')
+        focusMode: document.body.classList.contains('mobile-focus-mode'),
+        selectedId: gameState.selectedId ?? null,
+        favoriteCreatureId: gameState.pinnedId ?? null,
+        lineageRootId: gameState.lineageRootId ?? null
       },
       camera: {
         x: Number(camera.x.toFixed(1)),
@@ -1688,28 +1766,56 @@ export function initializeApp() {
       },
       selectedCreature: focusCreature ? {
         id: focusCreature.id,
+        selectedId: gameState.selectedId ?? null,
+        favoriteId: gameState.pinnedId ?? null,
+        isSelected: focusCreature.id === gameState.selectedId,
+        isPinned: focusCreature.id === gameState.pinnedId,
+        isFavorite: focusCreature.id === gameState.pinnedId,
         species: focusCreature.species || focusCreature.kind || focusCreature.genes?.species || null,
+        type: getDietLabel(focusCreature),
         stage: focusCreature.lifeStage || null,
-        x: Number(focusCreature.x?.toFixed?.(1) ?? 0),
-        y: Number(focusCreature.y?.toFixed?.(1) ?? 0),
-        energy: Number(focusCreature.energy?.toFixed?.(1) ?? 0),
-        age: Number(focusCreature.age?.toFixed?.(1) ?? 0),
-        status: focusCreature.currentGoal || focusCreature.state || null,
+        identity: {
+          label: focusPresentation?.nickname || (selectedFamilyRootId != null && lineageTracker?.ensureName ? lineageTracker.ensureName(selectedFamilyRootId) : `Creature #${focusCreature.id}`),
+          nickname: focusPresentation?.nickname ?? null,
+          familyRootId: selectedFamilyRootId,
+          generation: selectedGeneration
+        },
+        x: roundedNumber(focusCreature.x, 1),
+        y: roundedNumber(focusCreature.y, 1),
+        energy: roundedNumber(focusCreature.energy, 1),
+        health: {
+          current: roundedNumber(focusCreature.health, 1),
+          max: roundedNumber(focusCreature.maxHealth ?? focusCreature.health, 1)
+        },
+        age: roundedNumber(focusCreature.age, 1),
+        status: getReadableCreatureState(focusCreature),
         why: focusCreature.goal?.reason || focusCreature.goal?.current || focusCreature.currentGoal || focusCreature.state || null,
-        presentation: upgradeController?.getCreaturePresentation?.(focusCreature) ?? null,
+        needs: {
+          hunger: Math.round(finiteNumber(focusCreature.needs?.hunger, 0)),
+          stress: Math.round(finiteNumber(focusCreature.needs?.stress ?? focusCreature.ecosystem?.stress, 0)),
+          curiosity: percentValue(focusCreature.ecosystem?.curiosity ?? focusCreature.needs?.curiosity ?? focusCreature.personality?.curiosity, 0),
+          social: Math.round(finiteNumber(focusCreature.needs?.social ?? focusCreature.needs?.socialDrive ?? focusCreature.social?.bondStrength, 0))
+        },
+        story: buildSelectedCreatureStory(focusCreature, focusPresentation, focusMemories.length),
+        affordances: {
+          canInspect: true,
+          canFavorite: true,
+          canSetLineageRoot: true,
+          canOpenLineageStory: (lineageTracker?.getStories?.() ?? []).length > 0
+        },
+        presentation: focusPresentation,
         memoryFocus: focusCreature.memory?.focus ? {
           type: focusCreature.memory.focus.tag || focusCreature.memory.focus.entry?.type || 'memory',
-          recallUntil: Number(focusCreature.memory.focus.recallUntil?.toFixed?.(2) ?? focusCreature.memory.focus.recallUntil ?? 0)
+          recallUntil: roundedNumber(focusCreature.memory.focus.recallUntil, 2)
         } : null,
-        memories: Array.isArray(focusCreature.memory?.locations)
-          ? focusCreature.memory.locations.slice(0, 5).map(memory => ({
+        memories: focusMemories
+          .map(memory => ({
             type: memory.type || memory.tag || 'memory',
-            strength: Number(memory.strength?.toFixed?.(2) ?? memory.strength ?? 0),
-            x: Number(memory.x?.toFixed?.(1) ?? 0),
-            y: Number(memory.y?.toFixed?.(1) ?? 0),
-            age: Number(Math.max(0, (world.t ?? 0) - (memory.timestamp ?? world.t ?? 0)).toFixed(1))
+            strength: roundedNumber(memory.strength, 2),
+            x: roundedNumber(memory.x, 1),
+            y: roundedNumber(memory.y, 1),
+            age: roundedNumber(Math.max(0, finiteNumber(world.t, 0) - finiteNumber(memory.timestamp, finiteNumber(world.t, 0))), 1)
           }))
-          : []
       } : null,
       systems: {
         activeEvent: world.events?.activeEvent?.type ?? null,
@@ -1748,6 +1854,9 @@ export function initializeApp() {
     }
 
     const renderDt = steps * gameLoop.fixedDt;
+    gameState.smokeAdvanceCalls = (gameState.smokeAdvanceCalls || 0) + 1;
+    gameState.smokeSimulatedMs = (gameState.smokeSimulatedMs || 0) + Math.round(renderDt * 1000);
+    gameState.smokeLastAdvanceAt = performance.now();
     camera.update(renderDt);
     gameLoop.render(renderDt);
     gameLoop.updateUI(renderDt);
@@ -1830,13 +1939,32 @@ export function initializeApp() {
         const [visible] = getVisibleCreatures(1);
         if (!visible) return { ok: false, reason: 'no-visible-creature' };
         gameState.selectCreature(visible.id);
+        gameState.setInspectorVisible(true);
         const creature = world.registry?.get?.(visible.id) ||
           world.creatures?.find(item => item.id === visible.id);
         if (creature && camera?.travelTo) {
           camera.travelTo(creature.x, creature.y, { zoom: 0.92, duration: 0.25 });
         }
         uiController?.updateSelectedInfo?.();
+        uiController?.updateInspectorVisibility?.();
         return { ok: true, id: visible.id };
+      },
+      toggleSelectedFavorite: () => {
+        const id = gameState.selectedId;
+        if (!id) return { ok: false, reason: 'no-selected-creature' };
+        gameState.togglePin(id);
+        if (gameLoop) {
+          gameLoop._selectedInfoSignature = '';
+          gameLoop._inspectorSignature = '';
+        }
+        uiController?.updateSelectedInfo?.();
+        uiController?.updateInspectorVisibility?.();
+        return {
+          ok: true,
+          id,
+          favoriteCreatureId: gameState.pinnedId ?? null,
+          favorite: gameState.pinnedId === id
+        };
       },
       setPaused: (paused = true) => {
         gameState.paused = !!paused;
@@ -1891,12 +2019,25 @@ export function initializeApp() {
       },
       perfBudget: () => {
         const rendererStats = renderer?.performance?.getStats?.() ?? renderer?.performance?.stats ?? {};
+        const profilerStats = performanceProfiler.getStats?.() ?? {};
         const rendered = Number(rendererStats.rendered ?? renderer?.renderedCount ?? 0) || 0;
         const culled = Number(rendererStats.culled ?? renderer?.culledCount ?? 0) || 0;
         const totalObjects = Number(rendererStats.totalObjects ?? rendered + culled) || 0;
+        const sampledFps = Number(profilerStats.current?.fps || profilerStats.averages?.fps || 0) || 0;
+        const frameTimeMs = Number(profilerStats.current?.frameTime || profilerStats.averages?.frameTime || 0) || 0;
+        const deterministic = Number(gameState.smokeAdvanceCalls || 0) > 0;
 
         return {
           fps: Number(gameState.fps?.toFixed?.(1) ?? 0),
+          timing: {
+            mode: deterministic ? 'deterministic-step' : 'animation-frame',
+            deterministicFps: Number(gameState.fps?.toFixed?.(1) ?? 0),
+            sampledFps: Number(sampledFps.toFixed(1)),
+            frameTimeMs: Number(frameTimeMs.toFixed(2)),
+            profilerSamples: Number(profilerStats.samples || 0),
+            advanceCalls: Number(gameState.smokeAdvanceCalls || 0),
+            simulatedMs: Number(gameState.smokeSimulatedMs || 0)
+          },
           rendered,
           culled,
           totalObjects,

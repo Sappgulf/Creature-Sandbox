@@ -158,6 +158,22 @@ export function buildEcosystemStory(world = null, playableSnapshot = null) {
   };
 }
 
+const SESSION_GOAL_LABELS = {
+  population: 'Grow the herd',
+  predator_kills: 'Watch the hunt',
+  food_collected: 'Feed the herd',
+  births: 'Welcome babies',
+  survival_time: 'Keep them alive',
+  manual_spawns: 'Spawn creatures',
+  creature_throws: 'Try a toy launch',
+  prop_triggers: 'Trigger props',
+  prop_places: 'Build a toy',
+  god_actions: 'Use a god tool',
+  aquatic_alive: 'Protect aquatic life',
+  variant_alive: 'Find variants',
+  lineage_generation: 'Protect a family'
+};
+
 export function buildObjectiveRail(playableSnapshot = null, goals = []) {
   if (playableSnapshot?.active) {
     return {
@@ -172,17 +188,17 @@ export function buildObjectiveRail(playableSnapshot = null, goals = []) {
   if (activeGoal) {
     return {
       icon: activeGoal.icon || '🎯',
-      title: activeGoal.description || 'Session goal',
+      title: SESSION_GOAL_LABELS[activeGoal.type] || 'Session goal',
       progress: Math.round(clamp(Number(activeGoal.progress ?? 0), 0, 1) * 100),
-      action: 'Complete the active session goal.'
+      action: activeGoal.description || 'Complete the active session goal.'
     };
   }
 
   return {
     icon: '👁️',
-    title: 'Watch the ecosystem',
+    title: 'Watch the herd',
     progress: 0,
-    action: 'Select a creature or start a scenario.'
+    action: 'Select one creature, paint food, or start a scenario.'
   };
 }
 

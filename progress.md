@@ -386,3 +386,28 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - `npm run check:bundle` ✅ (`index-PXjxgWPU.js` `620514B` / `177002B` gzip under budget)
   - inspected `output/browser-smoke/desktop.png`, `mobile-compact.png`, and `mobile-large.png`.
   - external `$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js` failed before launch because its cached Playwright Chromium executable was missing; the checked-in browser smoke remained the reliable browser lane.
+
+2026-05-16
+- New request: execute upgrades 1-7 as a repo-grounded polish pass using applicable Codex skills.
+- Implemented visible trust and first-30-seconds polish:
+  - selecting a creature no longer silently favorites it; Favorite/Unfavorite is now an explicit inspector action.
+  - selected-creature UI and smoke text state use finite metric formatting so values like `NaN` cannot leak into visible copy.
+  - selected creatures now expose short story/behavior context, favorite/root tags, family context, and current drive.
+  - active session goals use readable objective labels in the rail; the canvas challenge overlay no longer duplicates the main objective rail except for compact completion pills.
+- Implemented mobile/menu/notification polish:
+  - the More drawer hierarchy is now Play, Goals, Sandbox Tools, Insights, and Save & Setup.
+  - mobile objective rail and drawer spacing were tightened so text remains visible without crowding the action bar.
+  - legacy achievement DOM banners were disabled in favor of the shared notification system to avoid duplicate mobile overlays.
+  - the web manifest now points at a tracked SVG app icon and includes the modern mobile web-app meta tag.
+- Hardened release confidence:
+  - browser smoke now auto-falls back when the default port is serving another app, while explicit bad ports/URLs fail with a clear error.
+  - smoke now asserts selected/favorite truth, finite selected metrics, no visible invalid text, deterministic-step perf labeling, and the richer selected-creature story payload.
+- Verification:
+  - `git diff --check` ✅
+  - `npm run lint` ✅
+  - `npm test` ✅ (154 passing)
+  - `npm run build` ✅ (130 modules, main app JS `623.93 kB` / `179.77 kB` gzip)
+  - `npm run check:bundle` ✅
+  - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large; default port fallback exercised from `4173` to `4175`)
+  - live browser check selected a creature, verified selected story text, and confirmed no visible `NaN`/`undefined` text.
+  - manifest/icon check: `/icons/icon.svg` serves `200 OK` as `image/svg+xml`; manifest lists the tracked SVG icon.

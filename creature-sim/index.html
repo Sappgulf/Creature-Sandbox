@@ -27,6 +27,7 @@
     href="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2064%2064%27%3E%3Crect%20width=%2764%27%20height=%2764%27%20rx=%2714%27%20ry=%2714%27%20fill=%27%230a0f1e%27/%3E%3Cpath%20d=%27M16%2020h32M16%2032h32M24%2044h24%27%20stroke=%27%23a5f3fc%27%20stroke-width=%276%27%20stroke-linecap=%27round%27/%3E%3Ccircle%20cx=%2720%27%20cy=%2744%27%20r=%274%27%20fill=%27%23facc15%27/%3E%3C/svg%3E" />
   <link rel="manifest" href="./manifest.json" />
   <meta name="theme-color" content="#0b1019" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
@@ -165,29 +166,29 @@
     <div class="drawer-content">
       <div class="drawer-handle"></div>
       <div class="drawer-header">
-        <span class="drawer-title">Menu</span>
+        <span class="drawer-title">More</span>
         <button id="overflow-drawer-close" class="drawer-close" aria-label="Close">×</button>
       </div>
       <div class="drawer-body drawer-menu">
         <div class="menu-section">
-          <div class="menu-section-title">Simulation</div>
+          <div class="menu-section-title">Play</div>
           <button class="menu-item" data-action="step">⏭️ Single Step</button>
           <button class="menu-item" id="menu-food" data-action="food">🌿 Paint Food</button>
           <button class="menu-item" id="menu-god-mode" data-action="god-mode">✨ God Mode</button>
           <button class="menu-item" data-action="props">🟣 Sandbox Props</button>
         </div>
         <div class="menu-section">
-          <div class="menu-section-title">Gameplay</div>
-          <button class="menu-item" id="menu-mode" data-action="mode">🎛️ Modes & Goals</button>
+          <div class="menu-section-title">Goals</div>
+          <button class="menu-item" id="menu-mode" data-action="mode">🎛️ Goals & Modes</button>
           <button class="menu-item" id="menu-upgrades" data-action="upgrades">✨ Upgrade Hub</button>
           <button class="menu-item" id="menu-campaign" data-action="campaign">🏆 Campaign</button>
           <button class="menu-item" id="menu-achievements" data-action="achievements">🏅 Achievements</button>
         </div>
         <div class="menu-section">
-          <div class="menu-section-title">Tools</div>
+          <div class="menu-section-title">Sandbox Tools</div>
           <button class="menu-item" id="menu-gene-editor" data-action="gene-editor">🧬 Gene Editor</button>
           <button class="menu-item" id="menu-scenario" data-action="scenario">🧪 Scenario Lab</button>
-          <button class="menu-item" id="menu-features" data-action="features">🎨 Features</button>
+          <button class="menu-item" id="menu-features" data-action="features">🎨 Visual Features</button>
           <button class="menu-item" id="menu-sound" data-action="sound">🔊 Sound</button>
         </div>
         <div class="menu-section">
@@ -196,7 +197,7 @@
           <button class="menu-item" id="menu-analytics" data-action="analytics">📊 Analytics</button>
         </div>
         <div class="menu-section">
-          <div class="menu-section-title">System</div>
+          <div class="menu-section-title">Save & Setup</div>
           <button class="menu-item" data-action="save">💾 Save Game</button>
           <button class="menu-item" data-action="load">📂 Load Game</button>
           <button class="menu-item" data-action="copy-seed">🔗 Copy Share Seed</button>
@@ -967,7 +968,7 @@
     <div class="title-row">
       <div class="title">Inspector</div>
       <div class="title-actions">
-        <button id="btn-pin" class="chip">Pin</button>
+        <button id="btn-pin" class="chip">Favorite</button>
         <button id="btn-root" class="chip">Set Root</button>
         <button id="btn-minimize-inspector" class="chip ghost" title="Minimize"
           aria-label="Minimize inspector">−</button>

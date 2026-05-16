@@ -498,10 +498,10 @@ export class AchievementSystem {
   // Show achievement notification
   showNotification(achievement) {
     if (!this.notificationsEnabled) return;
-    // If the central NotificationSystem exists, let it handle display via events
-    if (typeof window !== 'undefined' &&
-        window.notifications &&
-        typeof window.notifications.show === 'function') {
+    // ACHIEVEMENT_UNLOCKED is the canonical path; UIController forwards it to
+    // the shared NotificationSystem. Avoid the legacy DOM banner so mobile
+    // drawers and HUD controls are not covered by duplicate achievement UI.
+    if (typeof window !== 'undefined') {
       return;
     }
     if (typeof document === 'undefined' || !document.body) return;

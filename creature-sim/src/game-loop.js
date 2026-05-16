@@ -1105,8 +1105,11 @@ export class GameLoop {
     const statsEl = domCache.get('stats');
     const selectedInfoEl = domCache.get('selectedInfo');
     const interactionHintEl = domCache.get('interactionHint');
-    const focusId = gameState.pinnedId ?? gameState.selectedId ?? null;
+    const focusId = gameState.selectedId ?? gameState.pinnedId ?? null;
     const focusCreature = focusId ? this.world.getAnyCreatureById(focusId) : null;
+    const focusPresentation = focusCreature
+      ? this.upgradeController?.getCreaturePresentation?.(focusCreature) ?? null
+      : null;
     const statsSignature = [
       this.world.creatures.length,
       this.world.food.length,
@@ -1139,6 +1142,10 @@ export class GameLoop {
         focusCreature.memory?.focus?.tag || '',
         focusCreature.memory?.locations?.length || 0,
         focusCreature.memory?.locations?.[0]?.strength?.toFixed?.(2) ?? '',
+        focusPresentation?.nickname || '',
+        gameState.selectedId ?? '',
+        gameState.pinnedId ?? '',
+        gameState.lineageRootId ?? '',
         gameState.showQuirks ? 1 : 0,
         (focusCreature.quirks || []).join(',')
       ].join('|')
@@ -1159,7 +1166,14 @@ export class GameLoop {
     }
 
     if (selectedInfoEl && selectedSignature !== this._selectedInfoSignature) {
-      renderSelectedInfo(selectedInfoEl, focusCreature, { world: this.world, lineageTracker: this.world.lineageTracker });
+      renderSelectedInfo(selectedInfoEl, focusCreature, {
+        world: this.world,
+        lineageTracker: this.world.lineageTracker,
+        presentation: focusPresentation,
+        selectedId: gameState.selectedId,
+        pinnedId: gameState.pinnedId,
+        lineageRootId: gameState.lineageRootId
+      });
       this._selectedInfoSignature = selectedSignature;
     }
 

@@ -144,17 +144,14 @@ export class GameState {
    */
   selectCreature(id) {
     this.selectedId = id;
-    if (id && this.pinnedId !== id) {
-      this.pinnedId = id;
-    }
   }
 
   /**
    * Pin/unpin current selection
    */
-  togglePin() {
-    if (this.selectedId) {
-      this.pinnedId = this.pinnedId === this.selectedId ? null : this.selectedId;
+  togglePin(id = this.selectedId ?? this.pinnedId) {
+    if (id) {
+      this.pinnedId = this.pinnedId === id ? null : id;
     }
   }
 

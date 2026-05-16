@@ -807,6 +807,27 @@ input[type="range"]:focus-visible {
   color: var(--text-primary);
   border-top: none;
 }
+#selected-info .creature-story {
+  display: grid;
+  gap: 4px;
+  padding: 8px 9px;
+  border-radius: var(--radius-md);
+  background: rgba(57, 213, 255, 0.055);
+  border: 1px solid rgba(123, 183, 255, 0.16);
+}
+#selected-info .creature-story span {
+  color: var(--accent-primary);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+#selected-info .creature-story strong {
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+}
 #selected-info .subline.compact-meta {
   border-top: none;
   padding-top: 0;
@@ -4288,6 +4309,43 @@ body.home-active #btn-show-inspector {
     padding: 10px 12px;
   }
 }
+@media (max-width: 700px) {
+  .bottom-drawer .drawer-content {
+    max-height: min(82vh, 680px);
+    border-radius: 16px 16px 0 0;
+  }
+
+  .drawer-handle {
+    margin: 10px auto 6px;
+  }
+
+  .drawer-header {
+    padding: 6px 16px 12px;
+  }
+
+  .drawer-body {
+    padding: 12px 16px;
+  }
+
+  .drawer-menu {
+    padding: 6px 10px 12px;
+  }
+
+  .menu-section {
+    margin-bottom: 12px;
+  }
+
+  .menu-section-title {
+    margin-bottom: 5px;
+    font-size: 10px;
+  }
+
+  .menu-item {
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}
 /* ============================================================================
    WATCH MODE STRIP - Enhanced
    ============================================================================ */
@@ -4618,11 +4676,31 @@ body[data-readability-mode="minimal"] #view {
   .objective-rail {
     top: calc(env(safe-area-inset-top, 0px) + 8px);
     grid-template-columns: auto minmax(0, 1fr) auto;
-    padding: 7px 10px;
+    gap: 7px;
+    max-width: calc(100vw - 18px);
+    padding: 7px 9px;
+    border-radius: 18px;
+  }
+
+  .objective-copy {
+    gap: 2px;
+  }
+
+  .objective-copy strong {
+    font-size: 11px;
   }
 
   .objective-copy em {
-    display: none;
+    display: block;
+    max-height: 2.4em;
+    white-space: normal;
+    line-height: 1.2;
+  }
+
+  .objective-progress {
+    min-width: 36px;
+    padding: 3px 6px;
+    font-size: 10px;
   }
 
   .upgrade-section.two-col {

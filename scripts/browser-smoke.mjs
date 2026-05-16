@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import http from 'node:http';
+import net from 'node:net';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -11,8 +12,10 @@ const repoRoot = path.resolve(__dirname, '..');
 const outDir = path.join(repoRoot, 'output', 'browser-smoke');
 const headed = process.argv.includes('--headed');
 const keepServer = process.argv.includes('--keep-server');
-const port = Number(process.env.CREATURE_SMOKE_PORT || 4173);
-const baseUrl = process.env.CREATURE_SMOKE_URL || `http://127.0.0.1:${port}`;
+const explicitPort = process.env.CREATURE_SMOKE_PORT != null;
+const explicitBaseUrl = process.env.CREATURE_SMOKE_URL != null;
+let port = Number(process.env.CREATURE_SMOKE_PORT || 4173);
+let baseUrl = process.env.CREATURE_SMOKE_URL || `http://127.0.0.1:${port}`;
 
 const scenarios = [
   { name: 'desktop', viewport: { width: 1280, height: 800 }, mobile: false },
@@ -20,8 +23,14 @@ const scenarios = [
   { name: 'mobile-large', viewport: { width: 430, height: 932 }, mobile: true }
 ];
 
-function requestOk(url) {
+function probeServer(url) {
   return new Promise((resolve) => {
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      resolve(result);
+    };
     const req = http.get(url, (res) => {
       let body = '';
       res.setEncoding('utf8');
@@ -31,15 +40,48 @@ function requestOk(url) {
       res.on('end', () => {
         const statusOk = res.statusCode >= 200 && res.statusCode < 500;
         const appOk = body.includes('Creature Sandbox') && body.includes('./src/main.js');
-        resolve(statusOk && appOk);
+        finish({ reachable: true, statusOk, appOk, statusCode: res.statusCode, body });
       });
     });
-    req.on('error', () => resolve(false));
+    req.on('error', (error) => finish({
+      reachable: false,
+      statusOk: false,
+      appOk: false,
+      error: error.code || error.message
+    }));
     req.setTimeout(800, () => {
       req.destroy();
-      resolve(false);
+      finish({
+        reachable: false,
+        statusOk: false,
+        appOk: false,
+        error: 'timeout'
+      });
     });
   });
+}
+
+async function requestOk(url) {
+  const probe = await probeServer(url);
+  return probe.statusOk && probe.appOk;
+}
+
+function canListen(candidatePort) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.unref();
+    server.on('error', () => resolve(false));
+    server.listen(candidatePort, '127.0.0.1', () => {
+      server.close(() => resolve(true));
+    });
+  });
+}
+
+async function findAvailablePort(startPort) {
+  for (let candidate = startPort; candidate < startPort + 40; candidate += 1) {
+    if (await canListen(candidate)) return candidate;
+  }
+  throw new Error(`Could not find an available smoke port starting at ${startPort}`);
 }
 
 async function waitForServer(url, timeoutMs = 20000) {
@@ -52,7 +94,22 @@ async function waitForServer(url, timeoutMs = 20000) {
 }
 
 async function startServerIfNeeded() {
-  if (await requestOk(baseUrl)) return null;
+  const probe = await probeServer(baseUrl);
+  if (probe.statusOk && probe.appOk) return null;
+
+  if (explicitBaseUrl) {
+    throw new Error(`CREATURE_SMOKE_URL did not serve Creature Sandbox at ${baseUrl}`);
+  }
+
+  if (probe.reachable && !probe.appOk) {
+    if (explicitPort) {
+      throw new Error(`CREATURE_SMOKE_PORT ${port} is reachable but is not serving Creature Sandbox`);
+    }
+    const previousPort = port;
+    port = await findAvailablePort(port + 1);
+    baseUrl = `http://127.0.0.1:${port}`;
+    console.log(`Browser smoke: port ${previousPort} is serving another app; using ${port}`);
+  }
 
   const child = spawn(
     'npm',
@@ -120,6 +177,15 @@ async function captureCanvasSnapshot(page, filePath) {
   const [, base64] = dataUrl.split(',');
   assert.ok(base64, 'canvas snapshot should return base64 image data');
   await fs.writeFile(filePath, Buffer.from(base64, 'base64'));
+}
+
+async function assertNoInvalidVisibleText(page, scenarioName) {
+  const visibleText = await page.locator('body').innerText({ timeout: 5000 });
+  assert.doesNotMatch(
+    visibleText,
+    /\b(?:NaN|undefined)\b/,
+    `${scenarioName}: visible UI should not expose invalid values`
+  );
 }
 
 async function clickWorld(page, x, y, { touch = false } = {}) {
@@ -196,6 +262,7 @@ async function runScenario(browser, scenario) {
   assert.ok(state.summary.totalCreatures >= (scenario.mobile ? 35 : 55), `${scenario.name}: should seed creatures`);
   assert.ok(state.summary.totalFood >= (scenario.mobile ? 120 : 200), `${scenario.name}: should seed food`);
   assert.ok(state.visibleCreatures.length > 0, `${scenario.name}: should report visible creatures`);
+  await assertNoInvalidVisibleText(page, scenario.name);
   await page.screenshot({ path: path.join(outDir, `${scenario.name}-clean.png`) });
 
   const director = await page.evaluate(() => window.__creatureSmoke.startScenario('first_ecosystem'));
@@ -222,6 +289,41 @@ async function runScenario(browser, scenario) {
     state = await readGameState(page);
   }
   assert.ok(state.selectedCreature, `${scenario.name}: creature selection should be reflected in text state`);
+  assert.equal(state.ui.selectedId, state.selectedCreature.id, `${scenario.name}: text state should expose the selected creature id`);
+  assert.equal(state.selectedCreature.isSelected, true, `${scenario.name}: selected creature payload should mark selected creature`);
+  assert.equal(state.selectedCreature.isFavorite, false, `${scenario.name}: selecting should not silently favorite the creature`);
+  assert.equal(Number.isFinite(state.selectedCreature.needs?.curiosity), true, `${scenario.name}: curiosity should be a finite selected-creature metric`);
+  assert.ok(state.selectedCreature.story?.reason, `${scenario.name}: selected creature payload should explain current behavior`);
+  assert.equal(state.selectedCreature.affordances?.canFavorite, true, `${scenario.name}: selected creature payload should expose favorite affordance`);
+  assert.doesNotMatch(
+    await page.locator('#selected-info').textContent(),
+    /\bNaN\b/,
+    `${scenario.name}: selected creature card should never render NaN`
+  );
+  await assertNoInvalidVisibleText(page, scenario.name);
+  if (scenario.mobile) {
+    const favoriteResult = await page.evaluate(() => window.__creatureSmoke.toggleSelectedFavorite());
+    assert.equal(favoriteResult.ok, true, `${scenario.name}: smoke favorite fallback should favorite the selected creature`);
+  } else {
+    await page.locator('#inspector:not(.hidden)').waitFor({ state: 'visible', timeout: 5000 });
+    assert.match(
+      await page.locator('#btn-pin').textContent(),
+      /Favorite/,
+      `${scenario.name}: inspector should label the favorite action truthfully`
+    );
+    await page.locator('#btn-pin').click();
+  }
+  await advance(page, 120);
+  state = await readGameState(page);
+  assert.equal(state.ui.favoriteCreatureId, state.selectedCreature.id, `${scenario.name}: favorite action should set favorite creature id`);
+  assert.equal(state.selectedCreature.isFavorite, true, `${scenario.name}: selected payload should reflect favorite state after action`);
+  if (!scenario.mobile) {
+    assert.match(
+      await page.locator('#btn-pin').textContent(),
+      /Unfavorite/,
+      `${scenario.name}: favorite action should become reversible after activation`
+    );
+  }
   await page.screenshot({ path: path.join(outDir, `${scenario.name}-selected.png`) });
 
   console.log(`  ${scenario.name}: spawn`);
@@ -284,6 +386,7 @@ async function runScenario(browser, scenario) {
   await advance(page, 240);
   state = await readGameState(page);
   assert.equal(state.ui.godMode, true, `${scenario.name}: god mode should toggle from watch strip`);
+  await assertNoInvalidVisibleText(page, scenario.name);
   await page.screenshot({ path: path.join(outDir, `${scenario.name}-god.png`) });
 
   console.log(`  ${scenario.name}: moments and god tools`);
@@ -363,6 +466,9 @@ async function runScenario(browser, scenario) {
   assert.ok(perf.totalObjects >= perf.rendered, `${scenario.name}: smoke perf total should cover rendered objects`);
   assert.equal(perf.rendered, perf.renderer.rendered, `${scenario.name}: smoke rendered count should come from renderer stats`);
   assert.equal(perf.culled, perf.renderer.culled, `${scenario.name}: smoke culled count should come from renderer stats`);
+  assert.equal(perf.timing?.mode, 'deterministic-step', `${scenario.name}: smoke perf should label deterministic timing`);
+  assert.ok(perf.timing.advanceCalls > 0, `${scenario.name}: smoke perf should count deterministic advances`);
+  assert.ok(Number.isFinite(perf.timing.frameTimeMs), `${scenario.name}: smoke perf should expose finite sampled frame time`);
   assert.ok(perf.assets.registeredSprites >= 20, `${scenario.name}: sprite manifest should be loaded`);
   assert.ok(perf.assets.tintedSpriteVariants <= 260, `${scenario.name}: tinted sprite cache should stay bounded`);
   assert.ok(perf.world.creatures <= 220, `${scenario.name}: smoke population should stay inside perf budget`);

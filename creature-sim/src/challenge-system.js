@@ -251,7 +251,7 @@ export class ChallengeSystem {
         .map(goal => ({
           id: goal.id,
           type: goal.type,
-          title: 'Goal',
+          title: goal.description || 'Session goal',
           description: goal.description,
           points: this.pointsForGoal(goal),
           progress: clamp(Number(goal.progress || 0), 0, 1),
@@ -319,6 +319,29 @@ export class ChallengeSystem {
     const recent = this.getRecentCompletions();
     const viewportWidth = Number(options.viewportWidth || ctx.canvas?.width || 0);
     const compact = viewportWidth > 0 && viewportWidth < 760;
+
+    if (this.sessionGoals) {
+      if (!recent.length) return;
+      const latest = recent[0];
+      const panelWidth = compact ? Math.min(260, viewportWidth - 24) : 280;
+      ctx.save();
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = 'rgba(8, 12, 20, 0.64)';
+      ctx.strokeStyle = 'rgba(74, 222, 128, 0.26)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(x, y, panelWidth, 34, 999);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(74, 222, 128, 0.92)';
+      ctx.font = '700 12px system-ui, sans-serif';
+      const label = latest.description || latest.title || 'Goal complete';
+      const text = `✓ ${label} +${latest.points}`;
+      ctx.fillText(text.length > 34 ? `${text.slice(0, 31)}…` : text, x + 12, y + 10);
+      ctx.restore();
+      return;
+    }
+
     const maxVisible = compact ? 1 : 2;
     const visibleActive = active.slice(0, maxVisible);
 

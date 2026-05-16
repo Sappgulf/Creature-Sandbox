@@ -427,10 +427,10 @@ export class InputManager {
 
     if (gameState.lineageRootId !== null) {
       gameState.lineageRootId = null;
-    } else if (gameState.pinnedId !== null) {
-      gameState.pinnedId = null;
     } else if (gameState.selectedId !== null) {
       gameState.selectedId = null;
+    } else if (gameState.pinnedId !== null) {
+      gameState.pinnedId = null;
     } else if (gameState.inspectorVisible) {
       gameState.setInspectorVisible(false);
       gameState.setInspectorAutoOpen(false);

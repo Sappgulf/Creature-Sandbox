@@ -4,6 +4,17 @@ import { buildBondsSummary, getCreatureEmotion, getLifeStageDisplay } from './up
 // Animated number counter helper
 const _counterState = new Map();
 let inspectorActiveTab = 'stats';
+const finiteNumber = (value, fallback = 0) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+};
+const formatFixed = (value, digits = 1, fallback = 0) => finiteNumber(value, fallback).toFixed(digits);
+const formatPercentValue = (value, fallback = 0) => {
+  const number = finiteNumber(value, fallback);
+  const percent = number <= 1 ? number * 100 : number;
+  return Math.round(Math.max(0, Math.min(100, percent)));
+};
+
 function animateNumber(key, target, duration = 400) {
   const now = performance.now();
   const state = _counterState.get(key);
@@ -214,7 +225,14 @@ export function renderInteractionHint(el, {
   el.setAttribute('aria-hidden', shouldHide ? 'true' : 'false');
 }
 
-export function renderSelectedInfo(el, creature, { world = null, lineageTracker = null } = {}) {
+export function renderSelectedInfo(el, creature, {
+  world = null,
+  lineageTracker = null,
+  presentation = null,
+  selectedId = null,
+  pinnedId = null,
+  lineageRootId = null
+} = {}) {
   if (!el) return;
   const isMobile = typeof window !== 'undefined' && (window.matchMedia?.('(max-width: 768px)').matches ?? false);
   if (!creature) {
@@ -276,30 +294,34 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     return disorders[d] || '';
   }).join('');
 
-  const headline = lineageName ? `${lineageName} · #${creature.id}${sexEmoji}${disorderEmojis}` : `Creature #${creature.id}${sexEmoji}${disorderEmojis}`;
+  const nickname = presentation?.nickname || null;
+  const identityName = nickname || lineageName;
+  const headline = identityName ? `${identityName} · #${creature.id}${sexEmoji}${disorderEmojis}` : `Creature #${creature.id}${sexEmoji}${disorderEmojis}`;
   const lifeStage = getLifeStageDisplay(creature);
   const emotion = getCreatureEmotion(creature);
   const bonds = buildBondsSummary(creature, world);
+  const isSelected = creature.id === selectedId;
+  const isFavorite = creature.id === pinnedId;
+  const isLineageRoot = creature.id === lineageRootId;
   const sublineParts = [
     dietLabel,
     `${lifeStage.icon} ${lifeStage.label}`,
-    `Age ${creature.age.toFixed(1)}s`
+    `Age ${formatFixed(creature.age, 1)}s`
   ];
   if (creature.parentId) {
     sublineParts.push(`Parent #${creature.parentId}`);
   }
 
-  const energy = creature.energy?.toFixed(1) ?? '0.0';
-  const maxHealth = creature.maxHealth ?? creature.health ?? 0;
-  const health = `${(creature.health ?? 0).toFixed(0)} / ${maxHealth.toFixed(0)}`;
-  const speed = creature.genes?.speed?.toFixed(2) ?? '0.00';
-  const sense = creature.genes?.sense?.toFixed(0) ?? '0';
-  const metabolism = creature.genes?.metabolism?.toFixed(2) ?? '0.00';
-  const aquatic = (creature.genes?.aquatic ?? 0).toFixed(2);
-  const aggression = Number(creature.genes?.aggression ?? creature.personality?.aggression ?? 0).toFixed(2);
-  const socialDrive = Math.round(Number(creature.needs?.socialDrive ?? creature.social?.bondStrength ?? 0));
-  const curiosityRaw = Number(creature.ecosystem?.curiosity ?? creature.personality?.curiosity ?? 0);
-  const curiosity = Math.round(curiosityRaw <= 1 ? curiosityRaw * 100 : curiosityRaw);
+  const energy = formatFixed(creature.energy, 1);
+  const maxHealth = finiteNumber(creature.maxHealth ?? creature.health, 0);
+  const health = `${formatFixed(creature.health, 0)} / ${maxHealth.toFixed(0)}`;
+  const speed = formatFixed(creature.genes?.speed, 2);
+  const sense = formatFixed(creature.genes?.sense, 0);
+  const metabolism = formatFixed(creature.genes?.metabolism, 2);
+  const aquatic = formatFixed(creature.genes?.aquatic, 2);
+  const aggression = formatFixed(creature.genes?.aggression ?? creature.personality?.aggression, 2);
+  const socialDrive = Math.round(finiteNumber(creature.needs?.socialDrive ?? creature.social?.bondStrength, 0));
+  const curiosity = formatPercentValue(creature.ecosystem?.curiosity ?? creature.needs?.curiosity ?? creature.personality?.curiosity, 0);
   const biomeInfo = world?.getBiomeAt?.(creature.x, creature.y);
   const biome = biomeInfo?.name ?? biomeInfo?.type ?? 'Unknown';
   const nameSuggestion = creature.nameSuggestion ? `💡 ${creature.nameSuggestion}` : null;
@@ -318,22 +340,26 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
   };
   const quirkLine = showQuirks ? `<div class="subline quirks">Quirks: ${quirks.map(q => quirkLabelMap[q] || q).join(', ')}</div>` : '';
   const quirkHint = quirks.length ? '<div class="hint">Press Q to toggle quirks</div>' : '';
-  const hunger = Number(creature.needs?.hunger ?? 0);
-  const stress = Number(creature.needs?.stress ?? creature.ecosystem?.stress ?? 0);
-  const energyNeed = Number(creature.needs?.energy ?? creature.energy ?? 0);
+  const hunger = finiteNumber(creature.needs?.hunger, 0);
+  const stress = finiteNumber(creature.needs?.stress ?? creature.ecosystem?.stress, 0);
+  const energyNeed = finiteNumber(creature.needs?.energy ?? creature.energy, 0);
   const goal = creature.goal?.current || creature.currentGoal || creature.state || 'exploring';
+  const normalizedGoal = String(goal).toLowerCase();
   const readableState = (() => {
     if (!creature.alive) return 'Gone';
-    if (hunger > 72 || creature.energy < 14) return 'Hungry';
+    if (hunger > 72 || finiteNumber(creature.energy, 0) < 14) return 'Hungry';
     if (stress > 64) return 'Scared';
-    if (goal === 'rest' || energyNeed < 32) return 'Resting';
-    if (goal === 'mate') return 'Looking for mate';
-    if (goal === 'eat') return 'Seeking food';
-    if (goal === 'wander') return 'Exploring';
+    if (normalizedGoal === 'rest' || energyNeed < 32) return 'Resting';
+    if (normalizedGoal === 'mate') return 'Looking for mate';
+    if (normalizedGoal === 'eat') return 'Seeking food';
+    if (normalizedGoal === 'wander') return 'Exploring';
     return String(goal).replaceAll('_', ' ');
   })();
   const memoryCount = Array.isArray(creature.memory?.locations) ? creature.memory.locations.length : 0;
   const stateTags = [
+    isFavorite ? 'Favorite' : null,
+    isSelected && !isFavorite ? 'Selected' : null,
+    isLineageRoot ? 'Story root' : null,
     `${emotion.icon} ${emotion.label}`,
     readableState,
     `Hunger ${Math.round(hunger)}`,
@@ -362,13 +388,26 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     if (focusMemory?.tag) return `Recalling ${memoryTypeLabel(focusMemory)} while ${readableState.toLowerCase()}.`;
     if (hunger > 72) return 'Moving because hunger is high.';
     if (stress > 64) return 'Moving because stress is high.';
-    if (goal === 'mate') return 'Looking for a compatible mate.';
-    if (goal === 'rest') return 'Conserving energy and seeking safety.';
-    if (goal === 'eat') return 'Searching for food using scent and memory.';
+    if (normalizedGoal === 'mate') return 'Looking for a compatible mate.';
+    if (normalizedGoal === 'rest') return 'Conserving energy and seeking safety.';
+    if (normalizedGoal === 'eat') return 'Searching for food using scent and memory.';
     return `Current drive: ${readableState.toLowerCase()}.`;
   })();
+  const focusLabel = isFavorite ? 'Favorite' : isLineageRoot ? 'Story root' : 'Selected';
+  const familyLabel = bonds.parentId
+    ? `from family #${familyRootId ?? bonds.parentId}`
+    : 'founding a new line';
+  const memoryLabel = memoryCount ? `${memoryCount} learned place${memoryCount === 1 ? '' : 's'}` : 'still learning the map';
+  const storyLine = `${lifeStage.label} ${dietLabel.toLowerCase()} ${familyLabel}; ${readableState.toLowerCase()} and ${memoryLabel}.`;
+  const storyMarkup = `
+    <div class="creature-story">
+      <span>${focusLabel}</span>
+      <strong>${storyLine}</strong>
+    </div>
+  `;
+
   const memoryRowsMarkup = memoryLocations.map(memory => {
-    const strength = Math.round((memory.strength ?? 0) * 100);
+    const strength = Math.round(finiteNumber(memory.strength, 0) * 100);
     const age = Number.isFinite(memory.timestamp) && world?.t != null
       ? `${Math.max(0, Math.round(world.t - memory.timestamp))}s ago`
       : 'recent';
@@ -398,6 +437,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
       <div class="subline">${sublineParts.join(' · ')}</div>
       ${nameSuggestion ? `<div class="muted tiny">${nameSuggestion}</div>` : ''}
       ${showQuirks ? `<div class="hint">Quirks: ${quirks.map(q => quirkLabelMap[q] || q).join(', ')}</div>` : quirkHint}
+      ${storyMarkup}
       ${stateTagMarkup}
       <div class="metrics compact">
         <span><span>Stage</span><span>${lifeStage.label}</span></span>
@@ -423,6 +463,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     ${nameSuggestion ? `<div class="muted tiny">${nameSuggestion}</div>` : ''}
     ${quirkLine || ''}
     ${quirkHint}
+    ${storyMarkup}
     ${stateTagMarkup}
     <div class="metrics">
       <span><span>Energy</span><span>${energy}</span></span>
@@ -626,12 +667,12 @@ export function renderInspector(model = {}, handlers = {}) {
     if (!creature) {
       pinBtn.disabled = true;
       pinBtn.classList.remove('active');
-      pinBtn.textContent = 'Pin';
+      pinBtn.textContent = 'Favorite';
       pinBtn.onclick = null;
     } else {
       pinBtn.disabled = false;
       pinBtn.classList.toggle('active', !!model.pinned);
-      pinBtn.textContent = model.pinned ? 'Unpin' : 'Pin';
+      pinBtn.textContent = model.pinned ? 'Unfavorite' : 'Favorite';
       pinBtn.onclick = handlers.onTogglePin ?? null;
     }
   }
@@ -808,10 +849,16 @@ export function renderInspector(model = {}, handlers = {}) {
     } else {
       lineageStoryPanel.classList.remove('hidden');
       lineageStoriesEl.innerHTML = stories.map(evt => {
-        return `<button class="story" data-root="${evt.rootId}"><strong>${evt.title}</strong><br><span class="muted">t=${evt.time.toFixed(1)}s</span></button>`;
+        const rootId = Number(evt.rootId);
+        const disabled = Number.isFinite(rootId) ? '' : ' disabled';
+        const rootAttr = Number.isFinite(rootId) ? ` data-root="${rootId}"` : '';
+        return `<button class="story"${rootAttr}${disabled}><strong>${evt.title}</strong><br><span class="muted">t=${finiteNumber(evt.time, 0).toFixed(1)}s</span></button>`;
       }).join('');
       lineageStoriesEl.querySelectorAll('.story').forEach(btn => {
-        btn.onclick = () => handlers.onInspectId?.(Number(btn.dataset.root));
+        const rootId = Number(btn.dataset.root);
+        btn.onclick = () => {
+          if (Number.isFinite(rootId)) handlers.onInspectId?.(rootId);
+        };
       });
     }
   }
