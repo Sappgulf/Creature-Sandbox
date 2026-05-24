@@ -251,7 +251,8 @@ export class ChallengeSystem {
         .map(goal => ({
           id: goal.id,
           type: goal.type,
-          title: 'Goal',
+          icon: goal.icon || '🎯',
+          title: goal.description || 'Complete the active goal',
           description: goal.description,
           points: this.pointsForGoal(goal),
           progress: clamp(Number(goal.progress || 0), 0, 1),
@@ -278,6 +279,23 @@ export class ChallengeSystem {
       const completedTime = Number(item.completedTime || 0);
       return now - completedTime < 5000;
     });
+  }
+
+  fitLabel(ctx, text, maxWidth) {
+    const label = String(text || '').trim();
+    if (!label) return '';
+    if (ctx.measureText(label).width <= maxWidth) return label;
+
+    const ellipsis = '…';
+    let low = 0;
+    let high = label.length;
+    while (low < high) {
+      const mid = Math.ceil((low + high) / 2);
+      const candidate = `${label.slice(0, mid).trimEnd()}${ellipsis}`;
+      if (ctx.measureText(candidate).width <= maxWidth) low = mid;
+      else high = mid - 1;
+    }
+    return `${label.slice(0, Math.max(0, low)).trimEnd()}${ellipsis}`;
   }
 
   serialize() {
@@ -318,41 +336,55 @@ export class ChallengeSystem {
     const active = this.getActiveChallenges();
     const recent = this.getRecentCompletions();
     const viewportWidth = Number(options.viewportWidth || ctx.canvas?.width || 0);
-    const compact = viewportWidth > 0 && viewportWidth < 760;
+    const layoutWidth = Number(options.layoutWidth || viewportWidth);
+    const pixelRatio = layoutWidth > 0 ? viewportWidth / layoutWidth : 1;
+    const compact = layoutWidth > 0 && layoutWidth < 760;
     const maxVisible = compact ? 1 : 2;
     const visibleActive = active.slice(0, maxVisible);
+    const sx = x * pixelRatio;
+    const sy = y * pixelRatio;
 
     ctx.save();
     ctx.textBaseline = 'top';
 
-    const panelWidth = compact ? Math.min(220, viewportWidth - 24) : 230;
-    const rowHeight = 26;
-    const panelHeight = 28 + visibleActive.length * rowHeight + (recent.length ? 24 : 0);
+    const panelWidth = (compact ? Math.min(230, layoutWidth - 20) : 248) * pixelRatio;
+    const rowHeight = (compact ? 26 : 29) * pixelRatio;
+    const panelHeight = ((compact ? 22 : 28) * pixelRatio) +
+      visibleActive.length * rowHeight +
+      (recent.length ? (compact ? 18 : 24) * pixelRatio : 0);
     ctx.fillStyle = 'rgba(8, 12, 20, 0.58)';
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.09)';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = Math.max(1, pixelRatio);
     ctx.beginPath();
-    ctx.roundRect(x, y, panelWidth, panelHeight, 12);
+    ctx.roundRect(sx, sy, panelWidth, panelHeight, 12 * pixelRatio);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.82)';
-    ctx.font = '600 12px system-ui, sans-serif';
-    ctx.fillText(`Level ${this.level} · ${this.points}/${this.nextLevelPoints} pts`, x + 10, y + 8);
+    ctx.font = `600 ${compact ? 11 * pixelRatio : 12 * pixelRatio}px system-ui, sans-serif`;
+    ctx.fillText(`Level ${this.level} · ${this.points}/${this.nextLevelPoints} pts`, sx + 10 * pixelRatio, sy + 7 * pixelRatio);
 
-    let offsetY = y + 31;
+    let offsetY = sy + (compact ? 27 : 31) * pixelRatio;
 
     for (const challenge of visibleActive) {
+      const label = this.fitLabel(
+        ctx,
+        `${challenge.icon ? `${challenge.icon} ` : ''}${challenge.title}`,
+        panelWidth - 20 * pixelRatio
+      );
       ctx.fillStyle = 'rgba(250, 204, 21, 0.92)';
-      ctx.font = '700 11px system-ui, sans-serif';
-      ctx.fillText(challenge.title, x + 10, offsetY);
+      ctx.font = `700 ${11 * pixelRatio}px system-ui, sans-serif`;
+      ctx.fillText(label, sx + 10 * pixelRatio, offsetY);
 
-      if (challenge.progress > 0) {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-        ctx.fillRect(x + 10, offsetY + 15, panelWidth - 20, 3);
-        ctx.fillStyle = 'rgba(74, 222, 128, 0.8)';
-        ctx.fillRect(x + 10, offsetY + 15, (panelWidth - 20) * clamp(challenge.progress, 0, 1), 3);
-      }
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.fillRect(sx + 10 * pixelRatio, offsetY + 15 * pixelRatio, panelWidth - 20 * pixelRatio, Math.max(2, 3 * pixelRatio));
+      ctx.fillStyle = 'rgba(74, 222, 128, 0.82)';
+      ctx.fillRect(
+        sx + 10 * pixelRatio,
+        offsetY + 15 * pixelRatio,
+        (panelWidth - 20 * pixelRatio) * clamp(challenge.progress, 0, 1),
+        Math.max(2, 3 * pixelRatio)
+      );
 
       offsetY += rowHeight;
     }
@@ -360,8 +392,8 @@ export class ChallengeSystem {
     if (recent.length) {
       const latest = recent[0];
       ctx.fillStyle = 'rgba(74, 222, 128, 0.9)';
-      ctx.font = '700 11px system-ui, sans-serif';
-      ctx.fillText(`✓ ${latest.title} +${latest.points}`, x + 10, offsetY);
+      ctx.font = `700 ${compact ? 10 * pixelRatio : 11 * pixelRatio}px system-ui, sans-serif`;
+      ctx.fillText(`✓ ${latest.title} +${latest.points}`, sx + 10 * pixelRatio, offsetY);
     }
 
     ctx.restore();

@@ -683,6 +683,8 @@ export class ControlStripController {
 
   // === WATCH MODE ===
   toggleWatchMode() {
+    this.closeSpawnDrawer({ restoreFocus: false });
+    this.closeOverflowDrawer({ restoreFocus: false });
     if (this.uiController?.onWatchModeToggle) {
       this.uiController.onWatchModeToggle();
     } else {

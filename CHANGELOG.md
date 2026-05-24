@@ -17,6 +17,55 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-05-24 — opening-hud-regression-lock — Planned
+- **Issues:** Continuing the gameplay/visual audit, the compact objective rail still truncated the most important session-goal copy, the mobile canvas challenge card left too little room for long goal labels, and browser smoke only asserted that some creature was visible rather than protecting the new creature-forward opening composition.
+- **Root Causes:** The mobile objective rail reused the desktop pill layout, the compact canvas challenge panel kept an older narrow width, and smoke assertions verified population counts without checking camera zoom, framed starter-cluster readability, objective-rail state, or accidental startup props.
+- **Fixes:** Convert the mobile objective rail into a wider two-line compact panel, give the compact challenge overlay more label width and clearer font sizing, and add browser-smoke assertions for opening zoom, visible starter creatures, zero startup props, and objective rail availability.
+- **Verification:** Planned: `git diff --check`; targeted ESLint for touched JS; `npm run lint`; `npm test`; `npm run build`; `npm run check:bundle`; `npm run smoke:browser`; local opening screenshot inspection.
+
+### 2026-05-24 — opening-hud-regression-lock — Implemented
+- **Issues:** The mobile objective rail was still squeezing long goals into a desktop-shaped pill; the compact canvas challenge panel had too little room for readable session-goal labels; and the smoke suite did not yet fail if the opening camera regressed back to a distant map view or if startup props completed prop goals before player action.
+- **Root Causes:** Mobile used the same single-line objective grid as desktop, compact challenge drawing retained the older narrow panel sizing, and browser smoke treated any visible creature as enough proof for the opening shot.
+- **Fixes:**
+  - Reworked the mobile objective rail into a full-width compact panel with two-line goal title support and a visible action subtitle.
+  - Widened the compact challenge card, increased compact label sizing, and kept fitted labels/progress rails for long active goals.
+  - Added browser-smoke assertions for opening camera zoom, visible starter-creature count, zero startup props, and objective-rail state.
+  - Bumped CSS/module cache keys for the new runtime/UI pass.
+- **Verification:** `git diff --check` (pass); targeted ESLint for touched JS (pass); `npm run lint` (pass); `npm test` (pass, 154 checks); `npm run build` (pass, main app JS `629.86 kB` / `181.11 kB` gzip); `npm run check:bundle` (pass, main JS `629864B` / `179628B` gzip under budget); `npm run smoke:browser` (pass: desktop, mobile-compact, mobile-large); inspected `output/browser-smoke/desktop-clean.png`, `output/browser-smoke/mobile-compact-clean.png`, and `output/browser-smoke/mobile-large-clean.png`; external `develop-web-game` client pass captured `output/web-game/opening-hud-pass/shot-0.png` and `state-0.json` with desktop zoom `0.9`, `12` visible creatures, and `0` startup props.
+
+### 2026-05-24 — opening-playfield-watch-polish — Planned
+- **Issues:** Current live play/audit needed a more creature-forward first gameplay view, less intrusive compact/mobile overlays, and a reliable watch-mode smoke path before larger gameplay claims. The startup camera framed too much of the 4000×2800 world, the random toybox opener could place props before the player acted and complete prop goals, and the desktop smoke path had timed out waiting for the watch strip.
+- **Root Causes:** Startup used the same broad default zoom for first-run framing; opener props reused the normal `SandboxProps.addProp()` event path; watch toggling did not proactively close transient drawers; and compact canvas overlays mixed CSS viewport and backing-canvas dimensions.
+- **Fixes:** Add a starter glade, dedicated opening zoom, instant camera jump/travel helpers, safer non-prop opener variety, drawer cleanup before watch-mode toggles, and CSS-viewport-aware compact challenge/toast rendering.
+- **Verification:** Planned: targeted ESLint; `git diff --check`; `npm run lint`; `npm test`; `npm run build`; `npm run check:bundle`; `npm run smoke:browser`; screenshot inspection.
+
+### 2026-05-24 — opening-playfield-watch-polish — Implemented
+- **Issues:** The first gameplay shot read as a distant simulation map rather than playable creature action; startup prop placement could falsely satisfy prop goals; compact overlays were still vulnerable to high-DPR sizing; watch mode needed stronger drawer cleanup before browser smoke; and Playwright MCP surfaced PWA warnings for stale manifest icon paths and missing `mobile-web-app-capable`.
+- **Root Causes:** New games jumped to a full-world default zoom, the toybox opener used the same prop placement event path as the player, compact overlays were not consistently driven by CSS viewport size, watch toggles left drawer state cleanup to callers, and `manifest.json` referenced PNG icons that were not checked in.
+- **Fixes:**
+  - Added camera `jumpTo()` / `travelTo()` helpers and a starter glade with mixed creatures, food, and a calm zone.
+  - Increased opening zoom on desktop/mobile and preserved a broader default zoom for later free navigation.
+  - Replaced automatic toybox prop placement with non-prop creature/chaos opener variety.
+  - Closed transient drawers before watch-mode toggles and kept compact challenge/toast sizing CSS-viewport aware.
+  - Updated the web app manifest to use an existing SVG icon and added `mobile-web-app-capable`.
+- **Verification:** `git diff --check` (pass); targeted ESLint for touched JS (pass); `npm run lint` (pass); `npm test` (pass, 154 checks); `npm run build` (pass, main app JS `629.87 kB` / `181.11 kB` gzip); `npm run check:bundle` (pass, main JS `629871B` / `179621B` gzip under budget); `npm run smoke:browser` (pass: desktop, mobile-compact, mobile-large); external `develop-web-game` client pass captured `output/web-game/opening-pass/shot-0.png`; Playwright MCP opened the local smoke URL with no new console warnings.
+
+### 2026-05-24 — overlay-readability-polish — Planned
+- **Issues:** Live desktop/mobile smoke review showed the canvas challenge overlay describing session objectives as generic `Goal` rows, with no visible progress rail at 0%; compact/mobile startup could stack multiple notification pills over the top playfield while objective chrome was visible; smoke/autostart sessions could inherit stale service-worker cache behavior; and early sprite requests could cache missing variants before the manifest finished loading.
+- **Root Causes:** `ChallengeSystem.getActiveChallenges()` discarded the session goal description/icon when adapting goals for canvas rendering; `NotificationSystem.draw()` only keyed compact behavior from backing canvas width; service-worker registration was unconditional; and `AssetLoader.requestSpriteFrames()` marked sprite keys unavailable before late manifest loads had a chance to register sheets.
+- **Fixes:** Preserve goal descriptions/icons in the challenge adapter, always draw a progress rail for the active goal, make notification layout use CSS viewport width with one compact toast at a time, skip service-worker registration during smoke/autostart URLs, and clear/retry unavailable sprite variants after manifest or legacy SVG loads settle.
+- **Verification:** Planned: `git diff --check`; `npm run lint`; `npm test`; `npm run build`; `npm run check:bundle`; `npm run smoke:browser`; desktop/mobile screenshot inspection.
+
+### 2026-05-24 — overlay-readability-polish — Implemented
+- **Issues:** Generic goal labels made the in-canvas challenge card weaker than the top objective rail; mobile startup could show stacked canvas notifications while a goal card and objective rail were already visible; smoke URLs still registered the service worker; and first-frame sprite requests could remember missing manifest assets too early.
+- **Root Causes:** The challenge adapter replaced every active session goal title with `Goal`; notification compact mode used backing canvas width instead of CSS viewport width; service-worker registration did not check runtime URL mode; and sprite availability failures were sticky even when a manifest load resolved later.
+- **Fixes:**
+  - Updated `ChallengeSystem` to carry session goal icons/descriptions, fit long labels, and always show a compact progress rail.
+  - Updated `NotificationSystem.draw()` to accept CSS layout dimensions, limit compact/mobile to one visible toast, and keep toast sizing consistent with high-DPR canvases.
+  - Updated smoke/autostart HTML startup to skip service-worker registration.
+  - Updated `AssetLoader` to auto-queue manifest loads for sprite requests, wait for manifest settlement before marking a sprite variant unavailable, and forget unavailable variants after successful SVG/sprite loads.
+- **Verification:** `git diff --check` (pass); `npm run lint` (pass); `npm test` (pass, 154 checks); `npm run build` (pass, main app JS `621.26 kB` / `178.69 kB` gzip); `npm run check:bundle` (pass, main JS `621262B` / `177198B` gzip under budget); `npm run smoke:browser` (pass: desktop, mobile-compact, mobile-large); inspected `output/browser-smoke/desktop.png`, `output/browser-smoke/mobile-compact.png`, and `output/browser-smoke/mobile-large.png`; local before/after screenshots captured under `output/manual-audit/`.
+
 ### 2026-05-14 — director-architecture-gameplay-loop — Planned
 - **Issues:** The repo-level redo request identified overlapping scenario, goal, achievement/progression, moment/director, and god-tool systems; active scenario objectives were partly split between UI panels and runtime state; saves did not preserve the newly requested favorite/selected creature context; and browser smoke did not verify the consolidated director/objective surface.
 - **Root Causes:** Creature Sandbox had grown useful systems in parallel (`PlayableScenarios`, `CampaignSystem`, `SessionGoals`, `ChallengeSystem`, `AchievementSystem`, `UnlockableAchievements`, `AutoDirector`, `MomentsSystem`, `ToolController`, god-mode input), but no single adapter boundary described the playable loop or coordinated persistence/testing.

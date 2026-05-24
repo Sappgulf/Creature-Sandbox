@@ -195,7 +195,10 @@ async function runScenario(browser, scenario) {
   assert.equal(state.ui.mobileLayout, scenario.mobile, `${scenario.name}: mobile layout should match viewport`);
   assert.ok(state.summary.totalCreatures >= (scenario.mobile ? 35 : 55), `${scenario.name}: should seed creatures`);
   assert.ok(state.summary.totalFood >= (scenario.mobile ? 120 : 200), `${scenario.name}: should seed food`);
-  assert.ok(state.visibleCreatures.length > 0, `${scenario.name}: should report visible creatures`);
+  assert.ok(state.camera.zoom >= (scenario.mobile ? 0.6 : 0.84), `${scenario.name}: opening camera should start close enough to read creatures`);
+  assert.ok(state.visibleCreatures.length >= (scenario.mobile ? 5 : 8), `${scenario.name}: opening view should frame a readable starter cluster`);
+  assert.equal(state.summary.totalProps, 0, `${scenario.name}: startup should not pre-complete prop goals before player action`);
+  assert.ok(state.upgrades?.objectiveRail?.title, `${scenario.name}: objective rail should expose the first actionable goal`);
   await page.screenshot({ path: path.join(outDir, `${scenario.name}-clean.png`) });
 
   const director = await page.evaluate(() => window.__creatureSmoke.startScenario('first_ecosystem'));

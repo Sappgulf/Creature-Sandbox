@@ -301,22 +301,24 @@ export class NotificationSystem {
     }
   }
 
-  draw(ctx, viewportWidth, _viewportHeight) {
+  draw(ctx, viewportWidth, _viewportHeight, options = {}) {
     if (this.notifications.length === 0) return;
 
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-    const compactViewport = viewportWidth <= 520;
-    const visibleCount = Math.min(this.notifications.length, compactViewport ? 2 : this.maxVisible);
-    const startY = compactViewport ? 72 : 100;
-    const spacing = compactViewport ? 36 : 44;
+    const layoutWidth = Number(options.layoutWidth || viewportWidth);
+    const pixelRatio = layoutWidth > 0 ? viewportWidth / layoutWidth : 1;
+    const compactViewport = layoutWidth <= 520;
+    const visibleCount = Math.min(this.notifications.length, compactViewport ? 1 : this.maxVisible);
+    const startY = (compactViewport ? 112 : 100) * pixelRatio;
+    const spacing = (compactViewport ? 38 : 44) * pixelRatio;
 
     for (let i = 0; i < visibleCount; i++) {
       const notif = this.notifications[i];
       const y = startY + (i * spacing);
 
-      this._drawNotification(ctx, notif, viewportWidth / 2, y, viewportWidth);
+      this._drawNotification(ctx, notif, viewportWidth / 2, y, viewportWidth, { layoutWidth, pixelRatio });
     }
 
     ctx.restore();
@@ -332,18 +334,38 @@ export class NotificationSystem {
     ctx.closePath();
   }
 
-  _drawNotification(ctx, notif, x, y, viewportWidth = 1024) {
+  _fitText(ctx, text, maxWidth) {
+    const label = String(text || '').trim();
+    if (!label || ctx.measureText(label).width <= maxWidth) return label;
+
+    const ellipsis = '…';
+    let low = 0;
+    let high = label.length;
+    while (low < high) {
+      const mid = Math.ceil((low + high) / 2);
+      const candidate = `${label.slice(0, mid).trimEnd()}${ellipsis}`;
+      if (ctx.measureText(candidate).width <= maxWidth) low = mid;
+      else high = mid - 1;
+    }
+    return `${label.slice(0, Math.max(0, low)).trimEnd()}${ellipsis}`;
+  }
+
+  _drawNotification(ctx, notif, x, y, viewportWidth = 1024, options = {}) {
     ctx.save();
     ctx.globalAlpha = notif.opacity * 0.95;
 
     // Apply slide-in animation (slide down from above)
-    const slideOffset = (1 - (notif.slideIn || 1)) * -20;
+    const pixelRatio = Number(options.pixelRatio || 1);
+    const layoutWidth = Number(options.layoutWidth || viewportWidth);
+    const slideOffset = (1 - (notif.slideIn || 1)) * -20 * pixelRatio;
     y += slideOffset;
 
     // Compact pill design
-    const compactViewport = viewportWidth <= 520;
-    const width = compactViewport ? Math.min(236, viewportWidth - 96) : 260;
-    const height = compactViewport ? 34 : 38;
+    const compactViewport = layoutWidth <= 520;
+    const width = compactViewport
+      ? Math.min(210 * pixelRatio, viewportWidth - (56 * pixelRatio))
+      : 260 * pixelRatio;
+    const height = (compactViewport ? 30 : 38) * pixelRatio;
     const radius = height / 2;
 
     // Enhanced colors with better contrast
@@ -380,14 +402,15 @@ export class NotificationSystem {
 
     // Combined title + message on single line
     ctx.fillStyle = color.text;
-    ctx.font = `${compactViewport ? '600 12px' : '600 13px'} system-ui, -apple-system, sans-serif`;
+    ctx.font = `600 ${(compactViewport ? 12 : 13) * pixelRatio}px system-ui, -apple-system, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
     const displayText = notif.title
       ? `${notif.title} ${notif.message}`.trim()
       : notif.message;
-    ctx.fillText(displayText, x, y, width - 28);
+    const fittedText = this._fitText(ctx, displayText, width - (30 * pixelRatio));
+    ctx.fillText(fittedText, x, y);
 
     ctx.restore();
   }

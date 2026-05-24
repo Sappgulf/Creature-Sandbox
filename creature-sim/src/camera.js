@@ -141,6 +141,28 @@ export class Camera {
     this.travel = null;
   }
 
+  jumpTo(x, y, { zoom = this.targetZoom } = {}) {
+    if (Number.isFinite(zoom)) {
+      this.targetZoom = clamp(zoom, this.minZoom, this.maxZoom);
+    }
+    const clamped = this._clampPoint(x, y, this.targetZoom);
+    this.targetX = clamped.x;
+    this.targetY = clamped.y;
+    this.x = clamped.x;
+    this.y = clamped.y;
+    this.zoom = this.targetZoom;
+    this.travel = null;
+    this._clampPosition();
+    this._clampTargets();
+  }
+
+  travelTo(x, y, { zoom = this.targetZoom, duration = 0.65 } = {}) {
+    if (Number.isFinite(zoom)) {
+      this.targetZoom = clamp(zoom, this.minZoom, this.maxZoom);
+    }
+    this.startTravel(x, y, duration);
+  }
+
   startTravel(x, y, duration = 1.5) {
     const clamped = this._clampPoint(x, y, this.targetZoom);
     const safeDuration = Math.max(0.2, duration);

@@ -811,10 +811,18 @@ export class GameLoop {
     // Draw challenge system UI overlay
     if (this.challengeSystem?.draw) {
       const ctx = this.renderer.ctx;
-      const challengeY = canvas.width <= 520 ? 150 : 112;
+      const layoutWidth = this.camera.viewportWidth || canvas.width;
+      const layoutHeight = this.camera.viewportHeight || canvas.height;
+      const compactLayout = layoutWidth <= 520;
+      const bottomChrome = gameState.hudBottomHeight || (compactLayout ? 118 : 84);
+      const challengeY = compactLayout
+        ? Math.max(118, layoutHeight - bottomChrome - 104)
+        : 112;
       this.challengeSystem.draw(ctx, 12, challengeY, {
         viewportWidth: canvas.width,
-        viewportHeight: canvas.height
+        viewportHeight: canvas.height,
+        layoutWidth,
+        layoutHeight
       });
     }
 
@@ -934,7 +942,10 @@ export class GameLoop {
 
     // Render notifications
     if (this.hasNotifications()) {
-      this.notifications.draw(ctx, this.renderer.ctx.canvas.width, this.renderer.ctx.canvas.height);
+      this.notifications.draw(ctx, this.renderer.ctx.canvas.width, this.renderer.ctx.canvas.height, {
+        layoutWidth: this.camera.viewportWidth,
+        layoutHeight: this.camera.viewportHeight
+      });
     }
 
     // Render particles

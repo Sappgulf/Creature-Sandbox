@@ -7,7 +7,7 @@ import { SimulationProxy } from './simulation-proxy.js';
 import { Creature } from './creature.js';
 import './creature-features.js'; // Load feature extensions
 import { makeGenes } from './genetics.js';
-import { Camera } from './camera.js';
+import { Camera } from './camera.js?v=20260524-opening1';
 import { Renderer } from './renderer.js?v=20260423-assets1';
 import { ToolController } from './tools.js';
 import { AnalyticsTracker } from './analytics.js';
@@ -15,7 +15,7 @@ import { LineageTracker } from './lineage-tracker.js';
 import { MiniGraphs } from './mini-graphs.js';
 import { SaveSystem } from './save-system.js';
 import { ParticleSystem } from './particle-system.js?v=20260423-smoke3';
-import { NotificationSystem } from './notification-system.js?v=20260423-contrast3';
+import { NotificationSystem } from './notification-system.js?v=20260524-opening1';
 import { HeatmapSystem } from './heatmap-system.js';
 import { GeneEditor } from './gene-editor.js';
 import { EcosystemHealth } from './ecosystem-health.js';
@@ -30,7 +30,7 @@ import { PlayableScenarios } from './playable-scenarios.js';
 import { MobileSupport } from './mobile-support.js';
 import { AutoDirector } from './auto-director.js';
 import { MomentsSystem } from './moments-system.js';
-import { ControlStripController } from './control-strip.js?v=20260504-menu1';
+import { ControlStripController } from './control-strip.js?v=20260524-opening1';
 import { encodeSeed, getSeedFromUrl, setSeedInUrl } from './seed-utils.js';
 import { mobileGestureTutorial } from './mobile-gesture-tutorial.js?v=20260504-menu1';
 
@@ -39,7 +39,7 @@ import { domCache } from './dom-cache.js';
 import { gameState } from './game-state.js';
 import { InputManager } from './input-manager.js';
 import { UIController } from './ui-controller.js';
-import { GameLoop } from './game-loop.js?v=20260423-smoke2';
+import { GameLoop } from './game-loop.js?v=20260524-opening1';
 import { errorHandler } from './error-handler.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
@@ -54,7 +54,7 @@ import { godPowers } from './god-powers.js';
 import { UnlockableAchievements } from './unlockable-achievements.js';
 import { FamilyBondsSystem } from './family-bonds.js';
 import { MemoryLearningSystem } from './memory-learning.js';
-import { ChallengeSystem } from './challenge-system.js';
+import { ChallengeSystem } from './challenge-system.js?v=20260524-opening2';
 import { getDebugFlags } from './debug-flags.js';
 import { setupDevExports } from './dev-exports.js';
 import { UpgradeController } from './upgrade-controller.js';
@@ -131,7 +131,8 @@ function getRuntimeProfile() {
       compact: false,
       lowMemory: false,
       renderScale: 1,
-      defaultZoom: 0.25,
+      defaultZoom: 0.38,
+      openingZoom: 0.9,
       startupSeed: DESKTOP_STARTUP_SEED
     };
   }
@@ -149,7 +150,8 @@ function getRuntimeProfile() {
     compact: compactViewport,
     lowMemory,
     renderScale,
-    defaultZoom: mobileViewport ? 0.28 : 0.25,
+    defaultZoom: mobileViewport ? 0.4 : 0.38,
+    openingZoom: mobileViewport ? (compactViewport ? 0.68 : 0.74) : 0.9,
     startupSeed: compactViewport || lowMemory ? COMPACT_MOBILE_STARTUP_SEED : (mobileViewport ? MOBILE_STARTUP_SEED : DESKTOP_STARTUP_SEED)
   };
 }
@@ -1498,15 +1500,16 @@ export function initializeApp() {
       }
       world.addCalmZone?.(startX, startY, 140, 16, 0.55);
     } else if (roll < 0.92) {
-      label = 'Toybox opener';
-      const props = ['bounce', 'spinner', 'spring'];
-      for (let i = 0; i < props.length; i++) {
-        const theta = (Math.PI * 2 * i) / props.length;
+      label = 'Playful opener';
+      const types = ['flying', 'burrowing', 'omnivore'];
+      for (let i = 0; i < types.length; i++) {
+        const theta = (Math.PI * 2 * i) / types.length;
         const radius = 160 + Math.random() * 45;
         const x = startX + Math.cos(theta) * radius;
         const y = startY + Math.sin(theta) * radius;
-        world.sandbox?.addProp?.(props[i], x, y);
+        world.spawnCreatureType?.(types[i], x, y);
       }
+      world.triggerChaosNudge?.(0.08, 2.4);
     } else {
       label = 'Storm opener';
       world.triggerChaosNudge?.(0.16, 3.2);
@@ -1517,6 +1520,43 @@ export function initializeApp() {
     }
 
     notifications?.show?.(`🎲 ${label}`, 'info', 2000);
+  }
+
+  function applyStarterGlade() {
+    if (!world) return { x: world?.width * 0.5 || 0, y: world?.height * 0.5 || 0 };
+
+    const x = world.width * 0.5;
+    const y = world.height * 0.5;
+    const starterCreatures = [
+      ['herbivore', -92, -42],
+      ['herbivore', -42, 46],
+      ['omnivore', 52, -18],
+      ['herbivore', 104, 58],
+      ['aquatic', -118, 94],
+      ['flying', 132, -96],
+      ['burrowing', 4, 118]
+    ];
+
+    for (const [type, dx, dy] of starterCreatures) {
+      const jitterX = (Math.random() - 0.5) * 18;
+      const jitterY = (Math.random() - 0.5) * 18;
+      world.spawnCreatureType?.(type, x + dx + jitterX, y + dy + jitterY);
+    }
+
+    const foodTypes = ['berries', 'grass', 'fruit', 'grass', 'berries'];
+    for (let i = 0; i < foodTypes.length; i++) {
+      const angle = (Math.PI * 2 * i) / foodTypes.length - Math.PI / 5;
+      const radius = 70 + (i % 2) * 46;
+      world.addFood?.(
+        x + Math.cos(angle) * radius,
+        y + Math.sin(angle) * radius,
+        1.8,
+        foodTypes[i]
+      );
+    }
+
+    world.addCalmZone?.(x, y, 120, 24, 0.5);
+    return { x, y };
   }
 
   // Start new game
@@ -1546,12 +1586,17 @@ export function initializeApp() {
       setSeedInUrl(encodeSeed(nextSeed));
 
       applyReplayKickoff();
+      const openingFocus = applyStarterGlade();
 
       // Reset camera to center
       if (camera) {
         const runtimeProfile = getRuntimeProfile();
-        camera.focusOn(world.width * 0.5, world.height * 0.5);
-        camera.setZoom(runtimeProfile.defaultZoom);
+        if (typeof camera.jumpTo === 'function') {
+          camera.jumpTo(openingFocus.x, openingFocus.y, { zoom: runtimeProfile.openingZoom });
+        } else {
+          camera.focusOn(openingFocus.x, openingFocus.y);
+          camera.setZoom(runtimeProfile.openingZoom || runtimeProfile.defaultZoom);
+        }
         camera.clearUserOverride();
       }
 

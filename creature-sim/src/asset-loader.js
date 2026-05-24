@@ -90,6 +90,7 @@ export class AssetLoader {
     this.maxUntintedSpriteVariants = 192;
     this._missingAssetWarnings = new Set();
     this._manifestAutoQueued = false;
+    this._manifestSettled = false;
   }
 
   /**
@@ -109,6 +110,7 @@ export class AssetLoader {
       })
       .then(svgText => {
         this.assets.set(name, svgText);
+        this._forgetUnavailableSprite(name);
         return svgText;
       })
       .catch(error => {
@@ -146,6 +148,17 @@ export class AssetLoader {
       const oldestKey = cache.keys().next().value;
       cache.delete(oldestKey);
     }
+  }
+
+  _forgetUnavailableSprite(name) {
+    if (!name || this.unavailableSpriteKeys.size === 0) return;
+    const prefix = `${name}|`;
+    for (const key of Array.from(this.unavailableSpriteKeys)) {
+      if (key.startsWith(prefix)) {
+        this.unavailableSpriteKeys.delete(key);
+      }
+    }
+    this._missingAssetWarnings.delete(name);
   }
 
   _resolvePath(basePath, assetPath) {
@@ -305,6 +318,7 @@ export class AssetLoader {
         }
 
         this.spriteSheets.set(name, normalized);
+        this._forgetUnavailableSprite(name);
         return normalized;
       } catch (error) {
         console.warn(`Failed to load sprite sheet ${name}:`, error);
@@ -324,6 +338,7 @@ export class AssetLoader {
     if (typeof fetch === 'undefined') return Promise.resolve(null);
     this._manifestAutoQueued = true;
     this._manifestPath = path;
+    this._manifestSettled = false;
 
     const manifestPromise = (async () => {
       try {
@@ -375,6 +390,8 @@ export class AssetLoader {
           console.warn(`Failed to load sprite manifest ${path}:`, error);
         }
         return null;
+      } finally {
+        this._manifestSettled = true;
       }
     })();
 
@@ -532,6 +549,7 @@ export class AssetLoader {
 
   async requestSpriteFrames(name, { size = DEFAULT_SPRITE_SIZE, color = null } = {}) {
     if (typeof document === 'undefined' || typeof Image === 'undefined') return null;
+    this._queueManifestAutoLoad();
     const spriteSize = clampPositiveInt(size, DEFAULT_SPRITE_SIZE);
     const tintColor = color && typeof color === 'string' ? color : '';
     const key = this._getSpriteVariantKey(name, spriteSize, tintColor);
@@ -553,7 +571,11 @@ export class AssetLoader {
     }
 
     const preparePromise = (async () => {
-      const sheet = this._resolveSpriteSheetOrLegacy(name);
+      let sheet = this._resolveSpriteSheetOrLegacy(name);
+      if (!sheet && !this._manifestSettled) {
+        await this._waitForPromisesToSettle();
+        sheet = this._resolveSpriteSheetOrLegacy(name);
+      }
       if (!sheet) {
         this.unavailableSpriteKeys.add(key);
         if (!this._missingAssetWarnings.has(name)) {

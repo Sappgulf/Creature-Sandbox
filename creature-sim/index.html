@@ -27,10 +27,11 @@
     href="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2064%2064%27%3E%3Crect%20width=%2764%27%20height=%2764%27%20rx=%2714%27%20ry=%2714%27%20fill=%27%230a0f1e%27/%3E%3Cpath%20d=%27M16%2020h32M16%2032h32M24%2044h24%27%20stroke=%27%23a5f3fc%27%20stroke-width=%276%27%20stroke-linecap=%27round%27/%3E%3Ccircle%20cx=%2720%27%20cy=%2744%27%20r=%274%27%20fill=%27%23facc15%27/%3E%3C/svg%3E" />
   <link rel="manifest" href="./manifest.json" />
   <meta name="theme-color" content="#0b1019" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-  <link rel="stylesheet" href="styles.css?v=20260510-upgrades1" />
+  <link rel="stylesheet" href="styles.css?v=20260524-opening2" />
   <script>
     (() => {
       const params = new URLSearchParams(window.location.search);
@@ -1130,7 +1131,9 @@
 
   </main>
   <script>
-    if ('serviceWorker' in navigator) {
+    const smokeParams = new URLSearchParams(window.location.search);
+    const skipServiceWorker = smokeParams.has('smoke') || smokeParams.has('autosandbox') || smokeParams.has('autostart');
+    if (!skipServiceWorker && 'serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch(() => {
           // Silent fail: offline mode is optional
@@ -1138,7 +1141,7 @@
       });
     }
   </script>
-  <script type="module" src="./src/main.js?v=20260510-upgrades1"></script>
+  <script type="module" src="./src/main.js?v=20260524-opening2"></script>
 </body>
 
 </html>

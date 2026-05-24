@@ -386,3 +386,70 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - `npm run check:bundle` ✅ (`index-PXjxgWPU.js` `620514B` / `177002B` gzip under budget)
   - inspected `output/browser-smoke/desktop.png`, `mobile-compact.png`, and `mobile-large.png`.
   - external `$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js` failed before launch because its cached Playwright Chromium executable was missing; the checked-in browser smoke remained the reliable browser lane.
+
+2026-05-24
+- New request: audit everything with applicable Codex skills and drastically improve gameplay/visuals.
+- Skills used for this pass: `develop-web-game`, `game-studio:web-game-foundations`, `game-studio:game-ui-frontend`, and `game-studio:game-playtest`.
+- Baseline gates:
+  - `npm test` ✅ (154 passing)
+  - `npm run lint` ✅
+  - `npm run build` ✅ (`index-PXjxgWPU.js` `620.51 kB` / `178.48 kB` gzip)
+  - `npm run check:bundle` ✅
+  - initial `npm run smoke:browser` failed before app assertions because Playwright Chromium was missing; installed it with `npx playwright install chromium`.
+  - after install, `npm run smoke:browser` reached desktop watch/god and timed out waiting for `#watch-strip`, making watch-mode browser proof the first blocking regression.
+- Implemented opening gameplay/visual pass:
+  - added `Camera.jumpTo()` / `Camera.travelTo()` helpers so startup and selected-creature smoke hooks can frame subjects directly.
+  - increased first-run opening zoom and added a starter glade with mixed creatures, nearby food, and a calm zone so the first gameplay view contains readable creatures immediately.
+  - replaced random toybox opener auto-prop placement with creature/chaos variety so session prop goals are not completed by non-player startup events.
+  - made watch-mode toggles close transient drawers before syncing the watch strip.
+  - scaled/repositioned the canvas challenge card using CSS viewport dimensions and fit compact notification text to avoid high-DPR mobile overlay bloat.
+- Local probes:
+  - `output/manual-audit/desktop-opening-final-probe.png` shows the new desktop opening camera at `0.9` zoom with 12 visible creatures.
+  - `output/manual-audit/mobile-opening-final-probe.png` shows compact mobile opening at `0.68` zoom with 9 visible creatures and visible watch-mode strip when toggled.
+- Follow-up PWA polish from in-app Playwright: added `mobile-web-app-capable` and replaced missing manifest PNG icon entries with the checked-in herbivore SVG icon.
+- Final verification:
+  - `git diff --check` ✅
+  - targeted ESLint for touched JS ✅
+  - `npm run lint` ✅
+  - `npm test` ✅ (154 passing)
+  - `npm run build` ✅ (main app JS `629.87 kB` / `181.11 kB` gzip)
+  - `npm run check:bundle` ✅ (`index-D2ITlq79.js` `629871B` / `179621B` gzip under budget)
+  - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
+  - `node "$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js" --url "http://127.0.0.1:4173/?smoke=1&v=opening-client-20260524b" ...` ✅ after installing the skill-local Chromium cache
+  - inspected `output/web-game/opening-pass/shot-0.png`, `output/browser-smoke/desktop-clean.png`, and `output/browser-smoke/mobile-compact-clean.png`.
+  - Playwright MCP opened `http://127.0.0.1:4173/?smoke=1&v=final-open-20260524b` with no new console warnings in the tool output.
+
+2026-05-24
+- Continued with the `develop-web-game` and `web-game-foundations` constraints: keep Canvas 2D + DOM overlays, preserve `window.render_game_to_text` / `window.advanceTime`, and verify with checked-in smoke because the external browser client remained unreliable.
+- Live desktop/mobile smoke screenshots showed the challenge canvas card was using generic `Goal` labels, compact/mobile startup could show stacked notification pills over the playfield, smoke URLs still registered the service worker, and early sprite frame requests could cache unavailable manifest sprites before the manifest settled.
+- Implemented a bounded overlay/runtime reliability pass:
+  - `ChallengeSystem` now keeps session goal icon/description copy, fits long labels, and always renders a compact progress rail.
+  - `NotificationSystem.draw()` now accepts CSS viewport dimensions, limits compact/mobile to one visible toast, and sizes toast geometry/fonts consistently on high-DPR canvases.
+  - smoke/autostart URLs skip service-worker registration so browser smoke does not inherit stale cache state.
+  - `AssetLoader` waits for manifest settlement before marking sprite variants unavailable and clears unavailable markers after successful sprite/SVG loads.
+- Verification:
+  - `git diff --check` ✅
+  - `npm run lint` ✅
+  - `npm test` ✅ (154 passing)
+  - `npm run build` ✅ (main app JS `621.26 kB` / `178.69 kB` gzip)
+  - `npm run check:bundle` ✅ (`index-CRBsZRBw.js` `621262B` / `177198B` gzip under budget)
+  - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
+  - inspected `output/browser-smoke/desktop.png`, `mobile-compact.png`, and `mobile-large.png`, plus local before/after screenshots in `output/manual-audit/`.
+
+2026-05-24
+- Continued the gameplay/visual audit after the opening pass with a HUD readability/regression-lock pass.
+- Implemented:
+  - mobile objective rail now uses a full-width compact panel with two-line goal titles and a retained action subtitle instead of hiding the second line entirely.
+  - compact canvas challenge card gained more label width and clearer compact text sizing while preserving fitted labels and progress rails.
+  - browser smoke now asserts the new opening contract: close-enough camera zoom, a readable visible starter cluster, no startup props, and an exposed objective rail title.
+  - bumped CSS/module cache keys for the opening HUD pass.
+- Verification:
+  - `git diff --check` ✅
+  - targeted ESLint for touched JS ✅
+  - `npm run lint` ✅
+  - `npm test` ✅ (154 passing)
+  - `npm run build` ✅ (main app JS `629.86 kB` / `181.11 kB` gzip)
+  - `npm run check:bundle` ✅ (`index-CIgYLPRv.js` `629864B` / `179628B` gzip under budget)
+  - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
+  - inspected `output/browser-smoke/desktop-clean.png`, `mobile-compact-clean.png`, and `mobile-large-clean.png`.
+  - `node "$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js" --url "http://127.0.0.1:4173/?smoke=1&v=opening-hud-client-20260524" ...` ✅ captured `output/web-game/opening-hud-pass/shot-0.png` and `state-0.json` with desktop zoom `0.9`, 12 visible creatures, and 0 startup props.
