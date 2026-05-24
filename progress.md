@@ -453,3 +453,43 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
   - inspected `output/browser-smoke/desktop-clean.png`, `mobile-compact-clean.png`, and `mobile-large-clean.png`.
   - `node "$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js" --url "http://127.0.0.1:4173/?smoke=1&v=opening-hud-client-20260524" ...` ✅ captured `output/web-game/opening-hud-pass/shot-0.png` and `state-0.json` with desktop zoom `0.9`, 12 visible creatures, and 0 startup props.
+
+2026-05-24
+- Continued the audit after pushing `20f6796` to `origin/main`.
+- Next target: first-action clarity and playfield chrome.
+- Implemented:
+  - desktop startup now spotlights a starter creature from the glade so the left card shows an inspectable subject instead of `No creature selected`.
+  - mobile startup keeps the playfield clean and waits for manual creature selection rather than opening the detailed creature card automatically.
+  - normal play now uses the DOM objective rail as the primary goal surface; the canvas challenge overlay stays hidden while the rail is visible unless debug goal overlays are enabled.
+  - smoke text now exposes `objectiveRailVisible` and `challengeOverlayVisible`, and smoke asserts desktop spotlight/mobile clean entry.
+  - fixed a lineage rendering boundary where descendant arrays were consumed as Sets.
+  - prevented selected-creature `Curiosity NaN` from appearing in the opening card by removing the low-priority diagnostic stat from the compact desktop surface.
+- Verification:
+  - `git diff --check` ✅
+  - targeted ESLint ✅
+  - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
+  - inspected `output/browser-smoke/desktop-clean.png`, `mobile-compact-clean.png`, and `mobile-large-clean.png`; desktop has no duplicate challenge card and mobile entry has no selected card covering the lower playfield.
+  - `npm run lint` ✅
+  - `npm test` ✅ (154 passing)
+  - `npm run build` ✅ (main app JS `630.55 kB` / `181.40 kB` gzip)
+  - `npm run check:bundle` ✅ (`index-CJ7lJBo2.js` `630552B` / `179918B` gzip under budget)
+  - external `develop-web-game` client ✅ captured `output/web-game/opening-focus-pass/shot-0.png` and `state-0.json` with `objectiveRailVisible: true`, `challengeOverlayVisible: false`, desktop selected creature present, zoom `0.9`, 12 visible creatures, and 0 startup props.
+
+2026-05-24
+- Continued the audit with `develop-web-game`, `game-studio:game-ui-frontend`, `game-studio:game-playtest`, and finishing workflow because the user asked to keep improving and then commit/push to `main`.
+- Next target: remaining normal-play chrome weight.
+- Implemented:
+  - mini-graphs now default off, treating them as analytics/debug chrome instead of normal gameplay UI; existing `L` hotkey path still toggles them.
+  - smoke text exposes `miniGraphsVisible` and browser smoke asserts mini-graphs stay hidden in normal opening gameplay.
+  - desktop selected-creature card now acts as a compact field dossier with core vitals and current drive instead of a long diagnostic stat block.
+  - bumped CSS/module cache keys for the dossier pass.
+- Verification:
+  - `git diff --check` ✅
+  - targeted ESLint ✅
+  - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
+  - inspected `output/browser-smoke/desktop-clean.png`, `mobile-compact-clean.png`, and `mobile-large-clean.png`; desktop no longer shows the legacy `ENERGY` graph and the selected card is shorter.
+  - `npm run lint` ✅
+  - `npm test` ✅ (154 passing)
+  - `npm run build` ✅ (main app JS `635.98 kB` / `183.20 kB` gzip)
+  - `npm run check:bundle` ✅ (`index-GBwPEhSn.js` `635982B` / `181688B` gzip under budget)
+  - external `develop-web-game` client ✅ captured `output/web-game/dossier-pass/shot-0.png` and `state-0.json` with `objectiveRailVisible: true`, `challengeOverlayVisible: false`, `miniGraphsVisible: false`, desktop camera zoom `0.9`, and `0` startup props.

@@ -8,11 +8,11 @@ import { Creature } from './creature.js';
 import './creature-features.js'; // Load feature extensions
 import { makeGenes } from './genetics.js';
 import { Camera } from './camera.js?v=20260524-opening1';
-import { Renderer } from './renderer.js?v=20260423-assets1';
+import { Renderer } from './renderer.js?v=20260524-focus1';
 import { ToolController } from './tools.js';
 import { AnalyticsTracker } from './analytics.js';
 import { LineageTracker } from './lineage-tracker.js';
-import { MiniGraphs } from './mini-graphs.js';
+import { MiniGraphs } from './mini-graphs.js?v=20260524-dossier1';
 import { SaveSystem } from './save-system.js';
 import { ParticleSystem } from './particle-system.js?v=20260423-smoke3';
 import { NotificationSystem } from './notification-system.js?v=20260524-opening1';
@@ -39,7 +39,7 @@ import { domCache } from './dom-cache.js';
 import { gameState } from './game-state.js';
 import { InputManager } from './input-manager.js';
 import { UIController } from './ui-controller.js';
-import { GameLoop } from './game-loop.js?v=20260524-opening1';
+import { GameLoop } from './game-loop.js?v=20260524-focus1';
 import { errorHandler } from './error-handler.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
@@ -1537,10 +1537,14 @@ export function initializeApp() {
       ['burrowing', 4, 118]
     ];
 
+    let spotlightCreature = null;
     for (const [type, dx, dy] of starterCreatures) {
       const jitterX = (Math.random() - 0.5) * 18;
       const jitterY = (Math.random() - 0.5) * 18;
-      world.spawnCreatureType?.(type, x + dx + jitterX, y + dy + jitterY);
+      const creature = world.spawnCreatureType?.(type, x + dx + jitterX, y + dy + jitterY);
+      if (creature && (type === 'omnivore' || !spotlightCreature)) {
+        spotlightCreature = creature;
+      }
     }
 
     const foodTypes = ['berries', 'grass', 'fruit', 'grass', 'berries'];
@@ -1556,7 +1560,7 @@ export function initializeApp() {
     }
 
     world.addCalmZone?.(x, y, 120, 24, 0.5);
-    return { x, y };
+    return { x, y, creatureId: spotlightCreature?.id ?? null };
   }
 
   // Start new game
@@ -1587,6 +1591,10 @@ export function initializeApp() {
 
       applyReplayKickoff();
       const openingFocus = applyStarterGlade();
+      if (!runtimeProfile.mobile && openingFocus.creatureId != null) {
+        gameState.selectCreature(openingFocus.creatureId);
+        gameState.lineageRootId = openingFocus.creatureId;
+      }
 
       // Reset camera to center
       if (camera) {
@@ -1613,6 +1621,8 @@ export function initializeApp() {
       if (lineageTracker) {
         lineageTracker.reset();
       }
+
+      upgradeController?.updateObjectiveRail?.();
 
       console.debug('✅ New game started successfully!');
 
@@ -1690,6 +1700,7 @@ export function initializeApp() {
     const focusCreature = getFocusCreature();
     const homePage = domCache.get('homePage') || document.getElementById('home-page');
     const tutorialOverlay = document.getElementById('tutorial-overlay');
+    const objectiveRail = document.getElementById('objective-rail');
     const bounds = getViewportBounds();
 
     return JSON.stringify({
@@ -1708,7 +1719,10 @@ export function initializeApp() {
         godMode: !!gameState.godModeActive,
         godTool: gameState.godModeTool ?? null,
         mobileLayout: document.body.classList.contains('mobile-device'),
-        focusMode: document.body.classList.contains('mobile-focus-mode')
+        focusMode: document.body.classList.contains('mobile-focus-mode'),
+        objectiveRailVisible: !!objectiveRail && objectiveRail.textContent.trim().length > 0 && !document.body.classList.contains('home-active'),
+        challengeOverlayVisible: !!gameState.challengeOverlayVisible,
+        miniGraphsVisible: !!miniGraphs?.enabled
       },
       camera: {
         x: Number(camera.x.toFixed(1)),

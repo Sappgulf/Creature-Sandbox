@@ -17,6 +17,39 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-05-24 — field-dossier-analytics-declutter — Planned
+- **Issues:** Continued visual audit found remaining normal-play chrome weight: the legacy mini-graph energy histogram was still visible as a debug-looking black panel, and the desktop selected-creature card carried too many stats for the first few seconds of play.
+- **Root Causes:** `MiniGraphs` defaulted to enabled even though it is an analytics surface, and the desktop selected-creature renderer reused a broad diagnostic stat list instead of a compact field dossier.
+- **Fixes:** Default mini-graphs off for normal play while preserving the existing hotkey/debug path, expose that state in smoke text, assert it in browser smoke, and reduce the desktop selected-creature card to core vitals plus current drive.
+- **Verification:** Planned: `git diff --check`; targeted ESLint; `npm run lint`; `npm test`; `npm run build`; `npm run check:bundle`; `npm run smoke:browser`; desktop/mobile screenshot review; external web-game client pass; commit and push to `main`.
+
+### 2026-05-24 — field-dossier-analytics-declutter — Implemented
+- **Issues:** The default gameplay HUD still exposed an analytics-style mini-graph panel, and the desktop selected-creature card read like a diagnostics dump instead of a quick field dossier for the first selected creature.
+- **Root Causes:** `MiniGraphs` initialized as visible by default, smoke did not assert its normal-play visibility contract, and the selected-creature desktop renderer combined core vitals with low-priority simulation traits in the opening card.
+- **Fixes:**
+  - Defaulted mini-graphs off for normal play while preserving the existing `L` toggle path.
+  - Exposed `miniGraphsVisible` in `render_game_to_text()` and added browser-smoke coverage to keep the normal opening free of analytics chrome.
+  - Reworked the desktop selected-creature card into a compact field dossier with core vitals, biome/family/social context, and a concise current-drive block.
+  - Bumped CSS/module cache keys for the dossier pass.
+- **Verification:** `git diff --check` (pass); targeted ESLint for touched JS (pass); `npm run lint` (pass); `npm test` (pass, 154 checks); `npm run build` (pass, main app JS `635.98 kB` / `183.20 kB` gzip); `npm run check:bundle` (pass, main JS `635982B` / `181688B` gzip under budget); `npm run smoke:browser` (pass: desktop, mobile-compact, mobile-large); inspected `output/browser-smoke/desktop-clean.png`, `output/browser-smoke/mobile-compact-clean.png`, and `output/browser-smoke/mobile-large-clean.png`; external `develop-web-game` client pass captured `output/web-game/dossier-pass/shot-0.png` and `state-0.json` with `objectiveRailVisible: true`, `challengeOverlayVisible: false`, `miniGraphsVisible: false`, desktop camera zoom `0.9`, and `0` startup props.
+
+### 2026-05-24 — opening-focus-chrome-declutter — Planned
+- **Issues:** Continuing the audit after the pushed opening HUD pass, the first desktop gameplay state still had an empty selected-creature card, the active goal appeared in both the DOM objective rail and the canvas challenge overlay, mobile could become cluttered if a starter creature card opened automatically, and the lineage highlight path had not been covered by the latest opening smoke.
+- **Root Causes:** The starter glade spawned readable creatures without selecting a desktop subject; `GameLoop.render()` always drew the canvas challenge overlay even when the DOM rail was visible; mobile and desktop used the same selection state expectations; and `Renderer.drawWorld()` passed `world.descendantsOf()` arrays to creature rendering code that expected a `Set`.
+- **Fixes:** Spotlight a starter creature on desktop only, treat the DOM objective rail as the primary normal-play goal surface, hide the canvas challenge overlay unless debug goal overlays are enabled or the rail is unavailable, normalize lineage descendants into a `Set`, and expand smoke assertions around goal-surface state and mobile clean entry.
+- **Verification:** Planned: `git diff --check`; targeted ESLint; `npm run lint`; `npm test`; `npm run build`; `npm run check:bundle`; `npm run smoke:browser`; desktop/mobile screenshot review; external web-game client pass.
+
+### 2026-05-24 — opening-focus-chrome-declutter — Implemented
+- **Issues:** Desktop startup still showed an empty selected-card affordance despite readable starter creatures; the same active goal could render in both DOM and canvas chrome; mobile opening could be overrun by the full selected-creature card if auto-selection applied everywhere; and lineage-root rendering could throw when descendants were returned as arrays.
+- **Root Causes:** The opening glade did not return a spotlight creature; canvas challenge rendering did not check whether the DOM objective rail was already populated; selection behavior was not split by viewport; and `Renderer.drawWorld()` forwarded `world.descendantsOf()` directly to code expecting `.has()`.
+- **Fixes:**
+  - Desktop now selects and lineage-roots a starter creature from the opening glade, giving the first view a concrete inspectable subject.
+  - Mobile opening remains unselected so the lower playfield stays clear until the player taps a creature.
+  - `GameLoop` hides the canvas challenge overlay while the DOM objective rail is visible, and smoke state now exposes both goal-surface flags.
+  - Startup forces an immediate objective rail render so short playtest captures see the same chrome state as full smoke.
+  - `Renderer` normalizes lineage descendants into a `Set`, and the opening selected-creature card no longer exposes a non-finite curiosity value.
+- **Verification:** `git diff --check` (pass); targeted ESLint (pass); `npm run lint` (pass); `npm test` (pass, 154 checks); `npm run build` (pass, main app JS `630.55 kB` / `181.40 kB` gzip); `npm run check:bundle` (pass, main JS `630552B` / `179918B` gzip under budget); `npm run smoke:browser` (pass: desktop, mobile-compact, mobile-large); inspected `output/browser-smoke/desktop-clean.png`, `output/browser-smoke/mobile-compact-clean.png`, and `output/browser-smoke/mobile-large-clean.png`; external `develop-web-game` client pass captured `output/web-game/opening-focus-pass/shot-0.png` and `state-0.json` with `objectiveRailVisible: true`, `challengeOverlayVisible: false`, desktop selected creature present, zoom `0.9`, `12` visible creatures, and `0` startup props.
+
 ### 2026-05-24 — opening-hud-regression-lock — Planned
 - **Issues:** Continuing the gameplay/visual audit, the compact objective rail still truncated the most important session-goal copy, the mobile canvas challenge card left too little room for long goal labels, and browser smoke only asserted that some creature was visible rather than protecting the new creature-forward opening composition.
 - **Root Causes:** The mobile objective rail reused the desktop pill layout, the compact canvas challenge panel kept an older narrow width, and smoke assertions verified population counts without checking camera zoom, framed starter-cluster readability, objective-rail state, or accidental startup props.

@@ -747,6 +747,18 @@ input[type="range"]:focus-visible {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px var(--space-sm);
 }
+#selected-info.selected-dossier {
+  max-width: 292px;
+  padding: 12px 14px;
+}
+#selected-info .metrics.desktop-focus {
+  gap: 5px 12px;
+  padding: 8px 0;
+}
+#selected-info .memory-trail.compact {
+  gap: 4px;
+  padding: 8px;
+}
 #selected-info .metrics span {
   display: flex;
   justify-content: space-between;

@@ -199,6 +199,14 @@ async function runScenario(browser, scenario) {
   assert.ok(state.visibleCreatures.length >= (scenario.mobile ? 5 : 8), `${scenario.name}: opening view should frame a readable starter cluster`);
   assert.equal(state.summary.totalProps, 0, `${scenario.name}: startup should not pre-complete prop goals before player action`);
   assert.ok(state.upgrades?.objectiveRail?.title, `${scenario.name}: objective rail should expose the first actionable goal`);
+  assert.equal(state.ui.objectiveRailVisible, true, `${scenario.name}: DOM objective rail should be the primary goal surface`);
+  assert.equal(state.ui.challengeOverlayVisible, false, `${scenario.name}: canvas challenge overlay should stay hidden while the objective rail is visible`);
+  assert.equal(state.ui.miniGraphsVisible, false, `${scenario.name}: analytics mini-graphs should not occupy normal gameplay`);
+  if (scenario.mobile) {
+    assert.equal(state.selectedCreature, null, `${scenario.name}: opening should keep mobile playfield uncluttered before manual selection`);
+  } else {
+    assert.ok(state.selectedCreature, `${scenario.name}: desktop opening should spotlight an inspectable starter creature`);
+  }
   await page.screenshot({ path: path.join(outDir, `${scenario.name}-clean.png`) });
 
   const director = await page.evaluate(() => window.__creatureSmoke.startScenario('first_ecosystem'));

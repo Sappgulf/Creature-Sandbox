@@ -219,6 +219,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
   const isMobile = typeof window !== 'undefined' && (window.matchMedia?.('(max-width: 768px)').matches ?? false);
   if (!creature) {
     el.classList.remove('hidden');
+    el.classList.remove('selected-dossier');
     el.classList.add('selected-empty');
     el.innerHTML = isMobile
       ? `
@@ -238,6 +239,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
 
   el.classList.remove('hidden');
   el.classList.remove('selected-empty');
+  el.classList.add('selected-dossier');
 
   // Resolve lineage-friendly name if available
   let lineageName = null;
@@ -294,12 +296,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
   const health = `${(creature.health ?? 0).toFixed(0)} / ${maxHealth.toFixed(0)}`;
   const speed = creature.genes?.speed?.toFixed(2) ?? '0.00';
   const sense = creature.genes?.sense?.toFixed(0) ?? '0';
-  const metabolism = creature.genes?.metabolism?.toFixed(2) ?? '0.00';
-  const aquatic = (creature.genes?.aquatic ?? 0).toFixed(2);
-  const aggression = Number(creature.genes?.aggression ?? creature.personality?.aggression ?? 0).toFixed(2);
   const socialDrive = Math.round(Number(creature.needs?.socialDrive ?? creature.social?.bondStrength ?? 0));
-  const curiosityRaw = Number(creature.ecosystem?.curiosity ?? creature.personality?.curiosity ?? 0);
-  const curiosity = Math.round(curiosityRaw <= 1 ? curiosityRaw * 100 : curiosityRaw);
   const biomeInfo = world?.getBiomeAt?.(creature.x, creature.y);
   const biome = biomeInfo?.name ?? biomeInfo?.type ?? 'Unknown';
   const nameSuggestion = creature.nameSuggestion ? `💡 ${creature.nameSuggestion}` : null;
@@ -388,6 +385,15 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
       ` : '<div class="memory-list empty">No learned places yet.</div>'}
     </div>
   `;
+  const desktopMemoryMarkup = `
+    <div class="memory-trail compact">
+      <div class="memory-trail-head">
+        <span>Drive</span>
+        <strong>${focusMemory?.tag ? 'Recall' : readableState}</strong>
+      </div>
+      <div class="memory-reason">${whyLine}</div>
+    </div>
+  `;
 
   if (isMobile) {
     el.innerHTML = `
@@ -424,25 +430,19 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     ${quirkLine || ''}
     ${quirkHint}
     ${stateTagMarkup}
-    <div class="metrics">
+    <div class="metrics desktop-focus">
       <span><span>Energy</span><span>${energy}</span></span>
       <span><span>Health</span><span>${health}</span></span>
-      <span><span>Stage</span><span>${lifeStage.label}</span></span>
-      <span><span>Generation</span><span>${generation ?? '—'}</span></span>
-      <span><span>Family</span><span>${familyRootId ?? '—'}</span></span>
-      <span><span>Emotion</span><span>${emotion.label}</span></span>
       <span><span>Speed</span><span>${speed}</span></span>
       <span><span>Senses</span><span>${sense}px</span></span>
-      <span><span>Strength</span><span>${aggression}</span></span>
-      <span><span>Social</span><span>${socialDrive}</span></span>
-      <span><span>Curiosity</span><span>${curiosity}</span></span>
-      <span><span>Metabolism</span><span>${metabolism}</span></span>
-      <span><span>Children</span><span>${creature.stats?.births ?? 0}</span></span>
-      <span><span>Aquatic</span><span>${aquatic}</span></span>
+      <span><span>Hunger</span><span>${Math.round(hunger)}</span></span>
+      <span><span>Stress</span><span>${Math.round(stress)}</span></span>
       <span><span>Biome</span><span>${biome}</span></span>
+      <span><span>Family</span><span>${familyRootId ?? '—'}</span></span>
+      <span><span>Social</span><span>${socialDrive}</span></span>
     </div>
     <div class="subline compact-meta">${bonds.label}</div>
-    ${memoryTrailMarkup}
+    ${desktopMemoryMarkup}
   `;
 }
 

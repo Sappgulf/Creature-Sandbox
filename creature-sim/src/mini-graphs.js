@@ -3,7 +3,7 @@
 
 export class MiniGraphs {
   constructor() {
-    this.enabled = true;
+    this.enabled = false;
     this.autoHide = true; // Auto-hide when camera is moving
     this.opacity = 1.0; // Current opacity for fading
     this.targetOpacity = 1.0;

@@ -246,7 +246,10 @@ export class Renderer {
       if (this._lineageCache.rootId === lineageRootId && this._lineageCache.frame === world.t) {
         lineageSet = this._lineageCache.set;
       } else {
-        lineageSet = world.descendantsOf(lineageRootId);
+        const descendants = world.descendantsOf(lineageRootId);
+        lineageSet = descendants instanceof Set
+          ? descendants
+          : new Set((descendants || []).map(item => item?.id ?? item));
         this._lineageCache = { rootId: lineageRootId, set: lineageSet, frame: world.t };
       }
     }

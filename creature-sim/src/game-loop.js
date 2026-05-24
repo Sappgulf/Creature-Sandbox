@@ -808,8 +808,18 @@ export class GameLoop {
 
     this.renderer.drawWorld(this.world, opts);
 
-    // Draw challenge system UI overlay
-    if (this.challengeSystem?.draw) {
+    const objectiveRail = typeof document !== 'undefined'
+      ? document.getElementById('objective-rail')
+      : null;
+    const objectiveRailVisible = !!objectiveRail &&
+      objectiveRail.textContent.trim().length > 0 &&
+      !document.body.classList.contains('home-active');
+
+    // Draw challenge system UI overlay only when the DOM rail is unavailable or debug goals are enabled.
+    const shouldDrawChallengeOverlay = !!this.challengeSystem?.draw &&
+      (!objectiveRailVisible || gameState.showGoalDebug || gameState.showObserverDebug);
+    gameState.challengeOverlayVisible = shouldDrawChallengeOverlay;
+    if (shouldDrawChallengeOverlay) {
       const ctx = this.renderer.ctx;
       const layoutWidth = this.camera.viewportWidth || canvas.width;
       const layoutHeight = this.camera.viewportHeight || canvas.height;
