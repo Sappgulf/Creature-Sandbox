@@ -13,11 +13,11 @@ import { BehaviorConfig, setBehaviorWeights } from './behavior.js';
 import { applyUiExportMethods } from './ui-controller-exports.js';
 import { applyUiGameModeMethods } from './ui-controller-game-mode.js';
 import { applyUiPlayableMethods } from './ui-controller-playable.js';
-import { applyUiWatchMethods } from './ui-controller-watch.js';
-import { applyUiGodModeMethods } from './ui-controller-god-mode.js';
+import { applyUiWatchMethods } from './ui-controller-watch.js?v=20260526-tranche1';
+import { applyUiGodModeMethods } from './ui-controller-god-mode.js?v=20260526-tranche1';
 import { DEFAULT_SPAWN_TYPE, applyUiSpawnMethods } from './ui-controller-spawn.js';
 import { applyUiAchievementsMethods } from './ui-controller-achievements.js';
-import { applyUiPanelMethods } from './ui-controller-panels.js';
+import { applyUiPanelMethods } from './ui-controller-panels.js?v=20260526-tranche1';
 
 // Local helper to validate notification subsystem shape without relying on external export
 export function isNotificationSystem(candidate) {

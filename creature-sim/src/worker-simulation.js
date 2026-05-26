@@ -30,6 +30,55 @@ const BRIDGE_EVENTS = [
   'achievement:unlocked'
 ];
 
+function compactCreature(creature) {
+  if (!creature || typeof creature !== 'object') return creature ?? null;
+  return {
+    id: creature.id ?? null,
+    x: Number(creature.x ?? 0),
+    y: Number(creature.y ?? 0),
+    age: Number(creature.age ?? 0),
+    energy: Number(creature.energy ?? 0),
+    alive: creature.alive !== false,
+    species: creature.species || creature.kind || null,
+    parentId: creature.parentId ?? null,
+    genes: {
+      predator: !!creature.genes?.predator,
+      diet: Number(creature.genes?.diet ?? 0),
+      speed: Number(creature.genes?.speed ?? 0),
+      sense: Number(creature.genes?.sense ?? 0)
+    }
+  };
+}
+
+function sanitizeBridgePayload(payload) {
+  if (!payload || typeof payload !== 'object') return payload ?? null;
+  const output = Array.isArray(payload) ? [] : {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (typeof value === 'function') continue;
+    if (key === 'creature' || key === 'parent' || key === 'child' || key === 'attacker' || key === 'target') {
+      output[key] = compactCreature(value);
+      continue;
+    }
+    if (value == null || ['string', 'number', 'boolean'].includes(typeof value)) {
+      output[key] = value;
+      continue;
+    }
+    if (Array.isArray(value)) {
+      output[key] = value
+        .slice(0, 16)
+        .map(item => typeof item === 'object' ? compactCreature(item) : item)
+        .filter(item => typeof item !== 'function');
+      continue;
+    }
+    try {
+      output[key] = structuredClone(value);
+    } catch {
+      output[key] = compactCreature(value);
+    }
+  }
+  return output;
+}
+
 self.onmessage = function (e) {
   try {
     const { type, data } = e.data;
@@ -41,7 +90,7 @@ self.onmessage = function (e) {
         // Bridge events back to main thread
         BRIDGE_EVENTS.forEach(evType => {
           eventSystem.on(evType, (payload) => {
-            self.postMessage({ type: 'EVENT', eventType: evType, data: payload });
+            self.postMessage({ type: 'EVENT', eventType: evType, data: sanitizeBridgePayload(payload) });
           });
         });
         self.postMessage({ type: 'READY' });

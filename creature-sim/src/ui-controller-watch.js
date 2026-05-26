@@ -123,5 +123,7 @@ export function applyUiWatchMethods(UIController) {
       watchRecenterBtn.classList.toggle('active', isSuspended);
       watchRecenterBtn.setAttribute('aria-label', isSuspended ? 'Re-center to auto director' : 'Auto director active');
     }
+
+    this.upgradeController?.updateObjectiveRail?.();
   };
 }

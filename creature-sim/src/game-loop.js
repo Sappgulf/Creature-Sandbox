@@ -22,7 +22,7 @@ import {
   renderInspector,
   renderAnalyticsCharts,
   renderInteractionHint
-} from './ui.js';
+} from './ui.js?v=20260526-tranche1';
 
 // Local helper to validate notification subsystem shape without depending on cross-module export availability
 function isNotificationSystem(candidate) {
@@ -952,9 +952,17 @@ export class GameLoop {
 
     // Render notifications
     if (this.hasNotifications()) {
+      const objectiveRail = typeof document !== 'undefined'
+        ? document.getElementById('objective-rail')
+        : null;
+      const objectiveRailVisible = !!objectiveRail &&
+        objectiveRail.textContent.trim().length > 0 &&
+        !document.body.classList.contains('home-active');
       this.notifications.draw(ctx, this.renderer.ctx.canvas.width, this.renderer.ctx.canvas.height, {
         layoutWidth: this.camera.viewportWidth,
-        layoutHeight: this.camera.viewportHeight
+        layoutHeight: this.camera.viewportHeight,
+        objectiveRailVisible,
+        bottomChrome: hudBottomHeight
       });
     }
 
@@ -1161,9 +1169,10 @@ export class GameLoop {
         focusCreature.memory?.locations?.length || 0,
         focusCreature.memory?.locations?.[0]?.strength?.toFixed?.(2) ?? '',
         gameState.showQuirks ? 1 : 0,
-        (focusCreature.quirks || []).join(',')
+        (focusCreature.quirks || []).join(','),
+        gameState.inspectorVisible ? 'inspector' : 'field'
       ].join('|')
-      : `none|${gameState.showQuirks ? 1 : 0}`;
+      : `none|${gameState.showQuirks ? 1 : 0}|${gameState.inspectorVisible ? 'inspector' : 'field'}`;
     if (statsEl && statsSignature !== this._statsUiSignature) {
       renderStats(statsEl, this.world, gameState.fps, {
         fastForward: gameState.fastForward,
@@ -1180,7 +1189,11 @@ export class GameLoop {
     }
 
     if (selectedInfoEl && selectedSignature !== this._selectedInfoSignature) {
-      renderSelectedInfo(selectedInfoEl, focusCreature, { world: this.world, lineageTracker: this.world.lineageTracker });
+      renderSelectedInfo(selectedInfoEl, focusCreature, {
+        world: this.world,
+        lineageTracker: this.world.lineageTracker,
+        inspectorOpen: gameState.inspectorVisible
+      });
       this._selectedInfoSignature = selectedSignature;
     }
 

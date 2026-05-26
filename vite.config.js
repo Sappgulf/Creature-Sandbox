@@ -29,8 +29,9 @@ const chunkMap = [
 ];
 
 function manualChunks(id) {
+  const cleanId = id.split('?')[0];
   for (const chunk of chunkMap) {
-    if (chunk.paths.some(p => id.endsWith(p))) {
+    if (chunk.paths.some(p => cleanId.endsWith(p))) {
       return chunk.name;
     }
   }

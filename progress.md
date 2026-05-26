@@ -218,6 +218,32 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - `output/browser-smoke/polish/home-desktop.png`
 - Residual note: smoke screenshots finish in watch/god state by design, so primary-strip screenshots were partly limited by a local Playwright screenshot timeout after gameplay start; the checked-in smoke state still confirmed 30 registered sprites, no missing asset errors, and no console errors.
 
+2026-05-26
+- New request: use relevant skills, propose improvements, then execute selected tranche 1-8.
+- Implemented HUD/player-facing polish:
+- objective rail now carries active God/watch mode plus day/night/season/resource rhythm.
+- objective hint copy now maps common goal types to concrete player actions instead of generic completion text.
+- desktop selected-creature card compacts into an inspector chip when the Inspector is already open.
+- low-priority canvas notifications route away from the top objective rail; warnings/errors can still interrupt.
+- Implemented release-confidence polish:
+- added `npm run smoke:worker` for `?worker=1` startup, spawn, food, Watch Mode, screenshots/state, and frame-pacing checks across desktop and compact/large mobile profiles.
+- added frame-pacing smoke hooks and JSON artifacts to the main browser smoke.
+- fixed worker event bridge payloads so non-cloneable creature functions do not break worker messaging.
+- refreshed the visible objective rail from Watch/God state changes so smoke metadata and screenshots agree immediately.
+- Implemented startup/bundle trim:
+- Gene Editor now lazy-loads behind a cached proxy instead of shipping on initial app bootstrap.
+- manual chunk matching now strips cache-bust query strings so lazy chunks stay split.
+- Final verification:
+- targeted ESLint for touched worker/smoke files ✅
+- `git diff --check` ✅
+- `npm run lint` ✅
+- `npm test` ✅ (154 checks)
+- `npm run build` ✅ (main JS `560.15 kB`, Gene Editor split into a `7.61 kB` chunk)
+- `npm run check:bundle` ✅
+- `npm run smoke:browser` ✅
+- `npm run smoke:worker` ✅
+- inspected `output/browser-smoke/desktop-selected.png`, `output/browser-smoke/mobile-compact-god.png`, and `output/browser-smoke-worker/mobile-compact-watch.png` ✅
+
 - Continued asset/UI polish pass:
 - Replaced home feature emoji tiles with scenario-card art panels on the cards themselves so first-run desktop and mobile screens show actual game art.
 - Replaced spawn picker emoji icons with compact creature badges after Chromium proved unreliable with external SVG sprite masks in CSS.

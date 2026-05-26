@@ -751,6 +751,29 @@ input[type="range"]:focus-visible {
   max-width: 292px;
   padding: 12px 14px;
 }
+#selected-info.selected-inspector-chip {
+  max-width: 250px;
+  gap: 6px;
+  padding: 10px 12px;
+  opacity: 0.92;
+}
+#selected-info.selected-inspector-chip .headline {
+  font-size: 12px;
+}
+#selected-info.selected-inspector-chip .subline {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#selected-info.selected-inspector-chip .state-tags {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 5px;
+}
+#selected-info.selected-inspector-chip .state-tags span {
+  font-size: 10px;
+  padding: 3px 6px;
+}
 #selected-info .metrics.desktop-focus {
   gap: 5px 12px;
   padding: 8px 0;
@@ -4404,10 +4427,10 @@ body:not(.legacy-ui) #hud {
   z-index: 82;
   transform: translateX(-50%);
   display: grid;
-  grid-template-columns: auto minmax(160px, 360px) auto;
+  grid-template-columns: auto minmax(160px, 1fr) auto;
   align-items: center;
   gap: 10px;
-  max-width: min(560px, calc(100vw - 32px));
+  width: min(680px, calc(100vw - 32px));
   padding: 8px 12px;
   border: 1px solid rgba(151, 218, 255, 0.18);
   border-radius: 999px;
@@ -4467,6 +4490,36 @@ body:not(.legacy-ui) #hud {
   font-size: 11px;
   font-weight: 700;
   text-align: center;
+}
+
+.objective-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+}
+
+.objective-mode,
+.objective-world {
+  min-width: 0;
+  max-width: 145px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(151, 218, 255, 0.16);
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.objective-mode {
+  border-color: rgba(168, 85, 247, 0.42);
+  background: rgba(88, 28, 135, 0.28);
+  color: #f4e8ff;
 }
 
 .upgrade-panel-body {
@@ -4674,6 +4727,38 @@ body[data-readability-mode="minimal"] #view {
     min-width: 38px;
     padding: 3px 6px;
     font-size: 10px;
+  }
+
+  .objective-status {
+    display: grid;
+    justify-items: end;
+    gap: 4px;
+  }
+
+  .objective-mode,
+  .objective-world {
+    max-width: 86px;
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+
+  .objective-world {
+    color: transparent;
+    position: relative;
+  }
+
+  .objective-world::after {
+    content: attr(data-short);
+    color: var(--text-secondary);
+    position: absolute;
+    inset: 2px 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-device .god-mode-indicator {
+    display: none;
   }
 
   .upgrade-section.two-col {

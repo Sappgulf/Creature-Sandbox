@@ -87,6 +87,9 @@ export class UpgradeController {
 
   init() {
     this.panel = document.getElementById('upgrade-panel');
+    if (this.uiController) {
+      this.uiController.upgradeController = this;
+    }
     document.body.dataset.readabilityMode = this.activeReadabilityMode;
 
     window.addEventListener('creature:toggle-upgrades-panel', () => this.togglePanel());
@@ -171,6 +174,47 @@ export class UpgradeController {
       emotion: getCreatureEmotion(creature),
       nickname: this.nicknames?.[creature?.id] || null,
       bonds: buildBondsSummary(creature, this.world)
+    };
+  }
+
+  getRailModeChip() {
+    if (gameState.godModeActive) {
+      const tool = String(gameState.godModeTool || 'food').replaceAll('_', ' ');
+      return {
+        id: 'god',
+        label: `God: ${tool}`,
+        icon: '✨'
+      };
+    }
+    if (gameState.watchModeEnabled) {
+      return {
+        id: gameState.watchModeFollow ? 'follow' : 'watch',
+        label: gameState.watchModeFollow ? 'Following' : 'Watch',
+        icon: gameState.watchModeFollow ? '🎯' : '👁️'
+      };
+    }
+    return null;
+  }
+
+  getWorldRhythmChip() {
+    const environment = this.world?.environment;
+    const season = environment?.getSeasonInfo?.() || {
+      label: this.world?.currentSeason || 'Season',
+      icon: '🌍'
+    };
+    const hour = Number(environment?.timeOfDay ?? this.world?.timeOfDay ?? 12);
+    const timeLabel = hour < 5 || hour >= 21
+      ? 'Night'
+      : hour < 8
+        ? 'Dawn'
+        : hour >= 18
+          ? 'Dusk'
+          : 'Day';
+    const foodRate = environment?.getSeasonModifier?.('food');
+    const foodLabel = Number.isFinite(foodRate) ? ` · Food ${Math.round(foodRate * 100)}%` : '';
+    return {
+      label: `${season.icon || '🌍'} ${season.label || season.name || 'Season'} · ${timeLabel}${foodLabel}`,
+      shortLabel: `${season.icon || '🌍'} ${timeLabel}`
     };
   }
 
@@ -463,14 +507,21 @@ export class UpgradeController {
     if (!rail) return;
     const story = buildEcosystemStory(this.world, this.playableScenarios?.getSnapshot?.());
     const objective = buildObjectiveRail(this.playableScenarios?.getSnapshot?.(), this.sessionGoals?.getGoals?.() ?? []);
+    const modeChip = this.getRailModeChip();
+    const rhythmChip = this.getWorldRhythmChip();
     rail.dataset.level = story.level;
+    rail.dataset.mode = modeChip?.id || 'none';
     rail.innerHTML = `
       <span class="objective-icon">${escapeHtml(objective.icon)}</span>
       <span class="objective-copy">
         <strong>${escapeHtml(objective.title)}</strong>
         <em>${escapeHtml(objective.action)}</em>
       </span>
-      <span class="objective-progress">${Math.round(objective.progress)}%</span>
+      <span class="objective-status">
+        ${modeChip ? `<span class="objective-mode">${escapeHtml(modeChip.icon)} ${escapeHtml(modeChip.label)}</span>` : ''}
+        <span class="objective-progress">${Math.round(objective.progress)}%</span>
+        <span class="objective-world" data-short="${escapeHtml(rhythmChip.shortLabel)}">${escapeHtml(rhythmChip.label)}</span>
+      </span>
     `;
   }
 

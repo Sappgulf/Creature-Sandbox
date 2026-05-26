@@ -214,12 +214,14 @@ export function renderInteractionHint(el, {
   el.setAttribute('aria-hidden', shouldHide ? 'true' : 'false');
 }
 
-export function renderSelectedInfo(el, creature, { world = null, lineageTracker = null } = {}) {
+export function renderSelectedInfo(el, creature, { world = null, lineageTracker = null, inspectorOpen = false } = {}) {
   if (!el) return;
   const isMobile = typeof window !== 'undefined' && (window.matchMedia?.('(max-width: 768px)').matches ?? false);
+  const useInspectorChip = !isMobile && !!inspectorOpen;
   if (!creature) {
     el.classList.remove('hidden');
     el.classList.remove('selected-dossier');
+    el.classList.remove('selected-inspector-chip');
     el.classList.add('selected-empty');
     el.innerHTML = isMobile
       ? `
@@ -240,6 +242,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
   el.classList.remove('hidden');
   el.classList.remove('selected-empty');
   el.classList.add('selected-dossier');
+  el.classList.toggle('selected-inspector-chip', useInspectorChip);
 
   // Resolve lineage-friendly name if available
   let lineageName = null;
@@ -394,6 +397,22 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
       <div class="memory-reason">${whyLine}</div>
     </div>
   `;
+
+  if (useInspectorChip) {
+    el.innerHTML = `
+      <div class="headline">
+        <span>${headline}</span>
+        <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>
+      </div>
+      <div class="subline">${lifeStage.icon} ${lifeStage.label} · ${emotion.icon} ${emotion.label} · ${readableState}</div>
+      <div class="state-tags">
+        <span>Energy ${energy}</span>
+        <span>Hunger ${Math.round(hunger)}</span>
+        <span>Stress ${Math.round(stress)}</span>
+      </div>
+    `;
+    return;
+  }
 
   if (isMobile) {
     el.innerHTML = `

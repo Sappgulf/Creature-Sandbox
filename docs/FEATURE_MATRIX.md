@@ -12,7 +12,7 @@ Status legend: Y = present/wired; N = missing or not wired. Mobile/Save/Load mar
 | Needs/behavior (hunger/energy/stress/social) | Y | Y | Y | Y | Needs verification for throttling/hysteresis. |
 | Memory/learning | Y | Y | Y | Y | Selected-creature panel and Inspector Memory tab explain current drive plus strongest remembered places. |
 | Life stages (baby/adult/elder) + reproduction/offspring + population guardrails | Y | Y | Y | Y | Life stage is visible in selected cards, smoke text, and in-world selected/status cues. |
-| Day/night + resource regrowth | Y | N | Y | Y | Day/night visuals depend on renderer settings. |
+| Day/night + resource regrowth | Y | Y | Y | Y | The objective rail now exposes a compact rhythm/resource chip; long-run behavior remains a manual feel check. |
 | Watch Mode controls | Y | Y | Y | Partial | Browser smoke verifies toggle, follow modes, watch screenshots, and watch/god UI state in runtime metadata. |
 | Auto-camera director | Y | Y | Y | N | Re-center/follow controls exist; long-session prioritization still needs tuning. |
 | Moments log + session summary | Y | Y | Y | Y | Moments and summary serialize/restore; browser smoke opens the panel and checks summary state. |
@@ -23,5 +23,5 @@ Status legend: Y = present/wired; N = missing or not wired. Mobile/Save/Load mar
 | Upgrade Hub: recipes, action cards, readability, discovery, seed gallery, postcards | Y | Y | Y | Y | Browser smoke exercises recipe preset, readability mode, action card, nickname, postcard, seed/save metadata, and balance probe hooks. |
 | Scenario medal/result summaries | Y | Y | Y | Y | Upgrade Hub shows survival, food stability, stress, and score/medal for active scenario runs. |
 | Save/load schema versioning + migrations | Y | N | Y | Y | Regression covers zero values, older fixture, memory, props, food bites, active events, runtime metadata providers, upgrade metadata, and thumbnail previews. |
-| Performance guardrails (throttling, spatial partitioning) | Y | Partial | Y | Partial | Browser smoke asserts live renderer rendered/culled counters, bounded sprite cache/population, and `npm run check:bundle` enforces post-build JS chunk budgets. |
-| Simulation proxy attachment contract | Y | Y | Partial | N/A | Worker world now stores/exposes attached lineage, particles, heatmaps, audio, notifications, achievements, family bonds, and memory-learning systems; worker mode remains opt-in. |
+| Performance guardrails (throttling, spatial partitioning) | Y | Partial | Y | Partial | Browser smoke asserts live renderer rendered/culled counters, bounded sprite cache/population, and frame-pacing artifacts; `npm run check:bundle` enforces post-build JS chunk budgets. |
+| Simulation proxy attachment contract | Y | Y | Y | N/A | Worker world stores/exposes attached lineage, particles, heatmaps, audio, notifications, achievements, family bonds, and memory-learning systems; `npm run smoke:worker` covers the opt-in runtime on desktop and mobile profiles. |

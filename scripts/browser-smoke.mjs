@@ -8,9 +8,11 @@ import { chromium } from 'playwright';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
-const outDir = path.join(repoRoot, 'output', 'browser-smoke');
 const headed = process.argv.includes('--headed');
 const keepServer = process.argv.includes('--keep-server');
+const workerMode = process.argv.includes('--worker') || process.env.CREATURE_SMOKE_WORKER === '1';
+const sampleRealtime = !process.argv.includes('--no-realtime');
+const outDir = path.join(repoRoot, 'output', workerMode ? 'browser-smoke-worker' : 'browser-smoke');
 const port = Number(process.env.CREATURE_SMOKE_PORT || 4173);
 const baseUrl = process.env.CREATURE_SMOKE_URL || `http://127.0.0.1:${port}`;
 
@@ -158,6 +160,20 @@ async function captureHomeSnapshot(browser) {
   await context.close();
 }
 
+async function sampleFramePacing(page, durationMs = 900) {
+  await page.evaluate(() => {
+    window.__creatureSmoke?.startFramePacingSample?.();
+    window.__creatureSmoke?.setPaused?.(false);
+  });
+  await page.waitForTimeout(durationMs);
+  const sample = await page.evaluate(() => {
+    window.__creatureSmoke?.setPaused?.(true);
+    return window.__creatureSmoke?.finishFramePacingSample?.();
+  });
+  await page.evaluate(() => window.__creatureSmoke?.setPaused?.(true));
+  return sample;
+}
+
 async function runScenario(browser, scenario) {
   console.log(`Browser smoke: ${scenario.name}`);
   const context = await browser.newContext({
@@ -178,7 +194,8 @@ async function runScenario(browser, scenario) {
     errors.push({ type: 'pageerror', text: error.message });
   });
 
-  const url = `${baseUrl}/?smoke=1&v=${Date.now()}-${scenario.name}`;
+  const workerParam = workerMode ? '&worker=1' : '';
+  const url = `${baseUrl}/?smoke=1${workerParam}&v=${Date.now()}-${scenario.name}`;
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 12000 });
   await waitForPageCondition(page, () => typeof window.render_game_to_text === 'function', 'render_game_to_text');
   await waitForPageCondition(page, () => typeof window.__creatureSmoke?.saveRoundTrip === 'function', 'creature smoke hooks');
@@ -191,6 +208,7 @@ async function runScenario(browser, scenario) {
   console.log(`  ${scenario.name}: startup`);
   await advance(page, 900);
   let state = await readGameState(page);
+  assert.equal(!!state.systems?.workerMode, workerMode, `${scenario.name}: worker mode should match smoke target`);
   assert.equal(state.ui.homeVisible, false, `${scenario.name}: home should be hidden for smoke`);
   assert.equal(state.ui.mobileLayout, scenario.mobile, `${scenario.name}: mobile layout should match viewport`);
   assert.ok(state.summary.totalCreatures >= (scenario.mobile ? 35 : 55), `${scenario.name}: should seed creatures`);
@@ -200,14 +218,69 @@ async function runScenario(browser, scenario) {
   assert.equal(state.summary.totalProps, 0, `${scenario.name}: startup should not pre-complete prop goals before player action`);
   assert.ok(state.upgrades?.objectiveRail?.title, `${scenario.name}: objective rail should expose the first actionable goal`);
   assert.equal(state.ui.objectiveRailVisible, true, `${scenario.name}: DOM objective rail should be the primary goal surface`);
+  assert.ok(state.ui.worldRhythm, `${scenario.name}: objective rail should expose season/time rhythm`);
   assert.equal(state.ui.challengeOverlayVisible, false, `${scenario.name}: canvas challenge overlay should stay hidden while the objective rail is visible`);
   assert.equal(state.ui.miniGraphsVisible, false, `${scenario.name}: analytics mini-graphs should not occupy normal gameplay`);
   if (scenario.mobile) {
     assert.equal(state.selectedCreature, null, `${scenario.name}: opening should keep mobile playfield uncluttered before manual selection`);
   } else {
+    if (!state.selectedCreature && workerMode) {
+      const fallbackSelection = await page.evaluate(() => window.__creatureSmoke.selectVisibleCreature());
+      assert.equal(fallbackSelection.ok, true, `${scenario.name}: worker opening fallback should select a visible creature`);
+      await advance(page, 120);
+      state = await readGameState(page);
+    }
     assert.ok(state.selectedCreature, `${scenario.name}: desktop opening should spotlight an inspectable starter creature`);
   }
   await page.screenshot({ path: path.join(outDir, `${scenario.name}-clean.png`) });
+
+  if (workerMode) {
+    console.log(`  ${scenario.name}: worker interactions`);
+    const beforeSpawn = state.summary.totalCreatures;
+    await page.locator('#ctrl-spawn').click();
+    await page.locator('.spawn-card[data-creature="predator"]').click();
+    await page.locator('#spawn-drawer-confirm').click();
+    await page.locator('#spawn-drawer').waitFor({ state: 'hidden', timeout: 5000 });
+    await advance(page, 240);
+    await clickWorld(page, scenario.viewport.width * 0.5, scenario.viewport.height * 0.45, { touch: scenario.mobile });
+    await page.waitForTimeout(800);
+    state = await readGameState(page);
+    assert.ok(state.summary.totalCreatures >= beforeSpawn, `${scenario.name}: worker spawn flow should keep creature sync valid`);
+
+    const beforeFood = state.summary.totalFood;
+    await page.locator('#ctrl-food').click();
+    await clickWorld(page, scenario.viewport.width * 0.54, scenario.viewport.height * 0.48, { touch: scenario.mobile });
+    await page.waitForTimeout(800);
+    state = await readGameState(page);
+    assert.ok(state.summary.totalFood >= beforeFood, `${scenario.name}: worker food flow should keep food sync valid`);
+    assert.equal(state.ui.tool, 'food', `${scenario.name}: worker food tool should be reflected`);
+
+    await page.locator('#ctrl-watch').click();
+    await advance(page, 240);
+    state = await readGameState(page);
+    assert.equal(state.ui.watchMode, true, `${scenario.name}: worker watch mode should toggle on`);
+    await page.screenshot({ path: path.join(outDir, `${scenario.name}-watch.png`) });
+
+    const perf = await page.evaluate(() => window.__creatureSmoke.perfBudget());
+    assert.equal(!!perf.runtime?.workerMode, true, `${scenario.name}: worker perf runtime should expose worker mode truth`);
+    assert.ok(perf.canvas.width > 0 && perf.canvas.height > 0, `${scenario.name}: worker canvas should be measurable`);
+    assert.ok(perf.rendered > 0, `${scenario.name}: worker smoke perf should report live rendered objects`);
+    assert.ok(perf.assets.registeredSprites >= 20, `${scenario.name}: worker sprite manifest should be loaded`);
+
+    const framePacing = sampleRealtime ? await sampleFramePacing(page) : null;
+    if (framePacing) {
+      console.log(
+        `  ${scenario.name}: worker frame pacing ${framePacing.frames} frames, avg ${framePacing.avgFrameMs}ms, p95 ${framePacing.p95FrameMs}ms, quality ${framePacing.qualityStart || 'unknown'}→${framePacing.qualityEnd || 'unknown'}`
+      );
+      assert.ok(framePacing.frames >= 1, `${scenario.name}: worker real-time frame sample should capture app frames`);
+    }
+
+    await captureCanvasSnapshot(page, path.join(outDir, `${scenario.name}.png`));
+    await fs.writeFile(path.join(outDir, `${scenario.name}.json`), JSON.stringify({ state, perf, framePacing, errors }, null, 2));
+    assert.deepEqual(errors, [], `${scenario.name}: worker browser console should stay warning/error free`);
+    await context.close();
+    return { scenario: scenario.name, workerMode, creatures: state.summary.totalCreatures, food: state.summary.totalFood, perf, framePacing };
+  }
 
   const director = await page.evaluate(() => window.__creatureSmoke.startScenario('first_ecosystem'));
   const playable = director?.playable || director;
@@ -233,6 +306,12 @@ async function runScenario(browser, scenario) {
     state = await readGameState(page);
   }
   assert.ok(state.selectedCreature, `${scenario.name}: creature selection should be reflected in text state`);
+  if (!scenario.mobile) {
+    const inspectorOpen = await page.locator('#inspector:not(.hidden)').count();
+    if (inspectorOpen) {
+      await page.locator('#selected-info.selected-inspector-chip').waitFor({ state: 'visible', timeout: 3000 });
+    }
+  }
   await page.screenshot({ path: path.join(outDir, `${scenario.name}-selected.png`) });
 
   console.log(`  ${scenario.name}: spawn`);
@@ -295,6 +374,7 @@ async function runScenario(browser, scenario) {
   await advance(page, 240);
   state = await readGameState(page);
   assert.equal(state.ui.godMode, true, `${scenario.name}: god mode should toggle from watch strip`);
+  assert.equal(state.ui.objectiveMode, 'god', `${scenario.name}: objective rail should carry god-mode state`);
   await page.screenshot({ path: path.join(outDir, `${scenario.name}-god.png`) });
 
   console.log(`  ${scenario.name}: moments and god tools`);
@@ -369,6 +449,7 @@ async function runScenario(browser, scenario) {
   assert.ok(upgrades.state.recipes.length >= 4, `${scenario.name}: upgrade state should expose recipe presets`);
 
   const perf = await page.evaluate(() => window.__creatureSmoke.perfBudget());
+  assert.equal(!!perf.runtime?.workerMode, workerMode, `${scenario.name}: perf runtime should expose worker mode truth`);
   assert.ok(perf.canvas.width > 0 && perf.canvas.height > 0, `${scenario.name}: canvas should be measurable`);
   assert.ok(perf.rendered > 0, `${scenario.name}: smoke perf should report live rendered objects`);
   assert.ok(perf.totalObjects >= perf.rendered, `${scenario.name}: smoke perf total should cover rendered objects`);
@@ -378,12 +459,22 @@ async function runScenario(browser, scenario) {
   assert.ok(perf.assets.tintedSpriteVariants <= 260, `${scenario.name}: tinted sprite cache should stay bounded`);
   assert.ok(perf.world.creatures <= 220, `${scenario.name}: smoke population should stay inside perf budget`);
 
+  const framePacing = sampleRealtime ? await sampleFramePacing(page) : null;
+  if (framePacing) {
+    console.log(
+      `  ${scenario.name}: frame pacing ${framePacing.frames} frames, avg ${framePacing.avgFrameMs}ms, p95 ${framePacing.p95FrameMs}ms, quality ${framePacing.qualityStart || 'unknown'}→${framePacing.qualityEnd || 'unknown'}`
+    );
+    assert.ok(framePacing.frames >= 1, `${scenario.name}: real-time frame sample should capture app frames`);
+    assert.ok(Number.isFinite(framePacing.avgFrameMs), `${scenario.name}: real-time average frame interval should be finite`);
+    assert.ok(Number.isFinite(framePacing.p95FrameMs), `${scenario.name}: real-time p95 frame interval should be finite`);
+  }
+
   await captureCanvasSnapshot(page, path.join(outDir, `${scenario.name}.png`));
-  await fs.writeFile(path.join(outDir, `${scenario.name}.json`), JSON.stringify({ state, perf, errors }, null, 2));
+  await fs.writeFile(path.join(outDir, `${scenario.name}.json`), JSON.stringify({ state, perf, framePacing, errors }, null, 2));
 
   assert.deepEqual(errors, [], `${scenario.name}: browser console should stay warning/error free`);
   await context.close();
-  return { scenario: scenario.name, creatures: state.summary.totalCreatures, food: state.summary.totalFood, perf };
+  return { scenario: scenario.name, workerMode, creatures: state.summary.totalCreatures, food: state.summary.totalFood, perf, framePacing };
 }
 
 await fs.mkdir(outDir, { recursive: true });
@@ -398,7 +489,7 @@ try {
     results.push(await runScenario(browser, scenario));
   }
   await fs.writeFile(path.join(outDir, 'summary.json'), JSON.stringify(results, null, 2));
-  console.log(`Browser smoke passed: ${results.map(result => result.scenario).join(', ')}`);
+  console.log(`Browser smoke passed${workerMode ? ' (worker)' : ''}: ${results.map(result => result.scenario).join(', ')}`);
 } finally {
   if (browser) await browser.close();
   if (server && !keepServer) server.kill('SIGTERM');

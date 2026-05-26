@@ -15,9 +15,8 @@ import { LineageTracker } from './lineage-tracker.js';
 import { MiniGraphs } from './mini-graphs.js?v=20260524-dossier1';
 import { SaveSystem } from './save-system.js';
 import { ParticleSystem } from './particle-system.js?v=20260423-smoke3';
-import { NotificationSystem } from './notification-system.js?v=20260524-opening1';
+import { NotificationSystem } from './notification-system.js?v=20260526-tranche1';
 import { HeatmapSystem } from './heatmap-system.js';
-import { GeneEditor } from './gene-editor.js';
 import { EcosystemHealth } from './ecosystem-health.js';
 import { DebugConsole } from './debug-console.js';
 import { AudioSystem } from './audio-system.js';
@@ -38,8 +37,8 @@ import { mobileGestureTutorial } from './mobile-gesture-tutorial.js?v=20260504-m
 import { domCache } from './dom-cache.js';
 import { gameState } from './game-state.js';
 import { InputManager } from './input-manager.js';
-import { UIController } from './ui-controller.js';
-import { GameLoop } from './game-loop.js?v=20260524-focus1';
+import { UIController } from './ui-controller.js?v=20260526-tranche1';
+import { GameLoop } from './game-loop.js?v=20260526-tranche1';
 import { errorHandler } from './error-handler.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
@@ -57,7 +56,7 @@ import { MemoryLearningSystem } from './memory-learning.js';
 import { ChallengeSystem } from './challenge-system.js?v=20260524-opening2';
 import { getDebugFlags } from './debug-flags.js';
 import { setupDevExports } from './dev-exports.js';
-import { UpgradeController } from './upgrade-controller.js';
+import { UpgradeController } from './upgrade-controller.js?v=20260526-tranche1';
 import {
   GameDirector,
   GodToolSystem,
@@ -123,6 +122,8 @@ let scenarioEditorInstance = null;
 let scenarioEditorPromise = null;
 let campaignSystemInstance = null;
 let campaignSystemPromise = null;
+let geneEditorInstance = null;
+let geneEditorPromise = null;
 
 function getRuntimeProfile() {
   if (typeof window === 'undefined') {
@@ -186,6 +187,22 @@ async function ensureCampaignSystem() {
       });
   }
   return campaignSystemPromise;
+}
+
+async function ensureGeneEditor() {
+  if (geneEditorInstance) return geneEditorInstance;
+  if (!geneEditorPromise) {
+    geneEditorPromise = import('./gene-editor.js')
+      .then(({ GeneEditor }) => {
+        geneEditorInstance = new GeneEditor();
+        return geneEditorInstance;
+      })
+      .catch((error) => {
+        geneEditorPromise = null;
+        throw error;
+      });
+  }
+  return geneEditorPromise;
 }
 
 // Preload sprite assets
@@ -528,19 +545,38 @@ export function initializeApp() {
     return new SaveSystem();
   }, 'Save system initialization', null);
 
-  const geneEditor = errorHandler.safeExecute(() => {
-    return new GeneEditor();
-  }, 'Gene editor initialization', null);
+  const geneEditor = {
+    get isActive() {
+      return !!geneEditorInstance?.isActive;
+    },
+    async ensure() {
+      return ensureGeneEditor();
+    },
+    update(dt) {
+      geneEditorInstance?.update?.(dt);
+    },
+    updateSpawnButton() {
+      geneEditorInstance?.updateSpawnButton?.();
+    },
+    async spawnMultiple(targetWorld, x, y) {
+      const editor = await ensureGeneEditor();
+      return editor.spawnMultiple(targetWorld, x, y);
+    }
+  };
 
-  if (geneEditor) {
-    errorHandler.safeExecute(() => {
-      eventSystem.on('gene-editor:spawn', ({ x, y }) => {
-        geneEditor.spawnMultiple(world, x, y);
+  errorHandler.safeExecute(() => {
+    eventSystem.on('gene-editor:spawn', async ({ x, y }) => {
+      try {
+        const editor = await ensureGeneEditor();
+        editor.spawnMultiple(world, x, y);
         gameState.setGeneEditorSpawnMode(false);
-        geneEditor.updateSpawnButton?.();
-      });
-    }, 'Gene editor spawn binding');
-  }
+        editor.updateSpawnButton?.();
+      } catch (error) {
+        console.error('Gene editor spawn failed:', error);
+        notifyUI('Gene editor failed to load.', 'error', 3000);
+      }
+    });
+  }, 'Gene editor spawn binding');
 
   const ecoHealth = errorHandler.safeExecute(() => {
     return new EcosystemHealth();
@@ -1721,6 +1757,8 @@ export function initializeApp() {
         mobileLayout: document.body.classList.contains('mobile-device'),
         focusMode: document.body.classList.contains('mobile-focus-mode'),
         objectiveRailVisible: !!objectiveRail && objectiveRail.textContent.trim().length > 0 && !document.body.classList.contains('home-active'),
+        objectiveMode: upgradeController?.getRailModeChip?.()?.id || null,
+        worldRhythm: upgradeController?.getWorldRhythmChip?.()?.label || null,
         challengeOverlayVisible: !!gameState.challengeOverlayVisible,
         miniGraphsVisible: !!miniGraphs?.enabled
       },
@@ -1773,6 +1811,7 @@ export function initializeApp() {
       systems: {
         activeEvent: world.events?.activeEvent?.type ?? null,
         activeDisaster: world.disaster?.activeDisaster?.type ?? null,
+        workerMode: USE_SIM_WORKER,
         registeredSprites: assetLoader.spriteSheets?.size ?? 0,
         legacySprites: assetLoader.assets?.size ?? 0,
         particles: world.particles?.particles?.length ?? notifications?.particles?.length ?? 0,
@@ -1840,8 +1879,71 @@ export function initializeApp() {
     window.__creatureSmokeReady = true;
   }
 
+  let frameSampleState = null;
+
   if (shouldAutoStartSandbox || devTools.enabled) {
     window.__creatureSmoke = {
+      startFramePacingSample: () => {
+        frameSampleState?.unsubscribe?.();
+        const startedAt = performance.now();
+        const startPerf = renderer?.performance?.getStats?.() ?? {};
+        const startQuality = renderer?.performance?.getCurrentQuality?.() || renderer?.performance?.currentQuality || null;
+        frameSampleState = {
+          startedAt,
+          lastNow: null,
+          intervals: [],
+          longFrames: 0,
+          qualityStart: startQuality,
+          qualityEnd: startQuality,
+          qualityShifts: [],
+          renderedStart: Number(startPerf.rendered || 0),
+          renderedEnd: Number(startPerf.rendered || 0),
+          unsubscribe: null
+        };
+        frameSampleState.unsubscribe = eventSystem.on(GameEvents.FRAME_UPDATE, ({ now }) => {
+          const currentNow = Number(now) || performance.now();
+          if (frameSampleState.lastNow != null) {
+            const interval = currentNow - frameSampleState.lastNow;
+            frameSampleState.intervals.push(interval);
+            if (interval > 50) frameSampleState.longFrames += 1;
+          }
+          frameSampleState.lastNow = currentNow;
+          const quality = renderer?.performance?.getCurrentQuality?.() || renderer?.performance?.currentQuality || null;
+          if (quality && quality !== frameSampleState.qualityEnd) {
+            frameSampleState.qualityShifts.push({
+              atMs: Number((currentNow - startedAt).toFixed(1)),
+              from: frameSampleState.qualityEnd,
+              to: quality
+            });
+            frameSampleState.qualityEnd = quality;
+          }
+          const stats = renderer?.performance?.getStats?.() ?? {};
+          frameSampleState.renderedEnd = Number(stats.rendered || 0);
+        });
+        return { started: true, qualityStart: startQuality };
+      },
+      finishFramePacingSample: () => {
+        const sample = frameSampleState;
+        if (!sample) return null;
+        sample.unsubscribe?.();
+        frameSampleState = null;
+        const intervals = sample.intervals;
+        const sorted = intervals.slice().sort((a, b) => a - b);
+        const average = intervals.reduce((sum, value) => sum + value, 0) / Math.max(1, intervals.length);
+        const p95 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] || 0;
+        return {
+          durationMs: Number((performance.now() - sample.startedAt).toFixed(1)),
+          frames: intervals.length,
+          avgFrameMs: Number(average.toFixed(2)),
+          p95FrameMs: Number(p95.toFixed(2)),
+          framesOver50ms: sample.longFrames,
+          qualityStart: sample.qualityStart,
+          qualityEnd: sample.qualityEnd,
+          qualityShifts: sample.qualityShifts,
+          renderedStart: sample.renderedStart,
+          renderedEnd: sample.renderedEnd
+        };
+      },
       saveRoundTrip: async () => {
         if (!saveSystem) {
           return { ok: false, reason: 'save-system-unavailable' };
@@ -1964,7 +2066,8 @@ export function initializeApp() {
             culled: Number(rendererStats.culled ?? culled) || 0,
             totalObjects,
             cullRatio: Number(rendererStats.cullRatio?.toFixed?.(3) ?? rendererStats.cullRatio ?? 0),
-            renderEfficiency: Number(rendererStats.renderEfficiency?.toFixed?.(3) ?? rendererStats.renderEfficiency ?? 0)
+            renderEfficiency: Number(rendererStats.renderEfficiency?.toFixed?.(3) ?? rendererStats.renderEfficiency ?? 0),
+            quality: renderer?.performance?.getCurrentQuality?.() || renderer?.performance?.currentQuality || null
           },
           gameStateCounters: {
             rendered: gameState.renderedCount || 0,
@@ -1986,6 +2089,9 @@ export function initializeApp() {
             legacySprites: assetLoader.assets?.size ?? 0,
             tintedSpriteVariants: assetLoader.tintedSpriteCache?.size ?? 0,
             untintedSpriteVariants: assetLoader.untintedSpriteCache?.size ?? 0
+          },
+          runtime: {
+            workerMode: USE_SIM_WORKER
           }
         };
       }

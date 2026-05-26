@@ -245,13 +245,31 @@ export function applyUiPanelMethods(UIController) {
     this.dismissInteractionHint();
   };
 
-  UIController.prototype.onGeneEditorToggle = function() {
+  UIController.prototype.onGeneEditorToggle = async function() {
     const panel = domCache.get('geneEditorPanel') || document.getElementById('gene-editor-panel');
-    if (panel) {
-      if (panel.classList.contains('hidden')) {
-        this.closeMajorPanels('gene-editor-panel');
+    const shouldShow = panel?.classList.contains('hidden') ?? false;
+    let editor = null;
+    if (shouldShow) {
+      this.closeMajorPanels('gene-editor-panel');
+      try {
+        editor = await this.geneEditor?.ensure?.();
+      } catch (error) {
+        console.error('Gene editor failed to load:', error);
+        this.notifications?.show?.('Gene editor failed to load', 'error', 3000);
       }
+    } else {
+      editor = await this.geneEditor?.ensure?.().catch(() => null);
+    }
+
+    if (editor) {
+      if (shouldShow) editor.show?.();
+      else editor.hide?.();
+    } else if (panel) {
       this.togglePanelVisibility(panel);
+    }
+
+    if (panel) {
+      panel.setAttribute('aria-hidden', panel.classList.contains('hidden') ? 'true' : 'false');
     }
     this.updateSandboxUiVisibility();
     this.dismissInteractionHint();

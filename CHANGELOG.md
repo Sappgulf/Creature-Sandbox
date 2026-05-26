@@ -17,6 +17,26 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-05-26 — hud-worker-pacing-bundle-pass — Planned
+- **Issues:** The next audit tranche targeted eight remaining release-polish gaps: mobile God/mode chrome could collide with the objective rail, selected-creature information duplicated the desktop inspector, canvas notifications still competed with top objective chrome, objective rail copy was generic, worker mode had no checked smoke lane, frame pacing was not captured as an artifact, day/night/resource rhythm was not surfaced in normal HUD, and the Gene Editor still loaded on the startup path.
+- **Root Causes:** Objective/status HUD data was split across separate surfaces; selected-card rendering did not know whether the inspector was already open; notification layout lacked objective-rail context; session-goal copy reused generic fallbacks; the browser smoke script only covered the main-thread scenario path; runtime smoke state exposed aggregate performance but not sampled frame intervals; the day/night/food-cycle systems were renderer/simulation-only for players; and `GeneEditor` was statically imported by `app-bootstrap.js`.
+- **Fixes:** Fold active tool/watch and world rhythm into the objective rail, compact the selected card while the desktop inspector is open, route low-priority notifications away from the top rail, make objective hints action-oriented, add worker smoke and clone-safe worker event payloads, add frame-pacing smoke hooks/artifacts, surface the day/night/resource chip in text state and UI, and lazy-load the Gene Editor behind a cached proxy.
+- **Verification:** Planned: `git diff --check`; targeted ESLint; `npm run lint`; `npm test`; `npm run build`; `npm run check:bundle`; `npm run smoke:browser`; `npm run smoke:worker`; desktop/mobile screenshot review; docs/progress update.
+
+### 2026-05-26 — hud-worker-pacing-bundle-pass — Implemented
+- **Issues:** Mobile and desktop runtime chrome still exposed duplicated or competing status surfaces; worker mode could regress without a first-class smoke gate; frame pacing had no saved proof; and an optional gene-editing surface stayed in the main startup bundle.
+- **Root Causes:** `UpgradeController` rendered objective progress without active mode or environmental rhythm context; `renderSelectedInfo()` did not receive inspector visibility; `NotificationSystem.draw()` did not know when the objective rail was occupying the top lane; `render_game_to_text()` lacked objective/world rhythm and worker metadata; worker event payloads could include non-cloneable creature functions; and the Gene Editor import sat on the app bootstrap critical path.
+- **Fixes:**
+  - Added active mode/watch and day/night/season/resource chips to the objective rail, including compact mobile behavior and smoke-text metadata.
+  - Reworked selected-creature rendering into a compact desktop chip while the Inspector is open, preserving the fuller card when the Inspector is closed.
+  - Moved low-priority canvas notifications to an edge/bottom lane while the objective rail is visible, while warnings/errors can still interrupt.
+  - Replaced generic session-goal objective copy with action-oriented hints for population, food, survival, prop, and scenario goals.
+  - Added `npm run smoke:worker`, worker-mode URL handling, worker runtime assertions, worker screenshots/state artifacts, and clone-safe worker event bridge payloads.
+  - Added real-time frame-pacing sample hooks to the smoke API and saved `framePacing` summaries in browser smoke JSON artifacts.
+  - Lazy-loaded `gene-editor.js` through a cached proxy and fixed manual chunk matching for cache-busted module ids.
+  - Refreshed the objective rail immediately from Watch/God state changes so the visible mobile rail matches the smoke metadata without waiting for a later rail update.
+- **Verification:** `git diff --check` (pass); targeted ESLint for touched UI/worker/smoke files (pass); `npm run lint` (pass); `npm test` (pass, 154 checks); `npm run build` (pass, final main app JS `560.15 kB` / `162.54 kB` gzip with separate `gene-editor` chunk `7.61 kB` / `2.45 kB` gzip); `npm run check:bundle` (pass); `npm run smoke:browser` (pass: desktop, mobile-compact, mobile-large, frame-pacing artifacts captured); `npm run smoke:worker` (pass: desktop, mobile-compact, mobile-large, worker frame-pacing artifacts captured); inspected `output/browser-smoke/desktop-selected.png`, `output/browser-smoke/mobile-compact-god.png`, and `output/browser-smoke-worker/mobile-compact-watch.png`.
+
 ### 2026-05-24 — field-dossier-analytics-declutter — Planned
 - **Issues:** Continued visual audit found remaining normal-play chrome weight: the legacy mini-graph energy histogram was still visible as a debug-looking black panel, and the desktop selected-creature card carried too many stats for the first few seconds of play.
 - **Root Causes:** `MiniGraphs` defaulted to enabled even though it is an analytics surface, and the desktop selected-creature renderer reused a broad diagnostic stat list instead of a compact field dossier.

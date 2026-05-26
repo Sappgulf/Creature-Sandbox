@@ -164,17 +164,33 @@ export function buildObjectiveRail(playableSnapshot = null, goals = []) {
       icon: playableSnapshot.scenario?.icon || '🎯',
       title: playableSnapshot.scenario?.name || 'Scenario',
       progress: clamp(Number(playableSnapshot.progress ?? 0), 0, 100),
-      action: playableSnapshot.director?.nextAction || playableSnapshot.scenario?.objective || 'Keep the ecosystem stable.'
+      action: playableSnapshot.director?.nextAction ||
+        playableSnapshot.scenario?.steps?.[0] ||
+        playableSnapshot.scenario?.objective ||
+        'Keep the ecosystem stable.'
     };
   }
 
   const activeGoal = goals.find(goal => !goal.completed) || goals[0] || null;
   if (activeGoal) {
+    const actionHints = {
+      population: 'Feed clusters and protect new births.',
+      predator_kills: 'Watch hunters without letting prey collapse.',
+      food_collected: 'Paint food near moving groups.',
+      births: 'Keep adults fed, calm, and close together.',
+      survival_time: 'Stay in Watch Mode and respond to pressure.',
+      manual_spawns: 'Open Spawn and add a balanced creature mix.',
+      creature_throws: 'Use Inspect, drag, then release gently.',
+      prop_triggers: 'Place toys near the herd edge.',
+      prop_places: 'Open Props and build near open ground.',
+      god_actions: 'Use God Mode for food, calm, or cleanup.',
+      aquatic_alive: 'Keep wetland creatures fed and uncrowded.'
+    };
     return {
       icon: activeGoal.icon || '🎯',
       title: activeGoal.description || 'Session goal',
       progress: Math.round(clamp(Number(activeGoal.progress ?? 0), 0, 1) * 100),
-      action: 'Complete the active session goal.'
+      action: actionHints[activeGoal.type] || 'Take the next visible action.'
     };
   }
 
@@ -182,7 +198,7 @@ export function buildObjectiveRail(playableSnapshot = null, goals = []) {
     icon: '👁️',
     title: 'Watch the ecosystem',
     progress: 0,
-    action: 'Select a creature or start a scenario.'
+    action: 'Select a creature, follow Watch Mode, or start a scenario.'
   };
 }
 

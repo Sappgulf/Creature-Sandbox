@@ -54,6 +54,7 @@ export function applyUiGodModeMethods(UIController) {
     }
     this.updateGodModeUI();
     this.updateSandboxUiVisibility();
+    this.upgradeController?.updateObjectiveRail?.();
   };
 
   UIController.prototype.setGodTool = function(tool, { source = 'panel', announce = false } = {}) {
@@ -61,6 +62,7 @@ export function applyUiGodModeMethods(UIController) {
     const changed = gameState.godModeTool !== tool;
     gameState.godModeTool = tool;
     this.updateGodModeUI();
+    this.upgradeController?.updateObjectiveRail?.();
     if (!announce || !this.hasNotifications()) return;
     const labels = {
       food: 'Food',

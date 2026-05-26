@@ -308,17 +308,37 @@ export class NotificationSystem {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 
     const layoutWidth = Number(options.layoutWidth || viewportWidth);
+    const layoutHeight = Number(options.layoutHeight || _viewportHeight);
     const pixelRatio = layoutWidth > 0 ? viewportWidth / layoutWidth : 1;
     const compactViewport = layoutWidth <= 520;
+    const objectiveRailVisible = !!options.objectiveRailVisible;
+    const bottomChrome = Number(options.bottomChrome || 0);
     const visibleCount = Math.min(this.notifications.length, compactViewport ? 1 : this.maxVisible);
     const startY = (compactViewport ? 112 : 100) * pixelRatio;
     const spacing = (compactViewport ? 38 : 44) * pixelRatio;
+    const railAwareTypes = new Set(['info', 'milestone', 'success', 'event']);
 
     for (let i = 0; i < visibleCount; i++) {
       const notif = this.notifications[i];
-      const y = startY + (i * spacing);
+      const priority = notif.priority ?? this._priorityForType(notif.type);
+      const useEdgeLane = objectiveRailVisible && railAwareTypes.has(notif.type) && priority <= 4;
+      const cssX = useEdgeLane
+        ? (compactViewport ? layoutWidth / 2 : Math.max(150, layoutWidth - 172))
+        : layoutWidth / 2;
+      const cssY = useEdgeLane
+        ? Math.max(
+          compactViewport ? 150 : 132,
+          layoutHeight - Math.max(bottomChrome, compactViewport ? 92 : 72) - (compactViewport ? 52 : 58) - (i * (compactViewport ? 34 : 42))
+        )
+        : ((compactViewport ? 112 : 100) + (i * (compactViewport ? 38 : 44)));
+      const x = cssX * pixelRatio;
+      const y = useEdgeLane ? cssY * pixelRatio : startY + (i * spacing);
 
-      this._drawNotification(ctx, notif, viewportWidth / 2, y, viewportWidth, { layoutWidth, pixelRatio });
+      this._drawNotification(ctx, notif, x, y, viewportWidth, {
+        layoutWidth,
+        pixelRatio,
+        edgeLane: useEdgeLane
+      });
     }
 
     ctx.restore();
@@ -364,7 +384,7 @@ export class NotificationSystem {
     const compactViewport = layoutWidth <= 520;
     const width = compactViewport
       ? Math.min(210 * pixelRatio, viewportWidth - (56 * pixelRatio))
-      : 260 * pixelRatio;
+      : (options.edgeLane ? 230 : 260) * pixelRatio;
     const height = (compactViewport ? 30 : 38) * pixelRatio;
     const radius = height / 2;
 
