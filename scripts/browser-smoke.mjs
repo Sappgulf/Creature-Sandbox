@@ -326,6 +326,32 @@ async function sampleFramePacing(page, durationMs = 900) {
   return sample;
 }
 
+function frameProfileText(framePacing) {
+  const mainThread = framePacing?.mainThread;
+  if (!mainThread) return 'nonDraw n/a';
+  const topScopes = (mainThread.topScopes || [])
+    .slice(0, 3)
+    .map(scope => `${scope.name}:${scope.avgMs}ms`)
+    .join(', ');
+  return `nonDraw ${mainThread.profiledNonDrawImageMs}ms (${mainThread.profiledNonDrawImagePerFrameMs}ms/frame), top ${topScopes || 'n/a'}`;
+}
+
+function assertFrameProfile(framePacing, label) {
+  assert.ok(framePacing.mainThread, `${label}: frame sample should include main-thread profile data`);
+  assert.ok(
+    Number.isFinite(framePacing.mainThread.profiledNonDrawImageMs),
+    `${label}: profiled non-drawImage frame cost should be finite`
+  );
+  assert.ok(
+    Number.isFinite(framePacing.mainThread.profiledNonDrawImagePerFrameMs),
+    `${label}: profiled non-drawImage per-frame cost should be finite`
+  );
+  assert.ok(
+    Array.isArray(framePacing.mainThread.topScopes),
+    `${label}: main-thread profile should include top scope breakdown`
+  );
+}
+
 async function runScenario(browser, scenario) {
   console.log(`Browser smoke: ${scenario.name}`);
   if (!(await waitForServer(baseUrl, 5000))) {
@@ -340,6 +366,7 @@ async function runScenario(browser, scenario) {
   });
   const page = await context.newPage();
   const errors = [];
+  let achievementToastBounds = null;
 
   page.on('console', (msg) => {
     if (['error', 'warning'].includes(msg.type())) {
@@ -496,9 +523,13 @@ async function runScenario(browser, scenario) {
     assert.equal(workerScenarioRoundTrip.before.playable, 'apex_balance', `${scenario.name}: worker scenario save parity should serialize active scenario`);
     assert.equal(workerScenarioRoundTrip.loaded.playable, 'apex_balance', `${scenario.name}: worker scenario save parity should reload active scenario metadata`);
 
-    await advance(page, 1500);
+    const scenarioElapsedBeforeSoak = Number(state.playable?.elapsed || 0);
+    await advance(page, 9000);
     state = await readGameState(page);
     assert.equal(state.ui.watchMode, true, `${scenario.name}: worker watch mode should survive parity soak`);
+    assert.equal(state.playable?.active, true, `${scenario.name}: worker scenario should remain active after extended soak`);
+    assert.equal(state.playable?.scenario?.id, 'apex_balance', `${scenario.name}: worker scenario id should survive extended soak`);
+    assert.ok(Number(state.playable?.elapsed || 0) >= scenarioElapsedBeforeSoak, `${scenario.name}: worker scenario clock should not rewind during extended soak`);
     assert.ok(state.summary.totalCreatures >= Math.min(workerScenarioRoundTrip.before.creatures, 30), `${scenario.name}: worker creature sync should survive parity soak`);
     assert.ok(state.summary.totalFood >= Math.min(workerScenarioRoundTrip.before.food, 1), `${scenario.name}: worker food sync should survive parity soak`);
 
@@ -516,12 +547,13 @@ async function runScenario(browser, scenario) {
     const framePacing = sampleRealtime ? await sampleFramePacing(page) : null;
     if (framePacing) {
       console.log(
-        `  ${scenario.name}: worker frame pacing ${framePacing.frames} frames, avg ${framePacing.avgFrameMs}ms, p95 ${framePacing.p95FrameMs}ms, drawImages ${framePacing.drawImage?.perFrame ?? 0}/frame, draw ${framePacing.drawImage?.timeMs ?? 0}ms, quality ${framePacing.qualityStart || 'unknown'}→${framePacing.qualityEnd || 'unknown'}`
+        `  ${scenario.name}: worker frame pacing ${framePacing.frames} frames, avg ${framePacing.avgFrameMs}ms, p95 ${framePacing.p95FrameMs}ms, drawImages ${framePacing.drawImage?.perFrame ?? 0}/frame, draw ${framePacing.drawImage?.timeMs ?? 0}ms, ${frameProfileText(framePacing)}, quality ${framePacing.qualityStart || 'unknown'}→${framePacing.qualityEnd || 'unknown'}`
       );
       assert.ok(framePacing.frames >= 1, `${scenario.name}: worker real-time frame sample should capture app frames`);
       assert.ok(framePacing.drawImage, `${scenario.name}: worker frame sample should include drawImage profile data`);
       assert.ok(framePacing.drawImage.count >= 0, `${scenario.name}: worker drawImage count should be measured`);
       assert.ok(Number.isFinite(framePacing.drawImage.timeMs), `${scenario.name}: worker drawImage time should be finite`);
+      assertFrameProfile(framePacing, `${scenario.name}: worker`);
     }
 
     await captureCanvasSnapshot(page, path.join(outDir, `${scenario.name}.png`));
@@ -722,7 +754,14 @@ async function runScenario(browser, scenario) {
     /First Ecosystem|Gold|Silver|Bronze|Practice/i,
     `${scenario.name}: run history should include scenario identity or medal state`
   );
+  if (!scenario.mobile) {
+    achievementToastBounds = await page.evaluate(() => window.__creatureSmoke.showAchievementToastForSmoke());
+    assert.equal(achievementToastBounds.ok, true, `${scenario.name}: fallback achievement toast should render for bounds audit`);
+    assert.equal(achievementToastBounds.overlapsInspector, false, `${scenario.name}: fallback achievement toast should not overlap the Inspector`);
+    assert.equal(achievementToastBounds.overlapsUpgradePanel, false, `${scenario.name}: fallback achievement toast should not overlap the Upgrade Hub`);
+  }
   await page.screenshot({ path: path.join(outDir, `${scenario.name}-upgrade-result.png`) });
+  await page.evaluate(() => window.__creatureSmoke.clearAchievementToastsForSmoke());
 
   const upgrades = await page.evaluate(() => {
     const recipeOk = window.__creatureSmoke.applyRecipe('peaceful_meadow');
@@ -768,17 +807,18 @@ async function runScenario(browser, scenario) {
   const framePacing = sampleRealtime ? await sampleFramePacing(page) : null;
   if (framePacing) {
     console.log(
-      `  ${scenario.name}: frame pacing ${framePacing.frames} frames, avg ${framePacing.avgFrameMs}ms, p95 ${framePacing.p95FrameMs}ms, drawImages ${framePacing.drawImage?.perFrame ?? 0}/frame, draw ${framePacing.drawImage?.timeMs ?? 0}ms, quality ${framePacing.qualityStart || 'unknown'}→${framePacing.qualityEnd || 'unknown'}`
+      `  ${scenario.name}: frame pacing ${framePacing.frames} frames, avg ${framePacing.avgFrameMs}ms, p95 ${framePacing.p95FrameMs}ms, drawImages ${framePacing.drawImage?.perFrame ?? 0}/frame, draw ${framePacing.drawImage?.timeMs ?? 0}ms, ${frameProfileText(framePacing)}, quality ${framePacing.qualityStart || 'unknown'}→${framePacing.qualityEnd || 'unknown'}`
     );
     assert.ok(framePacing.frames >= 1, `${scenario.name}: real-time frame sample should capture app frames`);
     assert.ok(Number.isFinite(framePacing.avgFrameMs), `${scenario.name}: real-time average frame interval should be finite`);
     assert.ok(Number.isFinite(framePacing.p95FrameMs), `${scenario.name}: real-time p95 frame interval should be finite`);
     assert.ok(framePacing.drawImage?.count > 0, `${scenario.name}: real-time frame sample should profile drawImage volume`);
     assert.ok(Number.isFinite(framePacing.drawImage.timeMs), `${scenario.name}: drawImage profile time should be finite`);
+    assertFrameProfile(framePacing, scenario.name);
   }
 
   await captureCanvasSnapshot(page, path.join(outDir, `${scenario.name}.png`));
-  await fs.writeFile(path.join(outDir, `${scenario.name}.json`), JSON.stringify({ state, perf, framePacing, errors }, null, 2));
+  await fs.writeFile(path.join(outDir, `${scenario.name}.json`), JSON.stringify({ state, perf, framePacing, achievementToastBounds, errors }, null, 2));
 
   assert.deepEqual(errors, [], `${scenario.name}: browser console should stay warning/error free`);
   await context.close();

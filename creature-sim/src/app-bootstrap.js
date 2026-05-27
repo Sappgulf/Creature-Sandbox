@@ -21,7 +21,7 @@ import { EcosystemHealth } from './ecosystem-health.js';
 import { DebugConsole } from './debug-console.js';
 import { AudioSystem } from './audio-system.js';
 import { TutorialSystem } from './tutorial-system.js';
-import { AchievementSystem } from './achievement-system.js?v=20260527-audit1';
+import { AchievementSystem } from './achievement-system.js?v=20260527-audit2';
 import { BiomeGenerator } from './perlin-noise.js';
 import { GameplayModes } from './gameplay-modes.js';
 import { SessionGoals } from './session-goals.js';
@@ -2034,16 +2034,104 @@ export function initializeApp() {
     };
   };
 
+  const readProfilerScopeRows = () => {
+    const scopeMap = performanceProfiler?.scopes;
+    if (!scopeMap || typeof scopeMap.forEach !== 'function') return [];
+
+    const totals = new Map();
+    const addScope = (scope) => {
+      if (!scope || !scope.name) return;
+      const duration = Number(scope.duration);
+      if (Number.isFinite(duration)) {
+        const bucket = totals.get(scope.name) || {
+          name: scope.name,
+          count: 0,
+          totalMs: 0,
+          maxMs: 0
+        };
+        bucket.count += 1;
+        bucket.totalMs += duration;
+        bucket.maxMs = Math.max(bucket.maxMs, duration);
+        totals.set(scope.name, bucket);
+      }
+      if (Array.isArray(scope.children)) {
+        scope.children.forEach(addScope);
+      }
+    };
+
+    scopeMap.forEach((scopes) => {
+      if (Array.isArray(scopes)) scopes.forEach(addScope);
+    });
+
+    return Array.from(totals.values())
+      .map((row) => ({
+        name: row.name,
+        count: row.count,
+        totalMs: Number(row.totalMs.toFixed(3)),
+        avgMs: Number((row.totalMs / Math.max(1, row.count)).toFixed(4)),
+        maxMs: Number(row.maxMs.toFixed(3))
+      }))
+      .sort((a, b) => b.totalMs - a.totalMs);
+  };
+
+  const summarizeMainThreadProfile = (sample, intervals, drawImageSummary, durationMs) => {
+    const scopeRows = readProfilerScopeRows();
+    const rootScope = scopeRows.find((row) => row.name === 'game-loop') || null;
+    const profiledTotalMs = rootScope?.totalMs || 0;
+    const drawImageMs = Number(drawImageSummary?.timeMs || 0);
+    const frames = Math.max(1, intervals.length);
+    const topScopes = scopeRows
+      .filter((row) => row.name !== 'game-loop')
+      .slice(0, 8);
+
+    return {
+      sampleMs: durationMs,
+      frames: intervals.length,
+      profilerWasEnabled: !!sample.previousProfilerEnabled,
+      rootScopeMs: Number(profiledTotalMs.toFixed(3)),
+      drawImageMs: Number(drawImageMs.toFixed(3)),
+      profiledNonDrawImageMs: Number(Math.max(0, profiledTotalMs - drawImageMs).toFixed(3)),
+      profiledNonDrawImagePerFrameMs: Number((Math.max(0, profiledTotalMs - drawImageMs) / frames).toFixed(4)),
+      topScopes: topScopes.length > 0 ? topScopes : scopeRows.slice(0, 8)
+    };
+  };
+
+  const getSmokeRect = (element) => {
+    if (!element || element.classList?.contains('hidden')) return null;
+    const rect = element.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    return {
+      left: Number(rect.left.toFixed(1)),
+      right: Number(rect.right.toFixed(1)),
+      top: Number(rect.top.toFixed(1)),
+      bottom: Number(rect.bottom.toFixed(1)),
+      width: Number(rect.width.toFixed(1)),
+      height: Number(rect.height.toFixed(1))
+    };
+  };
+
+  const rectsOverlap = (a, b) => {
+    if (!a || !b) return false;
+    return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  };
+
   if (shouldAutoStartSandbox || devTools.enabled) {
     window.__creatureSmoke = {
       startFramePacingSample: () => {
         frameSampleState?.unsubscribe?.();
         frameSampleState?.drawImageProbe?.restore?.();
+        if (frameSampleState && !frameSampleState.previousProfilerEnabled) {
+          performanceProfiler?.setEnabled?.(false);
+        }
+        const previousProfilerEnabled = !!performanceProfiler?.isEnabled;
+        performanceProfiler?.setEnabled?.(true);
+        performanceProfiler?.reset?.();
         const startedAt = performance.now();
         const startPerf = renderer?.performance?.getStats?.() ?? {};
         const startQuality = renderer?.performance?.getCurrentQuality?.() || renderer?.performance?.currentQuality || null;
         frameSampleState = {
           startedAt,
+          previousProfilerEnabled,
           lastNow: null,
           intervals: [],
           longFrames: 0,
@@ -2108,8 +2196,14 @@ export function initializeApp() {
         const p95 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] || 0;
         const longTaskDurations = sample.longTasks.map(task => task.duration);
         const totalLongTaskMs = longTaskDurations.reduce((sum, value) => sum + value, 0);
+        const durationMs = Number((performance.now() - sample.startedAt).toFixed(1));
+        const drawImage = summarizeDrawImageProbe(sample.drawImageProbe?.probe, intervals.length);
+        const mainThread = summarizeMainThreadProfile(sample, intervals, drawImage, durationMs);
+        if (!sample.previousProfilerEnabled) {
+          performanceProfiler?.setEnabled?.(false);
+        }
         return {
-          durationMs: Number((performance.now() - sample.startedAt).toFixed(1)),
+          durationMs,
           frames: intervals.length,
           avgFrameMs: Number(average.toFixed(2)),
           p95FrameMs: Number(p95.toFixed(2)),
@@ -2122,7 +2216,8 @@ export function initializeApp() {
           qualityShifts: sample.qualityShifts,
           renderedStart: sample.renderedStart,
           renderedEnd: sample.renderedEnd,
-          drawImage: summarizeDrawImageProbe(sample.drawImageProbe?.probe, intervals.length)
+          drawImage,
+          mainThread
         };
       },
       saveRoundTrip: async () => {
@@ -2275,6 +2370,30 @@ export function initializeApp() {
       showUpgradePanel: (options = {}) => {
         upgradeController?.setPanelVisible?.(true, options);
         return upgradeController?.getSnapshot?.() ?? null;
+      },
+      showAchievementToastForSmoke: () => {
+        achievements?.showNotification?.({
+          icon: '★',
+          name: 'Smoke Toast Bounds',
+          xp: 1
+        }, { forceFallback: true });
+        const toast = document.querySelector('.achievement-notification');
+        const toastRect = getSmokeRect(toast);
+        const inspectorRect = getSmokeRect(document.getElementById('inspector'));
+        const upgradePanelRect = getSmokeRect(document.getElementById('upgrade-panel'));
+        return {
+          ok: !!toastRect,
+          toast: toastRect,
+          inspector: inspectorRect,
+          upgradePanel: upgradePanelRect,
+          overlapsInspector: rectsOverlap(toastRect, inspectorRect),
+          overlapsUpgradePanel: rectsOverlap(toastRect, upgradePanelRect),
+          text: toast?.textContent?.trim?.().replace(/\s+/g, ' ').slice(0, 120) || ''
+        };
+      },
+      clearAchievementToastsForSmoke: () => {
+        document.querySelectorAll('.achievement-notification').forEach((toast) => toast.remove());
+        return true;
       },
       runtimeModePreference: () => ({
         activeMode: runtimeModePreference.mode,

@@ -433,6 +433,26 @@ export class AchievementSystem {
           opacity: 0;
         }
       }
+      @keyframes panelToastIn {
+        from {
+          transform: translateY(12px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      @keyframes panelToastOut {
+        from {
+          transform: translateY(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateY(12px);
+          opacity: 0;
+        }
+      }
     `;
     document.head.appendChild(style);
     this.notificationStylesInjected = true;
@@ -496,10 +516,11 @@ export class AchievementSystem {
   }
 
   // Show achievement notification
-  showNotification(achievement) {
+  showNotification(achievement, { forceFallback = false } = {}) {
     if (!this.notificationsEnabled) return;
     // If the central NotificationSystem exists, let it handle display via events
-    if (typeof window !== 'undefined' &&
+    if (!forceFallback &&
+        typeof window !== 'undefined' &&
         window.notifications &&
         typeof window.notifications.show === 'function') {
       return;
@@ -537,7 +558,7 @@ export class AchievementSystem {
     notification.style.cssText = `
       position: fixed;
       top: ${avoidPanelLane ? 'auto' : (compactViewport ? 'calc(env(safe-area-inset-top, 0px) + 12px)' : '20px')};
-      right: ${compactViewport ? '12px' : (inspectorOpen ? '344px' : '20px')};
+      right: ${compactViewport ? '12px' : (inspectorOpen ? '372px' : '20px')};
       bottom: ${avoidPanelLane ? 'calc(env(safe-area-inset-bottom, 0px) + 92px)' : 'auto'};
       left: auto;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -549,7 +570,7 @@ export class AchievementSystem {
       display: flex;
       align-items: center;
       gap: ${compactToast ? '8px' : '15px'};
-      animation: slideInRight 0.3s ease-out;
+      animation: ${avoidPanelLane ? 'panelToastIn' : 'slideInRight'} 0.3s ease-out;
       min-width: ${compactToast ? '0' : '300px'};
       max-width: ${compactToast ? 'min(300px, calc(100vw - 24px))' : '420px'};
       min-height: ${compactToast ? '42px' : 'auto'};
@@ -608,7 +629,7 @@ export class AchievementSystem {
 
     // Auto-remove after 5 seconds
     setTimeout(() => {
-      notification.style.animation = 'slideOutRight 0.3s ease-out';
+      notification.style.animation = `${avoidPanelLane ? 'panelToastOut' : 'slideOutRight'} 0.3s ease-out`;
       setTimeout(() => {
         notification.remove();
       }, 300);

@@ -645,3 +645,25 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - add a smoke/profile artifact for non-`drawImage` main-thread frame cost before any further desktop 60fps claim.
   - add a first-class smoke assertion around fallback achievement toast bounds when a side panel is open.
   - install Vercel CLI (`npm i -g vercel`) before the next deployment proof so `vercel deploy`, `vercel logs`, and env pulls are available.
+
+2026-05-27
+- Approved tranche 1-4: non-`drawImage` frame profile proof, achievement-toast bounds smoke assertion, longer worker scenario soak, and Vercel CLI install/verify.
+- Implemented:
+  - frame-pacing smoke samples now temporarily enable/reset the profiler and write `mainThread` scope evidence into every JSON artifact, including profiled non-`drawImage` total/per-frame cost and top scoped rows.
+  - browser smoke now forces a fallback achievement toast on desktop with Upgrade Hub/Inspector open, asserts it does not overlap either side panel, and stores measured bounds in `output/browser-smoke/desktop.json`.
+  - fallback achievement toasts now use a panel-safe vertical animation and wider Inspector offset so they do not briefly slide through the Inspector lane.
+  - worker smoke now runs an extended deterministic `Apex Balance` soak and reasserts active scenario/runtime truth afterward.
+  - installed Vercel CLI globally; `vercel --version` reports `54.5.0`.
+- Verification:
+  - initial `npm run smoke:browser` failed on the new toast-overlap assertion, then passed after the panel-safe toast fix ✅
+  - `node --check creature-sim/src/app-bootstrap.js creature-sim/src/achievement-system.js scripts/browser-smoke.mjs` ✅
+  - targeted ESLint ✅
+  - `git diff --check` ✅
+  - `npm run lint` ✅
+  - `npm test` ✅ (154 passing)
+  - `npm run build` ✅ (main app JS `578.82 kB` / `169.80 kB` gzip)
+  - `npm run check:bundle` ✅
+  - `npm run smoke:browser` ✅ (desktop avg `41.67ms` / p95 `51.1ms`, `5.38ms/frame` profiled non-`drawImage`, desktop toast bounds clear; mobile p95 `<= 17.7ms`)
+  - `npm run smoke:worker` ✅ (desktop avg `18.75ms` / p95 `33.4ms`, `1.1146ms/frame` profiled non-`drawImage`; mobile p95 `<= 16.8ms`)
+  - external `develop-web-game` client ✅ captured and inspected `output/web-game/profile-toast-worker-20260527/shot-0.png` and `state-0.json`.
+- Residual note: desktop main-thread heavy state still is not a 60fps claim. The profile evidence now points at `world-step` and `render` as the next concrete optimization targets; worker remains the smoother candidate lane.

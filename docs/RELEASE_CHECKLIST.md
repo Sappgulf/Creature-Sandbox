@@ -59,3 +59,9 @@ If `v2.0.0-rc1` already exists, use the next unused `v2.0.0-rcN` tag.
 ## Deployment
 
 The app is static Vite output and can deploy from the pushed branch/tag through Vercel, Netlify, or GitHub Pages. The local release proof above is the source of truth for the RC; remote deployment should not be called healthy until the same smoke URL behavior is checked against the deployed build.
+
+For Vercel proof, confirm the CLI is available before deploying:
+
+```bash
+vercel --version
+```
