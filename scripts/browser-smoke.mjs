@@ -352,6 +352,71 @@ function assertFrameProfile(framePacing, label) {
   );
 }
 
+function summarizeRuntimeReadiness(results) {
+  const scenarioRows = results.map((result) => {
+    const framePacing = result.framePacing || {};
+    const runtime = result.perf?.runtime || {};
+    const workerDiagnostics = runtime.workerDiagnostics || {};
+    return {
+      scenario: result.scenario,
+      mode: runtime.workerMode ? 'worker' : 'main',
+      runtimeModeSource: runtime.runtimeModeSource || null,
+      storedPreference: runtime.runtimeModeStored || null,
+      workerReady: workerDiagnostics.ready ?? runtime.workerReady ?? null,
+      workerPendingMessages: workerDiagnostics.queuedCommands ?? runtime.workerPendingMessages ?? null,
+      workerErrorCount: workerDiagnostics.errorCount ?? null,
+      workerSnapshotCount: workerDiagnostics.snapshotCount ?? null,
+      workerSnapshotAgeMs: workerDiagnostics.lastSnapshotAgeMs ?? null,
+      creatures: result.creatures,
+      food: result.food,
+      avgFrameMs: framePacing.avgFrameMs ?? null,
+      p95FrameMs: framePacing.p95FrameMs ?? null,
+      framesOver50ms: framePacing.framesOver50ms ?? null,
+      profiledNonDrawImagePerFrameMs: framePacing.mainThread?.profiledNonDrawImagePerFrameMs ?? null,
+      topScope: framePacing.mainThread?.topScopes?.[0]?.name || null
+    };
+  });
+
+  const desktop = scenarioRows.find(row => row.scenario === 'desktop') || null;
+  const mobileRows = scenarioRows.filter(row => row.scenario.startsWith('mobile-'));
+  const runtimeStatusesOk = scenarioRows.every(row => row.mode === 'main' || (row.workerReady === true && row.workerPendingMessages === 0));
+  const mobileP95Max = Math.max(0, ...mobileRows.map(row => Number(row.p95FrameMs) || 0));
+  const desktopAvg = Number(desktop?.avgFrameMs) || 0;
+  const desktopP95 = Number(desktop?.p95FrameMs) || 0;
+  const workerCandidate = workerMode &&
+    runtimeStatusesOk &&
+    desktopAvg > 0 &&
+    desktopAvg <= 24 &&
+    desktopP95 <= 40 &&
+    mobileP95Max <= 20;
+
+  return {
+    generatedAt: new Date().toISOString(),
+    mode: workerMode ? 'worker' : 'main',
+    shippingDefault: 'main',
+    defaultChanged: false,
+    status: workerMode
+      ? (workerCandidate ? 'candidate-opt-in' : 'needs-more-proof')
+      : 'shipping-default',
+    workerCandidate,
+    defaultReadiness: {
+      safeToDefaultWorker: false,
+      reason: workerMode
+        ? (workerCandidate
+          ? 'Worker smoke meets the opt-in candidate frame thresholds, but completed-scenario result flow still ships through the main-thread lane.'
+          : 'Worker smoke passed functional readiness but missed one or more frame thresholds in this run; keep worker opt-in until a clean readiness artifact passes.')
+        : 'Main-thread mode remains the default release path.'
+    },
+    thresholds: {
+      workerDesktopAvgFrameMsMax: 24,
+      workerDesktopP95FrameMsMax: 40,
+      workerMobileP95FrameMsMax: 20,
+      workerPendingMessagesMax: 0
+    },
+    scenarios: scenarioRows
+  };
+}
+
 async function runScenario(browser, scenario) {
   console.log(`Browser smoke: ${scenario.name}`);
   if (!(await waitForServer(baseUrl, 5000))) {
@@ -537,6 +602,16 @@ async function runScenario(browser, scenario) {
     assert.equal(!!perf.runtime?.workerMode, true, `${scenario.name}: worker perf runtime should expose worker mode truth`);
     assert.equal(perf.runtime?.runtimeModePreference, 'worker', `${scenario.name}: worker perf runtime should expose active worker preference`);
     assert.equal(perf.runtime?.runtimeModeSource, 'query', `${scenario.name}: worker perf runtime should expose query source`);
+    assert.equal(perf.runtime?.workerReady, true, `${scenario.name}: worker perf runtime should expose ready state`);
+    assert.equal(perf.runtime?.workerPendingMessages, 0, `${scenario.name}: worker perf runtime should have no queued startup messages`);
+    assert.equal(perf.runtime?.workerDiagnostics?.ready, true, `${scenario.name}: worker diagnostics should report ready`);
+    assert.equal(perf.runtime?.workerDiagnostics?.errorCount, 0, `${scenario.name}: worker diagnostics should remain error-free`);
+    assert.ok(perf.runtime?.workerDiagnostics?.snapshotCount >= 5, `${scenario.name}: worker diagnostics should count snapshot syncs`);
+    assert.ok(
+      perf.runtime?.workerDiagnostics?.lastSnapshotAgeMs >= 0 &&
+        perf.runtime?.workerDiagnostics?.lastSnapshotAgeMs < 5000,
+      `${scenario.name}: worker diagnostics should expose a fresh snapshot age`
+    );
     assert.ok(perf.canvas.width > 0 && perf.canvas.height > 0, `${scenario.name}: worker canvas should be measurable`);
     assert.ok(perf.rendered > 0, `${scenario.name}: worker smoke perf should report live rendered objects`);
     assert.ok(perf.assets.registeredSprites >= 20, `${scenario.name}: worker sprite manifest should be loaded`);
@@ -837,6 +912,11 @@ try {
     results.push(await runScenario(browser, scenario));
   }
   await fs.writeFile(path.join(outDir, 'summary.json'), JSON.stringify(results, null, 2));
+  const runtimeReadiness = summarizeRuntimeReadiness(results);
+  await fs.writeFile(path.join(outDir, 'runtime-readiness.json'), JSON.stringify(runtimeReadiness, null, 2));
+  console.log(
+    `Runtime readiness (${runtimeReadiness.mode}): ${runtimeReadiness.status}; shipping default=${runtimeReadiness.shippingDefault}; worker default=${runtimeReadiness.defaultReadiness.safeToDefaultWorker ? 'ready' : 'held'}`
+  );
   console.log(`Browser smoke passed${workerMode ? ' (worker)' : ''}: ${results.map(result => result.scenario).join(', ')}`);
 } finally {
   if (browser) await browser.close();

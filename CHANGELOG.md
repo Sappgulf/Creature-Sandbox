@@ -17,6 +17,30 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-05-27 — perf-readiness-production-polish — Planned
+- **Issues:** Approved tranche 1-4 needed a final desktop perf pass, stronger worker default-readiness evidence, production deploy health proof, and visual polish from the latest smoke screenshots.
+- **Root Causes:** Main-thread smoke still spent most measured non-`drawImage` time in world/update scopes, worker readiness lacked first-class error/snapshot diagnostics, deployed health had not been rechecked against the public Vercel alias, and compact achievement toasts could compete with the objective rail on mobile result screenshots.
+- **Fixes:** Reuse hot-path query/render buffers, remove per-creature vector transform allocation, throttle expensive flock/pack helpers, add worker runtime diagnostics to smoke artifacts, keep worker defaulting gated by `runtime-readiness.json`, verify the Vercel production alias, and move compact achievement toasts below the objective rail.
+- **Verification:** Planned: syntax checks, targeted/full ESLint, `git diff --check`, `npm test`, `npm run build`, `npm run check:bundle`, main and worker browser smoke, screenshot inspection, Vercel CLI/version/inspect, and production HTTP check.
+
+### 2026-05-27 — perf-readiness-production-polish — Implemented
+- **Issues:** The browser-game release proof needed a bounded optimization pass without overstating worker default readiness.
+- **Root Causes:** Dense main-thread frames still paid repeated query allocations and render object churn; worker proof did not expose snapshot age/error counts; the readiness artifact explanation could sound candidate-ready even when frame thresholds were missed; compact fallback achievement toasts did not account for the objective rail.
+- **Fixes:** Creature/world/ecosystem hot paths now reuse caller buffers for spatial queries, vector fallback creature drawing avoids `save/translate/rotate/restore`, dense food render constants are cached, advanced flock/pack helpers run at a lower cadence, `SimulationProxy` exposes ready/error/snapshot diagnostics, worker smoke asserts those diagnostics, readiness summaries include worker snapshot/error fields and threshold-aware defaulting reasons, and compact achievement toasts position below the measured objective rail. Production health was verified with Vercel CLI `54.5.0`, `vercel inspect`, and HTTP 200 from `https://creature-sandbox.vercel.app`.
+- **Verification:** `node --check` for touched JS and smoke files (pass); targeted ESLint (pass); `git diff --check` (pass); `npm run lint` (pass); `npm test` (pass, 155 checks); `npm run build` (pass, main app JS `582.10 kB` / `170.77 kB` gzip); `npm run check:bundle` (pass); final `npm run smoke:browser` (pass under concurrent DeskBuddy/Xcode build load, desktop avg `187.75ms` / p95 `201ms`, `17.775ms/frame` profiled non-`drawImage`; an earlier same-pass run with less local load sampled `32.1ms` / `50ms`; main stays the shipping default but not a 60fps claim); final `npm run smoke:worker` (pass under the same local load, desktop avg `38.4ms` / p95 `50ms`, `1.7783ms/frame` profiled non-`drawImage`; `runtime-readiness.json` status `needs-more-proof`, worker default held); inspected refreshed mobile Upgrade Hub screenshot and confirmed the achievement toast no longer overlaps the objective rail or result/history area; Playwright local smoke URL captured `output/playwright-final-local.png` with 0 warning/error console messages.
+
+### 2026-05-27 — worker-runtime-readiness-proof — Planned
+- **Issues:** Worker mode was the smoother candidate lane, but the smoke output still required humans to infer default-readiness from scattered summary, perf, and screenshot artifacts.
+- **Root Causes:** Runtime metadata exposed active worker mode, but the smoke runner did not write a first-class readiness decision artifact with worker ready state, pending queue state, frame thresholds, and the explicit default-mode hold.
+- **Fixes:** Add worker ready/queued-message metadata to smoke state and perf artifacts, assert the worker is ready with no queued startup messages during worker smoke, write `runtime-readiness.json` for both smoke lanes, and update smoke/release docs to inspect that artifact before any default-runtime decision.
+- **Verification:** Planned: syntax checks for touched JS, targeted ESLint, `git diff --check`, `npm test`, `npm run smoke:worker`, and a focused main smoke run if needed.
+
+### 2026-05-27 — worker-runtime-readiness-proof — Implemented
+- **Issues:** Worker proof could pass while still leaving the defaulting decision ambiguous in release notes.
+- **Root Causes:** The runtime toggle, perf budget, and smoke summary did not combine into one reviewed readiness artifact.
+- **Fixes:** `render_game_to_text()` and `perfBudget()` now expose worker readiness and queued-message counts. Browser smoke now asserts worker readiness, writes `runtime-readiness.json`, and records that the shipping default remains main-thread mode while worker stays opt-in until the readiness thresholds pass. Smoke and release docs now name the readiness artifact.
+- **Verification:** Latest worker smoke passed functionally, but `output/browser-smoke-worker/runtime-readiness.json` reports `needs-more-proof` under the loaded local run, so worker default remains held.
+
 ### 2026-05-27 — frame-profile-toast-worker-vercel-proof — Planned
 - **Issues:** Approved tranche 1-4 targeted the next proof/polish pass: desktop main-thread pacing needed non-`drawImage` cost evidence, fallback achievement-toast panel safety needed a first-class smoke assertion, worker mode needed a longer scenario soak before any default-mode promotion, and Vercel CLI needed to be installed for deploy/log/env proof.
 - **Root Causes:** Frame-pacing artifacts only separated `drawImage` volume/timing, smoke screenshots could catch a panel overlap without failing, worker `Apex Balance` validation used a short sync soak, and the local machine did not have the Vercel CLI available.

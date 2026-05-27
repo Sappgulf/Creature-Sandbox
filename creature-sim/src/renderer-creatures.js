@@ -124,18 +124,18 @@ export function applyCreatureMethods(Renderer) {
       const dayNight = world?.dayNightState || world?.environment?.getDayNightState?.();
       const dayLight = dayNight?.light ?? 1;
 
-      const renderOpts = {
-        isSelected,
-        isPinned,
-        inLineage,
-        showTrail: showTrails,
-        showVision: this.enableVision,
-        clusterHue,
-        zoom,
-        worldTime,
-        dayLight,
-        world
-      };
+      const renderOpts = this._creatureRenderOptions || (this._creatureRenderOptions = {});
+      renderOpts.isSelected = isSelected;
+      renderOpts.isPinned = isPinned;
+      renderOpts.inLineage = inLineage;
+      renderOpts.showTrail = showTrails;
+      renderOpts.showVision = this.enableVision;
+      renderOpts.clusterHue = clusterHue;
+      renderOpts.zoom = zoom;
+      renderOpts.worldTime = worldTime;
+      renderOpts.dayLight = dayLight;
+      renderOpts.world = world;
+      renderOpts.lodLevel = zoom < 0.25 ? 'low' : (zoom < 0.5 ? 'medium' : 'high');
 
       // PERFORMANCE: Level of Detail (LOD) handling
       if (zoom < 0.05 && !forceDetail) {
@@ -161,12 +161,11 @@ export function applyCreatureMethods(Renderer) {
         }
 
         // LOD: pass zoom to creature draw so it can skip fine details when far out
-        const lodRenderOpts = { ...renderOpts, lodLevel: zoom < 0.25 ? 'low' : (zoom < 0.5 ? 'medium' : 'high') };
         if (c.draw) {
-          c.draw(ctx, lodRenderOpts);
+          c.draw(ctx, renderOpts);
         } else {
           // Fallback if creature is just a data object (Proxy Mode)
-          this._drawExplicit(ctx, c, lodRenderOpts);
+          this._drawExplicit(ctx, c, renderOpts);
         }
 
         if (c.statuses?.has?.('disease') && zoom > 0.3) {
@@ -203,27 +202,41 @@ export function applyCreatureMethods(Renderer) {
   };
 
   Renderer.prototype._drawVectorCreatureLOD = function(ctx, c, { clusterHue = null, quality = 'high', zoom = 1 } = {}) {
-    ctx.save();
-    ctx.translate(c.x, c.y);
-    ctx.rotate(c.dir || 0);
     const hue = clusterHue ?? c.genes?.hue ?? 0;
     const predator = c.genes?.predator || (c.genes?.diet ?? 0) >= 0.7;
     const baseLight = predator ? 50 : 62;
     const creatureR = ((c.energy || 40) / 40) * (3 + (c.size || 5));
     const triSize = Math.max(7, creatureR * (quality === 'low' ? 1.28 : 1.45));
     const alpha = quality === 'low' && zoom < 0.8 ? 0.86 : 0.96;
-    ctx.globalAlpha *= alpha;
+    const dir = c.dir || 0;
+    const cos = Math.cos(dir);
+    const sin = Math.sin(dir);
+    const backX = -triSize * 0.62;
+    const wingY = triSize * 0.58;
+    const x = c.x;
+    const y = c.y;
+    const previousAlpha = ctx.globalAlpha;
+    const previousLineWidth = ctx.lineWidth;
+    const noseX = x + triSize * cos;
+    const noseY = y + triSize * sin;
+    const leftX = x + backX * cos - wingY * sin;
+    const leftY = y + backX * sin + wingY * cos;
+    const rightX = x + backX * cos + wingY * sin;
+    const rightY = y + backX * sin - wingY * cos;
+
+    ctx.globalAlpha = previousAlpha * alpha;
     ctx.fillStyle = `hsl(${hue}, 88%, ${baseLight}%)`;
     ctx.beginPath();
-    ctx.moveTo(triSize, 0);
-    ctx.lineTo(-triSize * 0.62, triSize * 0.58);
-    ctx.lineTo(-triSize * 0.62, -triSize * 0.58);
+    ctx.moveTo(noseX, noseY);
+    ctx.lineTo(leftX, leftY);
+    ctx.lineTo(rightX, rightY);
     ctx.closePath();
     ctx.fill();
     ctx.strokeStyle = `hsl(${hue}, 45%, ${predator ? 78 : 82}%)`;
     ctx.lineWidth = quality === 'low' ? 1.1 : 1.4;
     ctx.stroke();
-    ctx.restore();
+    ctx.globalAlpha = previousAlpha;
+    ctx.lineWidth = previousLineWidth;
   };
 
   Renderer.prototype._drawCreatureStatusCue = function(c, { isSelected = false, isPinned = false } = {}) {

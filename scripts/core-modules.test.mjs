@@ -1244,6 +1244,22 @@ test('World: step updates ecosystem balance once per tick', () => {
   assert.equal(updates, 1, 'ecosystem.update should not run twice in one world step');
 });
 
+test('WorldCreatureManager: fast creature query reuses caller buffer', () => {
+  const world = new World(300, 300);
+  const nearA = { id: 1, x: 50, y: 50, alive: true };
+  const nearB = { id: 2, x: 66, y: 54, alive: true };
+  const far = { id: 3, x: 220, y: 220, alive: true };
+  const dead = { id: 4, x: 52, y: 52, alive: false };
+  world.creatures = [nearA, nearB, far, dead];
+  world.creatureManager.gridDirty = true;
+
+  const out = ['stale'];
+  const result = world.creatureManager.queryCreaturesFast(50, 50, 30, out);
+
+  assert.equal(result, out, 'fast query should reuse the caller-provided output array');
+  assert.deepEqual(result.map(creature => creature.id).sort((a, b) => a - b), [1, 2]);
+});
+
 test('World: spawnCreatureType returns creature', () => {
   const world = new World(800, 600);
   const creature = world.spawnCreatureType('herbivore', 400, 300);

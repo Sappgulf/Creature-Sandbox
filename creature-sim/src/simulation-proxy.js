@@ -7,9 +7,24 @@ export class SimulationProxy {
     this.worker = new Worker(workerPath, { type: 'module' });
     this.worker.onerror = (e) => {
       console.error('🚨 SimulationProxy: Worker Error', e.message, e.filename, e.lineno);
+      this._recordWorkerError({
+        message: e.message || 'Worker error',
+        filename: e.filename || null,
+        lineno: e.lineno ?? null
+      });
       eventSystem.emit(GameEvents.ERROR_CRITICAL, { message: 'Simulation Worker Crashed: ' + e.message });
     };
     this.isReady = false;
+    this.diagnostics = {
+      errorCount: 0,
+      snapshotCount: 0,
+      lastReadyAt: null,
+      lastSnapshotAt: null,
+      lastWorldTime: 0,
+      lastCreatureCount: 0,
+      lastFoodCount: 0,
+      lastError: null
+    };
 
     this.worldSnapshot = {
       t: 0,
@@ -215,6 +230,7 @@ export class SimulationProxy {
       case 'READY':
         console.debug('📡 SimProxy: Worker READY received');
         this.isReady = true;
+        this.diagnostics.lastReadyAt = Date.now();
         this.queue.forEach(q => this.worker.postMessage(q));
         this.queue = [];
         break;
@@ -226,11 +242,32 @@ export class SimulationProxy {
       case 'EVENT':
         eventSystem.emit(e.data.eventType, e.data.data);
         break;
+
+      case 'ERROR':
+        this._recordWorkerError(e.data.data || e.data);
+        console.error('🚨 SimulationProxy: Worker reported error', e.data.data || e.data);
+        break;
     }
+  }
+
+  _recordWorkerError(error) {
+    this.diagnostics.errorCount += 1;
+    this.diagnostics.lastError = {
+      message: error?.message || String(error || 'Unknown worker error'),
+      stack: error?.stack || null,
+      filename: error?.filename || null,
+      lineno: error?.lineno ?? null,
+      at: Date.now()
+    };
   }
 
   updateSnapshot(payload) {
     const { t, count, creatureBuffer, food, corpses, environment, activeDisaster } = payload;
+    this.diagnostics.snapshotCount += 1;
+    this.diagnostics.lastSnapshotAt = Date.now();
+    this.diagnostics.lastWorldTime = Number(t || 0);
+    this.diagnostics.lastCreatureCount = Number(count || 0);
+    this.diagnostics.lastFoodCount = Array.isArray(food) ? food.length : 0;
 
     // Debug first few updates or if count changes
     if (Math.random() < 0.01 || count !== this.worldSnapshot.creatures.length) {
@@ -366,6 +403,24 @@ export class SimulationProxy {
 
   getCreatureById(id) {
     return this.getAnyCreatureById(id);
+  }
+
+  getRuntimeDiagnostics() {
+    const now = Date.now();
+    const lastSnapshotAt = this.diagnostics.lastSnapshotAt;
+    const lastReadyAt = this.diagnostics.lastReadyAt;
+    return {
+      ready: !!this.isReady,
+      queuedCommands: this.queue?.length || 0,
+      errorCount: this.diagnostics.errorCount,
+      lastError: this.diagnostics.lastError,
+      snapshotCount: this.diagnostics.snapshotCount,
+      lastSnapshotAgeMs: lastSnapshotAt ? now - lastSnapshotAt : null,
+      readyAgeMs: lastReadyAt ? now - lastReadyAt : null,
+      lastWorldTime: Number(this.diagnostics.lastWorldTime.toFixed?.(3) ?? this.diagnostics.lastWorldTime ?? 0),
+      lastCreatureCount: this.diagnostics.lastCreatureCount,
+      lastFoodCount: this.diagnostics.lastFoodCount
+    };
   }
 
   // World attachment contract for systems that need to read the active runtime.

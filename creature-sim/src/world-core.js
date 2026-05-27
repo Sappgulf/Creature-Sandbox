@@ -77,6 +77,8 @@ export class World {
     this.bumpCheckTimer = 0;
     this.bumpIndex = 0;
     this.crowdCheckTimer = 0;
+    this._bumpNearby = [];
+    this._crowdNearby = [];
     this.lastPointerWorld = { x: width * 0.5, y: height * 0.5 };
     this.regionUpdateTimer = 0;
     this.nestUpdateTimer = 0;
@@ -294,9 +296,15 @@ export class World {
       const a = creatures[idx];
       if (!a || !a.alive || a.isGrabbed) continue;
 
-      for (let j = 0; j < creatures.length; j++) {
-        if (j === idx) continue;
-        const b = creatures[j];
+      const nearby = this.creatureManager?.queryCreaturesFast?.(
+        a.x,
+        a.y,
+        bumpRadius,
+        this._bumpNearby
+      ) || creatures;
+      for (let j = 0; j < nearby.length; j++) {
+        const b = nearby[j];
+        if (b === a) continue;
         if (!b || !b.alive || b.isGrabbed) continue;
         const dx = b.x - a.x;
         const dy = b.y - a.y;
@@ -326,7 +334,12 @@ export class World {
       const idx = Math.floor(Math.random() * creatures.length);
       const creature = creatures[idx];
       if (!creature || !creature.alive || creature.isGrabbed) continue;
-      const nearby = this.creatureManager?.queryCreatures?.(creature.x, creature.y, 48) || [];
+      const nearby = this.creatureManager?.queryCreaturesFast?.(
+        creature.x,
+        creature.y,
+        48,
+        this._crowdNearby
+      ) || this.creatureManager?.queryCreatures?.(creature.x, creature.y, 48) || [];
       if (nearby.length < 4) continue;
       const angle = Math.random() * Math.PI * 2;
       const shove = 35 + Math.random() * 25;

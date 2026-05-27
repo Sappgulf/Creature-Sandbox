@@ -27,6 +27,7 @@ export class CreatureEcosystemSystem {
   constructor(world) {
     this.world = world;
     this._tickAccumulator = 0;
+    this._nearbyCreatures = [];
   }
 
   update(dt) {
@@ -156,6 +157,9 @@ export class CreatureEcosystemSystem {
 
   _getNearbyCreatures(creature, radius) {
     const manager = this.world.creatureManager;
+    if (manager?.queryCreaturesFast) {
+      return manager.queryCreaturesFast(creature.x, creature.y, radius, this._nearbyCreatures);
+    }
     if (!manager?.queryCreatures) return [];
     return manager.queryCreatures(creature.x, creature.y, radius);
   }

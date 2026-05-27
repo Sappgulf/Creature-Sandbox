@@ -533,9 +533,22 @@ export class AchievementSystem {
     const compactViewport = typeof window !== 'undefined' &&
       (window.innerWidth <= 640 || document.body.classList.contains('mobile-device'));
     const inspectorOpen = !document.getElementById('inspector')?.classList.contains('hidden');
-    const upgradePanelOpen = !document.getElementById('upgrade-panel')?.classList.contains('hidden');
+    const upgradePanel = document.getElementById('upgrade-panel');
+    const upgradePanelOpen = !upgradePanel?.classList.contains('hidden');
     const avoidPanelLane = !compactViewport && (inspectorOpen || upgradePanelOpen);
     const compactToast = compactViewport || avoidPanelLane;
+    const objectiveRail = document.getElementById('objective-rail');
+    const objectiveRailRect = objectiveRail?.textContent?.trim?.()
+      ? objectiveRail.getBoundingClientRect()
+      : null;
+    const upgradePanelRect = compactViewport && upgradePanelOpen
+      ? upgradePanel.getBoundingClientRect()
+      : null;
+    const compactRailTop = objectiveRailRect ? objectiveRailRect.bottom + 10 : null;
+    const compactPanelTop = upgradePanelRect ? upgradePanelRect.top - 104 : null;
+    const compactTop = compactViewport && objectiveRailRect
+      ? `${Math.ceil(Math.max(compactRailTop, compactPanelTop || 0))}px`
+      : 'calc(env(safe-area-inset-top, 0px) + 12px)';
     notification.className = 'achievement-notification';
     notification.innerHTML = compactToast
       ? `
@@ -557,7 +570,7 @@ export class AchievementSystem {
     // Style it
     notification.style.cssText = `
       position: fixed;
-      top: ${avoidPanelLane ? 'auto' : (compactViewport ? 'calc(env(safe-area-inset-top, 0px) + 12px)' : '20px')};
+      top: ${avoidPanelLane ? 'auto' : (compactViewport ? compactTop : '20px')};
       right: ${compactViewport ? '12px' : (inspectorOpen ? '372px' : '20px')};
       bottom: ${avoidPanelLane ? 'calc(env(safe-area-inset-bottom, 0px) + 92px)' : 'auto'};
       left: auto;

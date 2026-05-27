@@ -667,3 +667,27 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - `npm run smoke:worker` ✅ (desktop avg `18.75ms` / p95 `33.4ms`, `1.1146ms/frame` profiled non-`drawImage`; mobile p95 `<= 16.8ms`)
   - external `develop-web-game` client ✅ captured and inspected `output/web-game/profile-toast-worker-20260527/shot-0.png` and `state-0.json`.
 - Residual note: desktop main-thread heavy state still is not a 60fps claim. The profile evidence now points at `world-step` and `render` as the next concrete optimization targets; worker remains the smoother candidate lane.
+
+2026-05-27
+- Approved tranche 1-4: desktop perf optimization, worker default-readiness pass, production deploy health, and visual polish sweep.
+- Implemented:
+  - render and simulation hot paths now reuse more buffers: creature render options, food visual constants, ecosystem/world nearby-query outputs, behavior pack/herd/predator query arrays, and caller-provided spatial query result arrays.
+  - vector fallback creature drawing no longer uses per-creature canvas transform save/restore; it computes rotated triangle points directly.
+  - expensive advanced flock/pack/herding helpers now run at a lower cadence per creature instead of every frame.
+  - `SimulationProxy` now records worker ready time, snapshot count/age, worker error count, queued commands, world time, and synced creature/food counts.
+  - browser smoke now asserts worker diagnostics, writes richer `runtime-readiness.json`, and uses threshold-aware wording when worker remains opt-in.
+  - compact fallback achievement toasts now position below the measured objective rail, fixing the refreshed mobile Upgrade Hub screenshot overlap.
+  - production health checked with Vercel CLI and the public Vercel alias.
+- Verification:
+  - `node --check` for touched JS/smoke files ✅
+  - targeted ESLint and `npm run lint` ✅
+  - `git diff --check` ✅
+  - `npm test` ✅ (155 passing)
+  - `npm run build` ✅ (main app JS `582.10 kB` / `170.77 kB` gzip)
+  - `npm run check:bundle` ✅
+  - `npm run smoke:browser` ✅ final run under concurrent DeskBuddy/Xcode build load: desktop avg `187.75ms` / p95 `201ms`, `17.775ms/frame` profiled non-`drawImage`; earlier same-pass run with less local CPU pressure sampled desktop avg `32.1ms` / p95 `50ms`.
+  - `npm run smoke:worker` ✅ final run under the same local load: desktop avg `38.4ms` / p95 `50ms`, `1.7783ms/frame` profiled non-`drawImage`; `runtime-readiness.json` status `needs-more-proof`, so worker default remains held.
+  - Screenshot inspection ✅: refreshed `output/browser-smoke/mobile-compact-upgrade-result.png` shows the objective rail, Upgrade Hub result/history, and bottom controls without achievement-toast overlap.
+  - Playwright local smoke URL ✅: `http://127.0.0.1:5173/?smoke=1&v=final-local-polish` captured `output/playwright-final-local.png`, saved snapshot/console artifacts, and reported 0 warning/error console messages.
+  - Vercel proof ✅: `vercel --version` reported `54.5.0`; `vercel inspect https://creature-sandbox.vercel.app --timeout 20s` reported production `Ready`; `curl -I -L --max-time 20 https://creature-sandbox.vercel.app` returned HTTP `200`.
+- Residual note: functional release proof is healthy, production is reachable, and worker diagnostics are stronger. Performance is still environment-sensitive under local CPU load from concurrent builds; the next upgrade should target `world-step`/`subsystem-update` and the completed-scenario result flow before promoting worker by default.

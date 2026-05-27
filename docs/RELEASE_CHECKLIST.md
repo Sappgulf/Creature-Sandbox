@@ -21,11 +21,13 @@ npm run smoke:worker
 The browser smoke lanes should leave current proof under:
 
 - `output/browser-smoke/summary.json`
+- `output/browser-smoke/runtime-readiness.json`
 - `output/browser-smoke-worker/summary.json`
+- `output/browser-smoke-worker/runtime-readiness.json`
 - `output/browser-smoke/desktop-upgrade-result.png`
 - `output/browser-smoke-worker/desktop-watch.png`
 
-Before tagging, inspect at least one desktop and one mobile screenshot from both smoke folders. Confirm the canvas is nonblank, the objective rail is compact, the Upgrade Hub result/history surfaces are visible, and worker screenshots do not show stale or overlapping runtime copy.
+Before tagging, inspect at least one desktop and one mobile screenshot from both smoke folders. Confirm the canvas is nonblank, the objective rail is compact, the Upgrade Hub result/history surfaces are visible, and worker screenshots do not show stale or overlapping runtime copy. Confirm `output/browser-smoke-worker/runtime-readiness.json` reports `status: "candidate-opt-in"` before any worker-default discussion; if it reports `needs-more-proof`, document the missed thresholds and keep the shipping default at `main`.
 
 ## Manual Sanity
 
@@ -64,4 +66,6 @@ For Vercel proof, confirm the CLI is available before deploying:
 
 ```bash
 vercel --version
+vercel inspect https://creature-sandbox.vercel.app --timeout 20s
+curl -I -L --max-time 20 https://creature-sandbox.vercel.app
 ```

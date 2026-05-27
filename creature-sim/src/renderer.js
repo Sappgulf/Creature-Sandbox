@@ -77,6 +77,7 @@ export class Renderer {
     this._nameCache = null; // Cache for creature names to avoid repeated lookups
     this._visibleCreatures = [];
     this._renderList = [];
+    this._creatureRenderOptions = {};
 
     // OPTIMIZATION: Mini-map heatmap cache
     this._heatmapCache = {
@@ -105,6 +106,29 @@ export class Renderer {
       berries: 'food_berries',
       fruit: 'food_fruit',
       golden_fruit: 'food_golden_fruit'
+    };
+    this._foodTypeOrder = ['grass', 'berries', 'fruit', 'golden_fruit'];
+    this._foodVisuals = {
+      grass: {
+        color: 'rgba(100,220,90,0.9)',
+        glow: 'rgba(80,200,60,0.35)',
+        pulseSpeed: 1.4
+      },
+      berries: {
+        color: 'rgba(255,80,130,0.9)',
+        glow: 'rgba(255,50,100,0.4)',
+        pulseSpeed: 1.1
+      },
+      fruit: {
+        color: 'rgba(255,160,50,0.9)',
+        glow: 'rgba(255,140,30,0.4)',
+        pulseSpeed: 0.9
+      },
+      golden_fruit: {
+        color: 'rgba(255,230,50,0.95)',
+        glow: 'rgba(255,200,0,0.5)',
+        pulseSpeed: 0.7
+      }
     };
     this._propSpriteAssetByType = {
       bounce: 'prop_bounce',
@@ -1038,30 +1062,11 @@ export class Renderer {
     const quality = this.performance?.getCurrentQuality?.() || this.performance?.currentQuality || 'high';
     const lowDetailFood = quality !== 'ultra' && (visibleFood.length > 120 || this.camera.zoom < 1.08);
 
-    const foodVisuals = {
-      grass: {
-        color: 'rgba(100,220,90,0.9)',
-        glow: 'rgba(80,200,60,0.35)',
-        pulseSpeed: 1.4
-      },
-      berries: {
-        color: 'rgba(255,80,130,0.9)',
-        glow: 'rgba(255,50,100,0.4)',
-        pulseSpeed: 1.1
-      },
-      fruit: {
-        color: 'rgba(255,160,50,0.9)',
-        glow: 'rgba(255,140,30,0.4)',
-        pulseSpeed: 0.9
-      },
-      golden_fruit: {
-        color: 'rgba(255,230,50,0.95)',
-        glow: 'rgba(255,200,0,0.5)',
-        pulseSpeed: 0.7
-      }
-    };
-
-    for (const [type, items] of Object.entries(byType)) {
+    const foodVisuals = this._foodVisuals;
+    const foodTypeOrder = this._foodTypeOrder;
+    for (let typeIndex = 0; typeIndex < foodTypeOrder.length; typeIndex++) {
+      const type = foodTypeOrder[typeIndex];
+      const items = byType[type];
       if (items.length === 0) continue;
 
       const visual = foodVisuals[type] || foodVisuals.grass;

@@ -1885,6 +1885,8 @@ export function initializeApp() {
         runtimeModePreference: runtimeModePreference.mode,
         runtimeModeSource: runtimeModePreference.source,
         runtimeModeStored: readStoredRuntimeMode(),
+        workerReady: USE_SIM_WORKER ? !!world.isReady : null,
+        workerPendingMessages: USE_SIM_WORKER ? Number(world.queue?.length || 0) : null,
         registeredSprites: assetLoader.spriteSheets?.size ?? 0,
         legacySprites: assetLoader.assets?.size ?? 0,
         particles: world.particles?.particles?.length ?? notifications?.particles?.length ?? 0,
@@ -2413,6 +2415,7 @@ export function initializeApp() {
           stored: readStoredRuntimeMode()
         };
       },
+      runtimeDiagnostics: () => world.getRuntimeDiagnostics?.() ?? null,
       setRuntimeModePreference: (mode = 'main') => ({
         ok: !!writeStoredRuntimeMode(mode),
         requested: String(mode || ''),
@@ -2594,7 +2597,11 @@ export function initializeApp() {
             workerMode: USE_SIM_WORKER,
             runtimeModePreference: runtimeModePreference.mode,
             runtimeModeSource: runtimeModePreference.source,
-            runtimeModeStored: readStoredRuntimeMode()
+            runtimeModeStored: readStoredRuntimeMode(),
+            workerReady: USE_SIM_WORKER ? !!world.isReady : null,
+            workerPendingMessages: USE_SIM_WORKER ? Number(world.queue?.length || 0) : null,
+            workerSnapshotTime: USE_SIM_WORKER ? Number(world.t?.toFixed?.(2) ?? world.t ?? 0) : null,
+            workerDiagnostics: world.getRuntimeDiagnostics?.() ?? null
           }
         };
       }

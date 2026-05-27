@@ -20,6 +20,12 @@ export class CreatureBehaviorSystem {
 
     // Object pool for temporary calculations
     this._tempPool = new TempObjectPool(5);
+    this._nearbyPredators = [];
+    this._packMembers = [];
+    this._herdMembers = [];
+    this._schoolingNeighbors = [];
+    this._juveniles = [];
+    this._advancedAiTimer = rand() * 0.12;
   }
 
   /**
@@ -42,8 +48,13 @@ export class CreatureBehaviorSystem {
       this.updateHerbivoreBehavior(world, dt);
     }
 
-    // Advanced AI integrations
-    this.updateAdvancedAI(world, dt);
+    // Advanced flock/pack helpers are expensive and tolerate a lower cadence.
+    this._advancedAiTimer -= dt;
+    if (this._advancedAiTimer <= 0) {
+      const aiDt = Math.min(0.3, dt + Math.abs(this._advancedAiTimer));
+      this._advancedAiTimer = 0.08 + rand() * 0.06;
+      this.updateAdvancedAI(world, aiDt);
+    }
 
     // Handle lifecycle behaviors
     this.updateLifecycleBehavior(dt, world);
@@ -62,7 +73,8 @@ export class CreatureBehaviorSystem {
         }
       } else if (this.creature.target.creatureId !== undefined) {
         // Creature target - check if still alive
-        const targetCreature = world.creatures.find(c => c.id === this.creature.target.creatureId);
+        const targetCreature = world.getAnyCreatureById?.(this.creature.target.creatureId) ||
+          world.creatures.find(c => c.id === this.creature.target.creatureId);
         if (!targetCreature || !targetCreature.alive) {
           this.creature.target = null;
         }
@@ -862,34 +874,45 @@ export class CreatureBehaviorSystem {
     const packMembers = world.creatureManager?.queryCreaturesFast(
       this.creature.x,
       this.creature.y,
-      packRadius
-    ).filter(c =>
-      c !== this.creature &&
-      c.alive &&
-      c.genes.predator &&
-      c.genes.packInstinct > 0.5 &&
-      Math.abs((c.genes.hue || 0) - (this.creature.genes.hue || 0)) < 0.2
+      packRadius,
+      this._packMembers
     ) || [];
+    const distToPrey = Math.hypot(prey.x - this.creature.x, prey.y - this.creature.y);
+    const distToPreySq = distToPrey * distToPrey;
+    let packCount = 0;
+    let isClosest = true;
+    let closestPack = this.creature;
+    let closestPackDistSq = distToPreySq;
 
-    if (packMembers.length > 0) {
+    for (let i = 0; i < packMembers.length; i++) {
+      const candidate = packMembers[i];
+      if (candidate === this.creature ||
+          !candidate?.alive ||
+          !candidate.genes?.predator ||
+          candidate.genes.packInstinct <= 0.5 ||
+          Math.abs((candidate.genes.hue || 0) - (this.creature.genes.hue || 0)) >= 0.2) {
+        continue;
+      }
+      packMembers[packCount++] = candidate;
+      const dx = prey.x - candidate.x;
+      const dy = prey.y - candidate.y;
+      const candidateDistSq = dx * dx + dy * dy;
+      if (candidateDistSq < distToPreySq) {
+        isClosest = false;
+      }
+      if (candidateDistSq < closestPackDistSq) {
+        closestPackDistSq = candidateDistSq;
+        closestPack = candidate;
+      }
+    }
+    packMembers.length = packCount;
+
+    if (packCount > 0) {
       this.creature.personality.isPackHunting = true;
 
       // Coordinate attack - surround prey
-      const distToPrey = Math.hypot(prey.x - this.creature.x, prey.y - this.creature.y);
-
-      // Check if we're the closest - lead the chase
-      const isClosest = packMembers.every(p => {
-        const distOther = Math.hypot(prey.x - p.x, prey.y - p.y);
-        return distToPrey <= distOther;
-      });
-
       if (!isClosest) {
         // Flanking predator - cut off escape routes
-        const closestPack = packMembers.reduce((closest, p) => {
-          const d = Math.hypot(prey.x - p.x, prey.y - p.y);
-          return !closest || d < Math.hypot(prey.x - closest.x, prey.y - closest.y) ? p : closest;
-        }, this.creature);
-
         const escapeAngle = Math.atan2(prey.y - closestPack.y, prey.x - closestPack.x);
         const interceptDistance = 60;
         const interceptX = prey.x + Math.cos(escapeAngle) * interceptDistance;
@@ -903,7 +926,7 @@ export class CreatureBehaviorSystem {
       }
 
       // Boost confidence when hunting in pack
-      if (packMembers.length >= 2 && this.creature.emotions) {
+      if (packCount >= 2 && this.creature.emotions) {
         this.creature.emotions.confidence = Math.min(1.0, this.creature.emotions.confidence + 0.1 * dt);
       }
     }
@@ -932,9 +955,17 @@ export class CreatureBehaviorSystem {
 
     // Advanced evasion when predators are nearby
     const nearbyPredators = world.creatureManager?.queryCreaturesFast(
-      this.creature.x, this.creature.y, 120
-    )?.filter(c => c.alive && c.genes?.predator) || [];
-    if (nearbyPredators.length > 0) {
+      this.creature.x, this.creature.y, 120, this._nearbyPredators
+    ) || [];
+    let predatorCount = 0;
+    for (let i = 0; i < nearbyPredators.length; i++) {
+      const candidate = nearbyPredators[i];
+      if (candidate?.alive && candidate.genes?.predator) {
+        nearbyPredators[predatorCount++] = candidate;
+      }
+    }
+    nearbyPredators.length = predatorCount;
+    if (predatorCount > 0) {
       const evasion = AdvancedPredatorPreyAI.applyEvasionStrategy(
         this.creature, nearbyPredators, world, dt
       );
@@ -956,16 +987,22 @@ export class CreatureBehaviorSystem {
    * Update herd behavior
    */
   updateHerdBehavior(world, dt) {
-    const herdMembers = world.creatureManager?.queryCreatures(
-      this.creature.x, this.creature.y, 50
-    ).filter(c =>
-      c !== this.creature &&
-      c.alive &&
-      !c.genes.predator &&
-      c.genes.herdInstinct > 0.3
+    const herdMembers = world.creatureManager?.queryCreaturesFast(
+      this.creature.x, this.creature.y, 50, this._herdMembers
     ) || [];
+    let herdCount = 0;
+    for (let i = 0; i < herdMembers.length; i++) {
+      const candidate = herdMembers[i];
+      if (candidate !== this.creature &&
+          candidate?.alive &&
+          !candidate.genes?.predator &&
+          candidate.genes?.herdInstinct > 0.3) {
+        herdMembers[herdCount++] = candidate;
+      }
+    }
+    herdMembers.length = herdCount;
 
-    if (herdMembers.length > 0) {
+    if (herdCount > 0) {
       this.applyHerdForces(herdMembers, dt);
     }
   }
@@ -1026,7 +1063,7 @@ export class CreatureBehaviorSystem {
     // Schooling for non-predators
     if (!this.creature.genes.predator) {
       const nearby = world.creatureManager?.queryCreaturesFast(
-        this.creature.x, this.creature.y, 100
+        this.creature.x, this.creature.y, 100, this._schoolingNeighbors
       ) || [];
       EnhancedBehaviors.applySchooling(this.creature, nearby, dt);
     }
@@ -1035,8 +1072,16 @@ export class CreatureBehaviorSystem {
     if (this.creature.genes.predator && this.creature.target?.creatureId) {
       const prey = world.getAnyCreatureById?.(this.creature.target.creatureId);
       const nearbyPredators = world.creatureManager?.queryCreaturesFast(
-        this.creature.x, this.creature.y, 150
-      )?.filter(c => c.alive && c.genes?.predator && c.id !== this.creature.id) || [];
+        this.creature.x, this.creature.y, 150, this._nearbyPredators
+      ) || [];
+      let predatorCount = 0;
+      for (let i = 0; i < nearbyPredators.length; i++) {
+        const candidate = nearbyPredators[i];
+        if (candidate?.alive && candidate.genes?.predator && candidate.id !== this.creature.id) {
+          nearbyPredators[predatorCount++] = candidate;
+        }
+      }
+      nearbyPredators.length = predatorCount;
       const flank = EnhancedBehaviors.applyPackHunting(
         this.creature, nearbyPredators, prey, dt
       );
@@ -1048,9 +1093,15 @@ export class CreatureBehaviorSystem {
 
     // Herding protection for adults
     if (this.creature.ageStage === 'adult' && !this.creature.genes.predator) {
-      const juveniles = world.creatures?.filter(c =>
-        c.alive && c.ageStage === 'juvenile' && !c.genes?.predator
-      ) || [];
+      const juveniles = this._juveniles;
+      juveniles.length = 0;
+      const creatures = world.creatures || [];
+      for (let i = 0; i < creatures.length; i++) {
+        const candidate = creatures[i];
+        if (candidate?.alive && candidate.ageStage === 'juvenile' && !candidate.genes?.predator) {
+          juveniles.push(candidate);
+        }
+      }
       EnhancedBehaviors.applyHerding(this.creature, juveniles, dt);
     }
 
