@@ -4,7 +4,9 @@ import { BiomeGenerator } from './perlin-noise.js';
 
 export class SimulationProxy {
   constructor(workerPath) {
-    this.worker = new Worker(workerPath, { type: 'module' });
+    this.worker = typeof workerPath === 'function'
+      ? new workerPath()
+      : new Worker(workerPath, { type: 'module' });
     this.worker.onerror = (e) => {
       console.error('🚨 SimulationProxy: Worker Error', e.message, e.filename, e.lineno);
       this._recordWorkerError({

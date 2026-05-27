@@ -4,6 +4,7 @@
  */
 import { World } from './world-core.js';
 import { SimulationProxy } from './simulation-proxy.js';
+import SimulationWorker from './worker-simulation.js?worker';
 import { Creature } from './creature.js';
 import './creature-features.js'; // Load feature extensions
 import { makeGenes } from './genetics.js';
@@ -377,7 +378,7 @@ export function initializeApp() {
   const world = errorHandler.safeExecute(() => {
     if (USE_SIM_WORKER) {
       console.debug('🚀 Initializing Simulation Worker...');
-      const w = new SimulationProxy(new URL('./worker-simulation.js', import.meta.url));
+      const w = new SimulationProxy(SimulationWorker);
       w.init(4000, 2800);
       w.seed(startupSeed.herbivores, startupSeed.predators, startupSeed.food);
       return w;

@@ -726,19 +726,22 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - added the GitHub `release-smoke` workflow to run static/unit/build/browser/scenario/production proof after pushes to `main`.
   - added `npm run smoke:scenarios` for 75-second Stress Sanctuary and Scavenger Bridge balance soaks.
   - tuned Stress Sanctuary and Scavenger Bridge setup, disabled global auto-balance for those objective-owned runs, and prioritized predator goal cards when a scenario has a predator objective.
+  - fixed the production worker bundle path after post-push smoke exposed the source-style worker importing missing `/assets/world-core.js` dependencies.
+  - changed the app to use Vite `?worker` bundling for simulation worker startup and fixed the web manifest icon URL.
   - refreshed README, known issues, feature matrix, release checklist, smoke docs, and changelog for the worker-default/main-fallback split.
 - Verification:
   - `node --check` for touched JS/config/smoke files ✅
   - `git diff --check` ✅
   - `npm run lint` ✅
   - `npm test` ✅ (155 passing)
-  - `npm run build` ✅ (main app JS `585.95 kB` / `171.85 kB` gzip; `build-info.json` emitted)
+  - `npm run build` ✅ (main app JS `586.00 kB` / `171.87 kB` gzip; bundled worker `244.12 kB`; `build-info.json` emitted)
   - `npm run check:bundle` ✅
-  - `npm run smoke:browser` ✅ (`shipping-default`, desktop avg `20.93ms` / p95 `33.4ms`, `0.9605ms/frame` profiled non-`drawImage`; mobile p95 `<= 17.7ms`)
-  - `npm run smoke:main` ✅ (`fallback-proof`, desktop avg `34ms` / p95 `50.1ms`, `3.344ms/frame` profiled non-`drawImage`; mobile p95 `<= 17.7ms`)
-  - `npm run smoke:worker` ✅ (`candidate-opt-in`, desktop avg `21.03ms` / p95 `33.4ms`, `0.9452ms/frame` profiled non-`drawImage`; mobile p95 `<= 17.6ms`)
+  - `npm run smoke:browser` ✅ (`shipping-default`, desktop avg `20.54ms` / p95 `33.4ms`, `0.9767ms/frame` profiled non-`drawImage`; mobile p95 `<= 17.6ms`)
+  - `npm run smoke:main` ✅ (`fallback-proof`, desktop avg `33.33ms` / p95 `49.9ms`, `3.5231ms/frame` profiled non-`drawImage`; mobile p95 `<= 17.7ms`)
+  - `npm run smoke:worker` ✅ (`candidate-opt-in`, desktop avg `18.39ms` / p95 `33.3ms`, `0.9388ms/frame` profiled non-`drawImage`; mobile p95 `<= 17.6ms`)
   - `npm run smoke:scenarios` ✅ (Stress Sanctuary: `37` alive, `534` food, `1.25` stress; Scavenger Bridge: `48` alive, `431` food, `4` predators)
   - external `develop-web-game` client ✅ captured `output/web-game/worker-default-final/shot-0.png` and `state-0.json` with worker mode true and 0 pending worker messages.
   - Playwright local smoke URL ✅ captured `output/playwright-final-local.png`; warning/error console output was 0.
+  - first post-push `npm run smoke:production` ❌ exposed the unbundled worker dependency issue; local worker bundle fix is now verified and ready for post-push production verification.
   - `npm run evidence:release` ✅ local proof lanes present; production lane correctly flagged stale until the pushed SHA is deployed.
-- Residual note: desktop main-thread mode is now explicitly fallback-only. Worker default proof is green locally; production proof must be rerun after the pushed commit is live so `/build-info.json` matches `HEAD`.
+- Residual note: desktop main-thread mode is now explicitly fallback-only. Worker default proof is green locally; production proof must be rerun after the worker-bundle fix commit is live so `/build-info.json` matches `HEAD`.
