@@ -511,8 +511,12 @@ export class AchievementSystem {
     const notification = document.createElement('div');
     const compactViewport = typeof window !== 'undefined' &&
       (window.innerWidth <= 640 || document.body.classList.contains('mobile-device'));
+    const inspectorOpen = !document.getElementById('inspector')?.classList.contains('hidden');
+    const upgradePanelOpen = !document.getElementById('upgrade-panel')?.classList.contains('hidden');
+    const avoidPanelLane = !compactViewport && (inspectorOpen || upgradePanelOpen);
+    const compactToast = compactViewport || avoidPanelLane;
     notification.className = 'achievement-notification';
-    notification.innerHTML = compactViewport
+    notification.innerHTML = compactToast
       ? `
         <div class="achievement-icon">${achievement.icon}</div>
         <div class="achievement-content">
@@ -532,32 +536,33 @@ export class AchievementSystem {
     // Style it
     notification.style.cssText = `
       position: fixed;
-      top: ${compactViewport ? 'calc(env(safe-area-inset-top, 0px) + 12px)' : '20px'};
-      right: ${compactViewport ? '12px' : '20px'};
+      top: ${avoidPanelLane ? 'auto' : (compactViewport ? 'calc(env(safe-area-inset-top, 0px) + 12px)' : '20px')};
+      right: ${compactViewport ? '12px' : (inspectorOpen ? '344px' : '20px')};
+      bottom: ${avoidPanelLane ? 'calc(env(safe-area-inset-bottom, 0px) + 92px)' : 'auto'};
       left: auto;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      padding: ${compactViewport ? '7px 10px' : '15px 20px'};
-      border-radius: ${compactViewport ? '10px' : '10px'};
+      padding: ${compactToast ? '7px 10px' : '15px 20px'};
+      border-radius: 10px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
       z-index: 10001;
       display: flex;
       align-items: center;
-      gap: ${compactViewport ? '8px' : '15px'};
+      gap: ${compactToast ? '8px' : '15px'};
       animation: slideInRight 0.3s ease-out;
-      min-width: ${compactViewport ? '0' : '300px'};
-      max-width: ${compactViewport ? 'min(320px, calc(100vw - 24px))' : '420px'};
-      min-height: ${compactViewport ? '42px' : 'auto'};
+      min-width: ${compactToast ? '0' : '300px'};
+      max-width: ${compactToast ? 'min(300px, calc(100vw - 24px))' : '420px'};
+      min-height: ${compactToast ? '42px' : 'auto'};
     `;
 
     // Icon style
     const icon = notification.querySelector('.achievement-icon');
     icon.style.cssText = `
-      font-size: ${compactViewport ? '22px' : '40px'};
+      font-size: ${compactToast ? '22px' : '40px'};
       line-height: 1;
       flex: 0 0 auto;
-      width: ${compactViewport ? '28px' : 'auto'};
-      height: ${compactViewport ? '28px' : 'auto'};
+      width: ${compactToast ? '28px' : 'auto'};
+      height: ${compactToast ? '28px' : 'auto'};
       display: flex;
       align-items: center;
       justify-content: center;
@@ -584,18 +589,18 @@ export class AchievementSystem {
 
     const name = notification.querySelector('.achievement-name');
     name.style.cssText = `
-      font-size: ${compactViewport ? '13px' : '18px'};
+      font-size: ${compactToast ? '13px' : '18px'};
       font-weight: bold;
-      margin: ${compactViewport ? '1px 0' : '5px 0'};
+      margin: ${compactToast ? '1px 0' : '5px 0'};
       line-height: 1.15;
-      white-space: ${compactViewport ? 'nowrap' : 'normal'};
-      overflow: ${compactViewport ? 'hidden' : 'visible'};
-      text-overflow: ${compactViewport ? 'ellipsis' : 'clip'};
+      white-space: ${compactToast ? 'nowrap' : 'normal'};
+      overflow: ${compactToast ? 'hidden' : 'visible'};
+      text-overflow: ${compactToast ? 'ellipsis' : 'clip'};
     `;
 
     const xp = notification.querySelector('.achievement-xp');
     xp.style.cssText = `
-      font-size: ${compactViewport ? '10px' : '14px'};
+      font-size: ${compactToast ? '10px' : '14px'};
       opacity: 0.8;
     `;
 
@@ -607,7 +612,7 @@ export class AchievementSystem {
       setTimeout(() => {
         notification.remove();
       }, 300);
-    }, compactViewport ? 3200 : 5000);
+    }, compactToast ? 3200 : 5000);
   }
 
   // Get achievement progress for UI

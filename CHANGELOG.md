@@ -17,6 +17,18 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-05-27 — achievement-toast-lane-polish — Planned
+- **Issues:** Follow-up screenshot audit after the RC proof showed fallback achievement unlock toasts could still render as a large desktop card and cover the Inspector lane while Upgrade Hub scenario results were focused.
+- **Root Causes:** `AchievementSystem.showNotification()` only used the compact presentation on mobile-sized viewports; desktop fallback notifications did not account for visible side panels or the Upgrade Hub.
+- **Fixes:** Make fallback achievement notifications switch to a compact toast when the Inspector or Upgrade Hub is visible, and move that toast to a lower playfield lane away from the right-side Inspector.
+- **Verification:** Planned: targeted syntax/ESLint; `git diff --check`; `npm run lint`; `npm test`; `npm run build`; `npm run check:bundle`; `npm run smoke:browser`; `npm run smoke:worker`; external web-game client screenshot inspection.
+
+### 2026-05-27 — achievement-toast-lane-polish — Implemented
+- **Issues:** The top-right fallback achievement notification could obscure Inspector content during result-focused Upgrade Hub smoke screenshots.
+- **Root Causes:** Desktop fallback achievement notifications were styled as a wide celebratory card regardless of active panel layout.
+- **Fixes:** Added panel-aware fallback achievement toast positioning and compact styling when Inspector or Upgrade Hub is open, plus a cache-bust for the achievement module import.
+- **Verification:** `node --check creature-sim/src/achievement-system.js` and `creature-sim/src/app-bootstrap.js` (pass); targeted ESLint (pass); `git diff --check` (pass); `npm run lint` (pass); `npm test` (pass, 154 checks); `npm run build` (pass, main app JS `576.04 kB` / `169.01 kB` gzip); `npm run check:bundle` (pass); `npm run smoke:browser` (pass: desktop avg `33.97ms` / p95 `50ms`, mobile p95 `<= 17.7ms`); `npm run smoke:worker` (pass: desktop avg `18.37ms` / p95 `33.3ms`, mobile p95 `<= 17.6ms`); external web-game client captured `output/web-game/audit-toast-20260527/shot-0.png` and `state-0.json`; inspected `output/browser-smoke/desktop-upgrade-result.png` and confirmed the Inspector lane is no longer covered.
+
 ### 2026-05-27 — scenario-depth-worker-rc-polish — Planned
 - **Issues:** Approved tranche 1-5 targeted the next release-candidate slice: main-thread desktop draw cost still needed a low-risk creature LOD pass, worker mode needed a player-facing candidate toggle plus deeper scenario metadata proof, the playable catalog needed more scenario variety, Upgrade Hub needed completed-run history, and the repo needed an explicit release checklist before tag/push.
 - **Root Causes:** Creature sprite detail stayed high in low-quality/zoomed-out desktop states, runtime mode selection was only available through query/storage smoke hooks, worker smoke did not start a named scenario or verify playable metadata roundtrips, scenario progress only tracked aggregate completion counts, and release steps were spread across README, smoke docs, and prior progress notes.

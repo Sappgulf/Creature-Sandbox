@@ -21,7 +21,7 @@ import { EcosystemHealth } from './ecosystem-health.js';
 import { DebugConsole } from './debug-console.js';
 import { AudioSystem } from './audio-system.js';
 import { TutorialSystem } from './tutorial-system.js';
-import { AchievementSystem } from './achievement-system.js?v=20260527-tranche2';
+import { AchievementSystem } from './achievement-system.js?v=20260527-audit1';
 import { BiomeGenerator } from './perlin-noise.js';
 import { GameplayModes } from './gameplay-modes.js';
 import { SessionGoals } from './session-goals.js';

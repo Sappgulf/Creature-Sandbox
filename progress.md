@@ -620,3 +620,28 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - `npm run smoke:worker` ✅ (desktop avg `19.15ms` / p95 `33.4ms`; mobile p95 `<= 17.1ms`)
   - external `develop-web-game` client ✅ captured `output/web-game/rc-polish/shot-0.png` and `state-0.json`.
 - Residual note: main-thread desktop final heavy state is materially improved and draw volume is bounded, but it is still not a 60fps claim. Worker mode is the smoother candidate lane; the next upgrade should profile remaining non-`drawImage` frame time before making worker default.
+
+2026-05-27
+- Follow-up test/audit pass after `v2.0.0-rc1`.
+- Re-ran the release checklist proof on clean `main`, then inspected screenshots/state artifacts.
+- Found one concrete visual polish issue: fallback achievement unlock toasts could still render as a large desktop card over the Inspector lane while Upgrade Hub scenario result/history was focused.
+- Implemented:
+  - fallback achievement notifications now use compact toast styling when the Inspector or Upgrade Hub is visible.
+  - panel-aware positioning moves the toast to a lower playfield lane instead of covering the right-side Inspector.
+  - cache-busted the `AchievementSystem` import.
+- Verification:
+  - `node --check creature-sim/src/achievement-system.js` and `creature-sim/src/app-bootstrap.js` ✅
+  - targeted ESLint ✅
+  - `git diff --check` ✅
+  - `npm run lint` ✅
+  - `npm test` ✅ (154 passing)
+  - `npm run build` ✅ (main app JS `576.04 kB` / `169.01 kB` gzip)
+  - `npm run check:bundle` ✅
+  - `npm run smoke:browser` ✅ (desktop avg `33.97ms` / p95 `50ms`; mobile p95 `<= 17.7ms`)
+  - `npm run smoke:worker` ✅ (desktop avg `18.37ms` / p95 `33.3ms`; mobile p95 `<= 17.6ms`)
+  - external `develop-web-game` client ✅ captured `output/web-game/audit-toast-20260527/shot-0.png` and `state-0.json`.
+  - inspected `output/browser-smoke/desktop-upgrade-result.png`; Upgrade Hub result/history remains visible and the Inspector lane is no longer covered by a large achievement card.
+- Next recommended upgrades:
+  - add a smoke/profile artifact for non-`drawImage` main-thread frame cost before any further desktop 60fps claim.
+  - add a first-class smoke assertion around fallback achievement toast bounds when a side panel is open.
+  - install Vercel CLI (`npm i -g vercel`) before the next deployment proof so `vercel deploy`, `vercel logs`, and env pulls are available.
