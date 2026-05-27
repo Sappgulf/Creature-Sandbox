@@ -105,6 +105,10 @@ export class UpgradeController {
       if (action === 'follow') this.setFollowMode(value);
       if (action === 'readability') this.setReadabilityMode(value);
       if (action === 'quick-action') this.runQuickAction(value);
+      if (action === 'focus-result') {
+        this.focusScenarioResult();
+        return;
+      }
       if (action === 'nickname') {
         const creature = this.getSelectedCreature();
         const input = this.panel?.querySelector('#upgrade-nickname-input');
@@ -529,7 +533,7 @@ export class UpgradeController {
     this.setPanelVisible(this.panel?.classList.contains('hidden'));
   }
 
-  setPanelVisible(visible) {
+  setPanelVisible(visible, { focusResult = false } = {}) {
     if (!this.panel) return;
     if (visible) {
       this.uiController?.closeMajorPanels?.('upgrade-panel');
@@ -539,7 +543,25 @@ export class UpgradeController {
     }
     this.panel.classList.toggle('hidden', !visible);
     this.panel.setAttribute('aria-hidden', visible ? 'false' : 'true');
-    if (visible) this.renderPanel();
+    if (visible) {
+      this.renderPanel();
+      if (focusResult) this.focusScenarioResult({ smooth: false });
+    }
+  }
+
+  focusScenarioResult({ smooth = true } = {}) {
+    const target = this.panel?.querySelector('#upgrade-scenario-result');
+    if (!target) return false;
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    window.requestAnimationFrame(() => {
+      target.scrollIntoView({
+        block: 'start',
+        behavior: smooth && !prefersReducedMotion ? 'smooth' : 'auto'
+      });
+      target.classList.add('result-focused');
+      window.setTimeout(() => target.classList.remove('result-focused'), 900);
+    });
+    return true;
   }
 
   renderPanel({ passive = false } = {}) {
@@ -607,6 +629,11 @@ export class UpgradeController {
           <span>${story.metrics.food} food</span>
           <span>${story.metrics.stress} stress</span>
         </div>
+        ${result ? '<div class="upgrade-story-actions"><button class="chip" data-upgrade-action="focus-result">🏁 Result</button></div>' : ''}
+      </section>
+      <section id="upgrade-scenario-result" class="upgrade-section upgrade-result-section" tabindex="-1">
+        <h3>Scenario Result</h3>
+        ${scenarioResultMarkup}
       </section>
       <section class="upgrade-section">
         <h3>Action Cards</h3>
@@ -636,10 +663,6 @@ export class UpgradeController {
       <section class="upgrade-section">
         <h3>Readability</h3>
         <div class="chip-row">${modeMarkup}</div>
-      </section>
-      <section class="upgrade-section">
-        <h3>Scenario Result</h3>
-        ${scenarioResultMarkup}
       </section>
       <section class="upgrade-section two-col">
         <div><h3>Discovery Journal</h3><ul class="upgrade-list">${journalMarkup}</ul></div>

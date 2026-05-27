@@ -245,7 +245,7 @@ Run the checked-in browser smoke before shipping gameplay/UI changes:
 npm run smoke:browser
 ```
 
-The script starts Vite if needed, captures the home screen, opens desktop plus compact/large mobile browser contexts, verifies the smoke sandbox starts, starts the `First Ecosystem` playable scenario, checks Director guidance, selects a creature, spawns a predator, paints food, toggles Watch Mode and God Mode, verifies compact God panel sizing on mobile, opens Moments, exercises food/calm/chaos/prop/remove god tools, runs deterministic throw/prop-trigger probes, completes a scenario through the smoke hook, verifies the Upgrade Hub scenario result card, applies an Upgrade Hub recipe, switches readability mode, saves a nickname, runs an action card, creates a postcard and balance probe, runs in-page save/load plus slot-preview thumbnail roundtrips, captures screenshots/state under `output/browser-smoke/`, records a real-time frame-pacing sample into each JSON artifact, and fails on browser warnings or page errors.
+The script starts Vite if needed, captures the home screen, opens desktop plus compact/large mobile browser contexts, verifies the smoke sandbox starts, starts the `First Ecosystem` playable scenario, checks Director guidance, selects a creature, spawns a predator, paints food, toggles Watch Mode and God Mode, verifies compact God panel sizing on mobile, opens Moments, exercises food/calm/chaos/prop/remove god tools, runs deterministic throw/prop-trigger probes, completes a scenario through the smoke hook, focuses the Upgrade Hub result anchor, verifies the completed scenario result card is visible near the top of the panel, applies an Upgrade Hub recipe, switches readability mode, saves a nickname, runs an action card, creates a postcard and balance probe, runs in-page save/load plus slot-preview thumbnail roundtrips, captures screenshots/state under `output/browser-smoke/`, records a real-time frame-pacing sample with scoped `drawImage` volume/timing into each JSON artifact, and fails on browser warnings or page errors.
 
 Run the opt-in worker runtime lane before changing proxy, bridge, worker, or release-smoke code:
 
@@ -253,7 +253,7 @@ Run the opt-in worker runtime lane before changing proxy, bridge, worker, or rel
 npm run smoke:worker
 ```
 
-The worker lane opens the same desktop plus compact/large mobile browser contexts with `?worker=1`, verifies the worker runtime metadata, exercises startup selection, manual spawn, food painting, Watch Mode, screenshots/state under `output/browser-smoke-worker/`, and records the same frame-pacing sample. Full playable-scenario reset remains covered by the main-thread browser smoke.
+The worker lane opens the same desktop plus compact/large mobile browser contexts with `?worker=1`, verifies the worker runtime metadata, exercises startup selection, manual spawn, food painting, Watch Mode, snapshot-only save serialization/load parity, save-slot thumbnail preview, runtime preference storage roundtrips, screenshots/state under `output/browser-smoke-worker/`, and records the same frame-pacing plus `drawImage` sample. Full playable-scenario reset remains covered by the main-thread browser smoke.
 
 Run the post-build bundle guard after `npm run build`:
 

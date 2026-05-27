@@ -636,7 +636,11 @@ export class Renderer {
   _shouldUseFoodSprites(visibleFoodCount) {
     if (visibleFoodCount <= 0) return false;
     if (this.camera.zoom < 0.75) return false;
-    const maxDetailed = this.isMobile ? 80 : 180;
+    const quality = this.performance?.getCurrentQuality?.() || this.performance?.currentQuality || 'high';
+    const maxByQuality = this.isMobile
+      ? { ultra: 80, high: 70, medium: 54, low: 0 }
+      : { ultra: 160, high: 118, medium: 72, low: 0 };
+    const maxDetailed = maxByQuality[quality] ?? (this.isMobile ? 54 : 90);
     return visibleFoodCount <= maxDetailed;
   }
 

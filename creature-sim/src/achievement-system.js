@@ -534,30 +534,30 @@ export class AchievementSystem {
       position: fixed;
       top: ${compactViewport ? 'calc(env(safe-area-inset-top, 0px) + 12px)' : '20px'};
       right: ${compactViewport ? '12px' : '20px'};
-      left: ${compactViewport ? '12px' : 'auto'};
+      left: auto;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      padding: ${compactViewport ? '9px 12px' : '15px 20px'};
-      border-radius: ${compactViewport ? '14px' : '10px'};
+      padding: ${compactViewport ? '7px 10px' : '15px 20px'};
+      border-radius: ${compactViewport ? '10px' : '10px'};
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
       z-index: 10001;
       display: flex;
       align-items: center;
-      gap: ${compactViewport ? '10px' : '15px'};
+      gap: ${compactViewport ? '8px' : '15px'};
       animation: slideInRight 0.3s ease-out;
       min-width: ${compactViewport ? '0' : '300px'};
-      max-width: ${compactViewport ? 'calc(100vw - 24px)' : '420px'};
-      min-height: ${compactViewport ? '54px' : 'auto'};
+      max-width: ${compactViewport ? 'min(320px, calc(100vw - 24px))' : '420px'};
+      min-height: ${compactViewport ? '42px' : 'auto'};
     `;
 
     // Icon style
     const icon = notification.querySelector('.achievement-icon');
     icon.style.cssText = `
-      font-size: ${compactViewport ? '28px' : '40px'};
+      font-size: ${compactViewport ? '22px' : '40px'};
       line-height: 1;
       flex: 0 0 auto;
-      width: ${compactViewport ? '34px' : 'auto'};
-      height: ${compactViewport ? '34px' : 'auto'};
+      width: ${compactViewport ? '28px' : 'auto'};
+      height: ${compactViewport ? '28px' : 'auto'};
       display: flex;
       align-items: center;
       justify-content: center;
@@ -584,9 +584,9 @@ export class AchievementSystem {
 
     const name = notification.querySelector('.achievement-name');
     name.style.cssText = `
-      font-size: ${compactViewport ? '14px' : '18px'};
+      font-size: ${compactViewport ? '13px' : '18px'};
       font-weight: bold;
-      margin: ${compactViewport ? '2px 0' : '5px 0'};
+      margin: ${compactViewport ? '1px 0' : '5px 0'};
       line-height: 1.15;
       white-space: ${compactViewport ? 'nowrap' : 'normal'};
       overflow: ${compactViewport ? 'hidden' : 'visible'};
@@ -595,7 +595,7 @@ export class AchievementSystem {
 
     const xp = notification.querySelector('.achievement-xp');
     xp.style.cssText = `
-      font-size: ${compactViewport ? '11px' : '14px'};
+      font-size: ${compactViewport ? '10px' : '14px'};
       opacity: 0.8;
     `;
 

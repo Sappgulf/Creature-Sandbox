@@ -4638,6 +4638,21 @@ body:not(.legacy-ui) #hud {
   gap: 6px;
 }
 
+.upgrade-story-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.upgrade-result-section {
+  scroll-margin-top: 14px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.upgrade-result-section.result-focused {
+  border-color: rgba(52, 211, 153, 0.44);
+  box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.18), 0 12px 34px rgba(0, 0, 0, 0.18);
+}
+
 .upgrade-metrics span,
 .upgrade-list span {
   color: var(--text-secondary);

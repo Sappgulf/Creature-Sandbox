@@ -8,7 +8,7 @@ import { Creature } from './creature.js';
 import './creature-features.js'; // Load feature extensions
 import { makeGenes } from './genetics.js';
 import { Camera } from './camera.js?v=20260524-opening1';
-import { Renderer } from './renderer.js?v=20260524-focus1';
+import { Renderer } from './renderer.js?v=20260527-tranche2';
 import { ToolController } from './tools.js';
 import { AnalyticsTracker } from './analytics.js';
 import { LineageTracker } from './lineage-tracker.js';
@@ -21,7 +21,7 @@ import { EcosystemHealth } from './ecosystem-health.js';
 import { DebugConsole } from './debug-console.js';
 import { AudioSystem } from './audio-system.js';
 import { TutorialSystem } from './tutorial-system.js';
-import { AchievementSystem } from './achievement-system.js';
+import { AchievementSystem } from './achievement-system.js?v=20260527-tranche2';
 import { BiomeGenerator } from './perlin-noise.js';
 import { GameplayModes } from './gameplay-modes.js';
 import { SessionGoals } from './session-goals.js';
@@ -56,7 +56,7 @@ import { MemoryLearningSystem } from './memory-learning.js';
 import { ChallengeSystem } from './challenge-system.js?v=20260524-opening2';
 import { getDebugFlags } from './debug-flags.js';
 import { setupDevExports } from './dev-exports.js';
-import { UpgradeController } from './upgrade-controller.js?v=20260526-tranche1';
+import { UpgradeController } from './upgrade-controller.js?v=20260527-tranche2';
 import {
   GameDirector,
   GodToolSystem,
@@ -77,6 +77,44 @@ function isNotificationSystem(candidate) {
     typeof candidate.show === 'function' &&
     typeof candidate.update === 'function' &&
     typeof candidate.draw === 'function';
+}
+
+const RUNTIME_MODE_STORAGE_KEY = 'creature-sandbox-runtime-mode';
+
+function normalizeRuntimeMode(value) {
+  const mode = String(value || '').trim().toLowerCase();
+  if (mode === '1' || mode === 'true' || mode === 'worker') return 'worker';
+  if (mode === '0' || mode === 'false' || mode === 'main') return 'main';
+  return null;
+}
+
+function readStoredRuntimeMode() {
+  try {
+    return normalizeRuntimeMode(window.localStorage?.getItem(RUNTIME_MODE_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredRuntimeMode(mode) {
+  const normalized = normalizeRuntimeMode(mode);
+  if (!normalized) return null;
+  try {
+    window.localStorage?.setItem(RUNTIME_MODE_STORAGE_KEY, normalized);
+  } catch {
+    return null;
+  }
+  return normalized;
+}
+
+function getRuntimeModePreference() {
+  if (typeof window === 'undefined') return { mode: 'main', source: 'default', stored: null };
+  const params = new URLSearchParams(window.location.search);
+  const queryMode = normalizeRuntimeMode(params.get('worker'));
+  if (queryMode) return { mode: queryMode, source: 'query', stored: readStoredRuntimeMode() };
+  const stored = readStoredRuntimeMode();
+  if (stored) return { mode: stored, source: 'storage', stored };
+  return { mode: 'main', source: 'default', stored: null };
 }
 
 function getDevToolsConfig() {
@@ -328,10 +366,10 @@ export function initializeApp() {
   // ============================================================================
 
   // Performance Settings
-  // Default to in-thread simulation for full feature compatibility (save/load, personality state).
-  // Opt in to worker mode with ?worker=1.
-  const workerParam = new URLSearchParams(window.location.search).get('worker');
-  const USE_SIM_WORKER = workerParam === '1' || workerParam === 'true';
+  // Default to in-thread simulation for full feature compatibility. The worker
+  // runtime can be enabled per URL or remembered as a local candidate mode.
+  const runtimeModePreference = getRuntimeModePreference();
+  const USE_SIM_WORKER = runtimeModePreference.mode === 'worker';
   const startupSeed = getRuntimeProfile().startupSeed;
 
   // World and core entities
@@ -1812,6 +1850,9 @@ export function initializeApp() {
         activeEvent: world.events?.activeEvent?.type ?? null,
         activeDisaster: world.disaster?.activeDisaster?.type ?? null,
         workerMode: USE_SIM_WORKER,
+        runtimeModePreference: runtimeModePreference.mode,
+        runtimeModeSource: runtimeModePreference.source,
+        runtimeModeStored: readStoredRuntimeMode(),
         registeredSprites: assetLoader.spriteSheets?.size ?? 0,
         legacySprites: assetLoader.assets?.size ?? 0,
         particles: world.particles?.particles?.length ?? notifications?.particles?.length ?? 0,
@@ -1886,10 +1927,86 @@ export function initializeApp() {
 
   let frameSampleState = null;
 
+  const installDrawImageProbe = () => {
+    const proto = window.CanvasRenderingContext2D?.prototype;
+    if (!proto || typeof proto.drawImage !== 'function') return null;
+
+    const original = proto.drawImage;
+    const probe = {
+      count: 0,
+      timeMs: 0,
+      maxMs: 0,
+      byCanvas: {}
+    };
+
+    const getCanvasKey = (context) => {
+      const source = context?.canvas;
+      if (!source) return 'unknown';
+      if (source.id) return source.id;
+      if (source.className) return String(source.className);
+      return `${Number(source.width) || 0}x${Number(source.height) || 0}`;
+    };
+
+    const patchedDrawImage = function patchedDrawImage(...args) {
+      const started = performance.now();
+      try {
+        return original.apply(this, args);
+      } finally {
+        const elapsed = performance.now() - started;
+        const key = getCanvasKey(this);
+        const bucket = probe.byCanvas[key] || {
+          count: 0,
+          timeMs: 0,
+          maxMs: 0
+        };
+        probe.count += 1;
+        probe.timeMs += elapsed;
+        probe.maxMs = Math.max(probe.maxMs, elapsed);
+        bucket.count += 1;
+        bucket.timeMs += elapsed;
+        bucket.maxMs = Math.max(bucket.maxMs, elapsed);
+        probe.byCanvas[key] = bucket;
+      }
+    };
+
+    proto.drawImage = patchedDrawImage;
+    return {
+      probe,
+      restore: () => {
+        if (proto.drawImage === patchedDrawImage) proto.drawImage = original;
+      }
+    };
+  };
+
+  const summarizeDrawImageProbe = (probe, frames) => {
+    if (!probe) return null;
+    const safeFrames = Math.max(1, Number(frames) || 0);
+    const byCanvas = Object.entries(probe.byCanvas || {})
+      .map(([canvas, stats]) => ({
+        canvas,
+        count: Number(stats.count || 0),
+        timeMs: Number((stats.timeMs || 0).toFixed(3)),
+        avgMs: Number(((stats.timeMs || 0) / Math.max(1, stats.count || 0)).toFixed(4)),
+        maxMs: Number((stats.maxMs || 0).toFixed(3))
+      }))
+      .sort((a, b) => b.timeMs - a.timeMs)
+      .slice(0, 6);
+
+    return {
+      count: probe.count,
+      perFrame: Number((probe.count / safeFrames).toFixed(2)),
+      timeMs: Number(probe.timeMs.toFixed(3)),
+      avgMs: Number((probe.timeMs / Math.max(1, probe.count)).toFixed(4)),
+      maxMs: Number(probe.maxMs.toFixed(3)),
+      byCanvas
+    };
+  };
+
   if (shouldAutoStartSandbox || devTools.enabled) {
     window.__creatureSmoke = {
       startFramePacingSample: () => {
         frameSampleState?.unsubscribe?.();
+        frameSampleState?.drawImageProbe?.restore?.();
         const startedAt = performance.now();
         const startPerf = renderer?.performance?.getStats?.() ?? {};
         const startQuality = renderer?.performance?.getCurrentQuality?.() || renderer?.performance?.currentQuality || null;
@@ -1905,8 +2022,10 @@ export function initializeApp() {
           renderedEnd: Number(startPerf.rendered || 0),
           longTasks: [],
           longTaskObserver: null,
+          drawImageProbe: null,
           unsubscribe: null
         };
+        frameSampleState.drawImageProbe = installDrawImageProbe();
         try {
           if (typeof PerformanceObserver === 'function') {
             frameSampleState.longTaskObserver = new PerformanceObserver((list) => {
@@ -1949,6 +2068,7 @@ export function initializeApp() {
         if (!sample) return null;
         sample.unsubscribe?.();
         sample.longTaskObserver?.disconnect?.();
+        sample.drawImageProbe?.restore?.();
         frameSampleState = null;
         const intervals = sample.intervals;
         const sorted = intervals.slice().sort((a, b) => a - b);
@@ -1969,7 +2089,8 @@ export function initializeApp() {
           qualityEnd: sample.qualityEnd,
           qualityShifts: sample.qualityShifts,
           renderedStart: sample.renderedStart,
-          renderedEnd: sample.renderedEnd
+          renderedEnd: sample.renderedEnd,
+          drawImage: summarizeDrawImageProbe(sample.drawImageProbe?.probe, intervals.length)
         };
       },
       saveRoundTrip: async () => {
@@ -1989,7 +2110,53 @@ export function initializeApp() {
         const data = saveSystem.serialize(world, camera, analytics, lineageTracker, {
           source: 'browser-smoke'
         });
-        const loaded = saveSystem.deserialize(data, World, Creature, Camera, makeGenes, BiomeGenerator, world);
+        const canApplyLoadedWorld = typeof world.importState === 'function';
+        const loaded = saveSystem.deserialize(
+          data,
+          World,
+          Creature,
+          Camera,
+          makeGenes,
+          BiomeGenerator,
+          canApplyLoadedWorld ? world : null
+        );
+        if (USE_SIM_WORKER && !canApplyLoadedWorld) {
+          const loadedWorld = loaded?.world;
+          const after = {
+            creatures: world.creatures?.length || 0,
+            food: world.food?.length || 0,
+            props: world.sandbox?.props?.length || 0,
+            t: Number(world.t?.toFixed?.(2) ?? world.t ?? 0),
+            playable: playableScenarios?.getSnapshot?.()?.scenario?.id ?? null,
+            moments: moments?.moments?.length ?? 0,
+            watchMode: !!gameState.watchModeEnabled,
+            metadata: data.metadata?.preview ?? null
+          };
+          const loadedCounts = {
+            creatures: loadedWorld?.creatures?.length || 0,
+            food: loadedWorld?.food?.length || 0,
+            props: loadedWorld?.sandbox?.props?.length || 0,
+            t: Number(loadedWorld?.t?.toFixed?.(2) ?? loadedWorld?.t ?? 0),
+            playable: loaded.metadata?.preview?.scenario?.id ?? null
+          };
+
+          return {
+            ok: loadedCounts.creatures === before.creatures &&
+              loadedCounts.food >= Math.min(before.food, 1) &&
+              loadedCounts.props === before.props &&
+              loadedCounts.playable === before.playable &&
+              after.creatures === before.creatures &&
+              after.food === before.food &&
+              after.watchMode === before.watchMode &&
+              Number.isFinite(loadedCounts.t),
+            applied: false,
+            workerSnapshotOnly: true,
+            before,
+            loaded: loadedCounts,
+            after
+          };
+        }
+
         const applied = applyLoadedState(loaded, 'browser-smoke');
         const after = {
           creatures: world.creatures?.length || 0,
@@ -2011,6 +2178,8 @@ export function initializeApp() {
             after.moments >= before.moments &&
             after.watchMode === before.watchMode &&
             Number.isFinite(after.t),
+          applied: !!applied,
+          workerSnapshotOnly: false,
           before,
           after
         };
@@ -2062,10 +2231,23 @@ export function initializeApp() {
         };
       },
       upgradeState: () => upgradeController?.getSnapshot?.() ?? null,
-      showUpgradePanel: () => {
-        upgradeController?.setPanelVisible?.(true);
+      showUpgradePanel: (options = {}) => {
+        upgradeController?.setPanelVisible?.(true, options);
         return upgradeController?.getSnapshot?.() ?? null;
       },
+      runtimeModePreference: () => ({
+        activeMode: runtimeModePreference.mode,
+        source: runtimeModePreference.source,
+        workerMode: USE_SIM_WORKER,
+        stored: readStoredRuntimeMode()
+      }),
+      setRuntimeModePreference: (mode = 'main') => ({
+        ok: !!writeStoredRuntimeMode(mode),
+        requested: String(mode || ''),
+        stored: readStoredRuntimeMode(),
+        activeMode: runtimeModePreference.mode,
+        workerMode: USE_SIM_WORKER
+      }),
       applyRecipe: (id = 'peaceful_meadow') => upgradeController?.applyRecipe?.(id) ?? false,
       setReadabilityMode: (id = 'normal') => {
         upgradeController?.setReadabilityMode?.(id, { announce: false });
@@ -2236,7 +2418,10 @@ export function initializeApp() {
             untintedSpriteVariants: assetLoader.untintedSpriteCache?.size ?? 0
           },
           runtime: {
-            workerMode: USE_SIM_WORKER
+            workerMode: USE_SIM_WORKER,
+            runtimeModePreference: runtimeModePreference.mode,
+            runtimeModeSource: runtimeModePreference.source,
+            runtimeModeStored: readStoredRuntimeMode()
           }
         };
       }

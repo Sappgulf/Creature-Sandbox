@@ -576,3 +576,25 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - `npm run smoke:worker` ✅ (desktop avg `23.71ms` / p95 `34.4ms`; mobile p95 `<= 17.7ms`)
   - Playwright MCP opened local dev server at `http://127.0.0.1:50555/?smoke=1#seed=1s-8-7s` ✅
 - Residual note: desktop main-thread smoke is much better but still below 60fps in the final watch/god/result state. Next pass should profile full-view draw volume, especially creature/food `drawImage` cost.
+
+2026-05-27
+- Approved tranche 1-3: desktop draw-volume profiling, Upgrade Hub result focus, and worker-mode candidate promotion.
+- Implemented:
+  - smoke frame-pacing samples now install a scoped `drawImage` profiler and write call count, per-frame volume, total draw time, max draw time, and canvas buckets into every browser-smoke JSON artifact.
+  - food sprite rendering now follows active renderer quality so low/medium full-view states fall back to batched vector food sooner instead of paying detailed sprite blits.
+  - Upgrade Hub now has a first-class `#upgrade-scenario-result` anchor, a Result jump action, and smoke assertions that completed results are visible after focused open.
+  - worker runtime selection now has a stored `worker`/`main` candidate preference while query-string `?worker=1` remains explicit and authoritative.
+  - worker smoke now checks snapshot-only save serialization/load parity, save-slot thumbnail preview, runtime preference roundtrips, and a longer sync soak without mutating the live worker world.
+  - worker smoke startup waits briefly for the proxy snapshot before asserting visible starter creatures.
+  - mobile achievement fallback notifications were tightened to a compact top-right toast after screenshot review.
+- Verification:
+  - `git diff --check` ✅
+  - `node --check scripts/browser-smoke.mjs` and touched runtime files ✅
+  - `npm run lint` ✅
+  - `npm test` ✅ (154 passing)
+  - `npm run build` ✅ (main app JS `570.78 kB` / `166.93 kB` gzip)
+  - `npm run check:bundle` ✅
+  - `npm run smoke:browser` ✅ (desktop avg `42.01ms` / p95 `66.7ms`, `113.29` drawImages/frame; mobile p95 `<= 17.6ms`)
+  - `npm run smoke:worker` ✅ (desktop avg `25.24ms` / p95 `33.5ms`; mobile p95 `<= 17ms`)
+  - Playwright live mobile result sanity ✅: result visible, Upgrade Hub open, God panel hidden, objective rail visible, 30 creatures, and 0 warning/error console messages.
+- Residual note: main-thread desktop final-state pacing is improved and now profile-backed, but still not at 60fps. The next draw pass should use the new `drawImage.byCanvas` artifacts plus creature sprite counts to decide whether to reduce creature sprite detail or batch more creature/food decoration in low quality.
