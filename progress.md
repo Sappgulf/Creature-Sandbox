@@ -519,3 +519,36 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - `npm run build` ✅ (main app JS `635.98 kB` / `183.20 kB` gzip)
   - `npm run check:bundle` ✅ (`index-GBwPEhSn.js` `635982B` / `181688B` gzip under budget)
   - external `develop-web-game` client ✅ captured `output/web-game/dossier-pass/shot-0.png` and `state-0.json` with `objectiveRailVisible: true`, `challengeOverlayVisible: false`, `miniGraphsVisible: false`, desktop camera zoom `0.9`, and `0` startup props.
+
+2026-05-27
+- Continued a bounded docs-grounded polish pass from `docs/FEATURE_MATRIX.md`: Gene Editor settings existed but were still listed as not persisted as UI preferences.
+- Implemented Gene Editor local preference persistence for custom gene values plus spawn count/spread, with clamped restore and safe localStorage fallback.
+- Added a browser-smoke hook/assertion that writes Gene Editor preferences, reloads them from storage, and restores the previous user values after proof.
+- Updated `docs/FEATURE_MATRIX.md` to reflect the new persisted preference behavior.
+- Verification completed in the following audit pass.
+
+2026-05-27
+- New request: continue the broad audit/test/polish pass and make sure the game is fully working.
+- Baseline before edits:
+  - `npm test` ✅ (154 passing)
+  - `npm run lint` ✅
+  - `npm run build` ✅ (main app JS `560.15 kB` / `163.93 kB` gzip)
+  - `git diff --check` ✅
+  - `npm run check:bundle` ✅
+  - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
+- Screenshot audit found one concrete polish issue despite passing smoke: compact/mobile objective rails were reading like large top cards and truncating guidance/status when the mode and world-rhythm chips were visible.
+- Implemented:
+  - mobile objective rail now uses a flatter status row, tighter padding, and one-line title/action copy to preserve more playfield.
+  - browser smoke now measures the objective rail and asserts it stays compact on desktop and mobile.
+  - `GameLoop` now applies the active renderer quality preset's particle budget to the gameplay `ParticleSystem`, and smoke asserts the particle count honors that budget.
+- Verification:
+  - `git diff --check` ✅
+  - targeted ESLint for touched JS ✅
+  - `npm run lint` ✅
+  - `npm test` ✅ (154 passing)
+  - `npm run build` ✅ (main app JS `561.24 kB` / `164.31 kB` gzip; Gene Editor chunk `9.55 kB` / `3.10 kB` gzip)
+  - `npm run check:bundle` ✅
+  - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large; low-quality particle budget held at `50`)
+  - `npm run smoke:worker` ✅ (desktop, mobile-compact, mobile-large; mobile p95 frame pacing `<= 17.2ms`)
+  - Playwright live mobile smoke sanity ✅: rail height `45px`, home hidden, challenge overlay hidden, mini-graphs hidden, and 0 warning/error console messages.
+- Residual note: main-thread smoke still reports slow real-time frame pacing after the full scripted interaction sequence, even with the particle budget enforced. Worker mode is the smooth opt-in lane and is now passing with stable mobile frame pacing.

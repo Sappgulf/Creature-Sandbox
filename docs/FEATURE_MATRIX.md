@@ -5,7 +5,7 @@ Status legend: Y = present/wired; N = missing or not wired. Mobile/Save/Load mar
 | System | Exists | Wired into UI | Works on Mobile | Save/Load Supported | Known Issues |
 | --- | --- | --- | --- | --- | --- |
 | Playable scenarios + Director | Y | Y | Y | Y | Active scenario id, elapsed time, progress, director snapshot, and completion progress are included in runtime save metadata. |
-| Creature creation/editing (gene editor + presets) | Y | Y | Y | Y | Gene editor settings are not persisted as UI preferences. |
+| Creature creation/editing (gene editor + presets) | Y | Y | Y | Y | Gene editor values and spawn settings persist as local UI preferences; browser smoke verifies the roundtrip. |
 | Creature selection + spawn (mobile) | Y | Y | Y | Y | Browser smoke covers compact/large mobile spawn; physical-device feel still worth checking. |
 | Sandbox interactions / physics | Y | Y | Y | Y | Browser smoke covers tap/select/food; extended drag/throw remains a manual feel check. |
 | Health/damage/death/knockout + starting health tuning | Y | Y | Y | Y | Needs verification: damage debounce and starting maxHealth. |

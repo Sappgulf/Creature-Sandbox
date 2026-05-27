@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import http from 'node:http';
+import net from 'node:net';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -13,14 +14,24 @@ const keepServer = process.argv.includes('--keep-server');
 const workerMode = process.argv.includes('--worker') || process.env.CREATURE_SMOKE_WORKER === '1';
 const sampleRealtime = !process.argv.includes('--no-realtime');
 const outDir = path.join(repoRoot, 'output', workerMode ? 'browser-smoke-worker' : 'browser-smoke');
-const port = Number(process.env.CREATURE_SMOKE_PORT || 4173);
-const baseUrl = process.env.CREATURE_SMOKE_URL || `http://127.0.0.1:${port}`;
+const explicitBaseUrl = !!process.env.CREATURE_SMOKE_URL;
+const explicitPort = !!process.env.CREATURE_SMOKE_PORT;
+const reuseExternalServer = explicitBaseUrl || process.env.CREATURE_SMOKE_REUSE_SERVER === '1';
+let port = Number(process.env.CREATURE_SMOKE_PORT || 4173);
+let baseUrl = process.env.CREATURE_SMOKE_URL || `http://127.0.0.1:${port}`;
 
 const scenarios = [
   { name: 'desktop', viewport: { width: 1280, height: 800 }, mobile: false },
   { name: 'mobile-compact', viewport: { width: 390, height: 844 }, mobile: true },
   { name: 'mobile-large', viewport: { width: 430, height: 932 }, mobile: true }
 ];
+
+const particleBudgetByQuality = {
+  ultra: 500,
+  high: 300,
+  medium: 120,
+  low: 50
+};
 
 function requestOk(url) {
   return new Promise((resolve) => {
@@ -44,6 +55,49 @@ function requestOk(url) {
   });
 }
 
+function canListen(portToCheck) {
+  return new Promise((resolve) => {
+    const probe = net.createServer();
+    probe.once('error', () => resolve(false));
+    probe.listen({ host: '127.0.0.1', port: portToCheck }, () => {
+      probe.close(() => resolve(true));
+    });
+  });
+}
+
+function getRandomPort() {
+  return new Promise((resolve, reject) => {
+    const probe = net.createServer();
+    probe.once('error', reject);
+    probe.listen({ host: '127.0.0.1', port: 0 }, () => {
+      const address = probe.address();
+      const selectedPort = typeof address === 'object' && address ? address.port : null;
+      probe.close(() => {
+        if (!selectedPort) {
+          reject(new Error('Unable to allocate a smoke server port'));
+          return;
+        }
+        resolve(selectedPort);
+      });
+    });
+  });
+}
+
+async function resolveOwnedServerPort() {
+  if (await canListen(port)) return port;
+
+  if (explicitPort) {
+    throw new Error(
+      `CREATURE_SMOKE_PORT ${port} is already in use. ` +
+      'Set CREATURE_SMOKE_URL and CREATURE_SMOKE_REUSE_SERVER=1 to target an existing server, or choose another port.'
+    );
+  }
+
+  const fallbackPort = await getRandomPort();
+  console.log(`Browser smoke: port ${port} is busy; using ${fallbackPort} for an owned Vite server.`);
+  return fallbackPort;
+}
+
 async function waitForServer(url, timeoutMs = 20000) {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
@@ -54,7 +108,13 @@ async function waitForServer(url, timeoutMs = 20000) {
 }
 
 async function startServerIfNeeded() {
-  if (await requestOk(baseUrl)) return null;
+  if (reuseExternalServer) {
+    if (await requestOk(baseUrl)) return null;
+    throw new Error(`Expected a reusable Creature Sandbox server at ${baseUrl}, but it did not respond.`);
+  }
+
+  port = await resolveOwnedServerPort();
+  baseUrl = `http://127.0.0.1:${port}`;
 
   const child = spawn(
     'npm',
@@ -80,6 +140,20 @@ async function startServerIfNeeded() {
 async function readGameState(page) {
   const text = await page.evaluate(() => window.render_game_to_text?.() || '{}');
   return JSON.parse(text);
+}
+
+async function readObjectiveRailMetrics(page) {
+  return page.evaluate(() => {
+    const rail = document.getElementById('objective-rail');
+    if (!rail) return null;
+    const rect = rail.getBoundingClientRect();
+    return {
+      visible: rect.width > 0 && rect.height > 0,
+      width: Number(rect.width.toFixed(1)),
+      height: Number(rect.height.toFixed(1)),
+      top: Number(rect.top.toFixed(1))
+    };
+  });
 }
 
 async function waitForPageCondition(page, condition, label, timeoutMs = 12000) {
@@ -176,6 +250,10 @@ async function sampleFramePacing(page, durationMs = 900) {
 
 async function runScenario(browser, scenario) {
   console.log(`Browser smoke: ${scenario.name}`);
+  if (!(await waitForServer(baseUrl, 5000))) {
+    throw new Error(`Dev server became unavailable before ${scenario.name} at ${baseUrl}`);
+  }
+
   const context = await browser.newContext({
     viewport: scenario.viewport,
     isMobile: scenario.mobile,
@@ -219,6 +297,12 @@ async function runScenario(browser, scenario) {
   assert.ok(state.upgrades?.objectiveRail?.title, `${scenario.name}: objective rail should expose the first actionable goal`);
   assert.equal(state.ui.objectiveRailVisible, true, `${scenario.name}: DOM objective rail should be the primary goal surface`);
   assert.ok(state.ui.worldRhythm, `${scenario.name}: objective rail should expose season/time rhythm`);
+  const objectiveRail = await readObjectiveRailMetrics(page);
+  assert.ok(objectiveRail?.visible, `${scenario.name}: objective rail should be visible and measurable`);
+  assert.ok(
+    objectiveRail.height <= (scenario.mobile ? 76 : 58),
+    `${scenario.name}: objective rail should stay compact (${objectiveRail.height}px)`
+  );
   assert.equal(state.ui.challengeOverlayVisible, false, `${scenario.name}: canvas challenge overlay should stay hidden while the objective rail is visible`);
   assert.equal(state.ui.miniGraphsVisible, false, `${scenario.name}: analytics mini-graphs should not occupy normal gameplay`);
   if (scenario.mobile) {
@@ -266,6 +350,8 @@ async function runScenario(browser, scenario) {
     assert.ok(perf.canvas.width > 0 && perf.canvas.height > 0, `${scenario.name}: worker canvas should be measurable`);
     assert.ok(perf.rendered > 0, `${scenario.name}: worker smoke perf should report live rendered objects`);
     assert.ok(perf.assets.registeredSprites >= 20, `${scenario.name}: worker sprite manifest should be loaded`);
+    const particleBudget = particleBudgetByQuality[perf.renderer?.quality] ?? 500;
+    assert.ok(perf.world.particles <= particleBudget, `${scenario.name}: worker particles should honor ${perf.renderer?.quality || 'default'} quality budget`);
 
     const framePacing = sampleRealtime ? await sampleFramePacing(page) : null;
     if (framePacing) {
@@ -448,6 +534,11 @@ async function runScenario(browser, scenario) {
   assert.equal(upgrades.actionOk, true, `${scenario.name}: upgrade action card should run`);
   assert.ok(upgrades.state.recipes.length >= 4, `${scenario.name}: upgrade state should expose recipe presets`);
 
+  const genePrefs = await page.evaluate(() => window.__creatureSmoke.geneEditorPrefsRoundTrip());
+  assert.equal(genePrefs.ok, true, `${scenario.name}: gene editor preferences should persist across reload`);
+  assert.equal(genePrefs.restored.spawnCount, 4, `${scenario.name}: gene editor should restore spawn count preference`);
+  assert.equal(genePrefs.restored.spawnSpread, 120, `${scenario.name}: gene editor should restore spawn spread preference`);
+
   const perf = await page.evaluate(() => window.__creatureSmoke.perfBudget());
   assert.equal(!!perf.runtime?.workerMode, workerMode, `${scenario.name}: perf runtime should expose worker mode truth`);
   assert.ok(perf.canvas.width > 0 && perf.canvas.height > 0, `${scenario.name}: canvas should be measurable`);
@@ -458,6 +549,8 @@ async function runScenario(browser, scenario) {
   assert.ok(perf.assets.registeredSprites >= 20, `${scenario.name}: sprite manifest should be loaded`);
   assert.ok(perf.assets.tintedSpriteVariants <= 260, `${scenario.name}: tinted sprite cache should stay bounded`);
   assert.ok(perf.world.creatures <= 220, `${scenario.name}: smoke population should stay inside perf budget`);
+  const particleBudget = particleBudgetByQuality[perf.renderer?.quality] ?? 500;
+  assert.ok(perf.world.particles <= particleBudget, `${scenario.name}: particles should honor ${perf.renderer?.quality || 'default'} quality budget`);
 
   const framePacing = sampleRealtime ? await sampleFramePacing(page) : null;
   if (framePacing) {

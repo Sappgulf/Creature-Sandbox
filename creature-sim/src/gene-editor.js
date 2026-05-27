@@ -3,28 +3,90 @@ import { Creature } from './creature.js';
 import { clamp } from './utils.js';
 import { gameState } from './game-state.js';
 
+const GENE_EDITOR_PREF_KEY = 'creature-gene-editor-prefs';
+const DEFAULT_SPAWN_COUNT = 1;
+const DEFAULT_SPAWN_SPREAD = 50;
+const DEFAULT_CUSTOM_GENES = Object.freeze({
+  speed: 1.0,
+  fov: 90,
+  sense: 100,
+  metabolism: 1.0,
+  hue: 120,
+  predator: 0,
+  diet: 0.0,
+  spines: 0.0,
+  herdInstinct: 0.5,
+  panicPheromone: 0.3,
+  grit: 0.5,
+  packInstinct: 0.5,
+  ambushDelay: 0.5,
+  aggression: 1.0,
+  nocturnal: 0.0
+});
+const GENE_LIMITS = Object.freeze({
+  speed: [0.2, 2.0],
+  fov: [20, 160],
+  sense: [20, 200],
+  metabolism: [0.4, 2.0],
+  hue: [0, 359],
+  predator: [0, 1],
+  diet: [0, 1],
+  spines: [0, 1],
+  herdInstinct: [0, 1],
+  panicPheromone: [0, 1],
+  grit: [0, 1],
+  packInstinct: [0, 1],
+  ambushDelay: [0, 1],
+  aggression: [0.4, 2.2],
+  nocturnal: [0, 1]
+});
+
+function cloneDefaultGenes() {
+  return { ...DEFAULT_CUSTOM_GENES };
+}
+
+function getLocalStorage() {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.localStorage || null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizedNumber(value, fallback, min, max, { integer = false } = {}) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return fallback;
+  const bounded = clamp(numeric, min, max);
+  return integer ? Math.round(bounded) : bounded;
+}
+
+function normalizePreferenceSnapshot(snapshot = {}) {
+  const sourceGenes = snapshot.genes && typeof snapshot.genes === 'object'
+    ? snapshot.genes
+    : snapshot.customGenes && typeof snapshot.customGenes === 'object'
+      ? snapshot.customGenes
+      : {};
+  const genes = cloneDefaultGenes();
+
+  Object.keys(genes).forEach((key) => {
+    const [min, max] = GENE_LIMITS[key] || [Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY];
+    genes[key] = normalizedNumber(sourceGenes[key], genes[key], min, max);
+  });
+
+  return {
+    genes,
+    spawnCount: normalizedNumber(snapshot.spawnCount, DEFAULT_SPAWN_COUNT, 1, 20, { integer: true }),
+    spawnSpread: normalizedNumber(snapshot.spawnSpread, DEFAULT_SPAWN_SPREAD, 0, 200, { integer: true })
+  };
+}
+
 export class GeneEditor {
   constructor() {
     this.visible = false;
     this.spawnModeActive = false;
     this._uiBound = false;
-    this.customGenes = {
-      speed: 1.0,
-      fov: 90,
-      sense: 100,
-      metabolism: 1.0,
-      hue: 120,
-      predator: 0,
-      diet: 0.0,
-      spines: 0.0,
-      herdInstinct: 0.5,
-      panicPheromone: 0.3,
-      grit: 0.5,
-      packInstinct: 0.5,
-      ambushDelay: 0.5,
-      aggression: 1.0,
-      nocturnal: 0.0
-    };
+    this.customGenes = cloneDefaultGenes();
     this.presets = {
       'Fast Herbivore': { speed: 1.5, fov: 120, sense: 120, metabolism: 1.2, hue: 90, predator: 0, diet: 0.0 },
       'Tank Herbivore': { speed: 0.6, fov: 60, sense: 80, metabolism: 0.6, hue: 150, predator: 0, diet: 0.0, spines: 0.8, grit: 0.9 },
@@ -34,9 +96,10 @@ export class GeneEditor {
       'Night Hunter': { speed: 1.2, fov: 140, sense: 150, metabolism: 1.0, hue: 270, predator: 1, diet: 1.0, nocturnal: 1.0, aggression: 1.2 },
       'Herd Leader': { speed: 1.1, fov: 100, sense: 130, metabolism: 0.9, hue: 180, predator: 0, diet: 0.0, herdInstinct: 0.9, grit: 0.8 }
     };
-    this.spawnCount = 1;
-    this.spawnSpread = 50;
+    this.spawnCount = DEFAULT_SPAWN_COUNT;
+    this.spawnSpread = DEFAULT_SPAWN_SPREAD;
 
+    this.loadPreferences();
     this.bindUI();
   }
 
@@ -56,6 +119,7 @@ export class GeneEditor {
   }
 
   updateUI() {
+    if (typeof document === 'undefined') return;
     const panel = document.getElementById('gene-editor-panel');
     if (!panel) return;
 
@@ -70,6 +134,7 @@ export class GeneEditor {
   }
 
   syncUIToGenes() {
+    if (typeof document === 'undefined') return;
     // Update all sliders to match current gene values
     Object.keys(this.customGenes).forEach(key => {
       const slider = document.getElementById(`gene-${key}`);
@@ -121,28 +186,13 @@ export class GeneEditor {
     if (!preset) return;
 
     // Reset to defaults first
-    this.customGenes = {
-      speed: 1.0,
-      fov: 90,
-      sense: 100,
-      metabolism: 1.0,
-      hue: 120,
-      predator: 0,
-      diet: 0.0,
-      spines: 0.0,
-      herdInstinct: 0.5,
-      panicPheromone: 0.3,
-      grit: 0.5,
-      packInstinct: 0.5,
-      ambushDelay: 0.5,
-      aggression: 1.0,
-      nocturnal: 0.0
-    };
+    this.customGenes = cloneDefaultGenes();
 
     // Apply preset values
     Object.assign(this.customGenes, preset);
 
     this.syncUIToGenes();
+    this.savePreferences();
     this.setStatus(`Preset applied: ${presetName}`, 'success');
     console.debug(`✨ Applied preset: ${presetName}`);
   }
@@ -167,6 +217,7 @@ export class GeneEditor {
     };
 
     this.syncUIToGenes();
+    this.savePreferences();
     this.setStatus('Randomized gene set.', 'success');
     console.debug('🎲 Randomized genes!');
   }
@@ -223,10 +274,12 @@ export class GeneEditor {
       const imported = JSON.parse(jsonString);
       Object.keys(this.customGenes).forEach(key => {
         if (imported[key] !== undefined) {
-          this.customGenes[key] = imported[key];
+          const [min, max] = GENE_LIMITS[key] || [Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY];
+          this.customGenes[key] = normalizedNumber(imported[key], this.customGenes[key], min, max);
         }
       });
       this.syncUIToGenes();
+      this.savePreferences();
       this.setStatus('Imported gene code.', 'success');
       console.debug('📤 Imported custom genes!');
       return true;
@@ -260,6 +313,7 @@ export class GeneEditor {
 
   bindUI() {
     if (this._uiBound) return;
+    if (typeof document === 'undefined') return;
     const panel = document.getElementById('gene-editor-panel');
     if (!panel) return;
 
@@ -319,6 +373,7 @@ export class GeneEditor {
           valueSpan.textContent = this.formatGeneValue(key, value);
         }
         this.updateGeneCodeField();
+        this.savePreferences();
       });
     });
 
@@ -326,16 +381,78 @@ export class GeneEditor {
     const spawnSpreadInput = document.getElementById('gene-spawn-spread');
     if (spawnCountInput) {
       spawnCountInput.addEventListener('input', () => {
-        this.spawnCount = Number(spawnCountInput.value);
+        this.spawnCount = normalizedNumber(spawnCountInput.value, this.spawnCount, 1, 20, { integer: true });
         this.updateSpawnLabels();
+        this.savePreferences();
       });
     }
     if (spawnSpreadInput) {
       spawnSpreadInput.addEventListener('input', () => {
-        this.spawnSpread = Number(spawnSpreadInput.value);
+        this.spawnSpread = normalizedNumber(spawnSpreadInput.value, this.spawnSpread, 0, 200, { integer: true });
         this.updateSpawnLabels();
+        this.savePreferences();
       });
     }
+  }
+
+  getPreferenceSnapshot() {
+    return {
+      genes: { ...this.customGenes },
+      spawnCount: this.spawnCount,
+      spawnSpread: this.spawnSpread
+    };
+  }
+
+  applyPreferenceSnapshot(snapshot, { persist = true, sync = true } = {}) {
+    const normalized = normalizePreferenceSnapshot(snapshot);
+    this.customGenes = normalized.genes;
+    this.spawnCount = normalized.spawnCount;
+    this.spawnSpread = normalized.spawnSpread;
+
+    if (sync) this.syncUIToGenes();
+    if (persist) this.savePreferences();
+
+    return this.getPreferenceSnapshot();
+  }
+
+  readSavedPreferences() {
+    const storage = getLocalStorage();
+    if (!storage) return null;
+
+    try {
+      const raw = storage.getItem(GENE_EDITOR_PREF_KEY);
+      if (!raw) return null;
+      return normalizePreferenceSnapshot(JSON.parse(raw));
+    } catch {
+      return null;
+    }
+  }
+
+  loadPreferences({ sync = false } = {}) {
+    const saved = this.readSavedPreferences();
+    if (!saved) return false;
+    this.applyPreferenceSnapshot(saved, { persist: false, sync });
+    return true;
+  }
+
+  savePreferences() {
+    const storage = getLocalStorage();
+    if (!storage) return false;
+
+    try {
+      storage.setItem(GENE_EDITOR_PREF_KEY, JSON.stringify({
+        version: 1,
+        ...this.getPreferenceSnapshot()
+      }));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  reloadSavedPreferences() {
+    const loaded = this.loadPreferences({ sync: true });
+    return loaded ? this.getPreferenceSnapshot() : null;
   }
 
   updateSpawnLabels() {

@@ -17,6 +17,23 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-05-27 — mobile-objective-rail-audit — Planned
+- **Issues:** Baseline browser smoke passed, but screenshot review showed the compact mobile objective rail consuming too much vertical playfield space and truncating guidance when progress, world rhythm, and mode chips were all visible; smoke artifacts also showed the main-thread particle count could remain at 500 even after renderer quality dropped to `low`.
+- **Root Causes:** The mobile rail reused a stacked status layout and allowed a two-line title plus subtitle, so normal HUD status could grow into a large card at the top of the playfield; `RendererConfig.QUALITY_PRESETS` particle budgets were applied to the renderer-internal particle field but not the gameplay `ParticleSystem` owned by `GameLoop`.
+- **Fixes:** Tighten the mobile rail into a flatter status row, keep goal/action copy to a compact one-line treatment, add browser-smoke rail-height assertions, sync the gameplay particle budget from the active renderer quality preset, and assert that smoke particle counts honor that budget.
+- **Verification:** Planned: `git diff --check`; targeted ESLint; `npm run lint`; `npm test`; `npm run build`; `npm run check:bundle`; `npm run smoke:browser`; screenshot inspection.
+
+### 2026-05-27 — mobile-objective-rail-audit — Implemented
+- **Issues:** Mobile objective chrome was too tall in live smoke screenshots; gameplay particles ignored active quality budgets; Gene Editor custom values/spawn controls could not survive a reload as local UI preferences; and browser smoke could collide with unrelated local servers on the default port.
+- **Root Causes:** Mobile objective status chips were stacked vertically; `GameLoop` never forwarded renderer quality budgets into the gameplay `ParticleSystem`; `GeneEditor` kept values only in memory and accepted imported values without clamped preference normalization; and the smoke runner reused any valid Creature server on the default URL unless the caller explicitly managed ports.
+- **Fixes:**
+  - Flattened the mobile objective rail status row and added rail-height assertions for desktop/mobile smoke.
+  - Applied active renderer quality particle budgets to the gameplay `ParticleSystem` and added smoke assertions for particle-count caps.
+  - Added persisted, clamped Gene Editor preference snapshots for genes, spawn count, and spawn spread, plus a browser-smoke roundtrip hook.
+  - Hardened browser smoke server startup so owned runs choose a free port unless an external server is explicitly requested.
+  - Updated `docs/FEATURE_MATRIX.md` and `progress.md` with the new Gene Editor and smoke contracts.
+- **Verification:** `git diff --check` (pass); targeted ESLint for touched JS (pass); `npm run lint` (pass); `npm test` (pass, 154 checks); `npm run build` (pass, main app JS `561.24 kB` / `164.31 kB` gzip, Gene Editor chunk `9.55 kB` / `3.10 kB` gzip); `npm run check:bundle` (pass); `npm run smoke:browser` (pass: desktop, mobile-compact, mobile-large, particle caps held at 50 on low quality); `npm run smoke:worker` (pass: desktop, mobile-compact, mobile-large, mobile p95 frame pacing <= 17.2ms); Playwright live mobile smoke sanity confirmed objective rail height `45px`, no console warnings/errors, challenge overlay hidden, and mini-graphs hidden.
+
 ### 2026-05-26 — hud-worker-pacing-bundle-pass — Planned
 - **Issues:** The next audit tranche targeted eight remaining release-polish gaps: mobile God/mode chrome could collide with the objective rail, selected-creature information duplicated the desktop inspector, canvas notifications still competed with top objective chrome, objective rail copy was generic, worker mode had no checked smoke lane, frame pacing was not captured as an artifact, day/night/resource rhythm was not surfaced in normal HUD, and the Gene Editor still loaded on the startup path.
 - **Root Causes:** Objective/status HUD data was split across separate surfaces; selected-card rendering did not know whether the inspector was already open; notification layout lacked objective-rail context; session-goal copy reused generic fallbacks; the browser smoke script only covered the main-thread scenario path; runtime smoke state exposed aggregate performance but not sampled frame intervals; the day/night/food-cycle systems were renderer/simulation-only for players; and `GeneEditor` was statically imported by `app-bootstrap.js`.

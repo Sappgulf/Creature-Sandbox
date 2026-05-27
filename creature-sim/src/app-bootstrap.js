@@ -2050,6 +2050,47 @@ export function initializeApp() {
         const id = gameState.selectedId || gameState.pinnedId;
         return upgradeController?.setNickname?.(id, name) ?? false;
       },
+      geneEditorPrefsRoundTrip: async () => {
+        const editor = await ensureGeneEditor();
+        const before = editor.getPreferenceSnapshot();
+        const target = {
+          genes: {
+            ...before.genes,
+            speed: 1.65,
+            hue: 208,
+            diet: 0.42,
+            aggression: 1.35
+          },
+          spawnCount: 4,
+          spawnSpread: 120
+        };
+
+        const applied = editor.applyPreferenceSnapshot(target, { persist: true, sync: false });
+        const stored = editor.readSavedPreferences();
+
+        editor.applyPreferenceSnapshot({
+          genes: { speed: 0.25, hue: 1, diet: 0, aggression: 0.4 },
+          spawnCount: 1,
+          spawnSpread: 0
+        }, { persist: false, sync: false });
+        const restored = editor.reloadSavedPreferences();
+        editor.applyPreferenceSnapshot(before, { persist: true, sync: true });
+
+        const matches = (snapshot) => snapshot &&
+          Math.abs(Number(snapshot.genes?.speed) - target.genes.speed) < 0.001 &&
+          Math.abs(Number(snapshot.genes?.diet) - target.genes.diet) < 0.001 &&
+          Math.abs(Number(snapshot.genes?.aggression) - target.genes.aggression) < 0.001 &&
+          Number(snapshot.genes?.hue) === target.genes.hue &&
+          Number(snapshot.spawnCount) === target.spawnCount &&
+          Number(snapshot.spawnSpread) === target.spawnSpread;
+
+        return {
+          ok: matches(applied) && matches(stored) && matches(restored),
+          applied,
+          stored,
+          restored
+        };
+      },
       perfBudget: () => {
         const rendererStats = renderer?.performance?.getStats?.() ?? renderer?.performance?.stats ?? {};
         const rendered = Number(rendererStats.rendered ?? renderer?.renderedCount ?? 0) || 0;

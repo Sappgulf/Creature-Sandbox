@@ -15,6 +15,7 @@ import { getEnhancedAnalyticsModule } from './enhanced-analytics-loader.js';
 import { VisualEffects } from './visual-effects.js';
 import { ghostTrails } from './ecosystem-ghosts.js';
 import { lifetimeStats } from './lifetime-stats.js';
+import { RendererConfig } from './renderer-config.js';
 // STATIC UI IMPORTS - avoids dynamic import() latency in hot path
 import {
   renderStats,
@@ -190,6 +191,17 @@ export class GameLoop {
 
   hasNotifications() {
     return isNotificationSystem(this.notifications);
+  }
+
+  syncParticleBudget() {
+    if (!this.particles) return;
+    const quality = this.renderer?.performance?.getCurrentQuality?.() ||
+      this.renderer?.performance?.currentQuality ||
+      'medium';
+    const maxParticles = RendererConfig.QUALITY_PRESETS[quality]?.maxParticles;
+    if (Number.isFinite(maxParticles) && maxParticles > 0) {
+      this.particles.maxParticles = maxParticles;
+    }
   }
 
   /**
@@ -1013,6 +1025,7 @@ export class GameLoop {
 
     // Update particles
     if (this.particles) {
+      this.syncParticleBudget();
       this.particles.update(dt);
     }
 
