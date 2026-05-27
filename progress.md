@@ -691,3 +691,28 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - Playwright local smoke URL ✅: `http://127.0.0.1:5173/?smoke=1&v=final-local-polish` captured `output/playwright-final-local.png`, saved snapshot/console artifacts, and reported 0 warning/error console messages.
   - Vercel proof ✅: `vercel --version` reported `54.5.0`; `vercel inspect https://creature-sandbox.vercel.app --timeout 20s` reported production `Ready`; `curl -I -L --max-time 20 https://creature-sandbox.vercel.app` returned HTTP `200`.
 - Residual note: functional release proof is healthy, production is reachable, and worker diagnostics are stronger. Performance is still environment-sensitive under local CPU load from concurrent builds; the next upgrade should target `world-step`/`subsystem-update` and the completed-scenario result flow before promoting worker by default.
+
+2026-05-27
+- Approved tranche 1-8: clean perf re-baseline, world-step optimization, worker default-readiness, quality recovery polish, mobile result polish, production smoke, scenario depth, and release evidence board.
+- Implemented:
+  - production-safe smoke URL probing, custom smoke output folders, and a `smoke:production` lane.
+  - worker smoke now completes `Apex Balance`, focuses the Upgrade Hub result, asserts result/history visibility, and feeds that proof into `runtime-readiness.json`.
+  - advanced predator/prey AI and pack hunting avoid hot-path filter/reduce allocations and repeated square roots in strategy selection, pack herding, group evasion, closest-predator lookup, and pack flanking.
+  - minimap rendering now caches static biome and heatmap layers, and particle-budget sync skips redundant writes.
+  - renderer quality recovery now uses real FPS samples with a recovery streak and exposes quality recovery counters in smoke stats.
+  - Upgrade Hub run history uses a stable grid layout with mobile wrapping so result/history metadata and retry controls do not crowd each other.
+  - added `Stress Sanctuary` and `Scavenger Bridge` playable scenarios.
+  - added `npm run evidence:release` to emit SHA-bound release evidence board JSON/Markdown under `output/`.
+  - Vite production builds now copy `creature-sim/assets` and `manifest.json` into `dist`, fixing the live sprite-manifest 404 that production smoke exposed.
+- Verification:
+  - `node --check` for touched JS/config/smoke files ✅
+  - `git diff --check` ✅
+  - `npm run lint` ✅
+  - `npm test` ✅ (155 passing)
+  - `npm run build` ✅ (main app JS `585.62 kB` / `171.77 kB` gzip; runtime assets copied into `dist/assets`)
+  - `npm run check:bundle` ✅
+  - `npm run smoke:browser` ✅ (desktop avg `36.11ms` / p95 `50.9ms`; mobile p95 `<= 17.7ms`; result flow true)
+  - `npm run smoke:worker` ✅ (`candidate-opt-in`; desktop avg `24.32ms` / p95 `33.4ms`, `1.0135ms/frame` profiled non-`drawImage`; mobile p95 `<= 17.6ms`; completed result flow true)
+  - first `npm run smoke:production` ❌ found production sprite manifest missing (`registeredSprites < 20`); after the Vite asset-copy fix and production redeploy, `curl` to `/assets/sprites/sprite-manifest.json` returned HTTP `200` and `npm run smoke:production` ✅ passed desktop/mobile flows.
+  - `npm run evidence:release` ✅ produced `output/release-evidence-board.json` and `.md` with local, worker, and production lanes present.
+- Residual note: shipping default remains `main`; worker is now a candidate-ready opt-in lane for a defaulting discussion, not an automatic default change.

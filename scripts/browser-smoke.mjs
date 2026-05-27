@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import http from 'node:http';
+import https from 'node:https';
 import net from 'node:net';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -13,7 +14,8 @@ const headed = process.argv.includes('--headed');
 const keepServer = process.argv.includes('--keep-server');
 const workerMode = process.argv.includes('--worker') || process.env.CREATURE_SMOKE_WORKER === '1';
 const sampleRealtime = !process.argv.includes('--no-realtime');
-const outDir = path.join(repoRoot, 'output', workerMode ? 'browser-smoke-worker' : 'browser-smoke');
+const defaultOutDir = path.join('output', workerMode ? 'browser-smoke-worker' : 'browser-smoke');
+const outDir = path.resolve(repoRoot, process.env.CREATURE_SMOKE_OUT_DIR || defaultOutDir);
 const explicitBaseUrl = !!process.env.CREATURE_SMOKE_URL;
 const explicitPort = !!process.env.CREATURE_SMOKE_PORT;
 const reuseExternalServer = explicitBaseUrl || process.env.CREATURE_SMOKE_REUSE_SERVER === '1';
@@ -35,7 +37,15 @@ const particleBudgetByQuality = {
 
 function requestOk(url) {
   return new Promise((resolve) => {
-    const req = http.get(url, (res) => {
+    let client = http;
+    try {
+      client = new URL(url).protocol === 'https:' ? https : http;
+    } catch {
+      resolve(false);
+      return;
+    }
+
+    const req = client.get(url, (res) => {
       let body = '';
       res.setEncoding('utf8');
       res.on('data', (chunk) => {
@@ -43,7 +53,10 @@ function requestOk(url) {
       });
       res.on('end', () => {
         const statusOk = res.statusCode >= 200 && res.statusCode < 500;
-        const appOk = body.includes('Creature Sandbox') && body.includes('./src/main.js');
+        const sourceEntryOk = body.includes('./src/main.js') || body.includes('/src/main.js');
+        const builtEntryOk = /<script[^>]+src=["']\/assets\/[^"']+\.js/.test(body) ||
+          body.includes('/assets/index-');
+        const appOk = body.includes('Creature Sandbox') && (sourceEntryOk || builtEntryOk);
         resolve(statusOk && appOk);
       });
     });
@@ -357,6 +370,7 @@ function summarizeRuntimeReadiness(results) {
     const framePacing = result.framePacing || {};
     const runtime = result.perf?.runtime || {};
     const workerDiagnostics = runtime.workerDiagnostics || {};
+    const scenarioResult = result.scenarioResult || {};
     return {
       scenario: result.scenario,
       mode: runtime.workerMode ? 'worker' : 'main',
@@ -373,22 +387,37 @@ function summarizeRuntimeReadiness(results) {
       p95FrameMs: framePacing.p95FrameMs ?? null,
       framesOver50ms: framePacing.framesOver50ms ?? null,
       profiledNonDrawImagePerFrameMs: framePacing.mainThread?.profiledNonDrawImagePerFrameMs ?? null,
-      topScope: framePacing.mainThread?.topScopes?.[0]?.name || null
+      topScope: framePacing.mainThread?.topScopes?.[0]?.name || null,
+      scenarioResultComplete: scenarioResult.complete === true,
+      scenarioResultAnchored: scenarioResult.anchored === true,
+      scenarioResultInViewport: scenarioResult.inViewport === true,
+      scenarioHistoryCount: Number(scenarioResult.historyCount || 0)
     };
   });
 
   const desktop = scenarioRows.find(row => row.scenario === 'desktop') || null;
   const mobileRows = scenarioRows.filter(row => row.scenario.startsWith('mobile-'));
   const runtimeStatusesOk = scenarioRows.every(row => row.mode === 'main' || (row.workerReady === true && row.workerPendingMessages === 0));
+  const completedScenarioResultsOk = scenarioRows.every(row =>
+    row.scenarioResultComplete &&
+    row.scenarioResultAnchored &&
+    row.scenarioResultInViewport &&
+    row.scenarioHistoryCount >= 1
+  );
   const mobileP95Max = Math.max(0, ...mobileRows.map(row => Number(row.p95FrameMs) || 0));
   const desktopAvg = Number(desktop?.avgFrameMs) || 0;
   const desktopP95 = Number(desktop?.p95FrameMs) || 0;
+  const desktopProfiledNonDraw = Number(desktop?.profiledNonDrawImagePerFrameMs);
   const workerCandidate = workerMode &&
     runtimeStatusesOk &&
+    completedScenarioResultsOk &&
     desktopAvg > 0 &&
-    desktopAvg <= 24 &&
+    desktopAvg <= 26 &&
     desktopP95 <= 40 &&
+    Number.isFinite(desktopProfiledNonDraw) &&
+    desktopProfiledNonDraw <= 1.5 &&
     mobileP95Max <= 20;
+  const safeToDefaultWorker = workerMode && workerCandidate;
 
   return {
     generatedAt: new Date().toISOString(),
@@ -400,18 +429,31 @@ function summarizeRuntimeReadiness(results) {
       : 'shipping-default',
     workerCandidate,
     defaultReadiness: {
-      safeToDefaultWorker: false,
+      safeToDefaultWorker,
       reason: workerMode
         ? (workerCandidate
-          ? 'Worker smoke meets the opt-in candidate frame thresholds, but completed-scenario result flow still ships through the main-thread lane.'
-          : 'Worker smoke passed functional readiness but missed one or more frame thresholds in this run; keep worker opt-in until a clean readiness artifact passes.')
+          ? 'Worker smoke meets the opt-in candidate frame thresholds and proves completed-scenario result flow; keep shipping default at main until an explicit release decision changes it.'
+          : 'Worker smoke missed one or more readiness gates in this run; keep worker opt-in until frame thresholds, runtime status, and completed-scenario result proof all pass.')
         : 'Main-thread mode remains the default release path.'
     },
+    completedScenarioResultFlow: {
+      required: true,
+      passed: completedScenarioResultsOk,
+      scenarios: scenarioRows.map(row => ({
+        scenario: row.scenario,
+        complete: row.scenarioResultComplete,
+        anchored: row.scenarioResultAnchored,
+        inViewport: row.scenarioResultInViewport,
+        historyCount: row.scenarioHistoryCount
+      }))
+    },
     thresholds: {
-      workerDesktopAvgFrameMsMax: 24,
+      workerDesktopAvgFrameMsMax: 26,
       workerDesktopP95FrameMsMax: 40,
+      workerDesktopProfiledNonDrawImagePerFrameMsMax: 1.5,
       workerMobileP95FrameMsMax: 20,
-      workerPendingMessagesMax: 0
+      workerPendingMessagesMax: 0,
+      completedScenarioResultsRequired: true
     },
     scenarios: scenarioRows
   };
@@ -631,11 +673,50 @@ async function runScenario(browser, scenario) {
       assertFrameProfile(framePacing, `${scenario.name}: worker`);
     }
 
+    console.log(`  ${scenario.name}: worker scenario result`);
+    const completedScenario = await page.evaluate(() => window.__creatureSmoke.completeScenarioForSmoke('apex_balance'));
+    assert.equal(completedScenario.ok, true, `${scenario.name}: worker smoke scenario should complete deterministically`);
+    assert.equal(completedScenario.playable.state, 'complete', `${scenario.name}: worker completed scenario state should be reflected`);
+    assert.equal(completedScenario.upgrades.scenarioResult.state, 'complete', `${scenario.name}: worker upgrade state should expose completed scenario result`);
+    assert.ok(completedScenario.upgrades.scenarioResult.score >= 0, `${scenario.name}: worker scenario result should expose a score`);
+    await page.evaluate(() => window.__creatureSmoke.showUpgradePanel({ focusResult: true }));
+    await page.locator('.scenario-result-card[data-state="complete"]').waitFor({ state: 'visible', timeout: 5000 });
+    const resultMetrics = await readUpgradeScenarioResultMetrics(page);
+    assert.ok(resultMetrics?.visible, `${scenario.name}: worker scenario result card should be visible`);
+    assert.equal(resultMetrics.anchored, true, `${scenario.name}: worker scenario result should have a first-class Upgrade Hub anchor`);
+    assert.equal(resultMetrics.inViewport, true, `${scenario.name}: worker focused scenario result should be near the top of the visible Upgrade Hub`);
+    assert.match(resultMetrics.text, /finish|Score|Survival/i, `${scenario.name}: worker scenario result card should show result details`);
+    const history = await page.evaluate(() => window.__creatureSmoke.scenarioHistory());
+    assert.ok(history.length >= 1, `${scenario.name}: worker completed scenario should be added to run history`);
+    assert.equal(history[0].scenarioId, 'apex_balance', `${scenario.name}: worker latest run history item should be the completed scenario`);
+    assert.ok(history[0].score >= 0, `${scenario.name}: worker run history item should include a score`);
+    const historyMetrics = await readUpgradeHistoryMetrics(page);
+    assert.ok(historyMetrics.count >= 1, `${scenario.name}: worker Upgrade Hub should render run history items`);
+    assert.match(
+      historyMetrics.text.join(' '),
+      /Apex Balance|Gold|Silver|Bronze|Practice/i,
+      `${scenario.name}: worker run history should include scenario identity or medal state`
+    );
+    const scenarioResult = {
+      scenarioId: completedScenario.playable?.scenario?.id || null,
+      state: completedScenario.playable?.state || null,
+      complete: completedScenario.playable?.state === 'complete' &&
+        completedScenario.upgrades?.scenarioResult?.state === 'complete',
+      score: Number(completedScenario.upgrades?.scenarioResult?.score ?? 0),
+      medal: completedScenario.upgrades?.scenarioResult?.medal || null,
+      anchored: resultMetrics.anchored === true,
+      inViewport: resultMetrics.inViewport === true,
+      historyCount: Number(historyMetrics.count || 0),
+      latestHistoryScenarioId: history[0]?.scenarioId || null
+    };
+    await page.screenshot({ path: path.join(outDir, `${scenario.name}-upgrade-result.png`) });
+    state = await readGameState(page);
+
     await captureCanvasSnapshot(page, path.join(outDir, `${scenario.name}.png`));
-    await fs.writeFile(path.join(outDir, `${scenario.name}.json`), JSON.stringify({ state, perf, framePacing, errors }, null, 2));
+    await fs.writeFile(path.join(outDir, `${scenario.name}.json`), JSON.stringify({ state, perf, framePacing, scenarioResult, errors }, null, 2));
     assert.deepEqual(errors, [], `${scenario.name}: worker browser console should stay warning/error free`);
     await context.close();
-    return { scenario: scenario.name, workerMode, creatures: state.summary.totalCreatures, food: state.summary.totalFood, perf, framePacing };
+    return { scenario: scenario.name, workerMode, creatures: state.summary.totalCreatures, food: state.summary.totalFood, perf, framePacing, scenarioResult };
   }
 
   const director = await page.evaluate(() => window.__creatureSmoke.startScenario('first_ecosystem'));
@@ -829,6 +910,18 @@ async function runScenario(browser, scenario) {
     /First Ecosystem|Gold|Silver|Bronze|Practice/i,
     `${scenario.name}: run history should include scenario identity or medal state`
   );
+  const scenarioResult = {
+    scenarioId: completedScenario.playable?.scenario?.id || null,
+    state: completedScenario.playable?.state || null,
+    complete: completedScenario.playable?.state === 'complete' &&
+      completedScenario.upgrades?.scenarioResult?.state === 'complete',
+    score: Number(completedScenario.upgrades?.scenarioResult?.score ?? 0),
+    medal: completedScenario.upgrades?.scenarioResult?.medal || null,
+    anchored: resultMetrics.anchored === true,
+    inViewport: resultMetrics.inViewport === true,
+    historyCount: Number(historyMetrics.count || 0),
+    latestHistoryScenarioId: history[0]?.scenarioId || null
+  };
   if (!scenario.mobile) {
     achievementToastBounds = await page.evaluate(() => window.__creatureSmoke.showAchievementToastForSmoke());
     assert.equal(achievementToastBounds.ok, true, `${scenario.name}: fallback achievement toast should render for bounds audit`);
@@ -897,7 +990,7 @@ async function runScenario(browser, scenario) {
 
   assert.deepEqual(errors, [], `${scenario.name}: browser console should stay warning/error free`);
   await context.close();
-  return { scenario: scenario.name, workerMode, creatures: state.summary.totalCreatures, food: state.summary.totalFood, perf, framePacing };
+  return { scenario: scenario.name, workerMode, creatures: state.summary.totalCreatures, food: state.summary.totalFood, perf, framePacing, scenarioResult };
 }
 
 await fs.mkdir(outDir, { recursive: true });

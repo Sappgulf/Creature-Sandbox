@@ -5,7 +5,7 @@ import { RendererPerformanceMonitor } from './renderer-performance.js?v=20260527
 import { getDebugFlags } from './debug-flags.js';
 import { assetLoader } from './asset-loader.js?v=20260423-assets1';
 import { applyFeatureVizMethods } from './renderer-features-viz.js';
-import { applyMinimapMethods } from './renderer-minimap.js';
+import { applyMinimapMethods } from './renderer-minimap.js?v=20260527-perf1';
 import { applyCreatureMethods } from './renderer-creatures.js?v=20260527-tranche4';
 import {
   drawBiomeGround,
@@ -79,11 +79,22 @@ export class Renderer {
     this._renderList = [];
     this._creatureRenderOptions = {};
 
-    // OPTIMIZATION: Mini-map heatmap cache
+    // OPTIMIZATION: Mini-map static/cached layers
+    this._miniMapLayoutCache = {
+      key: null,
+      layout: null
+    };
+    this._miniMapBiomeCache = {
+      key: null,
+      canvas: null
+    };
     this._heatmapCache = {
       data: null,
       width: 0,
       height: 0,
+      canvas: null,
+      canvasWidth: 0,
+      canvasHeight: 0,
       lastUpdate: 0,
       updateInterval: 30 // Update every 30 frames (~0.5s at 60fps)
     };

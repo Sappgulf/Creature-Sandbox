@@ -1,5 +1,14 @@
 export function applyMinimapMethods(Renderer) {
-  Renderer.prototype.drawMiniMap = function(world, opts) {
+  const createLayerCanvas = (width, height) => {
+    const safeWidth = Math.max(1, Math.ceil(width));
+    const safeHeight = Math.max(1, Math.ceil(height));
+    const canvas = document.createElement('canvas');
+    canvas.width = safeWidth;
+    canvas.height = safeHeight;
+    return canvas;
+  };
+
+  Renderer.prototype.drawMiniMap = function(world, opts = {}) {
     const ctx = this.ctx;
     const camera = this.camera;
 
@@ -21,43 +30,21 @@ export function applyMinimapMethods(Renderer) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = this.miniMapOpacity;
 
-    // Get canvas CSS size (for click handler matching) and DPR (for drawing coordinates)
-    const canvas = ctx.canvas;
-    const rect = canvas.getBoundingClientRect();
-    const cssWidth = rect.width;
-    const cssHeight = rect.height;
     const dpr = window.devicePixelRatio || 1;
-
-    // FULLY FIXED: Show complete world with perfect aspect ratio
-    const maxMapWidth = 220; // Larger for better visibility
-    const maxMapHeight = 160;
-    const aspectRatio = world.width / world.height; // 4000/2800 = 1.43
-
-    // Calculate map size maintaining world aspect ratio
-    let mapW, mapH;
-    if (world.width / maxMapWidth > world.height / maxMapHeight) {
-      // Width-constrained
-      mapW = maxMapWidth;
-      mapH = maxMapWidth / aspectRatio;
-    } else {
-      // Height-constrained
-      mapH = maxMapHeight;
-      mapW = maxMapHeight * aspectRatio;
-    }
-
-    // Calculate CSS pixel positions (for click handler)
-    const cssMarginX = Math.max(16, Math.round(cssWidth * 0.015));
-    const cssMarginY = Math.max(16, Math.round(cssHeight * 0.015));
-    const mapXCss = cssWidth - mapW - cssMarginX;
-    const mapYCss = cssHeight - mapH - cssMarginY;
-
-    // Convert to canvas internal coordinates for drawing (scale by DPR)
-    const mapX = mapXCss * dpr;
-    const mapY = mapYCss * dpr;
-    const mapWCanvas = mapW * dpr;
-    const mapHCanvas = mapH * dpr;
-    const scaleX = mapW / world.width;
-    const scaleY = mapH / world.height;
+    const layout = this._getMiniMapLayout(world, opts, dpr);
+    const {
+      mapXCss,
+      mapYCss,
+      mapX,
+      mapY,
+      mapW,
+      mapH,
+      mapWCanvas,
+      mapHCanvas,
+      scaleX,
+      scaleY,
+      aspectRatio
+    } = layout;
     // Store CSS coordinates for click handler
     this.lastMiniMap = {
       x: mapXCss,
@@ -85,29 +72,21 @@ export function applyMinimapMethods(Renderer) {
       }
     }
 
-    // Draw biomes (MUCH more subtle - just hints of color)
-    const sampleSize = 100; // Larger samples = less detail, easier to read
-    ctx.globalAlpha = 0.2; // Very faint biome colors
-    for (let y = 0; y < world.height; y += sampleSize) {
-      for (let x = 0; x < world.width; x += sampleSize) {
-        const biome = world.getBiomeAt(x, y);
-        // STABILITY: Guard against undefined biome
-        ctx.fillStyle = this._getBiomeTint(biome?.type);
-        ctx.fillRect(
-          mapX + x * scaleX * dpr,
-          mapY + y * scaleY * dpr,
-          Math.max(1, sampleSize * scaleX * dpr),
-          Math.max(1, sampleSize * scaleY * dpr)
-        );
-      }
-    }
+    // Draw cached static biome layer. Biomes do not change during normal play,
+    // so avoid resampling 1000+ cells every frame.
+    const biomeLayer = this._getMiniMapBiomeLayer(world, layout);
     ctx.globalAlpha = 1;
+    if (biomeLayer) {
+      ctx.drawImage(biomeLayer, mapX, mapY, mapWCanvas, mapHCanvas);
+    }
 
     if (this.miniMapSettings.heatmap) {
       // OPTIMIZED: Draw creature population as HEAT MAP with caching
       const heatmapSize = 100;
       const heatmapW = Math.floor(heatmapSize * aspectRatio);
       const heatmapH = heatmapSize;
+      const heatmapCanvasW = Math.max(1, Math.ceil(mapWCanvas));
+      const heatmapCanvasH = Math.max(1, Math.ceil(mapHCanvas));
 
       // Check if we need to update the heatmap cache
       const cache = this._heatmapCache;
@@ -115,6 +94,8 @@ export function applyMinimapMethods(Renderer) {
       const shouldUpdate = !cache.data ||
         cache.width !== heatmapW ||
         cache.height !== heatmapH ||
+        cache.canvasWidth !== heatmapCanvasW ||
+        cache.canvasHeight !== heatmapCanvasH ||
         (this.performance.frameCount - cache.lastUpdate) >= cache.updateInterval;
 
       if (shouldUpdate) {
@@ -126,6 +107,8 @@ export function applyMinimapMethods(Renderer) {
         }
         cache.width = heatmapW;
         cache.height = heatmapH;
+        cache.canvasWidth = heatmapCanvasW;
+        cache.canvasHeight = heatmapCanvasH;
         cache.lastUpdate = this.performance.frameCount;
 
         // Populate heatmap
@@ -137,23 +120,36 @@ export function applyMinimapMethods(Renderer) {
             cache.data[index] = Math.min(cache.data[index] + 1, 255);
           }
         }
-      }
 
-      // Render cached heatmap (bright spots = high population)
-      const heatmap = cache.data;
-      for (let hy = 0; hy < heatmapH; hy++) {
-        for (let hx = 0; hx < heatmapW; hx++) {
-          const count = heatmap[hy * heatmapW + hx];
-          if (count > 0) {
-            const intensity = Math.min(count / 3, 1);
-            ctx.fillStyle = `rgba(123, 183, 255, ${intensity * 0.8})`;
-            const px = mapX + (hx / heatmapW) * mapWCanvas;
-            const py = mapY + (hy / heatmapH) * mapHCanvas;
-            const cellW = (mapWCanvas / heatmapW) * 1.5;
-            const cellH = (mapHCanvas / heatmapH) * 1.5;
-            ctx.fillRect(px, py, cellW, cellH);
+        if (!cache.canvas || cache.canvas.width !== heatmapCanvasW || cache.canvas.height !== heatmapCanvasH) {
+          cache.canvas = createLayerCanvas(heatmapCanvasW, heatmapCanvasH);
+        }
+        const heatmapCtx = cache.canvas.getContext('2d');
+        if (heatmapCtx) {
+          heatmapCtx.clearRect(0, 0, heatmapCanvasW, heatmapCanvasH);
+          const heatmap = cache.data;
+          const cellW = (heatmapCanvasW / heatmapW) * 1.5;
+          const cellH = (heatmapCanvasH / heatmapH) * 1.5;
+          for (let hy = 0; hy < heatmapH; hy++) {
+            for (let hx = 0; hx < heatmapW; hx++) {
+              const count = heatmap[hy * heatmapW + hx];
+              if (count > 0) {
+                const intensity = Math.min(count / 3, 1);
+                heatmapCtx.fillStyle = `rgba(123, 183, 255, ${intensity * 0.8})`;
+                heatmapCtx.fillRect(
+                  (hx / heatmapW) * heatmapCanvasW,
+                  (hy / heatmapH) * heatmapCanvasH,
+                  cellW,
+                  cellH
+                );
+              }
+            }
           }
         }
+      }
+
+      if (cache.canvas) {
+        ctx.drawImage(cache.canvas, mapX, mapY, mapWCanvas, mapHCanvas);
       }
     }
 
@@ -254,6 +250,118 @@ export function applyMinimapMethods(Renderer) {
     this._drawBiomeLabels(world, mapX, mapY, scaleX, scaleY, dpr);
 
     ctx.restore();
+  };
+
+  Renderer.prototype._getMiniMapLayout = function(world, opts = {}, dpr = 1) {
+    const canvas = this.ctx.canvas;
+    const cssWidth = Math.max(
+      1,
+      Number(this.camera?.viewportWidth) ||
+        Number(opts.viewportCssWidth) ||
+        Number(canvas.clientWidth) ||
+        Number(opts.viewportWidth) / Math.max(1, dpr) ||
+        1
+    );
+    const cssHeight = Math.max(
+      1,
+      Number(this.camera?.viewportHeight) ||
+        Number(opts.viewportCssHeight) ||
+        Number(canvas.clientHeight) ||
+        Number(opts.viewportHeight) / Math.max(1, dpr) ||
+        1
+    );
+    const key = [
+      Math.round(cssWidth * 10),
+      Math.round(cssHeight * 10),
+      Math.round(dpr * 100),
+      Math.round(world.width),
+      Math.round(world.height)
+    ].join('|');
+    const cache = this._miniMapLayoutCache || (this._miniMapLayoutCache = { key: null, layout: null });
+    if (cache.key === key && cache.layout) return cache.layout;
+
+    // FULLY FIXED: Show complete world with perfect aspect ratio
+    const maxMapWidth = 220; // Larger for better visibility
+    const maxMapHeight = 160;
+    const aspectRatio = world.width / world.height; // 4000/2800 = 1.43
+
+    // Calculate map size maintaining world aspect ratio
+    let mapW, mapH;
+    if (world.width / maxMapWidth > world.height / maxMapHeight) {
+      // Width-constrained
+      mapW = maxMapWidth;
+      mapH = maxMapWidth / aspectRatio;
+    } else {
+      // Height-constrained
+      mapH = maxMapHeight;
+      mapW = maxMapHeight * aspectRatio;
+    }
+
+    // Calculate CSS pixel positions (for click handler)
+    const cssMarginX = Math.max(16, Math.round(cssWidth * 0.015));
+    const cssMarginY = Math.max(16, Math.round(cssHeight * 0.015));
+    const mapXCss = cssWidth - mapW - cssMarginX;
+    const mapYCss = cssHeight - mapH - cssMarginY;
+
+    const layout = {
+      mapXCss,
+      mapYCss,
+      mapX: mapXCss * dpr,
+      mapY: mapYCss * dpr,
+      mapW,
+      mapH,
+      mapWCanvas: mapW * dpr,
+      mapHCanvas: mapH * dpr,
+      scaleX: mapW / world.width,
+      scaleY: mapH / world.height,
+      aspectRatio,
+      dpr
+    };
+    cache.key = key;
+    cache.layout = layout;
+    return layout;
+  };
+
+  Renderer.prototype._getMiniMapBiomeLayer = function(world, layout) {
+    const sampleSize = 100; // Larger samples = less detail, easier to read
+    const canvasWidth = Math.max(1, Math.ceil(layout.mapWCanvas));
+    const canvasHeight = Math.max(1, Math.ceil(layout.mapHCanvas));
+    const key = [
+      Math.round(world.width),
+      Math.round(world.height),
+      canvasWidth,
+      canvasHeight,
+      sampleSize
+    ].join('|');
+    const cache = this._miniMapBiomeCache || (this._miniMapBiomeCache = { key: null, canvas: null });
+    if (cache.key === key && cache.canvas) return cache.canvas;
+
+    const layer = createLayerCanvas(canvasWidth, canvasHeight);
+    const layerCtx = layer.getContext('2d');
+    if (!layerCtx) return null;
+
+    layerCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+    layerCtx.globalAlpha = 0.2; // Very faint biome colors
+    const scaleXPx = layout.scaleX * layout.dpr;
+    const scaleYPx = layout.scaleY * layout.dpr;
+    for (let y = 0; y < world.height; y += sampleSize) {
+      for (let x = 0; x < world.width; x += sampleSize) {
+        const biome = world.getBiomeAt(x, y);
+        // STABILITY: Guard against undefined biome
+        layerCtx.fillStyle = this._getBiomeTint(biome?.type);
+        layerCtx.fillRect(
+          x * scaleXPx,
+          y * scaleYPx,
+          Math.max(1, sampleSize * scaleXPx),
+          Math.max(1, sampleSize * scaleYPx)
+        );
+      }
+    }
+    layerCtx.globalAlpha = 1;
+
+    cache.key = key;
+    cache.canvas = layer;
+    return layer;
   };
 
   // NEW: Draw biome labels on mini-map

@@ -254,7 +254,16 @@ Run the opt-in worker runtime lane before changing proxy, bridge, worker, or rel
 npm run smoke:worker
 ```
 
-The worker lane opens the same desktop plus compact/large mobile browser contexts with `?worker=1`, verifies the worker runtime metadata and runtime-toggle UI, exercises startup selection, manual spawn, food painting, Watch Mode, snapshot-only save serialization/load parity, save-slot thumbnail preview, runtime preference storage roundtrips, worker scenario start/save metadata for `Apex Balance`, an extended deterministic scenario soak, screenshots/state under `output/browser-smoke-worker/`, and records the same frame-pacing plus `drawImage` and non-`drawImage` scope sample. It also writes `output/browser-smoke-worker/runtime-readiness.json`, including worker ready/queued-message status, worker error/snapshot counts, frame thresholds, and the explicit "shipping default remains main" decision. Full completed-scenario result flow remains covered by the main-thread browser smoke. Treat `needs-more-proof` as a functional pass but a defaulting hold.
+The worker lane opens the same desktop plus compact/large mobile browser contexts with `?worker=1`, verifies the worker runtime metadata and runtime-toggle UI, exercises startup selection, manual spawn, food painting, Watch Mode, snapshot-only save serialization/load parity, save-slot thumbnail preview, runtime preference storage roundtrips, worker scenario start/save metadata for `Apex Balance`, an extended deterministic scenario soak, completed-scenario result cards, Run History, screenshots/state under `output/browser-smoke-worker/`, and records the same frame-pacing plus `drawImage` and non-`drawImage` scope sample. It also writes `output/browser-smoke-worker/runtime-readiness.json`, including worker ready/queued-message status, worker error/snapshot counts, completed-scenario result proof, frame thresholds, and the explicit "shipping default remains main" decision. Treat `needs-more-proof` as a functional pass but a defaulting hold; treat `candidate-opt-in` plus `defaultReadiness.safeToDefaultWorker: true` as proof for a worker-default discussion, not as a default change by itself.
+
+Run the public Vercel smoke after deployment or production-health work:
+
+```bash
+npm run smoke:production
+npm run evidence:release
+```
+
+The production lane reuses the browser smoke against `https://creature-sandbox.vercel.app`, accepts built Vite asset entrypoints, writes `output/browser-smoke-production/`, and refreshes `output/release-evidence-board.json` plus `output/release-evidence-board.md`.
 
 Run the post-build bundle guard after `npm run build`:
 

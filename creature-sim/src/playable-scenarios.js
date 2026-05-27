@@ -214,6 +214,36 @@ export const PLAYABLE_SCENARIOS = [
     setup: { herbivore: 20, omnivore: 5, predator: 3, aquatic: 6, flying: 6, burrowing: 6, food: 245, props: ['slope', 'fan', 'spring', 'calm'] },
     tuning: { mode: 'chill', foodRate: 1.18, disasters: false },
     steps: ['Follow one of each variant', 'Open food corridors', 'Calm the crossing before stress spikes']
+  },
+  {
+    id: 'stress_sanctuary',
+    artFrame: 1,
+    icon: '🛟',
+    name: 'Stress Sanctuary',
+    fantasy: 'Turn a tense crowd into a calmer refuge without losing population.',
+    objective: 'Keep 34 creatures alive, stress under 48, and food above 135.',
+    targetSeconds: 210,
+    minAlive: 34,
+    minFood: 135,
+    maxStress: 48,
+    setup: { herbivore: 40, omnivore: 7, predator: 4, food: 190, props: ['calm', 'spring', 'fan'] },
+    tuning: { mode: 'balanced', foodRate: 1.05, disasters: true, season: 'spring' },
+    steps: ['Calm the densest herd first', 'Paint food outside crowded pockets', 'Watch stress before spawning more life']
+  },
+  {
+    id: 'scavenger_bridge',
+    artFrame: 4,
+    icon: '🌉',
+    name: 'Scavenger Bridge',
+    fantasy: 'Keep omnivores useful while prey and predators cross the same corridor.',
+    objective: 'Survive with 38+ creatures, 6+ predators, and a food buffer.',
+    targetSeconds: 225,
+    minAlive: 38,
+    minPredators: 6,
+    minFood: 125,
+    setup: { herbivore: 44, omnivore: 10, predator: 7, food: 220, props: ['conveyor', 'calm', 'bounce'] },
+    tuning: { mode: 'frontier', foodRate: 0.98, disasters: true, season: 'autumn' },
+    steps: ['Feed the bridge exits', 'Follow scavengers after hunts', 'Use calm zones if the corridor panics']
   }
 ];
 

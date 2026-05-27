@@ -17,6 +17,24 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-05-27 — release-evidence-production-smoke — Implemented
+- **Issues:** The approved 1-8 tranche needed current local/worker/production proof, a release evidence board, deeper playable scenarios, and a production smoke lane that could run against built Vite deployments.
+- **Root Causes:** Browser smoke only wrote per-lane artifacts, worker completed-result proof was not part of the readiness decision, production builds did not copy runtime sprite assets into `dist`, and the playable scenario catalog had room for more late-game objective variety.
+- **Fixes:** Added `smoke:production` and `evidence:release`, made smoke probing accept HTTPS/built Vite entrypoints and custom output folders, fed completed scenario result/history proof into readiness artifacts, copied `creature-sim/assets` plus `manifest.json` during Vite builds, added `Stress Sanctuary` and `Scavenger Bridge`, tightened mobile Upgrade Hub run-history layout, and exposed renderer quality recovery counters.
+- **Verification:** `node --check` for touched JS/config/smoke files (pass); `git diff --check` (pass); `npm run lint` (pass); `npm test` (pass, 155 checks); `npm run build` (pass, main app JS `585.62 kB` / `171.77 kB` gzip and runtime assets copied); `npm run check:bundle` (pass); `npm run smoke:browser` (pass: desktop avg `36.11ms` / p95 `50.9ms`, mobile p95 `<=17.7ms`); `npm run smoke:worker` (pass: `candidate-opt-in`, desktop avg `24.32ms` / p95 `33.4ms`, `1.0135ms/frame` profiled non-`drawImage`, completed result flow true); production smoke initially failed on missing sprite manifest, then passed after the Vite asset-copy fix and redeploy; `npm run evidence:release` wrote local, worker, and production proof lanes.
+
+### 2026-05-27 — minimap-layer-cache-performance — Implemented
+- **Issues:** Browser smoke profiling kept `render`, `world-step`, and `subsystem-update` as recurring frame-cost scopes; the minimap still resampled static biome cells and repainted heatmap cells every visible frame.
+- **Root Causes:** Minimap layout, biome tiles, and population heatmap rendering were computed in the overlay draw path even when world dimensions and map size were unchanged.
+- **Fixes:** Cache minimap layout and static biome layer by viewport/world size, redraw the heatmap layer only when its cache interval or size changes, and avoid repeated notification-shape and particle-budget writes in subsystem updates.
+- **Verification:** `node --check` for renderer/minimap/game-loop files (pass); `npm run smoke:browser` (pass: desktop non-`drawImage` `4.0417ms/frame`, mobile non-`drawImage` `<=2.5481ms/frame`); `npm run smoke:worker` (pass: desktop non-`drawImage` `1.0135ms/frame`, mobile non-`drawImage` `<=0.9698ms/frame`).
+
+### 2026-05-27 — worker-result-readiness-truth — Implemented
+- **Issues:** Worker smoke was already exercising completed-scenario result UI, but `runtime-readiness.json` and release docs still described that result flow as main-thread-only.
+- **Root Causes:** The smoke runner asserted scenario result cards and Run History inside each scenario but did not return those proof fields into `summary.json` or the readiness decision artifact.
+- **Fixes:** Add completed-scenario result proof to smoke summaries and readiness gating, make `safeToDefaultWorker` reflect the evidence gate without changing the app default, and update smoke/release/known-issue docs to use the artifact fields.
+- **Verification:** `node --check scripts/browser-smoke.mjs` (pass); `git diff --check` (pass); `npm run lint` (pass); `npm test` (pass, 155 checks); `npm run smoke:worker` (pass, `candidate-opt-in`, `completedScenarioResultFlow.passed: true`, `defaultReadiness.safeToDefaultWorker: true`, shipping default still `main`).
+
 ### 2026-05-27 — perf-readiness-production-polish — Planned
 - **Issues:** Approved tranche 1-4 needed a final desktop perf pass, stronger worker default-readiness evidence, production deploy health proof, and visual polish from the latest smoke screenshots.
 - **Root Causes:** Main-thread smoke still spent most measured non-`drawImage` time in world/update scopes, worker readiness lacked first-class error/snapshot diagnostics, deployed health had not been rechecked against the public Vercel alias, and compact achievement toasts could compete with the objective rail on mobile result screenshots.

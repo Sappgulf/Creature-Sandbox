@@ -190,7 +190,7 @@ export class GameLoop {
   }
 
   hasNotifications() {
-    return isNotificationSystem(this.notifications);
+    return !!this.notifications;
   }
 
   syncParticleBudget() {
@@ -199,8 +199,10 @@ export class GameLoop {
       this.renderer?.performance?.currentQuality ||
       'medium';
     const maxParticles = RendererConfig.QUALITY_PRESETS[quality]?.maxParticles;
+    if (quality === this._lastSyncedParticleQuality && this.particles.maxParticles === maxParticles) return;
     if (Number.isFinite(maxParticles) && maxParticles > 0) {
       this.particles.maxParticles = maxParticles;
+      this._lastSyncedParticleQuality = quality;
     }
   }
 

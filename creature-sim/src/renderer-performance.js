@@ -23,6 +23,8 @@ export class RendererPerformanceMonitor {
     this._lastFrameTimestamp = performance.now();
     this._fpsFrameCounter = 0;
     this._fpsSampleCount = 0;
+    this._lastFpsSample = 60;
+    this._qualityRecoveryStreak = 0;
 
     // ENHANCEMENT: Quality preset tracking
     this.currentQuality = 'high';
@@ -88,6 +90,7 @@ export class RendererPerformanceMonitor {
     const elapsed = now - this._lastFrameTimestamp;
     if (elapsed >= 1000) {
       const realFps = (this._fpsFrameCounter * 1000) / elapsed;
+      this._lastFpsSample = realFps;
       this.fpsHistory[this.fpsHistoryIndex] = realFps;
       this.fpsHistoryIndex = (this.fpsHistoryIndex + 1) % this.fpsHistory.length;
       this._fpsSampleCount = Math.min(this._fpsSampleCount + 1, this.fpsHistory.length);
@@ -168,6 +171,12 @@ export class RendererPerformanceMonitor {
   getStats() {
     return {
       ...this.stats,
+      quality: this.currentQuality,
+      currentFps: Number(this.currentFps.toFixed(2)),
+      lastFpsSample: Number(this._lastFpsSample.toFixed(2)),
+      fpsSampleCount: this._fpsSampleCount,
+      qualityRecoveryStreak: this._qualityRecoveryStreak,
+      qualityLockTimer: this.qualityLockTimer,
       cullRatio: this.stats.totalObjects > 0 ?
         this.stats.culled / this.stats.totalObjects : 0,
       renderEfficiency: this.stats.totalObjects > 0 ?
@@ -207,12 +216,21 @@ export class RendererPerformanceMonitor {
 
     // Downgrade quality if FPS too low
     if (this.currentFps < 25 && currentIndex > 0) {
+      this._qualityRecoveryStreak = 0;
       this.applyQualityPreset(presets[currentIndex - 1]);
       this.qualityLockTimer = this.qualityLockDuration;
 
     }
-    // Upgrade quality if FPS is good
-    else if (this._fpsSampleCount >= 3 && this.currentFps > 55 && currentIndex < presets.length - 1) {
+    else {
+      const recovering = this._fpsSampleCount >= 2 &&
+        this.currentFps > 50 &&
+        this._lastFpsSample > 52;
+      this._qualityRecoveryStreak = recovering ? this._qualityRecoveryStreak + 1 : 0;
+    }
+
+    // Upgrade quality after sustained real samples, so temporary dips recover without flapping.
+    if (this._qualityRecoveryStreak >= 2 && currentIndex < presets.length - 1) {
+      this._qualityRecoveryStreak = 0;
       this.applyQualityPreset(presets[currentIndex + 1]);
       this.qualityLockTimer = this.qualityLockDuration;
 

@@ -1,5 +1,10 @@
 import { defineConfig } from 'vite';
 import { visualizer } from 'rollup-plugin-visualizer';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const chunkMap = [
   {
@@ -37,6 +42,20 @@ function manualChunks(id) {
   }
 }
 
+function copyRuntimeAssets() {
+  return {
+    name: 'copy-runtime-assets',
+    closeBundle() {
+      const appRoot = path.join(__dirname, 'creature-sim');
+      const outDir = path.join(__dirname, 'dist');
+      fs.cpSync(path.join(appRoot, 'assets'), path.join(outDir, 'assets'), {
+        recursive: true
+      });
+      fs.copyFileSync(path.join(appRoot, 'manifest.json'), path.join(outDir, 'manifest.json'));
+    }
+  };
+}
+
 export default defineConfig(({ mode }) => ({
   root: 'creature-sim',
   server: {
@@ -51,7 +70,10 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks
       },
-      plugins: mode === 'analyze' ? [visualizer({ open: true, gzipSize: true, filename: '../dist/stats.html' })] : []
+      plugins: [
+        copyRuntimeAssets(),
+        ...(mode === 'analyze' ? [visualizer({ open: true, gzipSize: true, filename: '../dist/stats.html' })] : [])
+      ]
     }
   },
 }));

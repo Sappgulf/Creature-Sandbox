@@ -80,20 +80,24 @@ export class EnhancedBehaviors {
     if (!predator.genes || !predator.genes.predator || !prey) return null;
 
     const packRadius = 150;
+    const packRadiusSq = packRadius * packRadius;
     const packInstinct = predator.genes.packInstinct ?? 0.5;
 
     if (packInstinct < 0.3) return null; // Solitary hunter
 
-    // Find pack members targeting same prey
-    const packMembers = nearbyPredators.filter(other =>
-      other !== predator &&
-      other.alive &&
-      other.genes.predator &&
-      other.target === prey &&
-      dist2(other.x, other.y, predator.x, predator.y) < packRadius * packRadius
-    );
+    let packSize = 1;
+    for (let i = 0; i < nearbyPredators.length; i++) {
+      const other = nearbyPredators[i];
+      if (other !== predator &&
+          other?.alive &&
+          other.genes?.predator &&
+          other.target === prey &&
+          dist2(other.x, other.y, predator.x, predator.y) < packRadiusSq) {
+        packSize++;
+      }
+    }
 
-    if (packMembers.length === 0) return null;
+    if (packSize === 1) return null;
 
     // Calculate flanking positions
     const preyAngle = Math.atan2(prey.y - predator.y, prey.x - predator.x);
@@ -108,7 +112,7 @@ export class EnhancedBehaviors {
       x: prey.x - Math.cos(targetAngle) * flankDistance,
       y: prey.y - Math.sin(targetAngle) * flankDistance,
       isPack: true,
-      packSize: packMembers.length + 1
+      packSize
     };
   }
 

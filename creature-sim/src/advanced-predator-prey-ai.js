@@ -32,9 +32,9 @@ export class AdvancedPredatorPreyAI {
    * Select best hunting strategy
    */
   static selectHuntingStrategy(predator, prey, world) {
-    const distance = Math.sqrt(
-      (prey.x - predator.x) ** 2 + (prey.y - predator.y) ** 2
-    );
+    const dx = prey.x - predator.x;
+    const dy = prey.y - predator.y;
+    const distanceSq = dx * dx + dy * dy;
 
     const predatorSpeed = predator.genes?.speed ?? 1;
     const preySpeed = prey.genes?.speed ?? 1;
@@ -42,7 +42,7 @@ export class AdvancedPredatorPreyAI {
     const packInstinct = predator.genes?.packInstinct ?? 0.5;
 
     // Ambush predators wait
-    if (ambushTrait > 0.7 && distance > 100) {
+    if (ambushTrait > 0.7 && distanceSq > 10000) {
       return 'ambush';
     }
 
@@ -52,18 +52,28 @@ export class AdvancedPredatorPreyAI {
     }
 
     // Smart predators intercept
-    if (distance > 80 && predatorSpeed >= preySpeed) {
+    if (distanceSq > 6400 && predatorSpeed >= preySpeed) {
       return 'intercept';
     }
 
     // Pack hunters herd prey
     if (packInstinct > 0.6) {
-      const nearbyPack = world.creatures.filter(c =>
-        c.alive && c.genes?.predator &&
-        Math.sqrt((c.x - predator.x) ** 2 + (c.y - predator.y) ** 2) < 150
-      );
+      const creatures = world.creatures || [];
+      let nearbyPackCount = 0;
+      for (let i = 0; i < creatures.length; i++) {
+        const candidate = creatures[i];
+        if (!candidate?.alive || !candidate.genes?.predator) continue;
+        const packDx = candidate.x - predator.x;
+        const packDy = candidate.y - predator.y;
+        if (packDx * packDx + packDy * packDy < 22500) {
+          nearbyPackCount++;
+          if (nearbyPackCount >= 2) {
+            return 'herd';
+          }
+        }
+      }
 
-      if (nearbyPack.length >= 2) {
+      if (nearbyPackCount >= 2) {
         return 'herd';
       }
     }
@@ -159,19 +169,27 @@ export class AdvancedPredatorPreyAI {
    * Herding strategy - coordinate with pack
    */
   static herdingStrategy(predator, prey, world) {
-    // Find pack members
-    const packMembers = world.creatures.filter(c =>
-      c.alive && c.genes?.predator && c.id !== predator.id &&
-      Math.sqrt((c.x - predator.x) ** 2 + (c.y - predator.y) ** 2) < 200
-    );
+    const creatures = world.creatures || [];
+    let packCount = 0;
+    let packCenterX = predator.x;
+    let packCenterY = predator.y;
+    for (let i = 0; i < creatures.length; i++) {
+      const candidate = creatures[i];
+      if (!candidate?.alive || !candidate.genes?.predator || candidate.id === predator.id) continue;
+      const dx = candidate.x - predator.x;
+      const dy = candidate.y - predator.y;
+      if (dx * dx + dy * dy >= 40000) continue;
+      packCount++;
+      packCenterX += candidate.x;
+      packCenterY += candidate.y;
+    }
 
-    if (packMembers.length === 0) {
+    if (packCount === 0) {
       return this.chaseStrategy(predator, prey, world, 0);
     }
 
-    // Calculate pack center
-    const packCenterX = packMembers.reduce((sum, p) => sum + p.x, predator.x) / (packMembers.length + 1);
-    const packCenterY = packMembers.reduce((sum, p) => sum + p.y, predator.y) / (packMembers.length + 1);
+    packCenterX /= packCount + 1;
+    packCenterY /= packCount + 1;
 
     // Push prey away from pack center
     const awayAngle = Math.atan2(prey.y - packCenterY, prey.x - packCenterX);
@@ -320,31 +338,26 @@ export class AdvancedPredatorPreyAI {
    * Group evasion - join herd
    */
   static groupEvasion(prey, predator, world) {
-    // Find nearest group of same species
-    const sameSpecies = world.creatures.filter(c =>
-      c.alive && !c.genes?.predator &&
-      Math.abs((c.genes?.hue ?? 0) - (prey.genes?.hue ?? 0)) < 30
-    );
-
-    if (sameSpecies.length < 2) {
-      return this.fleeEvasion(prey, predator, world);
-    }
-
-    // Find center of nearest group
+    const creatures = world.creatures || [];
     let groupCenterX = 0;
     let groupCenterY = 0;
     let count = 0;
+    const preyHue = prey.genes?.hue ?? 0;
+    const groupRadiusSq = 22500;
 
-    for (const other of sameSpecies) {
-      const dist = Math.sqrt((other.x - prey.x) ** 2 + (other.y - prey.y) ** 2);
-      if (dist < 150) {
-        groupCenterX += other.x;
-        groupCenterY += other.y;
-        count++;
-      }
+    for (let i = 0; i < creatures.length; i++) {
+      const other = creatures[i];
+      if (!other?.alive || other.genes?.predator) continue;
+      if (Math.abs((other.genes?.hue ?? 0) - preyHue) >= 30) continue;
+      const dx = other.x - prey.x;
+      const dy = other.y - prey.y;
+      if (dx * dx + dy * dy >= groupRadiusSq) continue;
+      groupCenterX += other.x;
+      groupCenterY += other.y;
+      count++;
     }
 
-    if (count > 0) {
+    if (count >= 2) {
       return {
         x: groupCenterX / count,
         y: groupCenterY / count,
@@ -393,9 +406,9 @@ export class AdvancedPredatorPreyAI {
     let closestDist = Infinity;
 
     for (const predator of predators) {
-      const dist = Math.sqrt(
-        (predator.x - prey.x) ** 2 + (predator.y - prey.y) ** 2
-      );
+      const dx = predator.x - prey.x;
+      const dy = predator.y - prey.y;
+      const dist = dx * dx + dy * dy;
 
       if (dist < closestDist) {
         closestDist = dist;

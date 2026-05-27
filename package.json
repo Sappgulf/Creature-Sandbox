@@ -11,6 +11,8 @@
     "smoke:browser": "node scripts/browser-smoke.mjs",
     "smoke:browser:headed": "node scripts/browser-smoke.mjs --headed",
     "smoke:worker": "node scripts/browser-smoke.mjs --worker",
+    "smoke:production": "CREATURE_SMOKE_URL=https://creature-sandbox.vercel.app CREATURE_SMOKE_REUSE_SERVER=1 CREATURE_SMOKE_OUT_DIR=output/browser-smoke-production node scripts/browser-smoke.mjs --no-realtime",
+    "evidence:release": "node scripts/release-evidence-board.mjs",
     "check:bundle": "node scripts/bundle-budget.mjs",
     "test:coverage": "npm test",
     "lint": "eslint creature-sim/src",

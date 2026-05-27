@@ -7,10 +7,10 @@ List issues that could not be fixed quickly, with severity and reproduction step
    - **Description:** Camera clamping uses a 200px margin beyond world edges. Creatures very near the border may still appear partially off-screen after aggressive panning.
    - **Workaround:** Use focus-on-creature or the re-center button to snap back.
 
-2. **Worker simulation mode remains opt-in**
+2. **Worker simulation mode remains opt-in until explicit default decision**
    - **Severity:** Low
-   - **Description:** `?worker=1` now has a checked worker smoke lane for startup, spawn, food, Watch Mode, snapshot-only save/load parity, save-slot preview, runtime preference storage, runtime-toggle UI, `Apex Balance` scenario metadata save parity, an extended scenario soak, screenshots, frame pacing, `drawImage` profiling, main-thread scope profiling, runtime metadata, worker error/snapshot diagnostics, and `runtime-readiness.json`, but worker mode is still not the default shipping path. The latest loaded-machine run passed functionally but reported `status: "needs-more-proof"` because frame thresholds were missed.
-   - **Impact:** Main-thread play and completed-scenario result flow remain the release path. Run `npm run smoke:worker` before changing worker proxy, bridge, save, or runtime-selection code.
+   - **Description:** `?worker=1` now has a checked worker smoke lane for startup, spawn, food, Watch Mode, snapshot-only save/load parity, save-slot preview, runtime preference storage, runtime-toggle UI, `Apex Balance` scenario metadata save parity, an extended scenario soak, completed-scenario result cards, Run History, screenshots, frame pacing, `drawImage` profiling, main-thread scope profiling, runtime metadata, worker error/snapshot diagnostics, and `runtime-readiness.json`, but worker mode is still not the default shipping path. The current default-readiness decision comes from `output/browser-smoke-worker/runtime-readiness.json`: `candidate-opt-in` plus `defaultReadiness.safeToDefaultWorker: true` and `completedScenarioResultFlow.passed: true` means the worker lane is ready for a defaulting discussion; `needs-more-proof` means at least one gate missed.
+   - **Impact:** Main-thread play remains the shipping default until a release decision changes runtime selection. Run `npm run smoke:worker` before changing worker proxy, bridge, save, or runtime-selection code.
 
 3. **Desktop main-thread heavy final state is still below 60fps**
    - **Severity:** Medium
