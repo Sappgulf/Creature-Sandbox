@@ -279,7 +279,7 @@ npm run smoke:production
 npm run evidence:release
 ```
 
-The production lane reuses the browser smoke against `https://creature-sandbox.vercel.app`, accepts built Vite asset entrypoints, writes `output/browser-smoke-production/`, and refreshes `output/release-evidence-board.json` plus `output/release-evidence-board.md`. The release evidence board treats production proof as stale unless `target.json` shows a `/build-info.json` SHA matching the current commit.
+The production lane reuses the browser smoke against `https://creature-sandbox.vercel.app`, accepts built Vite asset entrypoints, records the same realtime frame-pacing plus `drawImage` and non-`drawImage` scope sample as the local worker lane, writes `output/browser-smoke-production/`, and refreshes `output/release-evidence-board.json`, `output/release-evidence-board.md`, and the compact `output/release-summary.md`. The release evidence board treats production proof as stale unless `target.json` shows a `/build-info.json` SHA matching the current commit, and treats it as blocked unless `runtime-readiness.json` reports `status: "shipping-default"` with `defaultReadiness.safeToDefaultWorker: true`.
 
 Run the post-build bundle guard after `npm run build`:
 

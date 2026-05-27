@@ -76,6 +76,10 @@ jobs:
       - name: Release evidence board
         run: npm run evidence:release
 
+      - name: Release evidence summary
+        if: always()
+        run: test -f output/release-summary.md && cat output/release-summary.md >> "$GITHUB_STEP_SUMMARY" || true
+
       - name: Upload smoke artifacts
         if: always()
         uses: actions/upload-artifact@v4

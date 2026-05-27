@@ -25,8 +25,18 @@ export class GhostTrailSystem {
   }
 
   update() {
+    if (this.ghosts.length === 0) return;
     const now = performance.now() * 0.001;
-    this.ghosts = this.ghosts.filter(g => (now - g.bornAt) < this.fadeDuration);
+    let writeIndex = 0;
+    for (let i = 0; i < this.ghosts.length; i++) {
+      const ghost = this.ghosts[i];
+      if ((now - ghost.bornAt) >= this.fadeDuration) continue;
+      if (writeIndex !== i) {
+        this.ghosts[writeIndex] = ghost;
+      }
+      writeIndex++;
+    }
+    this.ghosts.length = writeIndex;
   }
 
   draw(ctx, camera, worldTime) {

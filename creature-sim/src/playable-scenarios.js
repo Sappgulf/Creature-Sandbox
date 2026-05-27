@@ -226,8 +226,8 @@ export const PLAYABLE_SCENARIOS = [
     minAlive: 28,
     minFood: 135,
     maxStress: 48,
-    setup: { herbivore: 42, omnivore: 6, predator: 0, food: 260, props: ['calm', 'spring', 'fan'] },
-    tuning: { mode: 'balanced', foodRate: 1.24, disasters: false, autoBalance: false, season: 'spring' },
+    setup: { herbivore: 74, omnivore: 10, predator: 0, food: 430, props: ['calm', 'spring', 'fan'], radius: 780 },
+    tuning: { mode: 'chill', foodRate: 1.38, disasters: false, autoBalance: false, season: 'spring' },
     steps: ['Calm the densest herd first', 'Paint food outside crowded pockets', 'Watch stress before spawning more life']
   },
   {
@@ -241,8 +241,8 @@ export const PLAYABLE_SCENARIOS = [
     minAlive: 38,
     minPredators: 4,
     minFood: 125,
-    setup: { herbivore: 56, omnivore: 10, predator: 8, food: 290, props: ['conveyor', 'calm', 'bounce'] },
-    tuning: { mode: 'frontier', foodRate: 1.18, disasters: false, autoBalance: false, season: 'autumn' },
+    setup: { herbivore: 84, omnivore: 16, predator: 18, food: 430, props: ['conveyor', 'calm', 'bounce'], radius: 760 },
+    tuning: { mode: 'frontier', foodRate: 1.32, disasters: false, autoBalance: false, season: 'autumn' },
     steps: ['Feed the bridge exits', 'Follow scavengers after hunts', 'Use calm zones if the corridor panics']
   }
 ];

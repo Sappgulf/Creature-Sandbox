@@ -554,6 +554,15 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Residual note: main-thread smoke still reports slow real-time frame pacing after the full scripted interaction sequence, even with the particle budget enforced. Worker mode is the smooth opt-in lane and is now passing with stable mobile frame pacing.
 
 2026-05-27
+- Follow-up main-thread fallback smoothness pass.
+- Baseline from current `output/browser-smoke-main/runtime-readiness.json`: fallback proof is green, desktop avg `33.33ms` / p95 `49.9ms`, non-`drawImage` `3.5231ms/frame`, top scope `world-step`; mobile p95 remains `<=17.7ms`.
+- Implemented a narrow render-path fix:
+  - `GameLoop.renderOverlays()` now skips drawing particles when the same `ParticleSystem` was already drawn through `world.particles` inside `Renderer.drawWorld()`.
+  - `GhostTrailSystem.update()` now returns immediately when empty and compacts expired ghosts in place instead of allocating a filtered array every render.
+  - Bumped static module cache keys for `main.js` -> `app-bootstrap.js` -> `game-loop.js`.
+- Verification pending.
+
+2026-05-27
 - Approved tranche 1-5: main-thread smoothness, drag/throw/prop proof, mobile God Mode panel polish, Upgrade Hub pass, and scenario result polish.
 - Implemented:
   - reduced sprite-tint startup pressure by quantizing creature sprite tint colors and preparing only the base 64px sprite set immediately; close-zoom sizes now load lazily.
@@ -745,3 +754,26 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - first post-push `npm run smoke:production` ❌ exposed the unbundled worker dependency issue; local worker bundle fix is now verified and ready for post-push production verification.
   - `npm run evidence:release` ✅ local proof lanes present; production lane correctly flagged stale until the pushed SHA is deployed.
 - Residual note: desktop main-thread mode is now explicitly fallback-only. Worker default proof is green locally; production proof must be rerun after the worker-bundle fix commit is live so `/build-info.json` matches `HEAD`.
+
+2026-05-27
+- Approved tranche 1-3: production realtime perf proof, compact release evidence summary, and another safe main-thread fallback optimization before commit/push.
+- Implemented so far:
+  - production smoke is now realtime-gated against the public Vercel alias and the release evidence board blocks stale or non-ready production artifacts instead of counting them as present proof.
+  - release evidence generation now writes compact `output/release-summary.md` alongside the full JSON/Markdown board, and GitHub Actions appends it to the job summary when available.
+  - scalar field diffusion now uses direct indexed array access instead of calling bounds/index helpers for every cell, preserving zero-boundary behavior while reducing main-thread world-step overhead; ghost trails compact in-place and world-attached particles no longer get drawn a second time as an overlay.
+  - added a scalar-field boundary diffusion regression test and refreshed smoke/release docs for the new summary artifact.
+  - widened Stress Sanctuary and Scavenger Bridge setup buffers after scenario balance smoke exposed population/predator volatility.
+- Verification so far:
+  - `node --check` for touched runtime/smoke/evidence files ✅
+  - `git diff --check` ✅
+  - `npm run lint` ✅
+  - `npm test` ✅ (156 passing)
+  - `npm run build` ✅ (main app JS `586.23 kB` / `171.98 kB` gzip; worker `244.18 kB`)
+  - `npm run check:bundle` ✅
+  - `npm run smoke:browser` ✅ (`shipping-default`; desktop avg `23.24ms` / p95 `33.6ms`; mobile p95 `<=17.7ms`)
+  - `npm run smoke:main` ✅ (`fallback-proof`; desktop avg `36.07ms` / p95 `50ms`; mobile p95 `<=17.7ms`)
+  - `npm run smoke:worker` ✅ (`candidate-opt-in`; desktop avg `21.93ms` / p95 `33.4ms`; mobile p95 `<=17.7ms`)
+  - `npm run smoke:scenarios` ✅ after tuning (latest Stress Sanctuary `46` alive, `628` food; Scavenger Bridge `67` alive, `527` food, `10` predators)
+  - external web-game client ✅ captured/inspected `output/web-game/tranche-1-3/shot-0.png`; state shows worker mode ready and 0 pending messages.
+  - `npm run evidence:release` ✅ wrote `output/release-summary.md`; pre-commit board has no missing/blocked proof but still reports dirty worktree by design.
+- Next verification: commit/push, wait for production `/build-info.json` to match the new SHA, rerun production smoke and release evidence, then report final proof.

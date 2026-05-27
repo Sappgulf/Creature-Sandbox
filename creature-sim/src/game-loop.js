@@ -980,8 +980,9 @@ export class GameLoop {
       });
     }
 
-    // Render particles
-    if (this.particles) {
+    // Renderer.drawWorld already draws the world-attached particle system under
+    // the camera transform; only draw a separate overlay particle system here.
+    if (this.particles && this.particles !== this.world?.particles) {
       this.particles.draw(ctx, this.camera);
     }
 

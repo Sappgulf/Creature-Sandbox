@@ -13,7 +13,7 @@
     "smoke:main": "node scripts/browser-smoke.mjs --main",
     "smoke:worker": "node scripts/browser-smoke.mjs --worker",
     "smoke:scenarios": "node scripts/scenario-balance-smoke.mjs",
-    "smoke:production": "CREATURE_SMOKE_URL=https://creature-sandbox.vercel.app CREATURE_SMOKE_REUSE_SERVER=1 CREATURE_SMOKE_OUT_DIR=output/browser-smoke-production node scripts/browser-smoke.mjs --no-realtime",
+    "smoke:production": "CREATURE_SMOKE_URL=https://creature-sandbox.vercel.app CREATURE_SMOKE_REUSE_SERVER=1 CREATURE_SMOKE_OUT_DIR=output/browser-smoke-production node scripts/browser-smoke.mjs",
     "evidence:release": "node scripts/release-evidence-board.mjs",
     "check:bundle": "node scripts/bundle-budget.mjs",
     "test:coverage": "npm test",

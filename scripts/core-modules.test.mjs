@@ -12,6 +12,7 @@ import { rand, clamp, dist2, lerp, invLerp, remap, randn, wrap } from '../creatu
 import { collectGameplayMetrics, getObjectiveProgress } from '../creature-sim/src/gameplay-objectives.js';
 import { makeGenes, mutateGenes, GENETIC_DISORDERS, MUTATION_TYPES, applyDisorderEffects, getExpressedGenes, getGeneticInfo, breedGenes, applyMutations } from '../creature-sim/src/genetics.js';
 import { SpatialGrid } from '../creature-sim/src/spatial-grid.js';
+import { ScalarField } from '../creature-sim/src/world-scalar-field.js';
 import { ObjectPool, Vector2DPool, ArrayPool, ParticlePool, PoolManager, TempObjectPool } from '../creature-sim/src/object-pool.js';
 import { LineageTracker } from '../creature-sim/src/lineage-tracker.js';
 import { updateAgeStage, updateLifeStage, getAgeSizeMultiplier, getAgeSpeedMultiplier, getAgeMetabolismMultiplier, getElderFadeAlpha, getAgeStageIcon } from '../creature-sim/src/creature-age.js';
@@ -178,6 +179,24 @@ test('randn: returns numbers (distribution smoke test)', () => {
     values.push(randn(0, 1));
   }
   assert.ok(values.every(v => typeof v === 'number' && isFinite(v)), 'randn should return finite numbers');
+});
+
+// ============================================================================
+// world-scalar-field.js
+// ============================================================================
+console.log('\n=== world-scalar-field.js ===');
+
+test('ScalarField.step: diffuses with zero-value boundaries', () => {
+  const field = new ScalarField(30, 20, 10, 0.5, 0.2);
+  field.add(1, 0, 10);
+
+  field.step();
+
+  assert.ok(Math.abs(field.get(1, 0) - 4) < 1e-6);
+  assert.ok(Math.abs(field.get(0, 0) - 0.25) < 1e-6);
+  assert.ok(Math.abs(field.get(2, 0) - 0.25) < 1e-6);
+  assert.ok(Math.abs(field.get(1, 1) - 0.25) < 1e-6);
+  assert.equal(field.get(0, 1), 0);
 });
 
 // ============================================================================

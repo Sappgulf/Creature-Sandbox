@@ -35,12 +35,28 @@ export class ScalarField {
     // Use double buffering - swap instead of allocate
     const diffuse025 = this.diffuse * 0.25;
     const oneMinusDiffuse = 1 - this.diffuse;
+    const width = this.w;
+    const height = this.h;
+    const source = this.grid;
+    const target = this.nextGrid;
+    const decay = this.decay;
 
-    for (let y = 0; y < this.h; y++) {
-      for (let x = 0; x < this.w; x++) {
-        let s = this.get(x, y) * oneMinusDiffuse;
-        s += diffuse025 * (this.get(x + 1, y) + this.get(x - 1, y) + this.get(x, y + 1) + this.get(x, y - 1));
-        this.nextGrid[this.idx(x, y)] = s * this.decay;
+    for (let y = 0; y < height; y++) {
+      const row = y * width;
+      const upRow = row - width;
+      const downRow = row + width;
+      const hasUp = y > 0;
+      const hasDown = y < height - 1;
+
+      for (let x = 0; x < width; x++) {
+        const index = row + x;
+        let neighborSum = 0;
+        if (x > 0) neighborSum += source[index - 1];
+        if (x < width - 1) neighborSum += source[index + 1];
+        if (hasUp) neighborSum += source[upRow + x];
+        if (hasDown) neighborSum += source[downRow + x];
+
+        target[index] = (source[index] * oneMinusDiffuse + diffuse025 * neighborSum) * decay;
       }
     }
     // Swap buffers instead of creating new array

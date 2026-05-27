@@ -38,10 +38,12 @@ The browser smoke lanes should leave current proof under:
 - `output/scenario-balance/summary.json`
 - `output/release-evidence-board.json`
 - `output/release-evidence-board.md`
+- `output/release-summary.md`
+- `output/browser-smoke-production/runtime-readiness.json`
 - `output/browser-smoke/desktop-upgrade-result.png`
 - `output/browser-smoke-worker/desktop-watch.png`
 
-Before tagging, inspect at least one desktop and one mobile screenshot from the default, main-fallback, and forced-worker smoke folders. Confirm the canvas is nonblank, the objective rail is compact, the Upgrade Hub result/history surfaces are visible, and screenshots do not show stale or overlapping runtime copy. Confirm `output/browser-smoke/runtime-readiness.json` reports `shippingDefault: "worker"`, `status: "shipping-default"`, `defaultReadiness.safeToDefaultWorker: true`, and `completedScenarioResultFlow.passed: true`. Confirm `output/browser-smoke-main/runtime-readiness.json` reports `status: "fallback-proof"`. Confirm `output/scenario-balance/summary.json` includes `stress_sanctuary` and `scavenger_bridge` with viable alive/food/stress metrics. The release evidence board only counts production smoke when `output/browser-smoke-production/target.json` contains a `/build-info.json` SHA that matches the current `HEAD`.
+Before tagging, inspect at least one desktop and one mobile screenshot from the default, main-fallback, forced-worker, and production smoke folders. Confirm the canvas is nonblank, the objective rail is compact, the Upgrade Hub result/history surfaces are visible, and screenshots do not show stale or overlapping runtime copy. Confirm `output/browser-smoke/runtime-readiness.json` reports `shippingDefault: "worker"`, `status: "shipping-default"`, `defaultReadiness.safeToDefaultWorker: true`, and `completedScenarioResultFlow.passed: true`. Confirm `output/browser-smoke-main/runtime-readiness.json` reports `status: "fallback-proof"`. Confirm `output/browser-smoke-production/runtime-readiness.json` reports `status: "shipping-default"` and finite frame metrics in the release evidence board. Confirm `output/scenario-balance/summary.json` includes `stress_sanctuary` and `scavenger_bridge` with viable alive/food/stress metrics. Confirm `output/release-summary.md` lists no missing or blocked proof before treating the build as release-ready. The release evidence board only counts production smoke when `output/browser-smoke-production/target.json` contains a `/build-info.json` SHA that matches the current `HEAD` and the production readiness gate passes.
 
 ## Manual Sanity
 

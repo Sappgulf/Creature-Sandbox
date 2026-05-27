@@ -39,7 +39,7 @@ import { domCache } from './dom-cache.js';
 import { gameState } from './game-state.js';
 import { InputManager } from './input-manager.js';
 import { UIController } from './ui-controller.js?v=20260526-tranche1';
-import { GameLoop } from './game-loop.js?v=20260527-perf1';
+import { GameLoop } from './game-loop.js?v=20260527-main-fallback1';
 import { errorHandler } from './error-handler.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
