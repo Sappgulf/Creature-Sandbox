@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import { visualizer } from 'rollup-plugin-visualizer';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -52,6 +53,17 @@ function copyRuntimeAssets() {
         recursive: true
       });
       fs.copyFileSync(path.join(appRoot, 'manifest.json'), path.join(outDir, 'manifest.json'));
+      const sha = process.env.VERCEL_GIT_COMMIT_SHA ||
+        process.env.GITHUB_SHA ||
+        execFileSync('git', ['rev-parse', 'HEAD'], {
+          cwd: __dirname,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore']
+        }).trim();
+      fs.writeFileSync(
+        path.join(outDir, 'build-info.json'),
+        `${JSON.stringify({ sha, generatedAt: new Date().toISOString() }, null, 2)}\n`
+      );
     }
   };
 }

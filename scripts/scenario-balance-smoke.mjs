@@ -1,0 +1,229 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import http from 'node:http';
+import net from 'node:net';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { chromium } from 'playwright';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(__dirname, '..');
+const outDir = path.join(repoRoot, 'output', 'scenario-balance');
+let port = Number(process.env.CREATURE_SCENARIO_BALANCE_PORT || 4174);
+let baseUrl = process.env.CREATURE_SCENARIO_BALANCE_URL || `http://127.0.0.1:${port}`;
+const reuseExternalServer = !!process.env.CREATURE_SCENARIO_BALANCE_URL;
+const soakMs = Number(process.env.CREATURE_SCENARIO_BALANCE_SOAK_MS || 75000);
+
+const scenarios = [
+  {
+    id: 'stress_sanctuary',
+    minAlive: 28,
+    minFood: 135,
+    maxStress: 48
+  },
+  {
+    id: 'scavenger_bridge',
+    minAlive: 38,
+    minFood: 125,
+    minPredators: 4,
+    maxStress: 90
+  }
+];
+
+function requestOk(url) {
+  return new Promise((resolve) => {
+    const req = http.get(url, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => {
+        if (body.length < 4096) body += chunk;
+      });
+      res.on('end', () => {
+        resolve(res.statusCode >= 200 && res.statusCode < 500 && body.includes('Creature Sandbox'));
+      });
+    });
+    req.on('error', () => resolve(false));
+    req.setTimeout(800, () => {
+      req.destroy();
+      resolve(false);
+    });
+  });
+}
+
+function canListen(portToCheck) {
+  return new Promise((resolve) => {
+    const probe = net.createServer();
+    probe.once('error', () => resolve(false));
+    probe.listen({ host: '127.0.0.1', port: portToCheck }, () => {
+      probe.close(() => resolve(true));
+    });
+  });
+}
+
+async function getRandomPort() {
+  return new Promise((resolve, reject) => {
+    const probe = net.createServer();
+    probe.once('error', reject);
+    probe.listen({ host: '127.0.0.1', port: 0 }, () => {
+      const address = probe.address();
+      const selectedPort = typeof address === 'object' && address ? address.port : null;
+      probe.close(() => {
+        if (!selectedPort) reject(new Error('Unable to allocate a scenario balance smoke port'));
+        else resolve(selectedPort);
+      });
+    });
+  });
+}
+
+async function waitForServer(url, timeoutMs = 20000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    if (await requestOk(url)) return true;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  return false;
+}
+
+async function startServerIfNeeded() {
+  if (reuseExternalServer) {
+    if (await requestOk(baseUrl)) return null;
+    throw new Error(`Expected a reusable Creature Sandbox server at ${baseUrl}, but it did not respond.`);
+  }
+
+  if (!(await canListen(port))) {
+    const fallbackPort = await getRandomPort();
+    console.log(`Scenario balance smoke: port ${port} is busy; using ${fallbackPort}.`);
+    port = fallbackPort;
+  }
+  baseUrl = `http://127.0.0.1:${port}`;
+  const child = spawn(
+    'npm',
+    ['run', 'dev', '--', '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
+    {
+      cwd: repoRoot,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, BROWSER: 'none' }
+    }
+  );
+  child.stdout.on('data', (chunk) => process.stdout.write(`[vite] ${chunk}`));
+  child.stderr.on('data', (chunk) => process.stderr.write(`[vite] ${chunk}`));
+  if (!(await waitForServer(baseUrl))) {
+    child.kill('SIGTERM');
+    throw new Error(`Timed out waiting for Vite at ${baseUrl}`);
+  }
+  return child;
+}
+
+async function waitForPageCondition(page, condition, label, timeoutMs = 12000) {
+  const started = Date.now();
+  let lastError = null;
+  while (Date.now() - started < timeoutMs) {
+    try {
+      if (await page.evaluate(condition)) return;
+    } catch (error) {
+      lastError = error;
+    }
+    await page.waitForTimeout(120);
+  }
+  const suffix = lastError ? ` Last error: ${lastError.message}` : '';
+  throw new Error(`Timed out waiting for ${label}.${suffix}`);
+}
+
+async function advance(page, ms) {
+  let remaining = Math.max(0, Number(ms) || 0);
+  while (remaining > 0) {
+    const step = Math.min(500, remaining);
+    await page.evaluate((stepMs) => window.advanceTime?.(stepMs), step);
+    remaining -= step;
+  }
+}
+
+async function runScenario(browser, scenario) {
+  console.log(`Scenario balance: ${scenario.id}`);
+  const context = await browser.newContext({
+    viewport: { width: 1280, height: 800 },
+    deviceScaleFactor: 1
+  });
+  const page = await context.newPage();
+  const errors = [];
+  page.on('console', (msg) => {
+    if (['error', 'warning'].includes(msg.type())) {
+      errors.push({ type: msg.type(), text: msg.text() });
+    }
+  });
+  page.on('pageerror', (error) => {
+    errors.push({ type: 'pageerror', text: error.message });
+  });
+
+  const url = `${baseUrl}/?smoke=1&worker=0&v=scenario-balance-${Date.now()}-${scenario.id}`;
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 12000 });
+  await waitForPageCondition(page, () => typeof window.render_game_to_text === 'function', 'render_game_to_text');
+  await waitForPageCondition(page, () => typeof window.__creatureSmoke?.startScenario === 'function', 'creature smoke hooks');
+  await waitForPageCondition(page, () => {
+    const state = JSON.parse(window.render_game_to_text());
+    return state.ui && state.ui.homeVisible === false && state.summary.totalCreatures > 0;
+  }, 'seeded smoke world');
+  await page.evaluate(() => window.__creatureSmoke?.setPaused?.(true));
+
+  const start = await page.evaluate((id) => window.__creatureSmoke.startScenario(id), scenario.id);
+  assert.equal(start?.playable?.scenario?.id || start?.scenario?.id, scenario.id, `${scenario.id}: scenario should start`);
+  await advance(page, soakMs);
+  const state = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  const metrics = state.playable?.metrics || {};
+  console.log(
+    `  ${scenario.id}: elapsed ${Number(state.playable?.elapsed || 0).toFixed(1)}s, ` +
+    `alive ${Number(metrics.alive || 0)}, food ${Number(metrics.food || 0)}, ` +
+    `predators ${Number(metrics.predators || 0)}, stress ${Number(metrics.averageStress || 0).toFixed(1)}`
+  );
+
+  assert.equal(state.playable?.active, true, `${scenario.id}: scenario should remain active during balance soak`);
+  assert.notEqual(state.playable?.state, 'failed', `${scenario.id}: scenario should not fail during balance soak`);
+  assert.ok(Number(state.playable?.elapsed || 0) >= soakMs / 1000 - 5, `${scenario.id}: scenario clock should advance`);
+  assert.ok(Number(metrics.alive || 0) >= scenario.minAlive, `${scenario.id}: population should stay viable`);
+  assert.ok(Number(metrics.food || 0) >= scenario.minFood, `${scenario.id}: food should not collapse to zero`);
+  if (scenario.minPredators) {
+    assert.ok(Number(metrics.predators || 0) >= scenario.minPredators, `${scenario.id}: predators should remain viable`);
+  }
+  assert.ok(Number(metrics.averageStress || 0) <= scenario.maxStress, `${scenario.id}: stress should stay recoverable`);
+  assert.deepEqual(errors, [], `${scenario.id}: browser console should stay warning/error free`);
+
+  const screenshotPath = path.join(outDir, `${scenario.id}.png`);
+  await page.screenshot({ path: screenshotPath });
+  await fs.writeFile(path.join(outDir, `${scenario.id}.json`), JSON.stringify({ scenario, soakMs, state, errors }, null, 2));
+  await context.close();
+  return {
+    id: scenario.id,
+    soakMs,
+    runtime: state.systems?.workerMode ? 'worker' : 'main',
+    elapsed: Number(state.playable?.elapsed || 0),
+    progress: Number(state.playable?.progress || 0),
+    metrics: {
+      alive: Number(metrics.alive || 0),
+      food: Number(metrics.food || 0),
+      predators: Number(metrics.predators || 0),
+      averageStress: Number(metrics.averageStress || 0)
+    },
+    screenshot: path.relative(repoRoot, screenshotPath)
+  };
+}
+
+await fs.mkdir(outDir, { recursive: true });
+const server = await startServerIfNeeded();
+let browser;
+try {
+  browser = await chromium.launch({ headless: true });
+  const results = [];
+  for (const scenario of scenarios) {
+    results.push(await runScenario(browser, scenario));
+  }
+  await fs.writeFile(path.join(outDir, 'summary.json'), JSON.stringify({
+    generatedAt: new Date().toISOString(),
+    baseUrl,
+    scenarios: results
+  }, null, 2));
+  console.log(`Scenario balance smoke passed: ${results.map(result => result.id).join(', ')}`);
+} finally {
+  if (browser) await browser.close();
+  if (server) server.kill('SIGTERM');
+}

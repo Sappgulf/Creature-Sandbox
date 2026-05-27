@@ -221,13 +221,13 @@ export const PLAYABLE_SCENARIOS = [
     icon: '🛟',
     name: 'Stress Sanctuary',
     fantasy: 'Turn a tense crowd into a calmer refuge without losing population.',
-    objective: 'Keep 34 creatures alive, stress under 48, and food above 135.',
+    objective: 'Keep 28 creatures alive, stress under 48, and food above 135.',
     targetSeconds: 210,
-    minAlive: 34,
+    minAlive: 28,
     minFood: 135,
     maxStress: 48,
-    setup: { herbivore: 40, omnivore: 7, predator: 4, food: 190, props: ['calm', 'spring', 'fan'] },
-    tuning: { mode: 'balanced', foodRate: 1.05, disasters: true, season: 'spring' },
+    setup: { herbivore: 42, omnivore: 6, predator: 0, food: 260, props: ['calm', 'spring', 'fan'] },
+    tuning: { mode: 'balanced', foodRate: 1.24, disasters: false, autoBalance: false, season: 'spring' },
     steps: ['Calm the densest herd first', 'Paint food outside crowded pockets', 'Watch stress before spawning more life']
   },
   {
@@ -236,13 +236,13 @@ export const PLAYABLE_SCENARIOS = [
     icon: '🌉',
     name: 'Scavenger Bridge',
     fantasy: 'Keep omnivores useful while prey and predators cross the same corridor.',
-    objective: 'Survive with 38+ creatures, 6+ predators, and a food buffer.',
+    objective: 'Survive with 38+ creatures, 4+ predators, and a food buffer.',
     targetSeconds: 225,
     minAlive: 38,
-    minPredators: 6,
+    minPredators: 4,
     minFood: 125,
-    setup: { herbivore: 44, omnivore: 10, predator: 7, food: 220, props: ['conveyor', 'calm', 'bounce'] },
-    tuning: { mode: 'frontier', foodRate: 0.98, disasters: true, season: 'autumn' },
+    setup: { herbivore: 56, omnivore: 10, predator: 8, food: 290, props: ['conveyor', 'calm', 'bounce'] },
+    tuning: { mode: 'frontier', foodRate: 1.18, disasters: false, autoBalance: false, season: 'autumn' },
     steps: ['Feed the bridge exits', 'Follow scavengers after hunts', 'Use calm zones if the corridor panics']
   }
 ];
@@ -468,6 +468,9 @@ export class PlayableScenarios {
     if (typeof tuning.disasters === 'boolean') {
       this.world.randomDisasters = tuning.disasters;
     }
+    if (typeof tuning.autoBalance === 'boolean' && this.world.autoBalanceSettings) {
+      this.world.autoBalanceSettings.enabled = tuning.autoBalance;
+    }
     if (tuning.season && this.world.environment?.seasonCycle) {
       const idx = this.world.environment.seasonCycle.indexOf(tuning.season);
       if (idx >= 0) {
@@ -503,7 +506,17 @@ export class PlayableScenarios {
       }
     ];
 
-    if (scenario.minFood) {
+    if (scenario.minPredators) {
+      goals.push({
+        id: `${scenario.id}_predators`,
+        type: 'predator_count',
+        icon: '🦁',
+        target: scenario.minPredators,
+        description: `Keep ${scenario.minPredators}+ predators alive`,
+        progress: 0,
+        completed: false
+      });
+    } else if (scenario.minFood) {
       goals.push({
         id: `${scenario.id}_food`,
         type: 'food_available',

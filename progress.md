@@ -716,3 +716,29 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - first `npm run smoke:production` ❌ found production sprite manifest missing (`registeredSprites < 20`); after the Vite asset-copy fix and production redeploy, `curl` to `/assets/sprites/sprite-manifest.json` returned HTTP `200` and `npm run smoke:production` ✅ passed desktop/mobile flows.
   - `npm run evidence:release` ✅ produced `output/release-evidence-board.json` and `.md` with local, worker, and production lanes present.
 - Residual note: shipping default remains `main`; worker is now a candidate-ready opt-in lane for a defaulting discussion, not an automatic default change.
+
+2026-05-27
+- Approved tranche 1-4: worker default product decision, production smoke in CI, longer scenario balance proof, and continued desktop frame-time polish.
+- Implemented:
+  - worker runtime is now the shipping default, with `?worker=0` and `npm run smoke:main` preserving explicit main-thread fallback proof.
+  - browser smoke now separates default, main fallback, and forced-worker output folders and writes `target.json` build metadata for release evidence.
+  - Vite builds write `build-info.json`; the release evidence board rejects stale production smoke when the artifact SHA does not match `HEAD`.
+  - added the GitHub `release-smoke` workflow to run static/unit/build/browser/scenario/production proof after pushes to `main`.
+  - added `npm run smoke:scenarios` for 75-second Stress Sanctuary and Scavenger Bridge balance soaks.
+  - tuned Stress Sanctuary and Scavenger Bridge setup, disabled global auto-balance for those objective-owned runs, and prioritized predator goal cards when a scenario has a predator objective.
+  - refreshed README, known issues, feature matrix, release checklist, smoke docs, and changelog for the worker-default/main-fallback split.
+- Verification:
+  - `node --check` for touched JS/config/smoke files ✅
+  - `git diff --check` ✅
+  - `npm run lint` ✅
+  - `npm test` ✅ (155 passing)
+  - `npm run build` ✅ (main app JS `585.95 kB` / `171.85 kB` gzip; `build-info.json` emitted)
+  - `npm run check:bundle` ✅
+  - `npm run smoke:browser` ✅ (`shipping-default`, desktop avg `20.93ms` / p95 `33.4ms`, `0.9605ms/frame` profiled non-`drawImage`; mobile p95 `<= 17.7ms`)
+  - `npm run smoke:main` ✅ (`fallback-proof`, desktop avg `34ms` / p95 `50.1ms`, `3.344ms/frame` profiled non-`drawImage`; mobile p95 `<= 17.7ms`)
+  - `npm run smoke:worker` ✅ (`candidate-opt-in`, desktop avg `21.03ms` / p95 `33.4ms`, `0.9452ms/frame` profiled non-`drawImage`; mobile p95 `<= 17.6ms`)
+  - `npm run smoke:scenarios` ✅ (Stress Sanctuary: `37` alive, `534` food, `1.25` stress; Scavenger Bridge: `48` alive, `431` food, `4` predators)
+  - external `develop-web-game` client ✅ captured `output/web-game/worker-default-final/shot-0.png` and `state-0.json` with worker mode true and 0 pending worker messages.
+  - Playwright local smoke URL ✅ captured `output/playwright-final-local.png`; warning/error console output was 0.
+  - `npm run evidence:release` ✅ local proof lanes present; production lane correctly flagged stale until the pushed SHA is deployed.
+- Residual note: desktop main-thread mode is now explicitly fallback-only. Worker default proof is green locally; production proof must be rerun after the pushed commit is live so `/build-info.json` matches `HEAD`.

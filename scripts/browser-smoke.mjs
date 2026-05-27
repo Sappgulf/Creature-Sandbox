@@ -12,9 +12,22 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 const headed = process.argv.includes('--headed');
 const keepServer = process.argv.includes('--keep-server');
-const workerMode = process.argv.includes('--worker') || process.env.CREATURE_SMOKE_WORKER === '1';
+const forceWorkerMode = process.argv.includes('--worker') || process.env.CREATURE_SMOKE_WORKER === '1';
+const forceMainMode = process.argv.includes('--main') || process.env.CREATURE_SMOKE_MAIN === '1';
+const shippingDefaultRuntime = 'worker';
+if (forceWorkerMode && forceMainMode) {
+  throw new Error('Choose only one forced runtime smoke target: --worker or --main.');
+}
+const forcedRuntimeMode = forceWorkerMode ? 'worker' : (forceMainMode ? 'main' : null);
+const expectedRuntimeMode = forcedRuntimeMode || shippingDefaultRuntime;
+const workerMode = expectedRuntimeMode === 'worker';
 const sampleRealtime = !process.argv.includes('--no-realtime');
-const defaultOutDir = path.join('output', workerMode ? 'browser-smoke-worker' : 'browser-smoke');
+const defaultOutDir = path.join(
+  'output',
+  forcedRuntimeMode === 'worker'
+    ? 'browser-smoke-worker'
+    : (forcedRuntimeMode === 'main' ? 'browser-smoke-main' : 'browser-smoke')
+);
 const outDir = path.resolve(repoRoot, process.env.CREATURE_SMOKE_OUT_DIR || defaultOutDir);
 const explicitBaseUrl = !!process.env.CREATURE_SMOKE_URL;
 const explicitPort = !!process.env.CREATURE_SMOKE_PORT;
@@ -66,6 +79,57 @@ function requestOk(url) {
       resolve(false);
     });
   });
+}
+
+function requestJson(url) {
+  return new Promise((resolve) => {
+    let client = http;
+    try {
+      client = new URL(url).protocol === 'https:' ? https : http;
+    } catch {
+      resolve(null);
+      return;
+    }
+
+    const req = client.get(url, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => {
+        if (body.length < 32768) body += chunk;
+      });
+      res.on('end', () => {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          resolve(null);
+          return;
+        }
+        try {
+          resolve(JSON.parse(body));
+        } catch {
+          resolve(null);
+        }
+      });
+    });
+    req.on('error', () => resolve(null));
+    req.setTimeout(1200, () => {
+      req.destroy();
+      resolve(null);
+    });
+  });
+}
+
+async function resolveTargetInfo() {
+  const buildInfoUrl = new URL('build-info.json', baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`).toString();
+  return {
+    generatedAt: new Date().toISOString(),
+    baseUrl,
+    mode: workerMode ? 'worker' : 'main',
+    expectedRuntimeMode,
+    forcedRuntimeMode,
+    shippingDefault: shippingDefaultRuntime,
+    sampleRealtime,
+    buildInfoUrl,
+    buildInfo: await requestJson(buildInfoUrl)
+  };
 }
 
 function canListen(portToCheck) {
@@ -417,24 +481,30 @@ function summarizeRuntimeReadiness(results) {
     Number.isFinite(desktopProfiledNonDraw) &&
     desktopProfiledNonDraw <= 1.5 &&
     mobileP95Max <= 20;
+  const defaultRun = forcedRuntimeMode === null;
   const safeToDefaultWorker = workerMode && workerCandidate;
+  const status = workerMode
+    ? (workerCandidate ? (defaultRun ? 'shipping-default' : 'candidate-opt-in') : 'needs-more-proof')
+    : (defaultRun ? 'shipping-default' : 'fallback-proof');
 
   return {
     generatedAt: new Date().toISOString(),
     mode: workerMode ? 'worker' : 'main',
-    shippingDefault: 'main',
-    defaultChanged: false,
-    status: workerMode
-      ? (workerCandidate ? 'candidate-opt-in' : 'needs-more-proof')
-      : 'shipping-default',
+    shippingDefault: shippingDefaultRuntime,
+    defaultChanged: shippingDefaultRuntime === 'worker',
+    status,
     workerCandidate,
     defaultReadiness: {
       safeToDefaultWorker,
       reason: workerMode
         ? (workerCandidate
-          ? 'Worker smoke meets the opt-in candidate frame thresholds and proves completed-scenario result flow; keep shipping default at main until an explicit release decision changes it.'
-          : 'Worker smoke missed one or more readiness gates in this run; keep worker opt-in until frame thresholds, runtime status, and completed-scenario result proof all pass.')
-        : 'Main-thread mode remains the default release path.'
+          ? (defaultRun
+            ? 'Worker is the shipping default and this run meets frame, runtime, and completed-scenario result gates.'
+            : 'Forced worker smoke meets the candidate frame, runtime, and completed-scenario result gates.')
+          : (defaultRun
+            ? 'Worker is configured as the shipping default but missed one or more gates; treat this as a release blocker and use explicit main fallback only until fixed.'
+            : 'Forced worker smoke missed one or more readiness gates in this run; keep forced worker promotion held until frame thresholds, runtime status, and completed-scenario result proof all pass.'))
+        : 'Main-thread mode remains available as an explicit fallback path.'
     },
     completedScenarioResultFlow: {
       required: true,
@@ -484,7 +554,9 @@ async function runScenario(browser, scenario) {
     errors.push({ type: 'pageerror', text: error.message });
   });
 
-  const workerParam = workerMode ? '&worker=1' : '';
+  const workerParam = forcedRuntimeMode === 'worker'
+    ? '&worker=1'
+    : (forcedRuntimeMode === 'main' ? '&worker=0' : '');
   const url = `${baseUrl}/?smoke=1${workerParam}&v=${Date.now()}-${scenario.name}`;
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 12000 });
   await waitForPageCondition(page, () => typeof window.render_game_to_text === 'function', 'render_game_to_text');
@@ -499,8 +571,8 @@ async function runScenario(browser, scenario) {
   await advance(page, 900);
   let state = await readGameState(page);
   assert.equal(!!state.systems?.workerMode, workerMode, `${scenario.name}: worker mode should match smoke target`);
-  assert.equal(state.systems?.runtimeModePreference, workerMode ? 'worker' : 'main', `${scenario.name}: runtime mode preference should match active smoke target`);
-  assert.equal(state.systems?.runtimeModeSource, workerMode ? 'query' : 'default', `${scenario.name}: runtime mode source should be explicit`);
+  assert.equal(state.systems?.runtimeModePreference, expectedRuntimeMode, `${scenario.name}: runtime mode preference should match active smoke target`);
+  assert.equal(state.systems?.runtimeModeSource, forcedRuntimeMode ? 'query' : 'default', `${scenario.name}: runtime mode source should be explicit`);
   assert.equal(state.ui.homeVisible, false, `${scenario.name}: home should be hidden for smoke`);
   assert.equal(state.ui.mobileLayout, scenario.mobile, `${scenario.name}: mobile layout should match viewport`);
   assert.ok(state.summary.totalCreatures >= (scenario.mobile ? 35 : 55), `${scenario.name}: should seed creatures`);
@@ -531,7 +603,7 @@ async function runScenario(browser, scenario) {
   assert.ok(catalog.scenarios.some(item => item.id === 'variant_crossing'), `${scenario.name}: variant crossing scenario should be available`);
   const runtimeControl = await page.evaluate(() => window.__creatureSmoke.runtimeModeControlState());
   assert.equal(runtimeControl.exists, true, `${scenario.name}: runtime mode UI toggle should exist`);
-  assert.equal(runtimeControl.activeMode, workerMode ? 'worker' : 'main', `${scenario.name}: runtime mode UI toggle should reflect active runtime mode`);
+  assert.equal(runtimeControl.activeMode, expectedRuntimeMode, `${scenario.name}: runtime mode UI toggle should reflect active runtime mode`);
   if (scenario.mobile) {
     assert.equal(state.selectedCreature, null, `${scenario.name}: opening should keep mobile playfield uncluttered before manual selection`);
   } else {
@@ -643,7 +715,7 @@ async function runScenario(browser, scenario) {
     const perf = await page.evaluate(() => window.__creatureSmoke.perfBudget());
     assert.equal(!!perf.runtime?.workerMode, true, `${scenario.name}: worker perf runtime should expose worker mode truth`);
     assert.equal(perf.runtime?.runtimeModePreference, 'worker', `${scenario.name}: worker perf runtime should expose active worker preference`);
-    assert.equal(perf.runtime?.runtimeModeSource, 'query', `${scenario.name}: worker perf runtime should expose query source`);
+    assert.equal(perf.runtime?.runtimeModeSource, forcedRuntimeMode ? 'query' : 'default', `${scenario.name}: worker perf runtime should expose runtime source`);
     assert.equal(perf.runtime?.workerReady, true, `${scenario.name}: worker perf runtime should expose ready state`);
     assert.equal(perf.runtime?.workerPendingMessages, 0, `${scenario.name}: worker perf runtime should have no queued startup messages`);
     assert.equal(perf.runtime?.workerDiagnostics?.ready, true, `${scenario.name}: worker diagnostics should report ready`);
@@ -998,6 +1070,8 @@ await fs.mkdir(outDir, { recursive: true });
 const server = await startServerIfNeeded();
 let browser;
 try {
+  const targetInfo = await resolveTargetInfo();
+  await fs.writeFile(path.join(outDir, 'target.json'), JSON.stringify(targetInfo, null, 2));
   browser = await chromium.launch({ headless: !headed });
   await captureHomeSnapshot(browser);
   const results = [];
@@ -1008,7 +1082,7 @@ try {
   const runtimeReadiness = summarizeRuntimeReadiness(results);
   await fs.writeFile(path.join(outDir, 'runtime-readiness.json'), JSON.stringify(runtimeReadiness, null, 2));
   console.log(
-    `Runtime readiness (${runtimeReadiness.mode}): ${runtimeReadiness.status}; shipping default=${runtimeReadiness.shippingDefault}; worker default=${runtimeReadiness.defaultReadiness.safeToDefaultWorker ? 'ready' : 'held'}`
+    `Runtime readiness (${runtimeReadiness.mode}): ${runtimeReadiness.status}; shipping default=${runtimeReadiness.shippingDefault}; worker gate=${runtimeReadiness.defaultReadiness.safeToDefaultWorker ? 'ready' : 'held'}`
   );
   console.log(`Browser smoke passed${workerMode ? ' (worker)' : ''}: ${results.map(result => result.scenario).join(', ')}`);
 } finally {

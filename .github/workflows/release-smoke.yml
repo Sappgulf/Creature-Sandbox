@@ -1,0 +1,85 @@
+name: Release Smoke
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Static and unit checks
+        run: |
+          git diff --check
+          node --check scripts/browser-smoke.mjs
+          node --check scripts/scenario-balance-smoke.mjs
+          node --check scripts/release-evidence-board.mjs
+          node --check vite.config.js
+          npm run lint
+          npm test
+
+      - name: Build and bundle guard
+        run: |
+          npm run build
+          npm run check:bundle
+
+      - name: Local browser smoke
+        run: npm run smoke:browser
+
+      - name: Main-thread fallback smoke
+        run: npm run smoke:main
+
+      - name: Forced worker smoke
+        run: npm run smoke:worker
+
+      - name: Scenario balance smoke
+        run: npm run smoke:scenarios
+
+      - name: Wait for production alias
+        run: |
+          for i in {1..36}; do
+            BUILD_SHA="$(curl -fsS https://creature-sandbox.vercel.app/build-info.json | node -pe "JSON.parse(require('fs').readFileSync(0, 'utf8')).sha" || true)"
+            if [ "$BUILD_SHA" = "${GITHUB_SHA}" ]; then
+              curl -fsS https://creature-sandbox.vercel.app/assets/sprites/sprite-manifest.json >/dev/null
+              exit 0
+            fi
+            echo "Waiting for production alias to serve ${GITHUB_SHA}; current=${BUILD_SHA:-unavailable}"
+            sleep 10
+          done
+          echo "Production alias did not serve ${GITHUB_SHA} before timeout." >&2
+          exit 1
+
+      - name: Production browser smoke
+        run: npm run smoke:production
+
+      - name: Release evidence board
+        run: npm run evidence:release
+
+      - name: Upload smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-artifacts
+          path: output/
+          if-no-files-found: ignore

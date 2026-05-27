@@ -246,15 +246,31 @@ Run the checked-in browser smoke before shipping gameplay/UI changes:
 npm run smoke:browser
 ```
 
-The script starts Vite if needed, captures the home screen, opens desktop plus compact/large mobile browser contexts, verifies the smoke sandbox starts, asserts the expanded playable catalog includes `Drought Rescue`, `Apex Balance`, and `Variant Crossing`, starts the `First Ecosystem` playable scenario, checks Director guidance, selects a creature, spawns a predator, paints food, toggles Watch Mode and God Mode, verifies compact God panel sizing on mobile, opens Moments, exercises food/calm/chaos/prop/remove god tools, runs deterministic throw/prop-trigger probes, completes a scenario through the smoke hook, focuses the Upgrade Hub result anchor, verifies the completed scenario result card and Run History are visible in the panel, asserts fallback achievement-toast bounds when desktop side panels are open, applies an Upgrade Hub recipe, switches readability mode, saves a nickname, runs an action card, creates a postcard and balance probe, runs in-page save/load plus slot-preview thumbnail roundtrips, captures screenshots/state under `output/browser-smoke/`, records a real-time frame-pacing sample with scoped `drawImage` volume/timing and profiled non-`drawImage` main-thread scope cost into each JSON artifact, and fails on browser warnings or page errors.
+The script starts Vite if needed, captures the home screen, opens desktop plus compact/large mobile browser contexts, writes `target.json` for the tested URL/build metadata, and verifies the shipping-default worker runtime. It exercises startup selection, manual spawn, food painting, Watch Mode, snapshot-only save serialization/load parity, save-slot thumbnail preview, runtime preference storage roundtrips, `Apex Balance` scenario metadata, a deterministic scenario soak, completed-scenario result cards, Run History, screenshots/state under `output/browser-smoke/`, frame-pacing plus `drawImage` and non-`drawImage` scope samples, and browser warning/page-error failure.
 
-Run the opt-in worker runtime lane before changing proxy, bridge, worker, or release-smoke code:
+Run the explicit main-thread fallback lane before changing shared gameplay, save/load, or runtime-selection code:
+
+```bash
+npm run smoke:main
+```
+
+The main fallback lane uses `?worker=0`, runs the full desktop plus compact/large mobile flow, writes `output/browser-smoke-main/`, and reports `status: "fallback-proof"` in `runtime-readiness.json`.
+
+Run the forced worker runtime lane before changing proxy, bridge, worker, or release-smoke code:
 
 ```bash
 npm run smoke:worker
 ```
 
-The worker lane opens the same desktop plus compact/large mobile browser contexts with `?worker=1`, verifies the worker runtime metadata and runtime-toggle UI, exercises startup selection, manual spawn, food painting, Watch Mode, snapshot-only save serialization/load parity, save-slot thumbnail preview, runtime preference storage roundtrips, worker scenario start/save metadata for `Apex Balance`, an extended deterministic scenario soak, completed-scenario result cards, Run History, screenshots/state under `output/browser-smoke-worker/`, and records the same frame-pacing plus `drawImage` and non-`drawImage` scope sample. It also writes `output/browser-smoke-worker/runtime-readiness.json`, including worker ready/queued-message status, worker error/snapshot counts, completed-scenario result proof, frame thresholds, and the explicit "shipping default remains main" decision. Treat `needs-more-proof` as a functional pass but a defaulting hold; treat `candidate-opt-in` plus `defaultReadiness.safeToDefaultWorker: true` as proof for a worker-default discussion, not as a default change by itself.
+The forced worker lane opens the same desktop plus compact/large mobile browser contexts with `?worker=1`, verifies the worker runtime metadata and runtime-toggle UI, exercises startup selection, manual spawn, food painting, Watch Mode, snapshot-only save serialization/load parity, save-slot thumbnail preview, runtime preference storage roundtrips, worker scenario start/save metadata for `Apex Balance`, an extended deterministic scenario soak, completed-scenario result cards, Run History, screenshots/state under `output/browser-smoke-worker/`, and records the same frame-pacing plus `drawImage` and non-`drawImage` scope sample. It also writes `output/browser-smoke-worker/runtime-readiness.json`, including worker ready/queued-message status, worker error/snapshot counts, completed-scenario result proof, and frame thresholds.
+
+Run the longer new-scenario balance soak after changing playable scenario setup, tuning, or objectives:
+
+```bash
+npm run smoke:scenarios
+```
+
+The scenario balance lane runs `Stress Sanctuary` and `Scavenger Bridge` under the deterministic main-thread fallback for a 75-second soak, checks population/food/stress viability, captures screenshots/state under `output/scenario-balance/`, and writes `output/scenario-balance/summary.json`.
 
 Run the public Vercel smoke after deployment or production-health work:
 
@@ -263,7 +279,7 @@ npm run smoke:production
 npm run evidence:release
 ```
 
-The production lane reuses the browser smoke against `https://creature-sandbox.vercel.app`, accepts built Vite asset entrypoints, writes `output/browser-smoke-production/`, and refreshes `output/release-evidence-board.json` plus `output/release-evidence-board.md`.
+The production lane reuses the browser smoke against `https://creature-sandbox.vercel.app`, accepts built Vite asset entrypoints, writes `output/browser-smoke-production/`, and refreshes `output/release-evidence-board.json` plus `output/release-evidence-board.md`. The release evidence board treats production proof as stale unless `target.json` shows a `/build-info.json` SHA matching the current commit.
 
 Run the post-build bundle guard after `npm run build`:
 

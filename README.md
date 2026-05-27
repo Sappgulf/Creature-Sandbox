@@ -335,7 +335,7 @@ See `OPTIMIZATION_REPORT.md` for detailed analysis.
 - **HTML5 Canvas** (2D rendering)
 - **Vite** (dev server + production bundler)
 - **ESLint** (code quality)
-- **148 unit tests** (core modules)
+- **155 unit tests** (core modules)
 - **Static hosting** (Vercel, Netlify, GitHub Pages compatible)
 
 ---
@@ -346,8 +346,11 @@ See `OPTIMIZATION_REPORT.md` for detailed analysis.
 npm run dev        # Start dev server with HMR on port 8000
 npm run build     # Build for production (outputs to dist/)
 npm run preview   # Preview production build
-npm test         # Run all unit tests (148 tests)
-npm run smoke:browser # Run desktop/mobile browser smoke proof
+npm test          # Run all unit tests (155 checks)
+npm run smoke:browser    # Run shipping-default worker browser smoke proof
+npm run smoke:main       # Run explicit main-thread fallback browser smoke proof
+npm run smoke:scenarios  # Run longer balance soaks for newer scenarios
+npm run smoke:production # Run browser smoke against the Vercel production alias
 npm run lint     # Check code quality
 npm run lint:fix # Auto-fix lint issues
 ```
@@ -361,7 +364,7 @@ The codebase is organized into focused modules:
 - `creature-sim/src/renderer*.js` — Renderer (features-viz, minimap, creatures)
 - `creature-sim/src/ui-controller*.js` — UI (spawn, god-mode, watch, panels, game-mode, exports)
 - `creature-sim/src/input*.js` — Input (pointer, touch handlers)
-- `scripts/*.test.mjs` — Unit tests (148 tests)
+- `scripts/*.test.mjs` — Unit tests (155 checks)
 
 **Large files split:**
 - `creature.js`: 3377 → 2266 lines

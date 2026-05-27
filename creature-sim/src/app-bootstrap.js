@@ -80,6 +80,7 @@ function isNotificationSystem(candidate) {
 }
 
 const RUNTIME_MODE_STORAGE_KEY = 'creature-sandbox-runtime-mode';
+const DEFAULT_RUNTIME_MODE = 'worker';
 
 function normalizeRuntimeMode(value) {
   const mode = String(value || '').trim().toLowerCase();
@@ -108,13 +109,13 @@ function writeStoredRuntimeMode(mode) {
 }
 
 function getRuntimeModePreference() {
-  if (typeof window === 'undefined') return { mode: 'main', source: 'default', stored: null };
+  if (typeof window === 'undefined') return { mode: DEFAULT_RUNTIME_MODE, source: 'default', stored: null };
   const params = new URLSearchParams(window.location.search);
   const queryMode = normalizeRuntimeMode(params.get('worker'));
   if (queryMode) return { mode: queryMode, source: 'query', stored: readStoredRuntimeMode() };
   const stored = readStoredRuntimeMode();
   if (stored) return { mode: stored, source: 'storage', stored };
-  return { mode: 'main', source: 'default', stored: null };
+  return { mode: DEFAULT_RUNTIME_MODE, source: 'default', stored: null };
 }
 
 function getDevToolsConfig() {
@@ -182,7 +183,7 @@ function getRuntimeProfile() {
   const compactViewport = mobileViewport && shortEdge > 0 && shortEdge <= 430;
   const deviceMemory = Number(navigator.deviceMemory || 0);
   const lowMemory = mobileViewport && deviceMemory > 0 && deviceMemory <= 4;
-  const renderScale = mobileViewport ? (compactViewport || lowMemory ? 0.82 : 0.9) : 0.86;
+  const renderScale = mobileViewport ? (compactViewport || lowMemory ? 0.82 : 0.9) : 0.82;
 
   return {
     mobile: mobileViewport,
@@ -366,8 +367,8 @@ export function initializeApp() {
   // ============================================================================
 
   // Performance Settings
-  // Default to in-thread simulation for full feature compatibility. The worker
-  // runtime can be enabled per URL or remembered as a local candidate mode.
+  // Worker simulation is the product default after candidate-ready smoke proof.
+  // Main-thread mode remains available through ?worker=0 or a saved preference.
   const runtimeModePreference = getRuntimeModePreference();
   const USE_SIM_WORKER = runtimeModePreference.mode === 'worker';
   const startupSeed = getRuntimeProfile().startupSeed;
