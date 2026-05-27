@@ -8,7 +8,7 @@ import { Creature } from './creature.js';
 import './creature-features.js'; // Load feature extensions
 import { makeGenes } from './genetics.js';
 import { Camera } from './camera.js?v=20260524-opening1';
-import { Renderer } from './renderer.js?v=20260527-tranche2';
+import { Renderer } from './renderer.js?v=20260527-tranche4';
 import { ToolController } from './tools.js';
 import { AnalyticsTracker } from './analytics.js';
 import { LineageTracker } from './lineage-tracker.js';
@@ -38,7 +38,7 @@ import { domCache } from './dom-cache.js';
 import { gameState } from './game-state.js';
 import { InputManager } from './input-manager.js';
 import { UIController } from './ui-controller.js?v=20260526-tranche1';
-import { GameLoop } from './game-loop.js?v=20260526-tranche1';
+import { GameLoop } from './game-loop.js?v=20260527-tranche4';
 import { errorHandler } from './error-handler.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
@@ -56,7 +56,7 @@ import { MemoryLearningSystem } from './memory-learning.js';
 import { ChallengeSystem } from './challenge-system.js?v=20260524-opening2';
 import { getDebugFlags } from './debug-flags.js';
 import { setupDevExports } from './dev-exports.js';
-import { UpgradeController } from './upgrade-controller.js?v=20260527-tranche2';
+import { UpgradeController } from './upgrade-controller.js?v=20260527-tranche4';
 import {
   GameDirector,
   GodToolSystem,
@@ -182,7 +182,7 @@ function getRuntimeProfile() {
   const compactViewport = mobileViewport && shortEdge > 0 && shortEdge <= 430;
   const deviceMemory = Number(navigator.deviceMemory || 0);
   const lowMemory = mobileViewport && deviceMemory > 0 && deviceMemory <= 4;
-  const renderScale = mobileViewport ? (compactViewport || lowMemory ? 0.82 : 0.9) : 1;
+  const renderScale = mobileViewport ? (compactViewport || lowMemory ? 0.82 : 0.9) : 0.86;
 
   return {
     mobile: mobileViewport,
@@ -488,6 +488,38 @@ export function initializeApp() {
         }
       });
     }
+
+    const workerRuntimeToggle = document.getElementById('toggle-worker-runtime');
+    const runtimeModeNote = document.getElementById('runtime-mode-note');
+    const syncRuntimeModeControl = () => {
+      if (workerRuntimeToggle) {
+        workerRuntimeToggle.checked = (readStoredRuntimeMode() || runtimeModePreference.mode) === 'worker';
+      }
+      if (runtimeModeNote) {
+        const storedMode = readStoredRuntimeMode();
+        const activeLabel = USE_SIM_WORKER ? 'Worker runtime is active' : 'Main-thread runtime is active';
+        const nextLabel = storedMode
+          ? `Next load preference: ${storedMode}.`
+          : 'No saved runtime preference.';
+        const queryLabel = runtimeModePreference.source === 'query'
+          ? ' URL query overrides this load.'
+          : '';
+        runtimeModeNote.textContent = `${activeLabel}. ${nextLabel}${queryLabel}`;
+      }
+    };
+    syncRuntimeModeControl();
+    workerRuntimeToggle?.addEventListener('change', () => {
+      const mode = workerRuntimeToggle.checked ? 'worker' : 'main';
+      const stored = writeStoredRuntimeMode(mode);
+      syncRuntimeModeControl();
+      notifyUI(
+        stored === 'worker'
+          ? 'Worker runtime will be used on the next load.'
+          : 'Main-thread runtime will be used on the next load.',
+        'info',
+        2400
+      );
+    });
   }, 'Reduced motion accessibility toggle');
 
   // Nameplates toggle
@@ -2200,6 +2232,15 @@ export function initializeApp() {
         gameState.paused = !!paused;
         return { paused: gameState.paused };
       },
+      playableCatalog: () => ({
+        count: playableScenarios?.getScenarios?.()?.length || 0,
+        scenarios: playableScenarios?.getScenarios?.().map(item => ({
+          id: item.id,
+          name: item.name,
+          objective: item.objective,
+          progress: item.progress || null
+        })) || []
+      }),
       startScenario: (id = 'first_ecosystem') => {
         const snapshot = gameDirector?.startScenario?.(id, { announce: false }) ||
           playableScenarios?.startScenario?.(id, { announce: false }) ||
@@ -2241,6 +2282,18 @@ export function initializeApp() {
         workerMode: USE_SIM_WORKER,
         stored: readStoredRuntimeMode()
       }),
+      runtimeModeControlState: () => {
+        const toggle = document.getElementById('toggle-worker-runtime');
+        const note = document.getElementById('runtime-mode-note');
+        return {
+          exists: !!toggle,
+          checked: !!toggle?.checked,
+          note: note?.textContent || '',
+          activeMode: runtimeModePreference.mode,
+          source: runtimeModePreference.source,
+          stored: readStoredRuntimeMode()
+        };
+      },
       setRuntimeModePreference: (mode = 'main') => ({
         ok: !!writeStoredRuntimeMode(mode),
         requested: String(mode || ''),
@@ -2260,6 +2313,7 @@ export function initializeApp() {
       createPostcard: () => upgradeController?.createPostcard?.() ?? null,
       runBalanceProbe: (seconds = 180) => upgradeController?.runBalanceProbe?.(seconds) ?? null,
       runUpgradeAction: (id = 'paint_food') => upgradeController?.runQuickAction?.(id) ?? false,
+      scenarioHistory: () => upgradeController?.getScenarioHistory?.() ?? [],
       setSelectedNickname: (name = 'Scout') => {
         const id = gameState.selectedId || gameState.pinnedId;
         return upgradeController?.setNickname?.(id, name) ?? false;

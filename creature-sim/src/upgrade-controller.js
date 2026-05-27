@@ -83,6 +83,7 @@ export class UpgradeController {
     this.activeReadabilityMode = readJson('readability-mode', 'normal');
     this.lastPostcard = null;
     this.lastBalanceProbe = null;
+    this._lastPanelSignature = '';
   }
 
   init() {
@@ -105,6 +106,11 @@ export class UpgradeController {
       if (action === 'follow') this.setFollowMode(value);
       if (action === 'readability') this.setReadabilityMode(value);
       if (action === 'quick-action') this.runQuickAction(value);
+      if (action === 'start-scenario') {
+        this.startScenario(value);
+        this.renderPanel();
+        return;
+      }
       if (action === 'focus-result') {
         this.focusScenarioResult();
         return;
@@ -168,7 +174,8 @@ export class UpgradeController {
       discoveryJournal: this.discoveryJournal.slice(0, 12),
       seedGallery: this.seedGallery.slice(0, 8),
       lastPostcard: this.lastPostcard,
-      balanceProbe: this.lastBalanceProbe
+      balanceProbe: this.lastBalanceProbe,
+      scenarioHistory: this.getScenarioHistory()
     };
   }
 
@@ -179,6 +186,34 @@ export class UpgradeController {
       nickname: this.nicknames?.[creature?.id] || null,
       bonds: buildBondsSummary(creature, this.world)
     };
+  }
+
+  buildPanelSignature() {
+    const playable = this.playableScenarios?.getSnapshot?.() ?? null;
+    const result = buildScenarioResult(playable);
+    const selected = this.getSelectedCreature();
+    const history = this.getScenarioHistory(3);
+    const creatures = this.world?.creatures || [];
+    const food = this.world?.food || [];
+    const stress = creatures.length
+      ? creatures.reduce((sum, creature) => sum + Number(creature?.needs?.stress || 0), 0) / creatures.length
+      : 0;
+    return JSON.stringify({
+      selected: selected?.id || null,
+      nickname: selected ? this.nicknames?.[selected.id] || '' : '',
+      scenario: playable?.scenario?.id || null,
+      scenarioState: playable?.state || null,
+      result: result ? `${result.state}:${result.score}:${result.medal}` : null,
+      history: history.map(item => `${item.scenarioId}:${item.score}:${item.medal}:${item.completedAt}`).join('|'),
+      discoveries: this.discoveryJournal.length,
+      seeds: this.seedGallery.length,
+      readability: this.activeReadabilityMode,
+      postcard: this.lastPostcard?.createdAt || null,
+      balance: this.lastBalanceProbe?.checkedAt || null,
+      aliveBucket: Math.round(creatures.filter(creature => creature?.alive !== false).length / 5),
+      foodBucket: Math.round(food.length / 10),
+      stressBucket: Math.round(stress / 5)
+    });
   }
 
   getRailModeChip() {
@@ -450,6 +485,25 @@ export class UpgradeController {
     return this.lastBalanceProbe;
   }
 
+  getScenarioHistory(limit = 6) {
+    const progress = this.playableScenarios?.progress || {};
+    return Object.values(progress)
+      .flatMap((entry) => {
+        const history = Array.isArray(entry?.history) ? entry.history : [];
+        return history.length ? history : (entry?.lastResult ? [entry.lastResult] : []);
+      })
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.completedAt || 0) - new Date(a.completedAt || 0))
+      .slice(0, limit);
+  }
+
+  startScenario(id) {
+    const snapshot = this.playableScenarios?.startScenario?.(id, { announce: true }) ?? null;
+    this.uiController?.updateSessionMetaVisibility?.();
+    this.uiController?.renderPlayableDirector?.(snapshot);
+    return snapshot;
+  }
+
   buildActionCards(story) {
     const cards = [
       {
@@ -567,6 +621,8 @@ export class UpgradeController {
   renderPanel({ passive = false } = {}) {
     if (!this.panel) return;
     if (passive && this.panel.classList.contains('hidden')) return;
+    const panelSignature = this.buildPanelSignature();
+    if (passive && panelSignature === this._lastPanelSignature) return;
     const story = buildEcosystemStory(this.world, this.playableScenarios?.getSnapshot?.());
     const result = buildScenarioResult(this.playableScenarios?.getSnapshot?.());
     const selected = this.getSelectedCreature();
@@ -590,6 +646,19 @@ export class UpgradeController {
     const seedMarkup = this.seedGallery.length
       ? this.seedGallery.slice(0, 5).map(item => `<li><strong>${escapeHtml(item.label)}</strong><span>${Number(item.population) || 0} creatures · ${escapeHtml(item.season)}</span></li>`).join('')
       : '<li class="muted">Save favorite worlds to build a local seed gallery.</li>';
+    const scenarioHistory = this.getScenarioHistory();
+    const historyMarkup = scenarioHistory.length
+      ? scenarioHistory.map(item => `
+        <li class="scenario-history-item">
+          <span class="scenario-history-main">
+            <strong>${escapeHtml(item.icon || '🎯')} ${escapeHtml(item.scenarioName || 'Scenario')}</strong>
+            <em>${escapeHtml(item.medal || 'Run')} · ${Number(item.score || 0)} · ${Math.round(Number(item.seconds || 0) / 60)}m</em>
+          </span>
+          <span class="scenario-history-meta">${Number(item.alive || 0)} alive · ${Number(item.food || 0)} food · ${Number(item.stress || 0)} stress</span>
+          <button class="chip ghost" data-upgrade-action="start-scenario" data-value="${escapeHtml(item.scenarioId)}">Retry</button>
+        </li>
+      `).join('')
+      : '<li class="muted">Completed runs will appear here with score, medal, and retry controls.</li>';
     const postcard = this.lastPostcard || buildWorldPostcard({
       world: this.world,
       playableSnapshot: this.playableScenarios?.getSnapshot?.(),
@@ -636,6 +705,10 @@ export class UpgradeController {
         ${scenarioResultMarkup}
       </section>
       <section class="upgrade-section">
+        <h3>Run History</h3>
+        <ul class="upgrade-list scenario-history-list">${historyMarkup}</ul>
+      </section>
+      <section class="upgrade-section">
         <h3>Action Cards</h3>
         <div class="upgrade-grid">${this.buildActionCards(story)}</div>
       </section>
@@ -678,5 +751,6 @@ export class UpgradeController {
         </div>
       </section>
     `;
+    this._lastPanelSignature = panelSignature;
   }
 }

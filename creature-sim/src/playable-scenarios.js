@@ -169,6 +169,51 @@ export const PLAYABLE_SCENARIOS = [
     setup: { herbivore: 14, omnivore: 4, predator: 2, aquatic: 6, flying: 6, burrowing: 6, food: 240, props: ['calm'] },
     tuning: { mode: 'chill', foodRate: 1.3, disasters: false },
     steps: ['Follow each variant type', 'Use the inspector to compare traits', 'Save the seed if the mix is interesting']
+  },
+  {
+    id: 'drought_rescue',
+    artFrame: 3,
+    icon: '☀️',
+    name: 'Drought Rescue',
+    fantasy: 'Food regrows slowly and stress rises if you overreact.',
+    objective: 'Keep 30 creatures alive with 90+ food and stress under 58.',
+    targetSeconds: 210,
+    minAlive: 30,
+    minFood: 90,
+    maxStress: 58,
+    setup: { herbivore: 34, omnivore: 6, predator: 4, food: 115, props: ['calm', 'fan'] },
+    tuning: { mode: 'balanced', foodRate: 0.55, disasters: true, season: 'summer' },
+    steps: ['Paint small food trails', 'Calm crowded pockets', 'Keep predators away from starving groups']
+  },
+  {
+    id: 'apex_balance',
+    artFrame: 2,
+    icon: '👑',
+    name: 'Apex Balance',
+    fantasy: 'Maintain a serious hunter population without letting prey crash.',
+    objective: 'Survive with 8+ predators, 36+ total creatures, and a food buffer.',
+    targetSeconds: 210,
+    minAlive: 36,
+    minPredators: 8,
+    minFood: 110,
+    setup: { herbivore: 50, omnivore: 8, predator: 9, food: 230, props: ['conveyor', 'calm'] },
+    tuning: { mode: 'frontier', foodRate: 1.02, disasters: true },
+    steps: ['Feed prey clusters first', 'Follow hunters on the edge', 'Remove pressure only if births stop']
+  },
+  {
+    id: 'variant_crossing',
+    artFrame: 5,
+    icon: '🌈',
+    name: 'Variant Crossing',
+    fantasy: 'Guide mixed movement types through a crowded crossing.',
+    objective: 'Keep all three variant roles alive while stress stays under 60.',
+    targetSeconds: 240,
+    minAlive: 30,
+    minVariants: 3,
+    maxStress: 60,
+    setup: { herbivore: 20, omnivore: 5, predator: 3, aquatic: 6, flying: 6, burrowing: 6, food: 245, props: ['slope', 'fan', 'spring', 'calm'] },
+    tuning: { mode: 'chill', foodRate: 1.18, disasters: false },
+    steps: ['Follow one of each variant', 'Open food corridors', 'Calm the crossing before stress spikes']
   }
 ];
 
@@ -342,8 +387,8 @@ export class PlayableScenarios {
 
   _resetWorldForScenario(scenario) {
     this.world.reset?.();
-    this.world.food = [];
-    this.world.corpses = [];
+    if (Array.isArray(this.world.food)) this.world.food.length = 0;
+    if (Array.isArray(this.world.corpses)) this.world.corpses.length = 0;
     this.world.sandbox?.clear?.();
 
     const center = { x: this.world.width * 0.5, y: this.world.height * 0.5 };
@@ -607,16 +652,45 @@ export class PlayableScenarios {
     this.activeRun.progress = 1;
     const id = this.activeRun.id;
     const seconds = Math.round(this.activeRun.elapsed);
+    this.lastSnapshot = this._buildSnapshot();
+    const result = this._buildResultSummary(this.lastSnapshot);
     const existing = this.progress[id] || { completions: 0, bestSeconds: null };
+    const history = Array.isArray(existing.history) ? existing.history : [];
     this.progress[id] = {
       completions: existing.completions + 1,
-      bestSeconds: existing.bestSeconds == null ? seconds : Math.min(existing.bestSeconds, seconds)
+      bestSeconds: existing.bestSeconds == null ? seconds : Math.min(existing.bestSeconds, seconds),
+      bestScore: Math.max(Number(existing.bestScore || 0), result.score),
+      lastResult: result,
+      history: [result, ...history].slice(0, 5)
     };
     this._saveProgress();
     this.notifications?.show?.(`🏆 Scenario complete: ${this.activeRun.scenario.name}`, 'achievement', 4200);
     this.audio?.playUISound?.('success');
-    this.lastSnapshot = this._buildSnapshot();
     this._emitUpdate();
+  }
+
+  _buildResultSummary(snapshot = this.lastSnapshot) {
+    const scenario = this.activeRun?.scenario || snapshot?.scenario || {};
+    const metrics = snapshot?.metrics || {};
+    const survival = Math.round(clamp((metrics.alive || 0) / Math.max(1, scenario.minAlive || 25), 0, 1.4) * 100);
+    const foodStability = Math.round(clamp((metrics.foodPerCreature || 0) / 6, 0, 1) * 100);
+    const stressScore = Math.round(clamp(1 - (metrics.averageStress || 0) / 100, 0, 1) * 100);
+    const score = Math.round(clamp((survival * 0.45) + (foodStability * 0.25) + (stressScore * 0.3), 0, 100));
+    const medal = score >= 90 ? 'Gold' : score >= 72 ? 'Silver' : score >= 55 ? 'Bronze' : 'Practice';
+
+    return {
+      id: `${scenario.id || 'scenario'}-${Date.now()}`,
+      scenarioId: scenario.id || snapshot?.scenario?.id || 'unknown',
+      scenarioName: scenario.name || snapshot?.scenario?.name || 'Scenario',
+      icon: scenario.icon || snapshot?.scenario?.icon || '🎯',
+      completedAt: new Date().toISOString(),
+      seconds: Math.round(this.activeRun?.elapsed ?? snapshot?.elapsed ?? 0),
+      score,
+      medal,
+      alive: Number(metrics.alive || 0),
+      food: Number(metrics.food || 0),
+      stress: Number((metrics.averageStress || 0).toFixed?.(1) ?? metrics.averageStress ?? 0)
+    };
   }
 
   _failRun(reason) {

@@ -2,7 +2,7 @@
  * Renderer Performance Monitor - Handles culling, LOD, and performance optimizations
  * ENHANCED: Added quality presets and FPS-based dynamic quality scaling
  */
-import { RendererConfig } from './renderer-config.js';
+import { RendererConfig } from './renderer-config.js?v=20260527-tranche4';
 
 export class RendererPerformanceMonitor {
   constructor(renderer) {

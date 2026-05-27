@@ -1,12 +1,12 @@
 import { clamp } from './utils.js';
-import { RendererConfig } from './renderer-config.js?v=20260423-assets1';
-import { RendererFeatureManager } from './renderer-features.js';
-import { RendererPerformanceMonitor } from './renderer-performance.js';
+import { RendererConfig } from './renderer-config.js?v=20260527-tranche4';
+import { RendererFeatureManager } from './renderer-features.js?v=20260527-tranche4';
+import { RendererPerformanceMonitor } from './renderer-performance.js?v=20260527-tranche4';
 import { getDebugFlags } from './debug-flags.js';
 import { assetLoader } from './asset-loader.js?v=20260423-assets1';
 import { applyFeatureVizMethods } from './renderer-features-viz.js';
 import { applyMinimapMethods } from './renderer-minimap.js';
-import { applyCreatureMethods } from './renderer-creatures.js';
+import { applyCreatureMethods } from './renderer-creatures.js?v=20260527-tranche4';
 import {
   drawBiomeGround,
   drawWaterBiomes,
@@ -639,7 +639,7 @@ export class Renderer {
     const quality = this.performance?.getCurrentQuality?.() || this.performance?.currentQuality || 'high';
     const maxByQuality = this.isMobile
       ? { ultra: 80, high: 70, medium: 54, low: 0 }
-      : { ultra: 160, high: 118, medium: 72, low: 0 };
+      : { ultra: 118, high: 82, medium: 54, low: 0 };
     const maxDetailed = maxByQuality[quality] ?? (this.isMobile ? 54 : 90);
     return visibleFoodCount <= maxDetailed;
   }
@@ -1035,6 +1035,8 @@ export class Renderer {
     }
 
     const time = world?.t ?? 0;
+    const quality = this.performance?.getCurrentQuality?.() || this.performance?.currentQuality || 'high';
+    const lowDetailFood = quality !== 'ultra' && (visibleFood.length > 120 || this.camera.zoom < 1.08);
 
     const foodVisuals = {
       grass: {
@@ -1065,6 +1067,32 @@ export class Renderer {
       const visual = foodVisuals[type] || foodVisuals.grass;
       const pulse = Math.sin(time * visual.pulseSpeed + items.length * 0.1) * 0.5 + 0.5;
       const baseColor = items[0].color || visual.color;
+
+      if (lowDetailFood) {
+        ctx.fillStyle = baseColor;
+        ctx.beginPath();
+        for (let i = 0; i < items.length; i++) {
+          const f = items[i];
+          const radius = Math.max(1.5, f.r || 2);
+          ctx.moveTo(f.x + radius, f.y);
+          ctx.arc(f.x, f.y, radius, 0, Math.PI * 2);
+        }
+        ctx.fill();
+
+        if (type === 'golden_fruit') {
+          ctx.strokeStyle = 'rgba(255,255,200,0.38)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          for (let i = 0; i < items.length; i++) {
+            const f = items[i];
+            const radius = Math.max(2, (f.r || 2) + 1.5);
+            ctx.moveTo(f.x + radius, f.y);
+            ctx.arc(f.x, f.y, radius, 0, Math.PI * 2);
+          }
+          ctx.stroke();
+        }
+        continue;
+      }
 
       const glowSize = 3 + pulse * 2;
       const glowAlpha = 0.2 + pulse * 0.15;

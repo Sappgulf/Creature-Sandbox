@@ -24,7 +24,7 @@ export const RendererConfig = {
   // QUALITY PRESETS - for dynamic quality scaling
   QUALITY_PRESETS: {
     ultra: {
-      maxParticles: 500,
+      maxParticles: 120,
       shadowsEnabled: true,
       trailsEnabled: true,
       clusteringEnabled: true,
@@ -36,7 +36,7 @@ export const RendererConfig = {
       maxRenderedCreatures: 500
     },
     high: {
-      maxParticles: 300,
+      maxParticles: 80,
       shadowsEnabled: true,
       trailsEnabled: true,
       clusteringEnabled: true,
@@ -48,7 +48,7 @@ export const RendererConfig = {
       maxRenderedCreatures: 300
     },
     medium: {
-      maxParticles: 120,
+      maxParticles: 58,
       shadowsEnabled: false,
       trailsEnabled: false,
       clusteringEnabled: true,
@@ -60,7 +60,7 @@ export const RendererConfig = {
       maxRenderedCreatures: 200
     },
     low: {
-      maxParticles: 50,
+      maxParticles: 36,
       shadowsEnabled: false,
       trailsEnabled: false,
       clusteringEnabled: false,

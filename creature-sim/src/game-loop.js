@@ -15,7 +15,7 @@ import { getEnhancedAnalyticsModule } from './enhanced-analytics-loader.js';
 import { VisualEffects } from './visual-effects.js';
 import { ghostTrails } from './ecosystem-ghosts.js';
 import { lifetimeStats } from './lifetime-stats.js';
-import { RendererConfig } from './renderer-config.js';
+import { RendererConfig } from './renderer-config.js?v=20260527-tranche4';
 // STATIC UI IMPORTS - avoids dynamic import() latency in hot path
 import {
   renderStats,

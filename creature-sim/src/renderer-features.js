@@ -1,7 +1,7 @@
 /**
  * Renderer Feature Manager - Manages toggling and coordination of visual features
  */
-import { RendererConfig } from './renderer-config.js';
+import { RendererConfig } from './renderer-config.js?v=20260527-tranche4';
 
 export class RendererFeatureManager {
   constructor(renderer) {

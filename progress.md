@@ -598,3 +598,25 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - `npm run smoke:worker` ✅ (desktop avg `25.24ms` / p95 `33.5ms`; mobile p95 `<= 17ms`)
   - Playwright live mobile result sanity ✅: result visible, Upgrade Hub open, God panel hidden, objective rail visible, 30 creatures, and 0 warning/error console messages.
 - Residual note: main-thread desktop final-state pacing is improved and now profile-backed, but still not at 60fps. The next draw pass should use the new `drawImage.byCanvas` artifacts plus creature sprite counts to decide whether to reduce creature sprite detail or batch more creature/food decoration in low quality.
+
+2026-05-27
+- Approved tranche 1-5: desktop smoothness pass, worker release-candidate controls, scenario depth, Upgrade Hub run-history polish, and release packaging/tag prep.
+- Implemented:
+  - desktop/full-view rendering now uses vector creature LOD for non-focused creatures at overview zooms, tighter particle budgets, simplified dense food rendering, and a lower desktop canvas render scale to favor pacing.
+  - Features now exposes a Worker Runtime next-load toggle with smoke hooks for stored/active mode truth.
+  - playable scenarios now include `Drought Rescue`, `Apex Balance`, and `Variant Crossing`.
+  - completed scenario progress now stores scored run history, and Upgrade Hub renders Run History with medal/score/time/alive/food/stress plus Retry controls.
+  - worker smoke now starts `Apex Balance`, verifies active scenario text state, and proves worker snapshot-only save/load keeps playable metadata.
+  - browser smoke now asserts expanded catalog entries, runtime toggle existence, completed scenario history, Upgrade Hub history DOM, and scenario history in upgrade state.
+  - added `docs/RELEASE_CHECKLIST.md` and linked it from README; refreshed smoke docs and known issues.
+- Verification:
+  - `git diff --check` ✅
+  - `node --check` for touched JS files ✅
+  - `npm run lint` ✅
+  - `npm test` ✅ (154 passing)
+  - `npm run build` ✅ (main app JS `575.78 kB` / `168.92 kB` gzip)
+  - `npm run check:bundle` ✅
+  - `npm run smoke:browser` ✅ (desktop avg `34.65ms` / p95 `50ms`, `134.92` drawImages/frame; mobile p95 `<= 16.8ms`; canvas scaled to `1100x688` on desktop for smoothness)
+  - `npm run smoke:worker` ✅ (desktop avg `19.15ms` / p95 `33.4ms`; mobile p95 `<= 17.1ms`)
+  - external `develop-web-game` client ✅ captured `output/web-game/rc-polish/shot-0.png` and `state-0.json`.
+- Residual note: main-thread desktop final heavy state is materially improved and draw volume is bounded, but it is still not a 60fps claim. Worker mode is the smoother candidate lane; the next upgrade should profile remaining non-`drawImage` frame time before making worker default.

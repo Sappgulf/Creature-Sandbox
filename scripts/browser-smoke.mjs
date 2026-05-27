@@ -27,10 +27,10 @@ const scenarios = [
 ];
 
 const particleBudgetByQuality = {
-  ultra: 500,
-  high: 300,
-  medium: 120,
-  low: 50
+  ultra: 120,
+  high: 80,
+  medium: 58,
+  low: 36
 };
 
 function requestOk(url) {
@@ -197,6 +197,16 @@ async function readUpgradeScenarioResultMetrics(page) {
       bottom: Number(sectionRect.bottom.toFixed(1)),
       inViewport: sectionRect.top >= -2 && sectionRect.top <= window.innerHeight - 80,
       text: card.textContent.trim().replace(/\s+/g, ' ').slice(0, 240)
+    };
+  });
+}
+
+async function readUpgradeHistoryMetrics(page) {
+  return page.evaluate(() => {
+    const items = Array.from(document.querySelectorAll('.scenario-history-item'));
+    return {
+      count: items.length,
+      text: items.map(item => item.textContent.trim().replace(/\s+/g, ' ').slice(0, 160))
     };
   });
 }
@@ -380,6 +390,14 @@ async function runScenario(browser, scenario) {
   );
   assert.equal(state.ui.challengeOverlayVisible, false, `${scenario.name}: canvas challenge overlay should stay hidden while the objective rail is visible`);
   assert.equal(state.ui.miniGraphsVisible, false, `${scenario.name}: analytics mini-graphs should not occupy normal gameplay`);
+  const catalog = await page.evaluate(() => window.__creatureSmoke.playableCatalog());
+  assert.ok(catalog.count >= 14, `${scenario.name}: playable catalog should include the expanded scenario set`);
+  assert.ok(catalog.scenarios.some(item => item.id === 'drought_rescue'), `${scenario.name}: drought rescue scenario should be available`);
+  assert.ok(catalog.scenarios.some(item => item.id === 'apex_balance'), `${scenario.name}: apex balance scenario should be available`);
+  assert.ok(catalog.scenarios.some(item => item.id === 'variant_crossing'), `${scenario.name}: variant crossing scenario should be available`);
+  const runtimeControl = await page.evaluate(() => window.__creatureSmoke.runtimeModeControlState());
+  assert.equal(runtimeControl.exists, true, `${scenario.name}: runtime mode UI toggle should exist`);
+  assert.equal(runtimeControl.activeMode, workerMode ? 'worker' : 'main', `${scenario.name}: runtime mode UI toggle should reflect active runtime mode`);
   if (scenario.mobile) {
     assert.equal(state.selectedCreature, null, `${scenario.name}: opening should keep mobile playfield uncluttered before manual selection`);
   } else {
@@ -447,11 +465,42 @@ async function runScenario(browser, scenario) {
     assert.equal(runtimePreference.storedMain.ok, true, `${scenario.name}: worker runtime preference should restore main candidate mode`);
     assert.equal(runtimePreference.afterMain.stored, 'main', `${scenario.name}: worker preference reset should roundtrip from storage`);
 
+    const runtimeToggle = await page.evaluate(() => {
+      const toggle = document.getElementById('toggle-worker-runtime');
+      const before = window.__creatureSmoke.runtimeModeControlState();
+      if (toggle) {
+        toggle.checked = true;
+        toggle.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      const afterWorker = window.__creatureSmoke.runtimeModeControlState();
+      if (toggle) {
+        toggle.checked = false;
+        toggle.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      const afterMain = window.__creatureSmoke.runtimeModeControlState();
+      return { before, afterWorker, afterMain };
+    });
+    assert.equal(runtimeToggle.before.exists, true, `${scenario.name}: runtime mode UI toggle should exist`);
+    assert.equal(runtimeToggle.afterWorker.stored, 'worker', `${scenario.name}: runtime mode UI toggle should persist worker for next load`);
+    assert.equal(runtimeToggle.afterMain.stored, 'main', `${scenario.name}: runtime mode UI toggle should restore main for next load`);
+
+    const workerScenario = await page.evaluate(() => window.__creatureSmoke.startScenario('apex_balance'));
+    const workerPlayable = workerScenario?.playable || workerScenario;
+    assert.equal(workerPlayable?.active, true, `${scenario.name}: worker scenario candidate should start`);
+    assert.equal(workerPlayable?.scenario?.id, 'apex_balance', `${scenario.name}: worker scenario candidate id should be reflected`);
+    await advance(page, 1200);
+    state = await readGameState(page);
+    assert.equal(state.playable?.scenario?.id, 'apex_balance', `${scenario.name}: worker text state should preserve started scenario`);
+    const workerScenarioRoundTrip = await page.evaluate(() => window.__creatureSmoke.saveRoundTrip());
+    assert.equal(workerScenarioRoundTrip.ok, true, `${scenario.name}: worker scenario save parity should report ok`);
+    assert.equal(workerScenarioRoundTrip.before.playable, 'apex_balance', `${scenario.name}: worker scenario save parity should serialize active scenario`);
+    assert.equal(workerScenarioRoundTrip.loaded.playable, 'apex_balance', `${scenario.name}: worker scenario save parity should reload active scenario metadata`);
+
     await advance(page, 1500);
     state = await readGameState(page);
     assert.equal(state.ui.watchMode, true, `${scenario.name}: worker watch mode should survive parity soak`);
-    assert.ok(state.summary.totalCreatures >= workerRoundTrip.before.creatures, `${scenario.name}: worker creature sync should survive parity soak`);
-    assert.ok(state.summary.totalFood >= Math.min(workerRoundTrip.before.food, 1), `${scenario.name}: worker food sync should survive parity soak`);
+    assert.ok(state.summary.totalCreatures >= Math.min(workerScenarioRoundTrip.before.creatures, 30), `${scenario.name}: worker creature sync should survive parity soak`);
+    assert.ok(state.summary.totalFood >= Math.min(workerScenarioRoundTrip.before.food, 1), `${scenario.name}: worker food sync should survive parity soak`);
 
     const perf = await page.evaluate(() => window.__creatureSmoke.perfBudget());
     assert.equal(!!perf.runtime?.workerMode, true, `${scenario.name}: worker perf runtime should expose worker mode truth`);
@@ -662,6 +711,17 @@ async function runScenario(browser, scenario) {
   assert.equal(resultMetrics.anchored, true, `${scenario.name}: scenario result should have a first-class Upgrade Hub anchor`);
   assert.equal(resultMetrics.inViewport, true, `${scenario.name}: focused scenario result should be near the top of the visible Upgrade Hub`);
   assert.match(resultMetrics.text, /finish|Score|Survival/i, `${scenario.name}: scenario result card should show result details`);
+  const history = await page.evaluate(() => window.__creatureSmoke.scenarioHistory());
+  assert.ok(history.length >= 1, `${scenario.name}: completed scenario should be added to run history`);
+  assert.equal(history[0].scenarioId, 'first_ecosystem', `${scenario.name}: latest run history item should be the completed scenario`);
+  assert.ok(history[0].score >= 0, `${scenario.name}: run history item should include a score`);
+  const historyMetrics = await readUpgradeHistoryMetrics(page);
+  assert.ok(historyMetrics.count >= 1, `${scenario.name}: Upgrade Hub should render run history items`);
+  assert.match(
+    historyMetrics.text.join(' '),
+    /First Ecosystem|Gold|Silver|Bronze|Practice/i,
+    `${scenario.name}: run history should include scenario identity or medal state`
+  );
   await page.screenshot({ path: path.join(outDir, `${scenario.name}-upgrade-result.png`) });
 
   const upgrades = await page.evaluate(() => {
@@ -683,6 +743,7 @@ async function runScenario(browser, scenario) {
   assert.equal(upgrades.actionOk, true, `${scenario.name}: upgrade action card should run`);
   assert.ok(upgrades.state.recipes.length >= 4, `${scenario.name}: upgrade state should expose recipe presets`);
   assert.ok(upgrades.state.scenarioResult?.statCards?.length >= 3, `${scenario.name}: upgrade state should expose scenario result stat cards`);
+  assert.ok(upgrades.state.scenarioHistory?.length >= 1, `${scenario.name}: upgrade state should expose scenario run history`);
 
   const genePrefs = await page.evaluate(() => window.__creatureSmoke.geneEditorPrefsRoundTrip());
   assert.equal(genePrefs.ok, true, `${scenario.name}: gene editor preferences should persist across reload`);

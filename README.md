@@ -123,6 +123,8 @@ Run the current hosted build, or deploy your own instance with the button above.
 2. Connect your GitHub account
 3. Deploy! Your simulation will be live in ~30 seconds
 
+For release candidates, run the local proof in [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) before tagging or promoting a deployed build.
+
 ### Run Locally
 ```bash
 # Clone the repository

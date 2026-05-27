@@ -84,6 +84,14 @@ export function applyCreatureMethods(Renderer) {
     const showOutlines = zoom > 0.5;
     const showTrails = this.enableTrails && zoom > 0.6;
     const showNames = this.enableNameLabels && zoom > 0.5;
+    const quality = this.performance?.getCurrentQuality?.() || this.performance?.currentQuality || 'high';
+    const vectorLodZoom = {
+      ultra: 1.08,
+      high: 1.34,
+      medium: 1.4,
+      low: 1.48
+    }[quality] ?? 1.24;
+    const useVectorCreatureLOD = zoom < vectorLodZoom;
 
     const nameCacheKey = `${opts.selectedId}-${opts.pinnedId}-${Math.floor(zoom * 10)}`;
     if (!this._nameCache || this._nameCache.key !== nameCacheKey) {
@@ -98,6 +106,7 @@ export function applyCreatureMethods(Renderer) {
       const isPinned = opts.pinnedId === c.id;
       const isHovered = opts.hoveredId === c.id;
       const isGrabbed = Boolean(c.isGrabbed);
+      const forceDetail = isSelected || isPinned || isHovered || isGrabbed;
 
       this.renderedCount++;
 
@@ -129,7 +138,7 @@ export function applyCreatureMethods(Renderer) {
       };
 
       // PERFORMANCE: Level of Detail (LOD) handling
-      if (zoom < 0.05 && !isSelected && !isPinned) {
+      if (zoom < 0.05 && !forceDetail) {
         // ULTRA LOW LOD: Colored dot with outline, sized by creature
         const hue = clusterHue ?? c.genes?.hue ?? 0;
         const creatureR = ((c.energy || 40) / 40) * (3 + (c.size || 5));
@@ -142,28 +151,9 @@ export function applyCreatureMethods(Renderer) {
         ctx.strokeStyle = `hsl(${hue}, 60%, 85%)`;
         ctx.lineWidth = 1;
         ctx.stroke();
-      } else if (zoom < 0.08 && !isSelected && !isPinned) {
+      } else if ((zoom < 0.08 || useVectorCreatureLOD) && !forceDetail) {
         // MEDIUM LOD: Simplified directional shape for very distant flock reads.
-        ctx.save();
-        ctx.translate(c.x, c.y);
-        ctx.rotate(c.dir || 0);
-        const hue = clusterHue ?? c.genes?.hue ?? 0;
-        const baseLight = c.genes?.predator ? 50 : 62;
-        // Scale triangle based on creature size for better visibility
-        const creatureR = ((c.energy || 40) / 40) * (3 + (c.size || 5));
-        const triSize = Math.max(8, creatureR * 1.5);
-        ctx.fillStyle = `hsl(${hue}, 88%, ${baseLight}%)`;
-        ctx.beginPath();
-        ctx.moveTo(triSize, 0);
-        ctx.lineTo(-triSize * 0.6, triSize * 0.6);
-        ctx.lineTo(-triSize * 0.6, -triSize * 0.6);
-        ctx.closePath();
-        ctx.fill();
-        // Outline for contrast
-        ctx.strokeStyle = `hsl(${hue}, 50%, 82%)`;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.restore();
+        this._drawVectorCreatureLOD(ctx, c, { clusterHue, quality, zoom });
       } else {
         // HIGH LOD: Full rendering
         if (showShadows && (isSelected || isPinned || zoom > 0.6)) {
@@ -198,7 +188,7 @@ export function applyCreatureMethods(Renderer) {
         this._drawCreatureName(c, isSelected, isPinned, opts, nameCache);
       }
 
-      if (zoom > 0.55 && (isSelected || isPinned || c.needs?.stress > 68 || c.needs?.hunger > 72)) {
+      if (zoom > 0.55 && (isSelected || isPinned || (quality !== 'low' && (c.needs?.stress > 68 || c.needs?.hunger > 72)))) {
         this._drawCreatureStatusCue(c, { isSelected, isPinned });
       }
 
@@ -210,6 +200,30 @@ export function applyCreatureMethods(Renderer) {
     this.culledCount = creatures.length - this.renderedCount;
     this.performance.stats.rendered += this.renderedCount;
     this.performance.stats.culled += this.culledCount;
+  };
+
+  Renderer.prototype._drawVectorCreatureLOD = function(ctx, c, { clusterHue = null, quality = 'high', zoom = 1 } = {}) {
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.dir || 0);
+    const hue = clusterHue ?? c.genes?.hue ?? 0;
+    const predator = c.genes?.predator || (c.genes?.diet ?? 0) >= 0.7;
+    const baseLight = predator ? 50 : 62;
+    const creatureR = ((c.energy || 40) / 40) * (3 + (c.size || 5));
+    const triSize = Math.max(7, creatureR * (quality === 'low' ? 1.28 : 1.45));
+    const alpha = quality === 'low' && zoom < 0.8 ? 0.86 : 0.96;
+    ctx.globalAlpha *= alpha;
+    ctx.fillStyle = `hsl(${hue}, 88%, ${baseLight}%)`;
+    ctx.beginPath();
+    ctx.moveTo(triSize, 0);
+    ctx.lineTo(-triSize * 0.62, triSize * 0.58);
+    ctx.lineTo(-triSize * 0.62, -triSize * 0.58);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = `hsl(${hue}, 45%, ${predator ? 78 : 82}%)`;
+    ctx.lineWidth = quality === 'low' ? 1.1 : 1.4;
+    ctx.stroke();
+    ctx.restore();
   };
 
   Renderer.prototype._drawCreatureStatusCue = function(c, { isSelected = false, isPinned = false } = {}) {

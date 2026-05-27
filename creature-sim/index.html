@@ -31,7 +31,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-  <link rel="stylesheet" href="styles.css?v=20260527-tranche2" />
+  <link rel="stylesheet" href="styles.css?v=20260527-tranche4" />
   <script>
     (() => {
       const params = new URLSearchParams(window.location.search);
@@ -851,6 +851,11 @@
             <option value="tritanopia">Tritanopia</option>
           </select>
         </label>
+        <label class="feature-toggle">
+          <input type="checkbox" id="toggle-worker-runtime" />
+          <span>⚙️ Worker Runtime (next load)</span>
+        </label>
+        <div id="runtime-mode-note" class="muted tiny">Main-thread runtime is active.</div>
       </div>
 
       <div class="features-section">
@@ -1141,7 +1146,7 @@
       });
     }
   </script>
-  <script type="module" src="./src/main.js?v=20260527-tranche2"></script>
+  <script type="module" src="./src/main.js?v=20260527-tranche4"></script>
 </body>
 
 </html>
