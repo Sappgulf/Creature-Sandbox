@@ -1819,6 +1819,11 @@ export function initializeApp() {
         calmZones: world.environment?.calmZones?.length ?? 0,
         chaosNudge: Number(world.chaosNudge?.timer?.toFixed?.(2) ?? world.chaosNudge?.timer ?? 0)
       },
+      interactions: {
+        throws: gameLoop?.curiosityState?.throwCount ?? 0,
+        props: gameLoop?.curiosityState?.propCount ?? 0,
+        tinyWins: gameLoop?.curiosityState?.tinyWinTypes?.size ?? 0
+      },
       moments: {
         count: moments?.moments?.length ?? 0,
         summary: moments?.summary ?? null,
@@ -1898,8 +1903,25 @@ export function initializeApp() {
           qualityShifts: [],
           renderedStart: Number(startPerf.rendered || 0),
           renderedEnd: Number(startPerf.rendered || 0),
+          longTasks: [],
+          longTaskObserver: null,
           unsubscribe: null
         };
+        try {
+          if (typeof PerformanceObserver === 'function') {
+            frameSampleState.longTaskObserver = new PerformanceObserver((list) => {
+              for (const entry of list.getEntries()) {
+                frameSampleState.longTasks.push({
+                  startTime: Number((entry.startTime - startedAt).toFixed(1)),
+                  duration: Number(entry.duration.toFixed(1))
+                });
+              }
+            });
+            frameSampleState.longTaskObserver.observe({ entryTypes: ['longtask'] });
+          }
+        } catch {
+          frameSampleState.longTaskObserver = null;
+        }
         frameSampleState.unsubscribe = eventSystem.on(GameEvents.FRAME_UPDATE, ({ now }) => {
           const currentNow = Number(now) || performance.now();
           if (frameSampleState.lastNow != null) {
@@ -1926,17 +1948,23 @@ export function initializeApp() {
         const sample = frameSampleState;
         if (!sample) return null;
         sample.unsubscribe?.();
+        sample.longTaskObserver?.disconnect?.();
         frameSampleState = null;
         const intervals = sample.intervals;
         const sorted = intervals.slice().sort((a, b) => a - b);
         const average = intervals.reduce((sum, value) => sum + value, 0) / Math.max(1, intervals.length);
         const p95 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] || 0;
+        const longTaskDurations = sample.longTasks.map(task => task.duration);
+        const totalLongTaskMs = longTaskDurations.reduce((sum, value) => sum + value, 0);
         return {
           durationMs: Number((performance.now() - sample.startedAt).toFixed(1)),
           frames: intervals.length,
           avgFrameMs: Number(average.toFixed(2)),
           p95FrameMs: Number(p95.toFixed(2)),
           framesOver50ms: sample.longFrames,
+          longTaskCount: sample.longTasks.length,
+          longTaskMaxMs: Number(Math.max(0, ...longTaskDurations).toFixed(1)),
+          longTaskTotalMs: Number(totalLongTaskMs.toFixed(1)),
           qualityStart: sample.qualityStart,
           qualityEnd: sample.qualityEnd,
           qualityShifts: sample.qualityShifts,
@@ -2034,6 +2062,10 @@ export function initializeApp() {
         };
       },
       upgradeState: () => upgradeController?.getSnapshot?.() ?? null,
+      showUpgradePanel: () => {
+        upgradeController?.setPanelVisible?.(true);
+        return upgradeController?.getSnapshot?.() ?? null;
+      },
       applyRecipe: (id = 'peaceful_meadow') => upgradeController?.applyRecipe?.(id) ?? false,
       setReadabilityMode: (id = 'normal') => {
         upgradeController?.setReadabilityMode?.(id, { announce: false });
@@ -2049,6 +2081,75 @@ export function initializeApp() {
       setSelectedNickname: (name = 'Scout') => {
         const id = gameState.selectedId || gameState.pinnedId;
         return upgradeController?.setNickname?.(id, name) ?? false;
+      },
+      runInteractionProbe: () => {
+        const visible = getVisibleCreatures(1)[0];
+        const creature = (visible && (world.registry?.get?.(visible.id) || world.creatures?.find(item => item.id === visible.id))) ||
+          world.creatures?.find(item => item?.alive !== false);
+        if (!creature) return { ok: false, reason: 'no-creature' };
+
+        const before = {
+          throws: gameLoop?.curiosityState?.throwCount ?? 0,
+          props: gameLoop?.curiosityState?.propCount ?? 0,
+          propTotal: world.sandbox?.props?.length ?? 0
+        };
+        const x = Math.max(40, Math.min((world.width || 0) - 40, Number(creature.x) || 0));
+        const y = Math.max(40, Math.min((world.height || 0) - 40, Number(creature.y) || 0));
+
+        creature.x = x;
+        creature.y = y;
+        creature.isGrabbed = false;
+        gameState.selectCreature(creature.id);
+        camera.x = x;
+        camera.y = y;
+        camera.targetX = x;
+        camera.targetY = y;
+        creature.applyImpulse?.(260, -90, { decay: 6, cap: 320 });
+        eventSystem.emit(GameEvents.CREATURE_THROWN, { creatureId: creature.id, speed: 180 });
+
+        const prop = world.sandbox?.addProp?.('bounce', x - 6, y, { radius: 58, strength: 300 });
+        world.sandbox?.update?.(1 / 60);
+        gameLoop?.render?.(1 / 60);
+        uiController?.updateSelectedInfo?.();
+
+        const after = {
+          throws: gameLoop?.curiosityState?.throwCount ?? 0,
+          props: gameLoop?.curiosityState?.propCount ?? 0,
+          propTotal: world.sandbox?.props?.length ?? 0,
+          impulse: {
+            vx: Number(creature.externalImpulse?.vx?.toFixed?.(1) ?? creature.externalImpulse?.vx ?? 0),
+            vy: Number(creature.externalImpulse?.vy?.toFixed?.(1) ?? creature.externalImpulse?.vy ?? 0)
+          }
+        };
+
+        return {
+          ok: after.throws > before.throws && after.props > before.props,
+          creatureId: creature.id,
+          propId: prop?.id ?? null,
+          before,
+          after
+        };
+      },
+      completeScenarioForSmoke: (id = 'first_ecosystem') => {
+        if (!playableScenarios) return { ok: false, reason: 'playable-unavailable' };
+        const started = gameDirector?.startScenario?.(id, { announce: false }) ||
+          playableScenarios.startScenario?.(id, { announce: false }) ||
+          null;
+        const run = playableScenarios.activeRun;
+        if (!run) return { ok: false, reason: 'scenario-did-not-start', started };
+        run.elapsed = Number(run.scenario?.targetSeconds || 120);
+        run.progress = 1;
+        playableScenarios._completeRun?.();
+        const playable = playableScenarios.getSnapshot?.() ?? null;
+        upgradeController?.scanDiscoveries?.();
+        upgradeController?.renderPanel?.();
+        uiController?.updateSessionMetaVisibility?.();
+        uiController?.renderPlayableDirector?.(playable);
+        return {
+          ok: playable?.state === 'complete',
+          playable,
+          upgrades: upgradeController?.getSnapshot?.() ?? null
+        };
       },
       geneEditorPrefsRoundTrip: async () => {
         const editor = await ensureGeneEditor();
@@ -2123,7 +2224,10 @@ export function initializeApp() {
           world: {
             creatures: world.creatures?.length || 0,
             food: world.food?.length || 0,
-            particles: world.particles?.particles?.length || 0
+            particles: world.particles?.particles?.length || 0,
+            maxParticles: world.particles?.maxParticles ?? 0,
+            particleSpriteCached: !!world.particles?._particleSpriteRuntime?.frames?.length,
+            particleSpritePending: !!world.particles?._particleSpriteRequest
           },
           assets: {
             registeredSprites: assetLoader.spriteSheets?.size ?? 0,

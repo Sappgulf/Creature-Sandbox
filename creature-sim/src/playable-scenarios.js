@@ -604,6 +604,7 @@ export class PlayableScenarios {
   _completeRun() {
     this.activeRun.completed = true;
     this.activeRun.state = 'complete';
+    this.activeRun.progress = 1;
     const id = this.activeRun.id;
     const seconds = Math.round(this.activeRun.elapsed);
     const existing = this.progress[id] || { completions: 0, bestSeconds: null };
@@ -614,12 +615,14 @@ export class PlayableScenarios {
     this._saveProgress();
     this.notifications?.show?.(`🏆 Scenario complete: ${this.activeRun.scenario.name}`, 'achievement', 4200);
     this.audio?.playUISound?.('success');
+    this.lastSnapshot = this._buildSnapshot();
     this._emitUpdate();
   }
 
   _failRun(reason) {
     this.activeRun.failed = true;
     this.activeRun.state = 'failed';
+    this.lastSnapshot = this._buildSnapshot();
     this.notifications?.show?.(`Scenario failed: ${reason}`, 'error', 4200);
     this._emitUpdate();
   }

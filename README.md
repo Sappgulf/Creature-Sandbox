@@ -97,13 +97,13 @@ Run the current hosted build, or deploy your own instance with the button above.
 - **Grab affordances**: Hover creatures to see a grab outline and grabbed highlight
 - **Creature feedback**: Selection glow, success pulses, and friendly error shakes
 - **Chaos dial**: Tune physics wobble, bounce energy, and gravity drift from calm to silly
-- **God mode (optional)**: Enter a gentle intervention mode to place food, calm zones, or nudge chaos
+- **God mode (optional)**: Enter a gentle intervention mode to place food, calm zones, props, cleanup, or nudge chaos
 - **Gene sharing**: Copy/import gene codes from the Gene Editor
 - **Display toggles**: Nameplates, reduced motion, region boundaries, and nest markers in the Features panel
 - **Condensed top HUD**: Primary controls plus a ⋯ overflow menu for all panels
 - **Moments log**: Tap a moment to jump the camera and review a session summary
 - **Narrative summaries**: The moments panel now explains what the ecosystem is doing in plain language
-- **Upgrade Hub**: Open recipe presets, action cards, readability modes, discovery journal, seed gallery, and world postcards from the More menu
+- **Upgrade Hub**: Open recipe presets, action cards, readability modes, scenario result cards, discovery journal, seed gallery, and world postcards from the More menu
 - **Creature clarity**: Selected creatures show life stage, emotion, bonds, memory reasons, and compact inspector tabs for Stats, Memory, Family, and Genes
 - **Save previews**: Save slots include population, scenario context, runtime metadata, and canvas thumbnails
 
@@ -153,7 +153,7 @@ open http://localhost:5173
 - **Ctrl/⌘ + S / Ctrl/⌘ + O**: Save to file / load from file
 - **God Mode**: Open **⋯ More Actions** → **✨ God Mode** or long-press the world (touch)
 - **Watch Mode**: Use the bottom control strip for pause, follow, speed, moments, and re-center
-- **Upgrade Hub**: Open **⋯ More Actions** → **✨ Upgrade Hub** for recipe presets, action cards, readability, seed gallery, and postcards
+- **Upgrade Hub**: Open **⋯ More Actions** → **✨ Upgrade Hub** for recipe presets, action cards, scenario results, readability, seed gallery, and postcards
 
 ### Tool Modes (Keyboard Shortcuts)
 - **X**: Inspect mode (default)

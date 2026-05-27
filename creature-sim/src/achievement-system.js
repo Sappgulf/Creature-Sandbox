@@ -509,60 +509,93 @@ export class AchievementSystem {
 
     // Create notification element
     const notification = document.createElement('div');
+    const compactViewport = typeof window !== 'undefined' &&
+      (window.innerWidth <= 640 || document.body.classList.contains('mobile-device'));
     notification.className = 'achievement-notification';
-    notification.innerHTML = `
-      <div class="achievement-icon">${achievement.icon}</div>
-      <div class="achievement-content">
-        <div class="achievement-title">Achievement Unlocked!</div>
-        <div class="achievement-name">${achievement.name}</div>
-        <div class="achievement-xp">+${achievement.xp} XP</div>
-      </div>
-    `;
+    notification.innerHTML = compactViewport
+      ? `
+        <div class="achievement-icon">${achievement.icon}</div>
+        <div class="achievement-content">
+          <div class="achievement-name">${achievement.name}</div>
+          <div class="achievement-xp">Achievement · +${achievement.xp} XP</div>
+        </div>
+      `
+      : `
+        <div class="achievement-icon">${achievement.icon}</div>
+        <div class="achievement-content">
+          <div class="achievement-title">Achievement Unlocked!</div>
+          <div class="achievement-name">${achievement.name}</div>
+          <div class="achievement-xp">+${achievement.xp} XP</div>
+        </div>
+      `;
 
     // Style it
     notification.style.cssText = `
       position: fixed;
-      top: 20px;
-      right: 20px;
+      top: ${compactViewport ? 'calc(env(safe-area-inset-top, 0px) + 12px)' : '20px'};
+      right: ${compactViewport ? '12px' : '20px'};
+      left: ${compactViewport ? '12px' : 'auto'};
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      padding: 15px 20px;
-      border-radius: 10px;
+      padding: ${compactViewport ? '9px 12px' : '15px 20px'};
+      border-radius: ${compactViewport ? '14px' : '10px'};
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
       z-index: 10001;
       display: flex;
       align-items: center;
-      gap: 15px;
+      gap: ${compactViewport ? '10px' : '15px'};
       animation: slideInRight 0.3s ease-out;
-      min-width: 300px;
+      min-width: ${compactViewport ? '0' : '300px'};
+      max-width: ${compactViewport ? 'calc(100vw - 24px)' : '420px'};
+      min-height: ${compactViewport ? '54px' : 'auto'};
     `;
 
     // Icon style
     const icon = notification.querySelector('.achievement-icon');
     icon.style.cssText = `
-      font-size: 40px;
+      font-size: ${compactViewport ? '28px' : '40px'};
       line-height: 1;
+      flex: 0 0 auto;
+      width: ${compactViewport ? '34px' : 'auto'};
+      height: ${compactViewport ? '34px' : 'auto'};
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
     `;
 
     // Content styles
+    const content = notification.querySelector('.achievement-content');
+    if (content) {
+      content.style.cssText = `
+        min-width: 0;
+      `;
+    }
+
     const title = notification.querySelector('.achievement-title');
-    title.style.cssText = `
-      font-size: 12px;
-      opacity: 0.9;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    `;
+    if (title) {
+      title.style.cssText = `
+        font-size: 12px;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      `;
+    }
 
     const name = notification.querySelector('.achievement-name');
     name.style.cssText = `
-      font-size: 18px;
+      font-size: ${compactViewport ? '14px' : '18px'};
       font-weight: bold;
-      margin: 5px 0;
+      margin: ${compactViewport ? '2px 0' : '5px 0'};
+      line-height: 1.15;
+      white-space: ${compactViewport ? 'nowrap' : 'normal'};
+      overflow: ${compactViewport ? 'hidden' : 'visible'};
+      text-overflow: ${compactViewport ? 'ellipsis' : 'clip'};
     `;
 
     const xp = notification.querySelector('.achievement-xp');
     xp.style.cssText = `
-      font-size: 14px;
+      font-size: ${compactViewport ? '11px' : '14px'};
       opacity: 0.8;
     `;
 
@@ -574,7 +607,7 @@ export class AchievementSystem {
       setTimeout(() => {
         notification.remove();
       }, 300);
-    }, 5000);
+    }, compactViewport ? 3200 : 5000);
   }
 
   // Get achievement progress for UI

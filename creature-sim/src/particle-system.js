@@ -14,6 +14,8 @@ export class ParticleSystem {
     this._particleCreated = 0;
     this._particleReleased = 0;
     this._particleRemoved = 0;
+    this._particleSpriteRuntime = null;
+    this._particleSpriteRequest = null;
   }
 
   /**
@@ -1160,18 +1162,40 @@ export class ParticleSystem {
     this.particles.push(p);
   }
 
-  _getParticleSpriteFrame(p) {
-    if (!assetLoader.getSpriteSheet('particle_sparkle')) {
-      return null;
+  _getParticleSpriteRuntime() {
+    if (this._particleSpriteRuntime?.frames?.length) {
+      return this._particleSpriteRuntime;
     }
 
-    const sprite = assetLoader.getSpriteFramesSync('particle_sparkle', { size: 32 });
-    if (!sprite) {
-      assetLoader.requestSpriteFrames('particle_sparkle', { size: 32 }).catch((error) => {
-        console.debug('[ParticleSystem] particle sprite load failed:', error);
-      });
-      return null;
+    if (assetLoader.getSpriteSheet('particle_sparkle')) {
+      const sprite = assetLoader.getSpriteFramesSync('particle_sparkle', { size: 32 });
+      if (sprite?.frames?.length) {
+        this._particleSpriteRuntime = sprite;
+        return this._particleSpriteRuntime;
+      }
     }
+
+    if (!this._particleSpriteRequest) {
+      this._particleSpriteRequest = assetLoader.requestSpriteFrames('particle_sparkle', { size: 32 })
+        .then((sprite) => {
+          if (sprite?.frames?.length) this._particleSpriteRuntime = sprite;
+          return this._particleSpriteRuntime;
+        })
+        .catch((error) => {
+          console.debug('[ParticleSystem] particle sprite load failed:', error);
+          return null;
+        })
+        .finally(() => {
+          this._particleSpriteRequest = null;
+        });
+    }
+
+    return null;
+  }
+
+  _getParticleSpriteFrame(p) {
+    const sprite = this._getParticleSpriteRuntime();
+    if (!sprite) return null;
 
     const groupBaseByType = {
       sparkle: 0,
@@ -1207,6 +1231,30 @@ export class ParticleSystem {
     return true;
   }
 
+  _drawParticleCircle(ctx, p) {
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  _drawParticleSpriteOrCircle(ctx, p, { scale = 1, shadowBlur = 0 } = {}) {
+    const useGlow = shadowBlur > 0 && this.maxParticles > 80;
+    if (useGlow) {
+      ctx.save();
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = shadowBlur;
+    }
+
+    if (!this._drawParticleSprite(ctx, p, scale)) {
+      this._drawParticleCircle(ctx, p);
+    }
+
+    if (useGlow) {
+      ctx.restore();
+    }
+  }
+
   draw(ctx, camera = null) {
     // Camera parameter is optional - particles are drawn in world space
     // If camera transform is needed, it should be applied before calling draw
@@ -1226,16 +1274,7 @@ export class ParticleSystem {
       ctx.globalAlpha = p.opacity || 1.0;
 
       if (p.type === 'sparkle') {
-        ctx.save();
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 6;
-        if (!this._drawParticleSprite(ctx, p, 1.05)) {
-          ctx.fillStyle = p.color;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.restore();
+        this._drawParticleSpriteOrCircle(ctx, p, { scale: 1.05, shadowBlur: 6 });
       } else if (p.type === 'ring') {
         // Expanding ring
         ctx.strokeStyle = p.color;
@@ -1246,10 +1285,7 @@ export class ParticleSystem {
       } else if (p.type === 'dust') {
         // Dust cloud particles
         if (!this._drawParticleSprite(ctx, p, 1.1)) {
-          ctx.fillStyle = p.color;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fill();
+          this._drawParticleCircle(ctx, p);
         }
       } else if (p.type === 'gravestone') {
         // Draw gravestone symbol
@@ -1289,32 +1325,11 @@ export class ParticleSystem {
         ctx.textBaseline = 'middle';
         ctx.fillText(p.text, p.x, p.y);
       } else if (p.type === 'blood') {
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
+        this._drawParticleCircle(ctx, p);
       } else if (p.type === 'food') {
-        ctx.save();
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 5;
-        if (!this._drawParticleSprite(ctx, p, 1)) {
-          ctx.fillStyle = p.color;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.restore();
+        this._drawParticleSpriteOrCircle(ctx, p, { scale: 1, shadowBlur: 5 });
       } else if (p.type === 'evolution') {
-        ctx.save();
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 12;
-        if (!this._drawParticleSprite(ctx, p, 1.25)) {
-          ctx.fillStyle = p.color;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.restore();
+        this._drawParticleSpriteOrCircle(ctx, p, { scale: 1.25, shadowBlur: 12 });
       } else if (p.type === 'heal') {
         ctx.fillStyle = p.color;
         ctx.font = `${p.size}px Arial`;
@@ -1371,10 +1386,7 @@ export class ParticleSystem {
         ctx.stroke();
       } else if (p.type === 'venom') {
         if (!this._drawParticleSprite(ctx, p, 1)) {
-          ctx.fillStyle = p.color;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fill();
+          this._drawParticleCircle(ctx, p);
         }
       } else if (p.type === 'weather') {
         // Enhanced weather particle rendering using category

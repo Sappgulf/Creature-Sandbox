@@ -7,6 +7,20 @@ import { getDebugFlags } from './debug-flags.js';
 import { getAgeStageIcon, getElderFadeAlpha } from './creature-age.js';
 
 const { TAU } = CreatureConfig;
+const SPRITE_CACHE_SIZES = [32, 48, 64, 96, 128];
+const BASE_SPRITE_CACHE_SIZE = 64;
+
+function quantizeHue(value, step = 24) {
+  const hue = Number(value);
+  if (!Number.isFinite(hue)) return 0;
+  return ((Math.round(hue / step) * step) % 360 + 360) % 360;
+}
+
+function quantizeLightness(value, step = 5) {
+  const lightness = Number(value);
+  if (!Number.isFinite(lightness)) return 60;
+  return Math.round(clamp(lightness, 20, 90) / step) * step;
+}
 
 export function isAlphaCreature(creature, world) {
   if (!creature || !world?.lineageTracker) return false;
@@ -448,7 +462,9 @@ export function drawCreature(creature, ctx, opts = {}) {
     }
   }
 
-  const colorStr = `hsl(${displayHue},85%,${lightness}%)`;
+  const spriteHue = quantizeHue(displayHue);
+  const spriteLightness = quantizeLightness(lightness);
+  const colorStr = `hsl(${spriteHue},85%,${spriteLightness}%)`;
 
   if (assetLoader.isReady() && (creature._cachedColor !== colorStr || creature._cachedAssetType !== assetType)) {
     updateCachedCanvas(creature, assetType, colorStr);
@@ -1355,21 +1371,36 @@ export function getCachedSpriteFrame(creature, worldTime = 0, renderSize = 64) {
     return null;
   }
 
-  const sizes = [32, 48, 64, 96, 128];
-  let chosenSize = 64;
-  for (let i = 0; i < sizes.length; i++) {
-    if (sizes[i] >= renderSize) {
-      chosenSize = sizes[i];
+  let chosenSize = BASE_SPRITE_CACHE_SIZE;
+  for (let i = 0; i < SPRITE_CACHE_SIZES.length; i++) {
+    if (SPRITE_CACHE_SIZES[i] >= renderSize) {
+      chosenSize = SPRITE_CACHE_SIZES[i];
       break;
     }
-    if (i === sizes.length - 1) {
-      chosenSize = sizes[i];
+    if (i === SPRITE_CACHE_SIZES.length - 1) {
+      chosenSize = SPRITE_CACHE_SIZES[i];
     }
   }
 
   let spriteSet = spriteSets[chosenSize];
   if (!spriteSet || !spriteSet.frames || spriteSet.frames.length === 0) {
-    spriteSet = spriteSets[64];
+    if (creature._cachedAssetType && creature._cachedColor && !spriteSets[`pending-${chosenSize}`]) {
+      const expectedAssetType = creature._cachedAssetType;
+      const expectedColor = creature._cachedColor;
+      spriteSets[`pending-${chosenSize}`] = true;
+      assetLoader.requestSpriteFrames(expectedAssetType, { color: expectedColor, size: chosenSize }).then(nextSet => {
+        if (creature._cachedColor === expectedColor && creature._cachedAssetType === expectedAssetType && nextSet?.frames?.length) {
+          creature._cachedSpriteSets[chosenSize] = nextSet;
+        }
+      }).catch(error => {
+        console.debug(`Failed to prepare sprite frames for ${expectedAssetType} at size ${chosenSize}:`, error);
+      }).finally(() => {
+        if (creature._cachedSpriteSets === spriteSets) {
+          delete creature._cachedSpriteSets[`pending-${chosenSize}`];
+        }
+      });
+    }
+    spriteSet = spriteSets[BASE_SPRITE_CACHE_SIZE];
   }
   if (!spriteSet || !spriteSet.frames || spriteSet.frames.length === 0) {
     const firstKey = Object.keys(spriteSets)[0];
@@ -1401,18 +1432,13 @@ export function updateCachedCanvas(creature, assetType, colorStr) {
   creature._cachedAssetType = assetType;
   creature._cachedSpriteSets = {};
 
-  const zoomSizes = [32, 48, 64, 96, 128];
-  zoomSizes.forEach(size => {
-    assetLoader.requestSpriteFrames(assetType, { color: colorStr, size }).then(spriteSet => {
-      if (creature._cachedColor === colorStr && creature._cachedAssetType === assetType) {
-        creature._cachedSpriteSets[size] = spriteSet;
-        if (size === 64) {
-          creature._cachedCanvas = spriteSet?.frames?.[0] || null;
-        }
-      }
-    }).catch(error => {
-      console.debug(`Failed to prepare sprite frames for ${assetType} at size ${size}:`, error);
-    });
+  assetLoader.requestSpriteFrames(assetType, { color: colorStr, size: BASE_SPRITE_CACHE_SIZE }).then(spriteSet => {
+    if (creature._cachedColor === colorStr && creature._cachedAssetType === assetType) {
+      creature._cachedSpriteSets[BASE_SPRITE_CACHE_SIZE] = spriteSet;
+      creature._cachedCanvas = spriteSet?.frames?.[0] || null;
+    }
+  }).catch(error => {
+    console.debug(`Failed to prepare sprite frames for ${assetType} at size ${BASE_SPRITE_CACHE_SIZE}:`, error);
   });
 }
 

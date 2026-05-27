@@ -531,6 +531,12 @@ export class UpgradeController {
 
   setPanelVisible(visible) {
     if (!this.panel) return;
+    if (visible) {
+      this.uiController?.closeMajorPanels?.('upgrade-panel');
+      if (gameState.godModeActive) {
+        this.uiController?.setGodModeActive?.(false, { source: 'upgrade-panel' });
+      }
+    }
     this.panel.classList.toggle('hidden', !visible);
     this.panel.setAttribute('aria-hidden', visible ? 'false' : 'true');
     if (visible) this.renderPanel();
@@ -547,6 +553,7 @@ export class UpgradeController {
     const recipeMarkup = SANDBOX_RECIPES.map(recipe => `
       <button class="upgrade-card" data-upgrade-action="recipe" data-value="${escapeHtml(recipe.id)}">
         <span>${escapeHtml(recipe.icon)}</span><strong>${escapeHtml(recipe.label)}</strong><em>${escapeHtml(recipe.description)}</em>
+        <small>${Number(recipe.setup?.herbivore || 0) + Number(recipe.setup?.omnivore || 0) + Number(recipe.setup?.predator || 0) + Number(recipe.setup?.aquatic || 0) + Number(recipe.setup?.flying || 0) + Number(recipe.setup?.burrowing || 0)} creatures · ${Number(recipe.setup?.food || 0)} food</small>
       </button>
     `).join('');
     const followMarkup = FOLLOW_TARGET_MODES.map(mode => `
@@ -567,6 +574,27 @@ export class UpgradeController {
       moments: this.moments,
       seed: window.location.hash?.replace(/^#/, '') || ''
     });
+    const scenarioResultMarkup = result ? `
+      <div class="scenario-result-card" data-state="${escapeHtml(result.state)}">
+        <div class="scenario-result-head">
+          <span>${escapeHtml(result.label)}</span>
+          <strong>${escapeHtml(result.medal)} · ${Number(result.score) || 0}</strong>
+        </div>
+        <p>${escapeHtml(result.summary)}</p>
+        <div class="scenario-result-stats">
+          ${(result.statCards || []).map(item => `
+            <span data-tone="${escapeHtml(item.tone)}">
+              <em>${escapeHtml(item.label)}</em>
+              <strong>${escapeHtml(item.value)}</strong>
+            </span>
+          `).join('')}
+        </div>
+        <div class="scenario-result-foot">
+          <span>${result.discoveries?.length ? escapeHtml(result.discoveries.join(', ')) : 'No special discoveries yet'}</span>
+          <em>${escapeHtml(result.nextAction)}</em>
+        </div>
+      </div>
+    ` : '<p class="muted">Start a scenario to earn a medal summary.</p>';
 
     const body = this.panel.querySelector('#upgrade-panel-body');
     if (!body) return;
@@ -611,7 +639,7 @@ export class UpgradeController {
       </section>
       <section class="upgrade-section">
         <h3>Scenario Result</h3>
-        ${result ? `<p><strong>${escapeHtml(result.medal)}</strong> · Score ${result.score} · Survival ${result.survival}% · Stress ${result.stressScore}%</p>` : '<p class="muted">Start a scenario to earn a medal summary.</p>'}
+        ${scenarioResultMarkup}
       </section>
       <section class="upgrade-section two-col">
         <div><h3>Discovery Journal</h3><ul class="upgrade-list">${journalMarkup}</ul></div>

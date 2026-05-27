@@ -552,3 +552,27 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - `npm run smoke:worker` ✅ (desktop, mobile-compact, mobile-large; mobile p95 frame pacing `<= 17.2ms`)
   - Playwright live mobile smoke sanity ✅: rail height `45px`, home hidden, challenge overlay hidden, mini-graphs hidden, and 0 warning/error console messages.
 - Residual note: main-thread smoke still reports slow real-time frame pacing after the full scripted interaction sequence, even with the particle budget enforced. Worker mode is the smooth opt-in lane and is now passing with stable mobile frame pacing.
+
+2026-05-27
+- Approved tranche 1-5: main-thread smoothness, drag/throw/prop proof, mobile God Mode panel polish, Upgrade Hub pass, and scenario result polish.
+- Implemented:
+  - reduced sprite-tint startup pressure by quantizing creature sprite tint colors and preparing only the base 64px sprite set immediately; close-zoom sizes now load lazily.
+  - cached the particle sparkle sprite runtime and skips particle glow/shadow work when renderer quality has forced a low particle budget.
+  - refreshed completed/failed playable scenario snapshots immediately so result state is truthful in save/smoke/UI paths.
+  - upgraded the Upgrade Hub scenario result from one summary line into a result card with score, medal, survival/food/stress stats, discoveries, and next action.
+  - compacted mobile God Mode into a measured 3-column tool panel that stays above the action bar.
+  - compacted the legacy mobile achievement fallback toast so unlocks do not render as a large banner over the playfield.
+  - opening Upgrade Hub now exits God Mode first so recipe/result content is not covered by the God tool panel.
+  - added deterministic smoke hooks/assertions for throw counters, prop trigger counters, scenario completion cards, God panel sizing, Upgrade Hub result state, and particle max-budget truth.
+  - hardened the mobile overflow Props click path against hash/HMR reload races by checking the resulting tool state, settling one frame before perf checks, and retrying through the drawer.
+- Verification:
+  - `git diff --check` ✅
+  - `npm run lint` ✅
+  - `npm test` ✅ (154 passing)
+  - `node --check scripts/browser-smoke.mjs` ✅
+  - `npm run build` ✅ (main app JS `566.73 kB` / `165.82 kB` gzip)
+  - `npm run check:bundle` ✅
+  - `npm run smoke:browser` ✅ (desktop avg `48.15ms` / p95 `83.3ms`; mobile p95 `<= 16.8ms`)
+  - `npm run smoke:worker` ✅ (desktop avg `23.71ms` / p95 `34.4ms`; mobile p95 `<= 17.7ms`)
+  - Playwright MCP opened local dev server at `http://127.0.0.1:50555/?smoke=1#seed=1s-8-7s` ✅
+- Residual note: desktop main-thread smoke is much better but still below 60fps in the final watch/god/result state. Next pass should profile full-view draw volume, especially creature/food `drawImage` cost.

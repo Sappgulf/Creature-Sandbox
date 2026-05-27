@@ -205,13 +205,34 @@ export function buildObjectiveRail(playableSnapshot = null, goals = []) {
 export function buildScenarioResult(snapshot = null) {
   if (!snapshot?.active) return null;
   const metrics = snapshot.metrics || {};
+  const state = snapshot.state || 'running';
+  const progress = Math.round(clamp(Number(snapshot.progress ?? 0), 0, 100));
   const survival = Math.round(clamp((metrics.alive || 0) / Math.max(1, snapshot.scenario?.minAlive || 25), 0, 1.4) * 100);
   const foodStability = Math.round(clamp((metrics.foodPerCreature || 0) / 6, 0, 1) * 100);
   const stressScore = Math.round(clamp(1 - (metrics.averageStress || 0) / 100, 0, 1) * 100);
   const discoveries = [metrics.variants ? 'Variants' : null, metrics.hunts ? 'Hunts' : null, metrics.props ? 'Props' : null].filter(Boolean);
-  const score = Math.round((survival * 0.45) + (foodStability * 0.25) + (stressScore * 0.3));
+  const score = Math.round(clamp((survival * 0.45) + (foodStability * 0.25) + (stressScore * 0.3), 0, 100));
   const medal = score >= 90 ? 'Gold' : score >= 72 ? 'Silver' : score >= 55 ? 'Bronze' : 'Practice';
-  return { survival, foodStability, stressScore, discoveries, score, medal };
+  const scenarioName = snapshot.scenario?.name || 'Scenario';
+  const label = state === 'complete'
+    ? `${medal} finish`
+    : state === 'failed'
+      ? 'Run failed'
+      : `${progress}% in progress`;
+  const summary = state === 'complete'
+    ? `${scenarioName} finished with ${metrics.alive || 0} creatures and ${foodStability}% food stability.`
+    : state === 'failed'
+      ? `${scenarioName} ended early. Reset with a safer recipe or reduce pressure.`
+      : `${scenarioName} is active. Keep survival, food, and stress inside the target range.`;
+  const nextAction = snapshot.director?.nextAction || (state === 'complete'
+    ? 'Save the seed or try a harder scenario.'
+    : 'Follow the active objective and react to the next pressure point.');
+  const statCards = [
+    { id: 'survival', label: 'Survival', value: `${survival}%`, tone: survival >= 100 ? 'stable' : 'watch' },
+    { id: 'food', label: 'Food', value: `${foodStability}%`, tone: foodStability >= 55 ? 'stable' : 'watch' },
+    { id: 'stress', label: 'Stress', value: `${stressScore}%`, tone: stressScore >= 60 ? 'stable' : 'watch' }
+  ];
+  return { survival, foodStability, stressScore, discoveries, score, medal, state, progress, label, summary, nextAction, statCards };
 }
 
 export function buildWorldPostcard({ world, playableSnapshot, moments, seed } = {}) {

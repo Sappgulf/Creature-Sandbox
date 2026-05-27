@@ -156,6 +156,45 @@ async function readObjectiveRailMetrics(page) {
   });
 }
 
+async function readGodPanelMetrics(page) {
+  return page.evaluate(() => {
+    const panel = document.getElementById('god-mode-panel');
+    if (!panel) return null;
+    const rect = panel.getBoundingClientRect();
+    const buttons = Array.from(panel.querySelectorAll('.god-mode-tools button')).map((button) => {
+      const buttonRect = button.getBoundingClientRect();
+      return {
+        width: Number(buttonRect.width.toFixed(1)),
+        height: Number(buttonRect.height.toFixed(1))
+      };
+    });
+    return {
+      visible: rect.width > 0 && rect.height > 0 && !panel.classList.contains('hidden'),
+      width: Number(rect.width.toFixed(1)),
+      height: Number(rect.height.toFixed(1)),
+      top: Number(rect.top.toFixed(1)),
+      bottom: Number(rect.bottom.toFixed(1)),
+      buttonMinHeight: Number(Math.min(...buttons.map(button => button.height)).toFixed(1)),
+      buttonCount: buttons.length
+    };
+  });
+}
+
+async function readUpgradeScenarioResultMetrics(page) {
+  return page.evaluate(() => {
+    const card = document.querySelector('.scenario-result-card');
+    if (!card) return null;
+    const rect = card.getBoundingClientRect();
+    return {
+      state: card.getAttribute('data-state'),
+      visible: rect.width > 0 && rect.height > 0,
+      width: Number(rect.width.toFixed(1)),
+      height: Number(rect.height.toFixed(1)),
+      text: card.textContent.trim().replace(/\s+/g, ' ').slice(0, 240)
+    };
+  });
+}
+
 async function waitForPageCondition(page, condition, label, timeoutMs = 12000) {
   const started = Date.now();
   let lastError = null;
@@ -218,6 +257,29 @@ async function clickVisibleCreature(page, state) {
   };
   await clickWorld(page, point.x, point.y);
   await advance(page, 320);
+}
+
+async function clickOverflowAction(page, action, scenarioName) {
+  const menuItem = page.locator(`#overflow-drawer [data-action="${action}"]`);
+  await menuItem.waitFor({ state: 'visible', timeout: 5000 });
+  try {
+    await menuItem.click({ timeout: 5000 });
+    return;
+  } catch (error) {
+    await advance(page, 180);
+    const state = await readGameState(page);
+    if (state.ui?.tool === action || (action === 'props' && state.ui?.tool === 'prop')) return;
+    if (!(await menuItem.isVisible().catch(() => false))) {
+      await page.locator('#ctrl-more').click();
+      await menuItem.waitFor({ state: 'visible', timeout: 5000 });
+    }
+    await menuItem.click({ force: true, timeout: 5000 });
+    const after = await readGameState(page);
+    assert.ok(
+      after.ui?.tool === action || (action === 'props' && after.ui?.tool === 'prop'),
+      `${scenarioName}: overflow action ${action} should activate after retry (${error.message})`
+    );
+  }
 }
 
 async function captureHomeSnapshot(browser) {
@@ -352,6 +414,7 @@ async function runScenario(browser, scenario) {
     assert.ok(perf.assets.registeredSprites >= 20, `${scenario.name}: worker sprite manifest should be loaded`);
     const particleBudget = particleBudgetByQuality[perf.renderer?.quality] ?? 500;
     assert.ok(perf.world.particles <= particleBudget, `${scenario.name}: worker particles should honor ${perf.renderer?.quality || 'default'} quality budget`);
+    assert.ok(perf.world.maxParticles <= particleBudget, `${scenario.name}: worker particle system max should track ${perf.renderer?.quality || 'default'} quality budget`);
 
     const framePacing = sampleRealtime ? await sampleFramePacing(page) : null;
     if (framePacing) {
@@ -443,7 +506,7 @@ async function runScenario(browser, scenario) {
     'true',
     `${scenario.name}: food menu item should reflect active tool state`
   );
-  await page.locator('[data-action="props"]').click();
+  await clickOverflowAction(page, 'props', scenario.name);
   await advance(page, 180);
   state = await readGameState(page);
   assert.equal(state.ui.tool, 'prop', `${scenario.name}: props menu action should activate prop tool`);
@@ -461,6 +524,14 @@ async function runScenario(browser, scenario) {
   state = await readGameState(page);
   assert.equal(state.ui.godMode, true, `${scenario.name}: god mode should toggle from watch strip`);
   assert.equal(state.ui.objectiveMode, 'god', `${scenario.name}: objective rail should carry god-mode state`);
+  const godPanel = await readGodPanelMetrics(page);
+  assert.ok(godPanel?.visible, `${scenario.name}: god mode panel should be visible and measurable`);
+  assert.equal(godPanel.buttonCount, 6, `${scenario.name}: god mode panel should expose all six tools`);
+  if (scenario.mobile) {
+    assert.ok(godPanel.width <= scenario.viewport.width - 24, `${scenario.name}: mobile god panel should fit the viewport`);
+    assert.ok(godPanel.height <= 260, `${scenario.name}: mobile god panel should stay compact (${godPanel.height}px)`);
+    assert.ok(godPanel.buttonMinHeight >= 36, `${scenario.name}: mobile god buttons should remain tappable`);
+  }
   await page.screenshot({ path: path.join(outDir, `${scenario.name}-god.png`) });
 
   console.log(`  ${scenario.name}: moments and god tools`);
@@ -501,6 +572,16 @@ async function runScenario(browser, scenario) {
   assert.ok(state.systems.chaosNudge >= beforeGod.chaosNudge, `${scenario.name}: god chaos should register a nudge`);
   assert.ok(state.summary.totalProps >= beforeGod.props, `${scenario.name}: god prop/remove should leave prop accounting valid`);
 
+  console.log(`  ${scenario.name}: throw and props`);
+  const interactionProbe = await page.evaluate(() => window.__creatureSmoke.runInteractionProbe());
+  assert.equal(interactionProbe.ok, true, `${scenario.name}: smoke interaction probe should throw a creature and trigger a prop`);
+  assert.ok(interactionProbe.after.throws > interactionProbe.before.throws, `${scenario.name}: throw counter should increment`);
+  assert.ok(interactionProbe.after.props > interactionProbe.before.props, `${scenario.name}: prop trigger counter should increment`);
+  assert.ok(Math.hypot(interactionProbe.after.impulse.vx, interactionProbe.after.impulse.vy) > 1, `${scenario.name}: throw/prop should leave measurable impulse`);
+  state = await readGameState(page);
+  assert.ok(state.interactions.throws >= interactionProbe.after.throws, `${scenario.name}: text state should expose throw count`);
+  assert.ok(state.interactions.props >= interactionProbe.after.props, `${scenario.name}: text state should expose prop count`);
+
   console.log(`  ${scenario.name}: save/load and perf`);
   const roundTrip = await page.evaluate(() => window.__creatureSmoke.saveRoundTrip());
   assert.equal(roundTrip.ok, true, `${scenario.name}: save/load roundtrip should report ok`);
@@ -514,6 +595,21 @@ async function runScenario(browser, scenario) {
   assert.equal(slotPreview.info.preview.scenario.id, 'first_ecosystem', `${scenario.name}: slot preview should include scenario`);
   assert.ok(slotPreview.info.preview.population >= beforeSpawn, `${scenario.name}: slot preview should include population`);
   assert.match(slotPreview.info.preview.thumbnail || '', /^data:image\/png;base64,/, `${scenario.name}: slot preview should include a canvas thumbnail`);
+
+  console.log(`  ${scenario.name}: scenario result`);
+  const completedScenario = await page.evaluate(() => window.__creatureSmoke.completeScenarioForSmoke('first_ecosystem'));
+  assert.equal(completedScenario.ok, true, `${scenario.name}: smoke scenario should complete deterministically`);
+  assert.equal(completedScenario.playable.state, 'complete', `${scenario.name}: completed scenario state should be reflected`);
+  assert.equal(completedScenario.upgrades.scenarioResult.state, 'complete', `${scenario.name}: upgrade state should expose completed scenario result`);
+  assert.ok(completedScenario.upgrades.scenarioResult.score >= 0, `${scenario.name}: scenario result should expose a score`);
+  await page.evaluate(() => window.__creatureSmoke.showUpgradePanel());
+  const godPanelAfterUpgrade = await readGodPanelMetrics(page);
+  assert.equal(godPanelAfterUpgrade?.visible, false, `${scenario.name}: upgrade panel should not be covered by god mode panel`);
+  await page.locator('.scenario-result-card[data-state="complete"]').waitFor({ state: 'visible', timeout: 5000 });
+  const resultMetrics = await readUpgradeScenarioResultMetrics(page);
+  assert.ok(resultMetrics?.visible, `${scenario.name}: scenario result card should be visible`);
+  assert.match(resultMetrics.text, /finish|Score|Survival/i, `${scenario.name}: scenario result card should show result details`);
+  await page.screenshot({ path: path.join(outDir, `${scenario.name}-upgrade-result.png`) });
 
   const upgrades = await page.evaluate(() => {
     const recipeOk = window.__creatureSmoke.applyRecipe('peaceful_meadow');
@@ -533,12 +629,14 @@ async function runScenario(browser, scenario) {
   assert.equal(upgrades.nicknameOk, true, `${scenario.name}: selected creature nickname should save`);
   assert.equal(upgrades.actionOk, true, `${scenario.name}: upgrade action card should run`);
   assert.ok(upgrades.state.recipes.length >= 4, `${scenario.name}: upgrade state should expose recipe presets`);
+  assert.ok(upgrades.state.scenarioResult?.statCards?.length >= 3, `${scenario.name}: upgrade state should expose scenario result stat cards`);
 
   const genePrefs = await page.evaluate(() => window.__creatureSmoke.geneEditorPrefsRoundTrip());
   assert.equal(genePrefs.ok, true, `${scenario.name}: gene editor preferences should persist across reload`);
   assert.equal(genePrefs.restored.spawnCount, 4, `${scenario.name}: gene editor should restore spawn count preference`);
   assert.equal(genePrefs.restored.spawnSpread, 120, `${scenario.name}: gene editor should restore spawn spread preference`);
 
+  await advance(page, 180);
   const perf = await page.evaluate(() => window.__creatureSmoke.perfBudget());
   assert.equal(!!perf.runtime?.workerMode, workerMode, `${scenario.name}: perf runtime should expose worker mode truth`);
   assert.ok(perf.canvas.width > 0 && perf.canvas.height > 0, `${scenario.name}: canvas should be measurable`);
@@ -551,6 +649,7 @@ async function runScenario(browser, scenario) {
   assert.ok(perf.world.creatures <= 220, `${scenario.name}: smoke population should stay inside perf budget`);
   const particleBudget = particleBudgetByQuality[perf.renderer?.quality] ?? 500;
   assert.ok(perf.world.particles <= particleBudget, `${scenario.name}: particles should honor ${perf.renderer?.quality || 'default'} quality budget`);
+  assert.ok(perf.world.maxParticles <= particleBudget, `${scenario.name}: particle system max should track ${perf.renderer?.quality || 'default'} quality budget`);
 
   const framePacing = sampleRealtime ? await sampleFramePacing(page) : null;
   if (framePacing) {

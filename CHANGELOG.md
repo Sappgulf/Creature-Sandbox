@@ -17,6 +17,27 @@
 - **Verification:**
 
 ## [UNRELEASED]
+### 2026-05-27 — interaction-results-pacing-polish — Planned
+- **Issues:** Approved tranche 1-5 targeted the remaining high-value polish: main-thread smoke still showed slow desktop frame pacing after full scripted interactions, throw/prop play did not have deterministic smoke proof, mobile God Mode could still read as a tall panel, Upgrade Hub scenario results were too thin, and scenario completion snapshots needed stronger runtime truth.
+- **Root Causes:** Creature sprites eagerly prepared multiple tinted zoom sizes per color, particle rendering resolved/requested the same sparkle sprite on hot draw paths, low-quality particle budgets still paid glow/shadow costs, throw/prop counters were only player-observable through side effects, the God panel reused the desktop two-column layout on mobile, and `_completeRun()`/`_failRun()` emitted stale `lastSnapshot` state after mutating the active run.
+- **Fixes:** Quantize creature sprite tints and lazy-load close-zoom sizes, cache particle sprite runtime and skip glow work on low budgets, add smoke interaction and scenario-completion hooks, compact mobile God Mode and the legacy mobile achievement toast, expand the Upgrade Hub scenario result card, close God Mode when Upgrade Hub opens, refresh completed/failed playable snapshots immediately, and harden mobile overflow action clicks in browser smoke.
+- **Verification:** Planned: `git diff --check`; `node --check scripts/browser-smoke.mjs`; `npm run lint`; `npm test`; `npm run build`; `npm run check:bundle`; `npm run smoke:browser`; `npm run smoke:worker`; local browser sanity.
+
+### 2026-05-27 — interaction-results-pacing-polish — Implemented
+- **Issues:** Main-thread desktop pacing needed a concrete improvement; throw/prop interactions, God panel compactness, and scenario-result truth needed checked proof; and the Upgrade Hub result view did not yet feel like a completed-run summary.
+- **Root Causes:** Tinted creature sprite variants and particle sprite lookup work were heavier than needed during full-view canvas rendering; smoke coverage stopped short of deterministic throw/prop counter assertions and completed-result DOM checks; mobile God Mode inherited desktop sizing; and playable scenario completion did not rebuild the public snapshot before emitting updates.
+- **Fixes:**
+  - Quantized creature sprite tint colors and prepared only the base 64px sprite set up front, with higher sizes requested lazily as zoom demands them.
+  - Cached the particle sparkle sprite runtime and skipped glow/shadow rendering when the active quality budget is low.
+  - Rebuilt playable scenario snapshots on completion/failure so Upgrade Hub, save metadata, smoke state, and UI all see `complete`/`failed` truth immediately.
+  - Replaced the one-line Upgrade Hub result with a result card containing medal, score, survival/food/stress stats, discoveries, and next action.
+  - Compacted mobile God Mode into a measured three-column panel and added smoke assertions for width, height, tool count, and tap target size.
+  - Reduced the legacy achievement fallback notification on mobile so unlocks do not render as a large banner over the playfield.
+  - Made Upgrade Hub opening close God Mode so recipe/result content is not covered by the God tool panel.
+  - Added smoke hooks/assertions for throw counters, prop trigger counters, deterministic scenario completion, Upgrade Hub result DOM, scenario result state, and particle max-budget truth.
+  - Hardened the mobile overflow Props action against hash/HMR reload races by validating the resulting tool state, advancing to a settled budget frame before perf checks, and retrying through the drawer.
+- **Verification:** `git diff --check` (pass); `node --check scripts/browser-smoke.mjs` (pass); `npm run lint` (pass); `npm test` (pass, 154 checks); `npm run build` (pass, main app JS `566.73 kB` / `165.82 kB` gzip); `npm run check:bundle` (pass); `npm run smoke:browser` (pass: desktop avg `48.15ms` / p95 `83.3ms`, mobile p95 `<= 16.8ms`); `npm run smoke:worker` (pass: desktop avg `23.71ms` / p95 `34.4ms`, mobile p95 `<= 17.7ms`); Playwright MCP opened `http://127.0.0.1:50555/?smoke=1#seed=1s-8-7s`.
+
 ### 2026-05-27 — mobile-objective-rail-audit — Planned
 - **Issues:** Baseline browser smoke passed, but screenshot review showed the compact mobile objective rail consuming too much vertical playfield space and truncating guidance when progress, world rhythm, and mode chips were all visible; smoke artifacts also showed the main-thread particle count could remain at 500 even after renderer quality dropped to `low`.
 - **Root Causes:** The mobile rail reused a stacked status layout and allowed a two-line title plus subtitle, so normal HUD status could grow into a large card at the top of the playfield; `RendererConfig.QUALITY_PRESETS` particle budgets were applied to the renderer-internal particle field but not the gameplay `ParticleSystem` owned by `GameLoop`.
