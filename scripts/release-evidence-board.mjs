@@ -120,13 +120,19 @@ async function lane(name, folder, { requiredBuildSha = null } = {}) {
 async function scenarioBalanceLane() {
   const summary = await readJson(path.join(outputDir, 'scenario-balance', 'summary.json'));
   const scenarios = Array.isArray(summary?.scenarios) ? summary.scenarios : [];
+  const variance = Array.isArray(summary?.variance) ? summary.variance : [];
+  const runCount = Number(summary?.runs || 1);
+  const uniqueScenarioCount = new Set(scenarios.map((item) => item.id)).size;
+  const varianceOk = variance.length >= 2 &&
+    variance.every((item) => Number(item.passRate || 0) === 1 && Array.isArray(item.failedRuns) && item.failedRuns.length === 0);
+  const passed = runCount >= 2 && uniqueScenarioCount >= 2 && varianceOk;
   return {
     name: 'scenario-balance',
     folder: path.join('output', 'scenario-balance'),
     present: scenarios.length > 0,
     scenarios: scenarios.length,
-    passed: scenarios.length >= 2,
-    readinessStatus: scenarios.length >= 2 ? 'balance-proof' : null,
+    passed,
+    readinessStatus: passed ? `balance-proof-${runCount}x` : null,
     workerCandidate: null,
     workerDefaultReady: null,
     completedScenarioResultFlow: null,
@@ -134,7 +140,51 @@ async function scenarioBalanceLane() {
     screenshots: Object.fromEntries(
       scenarios.map((item) => [path.basename(item.screenshot || `${item.id}.png`), true])
     ),
-    balance: scenarios
+    balance: scenarios,
+    variance,
+    runs: runCount
+  };
+}
+
+async function productionVitalsLane(requiredBuildSha = null) {
+  const dir = path.join(outputDir, 'production-vitals');
+  const summary = await readJson(path.join(dir, 'summary.json'));
+  const contexts = Array.isArray(summary?.contexts) ? summary.contexts : [];
+  const buildSha = summary?.target?.buildInfo?.sha ?? null;
+  const staleBuild = !!requiredBuildSha && buildSha !== requiredBuildSha;
+  const present = !!summary && !staleBuild;
+  const contextProofOk = contexts.length >= 2 && contexts.every((item) =>
+    item.consoleMessages?.length === 0 &&
+    item.state?.workerMode === true &&
+    item.state?.workerReady === true &&
+    Number(item.state?.workerPendingMessages || 0) === 0 &&
+    Number(item.state?.registeredSprites || 0) >= Number(summary?.budgets?.registeredSprites || 20)
+  );
+  return {
+    name: 'production-vitals',
+    folder: path.relative(repoRoot, dir),
+    present,
+    staleBuild,
+    buildSha,
+    target: summary?.target ?? null,
+    scenarios: contexts.length,
+    passed: present && summary?.passed === true && contextProofOk,
+    readinessStatus: present && summary?.passed === true && contextProofOk ? 'web-vitals-proof' : null,
+    workerCandidate: null,
+    workerDefaultReady: null,
+    completedScenarioResultFlow: null,
+    frames: [],
+    screenshots: Object.fromEntries(
+      contexts.map((item) => [path.basename(item.screenshot || `${item.name}.png`), true])
+    ),
+    vitals: staleBuild ? [] : contexts.map((item) => ({
+      context: item.name,
+      seededWorldMs: item.seededWorldMs ?? null,
+      firstContentfulPaintMs: item.vitals?.firstContentfulPaintMs ?? null,
+      largestContentfulPaintMs: item.vitals?.largestContentfulPaintMs ?? null,
+      cumulativeLayoutShift: item.vitals?.cumulativeLayoutShift ?? null,
+      longTaskTotalMs: item.vitals?.longTaskTotalMs ?? null
+    }))
   };
 }
 
@@ -143,8 +193,9 @@ function postureFrom(lanes) {
   const main = lanes.find((item) => item.name === 'main-browser');
   const worker = lanes.find((item) => item.name === 'worker-browser');
   const production = lanes.find((item) => item.name === 'production-browser');
+  const productionVitals = lanes.find((item) => item.name === 'production-vitals');
   const scenarioBalance = lanes.find((item) => item.name === 'scenario-balance');
-  const requiredLanes = [local, main, worker, production, scenarioBalance];
+  const requiredLanes = [local, main, worker, production, productionVitals, scenarioBalance];
   const missing = lanes.filter((item) => !item.present).map((item) => item.name);
   const blocked = lanes
     .filter((item) => item.present && item.passed === false)
@@ -168,7 +219,14 @@ function postureFrom(lanes) {
           : (production?.present
             ? `Production browser smoke is present but not release-ready (${production.readinessStatus || 'unknown readiness'}).`
             : 'Production browser smoke artifacts are optional until a production smoke run is requested.')),
-      scenarioBalance?.present ? 'New scenario balance-soak artifacts are present.' : 'New scenario balance-soak artifacts are missing.',
+      productionVitals?.passed
+        ? 'Production Web Vitals artifacts match this commit and stay inside startup, CLS, and long-task budgets.'
+        : (productionVitals?.staleBuild
+          ? `Production Web Vitals smoke is stale for this commit (artifact SHA ${productionVitals.buildSha || 'unknown'}).`
+          : (productionVitals?.present
+            ? 'Production Web Vitals smoke is present but failed a vitals/runtime budget.'
+            : 'Production Web Vitals smoke artifacts are missing.')),
+      scenarioBalance?.passed ? `Scenario balance-soak variance artifacts are present (${scenarioBalance.runs || 1}x).` : 'Scenario balance-soak variance artifacts are missing or insufficient.',
       workerReady
         ? 'Worker runtime is the shipping default with explicit main-thread fallback proof.'
         : (workerHeld
@@ -194,7 +252,21 @@ function markdown(board) {
     .find((item) => item.name === 'scenario-balance')
     ?.balance
     ?.map((item) =>
-      `| ${item.id} | ${item.runtime} | ${item.elapsed} | ${item.progress} | ${item.metrics?.alive ?? 'n/a'} | ${item.metrics?.food ?? 'n/a'} | ${item.metrics?.predators ?? 'n/a'} | ${item.metrics?.averageStress ?? 'n/a'} |`
+      `| ${item.id} | ${item.run ?? 'n/a'} | ${item.runtime} | ${item.elapsed} | ${item.progress} | ${item.metrics?.alive ?? 'n/a'} | ${item.metrics?.food ?? 'n/a'} | ${item.metrics?.predators ?? 'n/a'} | ${item.metrics?.averageStress ?? 'n/a'} |`
+    )
+    .join('\n') || '';
+  const varianceRows = board.lanes
+    .find((item) => item.name === 'scenario-balance')
+    ?.variance
+    ?.map((item) =>
+      `| ${item.id} | ${item.runs} | ${item.passRate} | ${item.alive?.min ?? 'n/a'}-${item.alive?.max ?? 'n/a'} | ${item.food?.min ?? 'n/a'}-${item.food?.max ?? 'n/a'} | ${item.predators?.min ?? 'n/a'}-${item.predators?.max ?? 'n/a'} | ${item.averageStress?.max ?? 'n/a'} | ${item.failedRuns?.length ? item.failedRuns.join(', ') : 'none'} |`
+    )
+    .join('\n') || '';
+  const vitalsRows = board.lanes
+    .find((item) => item.name === 'production-vitals')
+    ?.vitals
+    ?.map((item) =>
+      `| ${item.context} | ${item.seededWorldMs ?? 'n/a'} | ${item.firstContentfulPaintMs ?? 'n/a'} | ${item.largestContentfulPaintMs ?? 'n/a'} | ${item.cumulativeLayoutShift ?? 'n/a'} | ${item.longTaskTotalMs ?? 'n/a'} |`
     )
     .join('\n') || '';
 
@@ -222,9 +294,21 @@ ${frameRows || '| n/a | n/a | n/a | n/a | n/a | n/a | n/a |'}
 
 ## Scenario Balance
 
-| Scenario | Runtime | Elapsed | Progress | Alive | Food | Predators | Stress |
+| Scenario | Run | Runtime | Elapsed | Progress | Alive | Food | Predators | Stress |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+${balanceRows || '| n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |'}
+
+## Scenario Variance
+
+| Scenario | Runs | Pass rate | Alive range | Food range | Predator range | Max stress | Failed runs |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-${balanceRows || '| n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |'}
+${varianceRows || '| n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |'}
+
+## Production Vitals
+
+| Context | Ready ms | FCP ms | LCP ms | CLS | Long tasks ms |
+| --- | --- | --- | --- | --- | --- |
+${vitalsRows || '| n/a | n/a | n/a | n/a | n/a | n/a |'}
 
 ## Release Posture
 
@@ -255,7 +339,12 @@ function compactSummaryMarkdown(board) {
       ?.filter((frame) => frame.avgFrameMs != null || frame.p95FrameMs != null)
       ?.map((frame) => `${frame.scenario} avg ${frame.avgFrameMs ?? 'n/a'}ms p95 ${frame.p95FrameMs ?? 'n/a'}ms`)
       ?.join('; ');
-    return `- ${label}: ${status}${frames ? ` (${frames})` : ''}`;
+    const vitals = item.vitals
+      ?.map((vital) =>
+        `${vital.context} ready ${vital.seededWorldMs ?? 'n/a'}ms FCP ${vital.firstContentfulPaintMs ?? 'n/a'}ms CLS ${vital.cumulativeLayoutShift ?? 'n/a'}`
+      )
+      ?.join('; ');
+    return `- ${label}: ${status}${frames ? ` (${frames})` : (vitals ? ` (${vitals})` : '')}`;
   };
 
   return `# Creature Sandbox Release Summary
@@ -281,6 +370,7 @@ ${[
     laneLine('main-browser', 'Main-thread fallback smoke'),
     laneLine('worker-browser', 'Forced worker smoke'),
     laneLine('production-browser', 'Production realtime smoke'),
+    laneLine('production-vitals', 'Production Web Vitals smoke'),
     laneLine('scenario-balance', 'Scenario balance soak')
   ].join('\n')}
 `;
@@ -294,6 +384,7 @@ const lanes = [
   await lane('main-browser', 'browser-smoke-main'),
   await lane('worker-browser', 'browser-smoke-worker'),
   await lane('production-browser', 'browser-smoke-production', { requiredBuildSha: gitSha }),
+  await productionVitalsLane(gitSha),
   await scenarioBalanceLane()
 ];
 

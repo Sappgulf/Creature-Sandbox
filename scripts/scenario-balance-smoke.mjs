@@ -14,6 +14,7 @@ let port = Number(process.env.CREATURE_SCENARIO_BALANCE_PORT || 4174);
 let baseUrl = process.env.CREATURE_SCENARIO_BALANCE_URL || `http://127.0.0.1:${port}`;
 const reuseExternalServer = !!process.env.CREATURE_SCENARIO_BALANCE_URL;
 const soakMs = Number(process.env.CREATURE_SCENARIO_BALANCE_SOAK_MS || 75000);
+const runCount = resolveRunCount();
 
 const scenarios = [
   {
@@ -30,6 +31,17 @@ const scenarios = [
     maxStress: 90
   }
 ];
+
+function resolveRunCount() {
+  const argIndex = process.argv.findIndex((arg) => arg === '--runs');
+  const argValue = argIndex >= 0 ? process.argv[argIndex + 1] : null;
+  const inlineArg = process.argv.find((arg) => arg.startsWith('--runs='));
+  const raw = process.env.CREATURE_SCENARIO_BALANCE_RUNS ||
+    (inlineArg ? inlineArg.split('=').slice(1).join('=') : null) ||
+    argValue ||
+    2;
+  return Math.max(1, Math.floor(Number(raw) || 2));
+}
 
 function requestOk(url) {
   return new Promise((resolve) => {
@@ -139,8 +151,8 @@ async function advance(page, ms) {
   }
 }
 
-async function runScenario(browser, scenario) {
-  console.log(`Scenario balance: ${scenario.id}`);
+async function runScenario(browser, scenario, run) {
+  console.log(`Scenario balance: ${scenario.id} run ${run}/${runCount}`);
   const context = await browser.newContext({
     viewport: { width: 1280, height: 800 },
     deviceScaleFactor: 1
@@ -156,7 +168,7 @@ async function runScenario(browser, scenario) {
     errors.push({ type: 'pageerror', text: error.message });
   });
 
-  const url = `${baseUrl}/?smoke=1&worker=0&v=scenario-balance-${Date.now()}-${scenario.id}`;
+  const url = `${baseUrl}/?smoke=1&worker=0&v=scenario-balance-${Date.now()}-${scenario.id}-run-${run}`;
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 12000 });
   await waitForPageCondition(page, () => typeof window.render_game_to_text === 'function', 'render_game_to_text');
   await waitForPageCondition(page, () => typeof window.__creatureSmoke?.startScenario === 'function', 'creature smoke hooks');
@@ -172,7 +184,7 @@ async function runScenario(browser, scenario) {
   const state = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const metrics = state.playable?.metrics || {};
   console.log(
-    `  ${scenario.id}: elapsed ${Number(state.playable?.elapsed || 0).toFixed(1)}s, ` +
+    `  ${scenario.id} run ${run}: elapsed ${Number(state.playable?.elapsed || 0).toFixed(1)}s, ` +
     `alive ${Number(metrics.alive || 0)}, food ${Number(metrics.food || 0)}, ` +
     `predators ${Number(metrics.predators || 0)}, stress ${Number(metrics.averageStress || 0).toFixed(1)}`
   );
@@ -188,12 +200,13 @@ async function runScenario(browser, scenario) {
   assert.ok(Number(metrics.averageStress || 0) <= scenario.maxStress, `${scenario.id}: stress should stay recoverable`);
   assert.deepEqual(errors, [], `${scenario.id}: browser console should stay warning/error free`);
 
-  const screenshotPath = path.join(outDir, `${scenario.id}.png`);
+  const screenshotPath = path.join(outDir, `run-${run}-${scenario.id}.png`);
   await page.screenshot({ path: screenshotPath });
-  await fs.writeFile(path.join(outDir, `${scenario.id}.json`), JSON.stringify({ scenario, soakMs, state, errors }, null, 2));
+  await fs.writeFile(path.join(outDir, `run-${run}-${scenario.id}.json`), JSON.stringify({ scenario, run, soakMs, state, errors }, null, 2));
   await context.close();
   return {
     id: scenario.id,
+    run,
     soakMs,
     runtime: state.systems?.workerMode ? 'worker' : 'main',
     elapsed: Number(state.playable?.elapsed || 0),
@@ -208,21 +221,82 @@ async function runScenario(browser, scenario) {
   };
 }
 
+function mean(values) {
+  if (!values.length) return 0;
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+function metricRange(results, selector) {
+  const values = results.map(selector).filter((value) => Number.isFinite(value));
+  if (!values.length) {
+    return { min: null, max: null, mean: null };
+  }
+  return {
+    min: Math.min(...values),
+    max: Math.max(...values),
+    mean: Number(mean(values).toFixed(2))
+  };
+}
+
+function summarizeVariance(results) {
+  return scenarios.map((scenario) => {
+    const scenarioRuns = results.filter((result) => result.id === scenario.id);
+    const failedRuns = scenarioRuns.filter((result) => {
+      const metrics = result.metrics || {};
+      const predatorOk = scenario.minPredators ? Number(metrics.predators || 0) >= scenario.minPredators : true;
+      return Number(metrics.alive || 0) < scenario.minAlive ||
+        Number(metrics.food || 0) < scenario.minFood ||
+        Number(metrics.averageStress || 0) > scenario.maxStress ||
+        !predatorOk;
+    }).map((result) => result.run);
+
+    return {
+      id: scenario.id,
+      runs: scenarioRuns.length,
+      passRate: scenarioRuns.length ? Number(((scenarioRuns.length - failedRuns.length) / scenarioRuns.length).toFixed(3)) : 0,
+      failedRuns,
+      alive: metricRange(scenarioRuns, (result) => result.metrics?.alive),
+      food: metricRange(scenarioRuns, (result) => result.metrics?.food),
+      predators: metricRange(scenarioRuns, (result) => result.metrics?.predators),
+      averageStress: metricRange(scenarioRuns, (result) => result.metrics?.averageStress),
+      thresholds: {
+        minAlive: scenario.minAlive,
+        minFood: scenario.minFood,
+        minPredators: scenario.minPredators ?? null,
+        maxStress: scenario.maxStress
+      }
+    };
+  });
+}
+
 await fs.mkdir(outDir, { recursive: true });
 const server = await startServerIfNeeded();
 let browser;
 try {
   browser = await chromium.launch({ headless: true });
   const results = [];
-  for (const scenario of scenarios) {
-    results.push(await runScenario(browser, scenario));
+  for (let run = 1; run <= runCount; run++) {
+    for (const scenario of scenarios) {
+      results.push(await runScenario(browser, scenario, run));
+    }
   }
+  const variance = summarizeVariance(results);
   await fs.writeFile(path.join(outDir, 'summary.json'), JSON.stringify({
     generatedAt: new Date().toISOString(),
     baseUrl,
-    scenarios: results
+    runs: runCount,
+    soakMs,
+    scenarios: results,
+    variance
   }, null, 2));
-  console.log(`Scenario balance smoke passed: ${results.map(result => result.id).join(', ')}`);
+  for (const item of variance) {
+    console.log(
+      `  variance ${item.id}: runs ${item.runs}, pass ${item.passRate}, ` +
+      `alive ${item.alive.min}-${item.alive.max}, food ${item.food.min}-${item.food.max}, ` +
+      `predators ${item.predators.min}-${item.predators.max}, stress max ${item.averageStress.max}`
+    );
+  }
+  console.log(`Scenario balance smoke passed: ${runCount}x ${scenarios.map(result => result.id).join(', ')}`);
 } finally {
   if (browser) await browser.close();
   if (server) server.kill('SIGTERM');

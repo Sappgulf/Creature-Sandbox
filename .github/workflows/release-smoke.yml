@@ -34,6 +34,7 @@ jobs:
           git diff --check
           node --check scripts/browser-smoke.mjs
           node --check scripts/scenario-balance-smoke.mjs
+          node --check scripts/production-vitals-smoke.mjs
           node --check scripts/release-evidence-board.mjs
           node --check vite.config.js
           npm run lint
@@ -72,6 +73,9 @@ jobs:
 
       - name: Production browser smoke
         run: npm run smoke:production
+
+      - name: Production Web Vitals smoke
+        run: npm run smoke:production:vitals
 
       - name: Release evidence board
         run: npm run evidence:release

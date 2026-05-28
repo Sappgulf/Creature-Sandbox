@@ -7,7 +7,7 @@ import { ScalarField } from './world-scalar-field.js';
 import { WorldEnvironment } from './world-environment.js';
 import { WorldEcosystem } from './world-ecosystem.js';
 import { WorldCreatureManager } from './world-creature-manager.js';
-import { WorldCombat } from './world-combat.js';
+import { WorldCombat } from './world-combat.js?v=20260528-vitals1';
 import { WorldDisaster } from './world-disaster.js';
 import { CreatureEcosystemSystem } from './creature-ecosystem.js';
 import { WorldEvents } from './world-events.js';
@@ -27,6 +27,8 @@ export class World {
     // Core spatial systems
     this.pheromone = new ScalarField(width, height, 20, 0.992, 0.18);
     this.temperature = new ScalarField(width, height, 40, 1.0, 0.0);
+    this.scalarFieldStepInterval = 1;
+    this._scalarFieldStepCounter = 0;
 
     // Entity collections
     this.creatures = [];
@@ -170,8 +172,7 @@ export class World {
       this.sandbox?.update(dt);
 
       // Update scalar fields
-      this.pheromone?.step();
-      this.temperature?.step();
+      this.stepScalarFields();
 
       // Update creatures
       this.updateCreatures(dt);
@@ -210,6 +211,17 @@ export class World {
       console.error('World step error:', error);
       // Attempt to continue - individual creature errors shouldn't crash world
     }
+  }
+
+  stepScalarFields() {
+    const interval = Math.max(1, Math.floor(Number(this.scalarFieldStepInterval) || 1));
+    if (interval > 1) {
+      this._scalarFieldStepCounter = (this._scalarFieldStepCounter + 1) % interval;
+      if (this._scalarFieldStepCounter !== 0) return;
+    }
+
+    this.pheromone?.step();
+    this.temperature?.step();
   }
 
   // Update all creatures
@@ -645,6 +657,7 @@ export class World {
     this.nests = [];
     this.decorations = [];
     this.t = 0;
+    this._scalarFieldStepCounter = 0;
 
     // Reset subsystems
     this.environment.initialize();

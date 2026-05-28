@@ -14,6 +14,7 @@
     "smoke:worker": "node scripts/browser-smoke.mjs --worker",
     "smoke:scenarios": "node scripts/scenario-balance-smoke.mjs",
     "smoke:production": "CREATURE_SMOKE_URL=https://creature-sandbox.vercel.app CREATURE_SMOKE_REUSE_SERVER=1 CREATURE_SMOKE_OUT_DIR=output/browser-smoke-production node scripts/browser-smoke.mjs",
+    "smoke:production:vitals": "CREATURE_VITALS_URL=https://creature-sandbox.vercel.app node scripts/production-vitals-smoke.mjs",
     "evidence:release": "node scripts/release-evidence-board.mjs",
     "check:bundle": "node scripts/bundle-budget.mjs",
     "test:coverage": "npm test",

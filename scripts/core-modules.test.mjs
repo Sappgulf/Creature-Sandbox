@@ -1263,6 +1263,48 @@ test('World: step updates ecosystem balance once per tick', () => {
   assert.equal(updates, 1, 'ecosystem.update should not run twice in one world step');
 });
 
+test('World: scalar field step interval throttles ambient field updates', () => {
+  const world = new World(800, 600);
+  let pheromoneSteps = 0;
+  let temperatureSteps = 0;
+  world.environment.update = () => {};
+  world.events.update = () => {};
+  world.ecosystem.update = () => {};
+  world.creatureEcosystem.update = () => {};
+  world.disaster.update = () => {};
+  world.sandbox.update = () => {};
+  world.updateChaosNudge = () => {};
+  world.updateCreatures = () => {};
+  world.updateCorpses = () => {};
+  world.updateFood = () => {};
+  world.pheromone.step = () => {
+    pheromoneSteps++;
+  };
+  world.temperature.step = () => {
+    temperatureSteps++;
+  };
+
+  world.scalarFieldStepInterval = 2;
+  world.step(0.01);
+  assert.equal(pheromoneSteps, 0, 'interval should skip the first scalar-field tick');
+  assert.equal(temperatureSteps, 0, 'interval should skip the first temperature tick');
+  world.step(0.01);
+  assert.equal(pheromoneSteps, 1, 'interval should update pheromones on the second tick');
+  assert.equal(temperatureSteps, 1, 'interval should update temperature on the second tick');
+  world.scalarFieldStepInterval = 1;
+  world.step(0.01);
+  assert.equal(pheromoneSteps, 2, 'interval 1 should update pheromones every tick');
+  assert.equal(temperatureSteps, 2, 'interval 1 should update temperature every tick');
+});
+
+test('WorldCombat: predator prey lookup handles diploid diet genes', () => {
+  const world = new World(300, 300);
+  const prey = world.spawnCreatureType('herbivore', 100, 100);
+  const predator = world.spawnCreatureType('predator', 112, 100);
+
+  assert.equal(world.findPrey(predator, 50), prey, 'predator should find nearby herbivore prey');
+});
+
 test('WorldCreatureManager: fast creature query reuses caller buffer', () => {
   const world = new World(300, 300);
   const nearA = { id: 1, x: 50, y: 50, alive: true };

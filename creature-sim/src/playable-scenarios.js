@@ -241,8 +241,8 @@ export const PLAYABLE_SCENARIOS = [
     minAlive: 38,
     minPredators: 4,
     minFood: 125,
-    setup: { herbivore: 84, omnivore: 16, predator: 18, food: 430, props: ['conveyor', 'calm', 'bounce'], radius: 760 },
-    tuning: { mode: 'frontier', foodRate: 1.32, disasters: false, autoBalance: false, season: 'autumn' },
+    setup: { herbivore: 96, omnivore: 18, predator: 24, food: 500, props: ['conveyor', 'calm', 'bounce'], radius: 820 },
+    tuning: { mode: 'frontier', foodRate: 1.38, disasters: false, autoBalance: false, season: 'autumn' },
     steps: ['Feed the bridge exits', 'Follow scavengers after hunts', 'Use calm zones if the corridor panics']
   }
 ];

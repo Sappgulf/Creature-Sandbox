@@ -777,3 +777,30 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - external web-game client ✅ captured/inspected `output/web-game/tranche-1-3/shot-0.png`; state shows worker mode ready and 0 pending messages.
   - `npm run evidence:release` ✅ wrote `output/release-summary.md`; pre-commit board has no missing/blocked proof but still reports dirty worktree by design.
 - Next verification: commit/push, wait for production `/build-info.json` to match the new SHA, rerun production smoke and release evidence, then report final proof.
+
+2026-05-28
+- Approved tranche 1-3: production Web Vitals lane, repeated scenario-balance sampling, and main-thread fallback polish, then commit/push.
+- Implemented:
+  - added `npm run smoke:production:vitals` via `scripts/production-vitals-smoke.mjs`, with desktop/mobile startup timing, FCP/LCP, CLS, long-task, sprite, worker-ready, and screenshot artifacts.
+  - added a `production-vitals` release evidence lane and CI step so stale/missing vitals proof blocks the release board beside production runtime smoke.
+  - `npm run smoke:scenarios` now defaults to two runs and writes variance/pass-rate summaries for Stress Sanctuary and Scavenger Bridge.
+  - fixed predator prey lookup for diploid diet genes so predator objectives exercise real hunting behavior, with a unit regression.
+  - increased Scavenger Bridge setup buffer after the new repeated smoke caught predator-count variance.
+  - main-thread fallback now throttles ambient scalar-field updates with `scalarFieldStepInterval = 2`, while worker mode remains unchanged.
+  - reserved desktop bottom-HUD selected-info/stats columns and stat width; this fixed the vitals CLS source from the startup HUD shift.
+- Verification:
+  - `node --check` for touched runtime/smoke/evidence files ✅
+  - `git diff --check` ✅
+  - `npm run lint` ✅
+  - `npm test` ✅ (158 passing)
+  - `npm run build` ✅ (main app JS `594.82 kB` / `174.88 kB` gzip; worker `244.64 kB`)
+  - `npm run check:bundle` ✅
+  - `npm run smoke:browser` ✅ (`shipping-default`; desktop avg `23.08ms` / p95 `34.3ms`; mobile p95 `<=17.7ms`)
+  - `npm run smoke:main` ✅ (`fallback-proof`; desktop avg `32.1ms` / p95 `50.1ms`; mobile p95 `<=16.8ms`)
+  - `npm run smoke:worker` ✅ (`candidate-opt-in`; desktop avg `21.55ms` / p95 `34.3ms`; mobile p95 `<=17.7ms`)
+  - `npm run smoke:scenarios` ✅ (2x variance: Stress Sanctuary alive `48-52`, food `612-638`, stress `0`; Scavenger Bridge alive `63-75`, food `570-574`, predators `7`, pass rate `1`)
+  - local production-preview vitals ✅ (`http://127.0.0.1:4175`: desktop FCP `76ms`, LCP `136ms`, CLS `0.0022`; mobile CLS `0`)
+  - current live production runtime smoke ✅ against `https://creature-sandbox.vercel.app`; current live production vitals ❌ on desktop CLS `0.1388`, expected until this HUD CLS fix deploys.
+  - external web-game client ✅ captured/inspected `output/web-game/vitals-variance-20260528/shot-1.png`; state shows worker mode ready and 0 pending messages.
+- Next verification:
+  - commit/push, wait for production `/build-info.json` to match the new SHA, then rerun `npm run smoke:production`, `npm run smoke:production:vitals`, and `npm run evidence:release` against the deployed build.

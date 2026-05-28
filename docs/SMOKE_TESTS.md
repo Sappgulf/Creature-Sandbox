@@ -276,10 +276,13 @@ Run the public Vercel smoke after deployment or production-health work:
 
 ```bash
 npm run smoke:production
+npm run smoke:production:vitals
 npm run evidence:release
 ```
 
 The production lane reuses the browser smoke against `https://creature-sandbox.vercel.app`, accepts built Vite asset entrypoints, records the same realtime frame-pacing plus `drawImage` and non-`drawImage` scope sample as the local worker lane, writes `output/browser-smoke-production/`, and refreshes `output/release-evidence-board.json`, `output/release-evidence-board.md`, and the compact `output/release-summary.md`. The release evidence board treats production proof as stale unless `target.json` shows a `/build-info.json` SHA matching the current commit, and treats it as blocked unless `runtime-readiness.json` reports `status: "shipping-default"` with `defaultReadiness.safeToDefaultWorker: true`.
+
+The production vitals lane opens desktop and compact mobile contexts against the same deployed alias, waits for the seeded worker world and sprite manifest to be ready, captures screenshots under `output/production-vitals/`, and writes `output/production-vitals/summary.json` with FCP, LCP when available, CLS, long-task total, startup-ready time, worker readiness, and `/build-info.json` SHA. The release evidence board treats vitals proof as stale unless that SHA matches the current commit.
 
 Run the post-build bundle guard after `npm run build`:
 

@@ -6,6 +6,13 @@ import { rand, clamp, dist2 } from './utils.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
 
+function geneValue(genes, key, fallback = 0) {
+  const value = genes?.[key];
+  if (typeof value === 'number') return value;
+  if (value && typeof value === 'object' && Number.isFinite(value.expressed)) return value.expressed;
+  return fallback;
+}
+
 export class WorldCombat {
   constructor(world) {
     this.world = world;
@@ -35,13 +42,13 @@ export class WorldCombat {
       if (dist2(predator.x, predator.y, c.x, c.y) > radius * radius) continue;
 
       // Check if predator can eat this creature
-      const predatorDiet = predator.genes.diet ?? (predator.genes.predator ? 1.0 : 0.0);
-      const preyDiet = c.genes.diet ?? (c.genes.predator ? 1.0 : 0.0);
+      const predatorDiet = predator.genes.predator ? 1.0 : geneValue(predator.genes, 'diet', 0.0);
+      const preyDiet = c.genes.predator ? 1.0 : geneValue(c.genes, 'diet', 0.0);
 
       // Predators can eat herbivores and smaller omnivores
       // Omnivores can eat herbivores and small creatures
       // Herbivores can't eat other creatures
-      const canEat = (predatorDiet > 0.7) || // Predator
+      const canEat = (predatorDiet > 0.7 && preyDiet < 0.7) || // Predator
         (predatorDiet > 0.3 && predatorDiet < 0.7 && preyDiet < 0.3) || // Omnivore eating herbivore
         (predatorDiet > 0.3 && predatorDiet < 0.7 && c.size < predator.size * 0.8); // Omnivore eating smaller creature
 

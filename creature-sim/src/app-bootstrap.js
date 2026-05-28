@@ -2,7 +2,7 @@
  * Main Entry Point - Simplified initialization using modular architecture
  * This replaces the massive 2000+ line main.js with clean, focused modules
  */
-import { World } from './world-core.js';
+import { World } from './world-core.js?v=20260528-vitals1';
 import { SimulationProxy } from './simulation-proxy.js';
 import SimulationWorker from './worker-simulation.js?worker';
 import { Creature } from './creature.js';
@@ -26,7 +26,7 @@ import { AchievementSystem } from './achievement-system.js?v=20260527-audit2';
 import { BiomeGenerator } from './perlin-noise.js';
 import { GameplayModes } from './gameplay-modes.js';
 import { SessionGoals } from './session-goals.js';
-import { PlayableScenarios } from './playable-scenarios.js';
+import { PlayableScenarios } from './playable-scenarios.js?v=20260528-vitals1';
 import { MobileSupport } from './mobile-support.js';
 import { AutoDirector } from './auto-director.js';
 import { MomentsSystem } from './moments-system.js';
@@ -384,6 +384,7 @@ export function initializeApp() {
       return w;
     } else {
       const w = new World(4000, 2800);
+      w.scalarFieldStepInterval = 2;
       w.seed(startupSeed.herbivores, startupSeed.predators, startupSeed.food);
       return w;
     }
@@ -1891,6 +1892,7 @@ export function initializeApp() {
         workerPendingMessages: USE_SIM_WORKER ? Number(world.queue?.length || 0) : null,
         registeredSprites: assetLoader.spriteSheets?.size ?? 0,
         legacySprites: assetLoader.assets?.size ?? 0,
+        scalarFieldStepInterval: world.scalarFieldStepInterval ?? null,
         particles: world.particles?.particles?.length ?? notifications?.particles?.length ?? 0,
         props: world.sandbox?.props?.length || 0,
         calmZones: world.environment?.calmZones?.length ?? 0,
@@ -2586,6 +2588,7 @@ export function initializeApp() {
             food: world.food?.length || 0,
             particles: world.particles?.particles?.length || 0,
             maxParticles: world.particles?.maxParticles ?? 0,
+            scalarFieldStepInterval: world.scalarFieldStepInterval ?? null,
             particleSpriteCached: !!world.particles?._particleSpriteRuntime?.frames?.length,
             particleSpritePending: !!world.particles?._particleSpriteRequest
           },
