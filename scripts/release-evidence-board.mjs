@@ -50,7 +50,10 @@ function frameSummary(summary = []) {
     p95FrameMs: item.framePacing?.p95FrameMs ?? null,
     nonDrawImagePerFrameMs: item.framePacing?.mainThread?.profiledNonDrawImagePerFrameMs ?? null,
     quality: item.perf?.renderer?.quality ?? item.framePacing?.qualityEnd ?? null,
-    scenarioResultComplete: item.scenarioResult?.complete === true
+    scenarioResultComplete: item.scenarioResult?.complete === true,
+    layoutGuardPassed: item.layoutGuard?.passed === true,
+    cumulativeLayoutShift: item.layoutGuard?.metrics?.cumulativeLayoutShift ?? null,
+    minTouchTarget: item.layoutGuard?.metrics?.minTouchTarget ?? null
   }));
 }
 
@@ -188,6 +191,27 @@ async function productionVitalsLane(requiredBuildSha = null) {
   };
 }
 
+async function vercelDeployProof() {
+  const summary = await readJson(path.join(outputDir, 'vercel-deploy-proof', 'summary.json'));
+  if (!summary) {
+    return {
+      present: false,
+      passed: false,
+      targetUrl: null,
+      buildSha: null,
+      deploymentId: null
+    };
+  }
+  return {
+    present: true,
+    passed: summary.passed === true,
+    targetUrl: summary.targetUrl || null,
+    buildSha: summary.buildInfo?.parsed?.sha || null,
+    deploymentId: summary.head?.deploymentId || null,
+    generatedAt: summary.generatedAt || null
+  };
+}
+
 function postureFrom(lanes) {
   const local = lanes.find((item) => item.name === 'local-browser');
   const main = lanes.find((item) => item.name === 'main-browser');
@@ -245,7 +269,7 @@ function markdown(board) {
   }).join('\n');
   const frameRows = board.lanes.flatMap((item) =>
     item.frames.map((frame) =>
-      `| ${item.name} | ${frame.scenario} | ${frame.avgFrameMs ?? 'n/a'} | ${frame.p95FrameMs ?? 'n/a'} | ${frame.nonDrawImagePerFrameMs ?? 'n/a'} | ${frame.quality || 'n/a'} | ${frame.scenarioResultComplete} |`
+      `| ${item.name} | ${frame.scenario} | ${frame.avgFrameMs ?? 'n/a'} | ${frame.p95FrameMs ?? 'n/a'} | ${frame.nonDrawImagePerFrameMs ?? 'n/a'} | ${frame.quality || 'n/a'} | ${frame.scenarioResultComplete} | ${frame.layoutGuardPassed} | ${frame.cumulativeLayoutShift ?? 'n/a'} | ${frame.minTouchTarget ?? 'n/a'} |`
     )
   ).join('\n');
   const balanceRows = board.lanes
@@ -269,6 +293,9 @@ function markdown(board) {
       `| ${item.context} | ${item.seededWorldMs ?? 'n/a'} | ${item.firstContentfulPaintMs ?? 'n/a'} | ${item.largestContentfulPaintMs ?? 'n/a'} | ${item.cumulativeLayoutShift ?? 'n/a'} | ${item.longTaskTotalMs ?? 'n/a'} |`
     )
     .join('\n') || '';
+  const vercelRows = board.vercel?.present
+    ? `| ${board.vercel.targetUrl || 'n/a'} | ${board.vercel.passed ? 'passed' : 'failed'} | ${board.vercel.buildSha || 'n/a'} | ${board.vercel.deploymentId || 'n/a'} |`
+    : '| n/a | missing | n/a | n/a |';
 
   return `# Release Evidence Board
 
@@ -288,9 +315,9 @@ ${rows}
 
 ## Frame Evidence
 
-| Lane | Scenario | Avg ms | P95 ms | Non-draw ms/frame | Quality | Result flow |
-| --- | --- | --- | --- | --- | --- | --- |
-${frameRows || '| n/a | n/a | n/a | n/a | n/a | n/a | n/a |'}
+| Lane | Scenario | Avg ms | P95 ms | Non-draw ms/frame | Quality | Result flow | Layout guard | CLS | Min touch |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+${frameRows || '| n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |'}
 
 ## Scenario Balance
 
@@ -309,6 +336,12 @@ ${varianceRows || '| n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |'}
 | Context | Ready ms | FCP ms | LCP ms | CLS | Long tasks ms |
 | --- | --- | --- | --- | --- | --- |
 ${vitalsRows || '| n/a | n/a | n/a | n/a | n/a | n/a |'}
+
+## Vercel Deploy Proof
+
+| Target | Result | Build SHA | Deployment ID |
+| --- | --- | --- | --- |
+${vercelRows}
 
 ## Release Posture
 
@@ -397,6 +430,7 @@ const board = {
     upstream: runGit(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'])
   },
   lanes,
+  vercel: await vercelDeployProof(),
   posture: postureFrom(lanes)
 };
 

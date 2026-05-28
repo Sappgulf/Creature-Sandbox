@@ -19,7 +19,6 @@ import { ParticleSystem } from './particle-system.js?v=20260423-smoke3';
 import { NotificationSystem } from './notification-system.js?v=20260526-tranche1';
 import { HeatmapSystem } from './heatmap-system.js';
 import { EcosystemHealth } from './ecosystem-health.js';
-import { DebugConsole } from './debug-console.js';
 import { AudioSystem } from './audio-system.js';
 import { TutorialSystem } from './tutorial-system.js';
 import { AchievementSystem } from './achievement-system.js?v=20260527-audit2';
@@ -57,7 +56,7 @@ import { MemoryLearningSystem } from './memory-learning.js';
 import { ChallengeSystem } from './challenge-system.js?v=20260524-opening2';
 import { getDebugFlags } from './debug-flags.js';
 import { setupDevExports } from './dev-exports.js';
-import { UpgradeController } from './upgrade-controller.js?v=20260527-tranche4';
+import { UpgradeController } from './upgrade-controller.js?v=20260528-tranche8';
 import {
   GameDirector,
   GodToolSystem,
@@ -157,6 +156,8 @@ console.debug('🚀 Starting Creature Sandbox...');
 const DESKTOP_STARTUP_SEED = { herbivores: 64, predators: 8, food: 280 };
 const MOBILE_STARTUP_SEED = { herbivores: 54, predators: 7, food: 230 };
 const COMPACT_MOBILE_STARTUP_SEED = { herbivores: 44, predators: 5, food: 190 };
+const MAIN_THREAD_DESKTOP_STARTUP_SEED = { herbivores: 54, predators: 7, food: 240 };
+const MAIN_THREAD_MOBILE_STARTUP_SEED = { herbivores: 44, predators: 5, food: 190 };
 
 let scenarioEditorInstance = null;
 let scenarioEditorPromise = null;
@@ -164,6 +165,8 @@ let campaignSystemInstance = null;
 let campaignSystemPromise = null;
 let geneEditorInstance = null;
 let geneEditorPromise = null;
+let debugConsoleInstance = null;
+let debugConsolePromise = null;
 
 function getRuntimeProfile() {
   if (typeof window === 'undefined') {
@@ -195,6 +198,12 @@ function getRuntimeProfile() {
     openingZoom: mobileViewport ? (compactViewport ? 0.68 : 0.74) : 0.9,
     startupSeed: compactViewport || lowMemory ? COMPACT_MOBILE_STARTUP_SEED : (mobileViewport ? MOBILE_STARTUP_SEED : DESKTOP_STARTUP_SEED)
   };
+}
+
+function getStartupSeedForRuntime(runtimeProfile, useWorker) {
+  if (useWorker) return runtimeProfile.startupSeed;
+  if (runtimeProfile.mobile) return MAIN_THREAD_MOBILE_STARTUP_SEED;
+  return MAIN_THREAD_DESKTOP_STARTUP_SEED;
 }
 
 async function ensureScenarioEditor() {
@@ -243,6 +252,37 @@ async function ensureGeneEditor() {
       });
   }
   return geneEditorPromise;
+}
+
+function createDebugConsoleProxy(world, camera) {
+  const ensureDebugConsole = () => {
+    if (debugConsoleInstance) return Promise.resolve(debugConsoleInstance);
+    if (!debugConsolePromise) {
+      debugConsolePromise = import('./debug-console.js')
+        .then(({ DebugConsole }) => {
+          debugConsoleInstance = new DebugConsole(world, camera);
+          return debugConsoleInstance;
+        })
+        .catch((error) => {
+          debugConsolePromise = null;
+          throw error;
+        });
+    }
+    return debugConsolePromise;
+  };
+
+  return {
+    get isActive() {
+      return !!debugConsoleInstance?.isActive;
+    },
+    ensure: ensureDebugConsole,
+    toggle() {
+      void ensureDebugConsole().then((consoleInstance) => consoleInstance.toggle?.());
+    },
+    update(dt) {
+      debugConsoleInstance?.update?.(dt);
+    }
+  };
 }
 
 // Preload sprite assets
@@ -372,7 +412,8 @@ export function initializeApp() {
   // Main-thread mode remains available through ?worker=0 or a saved preference.
   const runtimeModePreference = getRuntimeModePreference();
   const USE_SIM_WORKER = runtimeModePreference.mode === 'worker';
-  const startupSeed = getRuntimeProfile().startupSeed;
+  const startupProfile = getRuntimeProfile();
+  const startupSeed = getStartupSeedForRuntime(startupProfile, USE_SIM_WORKER);
 
   // World and core entities
   const world = errorHandler.safeExecute(() => {
@@ -384,7 +425,7 @@ export function initializeApp() {
       return w;
     } else {
       const w = new World(4000, 2800);
-      w.scalarFieldStepInterval = 2;
+      w.scalarFieldStepInterval = 3;
       w.seed(startupSeed.herbivores, startupSeed.predators, startupSeed.food);
       return w;
     }
@@ -428,6 +469,10 @@ export function initializeApp() {
   if (!renderer) {
     errorHandler.criticalError(new Error('Failed to create renderer'), 'Renderer initialization');
     throw new Error('Cannot continue without renderer');
+  }
+
+  if (!USE_SIM_WORKER) {
+    renderer.performance?.setQualityOverride?.(startupProfile.mobile ? 'low' : 'medium');
   }
 
   console.debug('🎨 Ultra-optimized Canvas 2D renderer initialized');
@@ -655,9 +700,7 @@ export function initializeApp() {
     return new EcosystemHealth();
   }, 'Ecosystem health initialization', null);
 
-  const debugConsole = errorHandler.safeExecute(() => {
-    return new DebugConsole(world, camera);
-  }, 'Debug console initialization', null);
+  const debugConsole = createDebugConsoleProxy(world, camera);
 
   const audio = errorHandler.safeExecute(() => {
     return new AudioSystem();
@@ -932,6 +975,10 @@ export function initializeApp() {
       lastControlStripSync = now;
       controlStrip.update();
     });
+  }
+
+  if (!USE_SIM_WORKER) {
+    renderer.performance?.setQualityOverride?.(startupProfile.mobile ? 'low' : 'medium');
   }
 
   upgradeController = errorHandler.safeExecute(() => {
@@ -1688,7 +1735,7 @@ export function initializeApp() {
       // Check for shared seed in URL
       const urlSeed = getSeedFromUrl();
       const runtimeProfile = getRuntimeProfile();
-      const nextSeed = urlSeed || runtimeProfile.startupSeed;
+      const nextSeed = urlSeed || getStartupSeedForRuntime(runtimeProfile, USE_SIM_WORKER);
 
       // Reset the world with fresh creatures
       if (world && world.seed) {

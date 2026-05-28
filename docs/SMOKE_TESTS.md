@@ -87,7 +87,8 @@
     - Apply **Peaceful Meadow** or **Predator Stress Test** and confirm the camera recenters on the seeded cluster.
     - Switch readability modes (Normal, Cozy, High Contrast, Analytics, Minimal) and confirm the canvas remains readable.
     - Make a postcard and save a seed; confirm population, season, strongest event, and seed gallery entry are shown.
-    - Complete or retry a playable scenario and confirm Run History shows score, medal, time, alive/food/stress, and a retry control.
+   - Complete or retry a playable scenario and confirm Run History shows score, medal, time, alive/food/stress, and a retry control.
+   - Confirm completed runs mark the current best score/time and keep the retry control visible without covering the result card.
 
 11. **God mode (optional)**
     - Open **⋯ More Actions** and toggle **✨ God Mode** (or long-press the world).
@@ -217,6 +218,7 @@
    - Tap top HUD buttons and the **⋯ More Actions** sheet items.
    - Confirm no tiny targets block touch usage.
    - Confirm the sheet respects safe-area padding.
+   - Automated smoke should report `layoutGuardPassed: true`, no offscreen visible controls, and at least 40px visible touch targets in `output/browser-smoke/runtime-readiness.json`.
 
 7. **Balance pass: touch drag + throw**
    - In Inspect mode, press-and-drag a creature slowly.

@@ -22,6 +22,7 @@ npm run smoke:browser
 npm run smoke:main
 npm run smoke:worker
 npm run smoke:scenarios
+npm run proof:release
 npm run smoke:production:vitals
 npm run evidence:release
 ```
@@ -43,10 +44,12 @@ The browser smoke lanes should leave current proof under:
 - `output/release-summary.md`
 - `output/browser-smoke-production/runtime-readiness.json`
 - `output/production-vitals/summary.json`
+- `output/release-proof/summary.json`
+- `output/vercel-deploy-proof/summary.json` (when `npm run proof:vercel` is run)
 - `output/browser-smoke/desktop-upgrade-result.png`
 - `output/browser-smoke-worker/desktop-watch.png`
 
-Before tagging, inspect at least one desktop and one mobile screenshot from the default, main-fallback, forced-worker, production smoke, and production vitals folders. Confirm the canvas is nonblank, the objective rail is compact, the Upgrade Hub result/history surfaces are visible, and screenshots do not show stale or overlapping runtime copy. Confirm `output/browser-smoke/runtime-readiness.json` reports `shippingDefault: "worker"`, `status: "shipping-default"`, `defaultReadiness.safeToDefaultWorker: true`, and `completedScenarioResultFlow.passed: true`. Confirm `output/browser-smoke-main/runtime-readiness.json` reports `status: "fallback-proof"`. Confirm `output/browser-smoke-production/runtime-readiness.json` reports `status: "shipping-default"` and finite frame metrics in the release evidence board. Confirm `output/production-vitals/summary.json` reports `passed: true`, at least desktop/mobile contexts, matching `/build-info.json` SHA, bounded FCP/CLS/long-task metrics, worker ready, and zero pending worker messages. Confirm `output/scenario-balance/summary.json` includes at least two runs of `stress_sanctuary` and `scavenger_bridge` with pass-rate `1` variance. Confirm `output/release-summary.md` lists no missing or blocked proof before treating the build as release-ready. The release evidence board only counts production smoke and production vitals when their `/build-info.json` SHA matches the current `HEAD` and their gates pass.
+Before tagging, inspect at least one desktop and one mobile screenshot from the default, main-fallback, forced-worker, production smoke, and production vitals folders. Confirm the canvas is nonblank, the objective rail is compact, the Upgrade Hub result/history surfaces are visible, and screenshots do not show stale or overlapping runtime copy. Confirm `output/browser-smoke/runtime-readiness.json` reports `shippingDefault: "worker"`, `status: "shipping-default"`, `defaultReadiness.safeToDefaultWorker: true`, and `completedScenarioResultFlow.passed: true`. Confirm the same readiness artifact includes `layoutGuardPassed: true`, startup CLS at or below `0.1` for worker/default lanes and `0.15` for explicit main fallback, and mobile touch targets at or above 40px. Confirm `output/browser-smoke-main/runtime-readiness.json` reports `status: "fallback-proof"`. Confirm `output/browser-smoke-production/runtime-readiness.json` reports `status: "shipping-default"` and finite frame metrics in the release evidence board. Confirm `output/production-vitals/summary.json` reports `passed: true`, at least desktop/mobile contexts, matching `/build-info.json` SHA, bounded FCP/CLS/long-task metrics, worker ready, and zero pending worker messages. Confirm `output/scenario-balance/summary.json` includes at least two runs of `stress_sanctuary` and `scavenger_bridge` with pass-rate `1` variance; use `npm run smoke:scenarios:variance` for the 5-run manual lane before a larger release. Confirm `output/release-summary.md` lists no missing or blocked proof before treating the build as release-ready. The release evidence board only counts production smoke and production vitals when their `/build-info.json` SHA matches the current `HEAD` and their gates pass.
 
 ## Manual Sanity
 
@@ -89,7 +92,10 @@ vercel --version
 vercel inspect https://creature-sandbox.vercel.app --timeout 20s
 curl -I -L --max-time 20 https://creature-sandbox.vercel.app
 curl -fsS https://creature-sandbox.vercel.app/build-info.json
+npm run proof:vercel
 npm run smoke:production
 npm run smoke:production:vitals
 npm run evidence:release
 ```
+
+If a production deployment is bad, use the Vercel dashboard or `vercel rollback` to return the alias to the previous healthy deployment, then rerun `npm run proof:vercel`, `npm run smoke:production`, `npm run smoke:production:vitals`, and `npm run evidence:release`.

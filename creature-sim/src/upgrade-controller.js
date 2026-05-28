@@ -490,7 +490,27 @@ export class UpgradeController {
     return Object.values(progress)
       .flatMap((entry) => {
         const history = Array.isArray(entry?.history) ? entry.history : [];
-        return history.length ? history : (entry?.lastResult ? [entry.lastResult] : []);
+        const runs = history.length ? history : (entry?.lastResult ? [entry.lastResult] : []);
+        const bestScore = Number(entry?.bestScore ?? Math.max(0, ...runs.map(item => Number(item?.score || 0))));
+        const bestSeconds = Number(entry?.bestSeconds ?? 0) || null;
+        const completions = Number(entry?.completions || runs.length || 0);
+        return runs.map((result, index) => {
+          const score = Number(result?.score || 0);
+          const seconds = Number(result?.seconds || 0);
+          const scoreDelta = score - bestScore;
+          const isBestScore = score >= bestScore;
+          const timeDelta = bestSeconds && seconds ? seconds - bestSeconds : null;
+          return {
+            ...result,
+            bestScore,
+            bestSeconds,
+            completions,
+            scoreDelta,
+            timeDelta,
+            isBestScore,
+            historyIndex: index + 1
+          };
+        });
       })
       .filter(Boolean)
       .sort((a, b) => new Date(b.completedAt || 0) - new Date(a.completedAt || 0))
@@ -654,7 +674,11 @@ export class UpgradeController {
             <strong>${escapeHtml(item.icon || '🎯')} ${escapeHtml(item.scenarioName || 'Scenario')}</strong>
             <em>${escapeHtml(item.medal || 'Run')} · ${Number(item.score || 0)} · ${Math.round(Number(item.seconds || 0) / 60)}m</em>
           </span>
-          <span class="scenario-history-meta">${Number(item.alive || 0)} alive · ${Number(item.food || 0)} food · ${Number(item.stress || 0)} stress</span>
+          <span class="scenario-history-meta">
+            ${Number(item.alive || 0)} alive · ${Number(item.food || 0)} food · ${Number(item.stress || 0)} stress
+            <span class="scenario-history-badge">${item.isBestScore ? 'Best' : `${item.scoreDelta > 0 ? '+' : ''}${Number(item.scoreDelta || 0)} vs best`}</span>
+            ${item.timeDelta == null ? '' : `<span class="scenario-history-badge">${item.timeDelta <= 0 ? 'Fastest' : `+${Math.round(item.timeDelta)}s`}</span>`}
+          </span>
           <button class="chip ghost" data-upgrade-action="start-scenario" data-value="${escapeHtml(item.scenarioId)}">Retry</button>
         </li>
       `).join('')
@@ -684,6 +708,7 @@ export class UpgradeController {
           <span>${result.discoveries?.length ? escapeHtml(result.discoveries.join(', ')) : 'No special discoveries yet'}</span>
           <em>${escapeHtml(result.nextAction)}</em>
         </div>
+        ${result.scenarioId ? `<button class="chip ghost scenario-result-retry" data-upgrade-action="start-scenario" data-value="${escapeHtml(result.scenarioId)}">Retry ${escapeHtml(result.scenarioName || 'Scenario')}</button>` : ''}
       </div>
     ` : '<p class="muted">Start a scenario to earn a medal summary.</p>';
 

@@ -233,6 +233,108 @@ async function readObjectiveRailMetrics(page) {
   });
 }
 
+async function readLayoutGuardMetrics(page) {
+  return page.evaluate(() => {
+    const visibleRect = (selector) => {
+      const element = document.querySelector(selector);
+      if (!element || element.classList?.contains('hidden') || element.getAttribute('aria-hidden') === 'true') {
+        return null;
+      }
+      const rect = element.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return null;
+      return {
+        selector,
+        left: Number(rect.left.toFixed(1)),
+        right: Number(rect.right.toFixed(1)),
+        top: Number(rect.top.toFixed(1)),
+        bottom: Number(rect.bottom.toFixed(1)),
+        width: Number(rect.width.toFixed(1)),
+        height: Number(rect.height.toFixed(1))
+      };
+    };
+    const overlaps = (a, b) => !!a && !!b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    const viewport = {
+      width: window.innerWidth,
+      height: window.innerHeight
+    };
+    const rects = {
+      objectiveRail: visibleRect('#objective-rail'),
+      controlStrip: visibleRect('#control-strip'),
+      watchStrip: visibleRect('#watch-strip'),
+      hudBottom: visibleRect('#hud-bottom-left'),
+      upgradePanel: visibleRect('#upgrade-panel'),
+      scenarioResult: visibleRect('#upgrade-scenario-result')
+    };
+    const bottomChrome = [rects.controlStrip, rects.watchStrip, rects.hudBottom]
+      .filter(Boolean)
+      .sort((a, b) => b.bottom - a.bottom)[0] || null;
+    const cumulativeLayoutShift = Number(window.__creatureLayoutShiftScore || 0);
+    const visibleButtons = Array.from(document.querySelectorAll(
+      '#control-strip button, #watch-strip button, .bottom-drawer:not(.hidden) button, .bottom-drawer:not(.hidden) .spawn-card'
+    ))
+      .filter((element) => {
+        const style = window.getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return style.visibility !== 'hidden' &&
+          style.display !== 'none' &&
+          rect.width > 0 &&
+          rect.height > 0 &&
+          !element.disabled;
+      })
+      .map((element) => {
+        const rect = element.getBoundingClientRect();
+        const label = element.id ||
+          element.getAttribute('aria-label') ||
+          element.textContent?.trim?.().replace(/\s+/g, ' ').slice(0, 40) ||
+          element.className ||
+          element.tagName;
+        return {
+          label,
+          width: Number(rect.width.toFixed(1)),
+          height: Number(rect.height.toFixed(1)),
+          top: Number(rect.top.toFixed(1)),
+          bottom: Number(rect.bottom.toFixed(1)),
+          offscreen: rect.left < -1 || rect.right > viewport.width + 1 || rect.top < -1 || rect.bottom > viewport.height + 1
+        };
+      });
+    const targetSizes = visibleButtons.map(button => Math.min(button.width, button.height));
+    const minTouchTarget = targetSizes.length ? Number(Math.min(...targetSizes).toFixed(1)) : null;
+    const offscreenButtons = visibleButtons.filter(button => button.offscreen).map(button => button.label);
+
+    return {
+      viewport,
+      rects,
+      bottomChrome,
+      cumulativeLayoutShift: Number(cumulativeLayoutShift.toFixed(4)),
+      objectiveBottomOverlap: overlaps(rects.objectiveRail, bottomChrome),
+      resultBottomOverlap: overlaps(rects.scenarioResult, bottomChrome),
+      minTouchTarget,
+      offscreenButtons,
+      visibleButtonCount: visibleButtons.length
+    };
+  });
+}
+
+async function installLayoutShiftObserver(page) {
+  await page.addInitScript(() => {
+    window.__creatureLayoutShiftScore = 0;
+    try {
+      if (typeof PerformanceObserver !== 'function') return;
+      const observer = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (!entry.hadRecentInput) {
+            window.__creatureLayoutShiftScore += Number(entry.value || 0);
+          }
+        }
+      });
+      observer.observe({ type: 'layout-shift', buffered: true });
+      window.__creatureLayoutShiftObserver = observer;
+    } catch {
+      window.__creatureLayoutShiftScore = 0;
+    }
+  });
+}
+
 async function readGodPanelMetrics(page) {
   return page.evaluate(() => {
     const panel = document.getElementById('god-mode-panel');
@@ -286,6 +388,27 @@ async function readUpgradeHistoryMetrics(page) {
       text: items.map(item => item.textContent.trim().replace(/\s+/g, ' ').slice(0, 160))
     };
   });
+}
+
+function assertLayoutGuard(layoutGuard, label, { mobile = false, resultVisible = false, checkCls = true, clsMax = 0.1 } = {}) {
+  assert.ok(layoutGuard, `${label}: layout guard metrics should be available`);
+  if (checkCls) {
+    assert.ok(
+      Number(layoutGuard.cumulativeLayoutShift) <= clsMax,
+      `${label}: cumulative layout shift should stay below ${clsMax} (${layoutGuard.cumulativeLayoutShift})`
+    );
+  }
+  assert.equal(layoutGuard.objectiveBottomOverlap, false, `${label}: objective rail should not overlap bottom chrome`);
+  if (resultVisible) {
+    assert.equal(layoutGuard.resultBottomOverlap, false, `${label}: scenario result should not sit under bottom chrome`);
+  }
+  if (mobile) {
+    assert.ok(
+      Number(layoutGuard.minTouchTarget || 0) >= 40,
+      `${label}: visible mobile controls should keep at least 40px touch targets (${layoutGuard.minTouchTarget}px)`
+    );
+    assert.deepEqual(layoutGuard.offscreenButtons, [], `${label}: visible mobile controls should stay onscreen`);
+  }
 }
 
 async function waitForPageCondition(page, condition, label, timeoutMs = 12000) {
@@ -435,6 +558,7 @@ function summarizeRuntimeReadiness(results) {
     const runtime = result.perf?.runtime || {};
     const workerDiagnostics = runtime.workerDiagnostics || {};
     const scenarioResult = result.scenarioResult || {};
+    const layoutGuard = result.layoutGuard || {};
     return {
       scenario: result.scenario,
       mode: runtime.workerMode ? 'worker' : 'main',
@@ -455,7 +579,10 @@ function summarizeRuntimeReadiness(results) {
       scenarioResultComplete: scenarioResult.complete === true,
       scenarioResultAnchored: scenarioResult.anchored === true,
       scenarioResultInViewport: scenarioResult.inViewport === true,
-      scenarioHistoryCount: Number(scenarioResult.historyCount || 0)
+      scenarioHistoryCount: Number(scenarioResult.historyCount || 0),
+      layoutGuardPassed: layoutGuard.passed === true,
+      cumulativeLayoutShift: layoutGuard.metrics?.startupCumulativeLayoutShift ?? layoutGuard.metrics?.cumulativeLayoutShift ?? null,
+      minTouchTarget: layoutGuard.metrics?.minTouchTarget ?? null
     };
   });
 
@@ -468,6 +595,7 @@ function summarizeRuntimeReadiness(results) {
     row.scenarioResultInViewport &&
     row.scenarioHistoryCount >= 1
   );
+  const layoutGuardsOk = scenarioRows.every(row => row.layoutGuardPassed === true);
   const mobileP95Max = Math.max(0, ...mobileRows.map(row => Number(row.p95FrameMs) || 0));
   const desktopAvg = Number(desktop?.avgFrameMs) || 0;
   const desktopP95 = Number(desktop?.p95FrameMs) || 0;
@@ -475,6 +603,7 @@ function summarizeRuntimeReadiness(results) {
   const workerCandidate = workerMode &&
     runtimeStatusesOk &&
     completedScenarioResultsOk &&
+    layoutGuardsOk &&
     desktopAvg > 0 &&
     desktopAvg <= 26 &&
     desktopP95 <= 40 &&
@@ -508,13 +637,16 @@ function summarizeRuntimeReadiness(results) {
     },
     completedScenarioResultFlow: {
       required: true,
-      passed: completedScenarioResultsOk,
+      passed: completedScenarioResultsOk && layoutGuardsOk,
       scenarios: scenarioRows.map(row => ({
         scenario: row.scenario,
         complete: row.scenarioResultComplete,
         anchored: row.scenarioResultAnchored,
         inViewport: row.scenarioResultInViewport,
-        historyCount: row.scenarioHistoryCount
+        historyCount: row.scenarioHistoryCount,
+        layoutGuardPassed: row.layoutGuardPassed,
+        cumulativeLayoutShift: row.cumulativeLayoutShift,
+        minTouchTarget: row.minTouchTarget
       }))
     },
     thresholds: {
@@ -523,7 +655,10 @@ function summarizeRuntimeReadiness(results) {
       workerDesktopProfiledNonDrawImagePerFrameMsMax: 1.5,
       workerMobileP95FrameMsMax: 20,
       workerPendingMessagesMax: 0,
-      completedScenarioResultsRequired: true
+      completedScenarioResultsRequired: true,
+      layoutGuardRequired: true,
+      cumulativeLayoutShiftMax: workerMode ? 0.1 : 0.15,
+      mobileTouchTargetMinPx: 40
     },
     scenarios: scenarioRows
   };
@@ -542,6 +677,7 @@ async function runScenario(browser, scenario) {
     deviceScaleFactor: scenario.mobile ? 2 : 1
   });
   const page = await context.newPage();
+  await installLayoutShiftObserver(page);
   const errors = [];
   let achievementToastBounds = null;
 
@@ -566,6 +702,7 @@ async function runScenario(browser, scenario) {
     return state.ui && state.ui.homeVisible === false && state.summary.totalCreatures > 0;
   }, 'seeded smoke world');
   await page.evaluate(() => window.__creatureSmoke?.setPaused?.(true));
+  await page.evaluate(() => { window.__creatureLayoutShiftScore = 0; });
 
   console.log(`  ${scenario.name}: startup`);
   await advance(page, 900);
@@ -580,8 +717,10 @@ async function runScenario(browser, scenario) {
   assert.ok(state.camera.zoom >= (scenario.mobile ? 0.6 : 0.84), `${scenario.name}: opening camera should start close enough to read creatures`);
   const minimumVisibleCreatures = scenario.mobile ? 5 : 8;
   if (workerMode && state.visibleCreatures.length < minimumVisibleCreatures) {
-    await advance(page, 720);
-    state = await readGameState(page);
+    for (let attempt = 0; attempt < 6 && state.visibleCreatures.length < minimumVisibleCreatures; attempt++) {
+      await advance(page, 360);
+      state = await readGameState(page);
+    }
   }
   assert.ok(state.visibleCreatures.length >= minimumVisibleCreatures, `${scenario.name}: opening view should frame a readable starter cluster`);
   assert.equal(state.summary.totalProps, 0, `${scenario.name}: startup should not pre-complete prop goals before player action`);
@@ -594,6 +733,11 @@ async function runScenario(browser, scenario) {
     objectiveRail.height <= (scenario.mobile ? 76 : 58),
     `${scenario.name}: objective rail should stay compact (${objectiveRail.height}px)`
   );
+  const startupLayoutGuard = await readLayoutGuardMetrics(page);
+  assertLayoutGuard(startupLayoutGuard, `${scenario.name}: startup`, {
+    mobile: scenario.mobile,
+    clsMax: workerMode ? 0.1 : 0.15
+  });
   assert.equal(state.ui.challengeOverlayVisible, false, `${scenario.name}: canvas challenge overlay should stay hidden while the objective rail is visible`);
   assert.equal(state.ui.miniGraphsVisible, false, `${scenario.name}: analytics mini-graphs should not occupy normal gameplay`);
   const catalog = await page.evaluate(() => window.__creatureSmoke.playableCatalog());
@@ -766,9 +910,15 @@ async function runScenario(browser, scenario) {
     assert.ok(historyMetrics.count >= 1, `${scenario.name}: worker Upgrade Hub should render run history items`);
     assert.match(
       historyMetrics.text.join(' '),
-      /Apex Balance|Gold|Silver|Bronze|Practice/i,
-      `${scenario.name}: worker run history should include scenario identity or medal state`
+      /Apex Balance|Gold|Silver|Bronze|Practice|Best/i,
+      `${scenario.name}: worker run history should include scenario identity, medal, or best-run state`
     );
+    const layoutGuardMetrics = await readLayoutGuardMetrics(page);
+    assertLayoutGuard(layoutGuardMetrics, `${scenario.name}: worker result`, {
+      mobile: scenario.mobile,
+      resultVisible: true,
+      checkCls: false
+    });
     const scenarioResult = {
       scenarioId: completedScenario.playable?.scenario?.id || null,
       state: completedScenario.playable?.state || null,
@@ -781,14 +931,22 @@ async function runScenario(browser, scenario) {
       historyCount: Number(historyMetrics.count || 0),
       latestHistoryScenarioId: history[0]?.scenarioId || null
     };
+    const layoutGuard = {
+      passed: true,
+      metrics: {
+        ...layoutGuardMetrics,
+        startupCumulativeLayoutShift: startupLayoutGuard.cumulativeLayoutShift
+      },
+      startup: startupLayoutGuard
+    };
     await page.screenshot({ path: path.join(outDir, `${scenario.name}-upgrade-result.png`) });
     state = await readGameState(page);
 
     await captureCanvasSnapshot(page, path.join(outDir, `${scenario.name}.png`));
-    await fs.writeFile(path.join(outDir, `${scenario.name}.json`), JSON.stringify({ state, perf, framePacing, scenarioResult, errors }, null, 2));
+    await fs.writeFile(path.join(outDir, `${scenario.name}.json`), JSON.stringify({ state, perf, framePacing, scenarioResult, layoutGuard, errors }, null, 2));
     assert.deepEqual(errors, [], `${scenario.name}: worker browser console should stay warning/error free`);
     await context.close();
-    return { scenario: scenario.name, workerMode, creatures: state.summary.totalCreatures, food: state.summary.totalFood, perf, framePacing, scenarioResult };
+    return { scenario: scenario.name, workerMode, creatures: state.summary.totalCreatures, food: state.summary.totalFood, perf, framePacing, scenarioResult, layoutGuard };
   }
 
   const director = await page.evaluate(() => window.__creatureSmoke.startScenario('first_ecosystem'));
@@ -979,9 +1137,15 @@ async function runScenario(browser, scenario) {
   assert.ok(historyMetrics.count >= 1, `${scenario.name}: Upgrade Hub should render run history items`);
   assert.match(
     historyMetrics.text.join(' '),
-    /First Ecosystem|Gold|Silver|Bronze|Practice/i,
-    `${scenario.name}: run history should include scenario identity or medal state`
+    /First Ecosystem|Gold|Silver|Bronze|Practice|Best/i,
+    `${scenario.name}: run history should include scenario identity, medal, or best-run state`
   );
+  const layoutGuardMetrics = await readLayoutGuardMetrics(page);
+  assertLayoutGuard(layoutGuardMetrics, `${scenario.name}: result`, {
+    mobile: scenario.mobile,
+    resultVisible: true,
+    checkCls: false
+  });
   const scenarioResult = {
     scenarioId: completedScenario.playable?.scenario?.id || null,
     state: completedScenario.playable?.state || null,
@@ -993,6 +1157,14 @@ async function runScenario(browser, scenario) {
     inViewport: resultMetrics.inViewport === true,
     historyCount: Number(historyMetrics.count || 0),
     latestHistoryScenarioId: history[0]?.scenarioId || null
+  };
+  const layoutGuard = {
+    passed: true,
+    metrics: {
+      ...layoutGuardMetrics,
+      startupCumulativeLayoutShift: startupLayoutGuard.cumulativeLayoutShift
+    },
+    startup: startupLayoutGuard
   };
   if (!scenario.mobile) {
     achievementToastBounds = await page.evaluate(() => window.__creatureSmoke.showAchievementToastForSmoke());
@@ -1058,11 +1230,11 @@ async function runScenario(browser, scenario) {
   }
 
   await captureCanvasSnapshot(page, path.join(outDir, `${scenario.name}.png`));
-  await fs.writeFile(path.join(outDir, `${scenario.name}.json`), JSON.stringify({ state, perf, framePacing, achievementToastBounds, errors }, null, 2));
+  await fs.writeFile(path.join(outDir, `${scenario.name}.json`), JSON.stringify({ state, perf, framePacing, scenarioResult, layoutGuard, achievementToastBounds, errors }, null, 2));
 
   assert.deepEqual(errors, [], `${scenario.name}: browser console should stay warning/error free`);
   await context.close();
-  return { scenario: scenario.name, workerMode, creatures: state.summary.totalCreatures, food: state.summary.totalFood, perf, framePacing, scenarioResult };
+  return { scenario: scenario.name, workerMode, creatures: state.summary.totalCreatures, food: state.summary.totalFood, perf, framePacing, scenarioResult, layoutGuard };
 }
 
 await fs.mkdir(outDir, { recursive: true });

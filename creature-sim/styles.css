@@ -4719,9 +4719,22 @@ body:not(.legacy-ui) #hud {
 }
 
 .scenario-history-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px 6px;
   text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.scenario-history-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  color: rgba(209, 250, 229, 0.92);
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.18);
   white-space: nowrap;
 }
 
@@ -4797,6 +4810,10 @@ body:not(.legacy-ui) #hud {
 .scenario-result-foot em {
   max-width: 60%;
   text-align: right;
+}
+
+.scenario-result-retry {
+  justify-self: start;
 }
 
 .upgrade-selected {
@@ -4961,6 +4978,7 @@ body[data-readability-mode="minimal"] #view {
 
   .scenario-history-meta {
     grid-column: 1 / -1;
+    justify-content: flex-start;
     text-align: left;
     white-space: normal;
   }

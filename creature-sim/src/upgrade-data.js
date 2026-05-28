@@ -232,7 +232,22 @@ export function buildScenarioResult(snapshot = null) {
     { id: 'food', label: 'Food', value: `${foodStability}%`, tone: foodStability >= 55 ? 'stable' : 'watch' },
     { id: 'stress', label: 'Stress', value: `${stressScore}%`, tone: stressScore >= 60 ? 'stable' : 'watch' }
   ];
-  return { survival, foodStability, stressScore, discoveries, score, medal, state, progress, label, summary, nextAction, statCards };
+  return {
+    scenarioId: snapshot.scenario?.id || null,
+    scenarioName,
+    survival,
+    foodStability,
+    stressScore,
+    discoveries,
+    score,
+    medal,
+    state,
+    progress,
+    label,
+    summary,
+    nextAction,
+    statCards
+  };
 }
 
 export function buildWorldPostcard({ world, playableSnapshot, moments, seed } = {}) {
