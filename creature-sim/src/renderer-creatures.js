@@ -2,7 +2,7 @@ import { clamp } from './utils.js';
 import { getCreatureEmotion, getLifeStageDisplay } from './upgrade-data.js';
 
 export function applyCreatureMethods(Renderer) {
-  Renderer.prototype.drawCreatures = function(world, opts) {
+  Renderer.prototype.drawCreatures = function (world, opts) {
     if (!world || !world.creatures) return;
     const ctx = this.ctx;
     const { worldTime = 0 } = opts;
@@ -23,8 +23,12 @@ export function applyCreatureMethods(Renderer) {
       visibleCreatures.length = 0;
       for (let i = 0; i < creatures.length; i++) {
         const c = creatures[i];
-        if (c.x >= this._viewBounds.x1 && c.x <= this._viewBounds.x2 &&
-            c.y >= this._viewBounds.y1 && c.y <= this._viewBounds.y2) {
+        if (
+          c.x >= this._viewBounds.x1 &&
+          c.x <= this._viewBounds.x2 &&
+          c.y >= this._viewBounds.y1 &&
+          c.y <= this._viewBounds.y2
+        ) {
           visibleCreatures.push(c);
         }
       }
@@ -51,7 +55,7 @@ export function applyCreatureMethods(Renderer) {
         renderList.push(visibleCreatures[i]);
       }
 
-      const appendIfMissing = (candidate) => {
+      const appendIfMissing = candidate => {
         if (!candidate || !candidate.alive) return;
         for (let i = 0; i < renderList.length; i++) {
           if (renderList[i].id === candidate.id) return;
@@ -85,12 +89,13 @@ export function applyCreatureMethods(Renderer) {
     const showTrails = this.enableTrails && zoom > 0.6;
     const showNames = this.enableNameLabels && zoom > 0.5;
     const quality = this.performance?.getCurrentQuality?.() || this.performance?.currentQuality || 'high';
-    const vectorLodZoom = {
-      ultra: 1.08,
-      high: 1.34,
-      medium: 1.4,
-      low: 1.48
-    }[quality] ?? 1.24;
+    const vectorLodZoom =
+      {
+        ultra: 1.08,
+        high: 1.34,
+        medium: 1.4,
+        low: 1.48
+      }[quality] ?? 1.24;
     const useVectorCreatureLOD = zoom < vectorLodZoom;
 
     const nameCacheKey = `${opts.selectedId}-${opts.pinnedId}-${Math.floor(zoom * 10)}`;
@@ -135,7 +140,7 @@ export function applyCreatureMethods(Renderer) {
       renderOpts.worldTime = worldTime;
       renderOpts.dayLight = dayLight;
       renderOpts.world = world;
-      renderOpts.lodLevel = zoom < 0.25 ? 'low' : (zoom < 0.5 ? 'medium' : 'high');
+      renderOpts.lodLevel = zoom < 0.25 ? 'low' : zoom < 0.5 ? 'medium' : 'high';
 
       // PERFORMANCE: Level of Detail (LOD) handling
       if (zoom < 0.05 && !forceDetail) {
@@ -187,7 +192,10 @@ export function applyCreatureMethods(Renderer) {
         this._drawCreatureName(c, isSelected, isPinned, opts, nameCache);
       }
 
-      if (zoom > 0.55 && (isSelected || isPinned || (quality !== 'low' && (c.needs?.stress > 68 || c.needs?.hunger > 72)))) {
+      if (
+        zoom > 0.55 &&
+        (isSelected || isPinned || (quality !== 'low' && (c.needs?.stress > 68 || c.needs?.hunger > 72)))
+      ) {
         this._drawCreatureStatusCue(c, { isSelected, isPinned });
       }
 
@@ -201,7 +209,11 @@ export function applyCreatureMethods(Renderer) {
     this.performance.stats.culled += this.culledCount;
   };
 
-  Renderer.prototype._drawVectorCreatureLOD = function(ctx, c, { clusterHue = null, quality = 'high', zoom = 1 } = {}) {
+  Renderer.prototype._drawVectorCreatureLOD = function (
+    ctx,
+    c,
+    { clusterHue = null, quality = 'high', zoom = 1 } = {}
+  ) {
     const hue = clusterHue ?? c.genes?.hue ?? 0;
     const predator = c.genes?.predator || (c.genes?.diet ?? 0) >= 0.7;
     const baseLight = predator ? 50 : 62;
@@ -239,20 +251,21 @@ export function applyCreatureMethods(Renderer) {
     ctx.lineWidth = previousLineWidth;
   };
 
-  Renderer.prototype._drawCreatureStatusCue = function(c, { isSelected = false, isPinned = false } = {}) {
+  Renderer.prototype._drawCreatureStatusCue = function (c, { isSelected = false, isPinned = false } = {}) {
     const ctx = this.ctx;
     const emotion = getCreatureEmotion(c);
     const stage = getLifeStageDisplay(c);
     const x = c.x;
     const y = c.y - Math.max(16, (c.size || 8) * 2.1);
     const label = isSelected || isPinned ? `${stage.icon} ${emotion.icon}` : emotion.icon;
-    const color = emotion.tone === 'danger'
-      ? 'rgba(255, 120, 120, 0.95)'
-      : emotion.tone === 'warning'
-        ? 'rgba(255, 214, 102, 0.95)'
-        : emotion.tone === 'warm'
-          ? 'rgba(255, 158, 197, 0.95)'
-          : 'rgba(139, 216, 255, 0.92)';
+    const color =
+      emotion.tone === 'danger'
+        ? 'rgba(255, 120, 120, 0.95)'
+        : emotion.tone === 'warning'
+          ? 'rgba(255, 214, 102, 0.95)'
+          : emotion.tone === 'warm'
+            ? 'rgba(255, 158, 197, 0.95)'
+            : 'rgba(139, 216, 255, 0.92)';
 
     ctx.save();
     ctx.font = '700 11px system-ui, -apple-system, sans-serif';
@@ -277,7 +290,7 @@ export function applyCreatureMethods(Renderer) {
   /**
    * Data-driven creature drawing for Proxy Mode / Fallback
    */
-  Renderer.prototype._drawExplicit = function(ctx, c, opts) {
+  Renderer.prototype._drawExplicit = function (ctx, c, opts) {
     const { isSelected, isPinned, clusterHue, zoom: _zoom } = opts;
     const g = c.genes || {};
     const hue = clusterHue !== null ? clusterHue : g.hue || 0;
@@ -312,7 +325,7 @@ export function applyCreatureMethods(Renderer) {
     ctx.restore();
   };
 
-  Renderer.prototype._drawCreatureShadow = function(creature) {
+  Renderer.prototype._drawCreatureShadow = function (creature) {
     // Enhanced dynamic shadow with biome/time-of-day awareness
     const ctx = this.ctx;
     const r = creature.size || creature.genes?.size || 5;
@@ -340,10 +353,18 @@ export function applyCreatureMethods(Renderer) {
     // Elemental creatures have colored shadows
     if (g?.elementalAffinity) {
       switch (g.elementalAffinity) {
-        case 'fire': shadowColor = 'rgba(80, 20, 0'; break;
-        case 'ice': shadowColor = 'rgba(40, 80, 120'; break;
-        case 'electric': shadowColor = 'rgba(100, 100, 0'; break;
-        case 'earth': shadowColor = 'rgba(60, 40, 20'; break;
+        case 'fire':
+          shadowColor = 'rgba(80, 20, 0';
+          break;
+        case 'ice':
+          shadowColor = 'rgba(40, 80, 120';
+          break;
+        case 'electric':
+          shadowColor = 'rgba(100, 100, 0';
+          break;
+        case 'earth':
+          shadowColor = 'rgba(60, 40, 20';
+          break;
       }
     }
 
@@ -381,15 +402,13 @@ export function applyCreatureMethods(Renderer) {
     ctx.restore();
   };
 
-  Renderer.prototype._drawCreatureOutline = function(creature, isSelected, selectionPulseUntil = null) {
+  Renderer.prototype._drawCreatureOutline = function (creature, isSelected, selectionPulseUntil = null) {
     // Subtle outline for contrast (not too thick!)
     const ctx = this.ctx;
     const r = creature.size || creature.genes?.size || 5;
     const now = performance.now();
     const pulseActive = isSelected && typeof selectionPulseUntil === 'number' && now < selectionPulseUntil;
-    const pulseProgress = pulseActive
-      ? 1 - (selectionPulseUntil - now) / 400
-      : 0;
+    const pulseProgress = pulseActive ? 1 - (selectionPulseUntil - now) / 400 : 0;
     const pulseScale = pulseActive ? 1 + Math.sin(pulseProgress * Math.PI) * 0.25 : 1;
 
     ctx.save();
@@ -405,7 +424,7 @@ export function applyCreatureMethods(Renderer) {
     ctx.restore();
   };
 
-  Renderer.prototype._drawCreatureHoverOutline = function(creature) {
+  Renderer.prototype._drawCreatureHoverOutline = function (creature) {
     const ctx = this.ctx;
     const r = creature.size || creature.genes?.size || 5;
     const now = performance.now();
@@ -422,7 +441,7 @@ export function applyCreatureMethods(Renderer) {
     ctx.restore();
   };
 
-  Renderer.prototype._drawCreatureGrabbedOutline = function(creature) {
+  Renderer.prototype._drawCreatureGrabbedOutline = function (creature) {
     const ctx = this.ctx;
     const r = creature.size || creature.genes?.size || 5;
     const now = performance.now();
@@ -444,7 +463,7 @@ export function applyCreatureMethods(Renderer) {
    * @param {object} creature - The creature to draw effect for
    * @param {number} worldTime - Current world time for animation
    */
-  Renderer.prototype._drawDiseaseEffect = function(creature, worldTime) {
+  Renderer.prototype._drawDiseaseEffect = function (creature, worldTime) {
     const ctx = this.ctx;
     const diseaseStatus = creature.statuses.get('disease');
     if (!diseaseStatus) return;
@@ -460,12 +479,14 @@ export function applyCreatureMethods(Renderer) {
     const auraRadius = r + 3 + severity * 4;
 
     // Outer glow
-    const gradient = ctx.createRadialGradient(
-      creature.x, creature.y, r,
-      creature.x, creature.y, auraRadius
-    );
+    const gradient = ctx.createRadialGradient(creature.x, creature.y, r, creature.x, creature.y, auraRadius);
     gradient.addColorStop(0, `${diseaseColor}00`);
-    gradient.addColorStop(0.5, `${diseaseColor}${Math.floor(severity * pulse * 40).toString(16).padStart(2, '0')}`);
+    gradient.addColorStop(
+      0.5,
+      `${diseaseColor}${Math.floor(severity * pulse * 40)
+        .toString(16)
+        .padStart(2, '0')}`
+    );
     gradient.addColorStop(1, `${diseaseColor}00`);
 
     ctx.beginPath();
@@ -486,7 +507,9 @@ export function applyCreatureMethods(Renderer) {
 
       ctx.beginPath();
       ctx.arc(px, py, particleSize, 0, Math.PI * 2);
-      ctx.fillStyle = `${diseaseColor}${Math.floor(pulse * 180).toString(16).padStart(2, '0')}`;
+      ctx.fillStyle = `${diseaseColor}${Math.floor(pulse * 180)
+        .toString(16)
+        .padStart(2, '0')}`;
       ctx.fill();
     }
 
@@ -500,7 +523,7 @@ export function applyCreatureMethods(Renderer) {
     ctx.restore();
   };
 
-  Renderer.prototype._drawCreatureName = function(creature, isSelected, isPinned, opts, nameCache = null) {
+  Renderer.prototype._drawCreatureName = function (creature, isSelected, isPinned, opts, nameCache = null) {
     // Draw creature name/ID above it
     const ctx = this.ctx;
     const zoom = this.camera.zoom;
@@ -564,15 +587,16 @@ export function applyCreatureMethods(Renderer) {
     ctx.restore();
   };
 
-  Renderer.prototype._computeClusters = function(creatures, k = 5) {
+  Renderer.prototype._computeClusters = function (creatures, k = 5) {
     if (creatures.length < k) return new Map();
 
     // OPTIMIZATION: Aggressive sampling for large populations
     // 100 samples is enough for visual clustering
     const maxSampleSize = 100;
-    const sampleCreatures = creatures.length > maxSampleSize
-      ? creatures.filter((_, i) => i % Math.ceil(creatures.length / maxSampleSize) === 0)
-      : creatures;
+    const sampleCreatures =
+      creatures.length > maxSampleSize
+        ? creatures.filter((_, i) => i % Math.ceil(creatures.length / maxSampleSize) === 0)
+        : creatures;
 
     // Simple k-means clustering on [speed, metabolism, sense, aggression]
     // Pre-allocate feature array
@@ -650,8 +674,7 @@ export function applyCreatureMethods(Renderer) {
           let nearestDist = Infinity;
           for (let j = 0; j < sampleCreatures.length; j++) {
             const sc = sampleCreatures[j];
-            const dist = Math.abs(c.genes.speed - sc.genes.speed) +
-              Math.abs(c.genes.metabolism - sc.genes.metabolism);
+            const dist = Math.abs(c.genes.speed - sc.genes.speed) + Math.abs(c.genes.metabolism - sc.genes.metabolism);
             if (dist < nearestDist) {
               nearestDist = dist;
               nearestId = sc.id;
@@ -665,11 +688,11 @@ export function applyCreatureMethods(Renderer) {
     return clusterMap;
   };
 
-  Renderer.prototype._euclidean = function(a, b) {
+  Renderer.prototype._euclidean = function (a, b) {
     return Math.sqrt(a.reduce((sum, val, i) => sum + (val - b[i]) ** 2, 0));
   };
 
-  Renderer.prototype._mean = function(points) {
+  Renderer.prototype._mean = function (points) {
     const dims = points[0].length;
     const mean = new Array(dims).fill(0);
     for (const p of points) {

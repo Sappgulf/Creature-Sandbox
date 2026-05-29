@@ -8,77 +8,77 @@ const GOAL_POOL = [
     type: 'population',
     icon: '🌿',
     makeTarget: () => 70 + Math.floor(Math.random() * 50),
-    getDescription: (target) => `Reach ${target} creatures at once`
+    getDescription: target => `Reach ${target} creatures at once`
   },
   {
     id: 'predator_prowess',
     type: 'predator_kills',
     icon: '🦁',
     makeTarget: () => 4 + Math.floor(Math.random() * 6),
-    getDescription: (target) => `Let predators score ${target} total hunts`
+    getDescription: target => `Let predators score ${target} total hunts`
   },
   {
     id: 'foraging_spree',
     type: 'food_collected',
     icon: '🍇',
     makeTarget: () => 80 + Math.floor(Math.random() * 80),
-    getDescription: (target) => `Consume ${target} meals`
+    getDescription: target => `Consume ${target} meals`
   },
   {
     id: 'baby_boom',
     type: 'births',
     icon: '🧬',
     makeTarget: () => 18 + Math.floor(Math.random() * 16),
-    getDescription: (target) => `Welcome ${target} new births`
+    getDescription: target => `Welcome ${target} new births`
   },
   {
     id: 'endure',
     type: 'survival_time',
     icon: '⏳',
     makeTarget: () => 180 + Math.floor(Math.random() * 180),
-    getDescription: (target) => `Survive ${Math.round(target / 60)} minutes`
+    getDescription: target => `Survive ${Math.round(target / 60)} minutes`
   },
   {
     id: 'spawn_party',
     type: 'manual_spawns',
     icon: '✨',
     makeTarget: () => 3 + Math.floor(Math.random() * 3),
-    getDescription: (target) => `Spawn ${target} creatures by hand`
+    getDescription: target => `Spawn ${target} creatures by hand`
   },
   {
     id: 'launch_creature',
     type: 'creature_throws',
     icon: '🎯',
     makeTarget: () => 2 + Math.floor(Math.random() * 3),
-    getDescription: (target) => `Launch ${target} creatures across the sandbox`
+    getDescription: target => `Launch ${target} creatures across the sandbox`
   },
   {
     id: 'prop_chain',
     type: 'prop_triggers',
     icon: '🧩',
     makeTarget: () => 4 + Math.floor(Math.random() * 4),
-    getDescription: (target) => `Trigger sandbox props ${target} times`
+    getDescription: target => `Trigger sandbox props ${target} times`
   },
   {
     id: 'prop_builder',
     type: 'prop_places',
     icon: '🧱',
     makeTarget: () => 4 + Math.floor(Math.random() * 5),
-    getDescription: (target) => `Place ${target} sandbox props`
+    getDescription: target => `Place ${target} sandbox props`
   },
   {
     id: 'divine_intervention',
     type: 'god_actions',
     icon: '✨',
     makeTarget: () => 5 + Math.floor(Math.random() * 5),
-    getDescription: (target) => `Use god powers ${target} times`
+    getDescription: target => `Use god powers ${target} times`
   },
   {
     id: 'wetland_watch',
     type: 'aquatic_alive',
     icon: '🐠',
     makeTarget: () => 6 + Math.floor(Math.random() * 6),
-    getDescription: (target) => `Keep ${target} aquatic creatures alive at once`
+    getDescription: target => `Keep ${target} aquatic creatures alive at once`
   }
 ];
 
@@ -93,7 +93,7 @@ export class SessionGoals {
     this.propTriggers = 0;
     this.propPlacements = 0;
     this.godActions = 0;
-    eventSystem.on(GameEvents.CREATURE_BORN, (event) => {
+    eventSystem.on(GameEvents.CREATURE_BORN, event => {
       if (!event || event.parentId != null) return;
       this.manualSpawns += 1;
     });

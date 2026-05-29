@@ -138,8 +138,8 @@ export class ErrorHandler {
         margin-left: auto;
         opacity: 0.7;
       `;
-      dismissBtn.onmouseover = () => dismissBtn.style.opacity = '1';
-      dismissBtn.onmouseout = () => dismissBtn.style.opacity = '0.7';
+      dismissBtn.onmouseover = () => (dismissBtn.style.opacity = '1');
+      dismissBtn.onmouseout = () => (dismissBtn.style.opacity = '0.7');
 
       dismissBtn.onclick = () => {
         notification.style.animation = 'slideOutRight 0.3s ease-out';
@@ -181,7 +181,6 @@ export class ErrorHandler {
           setTimeout(() => notification.remove(), 300);
         }
       }, 10000);
-
     } catch (notificationError) {
       // Fallback to console if notification creation fails
       console.error('Failed to show error notification:', notificationError);
@@ -264,7 +263,6 @@ export class ErrorHandler {
       continueBtn.onclick = () => dialog.remove();
 
       document.body.appendChild(dialog);
-
     } catch (dialogError) {
       console.error('Failed to show critical error dialog:', dialogError);
       // Fallback: simple alert
@@ -297,10 +295,10 @@ export class ErrorHandler {
 export const errorHandler = new ErrorHandler();
 
 // Global error handlers for unhandled errors
-window.addEventListener('error', (event) => {
+window.addEventListener('error', event => {
   errorHandler.handleError(event.error, 'Unhandled JavaScript error', 'error');
 });
 
-window.addEventListener('unhandledrejection', (event) => {
+window.addEventListener('unhandledrejection', event => {
   errorHandler.handleError(event.reason, 'Unhandled promise rejection', 'error');
 });

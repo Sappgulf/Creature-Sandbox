@@ -3,7 +3,7 @@ import { domCache } from './dom-cache.js';
 import { eventSystem, GameEvents } from './event-system.js';
 
 export function applyUiGodModeMethods(UIController) {
-  UIController.prototype.bindGodModeControls = function() {
+  UIController.prototype.bindGodModeControls = function () {
     const godExitBtn = domCache.get('godModeExit');
     const godTools = [
       domCache.get('godToolFood'),
@@ -22,21 +22,21 @@ export function applyUiGodModeMethods(UIController) {
     }
   };
 
-  UIController.prototype.onGodModeToggle = function() {
+  UIController.prototype.onGodModeToggle = function () {
     this.setGodModeActive(!gameState.godModeActive, { source: 'menu' });
   };
 
-  UIController.prototype.onGodModeExit = function() {
+  UIController.prototype.onGodModeExit = function () {
     this.setGodModeActive(false, { source: 'panel' });
   };
 
-  UIController.prototype.onGodToolSelect = function(event) {
+  UIController.prototype.onGodToolSelect = function (event) {
     const tool = event?.currentTarget?.dataset?.godTool;
     if (!tool) return;
     this.setGodTool(tool, { source: 'panel', announce: false });
   };
 
-  UIController.prototype.setGodModeActive = function(active, { source = 'menu' } = {}) {
+  UIController.prototype.setGodModeActive = function (active, { source = 'menu' } = {}) {
     gameState.godModeActive = !!active;
     if (gameState.godModeActive) {
       this.tools?.setMode?.('inspect');
@@ -57,7 +57,7 @@ export function applyUiGodModeMethods(UIController) {
     this.upgradeController?.updateObjectiveRail?.();
   };
 
-  UIController.prototype.setGodTool = function(tool, { source = 'panel', announce = false } = {}) {
+  UIController.prototype.setGodTool = function (tool, { source = 'panel', announce = false } = {}) {
     if (!tool) return;
     const changed = gameState.godModeTool !== tool;
     gameState.godModeTool = tool;
@@ -76,7 +76,7 @@ export function applyUiGodModeMethods(UIController) {
     this.notifications.show(`✨ ${labels[tool] || tool}${via}`, 'info', changed ? 900 : 700);
   };
 
-  UIController.prototype.updateGodModeUI = function() {
+  UIController.prototype.updateGodModeUI = function () {
     const panel = domCache.get('godModePanel');
     const indicator = domCache.get('godModeIndicator');
     const menuBtn = domCache.get('godModeMenuBtn');
@@ -130,7 +130,7 @@ export function applyUiGodModeMethods(UIController) {
     }
   };
 
-  UIController.prototype.performGodAction = function(action) {
+  UIController.prototype.performGodAction = function (action) {
     // Prefer selected creature; fall back to nearest to camera center
     let creature = gameState.selectedId ? this.world.getAnyCreatureById(gameState.selectedId) : null;
     if (!creature || !creature.alive) {
@@ -188,7 +188,6 @@ export function applyUiGodModeMethods(UIController) {
       } catch (e) {
         console.warn('Failed to emit god mode action event:', e);
       }
-
     } catch (error) {
       console.error(`God action '${action}' failed:`, error);
     }

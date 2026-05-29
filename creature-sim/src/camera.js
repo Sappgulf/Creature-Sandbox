@@ -115,7 +115,7 @@ export class Camera {
     const dx = Math.abs(this.x - this.targetX);
     const dy = Math.abs(this.y - this.targetY);
     const dz = Math.abs(this.zoom - this.targetZoom);
-    this.isMoving = (dx > this.movementThreshold || dy > this.movementThreshold || dz > 0.01) || this.travel !== null;
+    this.isMoving = dx > this.movementThreshold || dy > this.movementThreshold || dz > 0.01 || this.travel !== null;
   }
 
   setZoom(next) {
@@ -209,10 +209,7 @@ export class Camera {
   }
 
   _refreshMinZoom() {
-    const fitZoom = Math.min(
-      this.viewportWidth / this.worldWidth,
-      this.viewportHeight / this.worldHeight
-    );
+    const fitZoom = Math.min(this.viewportWidth / this.worldWidth, this.viewportHeight / this.worldHeight);
     const clampedFit = Math.min(fitZoom * 0.75, this.maxZoom);
     this.minZoom = clampedFit;
     this._clampZoom();
@@ -245,8 +242,8 @@ export class Camera {
   _clampTargets() {
     if (!Number.isFinite(this.worldWidth) || !Number.isFinite(this.worldHeight)) return;
     const margin = 200;
-    const hw = (this.viewportWidth / 2) / this.targetZoom;
-    const hh = (this.viewportHeight / 2) / this.targetZoom;
+    const hw = this.viewportWidth / 2 / this.targetZoom;
+    const hh = this.viewportHeight / 2 / this.targetZoom;
     const minX = -margin + hw;
     const maxX = this.worldWidth + margin - hw;
     const minY = -margin + hh;
@@ -258,8 +255,8 @@ export class Camera {
   _clampPosition() {
     if (!Number.isFinite(this.worldWidth) || !Number.isFinite(this.worldHeight)) return;
     const margin = 200;
-    const hw = (this.viewportWidth / 2) / this.zoom;
-    const hh = (this.viewportHeight / 2) / this.zoom;
+    const hw = this.viewportWidth / 2 / this.zoom;
+    const hh = this.viewportHeight / 2 / this.zoom;
     const minX = -margin + hw;
     const maxX = this.worldWidth + margin - hw;
     const minY = -margin + hh;
@@ -270,8 +267,8 @@ export class Camera {
 
   _limits(zoom = this.zoom) {
     const margin = 200;
-    const hw = (this.viewportWidth / 2) / zoom;
-    const hh = (this.viewportHeight / 2) / zoom;
+    const hw = this.viewportWidth / 2 / zoom;
+    const hh = this.viewportHeight / 2 / zoom;
     return {
       minX: -margin + hw,
       maxX: this.worldWidth + margin - hw,

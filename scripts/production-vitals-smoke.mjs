@@ -30,7 +30,7 @@ function httpClientFor(url) {
 }
 
 function requestOk(url) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     let client;
     try {
       client = httpClientFor(url);
@@ -39,16 +39,15 @@ function requestOk(url) {
       return;
     }
 
-    const req = client.get(url, (res) => {
+    const req = client.get(url, res => {
       let body = '';
       res.setEncoding('utf8');
-      res.on('data', (chunk) => {
+      res.on('data', chunk => {
         if (body.length < 8192) body += chunk;
       });
       res.on('end', () => {
         const statusOk = res.statusCode >= 200 && res.statusCode < 500;
-        const builtEntryOk = /<script[^>]+src=["']\/assets\/[^"']+\.js/.test(body) ||
-          body.includes('/assets/index-');
+        const builtEntryOk = /<script[^>]+src=["']\/assets\/[^"']+\.js/.test(body) || body.includes('/assets/index-');
         resolve(statusOk && body.includes('Creature Sandbox') && builtEntryOk);
       });
     });
@@ -61,7 +60,7 @@ function requestOk(url) {
 }
 
 function requestJson(url) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     let client;
     try {
       client = httpClientFor(url);
@@ -70,10 +69,10 @@ function requestJson(url) {
       return;
     }
 
-    const req = client.get(url, (res) => {
+    const req = client.get(url, res => {
       let body = '';
       res.setEncoding('utf8');
-      res.on('data', (chunk) => {
+      res.on('data', chunk => {
         if (body.length < 32768) body += chunk;
       });
       res.on('end', () => {
@@ -120,9 +119,7 @@ async function collectVitals(page) {
   return page.evaluate(() => {
     const navigation = performance.getEntriesByType('navigation')[0];
     const paintEntries = performance.getEntriesByType('paint');
-    const paintByName = Object.fromEntries(
-      paintEntries.map((entry) => [entry.name, Number(entry.startTime.toFixed(1))])
-    );
+    const paintByName = Object.fromEntries(paintEntries.map(entry => [entry.name, Number(entry.startTime.toFixed(1))]));
     const vitals = window.__creatureVitals || {};
     const lcp = Number.isFinite(vitals.lcp) && vitals.lcp > 0 ? Number(vitals.lcp.toFixed(1)) : null;
     const cls = Number.isFinite(vitals.cls) ? Number(vitals.cls.toFixed(4)) : 0;
@@ -131,9 +128,10 @@ async function collectVitals(page) {
     const domContentLoadedMs = navigation
       ? Number((navigation.domContentLoadedEventEnd - navigation.startTime).toFixed(1))
       : null;
-    const loadEventMs = navigation && navigation.loadEventEnd > 0
-      ? Number((navigation.loadEventEnd - navigation.startTime).toFixed(1))
-      : null;
+    const loadEventMs =
+      navigation && navigation.loadEventEnd > 0
+        ? Number((navigation.loadEventEnd - navigation.startTime).toFixed(1))
+        : null;
 
     return {
       firstPaintMs: paintByName['first-paint'] ?? null,
@@ -174,7 +172,10 @@ function assertContext(result) {
     Number(result.state.registeredSprites || 0) >= budgets.registeredSprites,
     `${result.name}: production should register sprite assets`
   );
-  assert.ok(Number.isFinite(fcp) && fcp <= budgets.firstContentfulPaintMs, `${result.name}: FCP should stay inside budget`);
+  assert.ok(
+    Number.isFinite(fcp) && fcp <= budgets.firstContentfulPaintMs,
+    `${result.name}: FCP should stay inside budget`
+  );
   if (result.vitals.largestContentfulPaintMs != null) {
     assert.ok(
       result.vitals.largestContentfulPaintMs <= budgets.largestContentfulPaintMs,
@@ -210,7 +211,7 @@ async function runContext(browser, target, contextConfig) {
 
     const observe = (type, handler) => {
       try {
-        const observer = new PerformanceObserver((list) => {
+        const observer = new PerformanceObserver(list => {
           for (const entry of list.getEntries()) handler(entry);
         });
         observer.observe({ type, buffered: true });
@@ -220,18 +221,18 @@ async function runContext(browser, target, contextConfig) {
       }
     };
 
-    observe('paint', (entry) => {
+    observe('paint', entry => {
       if (entry.name === 'first-contentful-paint') {
         window.__creatureVitals.fcp = entry.startTime;
       }
     });
-    observe('largest-contentful-paint', (entry) => {
+    observe('largest-contentful-paint', entry => {
       window.__creatureVitals.lcp = entry.startTime;
     });
-    observe('layout-shift', (entry) => {
+    observe('layout-shift', entry => {
       if (!entry.hadRecentInput) window.__creatureVitals.cls += entry.value || 0;
     });
-    observe('longtask', (entry) => {
+    observe('longtask', entry => {
       window.__creatureVitals.longTasks.push({
         name: entry.name,
         startTime: Number(entry.startTime.toFixed(1)),
@@ -242,12 +243,12 @@ async function runContext(browser, target, contextConfig) {
 
   const page = await context.newPage();
   const consoleMessages = [];
-  page.on('console', (msg) => {
+  page.on('console', msg => {
     if (['error', 'warning'].includes(msg.type())) {
       consoleMessages.push({ type: msg.type(), text: msg.text() });
     }
   });
-  page.on('pageerror', (error) => {
+  page.on('pageerror', error => {
     consoleMessages.push({ type: 'pageerror', text: error.message });
   });
 
@@ -255,14 +256,20 @@ async function runContext(browser, target, contextConfig) {
   const navigationStarted = Date.now();
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
   await waitForPageCondition(page, () => typeof window.render_game_to_text === 'function', 'render_game_to_text');
-  await waitForPageCondition(page, () => {
-    const state = JSON.parse(window.render_game_to_text());
-    return state.ui?.homeVisible === false &&
-      state.summary?.totalCreatures > 0 &&
-      state.systems?.workerReady === true &&
-      Number(state.systems?.workerPendingMessages || 0) === 0 &&
-      Number(state.systems?.registeredSprites || 0) >= 20;
-  }, 'production seeded worker world');
+  await waitForPageCondition(
+    page,
+    () => {
+      const state = JSON.parse(window.render_game_to_text());
+      return (
+        state.ui?.homeVisible === false &&
+        state.summary?.totalCreatures > 0 &&
+        state.systems?.workerReady === true &&
+        Number(state.systems?.workerPendingMessages || 0) === 0 &&
+        Number(state.systems?.registeredSprites || 0) >= 20
+      );
+    },
+    'production seeded worker world'
+  );
   const seededWorldMs = Date.now() - navigationStarted;
   await page.waitForTimeout(1800);
 
@@ -282,8 +289,8 @@ async function runContext(browser, target, contextConfig) {
   };
   console.log(
     `  ${contextConfig.name}: FCP ${vitals.firstContentfulPaintMs ?? 'n/a'}ms, ` +
-    `LCP ${vitals.largestContentfulPaintMs ?? 'n/a'}ms, CLS ${vitals.cumulativeLayoutShift}, ` +
-    `long tasks ${vitals.longTaskTotalMs}ms, ready ${seededWorldMs}ms`
+      `LCP ${vitals.largestContentfulPaintMs ?? 'n/a'}ms, CLS ${vitals.cumulativeLayoutShift}, ` +
+      `long tasks ${vitals.longTaskTotalMs}ms, ready ${seededWorldMs}ms`
   );
   assertContext(result);
   await context.close();
@@ -319,11 +326,11 @@ try {
     budgets,
     contexts: results,
     aggregate: {
-      maxSeededWorldMs: Math.max(...results.map((item) => item.seededWorldMs)),
-      maxFirstContentfulPaintMs: Math.max(...results.map((item) => Number(item.vitals.firstContentfulPaintMs || 0))),
-      maxLargestContentfulPaintMs: Math.max(...results.map((item) => Number(item.vitals.largestContentfulPaintMs || 0))),
-      maxCumulativeLayoutShift: Math.max(...results.map((item) => Number(item.vitals.cumulativeLayoutShift || 0))),
-      maxLongTaskTotalMs: Math.max(...results.map((item) => Number(item.vitals.longTaskTotalMs || 0)))
+      maxSeededWorldMs: Math.max(...results.map(item => item.seededWorldMs)),
+      maxFirstContentfulPaintMs: Math.max(...results.map(item => Number(item.vitals.firstContentfulPaintMs || 0))),
+      maxLargestContentfulPaintMs: Math.max(...results.map(item => Number(item.vitals.largestContentfulPaintMs || 0))),
+      maxCumulativeLayoutShift: Math.max(...results.map(item => Number(item.vitals.cumulativeLayoutShift || 0))),
+      maxLongTaskTotalMs: Math.max(...results.map(item => Number(item.vitals.longTaskTotalMs || 0)))
     }
   };
 
@@ -331,17 +338,20 @@ try {
   await fs.writeFile(
     path.join(outDir, 'summary.md'),
     `# Production Vitals Smoke\n\n` +
-    `Target: ${baseUrl}\n\n` +
-    `Build SHA: ${target.buildInfo?.sha || 'unknown'}\n\n` +
-    `| Context | Ready ms | FCP ms | LCP ms | CLS | Long tasks ms |\n` +
-    `| --- | --- | --- | --- | --- | --- |\n` +
-    results.map((item) =>
-      `| ${item.name} | ${item.seededWorldMs} | ${item.vitals.firstContentfulPaintMs ?? 'n/a'} | ` +
-      `${item.vitals.largestContentfulPaintMs ?? 'n/a'} | ${item.vitals.cumulativeLayoutShift} | ${item.vitals.longTaskTotalMs} |`
-    ).join('\n') +
-    '\n'
+      `Target: ${baseUrl}\n\n` +
+      `Build SHA: ${target.buildInfo?.sha || 'unknown'}\n\n` +
+      `| Context | Ready ms | FCP ms | LCP ms | CLS | Long tasks ms |\n` +
+      `| --- | --- | --- | --- | --- | --- |\n` +
+      results
+        .map(
+          item =>
+            `| ${item.name} | ${item.seededWorldMs} | ${item.vitals.firstContentfulPaintMs ?? 'n/a'} | ` +
+            `${item.vitals.largestContentfulPaintMs ?? 'n/a'} | ${item.vitals.cumulativeLayoutShift} | ${item.vitals.longTaskTotalMs} |`
+        )
+        .join('\n') +
+      '\n'
   );
-  console.log(`Production vitals smoke passed: ${results.map((item) => item.name).join(', ')}`);
+  console.log(`Production vitals smoke passed: ${results.map(item => item.name).join(', ')}`);
 } finally {
   if (browser) await browser.close();
 }

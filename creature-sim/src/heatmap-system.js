@@ -125,11 +125,16 @@ export class HeatmapSystem {
 
   _getActiveMap() {
     switch (this.activeType) {
-      case 'death': return this.deathMap;
-      case 'birth': return this.birthMap;
-      case 'activity': return this.activityMap;
-      case 'energy': return this.energyMap;
-      default: return null;
+      case 'death':
+        return this.deathMap;
+      case 'birth':
+        return this.birthMap;
+      case 'activity':
+        return this.activityMap;
+      case 'energy':
+        return this.energyMap;
+      default:
+        return null;
     }
   }
 
@@ -264,4 +269,3 @@ export class HeatmapSystem {
     };
   }
 }
-

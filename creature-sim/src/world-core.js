@@ -308,12 +308,7 @@ export class World {
       const a = creatures[idx];
       if (!a || !a.alive || a.isGrabbed) continue;
 
-      const nearby = this.creatureManager?.queryCreaturesFast?.(
-        a.x,
-        a.y,
-        bumpRadius,
-        this._bumpNearby
-      ) || creatures;
+      const nearby = this.creatureManager?.queryCreaturesFast?.(a.x, a.y, bumpRadius, this._bumpNearby) || creatures;
       for (let j = 0; j < nearby.length; j++) {
         const b = nearby[j];
         if (b === a) continue;
@@ -346,12 +341,10 @@ export class World {
       const idx = Math.floor(Math.random() * creatures.length);
       const creature = creatures[idx];
       if (!creature || !creature.alive || creature.isGrabbed) continue;
-      const nearby = this.creatureManager?.queryCreaturesFast?.(
-        creature.x,
-        creature.y,
-        48,
-        this._crowdNearby
-      ) || this.creatureManager?.queryCreatures?.(creature.x, creature.y, 48) || [];
+      const nearby =
+        this.creatureManager?.queryCreaturesFast?.(creature.x, creature.y, 48, this._crowdNearby) ||
+        this.creatureManager?.queryCreatures?.(creature.x, creature.y, 48) ||
+        [];
       if (nearby.length < 4) continue;
       const angle = Math.random() * Math.PI * 2;
       const shove = 35 + Math.random() * 25;
@@ -429,13 +422,16 @@ export class World {
         this.disaster.disasterCooldown = Infinity;
       }
       if (campaignConfig.triggerDisease) {
-        setTimeout(() => {
-          this.disaster.triggerDisaster('plague', {
-            intensity: 1.0,
-            duration: campaignConfig.triggerDisease.delay || 15,
-            manual: true
-          });
-        }, (campaignConfig.triggerDisease.delay || 15) * 1000);
+        setTimeout(
+          () => {
+            this.disaster.triggerDisaster('plague', {
+              intensity: 1.0,
+              duration: campaignConfig.triggerDisease.delay || 15,
+              manual: true
+            });
+          },
+          (campaignConfig.triggerDisease.delay || 15) * 1000
+        );
       }
       if (campaignConfig.waterBiomeBoost) {
         this.biomeGenerator.waterBoost = 1.5;
@@ -505,7 +501,9 @@ export class World {
       }
     }
 
-    console.debug(`🌱 Seeded diverse world: ${nPureHerbivoresFinal} herbivores, ${nOmnivoresFinal} omnivores, ${initialAquatic} aquatic, ${initialPredators} predators, ${initialFood} food`);
+    console.debug(
+      `🌱 Seeded diverse world: ${nPureHerbivoresFinal} herbivores, ${nOmnivoresFinal} omnivores, ${initialAquatic} aquatic, ${initialPredators} predators, ${initialFood} food`
+    );
 
     // Clear campaign config so it doesn't persist across resets
     this.pendingCampaignConfig = null;
@@ -597,7 +595,8 @@ export class World {
       if (possibleDecors.length === 0) continue;
 
       const decorTemplate = possibleDecors[Math.floor(Math.random() * possibleDecors.length)];
-      const size = decorTemplate.sizeRange[0] + Math.random() * (decorTemplate.sizeRange[1] - decorTemplate.sizeRange[0]);
+      const size =
+        decorTemplate.sizeRange[0] + Math.random() * (decorTemplate.sizeRange[1] - decorTemplate.sizeRange[0]);
       let hue;
       switch (decorTemplate.type) {
         case 'rock':
@@ -807,7 +806,13 @@ export class World {
         worldCount: this.creatures.length
       });
     }
-    this._recordSpawnDebug({ source: 'manual', type: predator ? 'predator' : 'herbivore', x: sanitized.x, y: sanitized.y, creature });
+    this._recordSpawnDebug({
+      source: 'manual',
+      type: predator ? 'predator' : 'herbivore',
+      x: sanitized.x,
+      y: sanitized.y,
+      creature
+    });
     return creature;
   }
 
@@ -889,7 +894,13 @@ export class World {
         if (debugFlags.spawnDebug) {
           console.debug('[Spawn][world] type:end', { id: herbivore?.id ?? null, worldCount: this.creatures.length });
         }
-        this._recordSpawnDebug({ source: 'type', type: 'herbivore', x: sanitized.x, y: sanitized.y, creature: herbivore });
+        this._recordSpawnDebug({
+          source: 'type',
+          type: 'herbivore',
+          x: sanitized.x,
+          y: sanitized.y,
+          creature: herbivore
+        });
         return herbivore;
     }
   }
@@ -944,7 +955,7 @@ export class World {
     let best = null;
     let bestD2 = radius * radius;
     for (const corpse of source) {
-      if (!corpse || corpse.energy !== undefined && corpse.energy < 0.5) continue;
+      if (!corpse || (corpse.energy !== undefined && corpse.energy < 0.5)) continue;
       const d2 = dist2(corpse.x, corpse.y, x, y);
       if (d2 < bestD2) {
         bestD2 = d2;
@@ -1425,7 +1436,7 @@ export class World {
       width: this.width,
       height: this.height,
       time: this.t,
-      creatures: this.creatures.map(c => c.export ? c.export() : null).filter(Boolean),
+      creatures: this.creatures.map(c => (c.export ? c.export() : null)).filter(Boolean),
       food: this.food,
       corpses: this.corpses,
       restZones: this.restZones,

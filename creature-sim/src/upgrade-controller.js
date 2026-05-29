@@ -32,13 +32,17 @@ function writeJson(key, value) {
 }
 
 function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  })[char]);
+  return String(value ?? '').replace(
+    /[&<>"']/g,
+    char =>
+      ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[char]
+  );
 }
 
 function randAround(center, radius) {
@@ -95,9 +99,11 @@ export class UpgradeController {
 
     window.addEventListener('creature:toggle-upgrades-panel', () => this.togglePanel());
     document.getElementById('btn-upgrade-close')?.addEventListener('click', () => this.setPanelVisible(false));
-    document.getElementById('upgrade-postcard-export')?.addEventListener('click', () => this.createPostcard({ announce: true }));
+    document
+      .getElementById('upgrade-postcard-export')
+      ?.addEventListener('click', () => this.createPostcard({ announce: true }));
     document.getElementById('upgrade-save-seed')?.addEventListener('click', () => this.saveSeedEntry());
-    this.panel?.addEventListener('click', (event) => {
+    this.panel?.addEventListener('click', event => {
       const button = event.target.closest('[data-upgrade-action]');
       if (!button) return;
       const action = button.dataset.upgradeAction;
@@ -242,13 +248,7 @@ export class UpgradeController {
       icon: '🌍'
     };
     const hour = Number(environment?.timeOfDay ?? this.world?.timeOfDay ?? 12);
-    const timeLabel = hour < 5 || hour >= 21
-      ? 'Night'
-      : hour < 8
-        ? 'Dawn'
-        : hour >= 18
-          ? 'Dusk'
-          : 'Day';
+    const timeLabel = hour < 5 || hour >= 21 ? 'Night' : hour < 8 ? 'Dawn' : hour >= 18 ? 'Dusk' : 'Day';
     const foodRate = environment?.getSeasonModifier?.('food');
     const foodLabel = Number.isFinite(foodRate) ? ` · Food ${Math.round(foodRate * 100)}%` : '';
     return {
@@ -260,14 +260,16 @@ export class UpgradeController {
   getSelectedCreature() {
     const id = gameState.selectedId || gameState.pinnedId;
     if (id == null) return null;
-    return this.world?.getAnyCreatureById?.(id)
-      || (this.world?.creatures || []).find(creature => creature.id === id)
-      || null;
+    return (
+      this.world?.getAnyCreatureById?.(id) || (this.world?.creatures || []).find(creature => creature.id === id) || null
+    );
   }
 
   setNickname(creatureId, name) {
     if (!creatureId) return false;
-    const clean = String(name || '').trim().slice(0, 28);
+    const clean = String(name || '')
+      .trim()
+      .slice(0, 28);
     if (clean) this.nicknames[creatureId] = clean;
     else delete this.nicknames[creatureId];
     writeJson('nicknames', this.nicknames);
@@ -326,14 +328,19 @@ export class UpgradeController {
       this.camera.targetY = target.y;
     }
     const mode = FOLLOW_TARGET_MODES.find(item => item.id === modeId);
-    this.notifications?.show?.(`${mode?.icon || '👁️'} Following ${mode?.label || 'creature'} #${target.id}`, 'info', 1900);
+    this.notifications?.show?.(
+      `${mode?.icon || '👁️'} Following ${mode?.label || 'creature'} #${target.id}`,
+      'info',
+      1900
+    );
     return target;
   }
 
   pickFollowTarget(modeId) {
     const creatures = (this.world?.creatures || []).filter(creature => creature?.alive !== false);
     if (!creatures.length) return null;
-    if (modeId === 'youngest') return creatures.reduce((best, item) => item.age < best.age ? item : best, creatures[0]);
+    if (modeId === 'youngest')
+      return creatures.reduce((best, item) => (item.age < best.age ? item : best), creatures[0]);
     if (modeId === 'stressed') {
       return creatures.reduce((best, item) => {
         const stress = Number(item.needs?.stress ?? item.ecosystem?.stress ?? 0);
@@ -350,14 +357,16 @@ export class UpgradeController {
     }
     if (modeId === 'alpha') {
       return creatures.reduce((best, item) => {
-        const itemScore = Number(item.age ?? 0)
-          + Number(item.energy ?? 0) * 0.2
-          + Number(item.stats?.kills ?? 0) * 8
-          + Number(item.children?.length ?? 0) * 5;
-        const bestScore = Number(best.age ?? 0)
-          + Number(best.energy ?? 0) * 0.2
-          + Number(best.stats?.kills ?? 0) * 8
-          + Number(best.children?.length ?? 0) * 5;
+        const itemScore =
+          Number(item.age ?? 0) +
+          Number(item.energy ?? 0) * 0.2 +
+          Number(item.stats?.kills ?? 0) * 8 +
+          Number(item.children?.length ?? 0) * 5;
+        const bestScore =
+          Number(best.age ?? 0) +
+          Number(best.energy ?? 0) * 0.2 +
+          Number(best.stats?.kills ?? 0) * 8 +
+          Number(best.children?.length ?? 0) * 5;
         return itemScore > bestScore ? item : best;
       }, creatures[0]);
     }
@@ -400,7 +409,7 @@ export class UpgradeController {
       this.world.addCalmZone?.(pos.x, pos.y, 150, 35, 0.65);
     }
 
-    (setup.props || []).forEach((type) => {
+    (setup.props || []).forEach(type => {
       const pos = randAround(center, radius * 0.5);
       this.world.sandbox?.addProp?.(type, pos.x, pos.y);
     });
@@ -488,9 +497,9 @@ export class UpgradeController {
   getScenarioHistory(limit = 6) {
     const progress = this.playableScenarios?.progress || {};
     return Object.values(progress)
-      .flatMap((entry) => {
+      .flatMap(entry => {
         const history = Array.isArray(entry?.history) ? entry.history : [];
-        const runs = history.length ? history : (entry?.lastResult ? [entry.lastResult] : []);
+        const runs = history.length ? history : entry?.lastResult ? [entry.lastResult] : [];
         const bestScore = Number(entry?.bestScore ?? Math.max(0, ...runs.map(item => Number(item?.score || 0))));
         const bestSeconds = Number(entry?.bestSeconds ?? 0) || null;
         const completions = Number(entry?.completions || runs.length || 0);
@@ -545,11 +554,15 @@ export class UpgradeController {
         icon: '👁️'
       }
     ];
-    return cards.map(card => `
+    return cards
+      .map(
+        card => `
       <button class="upgrade-card action-card" data-upgrade-action="quick-action" data-value="${escapeHtml(card.id)}">
         <span>${escapeHtml(card.icon)}</span><strong>${escapeHtml(card.label)}</strong><em>${escapeHtml(card.detail)}</em>
       </button>
-    `).join('');
+    `
+      )
+      .join('');
   }
 
   scanDiscoveries() {
@@ -557,10 +570,14 @@ export class UpgradeController {
     const creatures = this.world?.creatures || [];
     const moments = this.moments?.moments || [];
     const checks = {
-      first_birth: () => Number(this.moments?.summary?.births ?? 0) > 0 || creatures.some(creature => creature.parentId),
+      first_birth: () =>
+        Number(this.moments?.summary?.births ?? 0) > 0 || creatures.some(creature => creature.parentId),
       first_elder: () => creatures.some(creature => creature.ageStage === 'elder' || creature.lifeStage === 'elder'),
-      first_mutation: () => creatures.some(creature => (creature.disorders || []).length || creature.rareMutations?.length),
-      first_hunt: () => creatures.some(creature => Number(creature.stats?.kills ?? 0) > 0) || moments.some(moment => String(moment.type).includes('hunt')),
+      first_mutation: () =>
+        creatures.some(creature => (creature.disorders || []).length || creature.rareMutations?.length),
+      first_hunt: () =>
+        creatures.some(creature => Number(creature.stats?.kills ?? 0) > 0) ||
+        moments.some(moment => String(moment.type).includes('hunt')),
       first_migration: () => moments.some(moment => String(moment.type).includes('migration')),
       first_scenario_complete: () => this.playableScenarios?.getSnapshot?.()?.state === 'complete'
     };
@@ -584,7 +601,10 @@ export class UpgradeController {
     const rail = document.getElementById('objective-rail');
     if (!rail) return;
     const story = buildEcosystemStory(this.world, this.playableScenarios?.getSnapshot?.());
-    const objective = buildObjectiveRail(this.playableScenarios?.getSnapshot?.(), this.sessionGoals?.getGoals?.() ?? []);
+    const objective = buildObjectiveRail(
+      this.playableScenarios?.getSnapshot?.(),
+      this.sessionGoals?.getGoals?.() ?? []
+    );
     const modeChip = this.getRailModeChip();
     const rhythmChip = this.getWorldRhythmChip();
     rail.dataset.level = story.level;
@@ -647,28 +667,48 @@ export class UpgradeController {
     const result = buildScenarioResult(this.playableScenarios?.getSnapshot?.());
     const selected = this.getSelectedCreature();
     const selectedPresentation = selected ? this.getCreaturePresentation(selected) : null;
-    const nickname = selected ? (this.nicknames?.[selected.id] || '') : '';
-    const recipeMarkup = SANDBOX_RECIPES.map(recipe => `
+    const nickname = selected ? this.nicknames?.[selected.id] || '' : '';
+    const recipeMarkup = SANDBOX_RECIPES.map(
+      recipe => `
       <button class="upgrade-card" data-upgrade-action="recipe" data-value="${escapeHtml(recipe.id)}">
         <span>${escapeHtml(recipe.icon)}</span><strong>${escapeHtml(recipe.label)}</strong><em>${escapeHtml(recipe.description)}</em>
         <small>${Number(recipe.setup?.herbivore || 0) + Number(recipe.setup?.omnivore || 0) + Number(recipe.setup?.predator || 0) + Number(recipe.setup?.aquatic || 0) + Number(recipe.setup?.flying || 0) + Number(recipe.setup?.burrowing || 0)} creatures · ${Number(recipe.setup?.food || 0)} food</small>
       </button>
-    `).join('');
-    const followMarkup = FOLLOW_TARGET_MODES.map(mode => `
+    `
+    ).join('');
+    const followMarkup = FOLLOW_TARGET_MODES.map(
+      mode => `
       <button class="chip" data-upgrade-action="follow" data-value="${escapeHtml(mode.id)}">${escapeHtml(mode.icon)} ${escapeHtml(mode.label)}</button>
-    `).join('');
-    const modeMarkup = READABILITY_MODES.map(mode => `
+    `
+    ).join('');
+    const modeMarkup = READABILITY_MODES.map(
+      mode => `
       <button class="chip ${this.activeReadabilityMode === mode.id ? 'active' : ''}" data-upgrade-action="readability" data-value="${escapeHtml(mode.id)}">${escapeHtml(mode.label)}</button>
-    `).join('');
+    `
+    ).join('');
     const journalMarkup = this.discoveryJournal.length
-      ? this.discoveryJournal.slice(0, 6).map(item => `<li>${escapeHtml(item.icon)} <strong>${escapeHtml(item.label)}</strong><span>${Math.round(item.worldTime || 0)}s</span></li>`).join('')
+      ? this.discoveryJournal
+        .slice(0, 6)
+        .map(
+          item =>
+            `<li>${escapeHtml(item.icon)} <strong>${escapeHtml(item.label)}</strong><span>${Math.round(item.worldTime || 0)}s</span></li>`
+        )
+        .join('')
       : '<li class="muted">Discoveries will appear as the ecosystem develops.</li>';
     const seedMarkup = this.seedGallery.length
-      ? this.seedGallery.slice(0, 5).map(item => `<li><strong>${escapeHtml(item.label)}</strong><span>${Number(item.population) || 0} creatures · ${escapeHtml(item.season)}</span></li>`).join('')
+      ? this.seedGallery
+        .slice(0, 5)
+        .map(
+          item =>
+            `<li><strong>${escapeHtml(item.label)}</strong><span>${Number(item.population) || 0} creatures · ${escapeHtml(item.season)}</span></li>`
+        )
+        .join('')
       : '<li class="muted">Save favorite worlds to build a local seed gallery.</li>';
     const scenarioHistory = this.getScenarioHistory();
     const historyMarkup = scenarioHistory.length
-      ? scenarioHistory.map(item => `
+      ? scenarioHistory
+        .map(
+          item => `
         <li class="scenario-history-item">
           <span class="scenario-history-main">
             <strong>${escapeHtml(item.icon || '🎯')} ${escapeHtml(item.scenarioName || 'Scenario')}</strong>
@@ -681,15 +721,20 @@ export class UpgradeController {
           </span>
           <button class="chip ghost" data-upgrade-action="start-scenario" data-value="${escapeHtml(item.scenarioId)}">Retry</button>
         </li>
-      `).join('')
+      `
+        )
+        .join('')
       : '<li class="muted">Completed runs will appear here with score, medal, and retry controls.</li>';
-    const postcard = this.lastPostcard || buildWorldPostcard({
-      world: this.world,
-      playableSnapshot: this.playableScenarios?.getSnapshot?.(),
-      moments: this.moments,
-      seed: window.location.hash?.replace(/^#/, '') || ''
-    });
-    const scenarioResultMarkup = result ? `
+    const postcard =
+      this.lastPostcard ||
+      buildWorldPostcard({
+        world: this.world,
+        playableSnapshot: this.playableScenarios?.getSnapshot?.(),
+        moments: this.moments,
+        seed: window.location.hash?.replace(/^#/, '') || ''
+      });
+    const scenarioResultMarkup = result
+      ? `
       <div class="scenario-result-card" data-state="${escapeHtml(result.state)}">
         <div class="scenario-result-head">
           <span>${escapeHtml(result.label)}</span>
@@ -697,12 +742,16 @@ export class UpgradeController {
         </div>
         <p>${escapeHtml(result.summary)}</p>
         <div class="scenario-result-stats">
-          ${(result.statCards || []).map(item => `
+          ${(result.statCards || [])
+    .map(
+      item => `
             <span data-tone="${escapeHtml(item.tone)}">
               <em>${escapeHtml(item.label)}</em>
               <strong>${escapeHtml(item.value)}</strong>
             </span>
-          `).join('')}
+          `
+    )
+    .join('')}
         </div>
         <div class="scenario-result-foot">
           <span>${result.discoveries?.length ? escapeHtml(result.discoveries.join(', ')) : 'No special discoveries yet'}</span>
@@ -710,7 +759,8 @@ export class UpgradeController {
         </div>
         ${result.scenarioId ? `<button class="chip ghost scenario-result-retry" data-upgrade-action="start-scenario" data-value="${escapeHtml(result.scenarioId)}">Retry ${escapeHtml(result.scenarioName || 'Scenario')}</button>` : ''}
       </div>
-    ` : '<p class="muted">Start a scenario to earn a medal summary.</p>';
+    `
+      : '<p class="muted">Start a scenario to earn a medal summary.</p>';
 
     const body = this.panel.querySelector('#upgrade-panel-body');
     if (!body) return;
@@ -739,7 +789,9 @@ export class UpgradeController {
       </section>
       <section class="upgrade-section">
         <h3>Favorite Creature</h3>
-        ${selected ? `
+        ${
+  selected
+    ? `
           <div class="upgrade-selected">
             <strong>#${selected.id} · ${escapeHtml(selectedPresentation.lifeStage.icon)} ${escapeHtml(selectedPresentation.lifeStage.label)} · ${escapeHtml(selectedPresentation.emotion.icon)} ${escapeHtml(selectedPresentation.emotion.label)}</strong>
             <span>${escapeHtml(selectedPresentation.bonds.label)}</span>
@@ -748,7 +800,9 @@ export class UpgradeController {
             <input id="upgrade-nickname-input" type="text" maxlength="28" value="${escapeHtml(nickname)}" aria-label="Creature nickname" placeholder="Nickname this creature" />
             <button class="chip" data-upgrade-action="nickname">Save</button>
           </div>
-        ` : '<p class="muted">Select or pin a creature to nickname it and review its bonds.</p>'}
+        `
+    : '<p class="muted">Select or pin a creature to nickname it and review its bonds.</p>'
+}
       </section>
       <section class="upgrade-section">
         <h3>Recipe Presets</h3>

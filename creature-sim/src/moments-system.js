@@ -40,7 +40,7 @@ export class MomentsSystem {
     }
 
     if (this.listEl && !this._listBound) {
-      this.listEl.addEventListener('click', (event) => {
+      this.listEl.addEventListener('click', event => {
         const row = event.target.closest('.moment-row');
         if (!row) return;
         const id = row.dataset.momentId;
@@ -118,19 +118,25 @@ export class MomentsSystem {
       return;
     }
 
-    this.listEl.innerHTML = this.moments.map((moment) => `
+    this.listEl.innerHTML = this.moments
+      .map(
+        moment => `
       <button class="moment-row" data-moment-id="${moment.id}" type="button" aria-label="${moment.text}">
         <span class="moment-icon">${moment.icon || '✨'}</span>
         <span class="moment-text">${moment.text}</span>
         <span class="moment-time">${this._formatTime(moment.worldTime)}</span>
       </button>
-    `).join('');
+    `
+      )
+      .join('');
   }
 
   renderSummary() {
     if (!this.summaryEl) return;
     const summary = this.summary;
-    const stressLabel = summary.peakStressAt ? `${Math.round(summary.peakStress)} @ ${this._formatTime(summary.peakStressAt)}` : '—';
+    const stressLabel = summary.peakStressAt
+      ? `${Math.round(summary.peakStress)} @ ${this._formatTime(summary.peakStressAt)}`
+      : '—';
     const narrative = this._buildSummaryNarrative();
 
     this.summaryEl.innerHTML = `
@@ -184,15 +190,18 @@ export class MomentsSystem {
   restore(data) {
     if (!data || typeof data !== 'object') return false;
     if (Array.isArray(data.moments)) {
-      this.moments = data.moments.slice(0, this.maxMoments).filter(Boolean).map((moment, index) => ({
-        id: moment.id || `moment-restored-${index}`,
-        type: moment.type || 'restored',
-        icon: moment.icon || '✨',
-        text: String(moment.text || 'Saved moment'),
-        x: Number(moment.x ?? 0),
-        y: Number(moment.y ?? 0),
-        worldTime: Number(moment.worldTime ?? 0)
-      }));
+      this.moments = data.moments
+        .slice(0, this.maxMoments)
+        .filter(Boolean)
+        .map((moment, index) => ({
+          id: moment.id || `moment-restored-${index}`,
+          type: moment.type || 'restored',
+          icon: moment.icon || '✨',
+          text: String(moment.text || 'Saved moment'),
+          x: Number(moment.x ?? 0),
+          y: Number(moment.y ?? 0),
+          worldTime: Number(moment.worldTime ?? 0)
+        }));
     }
     if (data.summary && typeof data.summary === 'object') {
       this.summary = {
@@ -297,7 +306,7 @@ export class MomentsSystem {
   }
 
   _bindEvents() {
-    eventSystem.on(GameEvents.CREATURE_BORN, (data) => {
+    eventSystem.on(GameEvents.CREATURE_BORN, data => {
       const creature = data?.creature;
       if (!creature) return;
       this.summary.births += 1;
@@ -311,7 +320,7 @@ export class MomentsSystem {
       });
     });
 
-    eventSystem.on(GameEvents.CREATURE_DIED, (data) => {
+    eventSystem.on(GameEvents.CREATURE_DIED, data => {
       const creature = data?.creature;
       if (!creature) return;
       this.summary.deaths += 1;
@@ -325,7 +334,7 @@ export class MomentsSystem {
       });
     });
 
-    eventSystem.on(GameEvents.CREATURE_EAT, (data) => {
+    eventSystem.on(GameEvents.CREATURE_EAT, data => {
       if (!data?.hungry || !data.creature) return;
       const creature = data.creature;
       this.logMoment({
@@ -338,7 +347,7 @@ export class MomentsSystem {
       });
     });
 
-    eventSystem.on(GameEvents.CREATURE_BOND, (data) => {
+    eventSystem.on(GameEvents.CREATURE_BOND, data => {
       const creature = data?.creature;
       if (!creature) return;
       this.logMoment({
@@ -351,7 +360,7 @@ export class MomentsSystem {
       });
     });
 
-    eventSystem.on(GameEvents.CREATURE_PANIC, (data) => {
+    eventSystem.on(GameEvents.CREATURE_PANIC, data => {
       const creature = data?.creature;
       if (!creature) return;
       const stress = clamp(Number(data?.stress ?? creature.ecosystem?.stress ?? 0), 0, 100);
@@ -369,7 +378,7 @@ export class MomentsSystem {
       });
     });
 
-    eventSystem.on(GameEvents.CREATURE_OVERCROWD, (data) => {
+    eventSystem.on(GameEvents.CREATURE_OVERCROWD, data => {
       if (!data) return;
       this.logMoment({
         type: GameEvents.CREATURE_OVERCROWD,
@@ -381,7 +390,7 @@ export class MomentsSystem {
       });
     });
 
-    eventSystem.on(GameEvents.WORLD_FOOD_SCARCITY, (data) => {
+    eventSystem.on(GameEvents.WORLD_FOOD_SCARCITY, data => {
       if (!data) return;
       const zone = this._zoneLabel(data.patchId);
       this.logMoment({
@@ -394,7 +403,7 @@ export class MomentsSystem {
       });
     });
 
-    eventSystem.on(GameEvents.NEST_ESTABLISHED, (data) => {
+    eventSystem.on(GameEvents.NEST_ESTABLISHED, data => {
       if (!data) return;
       this.logMoment({
         type: GameEvents.NEST_ESTABLISHED,
@@ -406,7 +415,7 @@ export class MomentsSystem {
       });
     });
 
-    eventSystem.on(GameEvents.NEST_OVERCROWDED, (data) => {
+    eventSystem.on(GameEvents.NEST_OVERCROWDED, data => {
       if (!data) return;
       this.logMoment({
         type: GameEvents.NEST_OVERCROWDED,
@@ -418,7 +427,7 @@ export class MomentsSystem {
       });
     });
 
-    eventSystem.on(GameEvents.WORLD_MIGRATION_SETTLED, (data) => {
+    eventSystem.on(GameEvents.WORLD_MIGRATION_SETTLED, data => {
       if (!data) return;
       this.logMoment({
         type: GameEvents.WORLD_MIGRATION_SETTLED,
@@ -430,7 +439,7 @@ export class MomentsSystem {
       });
     });
 
-    eventSystem.on(GameEvents.WORLD_REGION_DEPLETED, (data) => {
+    eventSystem.on(GameEvents.WORLD_REGION_DEPLETED, data => {
       if (!data) return;
       this.logMoment({
         type: GameEvents.WORLD_REGION_DEPLETED,
@@ -442,7 +451,7 @@ export class MomentsSystem {
       });
     });
 
-    eventSystem.on(GameEvents.WORLD_REGION_THRIVING, (data) => {
+    eventSystem.on(GameEvents.WORLD_REGION_THRIVING, data => {
       if (!data) return;
       this.logMoment({
         type: GameEvents.WORLD_REGION_THRIVING,
@@ -454,7 +463,7 @@ export class MomentsSystem {
       });
     });
 
-    eventSystem.on(GameEvents.PREDATOR_LITE_CHASE, (data) => {
+    eventSystem.on(GameEvents.PREDATOR_LITE_CHASE, data => {
       if (!data) return;
       this.logMoment({
         type: GameEvents.PREDATOR_LITE_CHASE,
@@ -466,7 +475,7 @@ export class MomentsSystem {
       });
     });
 
-    eventSystem.on(GameEvents.WORLD_UPDATE, (data) => {
+    eventSystem.on(GameEvents.WORLD_UPDATE, data => {
       const world = data?.world ?? this.world;
       this.updateStatsFromWorld(world);
     });

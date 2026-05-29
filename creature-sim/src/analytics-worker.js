@@ -1,4 +1,4 @@
-self.onmessage = (event) => {
+self.onmessage = event => {
   const data = event?.data;
   if (data?.type === 'RESET') return;
 
@@ -50,11 +50,11 @@ self.onmessage = (event) => {
     pred,
     food: data?.foodCount || 0,
     meanSpeed: pop ? sumSpeed / pop : 0,
-    speedVar: pop ? (sumSpeed2 / pop) - Math.pow(sumSpeed / pop, 2) : 0,
+    speedVar: pop ? sumSpeed2 / pop - Math.pow(sumSpeed / pop, 2) : 0,
     meanMetabolism: pop ? sumMetabolism / pop : 0,
-    metabolismVar: pop ? (sumMetabolism2 / pop) - Math.pow(sumMetabolism / pop, 2) : 0,
+    metabolismVar: pop ? sumMetabolism2 / pop - Math.pow(sumMetabolism / pop, 2) : 0,
     meanSense: pop ? sumSense / pop : 0,
-    senseVar: pop ? (sumSense2 / pop) - Math.pow(sumSense / pop, 2) : 0,
+    senseVar: pop ? sumSense2 / pop - Math.pow(sumSense / pop, 2) : 0,
     meanEnergy: pop ? sumEnergy / pop : 0,
     meanHealth: meanHealthRatio,
     meanMaxHealth: pop ? sumMaxHealth / pop : 0,

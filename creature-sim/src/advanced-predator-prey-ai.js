@@ -100,9 +100,7 @@ export class AdvancedPredatorPreyAI {
 
     const state = predator.ambushState;
     const waitTime = Date.now() - state.waitStartTime;
-    const preyDistance = Math.sqrt(
-      (prey.x - predator.x) ** 2 + (prey.y - predator.y) ** 2
-    );
+    const preyDistance = Math.sqrt((prey.x - predator.x) ** 2 + (prey.y - predator.y) ** 2);
 
     // Wait until prey is close
     if (state.waiting && preyDistance < 60 && waitTime > 2000) {
@@ -248,9 +246,7 @@ export class AdvancedPredatorPreyAI {
    * Select best evasion strategy
    */
   static selectEvasionStrategy(prey, predator, _allPredators, _world) {
-    const distance = Math.sqrt(
-      (predator.x - prey.x) ** 2 + (predator.y - prey.y) ** 2
-    );
+    const distance = Math.sqrt((predator.x - prey.x) ** 2 + (predator.y - prey.y) ** 2);
 
     const preySpeed = prey.genes?.speed ?? 1;
     const predatorSpeed = predator.genes?.speed ?? 1;
@@ -324,7 +320,7 @@ export class AdvancedPredatorPreyAI {
     // Find nearest obstacle or dense area
     // For now, just move perpendicular to predator approach
     const awayAngle = Math.atan2(prey.y - predator.y, prey.x - predator.x);
-    const perpAngle = awayAngle + Math.PI / 2 * (Math.random() < 0.5 ? 1 : -1);
+    const perpAngle = awayAngle + (Math.PI / 2) * (Math.random() < 0.5 ? 1 : -1);
 
     return {
       x: prey.x + Math.cos(perpAngle) * 150,

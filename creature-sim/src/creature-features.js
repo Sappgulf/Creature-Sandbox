@@ -61,7 +61,7 @@ export function rollQuirks(max = 2) {
 
 export function inheritQuirks(parentA, parentB) {
   const inherited = [];
-  const addSafe = (id) => {
+  const addSafe = id => {
     if (id && !inherited.includes(id) && inherited.length < 2) {
       inherited.push(id);
     }
@@ -83,7 +83,6 @@ export function inheritQuirks(parentA, parentB) {
 
   return inherited;
 }
-
 
 // ============================================================================
 // FEATURE 2: LEARNING & MEMORY
@@ -149,10 +148,11 @@ Creature.prototype.rememberLocation = function (x, y, tag, strength, worldTime) 
   const type = tag;
   const now = worldTime ?? this._lastWorld?.t ?? 0;
   // Add or update memory
-  const existing = this.memory.locations.find(m =>
-    Math.abs(m.x - x) < CreatureConfig.MEMORY.MERGE_RADIUS &&
-    Math.abs(m.y - y) < CreatureConfig.MEMORY.MERGE_RADIUS &&
-    m.type === type
+  const existing = this.memory.locations.find(
+    m =>
+      Math.abs(m.x - x) < CreatureConfig.MEMORY.MERGE_RADIUS &&
+      Math.abs(m.y - y) < CreatureConfig.MEMORY.MERGE_RADIUS &&
+      m.type === type
   );
 
   if (existing) {
@@ -184,9 +184,7 @@ Creature.prototype.rememberLocation = function (x, y, tag, strength, worldTime) 
 };
 
 Creature.prototype.recallMemories = function (type) {
-  return this.memory.locations
-    .filter(m => m.type === type)
-    .sort((a, b) => b.strength - a.strength);
+  return this.memory.locations.filter(m => m.type === type).sort((a, b) => b.strength - a.strength);
 };
 
 Creature.prototype._selectMemory = function (tag, _world) {
@@ -270,11 +268,7 @@ Creature.prototype._updateSocialBehavior = function (world) {
 
   // Update herd mates (herbivores only)
   if (!this.genes.predator) {
-    this.social.herdMates = nearby.filter(c =>
-      c.id !== this.id &&
-      !c.genes.predator &&
-      c.alive
-    );
+    this.social.herdMates = nearby.filter(c => c.id !== this.id && !c.genes.predator && c.alive);
 
     // Apply herding buff if in group
     if (this.social.herdMates.length >= 2) {
@@ -286,11 +280,8 @@ Creature.prototype._updateSocialBehavior = function (world) {
 
   // Update pack coordination (predators only)
   if (this.genes.predator && this.personality.packInstinct > 0.3) {
-    const packMates = nearby.filter(c =>
-      c.id !== this.id &&
-      c.genes.predator &&
-      c.alive &&
-      c.personality.packInstinct > 0.3
+    const packMates = nearby.filter(
+      c => c.id !== this.id && c.genes.predator && c.alive && c.personality.packInstinct > 0.3
     );
 
     // Share target with pack
@@ -372,7 +363,8 @@ Creature.prototype._updateMigration = function (world, _dt) {
   const nest = this.homeNestId ? world.getNestById?.(this.homeNestId) : null;
   const nestOvercrowded = nest?.overcrowded;
 
-  const trigger = pressure >= CreatureAgentTuning.MIGRATION.PRESSURE_TRIGGER ||
+  const trigger =
+    pressure >= CreatureAgentTuning.MIGRATION.PRESSURE_TRIGGER ||
     foodRatio <= CreatureAgentTuning.MIGRATION.FOOD_TRIGGER ||
     stress >= CreatureAgentTuning.MIGRATION.STRESS_TRIGGER ||
     nestOvercrowded;
@@ -392,7 +384,7 @@ Creature.prototype._updateMigration = function (world, _dt) {
   const regions = world.regions || [];
   if (!regions.length) return;
 
-  const scoreRegion = (candidate) => {
+  const scoreRegion = candidate => {
     if (!candidate) return 0;
     const foodScore = candidate.foodRatio ?? 0.5;
     const pressureScore = 1 - (candidate.pressure ?? 0);
@@ -400,9 +392,10 @@ Creature.prototype._updateMigration = function (world, _dt) {
     let score = pressureScore * 0.55 + foodScore * 0.35 + nestScore;
 
     if (candidate.id === this.homeRegionId) {
-      const homeBonus = now < (this.migration.recentUntil ?? -Infinity)
-        ? CreatureAgentTuning.MIGRATION.HOME_RETURN_BIAS * 0.4
-        : CreatureAgentTuning.MIGRATION.HOME_RETURN_BIAS;
+      const homeBonus =
+        now < (this.migration.recentUntil ?? -Infinity)
+          ? CreatureAgentTuning.MIGRATION.HOME_RETURN_BIAS * 0.4
+          : CreatureAgentTuning.MIGRATION.HOME_RETURN_BIAS;
       score += homeBonus;
     }
 
@@ -497,14 +490,15 @@ Creature.prototype._updateEmotions = function (dt, world) {
   const eventStress = clamp(world?.eventModifiers?.stress ?? 1, 0.7, 1.25);
 
   // Update hunger based on energy
-  em.hunger = clamp(1 - (this.energy / 30), 0, 1);
+  em.hunger = clamp(1 - this.energy / 30, 0, 1);
   if (this.getQuirkMultiplier) {
     em.hunger = clamp(em.hunger * this.getQuirkMultiplier('hunger_bias'), 0, 1);
   }
 
   // Fear increases near predators (herbivores only)
   if (!this.genes.predator) {
-    const nearbyPredators = world.queryCreatures(this.x, this.y, this.genes.sense * 1.5)
+    const nearbyPredators = world
+      .queryCreatures(this.x, this.y, this.genes.sense * 1.5)
       .filter(c => c.genes.predator && c.alive);
     em.fear = Math.min(1, em.fear + nearbyPredators.length * 0.1);
   } else {
@@ -515,7 +509,11 @@ Creature.prototype._updateEmotions = function (dt, world) {
 
   // Stress accumulates from fear and hunger
   const stageStressMult = this.lifeStage === 'baby' ? 1.35 : this.lifeStage === 'elder' ? 1.15 : 1;
-  em.stress = clamp(em.stress + (em.fear * 0.01 + em.hunger * 0.01) * stageStressMult * dt * calmFactor * eventStress, 0, 1);
+  em.stress = clamp(
+    em.stress + (em.fear * 0.01 + em.hunger * 0.01) * stageStressMult * dt * calmFactor * eventStress,
+    0,
+    1
+  );
   if (this.getQuirkMultiplier && world?.queryCreatures) {
     const nearby = world.queryCreatures(this.x, this.y, 30).length;
     if (nearby > 6) {
@@ -613,10 +611,8 @@ Creature.prototype._updateIntelligence = function (dt, _world) {
       success: 1
     };
 
-    const existing = intel.patterns.find(p =>
-      p.type === pattern.type &&
-      Math.abs(p.x - pattern.x) < 50 &&
-      Math.abs(p.y - pattern.y) < 50
+    const existing = intel.patterns.find(
+      p => p.type === pattern.type && Math.abs(p.x - pattern.x) < 50 && Math.abs(p.y - pattern.y) < 50
     );
 
     if (existing) {

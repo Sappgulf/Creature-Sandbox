@@ -87,9 +87,12 @@ export class SaveSystem {
       ...runtimeMetadata,
       ...additionalData
     };
-    const childrenOfMap = world.childrenOf instanceof Map
-      ? world.childrenOf
-      : (world.creatureManager?.childrenOf instanceof Map ? world.creatureManager.childrenOf : new Map());
+    const childrenOfMap =
+      world.childrenOf instanceof Map
+        ? world.childrenOf
+        : world.creatureManager?.childrenOf instanceof Map
+          ? world.creatureManager.childrenOf
+          : new Map();
 
     const saveData = {
       version: '3.0',
@@ -119,27 +122,29 @@ export class SaveSystem {
         // Time system
         timeOfDay: world.timeOfDay ?? 12,
         dayLength: world.dayLength ?? 120,
-        environment: world.environment ? {
-          timeOfDay: world.environment.timeOfDay,
-          dayLength: world.environment.dayLength,
-          dayNightEnabled: world.environment.dayNightEnabled,
-          seasonTime: world.environment.seasonTime,
-          seasonDuration: world.environment.seasonDuration,
-          currentSeason: world.environment.currentSeason,
-          seasonIndex: world.environment.seasonIndex,
-          seasonPhase: world.environment.seasonPhase,
-          seasonSpeed: world.environment.seasonSpeed,
-          weatherIntensity: world.environment.weatherIntensity,
-          weatherType: world.environment.weatherType,
-          weatherTransitionTime: world.environment.weatherTransitionTime,
-          weatherTargetIntensity: world.environment.weatherTargetIntensity,
-          diseaseTimer: world.environment.diseaseTimer,
-          moodType: world.environment.moodType,
-          moodIntensity: world.environment.moodIntensity,
-          moodTimer: world.environment.moodTimer,
-          moodDuration: world.environment.moodDuration,
-          windAngle: world.environment.windAngle
-        } : null,
+        environment: world.environment
+          ? {
+            timeOfDay: world.environment.timeOfDay,
+            dayLength: world.environment.dayLength,
+            dayNightEnabled: world.environment.dayNightEnabled,
+            seasonTime: world.environment.seasonTime,
+            seasonDuration: world.environment.seasonDuration,
+            currentSeason: world.environment.currentSeason,
+            seasonIndex: world.environment.seasonIndex,
+            seasonPhase: world.environment.seasonPhase,
+            seasonSpeed: world.environment.seasonSpeed,
+            weatherIntensity: world.environment.weatherIntensity,
+            weatherType: world.environment.weatherType,
+            weatherTransitionTime: world.environment.weatherTransitionTime,
+            weatherTargetIntensity: world.environment.weatherTargetIntensity,
+            diseaseTimer: world.environment.diseaseTimer,
+            moodType: world.environment.moodType,
+            moodIntensity: world.environment.moodIntensity,
+            moodTimer: world.environment.moodTimer,
+            moodDuration: world.environment.moodDuration,
+            windAngle: world.environment.windAngle
+          }
+          : null,
 
         // Creatures
         creatures: world.creatures.map(c => ({
@@ -170,46 +175,56 @@ export class SaveSystem {
           homeNestId: c.homeNestId ?? null,
           homeRegionId: c.homeRegionId ?? null,
           territoryAffinity: c.territoryAffinity ?? null,
-          goal: c.goal ? {
-            current: c.goal.current,
-            lastChange: c.goal.lastChange,
-            cooldown: c.goal.cooldown,
-            mateCooldown: c.goal.mateCooldown
-          } : null,
+          goal: c.goal
+            ? {
+              current: c.goal.current,
+              lastChange: c.goal.lastChange,
+              cooldown: c.goal.cooldown,
+              mateCooldown: c.goal.mateCooldown
+            }
+            : null,
           ecosystem: c.ecosystem ? { ...c.ecosystem } : null,
           // Advanced features
           emotions: c.emotions ? { ...c.emotions } : null,
-          intelligence: c.intelligence ? {
-            level: c.intelligence.level,
-            experiencePoints: c.intelligence.experiencePoints
-          } : null,
-          sexuality: c.sexuality ? {
-            lastMated: c.sexuality.lastMated,
-            attractiveness: c.sexuality.attractiveness
-          } : null,
-          migration: c.migration ? {
-            lastMigration: c.migration.lastMigration,
-            targetRegionId: c.migration.targetRegionId,
-            target: c.migration.target ? { ...c.migration.target } : null,
-            settled: c.migration.settled,
-            active: c.migration.active,
-            cooldownUntil: c.migration.cooldownUntil,
-            recentUntil: c.migration.recentUntil
-          } : null,
-          memory: c.memory ? {
-            capacity: c.memory.capacity,
-            locations: Array.isArray(c.memory.locations)
-              ? c.memory.locations.map(mem => ({
-                id: mem.id ?? null,
-                x: mem.x,
-                y: mem.y,
-                tag: mem.tag ?? mem.type ?? null,
-                type: mem.type ?? mem.tag ?? null,
-                strength: mem.strength,
-                timestamp: mem.timestamp
-              }))
-              : []
-          } : null
+          intelligence: c.intelligence
+            ? {
+              level: c.intelligence.level,
+              experiencePoints: c.intelligence.experiencePoints
+            }
+            : null,
+          sexuality: c.sexuality
+            ? {
+              lastMated: c.sexuality.lastMated,
+              attractiveness: c.sexuality.attractiveness
+            }
+            : null,
+          migration: c.migration
+            ? {
+              lastMigration: c.migration.lastMigration,
+              targetRegionId: c.migration.targetRegionId,
+              target: c.migration.target ? { ...c.migration.target } : null,
+              settled: c.migration.settled,
+              active: c.migration.active,
+              cooldownUntil: c.migration.cooldownUntil,
+              recentUntil: c.migration.recentUntil
+            }
+            : null,
+          memory: c.memory
+            ? {
+              capacity: c.memory.capacity,
+              locations: Array.isArray(c.memory.locations)
+                ? c.memory.locations.map(mem => ({
+                  id: mem.id ?? null,
+                  x: mem.x,
+                  y: mem.y,
+                  tag: mem.tag ?? mem.type ?? null,
+                  type: mem.type ?? mem.tag ?? null,
+                  strength: mem.strength,
+                  timestamp: mem.timestamp
+                }))
+                : []
+            }
+            : null
         })),
 
         // Food
@@ -240,31 +255,37 @@ export class SaveSystem {
             tag: patch.tag ?? null
           }))
           : [],
-        restZones: world.restZones ? world.restZones.map(z => ({
-          id: z.id,
-          x: z.x,
-          y: z.y,
-          radius: z.radius
-        })) : [],
-        nests: world.nests ? world.nests.map(nest => ({
-          id: nest.id,
-          x: nest.x,
-          y: nest.y,
-          radius: nest.radius,
-          capacity: nest.capacity,
-          comfort: nest.comfort,
-          createdAt: nest.createdAt ?? 0,
-          createdBy: nest.createdBy ?? null
-        })) : [],
+        restZones: world.restZones
+          ? world.restZones.map(z => ({
+            id: z.id,
+            x: z.x,
+            y: z.y,
+            radius: z.radius
+          }))
+          : [],
+        nests: world.nests
+          ? world.nests.map(nest => ({
+            id: nest.id,
+            x: nest.x,
+            y: nest.y,
+            radius: nest.radius,
+            capacity: nest.capacity,
+            comfort: nest.comfort,
+            createdAt: nest.createdAt ?? 0,
+            createdBy: nest.createdBy ?? null
+          }))
+          : [],
 
         // Corpses
-        corpses: world.corpses ? world.corpses.map(c => ({
-          x: c.x,
-          y: c.y,
-          energy: c.energy,
-          age: c.age,
-          isPredator: c.isPredator
-        })) : [],
+        corpses: world.corpses
+          ? world.corpses.map(c => ({
+            x: c.x,
+            y: c.y,
+            energy: c.energy,
+            age: c.age,
+            isPredator: c.isPredator
+          }))
+          : [],
 
         // Sandbox props
         sandboxProps: world.sandbox?.serialize?.() ?? [],
@@ -282,18 +303,22 @@ export class SaveSystem {
         activeDisaster: world.disaster?.activeDisaster ?? null,
         disasterDuration: world.disaster?.activeDisaster?.duration ?? 0,
         disasterIntensity: world.disaster?.activeDisaster?.intensity ?? 1,
-        disaster: world.disaster ? {
-          active: world.disaster.activeDisaster ?? null,
-          pending: Array.isArray(world.disaster.pendingDisasters)
-            ? world.disaster.pendingDisasters.map(item => ({ ...item }))
-            : [],
-          cooldown: world.disaster.disasterCooldown ?? 0
-        } : null,
-        events: world.events ? {
-          active: world.events.activeEvent ? { ...world.events.activeEvent } : null,
-          cooldown: world.events.cooldown ?? 0,
-          modifiers: { ...(world.eventModifiers || {}) }
-        } : null
+        disaster: world.disaster
+          ? {
+            active: world.disaster.activeDisaster ?? null,
+            pending: Array.isArray(world.disaster.pendingDisasters)
+              ? world.disaster.pendingDisasters.map(item => ({ ...item }))
+              : [],
+            cooldown: world.disaster.disasterCooldown ?? 0
+          }
+          : null,
+        events: world.events
+          ? {
+            active: world.events.activeEvent ? { ...world.events.activeEvent } : null,
+            cooldown: world.events.cooldown ?? 0,
+            modifiers: { ...(world.eventModifiers || {}) }
+          }
+          : null
       },
 
       // Camera state
@@ -308,10 +333,12 @@ export class SaveSystem {
       },
 
       // Analytics (condensed)
-      analytics: analytics ? {
-        dataPoints: analytics.data ? analytics.data.slice(-300) : [], // Last 300 points
-        totalGenerations: analytics.totalGenerations || 0
-      } : null,
+      analytics: analytics
+        ? {
+          dataPoints: analytics.data ? analytics.data.slice(-300) : [], // Last 300 points
+          totalGenerations: analytics.totalGenerations || 0
+        }
+        : null,
 
       // Lineage names
       lineageNames: lineageTracker ? Array.from(lineageTracker.names.entries()) : [],
@@ -361,7 +388,7 @@ export class SaveSystem {
       if (!Number.isFinite(num)) return fallback;
       return Math.min(1, Math.max(0, num));
     };
-    const restoreTemperament = (t) => ({
+    const restoreTemperament = t => ({
       boldness: clamp01(t?.boldness, Math.random()),
       sociability: clamp01(t?.sociability, Math.random()),
       calmness: clamp01(t?.calmness, Math.random()),
@@ -391,7 +418,8 @@ export class SaveSystem {
     };
 
     // Create new world
-    const canReuseWorld = !!existingWorld &&
+    const canReuseWorld =
+      !!existingWorld &&
       typeof existingWorld.reset === 'function' &&
       existingWorld.creatureManager &&
       existingWorld.registry &&
@@ -436,8 +464,14 @@ export class SaveSystem {
       if (envData?.weatherType !== undefined) {
         world.environment.weatherType = envData.weatherType;
       }
-      world.environment.weatherTransitionTime = toNumber(envData?.weatherTransitionTime, world.environment.weatherTransitionTime);
-      world.environment.weatherTargetIntensity = toNumber(envData?.weatherTargetIntensity, world.environment.weatherTargetIntensity);
+      world.environment.weatherTransitionTime = toNumber(
+        envData?.weatherTransitionTime,
+        world.environment.weatherTransitionTime
+      );
+      world.environment.weatherTargetIntensity = toNumber(
+        envData?.weatherTargetIntensity,
+        world.environment.weatherTargetIntensity
+      );
       world.environment.diseaseTimer = toNumber(envData?.diseaseTimer, world.environment.diseaseTimer);
       if (envData?.moodType) {
         world.environment.moodType = envData.moodType;
@@ -449,7 +483,8 @@ export class SaveSystem {
       world.environment.updateDayNightState?.();
       world.environment.updateAmbientMood?.(0);
 
-      const seasonKey = world.environment.currentSeason || world.environment.seasonCycle?.[world.environment.seasonIndex];
+      const seasonKey =
+        world.environment.currentSeason || world.environment.seasonCycle?.[world.environment.seasonIndex];
       if (seasonKey && world.environment.seasonConfigs?.[seasonKey]) {
         world.environment.applySeasonConfig(world.environment.seasonConfigs[seasonKey], { announce: false });
       }
@@ -479,7 +514,11 @@ export class SaveSystem {
           x: clamp(nest.x ?? rand(80, world.width - 80), 0, world.width),
           y: clamp(nest.y ?? rand(80, world.height - 80), 0, world.height),
           radius: clamp(nest.radius ?? CreatureAgentTuning.NESTS.RADIUS, 20, CreatureAgentTuning.NESTS.RADIUS * 2),
-          capacity: clamp(nest.capacity ?? CreatureAgentTuning.NESTS.CAPACITY, 1, CreatureAgentTuning.NESTS.CAPACITY * 2),
+          capacity: clamp(
+            nest.capacity ?? CreatureAgentTuning.NESTS.CAPACITY,
+            1,
+            CreatureAgentTuning.NESTS.CAPACITY * 2
+          ),
           comfort: clamp(nest.comfort ?? CreatureAgentTuning.NESTS.COMFORT, 0.2, 1),
           comfortEffective: clamp(nest.comfort ?? CreatureAgentTuning.NESTS.COMFORT, 0.2, 1),
           occupancy: 0,
@@ -514,9 +553,10 @@ export class SaveSystem {
       creature.energy = toNumber(cData.energy, 24);
       creature.age = toNumber(cData.age, CreatureAgentTuning.LIFE_STAGE.DEFAULT_AGE);
       creature._updateAgeStage?.();
-      const baselineMaxHealth = (cData.genes?.predator ?? creature.genes?.predator)
-        ? CreatureTuning.DEFAULT_MAX_HEALTH * 1.25
-        : CreatureTuning.DEFAULT_MAX_HEALTH;
+      const baselineMaxHealth =
+        (cData.genes?.predator ?? creature.genes?.predator)
+          ? CreatureTuning.DEFAULT_MAX_HEALTH * 1.25
+          : CreatureTuning.DEFAULT_MAX_HEALTH;
       creature.maxHealth = toNumber(cData.maxHealth, creature.maxHealth);
       creature.maxHealth = Math.max(creature.maxHealth, baselineMaxHealth);
       creature.health = toNumber(cData.health, creature.maxHealth);
@@ -543,10 +583,22 @@ export class SaveSystem {
       }
       if (creature.needs) {
         const needsData = cData.needs || {};
-        creature.needs.hunger = toNumber(needsData.hunger, creature.needs.hunger ?? CreatureAgentTuning.NEEDS.START.hunger);
-        creature.needs.energy = toNumber(needsData.energy, creature.needs.energy ?? CreatureAgentTuning.NEEDS.START.energy);
-        creature.needs.socialDrive = toNumber(needsData.socialDrive, creature.needs.socialDrive ?? CreatureAgentTuning.NEEDS.START.socialDrive);
-        creature.needs.stress = toNumber(needsData.stress, creature.needs.stress ?? CreatureAgentTuning.NEEDS.START.stress);
+        creature.needs.hunger = toNumber(
+          needsData.hunger,
+          creature.needs.hunger ?? CreatureAgentTuning.NEEDS.START.hunger
+        );
+        creature.needs.energy = toNumber(
+          needsData.energy,
+          creature.needs.energy ?? CreatureAgentTuning.NEEDS.START.energy
+        );
+        creature.needs.socialDrive = toNumber(
+          needsData.socialDrive,
+          creature.needs.socialDrive ?? CreatureAgentTuning.NEEDS.START.socialDrive
+        );
+        creature.needs.stress = toNumber(
+          needsData.stress,
+          creature.needs.stress ?? CreatureAgentTuning.NEEDS.START.stress
+        );
         creature.needs.lastEatAt = toNumber(needsData.lastEatAt, creature.needs.lastEatAt ?? -Infinity);
       }
       if (creature.goal) {
@@ -559,10 +611,7 @@ export class SaveSystem {
       creature.homeNestId = cData.homeNestId ?? creature.homeNestId ?? null;
       const derivedHomeRegion = world.getRegionId?.(creature.x, creature.y);
       creature.homeRegionId = cData.homeRegionId ?? derivedHomeRegion ?? creature.homeRegionId ?? null;
-      creature.territoryAffinity = toNumber(
-        cData.territoryAffinity,
-        creature.territoryAffinity ?? 0.4
-      );
+      creature.territoryAffinity = toNumber(cData.territoryAffinity, creature.territoryAffinity ?? 0.4);
       creature.temperament = restoreTemperament(cData.temperament || null);
       creature.personality = restorePersonality(cData.personality, creature.personality);
       creature.quirks = Array.isArray(cData.quirks) ? [...cData.quirks] : [];
@@ -692,13 +741,10 @@ export class SaveSystem {
 
     // Restore disasters
     if (world.disaster) {
-      const disasterData = data.disaster && typeof data.disaster === 'object'
-        ? data.disaster
-        : null;
+      const disasterData = data.disaster && typeof data.disaster === 'object' ? data.disaster : null;
       if (disasterData) {
-        world.disaster.activeDisaster = (disasterData.active && typeof disasterData.active === 'object')
-          ? disasterData.active
-          : null;
+        world.disaster.activeDisaster =
+          disasterData.active && typeof disasterData.active === 'object' ? disasterData.active : null;
         world.disaster.pendingDisasters = Array.isArray(disasterData.pending)
           ? disasterData.pending.map(item => ({ ...item }))
           : [];
@@ -706,9 +752,7 @@ export class SaveSystem {
         world.disaster.pendingDisasters.sort((a, b) => (a.scheduledFor || 0) - (b.scheduledFor || 0));
       } else {
         const activeDisaster = data.activeDisaster;
-        world.disaster.activeDisaster = (activeDisaster && typeof activeDisaster === 'object')
-          ? activeDisaster
-          : null;
+        world.disaster.activeDisaster = activeDisaster && typeof activeDisaster === 'object' ? activeDisaster : null;
       }
     }
 
@@ -732,8 +776,10 @@ export class SaveSystem {
     let camera = null;
     if (saveData.camera && Camera) {
       // Use actual viewport dimensions or reasonable defaults
-      const viewportWidth = (typeof window !== 'undefined' && window.innerWidth) || saveData.camera.viewportWidth || 1200;
-      const viewportHeight = (typeof window !== 'undefined' && window.innerHeight) || saveData.camera.viewportHeight || 800;
+      const viewportWidth =
+        (typeof window !== 'undefined' && window.innerWidth) || saveData.camera.viewportWidth || 1200;
+      const viewportHeight =
+        (typeof window !== 'undefined' && window.innerHeight) || saveData.camera.viewportHeight || 800;
 
       camera = new Camera({
         x: saveData.camera.x,
@@ -805,7 +851,7 @@ export class SaveSystem {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
-      reader.onload = async (e) => {
+      reader.onload = async e => {
         try {
           let json = e.target.result;
           if (typeof json === 'string' && json.startsWith(COMPRESSED_MARKER)) {
@@ -854,11 +900,14 @@ export class SaveSystem {
           slotNumber: this._autoSaveSlotIndex
         });
         const json = JSON.stringify(saveData);
-        localStorage.setItem('creature-sim-autosave-preview', JSON.stringify({
-          timestamp: saveData.timestamp,
-          savedAt: saveData.savedAt,
-          metadata: saveData.metadata
-        }));
+        localStorage.setItem(
+          'creature-sim-autosave-preview',
+          JSON.stringify({
+            timestamp: saveData.timestamp,
+            savedAt: saveData.savedAt,
+            metadata: saveData.metadata
+          })
+        );
         if (this.compressionEnabled && COMPRESSION_SUPPORTED) {
           const compressed = await compressJson(json);
           localStorage.setItem(slotKey, compressed);
@@ -935,11 +984,14 @@ export class SaveSystem {
     });
 
     const json = JSON.stringify(saveData);
-    localStorage.setItem(`creature-sim-slot-${slotNumber}-preview`, JSON.stringify({
-      timestamp: saveData.timestamp,
-      savedAt: saveData.savedAt,
-      metadata: saveData.metadata
-    }));
+    localStorage.setItem(
+      `creature-sim-slot-${slotNumber}-preview`,
+      JSON.stringify({
+        timestamp: saveData.timestamp,
+        savedAt: saveData.savedAt,
+        metadata: saveData.metadata
+      })
+    );
     if (this.compressionEnabled && COMPRESSION_SUPPORTED) {
       const compressed = await compressJson(json);
       localStorage.setItem(`creature-sim-slot-${slotNumber}`, compressed);

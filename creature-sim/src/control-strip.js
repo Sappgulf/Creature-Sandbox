@@ -12,8 +12,9 @@ const DRAWER_FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tab
 
 function getDrawerFocusableElements(container) {
   if (!container) return [];
-  return Array.from(container.querySelectorAll(DRAWER_FOCUSABLE_SELECTOR))
-    .filter((element) => !element.disabled && element.getAttribute('aria-hidden') !== 'true');
+  return Array.from(container.querySelectorAll(DRAWER_FOCUSABLE_SELECTOR)).filter(
+    element => !element.disabled && element.getAttribute('aria-hidden') !== 'true'
+  );
 }
 
 function isPanelVisible(id) {
@@ -120,7 +121,7 @@ export class ControlStripController {
     this.overflowDrawerClose?.addEventListener('click', () => this.closeOverflowDrawer());
     this.overflowDrawer?.querySelector('.drawer-backdrop')?.addEventListener('click', () => this.closeOverflowDrawer());
 
-    this.overflowDrawer?.addEventListener('click', (event) => {
+    this.overflowDrawer?.addEventListener('click', event => {
       const item = event.target.closest('.menu-item');
       if (!item) return;
       const action = item.dataset.action;
@@ -128,11 +129,11 @@ export class ControlStripController {
         this.handleMenuAction(action);
       }
     });
-    this.spawnDrawer?.addEventListener('keydown', (event) => this.handleDrawerKeydown(event, this.spawnDrawer));
-    this.overflowDrawer?.addEventListener('keydown', (event) => this.handleDrawerKeydown(event, this.overflowDrawer));
+    this.spawnDrawer?.addEventListener('keydown', event => this.handleDrawerKeydown(event, this.spawnDrawer));
+    this.overflowDrawer?.addEventListener('keydown', event => this.handleDrawerKeydown(event, this.overflowDrawer));
 
     // Watch strip buttons are delegated so bindings survive UI refreshes.
-    this.watchStrip?.addEventListener('click', (event) => {
+    this.watchStrip?.addEventListener('click', event => {
       const button = event.target.closest('button');
       if (!button) return;
 
@@ -162,7 +163,7 @@ export class ControlStripController {
     });
 
     // Keyboard shortcuts (only actions not handled by InputManager)
-    document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+    document.addEventListener('keydown', e => this.handleKeyboard(e));
 
     // Keep control strip state synced with global events
     eventSystem.on('game:paused', () => this.updatePauseButton());
@@ -172,7 +173,7 @@ export class ControlStripController {
   }
 
   loadMobilePrefs() {
-    const isTouchDevice = window.matchMedia?.('(pointer: coarse)').matches || ('ontouchstart' in window);
+    const isTouchDevice = window.matchMedia?.('(pointer: coarse)').matches || 'ontouchstart' in window;
     const compactMobile = isTouchDevice && Math.min(window.innerWidth, window.innerHeight) <= 430;
     const deviceMemory = Number(navigator.deviceMemory || 0);
     const lowMemoryMobile = isTouchDevice && deviceMemory > 0 && deviceMemory <= 4;
@@ -183,7 +184,7 @@ export class ControlStripController {
       const storedHaptics = localStorage.getItem('creature-mobile-haptics');
       return {
         focusMode: storedFocus !== null ? storedFocus === 'true' : compactMobile,
-        batterySaver: storedBattery !== null ? storedBattery === 'true' : (compactMobile || lowMemoryMobile),
+        batterySaver: storedBattery !== null ? storedBattery === 'true' : compactMobile || lowMemoryMobile,
         haptics: storedHaptics !== null ? storedHaptics !== 'false' : true
       };
     } catch {
@@ -215,7 +216,7 @@ export class ControlStripController {
 
   buzz(pattern = 12) {
     if (!this.mobilePrefs.haptics) return;
-    const isTouchDevice = window.matchMedia?.('(pointer: coarse)').matches || ('ontouchstart' in window);
+    const isTouchDevice = window.matchMedia?.('(pointer: coarse)').matches || 'ontouchstart' in window;
     if (!isTouchDevice) return;
     if (typeof navigator.vibrate !== 'function') return;
     navigator.vibrate(pattern);
@@ -746,9 +747,9 @@ export class ControlStripController {
   }
 
   /**
-     * Re-enable auto-director camera control.
-     * Clears user permanent override so auto-director can move camera again.
-     */
+   * Re-enable auto-director camera control.
+   * Clears user permanent override so auto-director can move camera again.
+   */
   recenterCamera() {
     // Clear camera user override
     if (this.camera?.clearUserOverride) {

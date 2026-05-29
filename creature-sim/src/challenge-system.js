@@ -18,7 +18,7 @@ export class ChallengeSystem {
     this.level = 1;
     this.nextLevelPoints = 100;
 
-    this._unsubscribeGoalCompleted = eventSystem.on(GameEvents.SESSION_GOAL_COMPLETED, (goal) => {
+    this._unsubscribeGoalCompleted = eventSystem.on(GameEvents.SESSION_GOAL_COMPLETED, goal => {
       this.completeSessionGoal(goal);
     });
   }
@@ -246,7 +246,8 @@ export class ChallengeSystem {
    */
   getActiveChallenges() {
     if (this.sessionGoals) {
-      return this.sessionGoals.getGoals()
+      return this.sessionGoals
+        .getGoals()
         .filter(goal => !goal.completed)
         .map(goal => ({
           id: goal.id,
@@ -349,7 +350,8 @@ export class ChallengeSystem {
 
     const panelWidth = (compact ? Math.min(230, layoutWidth - 20) : 248) * pixelRatio;
     const rowHeight = (compact ? 26 : 29) * pixelRatio;
-    const panelHeight = ((compact ? 22 : 28) * pixelRatio) +
+    const panelHeight =
+      (compact ? 22 : 28) * pixelRatio +
       visibleActive.length * rowHeight +
       (recent.length ? (compact ? 18 : 24) * pixelRatio : 0);
     ctx.fillStyle = 'rgba(8, 12, 20, 0.58)';
@@ -362,7 +364,11 @@ export class ChallengeSystem {
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.82)';
     ctx.font = `600 ${compact ? 11 * pixelRatio : 12 * pixelRatio}px system-ui, sans-serif`;
-    ctx.fillText(`Level ${this.level} · ${this.points}/${this.nextLevelPoints} pts`, sx + 10 * pixelRatio, sy + 7 * pixelRatio);
+    ctx.fillText(
+      `Level ${this.level} · ${this.points}/${this.nextLevelPoints} pts`,
+      sx + 10 * pixelRatio,
+      sy + 7 * pixelRatio
+    );
 
     let offsetY = sy + (compact ? 27 : 31) * pixelRatio;
 
@@ -377,7 +383,12 @@ export class ChallengeSystem {
       ctx.fillText(label, sx + 10 * pixelRatio, offsetY);
 
       ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-      ctx.fillRect(sx + 10 * pixelRatio, offsetY + 15 * pixelRatio, panelWidth - 20 * pixelRatio, Math.max(2, 3 * pixelRatio));
+      ctx.fillRect(
+        sx + 10 * pixelRatio,
+        offsetY + 15 * pixelRatio,
+        panelWidth - 20 * pixelRatio,
+        Math.max(2, 3 * pixelRatio)
+      );
       ctx.fillStyle = 'rgba(74, 222, 128, 0.82)';
       ctx.fillRect(
         sx + 10 * pixelRatio,

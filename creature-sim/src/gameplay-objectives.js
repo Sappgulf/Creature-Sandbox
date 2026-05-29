@@ -105,11 +105,9 @@ export function collectGameplayMetrics(world, counters = {}) {
   }
 
   metrics.population = metrics.alive;
-  metrics.variants = [
-    metrics.aquaticAlive > 0,
-    metrics.flyingAlive > 0,
-    metrics.burrowingAlive > 0
-  ].filter(Boolean).length;
+  metrics.variants = [metrics.aquaticAlive > 0, metrics.flyingAlive > 0, metrics.burrowingAlive > 0].filter(
+    Boolean
+  ).length;
   metrics.variantsAlive = metrics.variants;
   metrics.averageStress = metrics.alive ? stressTotal / metrics.alive : 0;
   metrics.averageHunger = metrics.alive ? hungerTotal / metrics.alive : 0;

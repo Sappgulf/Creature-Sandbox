@@ -112,10 +112,10 @@ export class WorldEnhancements {
 
     const hour = world.timeOfDay % 24;
 
-    this.timeEffects.dawn = (hour >= 5 && hour < 7);
-    this.timeEffects.sunrise = (hour >= 6 && hour < 8);
-    this.timeEffects.dusk = (hour >= 18 && hour < 20);
-    this.timeEffects.sunset = (hour >= 17 && hour < 19);
+    this.timeEffects.dawn = hour >= 5 && hour < 7;
+    this.timeEffects.sunrise = hour >= 6 && hour < 8;
+    this.timeEffects.dusk = hour >= 18 && hour < 20;
+    this.timeEffects.sunset = hour >= 17 && hour < 19;
   }
 
   /**
@@ -126,8 +126,8 @@ export class WorldEnhancements {
     if (this.weather.type === 'rain') {
       // Rain slows down non-aquatic creatures slightly
       if (creature.aquaticAffinity < 0.3) {
-        creature.vx *= (1 - 0.05 * this.weather.intensity);
-        creature.vy *= (1 - 0.05 * this.weather.intensity);
+        creature.vx *= 1 - 0.05 * this.weather.intensity;
+        creature.vy *= 1 - 0.05 * this.weather.intensity;
       }
       // But provides a small energy boost (moisture/cooling)
       creature.energy += 0.02 * this.weather.intensity * dt;

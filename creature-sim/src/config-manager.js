@@ -399,14 +399,14 @@ export class ConfigManager {
   getDefaultPerformanceConfig() {
     return {
       targetFPS: 60,
-      fixedTimeStep: 1/60,
+      fixedTimeStep: 1 / 60,
       maxFrameSkip: 6,
       analyticsWorker: true,
       updateThrottles: {
-        ui: 200,      // UI updates every 200ms
+        ui: 200, // UI updates every 200ms
         charts: 5000, // Charts every 5 seconds
         analytics: 1000, // Analytics every second
-        physics: 16   // Physics every frame (~60fps)
+        physics: 16 // Physics every frame (~60fps)
       },
       memory: {
         maxEventHistory: 1000,

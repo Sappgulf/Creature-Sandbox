@@ -288,14 +288,8 @@ export class ToolController {
   }
 
   spawnCreature(x, y, options = {}) {
-    const normalizedOptions = (options && typeof options === 'object')
-      ? options
-      : { predator: Boolean(options) };
-    const {
-      type = 'herbivore',
-      predator = false,
-      genes = null
-    } = normalizedOptions;
+    const normalizedOptions = options && typeof options === 'object' ? options : { predator: Boolean(options) };
+    const { type = 'herbivore', predator = false, genes = null } = normalizedOptions;
 
     const creature = this._spawnForAction({
       x,
@@ -419,7 +413,7 @@ export class ToolController {
   }
 
   _spawnForAction(action) {
-    const genes = action.genes ? { ...(action.genes) } : null;
+    const genes = action.genes ? { ...action.genes } : null;
 
     if (genes && typeof this.world.spawnManualWithGenes === 'function') {
       return this.world.spawnManualWithGenes(action.x, action.y, genes);

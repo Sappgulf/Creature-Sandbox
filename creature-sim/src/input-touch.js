@@ -6,11 +6,10 @@ import { eventSystem, GameEvents } from './event-system.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
 
 export function applyInputTouchMethods(InputManager) {
-
   /**
    * Handle mobile tap events
    */
-  InputManager.prototype.onMobileTap = function(e) {
+  InputManager.prototype.onMobileTap = function (e) {
     const detail = e.detail;
     if (!detail) return;
     const rect = this.canvas.getBoundingClientRect();
@@ -44,7 +43,7 @@ export function applyInputTouchMethods(InputManager) {
   /**
    * Schedule god mode hold gesture
    */
-  InputManager.prototype.scheduleGodHold = function(e) {
+  InputManager.prototype.scheduleGodHold = function (e) {
     this.clearGodHold();
     this.godHoldPointerId = e.pointerId;
     this.godHoldStart = { x: e.clientX, y: e.clientY };
@@ -57,7 +56,7 @@ export function applyInputTouchMethods(InputManager) {
   /**
    * Clear god mode hold gesture
    */
-  InputManager.prototype.clearGodHold = function() {
+  InputManager.prototype.clearGodHold = function () {
     if (this.godHoldTimeout) {
       window.clearTimeout(this.godHoldTimeout);
       this.godHoldTimeout = null;
@@ -70,7 +69,7 @@ export function applyInputTouchMethods(InputManager) {
   /**
    * Handle god mode action
    */
-  InputManager.prototype.handleGodModeAction = function(x, y, isDrag) {
+  InputManager.prototype.handleGodModeAction = function (x, y, isDrag) {
     const tool = gameState.godModeTool || 'food';
     const dragEnabled = tool === 'food' || tool === 'calm' || tool === 'prop' || tool === 'remove';
     if (isDrag && !dragEnabled) return;
@@ -124,9 +123,8 @@ export function applyInputTouchMethods(InputManager) {
         const before = this.world.creatures.length;
         if (this.tools?.spawnCreature) this.tools.spawnCreature(x, y, { type });
         else this.world.spawnCreatureType?.(type, x, y);
-        const spawned = this.world.creatures.length > before
-          ? this.world.creatures[this.world.creatures.length - 1]
-          : null;
+        const spawned =
+          this.world.creatures.length > before ? this.world.creatures[this.world.creatures.length - 1] : null;
         eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'spawn', x, y, id: spawned?.id ?? null });
         break;
       }
@@ -164,7 +162,11 @@ export function applyInputTouchMethods(InputManager) {
         }
         const removedProp = this.world.sandbox?.removeNearestProp?.(x, y, 48 / this.camera.zoom);
         if (removedProp) {
-          eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'remove-prop', id: removedProp.id, propType: removedProp.type });
+          eventSystem.emit(GameEvents.GOD_MODE_ACTION, {
+            action: 'remove-prop',
+            id: removedProp.id,
+            propType: removedProp.type
+          });
         }
         break;
       }
@@ -176,7 +178,7 @@ export function applyInputTouchMethods(InputManager) {
   /**
    * Set god tool
    */
-  InputManager.prototype._setGodTool = function(tool, source = 'hotkey') {
+  InputManager.prototype._setGodTool = function (tool, source = 'hotkey') {
     if (!tool) return;
     eventSystem.emit('god:tool-changed', { tool, source });
     if (gameState.godModeTool !== tool) {
@@ -187,7 +189,7 @@ export function applyInputTouchMethods(InputManager) {
   /**
    * Allow god action based on rate limiting
    */
-  InputManager.prototype._allowGodAction = function(tool, x, y, isDrag) {
+  InputManager.prototype._allowGodAction = function (tool, x, y, isDrag) {
     const now = performance.now();
     const interval = this.godActionIntervals[tool] ?? 120;
     const state = this.godActionState;
@@ -212,5 +214,4 @@ export function applyInputTouchMethods(InputManager) {
     state.lastY = y;
     return true;
   };
-
 }

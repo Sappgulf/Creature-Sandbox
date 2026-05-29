@@ -6,7 +6,8 @@ export const GAMEPLAY_MODES = [
     id: 'chill',
     name: 'Chill Sandbox',
     icon: '🧘',
-    description: 'Maximum food, gentle predators, and no surprise disasters. Perfect for experimentation and sightseeing.',
+    description:
+      'Maximum food, gentle predators, and no surprise disasters. Perfect for experimentation and sightseeing.',
     tags: ['Relaxed pace', 'Auto-balance+', 'Disasters off'],
     apply(world) {
       if (!world) return;
@@ -48,7 +49,8 @@ export const GAMEPLAY_MODES = [
     id: 'frontier',
     name: 'Frontier Rush',
     icon: '🧭',
-    description: 'A volatile frontier with bigger populations, denser props pressure, and faster day/night cycles for high-replay runs.',
+    description:
+      'A volatile frontier with bigger populations, denser props pressure, and faster day/night cycles for high-replay runs.',
     tags: ['Population+', 'Tempo+', 'Disasters medium'],
     apply(world) {
       if (!world) return;

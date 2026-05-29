@@ -24,11 +24,16 @@
     "test:coverage": "npm test",
     "lint": "eslint creature-sim/src",
     "lint:fix": "eslint creature-sim/src --fix",
+    "format": "prettier --write \"creature-sim/src/**/*.js\" \"scripts/**/*.mjs\" \"*.md\" \"docs/**/*.md\" \"AGENTS.md\"",
+    "format:check": "prettier --check \"creature-sim/src/**/*.js\" \"scripts/**/*.mjs\" \"*.md\" \"docs/**/*.md\" \"AGENTS.md\"",
+    "prepare": "husky",
     "analyze": "vite build --mode analyze"
   },
   "devDependencies": {
     "eslint": "^10.2.0",
     "globals": "^17.5.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5",
     "playwright": "^1.57.0",
     "prettier": "^3.8.3",
     "rollup-plugin-visualizer": "^7.0.1",
@@ -51,5 +56,14 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "lint-staged": {
+    "*.{js,mjs}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.md": [
+      "prettier --write"
+    ]
   }
 }

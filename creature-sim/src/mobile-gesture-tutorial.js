@@ -16,7 +16,7 @@ export class MobileGestureTutorial {
     if (params.has('smoke') || params.has('autostart') || params.has('autosandbox')) {
       return false;
     }
-    const isMobile = window.matchMedia?.('(pointer: coarse)').matches || ('ontouchstart' in window);
+    const isMobile = window.matchMedia?.('(pointer: coarse)').matches || 'ontouchstart' in window;
     if (!isMobile) return false;
     try {
       const alreadyShown = localStorage.getItem(TUTORIAL_KEY);
@@ -85,7 +85,7 @@ export class MobileGestureTutorial {
     };
 
     card.querySelector('#gesture-tutorial-dismiss').addEventListener('click', dismiss);
-    overlay.addEventListener('click', (e) => {
+    overlay.addEventListener('click', e => {
       if (e.target === overlay) dismiss();
     });
   }

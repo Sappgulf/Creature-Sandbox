@@ -216,9 +216,7 @@ export class CreatureStatusSystem {
     const diseaseType = disease.metadata?.diseaseType || 'fever';
     const contagiousness = disease.metadata?.contagiousness || disease.contagiousness || 0.2;
 
-    const neighbors = world.creatureManager.queryCreatures(
-      this.creature.x, this.creature.y, 30
-    );
+    const neighbors = world.creatureManager.queryCreatures(this.creature.x, this.creature.y, 30);
 
     if (!neighbors || neighbors.length <= 1) return;
 
@@ -231,9 +229,7 @@ export class CreatureStatusSystem {
         continue;
       }
 
-      const distance = Math.sqrt(
-        (other.x - this.creature.x) ** 2 + (other.y - this.creature.y) ** 2
-      );
+      const distance = Math.sqrt((other.x - this.creature.x) ** 2 + (other.y - this.creature.y) ** 2);
       const spreadChance = contagiousness * (1 - distance / 30);
 
       if (Math.random() < spreadChance) {

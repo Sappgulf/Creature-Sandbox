@@ -15,7 +15,7 @@ export class AudioSystem {
       creatures: 0.25, // Reduced from 0.3
       ambient: 0.15, // Reduced from 0.2
       music: 0.18, // Reduced from 0.25
-      effects: 0.30 // New category for special effects
+      effects: 0.3 // New category for special effects
     };
 
     // Sound queues (limit simultaneous sounds)
@@ -82,14 +82,8 @@ export class AudioSystem {
     osc.frequency.value = frequency;
 
     gain.gain.setValueAtTime(0, this.ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(
-      volume * this.volumes[category] * this.masterVolume,
-      this.ctx.currentTime + 0.01
-    );
-    gain.gain.exponentialRampToValueAtTime(
-      0.001,
-      this.ctx.currentTime + duration
-    );
+    gain.gain.linearRampToValueAtTime(volume * this.volumes[category] * this.masterVolume, this.ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
 
     osc.connect(gain);
     gain.connect(this.masterCompressor || this.ctx.destination);
@@ -117,17 +111,11 @@ export class AudioSystem {
     osc.frequency.value = frequency;
 
     gain.gain.setValueAtTime(0, this.ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(
-      volume * this.volumes[category] * this.masterVolume,
-      this.ctx.currentTime + 0.01
-    );
-    gain.gain.exponentialRampToValueAtTime(
-      0.001,
-      this.ctx.currentTime + duration
-    );
+    gain.gain.linearRampToValueAtTime(volume * this.volumes[category] * this.masterVolume, this.ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
 
     osc.connect(gain);
-    const dest = this._spatialNode(gain, pan) || (this.masterCompressor || this.ctx.destination);
+    const dest = this._spatialNode(gain, pan) || this.masterCompressor || this.ctx.destination;
     if (!dest) gain.connect(this.masterCompressor || this.ctx.destination);
 
     const soundId = Math.random();
@@ -167,7 +155,7 @@ export class AudioSystem {
       const isPredator = genes.predator || (genes.diet && genes.diet > 0.7);
 
       // Base pitch based on size (smaller = higher pitch)
-      const basePitch = 300 - (size * 20); // 220-400 Hz range
+      const basePitch = 300 - size * 20; // 220-400 Hz range
 
       // Sense affects pitch modulation (higher sense = more variation)
       const pitchVariation = sense / 200;
@@ -196,12 +184,12 @@ export class AudioSystem {
           this.playSpatialTone(pitch * 1.8, 0.06, 'triangle', volume * 0.45 * spatialVolume, 'creatures', pan);
           break;
         case 'birth':
-        // Cute high-pitched chirp
+          // Cute high-pitched chirp
           this.playSpatialTone(pitch * 1.5, 0.15, 'sine', volume * 0.6 * spatialVolume, 'creatures', pan);
           break;
 
         case 'death':
-        // Descending sad tone
+          // Descending sad tone
           if (this.playingSounds.size >= this.maxConcurrent) break;
           try {
             const osc = this.ctx.createOscillator();
@@ -213,22 +201,22 @@ export class AudioSystem {
             gain.gain.setValueAtTime(volume * 0.4 * this.volumes.creatures * this.masterVolume * spatialVolume, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
             osc.connect(gain);
-            const dest = this._spatialNode(gain, pan) || (this.masterCompressor || this.ctx.destination);
+            const dest = this._spatialNode(gain, pan) || this.masterCompressor || this.ctx.destination;
             if (!dest) gain.connect(this.masterCompressor || this.ctx.destination);
             osc.start();
             osc.stop(now + 0.4);
           } catch {
-          // Ignore audio errors
+            // Ignore audio errors
           }
           break;
 
         case 'eat':
-        // Quick nom sound (low frequency crunch)
+          // Quick nom sound (low frequency crunch)
           this.playSpatialTone(pitch * 0.6, 0.08, 'square', volume * 0.5 * spatialVolume, 'creatures', pan);
           break;
 
         case 'attack':
-        // Aggressive growl/roar
+          // Aggressive growl/roar
           if (this.playingSounds.size >= this.maxConcurrent) break;
           try {
             const attackOsc = this.ctx.createOscillator();
@@ -237,10 +225,13 @@ export class AudioSystem {
             const now = this.ctx.currentTime;
             attackOsc.frequency.setValueAtTime(pitch * 0.7, now);
             attackOsc.frequency.linearRampToValueAtTime(pitch * 0.5, now + 0.1);
-            attackGain.gain.setValueAtTime(volume * 0.7 * this.volumes.creatures * this.masterVolume * spatialVolume, now);
+            attackGain.gain.setValueAtTime(
+              volume * 0.7 * this.volumes.creatures * this.masterVolume * spatialVolume,
+              now
+            );
             attackGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
             attackOsc.connect(attackGain);
-            const dest = this._spatialNode(attackGain, pan) || (this.masterCompressor || this.ctx.destination);
+            const dest = this._spatialNode(attackGain, pan) || this.masterCompressor || this.ctx.destination;
             if (!dest) attackGain.connect(this.masterCompressor || this.ctx.destination);
             attackOsc.start();
             attackOsc.stop(now + 0.15);
@@ -250,7 +241,7 @@ export class AudioSystem {
           break;
 
         case 'mating':
-        // Love chime (harmonic tones)
+          // Love chime (harmonic tones)
           if (this.playingSounds.size >= this.maxConcurrent) break;
           try {
             this.playTone(pitch * 1.2, 0.2, 'sine', volume * 0.5, 'creatures');
@@ -270,8 +261,9 @@ export class AudioSystem {
 
         case 'idle':
         default:
-        // Occasional ambient chirp/growl (rare)
-          if (Math.random() < 0.01) { // 1% chance
+          // Occasional ambient chirp/growl (rare)
+          if (Math.random() < 0.01) {
+            // 1% chance
             this.playTone(pitch, 0.05, 'sine', volume * 0.2, 'creatures');
           }
           break;
@@ -306,7 +298,8 @@ export class AudioSystem {
     if (!this.soundsEnabled || !this.ctx || !this.musicEnabled) return;
 
     // Very subtle, occasional ambient sounds
-    if (Math.random() > 0.95) { // 5% chance per call
+    if (Math.random() > 0.95) {
+      // 5% chance per call
       const ambients = {
         forest: { freq: 400 + Math.random() * 100, dur: 0.5 },
         grassland: { freq: 450 + Math.random() * 50, dur: 0.3 },
@@ -328,7 +321,9 @@ export class AudioSystem {
 
     try {
       const pop = world.creatures.length;
-      const predatorCount = world.creatures.filter(c => c && c.alive && c.genes && (c.genes.predator || (c.genes.diet && c.genes.diet > 0.7))).length;
+      const predatorCount = world.creatures.filter(
+        c => c && c.alive && c.genes && (c.genes.predator || (c.genes.diet && c.genes.diet > 0.7))
+      ).length;
       const tension = predatorCount / Math.max(1, pop); // 0-1 scale
 
       // Determine music type based on state
@@ -353,12 +348,13 @@ export class AudioSystem {
     if (!this.musicEnabled || !this.ctx) return;
 
     // Rich ambient drone with multiple oscillators
-    const baseFreq = {
-      peaceful: 220, // A3
-      tension: 185,  // F#3
-      lonely: 165,   // E3
-      thriving: 247  // B3
-    }[type] || 220;
+    const baseFreq =
+      {
+        peaceful: 220, // A3
+        tension: 185, // F#3
+        lonely: 165, // E3
+        thriving: 247 // B3
+      }[type] || 220;
 
     // Main drone
     this.musicOscillator = this.ctx.createOscillator();
@@ -399,9 +395,11 @@ export class AudioSystem {
   }
 
   stopMusic() {
-    const stopOsc = (osc) => {
+    const stopOsc = osc => {
       if (osc) {
-        try { osc.stop(); } catch {}
+        try {
+          osc.stop();
+        } catch {}
       }
     };
     stopOsc(this.musicOscillator);
@@ -835,7 +833,7 @@ export class AudioSystem {
           layer.gain = this.ctx.createGain();
           const freqs = { ambience: 220, rhythm: 110, tension: 55 };
           layer.osc.frequency.value = freqs[key];
-          layer.osc.type = key === 'tension' ? 'sawtooth' : (key === 'rhythm' ? 'triangle' : 'sine');
+          layer.osc.type = key === 'tension' ? 'sawtooth' : key === 'rhythm' ? 'triangle' : 'sine';
           layer.gain.gain.value = 0;
           layer.osc.connect(layer.gain);
           layer.gain.connect(this.masterCompressor || this.ctx.destination);
@@ -849,10 +847,7 @@ export class AudioSystem {
       // Crossfade volume toward target
       if (layer.gain) {
         const rampTime = 1.5;
-        layer.gain.gain.linearRampToValueAtTime(
-          target * this.volumes.music * this.masterVolume * 0.5,
-          now + rampTime
-        );
+        layer.gain.gain.linearRampToValueAtTime(target * this.volumes.music * this.masterVolume * 0.5, now + rampTime);
       }
       // If target is near zero and volume is low, stop oscillator
       if (target <= 0.05 && layer.osc && layer.gain && layer.gain.gain.value < 0.001) {

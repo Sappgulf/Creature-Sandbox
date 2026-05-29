@@ -28,7 +28,7 @@ export const DISEASE_TYPES = {
       healthDrainPerSecond: 0.3
     },
     immunityDuration: 120, // 2 minutes immunity after recovery
-    immunityChance: 0.8    // 80% chance to gain immunity
+    immunityChance: 0.8 // 80% chance to gain immunity
   },
 
   lethargy: {
@@ -280,8 +280,8 @@ export class DiseaseSystem {
     }
 
     // Calculate duration
-    const duration = options.duration ||
-      diseaseType.baseDuration + (Math.random() - 0.5) * 2 * diseaseType.durationVariance;
+    const duration =
+      options.duration || diseaseType.baseDuration + (Math.random() - 0.5) * 2 * diseaseType.durationVariance;
 
     // Apply the disease status
     creature.applyStatus('disease', {
@@ -344,9 +344,7 @@ export class DiseaseSystem {
     if (!diseaseType) return;
 
     const targetCount = options.initialInfections || Math.ceil(world.creatures.length * 0.1);
-    const candidates = world.creatures.filter(c =>
-      c?.alive && !this.isImmune(c.id, diseaseId)
-    );
+    const candidates = world.creatures.filter(c => c?.alive && !this.isImmune(c.id, diseaseId));
 
     // Shuffle and pick random creatures
     const shuffled = [...candidates].sort(() => Math.random() - 0.5);

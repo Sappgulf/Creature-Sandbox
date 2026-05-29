@@ -31,8 +31,7 @@ export function setupDevExports({
   window.advanceTime = advanceTime;
   window.debug = debugConsole;
 
-  const _devtoolsEnabled = gameState.showDebugOverlay ||
-    new URLSearchParams(location.search).has('devtools');
+  const _devtoolsEnabled = gameState.showDebugOverlay || new URLSearchParams(location.search).has('devtools');
   if (_devtoolsEnabled) {
     errorHandler.safeExecute(() => {
       window.world = world;

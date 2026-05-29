@@ -77,17 +77,20 @@ function buildWorldWithZeroes() {
   return { world, camera };
 }
 
-function assertZeroPreservation(result, {
-  expectedNextId = 0,
-  expectedDayNightEnabled = true,
-  expectedPersonality = null
-} = {}) {
+function assertZeroPreservation(
+  result,
+  { expectedNextId = 0, expectedDayNightEnabled = true, expectedPersonality = null } = {}
+) {
   assert.equal(result.world.timeOfDay, 0, 'timeOfDay should preserve 0');
   assert.equal(result.world.dayLength, 0, 'dayLength should preserve 0');
   assert.equal(result.world.environment.timeOfDay, 0, 'environment timeOfDay should preserve 0');
   assert.equal(result.world.environment.dayLength, 0, 'environment dayLength should preserve 0');
   assert.equal(result.world.environment.seasonPhase, 0, 'environment seasonPhase should preserve 0');
-  assert.equal(result.world.environment.dayNightEnabled, expectedDayNightEnabled, 'environment dayNightEnabled should preserve value');
+  assert.equal(
+    result.world.environment.dayNightEnabled,
+    expectedDayNightEnabled,
+    'environment dayNightEnabled should preserve value'
+  );
   assert.equal(result.world.t, 0, 'world.t should preserve 0');
   assert.equal(result.world.seasonPhase, 0, 'seasonPhase should preserve 0');
   assert.equal(result.world.creatureManager._nextId, expectedNextId, '_nextId should preserve value');
@@ -101,12 +104,36 @@ function assertZeroPreservation(result, {
   assert.equal(creature.alive, false, 'alive should preserve false');
   assert.equal(creature.deathTime, 1, 'deathTime should preserve value');
   if (expectedPersonality) {
-    assert.equal(creature.personality.packInstinct, expectedPersonality.packInstinct, 'personality packInstinct should round-trip');
-    assert.equal(creature.personality.ambushDelay, expectedPersonality.ambushDelay, 'personality ambushDelay should round-trip');
-    assert.equal(creature.personality.aggression, expectedPersonality.aggression, 'personality aggression should round-trip');
-    assert.equal(creature.personality.attackCooldown, expectedPersonality.attackCooldown, 'personality attackCooldown should round-trip');
-    assert.equal(creature.personality.idleTempo, expectedPersonality.idleTempo, 'personality idleTempo should round-trip');
-    assert.equal(creature.personality.playfulness, expectedPersonality.playfulness, 'personality playfulness should round-trip');
+    assert.equal(
+      creature.personality.packInstinct,
+      expectedPersonality.packInstinct,
+      'personality packInstinct should round-trip'
+    );
+    assert.equal(
+      creature.personality.ambushDelay,
+      expectedPersonality.ambushDelay,
+      'personality ambushDelay should round-trip'
+    );
+    assert.equal(
+      creature.personality.aggression,
+      expectedPersonality.aggression,
+      'personality aggression should round-trip'
+    );
+    assert.equal(
+      creature.personality.attackCooldown,
+      expectedPersonality.attackCooldown,
+      'personality attackCooldown should round-trip'
+    );
+    assert.equal(
+      creature.personality.idleTempo,
+      expectedPersonality.idleTempo,
+      'personality idleTempo should round-trip'
+    );
+    assert.equal(
+      creature.personality.playfulness,
+      expectedPersonality.playfulness,
+      'personality playfulness should round-trip'
+    );
   }
 
   assert.equal(result.world.food[0].energy, 0, 'food energy should preserve 0');
@@ -170,9 +197,17 @@ metadataSaveSystem.setMetadataProvider(() => ({
   source: 'provider'
 }));
 const metadataSave = metadataSaveSystem.serialize(multiWorld, camera, null, null, { source: 'test' });
-assert.equal(metadataSave.metadata.playable.activeRun.id, 'first_ecosystem', 'runtime playable metadata should serialize');
+assert.equal(
+  metadataSave.metadata.playable.activeRun.id,
+  'first_ecosystem',
+  'runtime playable metadata should serialize'
+);
 assert.equal(metadataSave.metadata.upgrades.activeReadabilityMode, 'contrast', 'upgrade metadata should serialize');
-assert.equal(metadataSave.metadata.upgrades.discoveryJournal[0].id, 'first_birth', 'discovery metadata should serialize');
+assert.equal(
+  metadataSave.metadata.upgrades.discoveryJournal[0].id,
+  'first_birth',
+  'discovery metadata should serialize'
+);
 assert.equal(metadataSave.metadata.preview.scenario.progress, 42, 'runtime preview metadata should serialize');
 assert.equal(metadataSave.metadata.source, 'test', 'explicit metadata should override provider metadata');
 

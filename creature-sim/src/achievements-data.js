@@ -13,7 +13,7 @@ export const ACHIEVEMENTS_DATA = [
     type: 'discovery',
     trigger: 'kill',
     goal: 1,
-    eventPredicate: (event) => {
+    eventPredicate: event => {
       const attacker = event?.attacker;
       if (!attacker?.genes) return false;
       const diet = attacker.genes.diet ?? (attacker.genes.predator ? 1.0 : 0.0);
@@ -41,7 +41,7 @@ export const ACHIEVEMENTS_DATA = [
     icon: '☠️',
     xp: 5,
     type: 'discovery',
-    check: (world) => world && world.creatures && world.creatures.length === 0 && world.t > 30
+    check: world => world && world.creatures && world.creatures.length === 0 && world.t > 30
   },
 
   {
@@ -83,7 +83,7 @@ export const ACHIEVEMENTS_DATA = [
     icon: '🦕',
     xp: 20,
     type: 'milestone',
-    check: (world) => world && world.creatures && world.creatures.some(c => c && c.age >= 200)
+    check: world => world && world.creatures && world.creatures.some(c => c && c.age >= 200)
   },
 
   // Population milestones as tiers (keeps existing IDs)
@@ -153,7 +153,7 @@ export const ACHIEVEMENTS_DATA = [
     icon: '🦷',
     type: 'milestone',
     trigger: 'kill',
-    eventPredicate: (event) => {
+    eventPredicate: event => {
       const attacker = event?.attacker;
       if (!attacker?.genes) return false;
       const diet = attacker.genes.diet ?? (attacker.genes.predator ? 1.0 : 0.0);
@@ -162,7 +162,14 @@ export const ACHIEVEMENTS_DATA = [
     tiers: [
       { id: 'predator_kills_5', name: 'Hunter', description: 'Predators get 5 kills', goal: 5, xp: 10 },
       { id: 'predator_kills_25', name: 'Slayer', description: 'Predators get 25 kills', goal: 25, xp: 20 },
-      { id: 'predator_kills_100', name: 'Legendary Beast', description: 'Predators get 100 kills', goal: 100, xp: 40, secret: true }
+      {
+        id: 'predator_kills_100',
+        name: 'Legendary Beast',
+        description: 'Predators get 100 kills',
+        goal: 100,
+        xp: 40,
+        secret: true
+      }
     ]
   }
 ];

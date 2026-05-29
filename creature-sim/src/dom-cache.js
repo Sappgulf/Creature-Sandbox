@@ -44,7 +44,6 @@ export class DOMCache {
 
     // UI controls
 
-
     // Behavior sliders
     this.cacheElement('slider-forage', 'forageSlider');
     this.cacheElement('slider-wander', 'wanderSlider');
@@ -74,12 +73,9 @@ export class DOMCache {
     this.cacheElement('god-tool-prop', 'godToolProp');
     this.cacheElement('god-tool-remove', 'godToolRemove');
 
-
-
     // Feature panel
     this.cacheElement('features-panel', 'featuresPanel');
     this.cacheElement('btn-features-close', 'featuresCloseBtn');
-
 
     // Achievements panel
     this.cacheElement('achievements-panel', 'achievementsPanel');
@@ -90,7 +86,6 @@ export class DOMCache {
     this.cacheElement('btn-scenario-close', 'scenarioCloseBtn');
     this.cacheElement('eco-health-panel', 'ecoHealthPanel');
     this.cacheElement('btn-eco-health-close', 'ecoHealthCloseBtn');
-
 
     // Gameplay modes + goals
     this.cacheElement('session-meta', 'sessionMeta');

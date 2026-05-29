@@ -28,11 +28,16 @@ export function updateLifeStage(creature) {
 
 export function getAgeSizeMultiplier(age, ageStage) {
   switch (ageStage) {
-    case 'baby': return clamp(0.3 + (age / 30) * 0.4, 0.3, 0.7);
-    case 'juvenile': return clamp(0.7 + ((age - 30) / 30) * 0.3, 0.7, 1.0);
-    case 'adult': return 1.0;
-    case 'elder': return clamp(1.0 - ((age - 240) / 60) * 0.1, 0.9, 1.0);
-    default: return 1.0;
+    case 'baby':
+      return clamp(0.3 + (age / 30) * 0.4, 0.3, 0.7);
+    case 'juvenile':
+      return clamp(0.7 + ((age - 30) / 30) * 0.3, 0.7, 1.0);
+    case 'adult':
+      return 1.0;
+    case 'elder':
+      return clamp(1.0 - ((age - 240) / 60) * 0.1, 0.9, 1.0);
+    default:
+      return 1.0;
   }
 }
 
@@ -85,10 +90,15 @@ export function getElderFadeAlpha(age) {
 
 export function getAgeStageIcon(ageStage) {
   switch (ageStage) {
-    case 'baby': return '🍼';
-    case 'juvenile': return '🌱';
-    case 'adult': return '⭐';
-    case 'elder': return '👴';
-    default: return '';
+    case 'baby':
+      return '🍼';
+    case 'juvenile':
+      return '🌱';
+    case 'adult':
+      return '⭐';
+    case 'elder':
+      return '👴';
+    default:
+      return '';
   }
 }

@@ -66,7 +66,7 @@ function sanitizeBridgePayload(payload) {
     if (Array.isArray(value)) {
       output[key] = value
         .slice(0, 16)
-        .map(item => typeof item === 'object' ? compactCreature(item) : item)
+        .map(item => (typeof item === 'object' ? compactCreature(item) : item))
         .filter(item => typeof item !== 'function');
       continue;
     }
@@ -89,7 +89,7 @@ self.onmessage = function (e) {
         world = new World(data.width, data.height);
         // Bridge events back to main thread
         BRIDGE_EVENTS.forEach(evType => {
-          eventSystem.on(evType, (payload) => {
+          eventSystem.on(evType, payload => {
             self.postMessage({ type: 'EVENT', eventType: evType, data: sanitizeBridgePayload(payload) });
           });
         });

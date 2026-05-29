@@ -47,7 +47,7 @@ class InteractiveChart {
   setupEventListeners() {
     if (!this.options.interactive) return;
 
-    this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+    this.canvas.addEventListener('mousemove', e => this.handleMouseMove(e));
     this.canvas.addEventListener('mouseleave', () => this.handleMouseLeave());
   }
 
@@ -56,7 +56,7 @@ class InteractiveChart {
     const x = e.clientX - rect.left;
 
     const dataIndex = Math.floor((x / this.options.width) * this.data.length);
-    this.hoverIndex = (dataIndex >= 0 && dataIndex < this.data.length) ? dataIndex : -1;
+    this.hoverIndex = dataIndex >= 0 && dataIndex < this.data.length ? dataIndex : -1;
     this.draw();
   }
 
@@ -389,7 +389,7 @@ export class AnalyticsDashboard {
     });
 
     // Keyboard shortcut (Ctrl+Shift+A)
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       if (e.ctrlKey && e.shiftKey && e.key === 'A') {
         e.preventDefault();
         this.toggle();
@@ -407,17 +407,17 @@ export class AnalyticsDashboard {
 
     const header = this.panel.querySelector('h2');
 
-    header.addEventListener('mousedown', (e) => {
+    header.addEventListener('mousedown', e => {
       isDragging = true;
       dragOffsetX = e.clientX - this.panel.offsetLeft;
       dragOffsetY = e.clientY - this.panel.offsetTop;
       this.panel.style.cursor = 'grabbing';
     });
 
-    document.addEventListener('mousemove', (e) => {
+    document.addEventListener('mousemove', e => {
       if (isDragging) {
-        this.panel.style.left = (e.clientX - dragOffsetX) + 'px';
-        this.panel.style.top = (e.clientY - dragOffsetY) + 'px';
+        this.panel.style.left = e.clientX - dragOffsetX + 'px';
+        this.panel.style.top = e.clientY - dragOffsetY + 'px';
       }
     });
 
@@ -529,9 +529,7 @@ export class AnalyticsDashboard {
     }
 
     // Transpose data for chart
-    const chartData = populationData.map((_, index) =>
-      history.map(point => point[index] || 0)
-    );
+    const chartData = populationData.map((_, index) => history.map(point => point[index] || 0));
 
     chart.setData(chartData, ['Total', 'Babies', 'Juveniles', 'Adults', 'Elders']);
   }
@@ -553,9 +551,7 @@ export class AnalyticsDashboard {
     }
 
     // Transpose data for chart
-    const chartData = geneData.map((_, index) =>
-      history.map(point => point[index] || 0)
-    );
+    const chartData = geneData.map((_, index) => history.map(point => point[index] || 0));
 
     chart.setData(chartData, ['Speed', 'Sense', 'Metabolism', 'Size']);
   }
@@ -577,9 +573,7 @@ export class AnalyticsDashboard {
     }
 
     // Transpose data for chart
-    const chartData = ecoData.map((_, index) =>
-      history.map(point => point[index] || 0)
-    );
+    const chartData = ecoData.map((_, index) => history.map(point => point[index] || 0));
 
     chart.setData(chartData, ['Diversity', 'Stability', 'Food', 'Predators']);
   }
@@ -601,9 +595,7 @@ export class AnalyticsDashboard {
     }
 
     // Transpose data for chart
-    const chartData = perfData.map((_, index) =>
-      history.map(point => point[index] || 0)
-    );
+    const chartData = perfData.map((_, index) => history.map(point => point[index] || 0));
 
     chart.setData(chartData, ['FPS', 'Frame Time', 'Memory', 'Draw Calls']);
   }
@@ -616,10 +608,9 @@ export class AnalyticsDashboard {
 
     creaturesElement.textContent = analyticsData.population?.total || 0;
     generationsElement.textContent = analyticsData.generation || 0;
-    ecosystemElement.textContent = analyticsData.ecosystem?.health != null ?
-      analyticsData.ecosystem.health.toFixed(2) : '--';
-    fpsElement.textContent = performanceStats?.current?.fps != null ?
-      performanceStats.current.fps.toFixed(1) : '--';
+    ecosystemElement.textContent =
+      analyticsData.ecosystem?.health != null ? analyticsData.ecosystem.health.toFixed(2) : '--';
+    fpsElement.textContent = performanceStats?.current?.fps != null ? performanceStats.current.fps.toFixed(1) : '--';
     this.updateInsightNarrative(analyticsData, world, performanceStats);
   }
 
@@ -639,30 +630,38 @@ export class AnalyticsDashboard {
     }
 
     const clauses = [];
-    clauses.push(populationTrend > 0.4
-      ? `Population is growing around ${total} creatures`
-      : populationTrend < -0.4
-        ? `Population is shrinking around ${total} creatures`
-        : `Population is holding steady around ${total} creatures`);
+    clauses.push(
+      populationTrend > 0.4
+        ? `Population is growing around ${total} creatures`
+        : populationTrend < -0.4
+          ? `Population is shrinking around ${total} creatures`
+          : `Population is holding steady around ${total} creatures`
+    );
 
-    clauses.push(diversityTrend > 0.005
-      ? 'genetic diversity is widening'
-      : diversityTrend < -0.005
-        ? 'genetic diversity is narrowing'
-        : 'genetic diversity is stable');
+    clauses.push(
+      diversityTrend > 0.005
+        ? 'genetic diversity is widening'
+        : diversityTrend < -0.005
+          ? 'genetic diversity is narrowing'
+          : 'genetic diversity is stable'
+    );
 
-    clauses.push(healthTrend > 0.005
-      ? `ecosystem health is improving${Number.isFinite(health) ? ` (${health.toFixed(2)})` : ''}`
-      : healthTrend < -0.005
-        ? `ecosystem health is slipping${Number.isFinite(health) ? ` (${health.toFixed(2)})` : ''}`
-        : `ecosystem health is steady${Number.isFinite(health) ? ` (${health.toFixed(2)})` : ''}`);
+    clauses.push(
+      healthTrend > 0.005
+        ? `ecosystem health is improving${Number.isFinite(health) ? ` (${health.toFixed(2)})` : ''}`
+        : healthTrend < -0.005
+          ? `ecosystem health is slipping${Number.isFinite(health) ? ` (${health.toFixed(2)})` : ''}`
+          : `ecosystem health is steady${Number.isFinite(health) ? ` (${health.toFixed(2)})` : ''}`
+    );
 
     if (Number.isFinite(food)) {
-      clauses.push(food < 0.3
-        ? 'food availability is tight'
-        : food > 0.7
-          ? 'food availability is abundant'
-          : 'food availability is balanced');
+      clauses.push(
+        food < 0.3
+          ? 'food availability is tight'
+          : food > 0.7
+            ? 'food availability is abundant'
+            : 'food availability is balanced'
+      );
     }
 
     if (Number.isFinite(pressure) && pressure > 0.35) {
@@ -670,9 +669,9 @@ export class AnalyticsDashboard {
     }
 
     if (Number.isFinite(fps)) {
-      clauses.push(fps < 45
-        ? `performance is dipping at ${fps.toFixed(0)} FPS`
-        : `performance is holding at ${fps.toFixed(0)} FPS`);
+      clauses.push(
+        fps < 45 ? `performance is dipping at ${fps.toFixed(0)} FPS` : `performance is holding at ${fps.toFixed(0)} FPS`
+      );
     }
 
     return `${clauses.join('. ')}.`;
@@ -692,7 +691,7 @@ export class AnalyticsDashboard {
   }
 
   clearData() {
-    this.dataHistory.forEach(history => history.length = 0);
+    this.dataHistory.forEach(history => (history.length = 0));
     this.charts.forEach(chart => chart.clear());
     console.debug('📊 Analytics data cleared');
   }
@@ -834,16 +833,13 @@ export class AdvancedStatsCalculator {
     if (this.history.length > 20) {
       const recentPopulations = this.history.slice(-20).map(h => h.population.total);
       const avgPopulation = recentPopulations.reduce((a, b) => a + b, 0) / recentPopulations.length;
-      const variance = recentPopulations.reduce((sum, pop) => sum + Math.pow(pop - avgPopulation, 2), 0) / recentPopulations.length;
+      const variance =
+        recentPopulations.reduce((sum, pop) => sum + Math.pow(pop - avgPopulation, 2), 0) / recentPopulations.length;
       ecosystem.stability = 1 - Math.min(variance / Math.max(avgPopulation, 1), 1);
     }
 
     // Overall health
-    ecosystem.health = (
-      ecosystem.diversity * 0.3 +
-      ecosystem.stability * 0.3 +
-      ecosystem.foodAvailability * 0.4
-    );
+    ecosystem.health = ecosystem.diversity * 0.3 + ecosystem.stability * 0.3 + ecosystem.foodAvailability * 0.4;
   }
 
   calculateStats(values) {
@@ -900,10 +896,11 @@ export class AdvancedStatsCalculator {
       trends: this.stats.trends || {},
       summary: {
         totalDataPoints: this.history.length,
-        averagePopulation: this.history.length > 0 ?
-          this.history.reduce((sum, h) => sum + h.population.total, 0) / this.history.length : 0,
-        peakPopulation: this.history.length > 0 ?
-          Math.max(...this.history.map(h => h.population.total)) : 0
+        averagePopulation:
+          this.history.length > 0
+            ? this.history.reduce((sum, h) => sum + h.population.total, 0) / this.history.length
+            : 0,
+        peakPopulation: this.history.length > 0 ? Math.max(...this.history.map(h => h.population.total)) : 0
       }
     };
   }
@@ -920,11 +917,21 @@ export const analyticsDashboard = {
     }
     return _analyticsDashboard;
   },
-  toggle: function() { this.instance.toggle(); },
-  update: function(stats, world, profiler) { this.instance.update(stats, world, profiler); },
-  show: function() { this.instance.show(); },
-  hide: function() { this.instance.hide(); },
-  get isVisible() { return _analyticsDashboard?.isVisible || false; }
+  toggle: function () {
+    this.instance.toggle();
+  },
+  update: function (stats, world, profiler) {
+    this.instance.update(stats, world, profiler);
+  },
+  show: function () {
+    this.instance.show();
+  },
+  hide: function () {
+    this.instance.hide();
+  },
+  get isVisible() {
+    return _analyticsDashboard?.isVisible || false;
+  }
 };
 
 export const advancedStatsCalculator = {
@@ -934,8 +941,12 @@ export const advancedStatsCalculator = {
     }
     return _advancedStatsCalculator;
   },
-  update: function(creatures, food, world) { this.instance.update(creatures, food, world); },
-  get stats() { return this.instance.stats; }
+  update: function (creatures, food, world) {
+    this.instance.update(creatures, food, world);
+  },
+  get stats() {
+    return this.instance.stats;
+  }
 };
 
 // Initialize dashboard after DOM is ready

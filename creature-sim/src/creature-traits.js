@@ -12,7 +12,7 @@ export function generateTemperament(seed = {}) {
 }
 
 export function blendTemperament(parentA, parentB) {
-  const safe = (val) => clamp(val, 0, 1);
+  const safe = val => clamp(val, 0, 1);
   const jitter = () => (Math.random() - 0.5) * 0.12; // small bounded mutation
   const avg = (a, b) => ((a ?? 0.5) + (b ?? 0.5)) * 0.5;
 
@@ -76,7 +76,7 @@ export function rollQuirks(max = 2) {
 
 export function inheritQuirks(parentA, parentB) {
   const inherited = [];
-  const addSafe = (id) => {
+  const addSafe = id => {
     if (id && !inherited.includes(id) && inherited.length < 2) {
       inherited.push(id);
     }

@@ -44,7 +44,7 @@ async function exists(filePath) {
 }
 
 function frameSummary(summary = []) {
-  return summary.map((item) => ({
+  return summary.map(item => ({
     scenario: item.scenario,
     avgFrameMs: item.framePacing?.avgFrameMs ?? null,
     p95FrameMs: item.framePacing?.p95FrameMs ?? null,
@@ -67,14 +67,18 @@ function readinessGate(name, readiness, staleBuild) {
   }
 
   if (name === 'worker-browser') {
-    return readiness.mode === 'worker' &&
+    return (
+      readiness.mode === 'worker' &&
       readiness.status === 'candidate-opt-in' &&
-      readiness.defaultReadiness?.safeToDefaultWorker === true;
+      readiness.defaultReadiness?.safeToDefaultWorker === true
+    );
   }
 
-  return readiness.mode === 'worker' &&
+  return (
+    readiness.mode === 'worker' &&
     readiness.status === 'shipping-default' &&
-    readiness.defaultReadiness?.safeToDefaultWorker === true;
+    readiness.defaultReadiness?.safeToDefaultWorker === true
+  );
 }
 
 async function lane(name, folder, { requiredBuildSha = null } = {}) {
@@ -125,9 +129,12 @@ async function scenarioBalanceLane() {
   const scenarios = Array.isArray(summary?.scenarios) ? summary.scenarios : [];
   const variance = Array.isArray(summary?.variance) ? summary.variance : [];
   const runCount = Number(summary?.runs || 1);
-  const uniqueScenarioCount = new Set(scenarios.map((item) => item.id)).size;
-  const varianceOk = variance.length >= 2 &&
-    variance.every((item) => Number(item.passRate || 0) === 1 && Array.isArray(item.failedRuns) && item.failedRuns.length === 0);
+  const uniqueScenarioCount = new Set(scenarios.map(item => item.id)).size;
+  const varianceOk =
+    variance.length >= 2 &&
+    variance.every(
+      item => Number(item.passRate || 0) === 1 && Array.isArray(item.failedRuns) && item.failedRuns.length === 0
+    );
   const passed = runCount >= 2 && uniqueScenarioCount >= 2 && varianceOk;
   return {
     name: 'scenario-balance',
@@ -140,9 +147,7 @@ async function scenarioBalanceLane() {
     workerDefaultReady: null,
     completedScenarioResultFlow: null,
     frames: [],
-    screenshots: Object.fromEntries(
-      scenarios.map((item) => [path.basename(item.screenshot || `${item.id}.png`), true])
-    ),
+    screenshots: Object.fromEntries(scenarios.map(item => [path.basename(item.screenshot || `${item.id}.png`), true])),
     balance: scenarios,
     variance,
     runs: runCount
@@ -156,13 +161,16 @@ async function productionVitalsLane(requiredBuildSha = null) {
   const buildSha = summary?.target?.buildInfo?.sha ?? null;
   const staleBuild = !!requiredBuildSha && buildSha !== requiredBuildSha;
   const present = !!summary && !staleBuild;
-  const contextProofOk = contexts.length >= 2 && contexts.every((item) =>
-    item.consoleMessages?.length === 0 &&
-    item.state?.workerMode === true &&
-    item.state?.workerReady === true &&
-    Number(item.state?.workerPendingMessages || 0) === 0 &&
-    Number(item.state?.registeredSprites || 0) >= Number(summary?.budgets?.registeredSprites || 20)
-  );
+  const contextProofOk =
+    contexts.length >= 2 &&
+    contexts.every(
+      item =>
+        item.consoleMessages?.length === 0 &&
+        item.state?.workerMode === true &&
+        item.state?.workerReady === true &&
+        Number(item.state?.workerPendingMessages || 0) === 0 &&
+        Number(item.state?.registeredSprites || 0) >= Number(summary?.budgets?.registeredSprites || 20)
+    );
   return {
     name: 'production-vitals',
     folder: path.relative(repoRoot, dir),
@@ -177,17 +185,17 @@ async function productionVitalsLane(requiredBuildSha = null) {
     workerDefaultReady: null,
     completedScenarioResultFlow: null,
     frames: [],
-    screenshots: Object.fromEntries(
-      contexts.map((item) => [path.basename(item.screenshot || `${item.name}.png`), true])
-    ),
-    vitals: staleBuild ? [] : contexts.map((item) => ({
-      context: item.name,
-      seededWorldMs: item.seededWorldMs ?? null,
-      firstContentfulPaintMs: item.vitals?.firstContentfulPaintMs ?? null,
-      largestContentfulPaintMs: item.vitals?.largestContentfulPaintMs ?? null,
-      cumulativeLayoutShift: item.vitals?.cumulativeLayoutShift ?? null,
-      longTaskTotalMs: item.vitals?.longTaskTotalMs ?? null
-    }))
+    screenshots: Object.fromEntries(contexts.map(item => [path.basename(item.screenshot || `${item.name}.png`), true])),
+    vitals: staleBuild
+      ? []
+      : contexts.map(item => ({
+          context: item.name,
+          seededWorldMs: item.seededWorldMs ?? null,
+          firstContentfulPaintMs: item.vitals?.firstContentfulPaintMs ?? null,
+          largestContentfulPaintMs: item.vitals?.largestContentfulPaintMs ?? null,
+          cumulativeLayoutShift: item.vitals?.cumulativeLayoutShift ?? null,
+          longTaskTotalMs: item.vitals?.longTaskTotalMs ?? null
+        }))
   };
 }
 
@@ -213,86 +221,102 @@ async function vercelDeployProof() {
 }
 
 function postureFrom(lanes) {
-  const local = lanes.find((item) => item.name === 'local-browser');
-  const main = lanes.find((item) => item.name === 'main-browser');
-  const worker = lanes.find((item) => item.name === 'worker-browser');
-  const production = lanes.find((item) => item.name === 'production-browser');
-  const productionVitals = lanes.find((item) => item.name === 'production-vitals');
-  const scenarioBalance = lanes.find((item) => item.name === 'scenario-balance');
+  const local = lanes.find(item => item.name === 'local-browser');
+  const main = lanes.find(item => item.name === 'main-browser');
+  const worker = lanes.find(item => item.name === 'worker-browser');
+  const production = lanes.find(item => item.name === 'production-browser');
+  const productionVitals = lanes.find(item => item.name === 'production-vitals');
+  const scenarioBalance = lanes.find(item => item.name === 'scenario-balance');
   const requiredLanes = [local, main, worker, production, productionVitals, scenarioBalance];
-  const missing = lanes.filter((item) => !item.present).map((item) => item.name);
+  const missing = lanes.filter(item => !item.present).map(item => item.name);
   const blocked = lanes
-    .filter((item) => item.present && item.passed === false)
-    .map((item) => `${item.name} (${item.readinessStatus || 'proof gate failed'})`);
+    .filter(item => item.present && item.passed === false)
+    .map(item => `${item.name} (${item.readinessStatus || 'proof gate failed'})`);
   const workerReady = local?.mode === 'worker' && local?.readinessStatus === 'shipping-default';
   const workerHeld = local?.mode !== 'worker' || local?.workerDefaultReady === false;
   return {
-    readyForPush: requiredLanes.every((item) => item?.passed === true),
+    readyForPush: requiredLanes.every(item => item?.passed === true),
     missingProof: missing,
     blockedProof: blocked,
     defaultRuntime: local?.shippingDefault || 'worker',
     workerPromotion: workerReady ? 'shipping-default' : 'held',
     releaseNotes: [
-      local?.passed ? 'Shipping-default browser smoke artifacts are present and realtime-ready.' : 'Shipping-default browser smoke artifacts are missing or not realtime-ready.',
-      main?.passed ? 'Main-thread fallback smoke artifacts are present.' : 'Main-thread fallback smoke artifacts are missing or failed fallback proof.',
-      worker?.passed ? 'Forced worker smoke artifacts are present and candidate-ready.' : 'Forced worker smoke artifacts are missing or failed candidate proof.',
+      local?.passed
+        ? 'Shipping-default browser smoke artifacts are present and realtime-ready.'
+        : 'Shipping-default browser smoke artifacts are missing or not realtime-ready.',
+      main?.passed
+        ? 'Main-thread fallback smoke artifacts are present.'
+        : 'Main-thread fallback smoke artifacts are missing or failed fallback proof.',
+      worker?.passed
+        ? 'Forced worker smoke artifacts are present and candidate-ready.'
+        : 'Forced worker smoke artifacts are missing or failed candidate proof.',
       production?.passed
         ? 'Production browser smoke artifacts match this commit and include realtime worker readiness proof.'
-        : (production?.staleBuild
+        : production?.staleBuild
           ? `Production browser smoke is stale for this commit (artifact SHA ${production.buildSha || 'unknown'}).`
-          : (production?.present
+          : production?.present
             ? `Production browser smoke is present but not release-ready (${production.readinessStatus || 'unknown readiness'}).`
-            : 'Production browser smoke artifacts are optional until a production smoke run is requested.')),
+            : 'Production browser smoke artifacts are optional until a production smoke run is requested.',
       productionVitals?.passed
         ? 'Production Web Vitals artifacts match this commit and stay inside startup, CLS, and long-task budgets.'
-        : (productionVitals?.staleBuild
+        : productionVitals?.staleBuild
           ? `Production Web Vitals smoke is stale for this commit (artifact SHA ${productionVitals.buildSha || 'unknown'}).`
-          : (productionVitals?.present
+          : productionVitals?.present
             ? 'Production Web Vitals smoke is present but failed a vitals/runtime budget.'
-            : 'Production Web Vitals smoke artifacts are missing.')),
-      scenarioBalance?.passed ? `Scenario balance-soak variance artifacts are present (${scenarioBalance.runs || 1}x).` : 'Scenario balance-soak variance artifacts are missing or insufficient.',
+            : 'Production Web Vitals smoke artifacts are missing.',
+      scenarioBalance?.passed
+        ? `Scenario balance-soak variance artifacts are present (${scenarioBalance.runs || 1}x).`
+        : 'Scenario balance-soak variance artifacts are missing or insufficient.',
       workerReady
         ? 'Worker runtime is the shipping default with explicit main-thread fallback proof.'
-        : (workerHeld
+        : workerHeld
           ? 'Worker default evidence missed a gate; treat this as a release blocker and keep explicit main-thread fallback proof current.'
-          : 'Worker runtime proof is missing a default-readiness decision.')
+          : 'Worker runtime proof is missing a default-readiness decision.'
     ]
   };
 }
 
 function markdown(board) {
-  const rows = board.lanes.map((item) => {
-    const result = item.present ? 'present' : (item.staleBuild ? `stale (${item.buildSha || 'unknown'})` : 'missing');
-    const worker = item.workerDefaultReady === null ? 'n/a' : String(item.workerDefaultReady);
-    const resultFlow = item.completedScenarioResultFlow === null ? 'n/a' : String(item.completedScenarioResultFlow);
-    return `| ${item.name} | ${result} | ${item.readinessStatus || 'n/a'} | ${worker} | ${resultFlow} | ${item.scenarios} |`;
-  }).join('\n');
-  const frameRows = board.lanes.flatMap((item) =>
-    item.frames.map((frame) =>
-      `| ${item.name} | ${frame.scenario} | ${frame.avgFrameMs ?? 'n/a'} | ${frame.p95FrameMs ?? 'n/a'} | ${frame.nonDrawImagePerFrameMs ?? 'n/a'} | ${frame.quality || 'n/a'} | ${frame.scenarioResultComplete} | ${frame.layoutGuardPassed} | ${frame.cumulativeLayoutShift ?? 'n/a'} | ${frame.minTouchTarget ?? 'n/a'} |`
+  const rows = board.lanes
+    .map(item => {
+      const result = item.present ? 'present' : item.staleBuild ? `stale (${item.buildSha || 'unknown'})` : 'missing';
+      const worker = item.workerDefaultReady === null ? 'n/a' : String(item.workerDefaultReady);
+      const resultFlow = item.completedScenarioResultFlow === null ? 'n/a' : String(item.completedScenarioResultFlow);
+      return `| ${item.name} | ${result} | ${item.readinessStatus || 'n/a'} | ${worker} | ${resultFlow} | ${item.scenarios} |`;
+    })
+    .join('\n');
+  const frameRows = board.lanes
+    .flatMap(item =>
+      item.frames.map(
+        frame =>
+          `| ${item.name} | ${frame.scenario} | ${frame.avgFrameMs ?? 'n/a'} | ${frame.p95FrameMs ?? 'n/a'} | ${frame.nonDrawImagePerFrameMs ?? 'n/a'} | ${frame.quality || 'n/a'} | ${frame.scenarioResultComplete} | ${frame.layoutGuardPassed} | ${frame.cumulativeLayoutShift ?? 'n/a'} | ${frame.minTouchTarget ?? 'n/a'} |`
+      )
     )
-  ).join('\n');
-  const balanceRows = board.lanes
-    .find((item) => item.name === 'scenario-balance')
-    ?.balance
-    ?.map((item) =>
-      `| ${item.id} | ${item.run ?? 'n/a'} | ${item.runtime} | ${item.elapsed} | ${item.progress} | ${item.metrics?.alive ?? 'n/a'} | ${item.metrics?.food ?? 'n/a'} | ${item.metrics?.predators ?? 'n/a'} | ${item.metrics?.averageStress ?? 'n/a'} |`
-    )
-    .join('\n') || '';
-  const varianceRows = board.lanes
-    .find((item) => item.name === 'scenario-balance')
-    ?.variance
-    ?.map((item) =>
-      `| ${item.id} | ${item.runs} | ${item.passRate} | ${item.alive?.min ?? 'n/a'}-${item.alive?.max ?? 'n/a'} | ${item.food?.min ?? 'n/a'}-${item.food?.max ?? 'n/a'} | ${item.predators?.min ?? 'n/a'}-${item.predators?.max ?? 'n/a'} | ${item.averageStress?.max ?? 'n/a'} | ${item.failedRuns?.length ? item.failedRuns.join(', ') : 'none'} |`
-    )
-    .join('\n') || '';
-  const vitalsRows = board.lanes
-    .find((item) => item.name === 'production-vitals')
-    ?.vitals
-    ?.map((item) =>
-      `| ${item.context} | ${item.seededWorldMs ?? 'n/a'} | ${item.firstContentfulPaintMs ?? 'n/a'} | ${item.largestContentfulPaintMs ?? 'n/a'} | ${item.cumulativeLayoutShift ?? 'n/a'} | ${item.longTaskTotalMs ?? 'n/a'} |`
-    )
-    .join('\n') || '';
+    .join('\n');
+  const balanceRows =
+    board.lanes
+      .find(item => item.name === 'scenario-balance')
+      ?.balance?.map(
+        item =>
+          `| ${item.id} | ${item.run ?? 'n/a'} | ${item.runtime} | ${item.elapsed} | ${item.progress} | ${item.metrics?.alive ?? 'n/a'} | ${item.metrics?.food ?? 'n/a'} | ${item.metrics?.predators ?? 'n/a'} | ${item.metrics?.averageStress ?? 'n/a'} |`
+      )
+      .join('\n') || '';
+  const varianceRows =
+    board.lanes
+      .find(item => item.name === 'scenario-balance')
+      ?.variance?.map(
+        item =>
+          `| ${item.id} | ${item.runs} | ${item.passRate} | ${item.alive?.min ?? 'n/a'}-${item.alive?.max ?? 'n/a'} | ${item.food?.min ?? 'n/a'}-${item.food?.max ?? 'n/a'} | ${item.predators?.min ?? 'n/a'}-${item.predators?.max ?? 'n/a'} | ${item.averageStress?.max ?? 'n/a'} | ${item.failedRuns?.length ? item.failedRuns.join(', ') : 'none'} |`
+      )
+      .join('\n') || '';
+  const vitalsRows =
+    board.lanes
+      .find(item => item.name === 'production-vitals')
+      ?.vitals?.map(
+        item =>
+          `| ${item.context} | ${item.seededWorldMs ?? 'n/a'} | ${item.firstContentfulPaintMs ?? 'n/a'} | ${item.largestContentfulPaintMs ?? 'n/a'} | ${item.cumulativeLayoutShift ?? 'n/a'} | ${item.longTaskTotalMs ?? 'n/a'} |`
+      )
+      .join('\n') || '';
   const vercelRows = board.vercel?.present
     ? `| ${board.vercel.targetUrl || 'n/a'} | ${board.vercel.passed ? 'passed' : 'failed'} | ${board.vercel.buildSha || 'n/a'} | ${board.vercel.deploymentId || 'n/a'} |`
     : '| n/a | missing | n/a | n/a |';
@@ -353,12 +377,12 @@ Missing proof: ${board.posture.missingProof.length ? board.posture.missingProof.
 
 Blocked proof: ${board.posture.blockedProof.length ? board.posture.blockedProof.join(', ') : 'none'}
 
-${board.posture.releaseNotes.map((note) => `- ${note}`).join('\n')}
+${board.posture.releaseNotes.map(note => `- ${note}`).join('\n')}
 `;
 }
 
 function compactSummaryMarkdown(board) {
-  const laneByName = new Map(board.lanes.map((item) => [item.name, item]));
+  const laneByName = new Map(board.lanes.map(item => [item.name, item]));
   const laneLine = (name, label = name) => {
     const item = laneByName.get(name);
     if (!item) return `- ${label}: missing`;
@@ -366,18 +390,19 @@ function compactSummaryMarkdown(board) {
     if (!item.present) return `- ${label}: missing`;
 
     const status = item.passed
-      ? (item.readinessStatus || 'passed')
+      ? item.readinessStatus || 'passed'
       : `blocked (${item.readinessStatus || 'proof gate failed'})`;
     const frames = item.frames
-      ?.filter((frame) => frame.avgFrameMs != null || frame.p95FrameMs != null)
-      ?.map((frame) => `${frame.scenario} avg ${frame.avgFrameMs ?? 'n/a'}ms p95 ${frame.p95FrameMs ?? 'n/a'}ms`)
+      ?.filter(frame => frame.avgFrameMs != null || frame.p95FrameMs != null)
+      ?.map(frame => `${frame.scenario} avg ${frame.avgFrameMs ?? 'n/a'}ms p95 ${frame.p95FrameMs ?? 'n/a'}ms`)
       ?.join('; ');
     const vitals = item.vitals
-      ?.map((vital) =>
-        `${vital.context} ready ${vital.seededWorldMs ?? 'n/a'}ms FCP ${vital.firstContentfulPaintMs ?? 'n/a'}ms CLS ${vital.cumulativeLayoutShift ?? 'n/a'}`
+      ?.map(
+        vital =>
+          `${vital.context} ready ${vital.seededWorldMs ?? 'n/a'}ms FCP ${vital.firstContentfulPaintMs ?? 'n/a'}ms CLS ${vital.cumulativeLayoutShift ?? 'n/a'}`
       )
       ?.join('; ');
-    return `- ${label}: ${status}${frames ? ` (${frames})` : (vitals ? ` (${vitals})` : '')}`;
+    return `- ${label}: ${status}${frames ? ` (${frames})` : vitals ? ` (${vitals})` : ''}`;
   };
 
   return `# Creature Sandbox Release Summary
@@ -399,13 +424,13 @@ Blocked proof: ${board.posture.blockedProof.length ? board.posture.blockedProof.
 ## Lanes
 
 ${[
-    laneLine('local-browser', 'Local shipping-default smoke'),
-    laneLine('main-browser', 'Main-thread fallback smoke'),
-    laneLine('worker-browser', 'Forced worker smoke'),
-    laneLine('production-browser', 'Production realtime smoke'),
-    laneLine('production-vitals', 'Production Web Vitals smoke'),
-    laneLine('scenario-balance', 'Scenario balance soak')
-  ].join('\n')}
+  laneLine('local-browser', 'Local shipping-default smoke'),
+  laneLine('main-browser', 'Main-thread fallback smoke'),
+  laneLine('worker-browser', 'Forced worker smoke'),
+  laneLine('production-browser', 'Production realtime smoke'),
+  laneLine('production-vitals', 'Production Web Vitals smoke'),
+  laneLine('scenario-balance', 'Scenario balance soak')
+].join('\n')}
 `;
 }
 

@@ -29,14 +29,15 @@ export class Renderer {
     this.camera = camera;
 
     // Detect mobile for performance optimizations
-    this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    this.isMobile =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
       (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
 
     // Setup image smoothing based on device
     ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = this.isMobile ?
-      RendererConfig.CANVAS.IMAGE_SMOOTHING.MOBILE :
-      RendererConfig.CANVAS.IMAGE_SMOOTHING.DESKTOP;
+    ctx.imageSmoothingQuality = this.isMobile
+      ? RendererConfig.CANVAS.IMAGE_SMOOTHING.MOBILE
+      : RendererConfig.CANVAS.IMAGE_SMOOTHING.DESKTOP;
 
     // Initialize subsystems
     this.features = new RendererFeatureManager(this);
@@ -213,9 +214,10 @@ export class Renderer {
     ctx.save();
 
     // Apply screen shake offset (for dramatic effects)
-    const shakeOffset = (world.particles && typeof world.particles.getShakeOffset === 'function')
-      ? world.particles.getShakeOffset()
-      : { x: 0, y: 0 };
+    const shakeOffset =
+      world.particles && typeof world.particles.getShakeOffset === 'function'
+        ? world.particles.getShakeOffset()
+        : { x: 0, y: 0 };
 
     ctx.translate(opts.viewportWidth / 2 + shakeOffset.x, opts.viewportHeight / 2 + shakeOffset.y);
     ctx.scale(camera.zoom, camera.zoom);
@@ -282,9 +284,8 @@ export class Renderer {
         lineageSet = this._lineageCache.set;
       } else {
         const descendants = world.descendantsOf(lineageRootId);
-        lineageSet = descendants instanceof Set
-          ? descendants
-          : new Set((descendants || []).map(item => item?.id ?? item));
+        lineageSet =
+          descendants instanceof Set ? descendants : new Set((descendants || []).map(item => item?.id ?? item));
         this._lineageCache = { rootId: lineageRootId, set: lineageSet, frame: world.t };
       }
     }
@@ -298,7 +299,14 @@ export class Renderer {
     ghostTrails.update();
     ghostTrails.draw(ctx, camera, worldTime);
 
-    this.drawCreatures(world, { selectedId, pinnedId, hoveredId, lineageSet, worldTime, selectionPulseUntil: opts.selectionPulseUntil });
+    this.drawCreatures(world, {
+      selectedId,
+      pinnedId,
+      hoveredId,
+      lineageSet,
+      worldTime,
+      selectionPulseUntil: opts.selectionPulseUntil
+    });
     if (spawnDebug && this._pendingDebugSpawn) {
       const spawnInfo = this._pendingDebugSpawn;
       const creature = world.getAnyCreatureById?.(spawnInfo.creatureId);
@@ -405,9 +413,12 @@ export class Renderer {
     ctx.setLineDash([dashLength, dashLength * 0.75]);
     ctx.lineWidth = 1.2 / this.camera.zoom;
 
-    const parents = Array.isArray(creature.parents) && creature.parents.length
-      ? creature.parents
-      : (creature.parentId ? [creature.parentId] : []);
+    const parents =
+      Array.isArray(creature.parents) && creature.parents.length
+        ? creature.parents
+        : creature.parentId
+          ? [creature.parentId]
+          : [];
     if (parents.length) {
       ctx.strokeStyle = 'rgba(255,210,130,0.45)';
       ctx.beginPath();
@@ -446,7 +457,7 @@ export class Renderer {
     for (let i = window.godModeEffects.length - 1; i >= 0; i--) {
       const effect = window.godModeEffects[i];
       const age = (now - effect.createdAt) / 1000; // seconds
-      effect.life = 1 - (age / 1.5); // 1.5 second duration
+      effect.life = 1 - age / 1.5; // 1.5 second duration
 
       if (effect.life <= 0) {
         window.godModeEffects.splice(i, 1);
@@ -657,7 +668,9 @@ export class Renderer {
     const options = color ? { size, color } : { size };
     const cached = assetLoader.getSpriteFramesSync(name, options);
     if (cached) return cached;
-    assetLoader.requestSpriteFrames(name, options).catch((e) => { console.debug('[Renderer] sprite load failed:', name, e); });
+    assetLoader.requestSpriteFrames(name, options).catch(e => {
+      console.debug('[Renderer] sprite load failed:', name, e);
+    });
     return null;
   }
 
@@ -692,12 +705,25 @@ export class Renderer {
       else if (type === 'golden_fruit') needGolden = true;
     }
 
-    const grassSprite = needGrass ? this._getSpriteRuntime(this._foodSpriteAssetByType.grass, this._foodSpriteSize) : null;
-    const berriesSprite = needBerries ? this._getSpriteRuntime(this._foodSpriteAssetByType.berries, this._foodSpriteSize) : null;
-    const fruitSprite = needFruit ? this._getSpriteRuntime(this._foodSpriteAssetByType.fruit, this._foodSpriteSize) : null;
-    const goldenSprite = needGolden ? this._getSpriteRuntime(this._foodSpriteAssetByType.golden_fruit, this._foodSpriteSize) : null;
+    const grassSprite = needGrass
+      ? this._getSpriteRuntime(this._foodSpriteAssetByType.grass, this._foodSpriteSize)
+      : null;
+    const berriesSprite = needBerries
+      ? this._getSpriteRuntime(this._foodSpriteAssetByType.berries, this._foodSpriteSize)
+      : null;
+    const fruitSprite = needFruit
+      ? this._getSpriteRuntime(this._foodSpriteAssetByType.fruit, this._foodSpriteSize)
+      : null;
+    const goldenSprite = needGolden
+      ? this._getSpriteRuntime(this._foodSpriteAssetByType.golden_fruit, this._foodSpriteSize)
+      : null;
 
-    if ((needGrass && !grassSprite) || (needBerries && !berriesSprite) || (needFruit && !fruitSprite) || (needGolden && !goldenSprite)) {
+    if (
+      (needGrass && !grassSprite) ||
+      (needBerries && !berriesSprite) ||
+      (needFruit && !fruitSprite) ||
+      (needGolden && !goldenSprite)
+    ) {
       return false;
     }
 
@@ -769,7 +795,7 @@ export class Renderer {
     if (!prop) return false;
     const spriteName = this._propSpriteAssetByType[prop.type];
     if (!spriteName) return false;
-    const tintColor = assetLoader.isSpriteTintable(spriteName) ? (prop.color || null) : null;
+    const tintColor = assetLoader.isSpriteTintable(spriteName) ? prop.color || null : null;
     const sprite = this._getSpriteRuntime(spriteName, this._propSpriteSize, tintColor);
     if (!sprite) return false;
 
@@ -1046,7 +1072,7 @@ export class Renderer {
     // Update performance stats
     this.performance.stats.totalObjects += world.food.length;
     this.performance.stats.rendered += visibleFood.length;
-    this.performance.stats.culled += (world.food.length - visibleFood.length);
+    this.performance.stats.culled += world.food.length - visibleFood.length;
 
     if (visibleFood.length === 0) return;
     if (this._shouldUseFoodSprites(visibleFood.length) && this._drawFoodSprites(world, visibleFood)) {
@@ -1183,7 +1209,7 @@ export class Renderer {
     // Update performance stats
     this.performance.stats.totalObjects += world.corpses.length;
     this.performance.stats.rendered += visibleCorpses.length;
-    this.performance.stats.culled += (world.corpses.length - visibleCorpses.length);
+    this.performance.stats.culled += world.corpses.length - visibleCorpses.length;
 
     for (const corpse of visibleCorpses) {
       const decayAlpha = 1 - corpse.decay;
@@ -1214,7 +1240,6 @@ export class Renderer {
       ctx.restore();
     }
   }
-
 }
 
 applyFeatureVizMethods(Renderer);

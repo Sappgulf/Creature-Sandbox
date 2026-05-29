@@ -105,7 +105,8 @@ export class WorldEvents {
     };
 
     try {
-      eventSystem.emit(GameEvents.WORLD_SEASON_CHANGE, { // reuse channel for light announcements
+      eventSystem.emit(GameEvents.WORLD_SEASON_CHANGE, {
+        // reuse channel for light announcements
         type: 'world_event',
         event: this.activeEvent
       });

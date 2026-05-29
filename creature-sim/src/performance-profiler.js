@@ -98,15 +98,15 @@ export class PerformanceProfiler {
     this.lastFPSTime = performance.now();
 
     // === NEW: Silent mode and debug controls ===
-    this.debugMode = false;           // Only show warnings when true
-    this.showOverlayAlerts = false;   // Show intrusive overlay alerts
-    this.startupGracePeriod = 300;    // Ignore first 300 frames (5 seconds)
+    this.debugMode = false; // Only show warnings when true
+    this.showOverlayAlerts = false; // Show intrusive overlay alerts
+    this.startupGracePeriod = 300; // Ignore first 300 frames (5 seconds)
     this.framesSinceStart = 0;
-    this.alertsEnabled = false;       // Master switch - alerts completely disabled by default
+    this.alertsEnabled = false; // Master switch - alerts completely disabled by default
 
     // Alert cooldown system (prevents spam)
-    this.alertCooldowns = new Map();  // type -> lastAlertTime
-    this.alertCooldownMs = 5000;      // 5 seconds between same alert type
+    this.alertCooldowns = new Map(); // type -> lastAlertTime
+    this.alertCooldownMs = 5000; // 5 seconds between same alert type
 
     // Rolling averages for smooth metrics
     this.fpsAverage = new RollingAverage(60);
@@ -130,9 +130,9 @@ export class PerformanceProfiler {
     this.budgets = {
       targetFPS: 60,
       maxFrameTime: 16.67, // ~60fps
-      maxMemoryMB: 150,    // Increased from 100
-      maxDrawCalls: 1500,  // Increased from 1000
-      warningThreshold: 0.7,  // Relaxed from 0.8
+      maxMemoryMB: 150, // Increased from 100
+      maxDrawCalls: 1500, // Increased from 1000
+      warningThreshold: 0.7, // Relaxed from 0.8
       criticalThreshold: 0.85 // Relaxed from 0.95
     };
 
@@ -251,7 +251,8 @@ export class PerformanceProfiler {
 
     // Calculate FPS
     const fpsTimeDiff = now - this.lastFPSTime;
-    if (fpsTimeDiff >= 1000) { // Update FPS every second
+    if (fpsTimeDiff >= 1000) {
+      // Update FPS every second
       this.currentMetrics.fps = (this.frameCount / fpsTimeDiff) * 1000;
       this.frameCount = 0;
       this.lastFPSTime = now;
@@ -329,10 +330,14 @@ export class PerformanceProfiler {
     const issues = [];
 
     // FPS budget
-    if (this.currentMetrics.fps > 0 && this.currentMetrics.fps < this.budgets.targetFPS * this.budgets.warningThreshold) {
+    if (
+      this.currentMetrics.fps > 0 &&
+      this.currentMetrics.fps < this.budgets.targetFPS * this.budgets.warningThreshold
+    ) {
       issues.push({
         type: 'fps',
-        severity: this.currentMetrics.fps < this.budgets.targetFPS * this.budgets.criticalThreshold ? 'critical' : 'warning',
+        severity:
+          this.currentMetrics.fps < this.budgets.targetFPS * this.budgets.criticalThreshold ? 'critical' : 'warning',
         message: `FPS dropped to ${this.currentMetrics.fps.toFixed(1)} (target: ${this.budgets.targetFPS})`,
         value: this.currentMetrics.fps,
         threshold: this.budgets.targetFPS
@@ -343,7 +348,10 @@ export class PerformanceProfiler {
     if (this.currentMetrics.frameTime > this.budgets.maxFrameTime * this.budgets.warningThreshold) {
       issues.push({
         type: 'frame_time',
-        severity: this.currentMetrics.frameTime > this.budgets.maxFrameTime * this.budgets.criticalThreshold ? 'critical' : 'warning',
+        severity:
+          this.currentMetrics.frameTime > this.budgets.maxFrameTime * this.budgets.criticalThreshold
+            ? 'critical'
+            : 'warning',
         message: `Frame time: ${this.currentMetrics.frameTime.toFixed(2)}ms (budget: ${this.budgets.maxFrameTime.toFixed(2)}ms)`,
         value: this.currentMetrics.frameTime,
         threshold: this.budgets.maxFrameTime
@@ -354,7 +362,10 @@ export class PerformanceProfiler {
     if (this.currentMetrics.memoryUsage > this.budgets.maxMemoryMB * this.budgets.warningThreshold) {
       issues.push({
         type: 'memory',
-        severity: this.currentMetrics.memoryUsage > this.budgets.maxMemoryMB * this.budgets.criticalThreshold ? 'critical' : 'warning',
+        severity:
+          this.currentMetrics.memoryUsage > this.budgets.maxMemoryMB * this.budgets.criticalThreshold
+            ? 'critical'
+            : 'warning',
         message: `Memory usage: ${this.currentMetrics.memoryUsage.toFixed(1)}MB (budget: ${this.budgets.maxMemoryMB}MB)`,
         value: this.currentMetrics.memoryUsage,
         threshold: this.budgets.maxMemoryMB
@@ -376,7 +387,7 @@ export class PerformanceProfiler {
     for (const issue of issues) {
       // Check cooldown - skip if same alert type was shown recently
       const lastAlert = this.alertCooldowns.get(issue.type);
-      if (lastAlert && (now - lastAlert) < this.alertCooldownMs) {
+      if (lastAlert && now - lastAlert < this.alertCooldownMs) {
         continue; // Skip this alert, still in cooldown
       }
 
@@ -517,7 +528,7 @@ export class PerformanceProfiler {
     let exportSamples = this.samples;
 
     if (duration > 0) {
-      const cutoffTime = performance.now() - (duration * 1000);
+      const cutoffTime = performance.now() - duration * 1000;
       exportSamples = this.samples.filter(s => s.timestamp >= cutoffTime);
     }
 
@@ -685,7 +696,7 @@ export class PerformanceMonitor {
     });
 
     // Keyboard shortcut (F12)
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       if (e.key === 'F12') {
         e.preventDefault();
         this.toggle();
@@ -749,10 +760,12 @@ export class PerformanceMonitor {
       return;
     }
 
-    const alertHtml = alerts.map(alert => {
-      const color = alert.severity === 'critical' ? '#ff4444' : '#ffa500';
-      return `<div style="color: ${color}; font-size: 10px;">${alert.message}</div>`;
-    }).join('');
+    const alertHtml = alerts
+      .map(alert => {
+        const color = alert.severity === 'critical' ? '#ff4444' : '#ffa500';
+        return `<div style="color: ${color}; font-size: 10px;">${alert.message}</div>`;
+      })
+      .join('');
 
     this.alertListElement.innerHTML = alertHtml;
   }
@@ -858,7 +871,7 @@ export function updatePerformanceMonitor() {
 
 // Convenience profiling functions
 export const profile = {
-  start: (name) => performanceProfiler.startScope(name),
+  start: name => performanceProfiler.startScope(name),
   end: () => performanceProfiler.endScope(),
   function: (name, fn, context) => performanceProfiler.profileFunction(name, fn, context),
   frame: () => {

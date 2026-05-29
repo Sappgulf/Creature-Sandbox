@@ -101,7 +101,7 @@ export class ScenarioRegistry {
   }
 
   toOptions(progress = {}) {
-    return this.scenarios.map((scenario) => ({
+    return this.scenarios.map(scenario => ({
       id: scenario.id,
       name: scenario.name,
       icon: scenario.icon,

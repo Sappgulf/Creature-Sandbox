@@ -44,10 +44,12 @@ export function resolveDietRole(genes) {
 }
 
 export function calculateAttractiveness(genes) {
-  return (genes.speed * 0.3 +
+  return (
+    genes.speed * 0.3 +
     genes.sense * 0.002 +
     (2 - genes.metabolism) * 0.2 +
-    (genes.predator ? genes.aggression * 0.2 : 1 - genes.metabolism * 0.3));
+    (genes.predator ? genes.aggression * 0.2 : 1 - genes.metabolism * 0.3)
+  );
 }
 
 export function pickDesiredTraits(genes) {

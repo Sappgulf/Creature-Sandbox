@@ -162,7 +162,9 @@ export class WorldDisaster {
     // Trigger start effects
     this.onDisasterStart(this.activeDisaster);
 
-    console.debug(`🌪️ Disaster started: ${this.activeDisaster.name} (${this.activeDisaster.intensity.toFixed(1)}× intensity)`);
+    console.debug(
+      `🌪️ Disaster started: ${this.activeDisaster.name} (${this.activeDisaster.intensity.toFixed(1)}× intensity)`
+    );
     return true;
   }
 
@@ -171,9 +173,7 @@ export class WorldDisaster {
     if (this.activeDisaster) return;
 
     const now = this.world.t;
-    const readyDisasters = this.pendingDisasters.filter(d =>
-      d.scheduledFor && d.scheduledFor <= now
-    );
+    const readyDisasters = this.pendingDisasters.filter(d => d.scheduledFor && d.scheduledFor <= now);
 
     if (readyDisasters.length > 0) {
       const disaster = readyDisasters[0];
@@ -195,7 +195,7 @@ export class WorldDisaster {
 
     const disaster = this.activeDisaster;
     const intensity = disaster.intensity;
-    const progress = 1 - (disaster.timeRemaining / disaster.duration);
+    const progress = 1 - disaster.timeRemaining / disaster.duration;
 
     for (const effect of disaster.effects) {
       switch (effect) {
@@ -225,7 +225,8 @@ export class WorldDisaster {
     for (const creature of this.world.creatures) {
       if (!creature.alive) continue;
 
-      if (rand() < dt * 0.1 * intensity) { // 10% chance per second
+      if (rand() < dt * 0.1 * intensity) {
+        // 10% chance per second
         this.world.combat?.applyDamage(creature, damageRate, {
           disaster: this.activeDisaster.type,
           bypassIframes: true
@@ -308,11 +309,14 @@ export class WorldDisaster {
   onDisasterStart(disaster) {
     // Notify systems
     if (this.world.lineageTracker) {
-      this.world.lineageTracker.recordEvent({
-        type: 'disaster_start',
-        disaster: disaster.type,
-        intensity: disaster.intensity
-      }, this.world);
+      this.world.lineageTracker.recordEvent(
+        {
+          type: 'disaster_start',
+          disaster: disaster.type,
+          intensity: disaster.intensity
+        },
+        this.world
+      );
     }
 
     // Audio cues
@@ -345,12 +349,15 @@ export class WorldDisaster {
 
     // Notify systems
     if (this.world.lineageTracker) {
-      this.world.lineageTracker.recordEvent({
-        type: 'disaster_end',
-        disaster: disaster.type,
-        duration: this.world.t - disaster.startTime,
-        cancelled
-      }, this.world);
+      this.world.lineageTracker.recordEvent(
+        {
+          type: 'disaster_end',
+          disaster: disaster.type,
+          duration: this.world.t - disaster.startTime,
+          cancelled
+        },
+        this.world
+      );
     }
   }
 

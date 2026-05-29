@@ -92,9 +92,7 @@ export class AchievementSystem {
   addAchievement(def) {
     this.validateDefinition(def);
 
-    const goal =
-      Number(def.goal) ||
-      (def.sustain?.duration ? Number(def.sustain.duration) : null);
+    const goal = Number(def.goal) || (def.sustain?.duration ? Number(def.sustain.duration) : null);
 
     this.achievements.set(def.id, {
       ...def,
@@ -116,7 +114,7 @@ export class AchievementSystem {
     // Kill events (predation)
     if (GameEvents.CREATURE_KILLED) {
       this._subscriptions.push(
-        eventSystem.on(GameEvents.CREATURE_KILLED, (event) => {
+        eventSystem.on(GameEvents.CREATURE_KILLED, event => {
           this.handleTrigger('kill', 1, event);
         })
       );
@@ -124,7 +122,7 @@ export class AchievementSystem {
 
     // Birth events (future-proof)
     this._subscriptions.push(
-      eventSystem.on(GameEvents.CREATURE_BORN, (event) => {
+      eventSystem.on(GameEvents.CREATURE_BORN, event => {
         this.handleTrigger('birth', 1, event);
       })
     );
@@ -132,7 +130,7 @@ export class AchievementSystem {
     // God mode actions
     if (GameEvents.GOD_MODE_ACTION) {
       this._subscriptions.push(
-        eventSystem.on(GameEvents.GOD_MODE_ACTION, (event) => {
+        eventSystem.on(GameEvents.GOD_MODE_ACTION, event => {
           this.handleTrigger('god_action', 1, event);
         })
       );
@@ -141,7 +139,7 @@ export class AchievementSystem {
     // Direct XP awards (campaign rewards, etc.)
     if (GameEvents.ACHIEVEMENT_XP) {
       this._subscriptions.push(
-        eventSystem.on(GameEvents.ACHIEVEMENT_XP, (event) => {
+        eventSystem.on(GameEvents.ACHIEVEMENT_XP, event => {
           if (this._broadcastingXP || event?.source === 'achievement-system') {
             return;
           }
@@ -157,7 +155,7 @@ export class AchievementSystem {
 
     // World update (state + sustain checks)
     this._subscriptions.push(
-      eventSystem.on(GameEvents.WORLD_UPDATE, (event) => {
+      eventSystem.on(GameEvents.WORLD_UPDATE, event => {
         const world = event?.world;
         const context = event?.context || null;
         if (world) this.update(world, context);
@@ -175,24 +173,17 @@ export class AchievementSystem {
 
     // Back-compat: if second arg isn't an object, treat it as tracker
     const context =
-      trackerOrContext &&
-      typeof trackerOrContext === 'object' &&
-      !Array.isArray(trackerOrContext)
+      trackerOrContext && typeof trackerOrContext === 'object' && !Array.isArray(trackerOrContext)
         ? trackerOrContext
         : { tracker: trackerOrContext };
 
-    const tracker =
-      context.tracker ||
-      context.lineageTracker ||
-      world.lineageTracker ||
-      null;
+    const tracker = context.tracker || context.lineageTracker || world.lineageTracker || null;
     const analytics = context.analytics || null;
 
     const ctx = { ...context, tracker, analytics };
 
     const nowT = Number(world.t) || 0;
-    const dt =
-      this._lastWorldTime == null ? 0 : Math.max(0, nowT - this._lastWorldTime);
+    const dt = this._lastWorldTime == null ? 0 : Math.max(0, nowT - this._lastWorldTime);
     this._lastWorldTime = nowT;
 
     this.checkState(world, ctx, dt);
@@ -314,11 +305,7 @@ export class AchievementSystem {
     const achievement = this.achievements.get(id);
     if (!prog || !achievement) return;
 
-    const goal =
-      prog.goal ||
-      Number(achievement.goal) ||
-      Number(achievement.sustain?.duration) ||
-      0;
+    const goal = prog.goal || Number(achievement.goal) || Number(achievement.sustain?.duration) || 0;
     if (goal) prog.goal = goal;
 
     const prev = prog.current;
@@ -519,10 +506,12 @@ export class AchievementSystem {
   showNotification(achievement, { forceFallback = false } = {}) {
     if (!this.notificationsEnabled) return;
     // If the central NotificationSystem exists, let it handle display via events
-    if (!forceFallback &&
-        typeof window !== 'undefined' &&
-        window.notifications &&
-        typeof window.notifications.show === 'function') {
+    if (
+      !forceFallback &&
+      typeof window !== 'undefined' &&
+      window.notifications &&
+      typeof window.notifications.show === 'function'
+    ) {
       return;
     }
     if (typeof document === 'undefined' || !document.body) return;
@@ -530,25 +519,22 @@ export class AchievementSystem {
 
     // Create notification element
     const notification = document.createElement('div');
-    const compactViewport = typeof window !== 'undefined' &&
-      (window.innerWidth <= 640 || document.body.classList.contains('mobile-device'));
+    const compactViewport =
+      typeof window !== 'undefined' && (window.innerWidth <= 640 || document.body.classList.contains('mobile-device'));
     const inspectorOpen = !document.getElementById('inspector')?.classList.contains('hidden');
     const upgradePanel = document.getElementById('upgrade-panel');
     const upgradePanelOpen = !upgradePanel?.classList.contains('hidden');
     const avoidPanelLane = !compactViewport && (inspectorOpen || upgradePanelOpen);
     const compactToast = compactViewport || avoidPanelLane;
     const objectiveRail = document.getElementById('objective-rail');
-    const objectiveRailRect = objectiveRail?.textContent?.trim?.()
-      ? objectiveRail.getBoundingClientRect()
-      : null;
-    const upgradePanelRect = compactViewport && upgradePanelOpen
-      ? upgradePanel.getBoundingClientRect()
-      : null;
+    const objectiveRailRect = objectiveRail?.textContent?.trim?.() ? objectiveRail.getBoundingClientRect() : null;
+    const upgradePanelRect = compactViewport && upgradePanelOpen ? upgradePanel.getBoundingClientRect() : null;
     const compactRailTop = objectiveRailRect ? objectiveRailRect.bottom + 10 : null;
     const compactPanelTop = upgradePanelRect ? upgradePanelRect.top - 104 : null;
-    const compactTop = compactViewport && objectiveRailRect
-      ? `${Math.ceil(Math.max(compactRailTop, compactPanelTop || 0))}px`
-      : 'calc(env(safe-area-inset-top, 0px) + 12px)';
+    const compactTop =
+      compactViewport && objectiveRailRect
+        ? `${Math.ceil(Math.max(compactRailTop, compactPanelTop || 0))}px`
+        : 'calc(env(safe-area-inset-top, 0px) + 12px)';
     notification.className = 'achievement-notification';
     notification.innerHTML = compactToast
       ? `
@@ -570,8 +556,8 @@ export class AchievementSystem {
     // Style it
     notification.style.cssText = `
       position: fixed;
-      top: ${avoidPanelLane ? 'auto' : (compactViewport ? compactTop : '20px')};
-      right: ${compactViewport ? '12px' : (inspectorOpen ? '372px' : '20px')};
+      top: ${avoidPanelLane ? 'auto' : compactViewport ? compactTop : '20px'};
+      right: ${compactViewport ? '12px' : inspectorOpen ? '372px' : '20px'};
       bottom: ${avoidPanelLane ? 'calc(env(safe-area-inset-bottom, 0px) + 92px)' : 'auto'};
       left: auto;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -641,12 +627,15 @@ export class AchievementSystem {
     document.body.appendChild(notification);
 
     // Auto-remove after 5 seconds
-    setTimeout(() => {
-      notification.style.animation = `${avoidPanelLane ? 'panelToastOut' : 'slideOutRight'} 0.3s ease-out`;
-      setTimeout(() => {
-        notification.remove();
-      }, 300);
-    }, compactToast ? 3200 : 5000);
+    setTimeout(
+      () => {
+        notification.style.animation = `${avoidPanelLane ? 'panelToastOut' : 'slideOutRight'} 0.3s ease-out`;
+        setTimeout(() => {
+          notification.remove();
+        }, 300);
+      },
+      compactToast ? 3200 : 5000
+    );
   }
 
   // Get achievement progress for UI
@@ -659,7 +648,7 @@ export class AchievementSystem {
       const prog = this.progress.get(id);
       const goal = prog?.goal || Number(achievement.goal) || null;
       const current = prog?.current || 0;
-      const percent = goal ? Math.min(1, current / goal) : (achievement.unlocked ? 1 : 0);
+      const percent = goal ? Math.min(1, current / goal) : achievement.unlocked ? 1 : 0;
       const visibleUnlocked = achievement.unlocked || (prog?.timesUnlocked || 0) > 0;
 
       items.push({
@@ -699,7 +688,7 @@ export class AchievementSystem {
     if (!achievement || !prog) return;
 
     const goal = prog.goal || Number(achievement.goal) || null;
-    const percent = goal ? Math.min(1, prog.current / goal) : (achievement.unlocked ? 1 : 0);
+    const percent = goal ? Math.min(1, prog.current / goal) : achievement.unlocked ? 1 : 0;
 
     try {
       eventSystem.emit(GameEvents.ACHIEVEMENT_PROGRESS, {

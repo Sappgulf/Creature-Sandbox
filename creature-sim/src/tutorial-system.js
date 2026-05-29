@@ -282,20 +282,24 @@ export class TutorialSystem {
     this._listenersBound = true;
 
     // Track zoom
-    window.addEventListener('wheel', (e) => {
-      if (!this.active || this.currentStep?.waitFor?.type !== 'zoom') return;
-      const waitFor = this.currentStep.waitFor || {};
-      const count = Math.max(1, Number(waitFor.count) || 1);
-      const delta = Math.abs(e?.deltaY ?? 0);
-      if (delta < 0.5) return;
-      this.listeners.zoom += 1;
-      if (this.listeners.zoom >= count) {
-        this._advanceSoon();
-      }
-    }, { passive: true });
+    window.addEventListener(
+      'wheel',
+      e => {
+        if (!this.active || this.currentStep?.waitFor?.type !== 'zoom') return;
+        const waitFor = this.currentStep.waitFor || {};
+        const count = Math.max(1, Number(waitFor.count) || 1);
+        const delta = Math.abs(e?.deltaY ?? 0);
+        if (delta < 0.5) return;
+        this.listeners.zoom += 1;
+        if (this.listeners.zoom >= count) {
+          this._advanceSoon();
+        }
+      },
+      { passive: true }
+    );
 
     // Track keypresses
-    window.addEventListener('keydown', (e) => {
+    window.addEventListener('keydown', e => {
       if (!this.active) return;
       if (this.currentStep?.waitFor?.type !== 'keypress') return;
 
@@ -439,7 +443,7 @@ export class TutorialSystem {
           align-items: center;
           justify-content: center;
         `;
-        dismissBtn.addEventListener('click', (e) => {
+        dismissBtn.addEventListener('click', e => {
           e.stopPropagation();
           this.dismissTooltip(selector);
         });

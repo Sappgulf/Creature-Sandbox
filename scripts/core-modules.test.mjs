@@ -10,17 +10,55 @@ if (!globalThis.performance) {
 
 import { rand, clamp, dist2, lerp, invLerp, remap, randn, wrap } from '../creature-sim/src/utils.js';
 import { collectGameplayMetrics, getObjectiveProgress } from '../creature-sim/src/gameplay-objectives.js';
-import { makeGenes, mutateGenes, GENETIC_DISORDERS, MUTATION_TYPES, applyDisorderEffects, getExpressedGenes, getGeneticInfo, breedGenes, applyMutations } from '../creature-sim/src/genetics.js';
+import {
+  makeGenes,
+  mutateGenes,
+  GENETIC_DISORDERS,
+  MUTATION_TYPES,
+  applyDisorderEffects,
+  getExpressedGenes,
+  getGeneticInfo,
+  breedGenes,
+  applyMutations
+} from '../creature-sim/src/genetics.js';
 import { SpatialGrid } from '../creature-sim/src/spatial-grid.js';
 import { ScalarField } from '../creature-sim/src/world-scalar-field.js';
-import { ObjectPool, Vector2DPool, ArrayPool, ParticlePool, PoolManager, TempObjectPool } from '../creature-sim/src/object-pool.js';
+import {
+  ObjectPool,
+  Vector2DPool,
+  ArrayPool,
+  ParticlePool,
+  PoolManager,
+  TempObjectPool
+} from '../creature-sim/src/object-pool.js';
 import { LineageTracker } from '../creature-sim/src/lineage-tracker.js';
-import { updateAgeStage, updateLifeStage, getAgeSizeMultiplier, getAgeSpeedMultiplier, getAgeMetabolismMultiplier, getElderFadeAlpha, getAgeStageIcon } from '../creature-sim/src/creature-age.js';
-import { NAME_SUGGESTIONS, pickNameSuggestion, determineSenseType, resolveDietRole, calculateAttractiveness, pickDesiredTraits } from '../creature-sim/src/creature-genetics-helpers.js';
+import {
+  updateAgeStage,
+  updateLifeStage,
+  getAgeSizeMultiplier,
+  getAgeSpeedMultiplier,
+  getAgeMetabolismMultiplier,
+  getElderFadeAlpha,
+  getAgeStageIcon
+} from '../creature-sim/src/creature-age.js';
+import {
+  NAME_SUGGESTIONS,
+  pickNameSuggestion,
+  determineSenseType,
+  resolveDietRole,
+  calculateAttractiveness,
+  pickDesiredTraits
+} from '../creature-sim/src/creature-genetics-helpers.js';
 import { World } from '../creature-sim/src/world-core.js';
 import { Creature } from '../creature-sim/src/creature.js';
 import { AdvancedGenetics } from '../creature-sim/src/advanced-genetics.js';
-import { GameDirector, GodToolSystem, ObjectiveSystem, ProgressionSystem, ScenarioRegistry } from '../creature-sim/src/game/index.js';
+import {
+  GameDirector,
+  GodToolSystem,
+  ObjectiveSystem,
+  ProgressionSystem,
+  ScenarioRegistry
+} from '../creature-sim/src/game/index.js';
 
 let passed = 0;
 let failed = 0;
@@ -178,7 +216,10 @@ test('randn: returns numbers (distribution smoke test)', () => {
   for (let i = 0; i < 50; i++) {
     values.push(randn(0, 1));
   }
-  assert.ok(values.every(v => typeof v === 'number' && isFinite(v)), 'randn should return finite numbers');
+  assert.ok(
+    values.every(v => typeof v === 'number' && isFinite(v)),
+    'randn should return finite numbers'
+  );
 });
 
 // ============================================================================
@@ -211,7 +252,7 @@ test('collectGameplayMetrics: centralizes objective metrics', () => {
     restZones: [{}],
     sandbox: { props: [{}, {}] },
     lineageTracker: {
-      generation: (_world, id) => id === 2 ? 4 : 1
+      generation: (_world, id) => (id === 2 ? 4 : 1)
     },
     creatures: [
       {
@@ -263,19 +304,42 @@ test('ObjectiveSystem: evaluates scenario cards with biome and predator objectiv
     food: new Array(40).fill({}),
     restZones: [{}, {}],
     creatures: [
-      { alive: true, genes: { predator: 1, diet: 1 }, needs: { stress: 15, hunger: 20 }, energy: 85, stats: { kills: 1 } },
-      { alive: true, genes: { predator: 0, diet: 0.1 }, needs: { stress: 20, hunger: 18 }, energy: 82, stats: { births: 1 } },
-      { alive: true, genes: { predator: 0, diet: 0.1, aquatic: { expressed: 0.9 } }, needs: { stress: 18, hunger: 25 }, energy: 80, stats: {} }
+      {
+        alive: true,
+        genes: { predator: 1, diet: 1 },
+        needs: { stress: 15, hunger: 20 },
+        energy: 85,
+        stats: { kills: 1 }
+      },
+      {
+        alive: true,
+        genes: { predator: 0, diet: 0.1 },
+        needs: { stress: 20, hunger: 18 },
+        energy: 82,
+        stats: { births: 1 }
+      },
+      {
+        alive: true,
+        genes: { predator: 0, diet: 0.1, aquatic: { expressed: 0.9 } },
+        needs: { stress: 18, hunger: 25 },
+        energy: 80,
+        stats: {}
+      }
     ],
     sandbox: { props: [] }
   };
 
-  const snapshot = objectiveSystem.evaluate(world, [
-    { id: 'survive', type: 'survival_time', target: 120 },
-    { id: 'population', type: 'population', target: 3 },
-    { id: 'health', type: 'biome_health', target: { score: 0.5 } },
-    { id: 'predator', type: 'predator_control', target: { maxPredators: 2 } }
-  ], {}, { elapsed: 90 });
+  const snapshot = objectiveSystem.evaluate(
+    world,
+    [
+      { id: 'survive', type: 'survival_time', target: 120 },
+      { id: 'population', type: 'population', target: 3 },
+      { id: 'health', type: 'biome_health', target: { score: 0.5 } },
+      { id: 'predator', type: 'predator_control', target: { maxPredators: 2 } }
+    ],
+    {},
+    { elapsed: 90 }
+  );
 
   assert.equal(snapshot.cards.length, 4);
   assert.ok(snapshot.cards.find(card => card.id === 'population').completed, 'population objective should complete');
@@ -289,7 +353,13 @@ test('GameDirector: wraps playable scenarios, objectives, progression, and tools
     food: new Array(12).fill({}),
     creatures: [
       { alive: true, genes: { predator: 0, diet: 0.1 }, needs: { stress: 20, hunger: 20 }, energy: 70, stats: {} },
-      { alive: true, genes: { predator: 1, diet: 1 }, needs: { stress: 30, hunger: 30 }, energy: 75, stats: { kills: 1 } }
+      {
+        alive: true,
+        genes: { predator: 1, diet: 1 },
+        needs: { stress: 30, hunger: 30 },
+        energy: 75,
+        stats: { kills: 1 }
+      }
     ],
     sandbox: { props: [] }
   };
@@ -326,7 +396,10 @@ test('GameDirector: wraps playable scenarios, objectives, progression, and tools
   assert.equal(snapshot.mode, 'scenario');
   assert.equal(snapshot.objectives.cards.length, 1);
   assert.equal(snapshot.objectives.cards[0].completed, true);
-  assert.ok(snapshot.tools.tools.some(tool => tool.id === 'food'), 'god tool registry should be exposed');
+  assert.ok(
+    snapshot.tools.tools.some(tool => tool.id === 'food'),
+    'god tool registry should be exposed'
+  );
 });
 
 test('ProgressionSystem: preserves sandbox tools and serializes unlocks', () => {
@@ -371,7 +444,21 @@ test('makeGenes: returns object with expected gene properties', () => {
 
 test('makeGenes: diploid traits have allele1, allele2, expressed, min, max', () => {
   const genes = makeGenes();
-  const diploidTraits = ['speed', 'fov', 'sense', 'metabolism', 'packInstinct', 'aggression', 'herdInstinct', 'grit', 'nocturnal', 'aquatic', 'spines', 'ambushDelay', 'panicPheromone'];
+  const diploidTraits = [
+    'speed',
+    'fov',
+    'sense',
+    'metabolism',
+    'packInstinct',
+    'aggression',
+    'herdInstinct',
+    'grit',
+    'nocturnal',
+    'aquatic',
+    'spines',
+    'ambushDelay',
+    'panicPheromone'
+  ];
   for (const key of diploidTraits) {
     const trait = genes[key];
     assert.ok(typeof trait === 'object' && 'allele1' in trait && 'allele2' in trait, `${key} should be diploid`);
@@ -412,11 +499,30 @@ test('makeGenes: override sex', () => {
 test('makeGenes: gene values stay within expected ranges after creation', () => {
   for (let i = 0; i < 20; i++) {
     const genes = makeGenes();
-    const diploidTraits = ['speed', 'fov', 'sense', 'metabolism', 'packInstinct', 'aggression', 'herdInstinct', 'grit', 'nocturnal', 'aquatic', 'spines', 'ambushDelay'];
+    const diploidTraits = [
+      'speed',
+      'fov',
+      'sense',
+      'metabolism',
+      'packInstinct',
+      'aggression',
+      'herdInstinct',
+      'grit',
+      'nocturnal',
+      'aquatic',
+      'spines',
+      'ambushDelay'
+    ];
     for (const key of diploidTraits) {
       const trait = genes[key];
-      assert.ok(trait.allele1 >= trait.min && trait.allele1 <= trait.max, `${key}.allele1 out of range: ${trait.allele1} not in [${trait.min}, ${trait.max}]`);
-      assert.ok(trait.allele2 >= trait.min && trait.allele2 <= trait.max, `${key}.allele2 out of range: ${trait.allele2} not in [${trait.min}, ${trait.max}]`);
+      assert.ok(
+        trait.allele1 >= trait.min && trait.allele1 <= trait.max,
+        `${key}.allele1 out of range: ${trait.allele1} not in [${trait.min}, ${trait.max}]`
+      );
+      assert.ok(
+        trait.allele2 >= trait.min && trait.allele2 <= trait.max,
+        `${key}.allele2 out of range: ${trait.allele2} not in [${trait.min}, ${trait.max}]`
+      );
     }
   }
 });
@@ -726,7 +832,10 @@ test('ObjectPool: release calls reset function', () => {
   let resetCalled = 0;
   const pool = new ObjectPool(
     () => ({ val: 0 }),
-    (obj) => { obj.val = 0; resetCalled++; },
+    obj => {
+      obj.val = 0;
+      resetCalled++;
+    },
     2
   );
   const obj = pool.get();
@@ -805,7 +914,7 @@ test('ObjectPool: peakCount tracks maximum active objects', () => {
 
 test('ObjectPool: hitRate updates correctly', () => {
   const pool = new ObjectPool(() => ({ val: 0 }), null, 5);
-  const obj = pool.get();  // hit
+  const obj = pool.get(); // hit
   pool.release(obj);
   pool.get(); // hit — from pool
   const stats = pool.getStats();
@@ -917,7 +1026,9 @@ function makeMockWorld(creatures) {
   return {
     t: 0,
     creatures,
-    getAnyCreatureById(id) { return map.get(id) ?? null; },
+    getAnyCreatureById(id) {
+      return map.get(id) ?? null;
+    },
     particles: { addEvolutionEffect() {} },
     audio: { playUISound() {} }
   };
@@ -1127,12 +1238,12 @@ test('creature-age: updateLifeStage sets correct lifeStage', () => {
   const creature = { age: 10, ageStage: 'baby', alive: true, reproductionCoolDown: 0 };
   updateLifeStage(creature);
   assert.equal(creature.lifeStage, 'baby', 'should set lifeStage to baby');
-  
+
   creature.age = 120;
   creature.ageStage = 'adult';
   updateLifeStage(creature);
   assert.equal(creature.lifeStage, 'adult', 'should set lifeStage to adult');
-  
+
   creature.age = 260;
   creature.ageStage = 'elder';
   updateLifeStage(creature);
@@ -1191,13 +1302,13 @@ test('creature-genetics-helpers: pickNameSuggestion returns string with format "
 test('creature-genetics-helpers: determineSenseType returns correct type based on genes hue', () => {
   let genes = { hue: 50 };
   assert.equal(determineSenseType(genes), 'normal', 'hue 50 should return normal');
-  
+
   genes = { hue: 150 };
   assert.equal(determineSenseType(genes), 'chemical', 'hue 150 should return chemical');
-  
+
   genes = { hue: 260 };
   assert.equal(determineSenseType(genes), 'thermal', 'hue 260 should return thermal');
-  
+
   genes = { hue: 350 };
   assert.equal(determineSenseType(genes), 'echolocation', 'hue 350 should return echolocation');
 });
@@ -1318,7 +1429,10 @@ test('WorldCreatureManager: fast creature query reuses caller buffer', () => {
   const result = world.creatureManager.queryCreaturesFast(50, 50, 30, out);
 
   assert.equal(result, out, 'fast query should reuse the caller-provided output array');
-  assert.deepEqual(result.map(creature => creature.id).sort((a, b) => a - b), [1, 2]);
+  assert.deepEqual(
+    result.map(creature => creature.id).sort((a, b) => a - b),
+    [1, 2]
+  );
 });
 
 test('World: spawnCreatureType returns creature', () => {

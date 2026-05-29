@@ -75,7 +75,11 @@ export function updateAgentSenses(creature, world) {
   }
   senses.food = bestFood;
 
-  const restZone = world?.ecosystem?.nearestRestZone?.(creature.x, creature.y, CreatureAgentTuning.REST_ZONES.DETECT_RADIUS);
+  const restZone = world?.ecosystem?.nearestRestZone?.(
+    creature.x,
+    creature.y,
+    CreatureAgentTuning.REST_ZONES.DETECT_RADIUS
+  );
   senses.restZone = restZone || null;
 
   const homeNest = creature.homeNestId ? world?.getNestById?.(creature.homeNestId) : null;
@@ -141,14 +145,14 @@ export function updateNeeds(creature, dt, world) {
 
   const dayNight = world?.dayNightState;
   const dayFactor = dayNight ? clamp((dayNight.light - 0.2) / 0.8, 0, 1) : 1;
-  const hungerRate = CreatureAgentTuning.NEEDS.HUNGER_RATE * (
-    CreatureAgentTuning.DAY_NIGHT.HUNGER_NIGHT_MULT +
-    (CreatureAgentTuning.DAY_NIGHT.HUNGER_DAY_MULT - CreatureAgentTuning.DAY_NIGHT.HUNGER_NIGHT_MULT) * dayFactor
-  );
-  const socialRate = CreatureAgentTuning.NEEDS.SOCIAL_RATE * (
-    CreatureAgentTuning.DAY_NIGHT.SOCIAL_NIGHT_MULT +
-    (CreatureAgentTuning.DAY_NIGHT.SOCIAL_DAY_MULT - CreatureAgentTuning.DAY_NIGHT.SOCIAL_NIGHT_MULT) * dayFactor
-  );
+  const hungerRate =
+    CreatureAgentTuning.NEEDS.HUNGER_RATE *
+    (CreatureAgentTuning.DAY_NIGHT.HUNGER_NIGHT_MULT +
+      (CreatureAgentTuning.DAY_NIGHT.HUNGER_DAY_MULT - CreatureAgentTuning.DAY_NIGHT.HUNGER_NIGHT_MULT) * dayFactor);
+  const socialRate =
+    CreatureAgentTuning.NEEDS.SOCIAL_RATE *
+    (CreatureAgentTuning.DAY_NIGHT.SOCIAL_NIGHT_MULT +
+      (CreatureAgentTuning.DAY_NIGHT.SOCIAL_DAY_MULT - CreatureAgentTuning.DAY_NIGHT.SOCIAL_NIGHT_MULT) * dayFactor);
 
   needs.hunger = clamp(needs.hunger + hungerRate * dt, 0, 100);
   needs.socialDrive = clamp(needs.socialDrive + socialRate * dt, 0, 100);
@@ -159,7 +163,8 @@ export function updateNeeds(creature, dt, world) {
     needs.stress = clamp(ecoStress, 0, 100);
   }
 
-  const overcrowdMult = CreatureAgentTuning.DAY_NIGHT.OVERCROWD_NIGHT_MULT +
+  const overcrowdMult =
+    CreatureAgentTuning.DAY_NIGHT.OVERCROWD_NIGHT_MULT +
     (CreatureAgentTuning.DAY_NIGHT.OVERCROWD_DAY_MULT - CreatureAgentTuning.DAY_NIGHT.OVERCROWD_NIGHT_MULT) * dayFactor;
   const stressGainMultiplier = creature.lifeStage === 'baby' ? 1.35 : creature.lifeStage === 'elder' ? 1.15 : 1;
   if (creature.senses?.overcrowded) {
@@ -189,9 +194,15 @@ export function updateNeeds(creature, dt, world) {
   const prevStress = creature._lastStressLevel ?? needs.stress;
   const stressDelta = needs.stress - prevStress;
   creature._lastStressLevel = needs.stress;
-  if (world && stressDelta >= CreatureConfig.MEMORY.STRESS_SPIKE_THRESHOLD &&
-    needs.stress >= CreatureConfig.MEMORY.STRESS_THRESHOLD) {
-    if (creature.memory && world.t - (creature.memory.lastDangerAt ?? -Infinity) >= CreatureConfig.MEMORY.DANGER_COOLDOWN) {
+  if (
+    world &&
+    stressDelta >= CreatureConfig.MEMORY.STRESS_SPIKE_THRESHOLD &&
+    needs.stress >= CreatureConfig.MEMORY.STRESS_THRESHOLD
+  ) {
+    if (
+      creature.memory &&
+      world.t - (creature.memory.lastDangerAt ?? -Infinity) >= CreatureConfig.MEMORY.DANGER_COOLDOWN
+    ) {
       creature.rememberLocation?.(creature.x, creature.y, 'danger', clamp(stressDelta / 40, 0.2, 0.8), world.t);
       creature.memory.lastDangerAt = world.t;
     }
@@ -214,11 +225,14 @@ export function selectGoal(creature, world) {
   const stressScore = clamp(needs.stress / 100, 0, 1);
   const dayNight = world?.dayNightState;
   const dayFactor = dayNight ? clamp((dayNight.light - 0.2) / 0.8, 0, 1) : 1;
-  const restBias = CreatureAgentTuning.DAY_NIGHT.REST_NIGHT_BIAS +
+  const restBias =
+    CreatureAgentTuning.DAY_NIGHT.REST_NIGHT_BIAS +
     (CreatureAgentTuning.DAY_NIGHT.REST_DAY_BIAS - CreatureAgentTuning.DAY_NIGHT.REST_NIGHT_BIAS) * dayFactor;
-  const eatBias = CreatureAgentTuning.DAY_NIGHT.EAT_NIGHT_BIAS +
+  const eatBias =
+    CreatureAgentTuning.DAY_NIGHT.EAT_NIGHT_BIAS +
     (CreatureAgentTuning.DAY_NIGHT.EAT_DAY_BIAS - CreatureAgentTuning.DAY_NIGHT.EAT_NIGHT_BIAS) * dayFactor;
-  const wanderBias = CreatureAgentTuning.DAY_NIGHT.WANDER_NIGHT_BIAS +
+  const wanderBias =
+    CreatureAgentTuning.DAY_NIGHT.WANDER_NIGHT_BIAS +
     (CreatureAgentTuning.DAY_NIGHT.WANDER_DAY_BIAS - CreatureAgentTuning.DAY_NIGHT.WANDER_NIGHT_BIAS) * dayFactor;
 
   const memoryFood = !senses.food && creature._selectMemory ? creature._selectMemory('food', world) : null;
@@ -226,8 +240,8 @@ export function selectGoal(creature, world) {
   const eatSourceFactor = senses.food ? 1 : memoryFood ? 0.6 : 0.3;
   const restSourceFactor = senses.restZone ? 1 : memoryCalm ? 0.6 : 0.4;
   let eatScore = hungerScore * eatSourceFactor * CreatureAgentTuning.GOALS.SCORE_BIAS.EAT * eatBias;
-  let restScore = (energyScore * 0.9 + stressScore * 0.3) *
-    restSourceFactor * CreatureAgentTuning.GOALS.SCORE_BIAS.REST * restBias;
+  let restScore =
+    (energyScore * 0.9 + stressScore * 0.3) * restSourceFactor * CreatureAgentTuning.GOALS.SCORE_BIAS.REST * restBias;
   let mateScore = socialScore * (senses.mate ? 1 : 0.2) * CreatureAgentTuning.GOALS.SCORE_BIAS.SEEK_MATE;
   if (needs.stress > CreatureAgentTuning.MATING.STRESS_MAX) {
     mateScore *= 0.1;
@@ -291,7 +305,8 @@ export function selectGoal(creature, world) {
   const best = scores[0];
   const now = world?.t ?? 0;
   const timeSinceChange = now - (goal.lastChange ?? 0);
-  const shouldHold = timeSinceChange < CreatureAgentTuning.GOALS.MIN_DURATION &&
+  const shouldHold =
+    timeSinceChange < CreatureAgentTuning.GOALS.MIN_DURATION &&
     (goal.score ?? 0) >= best.score - CreatureAgentTuning.GOALS.SWITCH_HYSTERESIS;
 
   if (!shouldHold && goal.current !== best.key) {
@@ -364,11 +379,7 @@ export function applyRestRecovery(creature, dt, world, { inRestZone = false, nes
     const stressRecovery = CreatureAgentTuning.REST_ZONES.STRESS_RECOVERY * (nest ? 1 + nestComfort * 0.4 : 1);
     creature.needs.stress = clamp(creature.needs.stress - stressRecovery * dt, 0, 100);
     if (nest?.overcrowded) {
-      creature.needs.stress = clamp(
-        creature.needs.stress + CreatureAgentTuning.NESTS.OVERCROWD_PENALTY * dt,
-        0,
-        100
-      );
+      creature.needs.stress = clamp(creature.needs.stress + CreatureAgentTuning.NESTS.OVERCROWD_PENALTY * dt, 0, 100);
     }
   }
   world?.creatureEcosystem?.registerEvent?.(creature, 'rest');
@@ -407,8 +418,10 @@ export function updateRestHome(creature, dt, world, nest = null) {
   if (creature.migration?.active && creature.migration.targetRegionId != null) {
     if (region?.id === creature.migration.targetRegionId) {
       creature.migration.settleTimer = (creature.migration.settleTimer ?? 0) + dt;
-      if (creature.migration.settleTimer >= CreatureAgentTuning.MIGRATION.SETTLE_REST_TIME &&
-        (creature.needs?.stress ?? 100) < CreatureAgentTuning.MIGRATION.STRESS_TRIGGER) {
+      if (
+        creature.migration.settleTimer >= CreatureAgentTuning.MIGRATION.SETTLE_REST_TIME &&
+        (creature.needs?.stress ?? 100) < CreatureAgentTuning.MIGRATION.STRESS_TRIGGER
+      ) {
         creature.migration.active = false;
         creature.migration.settled = true;
         creature.migration.targetRegionId = region.id;
@@ -521,8 +534,8 @@ export function getHomeBias(creature, world, goal) {
   const goalAllows = goal === 'WANDER' || goal === 'REST' || goal === 'SEEK_MATE' || returning || stressed;
   if (!goalAllows) return null;
 
-  const homeRadius = (region.size ?? CreatureAgentTuning.TERRITORY.REGION_SIZE) * 0.5 *
-    CreatureAgentTuning.TERRITORY.HOME_RADIUS_MULT;
+  const homeRadius =
+    (region.size ?? CreatureAgentTuning.TERRITORY.REGION_SIZE) * 0.5 * CreatureAgentTuning.TERRITORY.HOME_RADIUS_MULT;
   if (dist < homeRadius * 0.6 && !returning && !stressed) return null;
 
   const baseStrength = returning ? 0.55 : stressed ? 0.45 : 0.28;

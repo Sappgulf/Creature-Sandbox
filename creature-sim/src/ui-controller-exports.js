@@ -1,5 +1,5 @@
 export function applyUiExportMethods(UIController) {
-  UIController.prototype.exportSnapshot = function() {
+  UIController.prototype.exportSnapshot = function () {
     if (this.subsystems.analytics) {
       const data = this.subsystems.analytics.snapshot();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -15,7 +15,7 @@ export function applyUiExportMethods(UIController) {
     }
   };
 
-  UIController.prototype.exportCSV = function() {
+  UIController.prototype.exportCSV = function () {
     if (this.subsystems.analytics) {
       const csv = this.subsystems.analytics.exportAsCSV();
       const blob = new Blob([csv], { type: 'text/csv' });
@@ -31,7 +31,7 @@ export function applyUiExportMethods(UIController) {
     }
   };
 
-  UIController.prototype.exportGenesCSV = function() {
+  UIController.prototype.exportGenesCSV = function () {
     if (this.subsystems.analytics) {
       const csv = this.subsystems.analytics.exportGeneHistoryCSV();
       const blob = new Blob([csv], { type: 'text/csv' });

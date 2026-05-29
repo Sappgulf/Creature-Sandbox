@@ -7,14 +7,39 @@ import { createEcosystemState, ECOSYSTEM_STATES } from './creature-ecosystem.js'
 import { CreatureStatusSystem } from './creature-status.js';
 import { CreatureBehaviorSystem } from './creature-behavior.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
-import { updateAgentState, applyRestRecovery, updateRestHome, updateMatingBond, applyHungerRelief, getHomeBias } from './creature-agent-needs.js';
+import {
+  updateAgentState,
+  applyRestRecovery,
+  updateRestHome,
+  updateMatingBond,
+  applyHungerRelief,
+  getHomeBias
+} from './creature-agent-needs.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { generateTemperament } from './creature-traits.js';
-import { pickNameSuggestion, determineSenseType, resolveDietRole, calculateAttractiveness, pickDesiredTraits } from './creature-genetics-helpers.js';
-import { updateAgeStage, getAgeSizeMultiplier, getAgeSpeedMultiplier, getAgeMetabolismMultiplier } from './creature-age.js';
+import {
+  pickNameSuggestion,
+  determineSenseType,
+  resolveDietRole,
+  calculateAttractiveness,
+  pickDesiredTraits
+} from './creature-genetics-helpers.js';
+import {
+  updateAgeStage,
+  getAgeSizeMultiplier,
+  getAgeSpeedMultiplier,
+  getAgeMetabolismMultiplier
+} from './creature-age.js';
 import { AdvancedGenetics } from './advanced-genetics.js';
 import { BiomeInteractions } from './biome-interactions.js';
-import { getBadges as _getBadges, drawCreature as _drawCreature, getCachedSpriteFrame as _getCachedSpriteFrame, updateCachedCanvas as _updateCachedCanvas, drawBehaviorState as _drawBehaviorState, drawTraits as _drawTraits } from './creature-render.js?v=20260423-assets1';
+import {
+  getBadges as _getBadges,
+  drawCreature as _drawCreature,
+  getCachedSpriteFrame as _getCachedSpriteFrame,
+  updateCachedCanvas as _updateCachedCanvas,
+  drawBehaviorState as _drawBehaviorState,
+  drawTraits as _drawTraits
+} from './creature-render.js?v=20260423-assets1';
 import {
   reactToPoke,
   reactToGrab,
@@ -25,12 +50,7 @@ import {
   hasQuirk,
   getQuirkMultiplier
 } from './creature-reactions.js';
-import {
-  recordDamage,
-  applyImpactDamage,
-  applyImpulse,
-  calculateCurrentSpeed
-} from './creature-combat.js';
+import { recordDamage, applyImpactDamage, applyImpulse, calculateCurrentSpeed } from './creature-combat.js';
 
 // Destructure commonly-used constants for cleaner code
 const { TRAIL_INTERVAL, TRAIL_MAX, LOG_MAX } = CreatureConfig;
@@ -57,9 +77,7 @@ export class Creature {
     this.externalImpulse = { vx: 0, vy: 0, decay: 6, cap: 360 };
     this.isGrabbed = false;
     this.grabTarget = { x, y };
-    this.energy = isChild ?
-      CreatureConfig.STARTING_ENERGY.baby :
-      CreatureConfig.STARTING_ENERGY.adult;
+    this.energy = isChild ? CreatureConfig.STARTING_ENERGY.baby : CreatureConfig.STARTING_ENERGY.adult;
     this.age = 0;
     this.alive = true;
 
@@ -94,12 +112,13 @@ export class Creature {
 
     // Size based on diet (omnivores are medium-sized)
     const diet = this.genes.diet ?? (this.genes.predator ? 1.0 : 0.0);
-    const isOmnivore = diet > CreatureConfig.GENETICS.DIET_THRESHOLDS.HERBIVORE_MAX &&
+    const isOmnivore =
+      diet > CreatureConfig.GENETICS.DIET_THRESHOLDS.HERBIVORE_MAX &&
       diet < CreatureConfig.GENETICS.DIET_THRESHOLDS.OMNIVORE_MAX;
-    this.baseSize = isOmnivore ?
-      CreatureConfig.GENETICS.SIZE_MODIFIERS.OMNIVORE :
-      (CreatureConfig.GENETICS.SIZE_MODIFIERS.HERBIVORE_BASE +
-        (this.genes.predator ? CreatureConfig.GENETICS.SIZE_MODIFIERS.PREDATOR_BONUS : 0));
+    this.baseSize = isOmnivore
+      ? CreatureConfig.GENETICS.SIZE_MODIFIERS.OMNIVORE
+      : CreatureConfig.GENETICS.SIZE_MODIFIERS.HERBIVORE_BASE +
+        (this.genes.predator ? CreatureConfig.GENETICS.SIZE_MODIFIERS.PREDATOR_BONUS : 0);
     this.aquaticAffinity = this.genes.aquatic ?? 0;
     this.flyingAffinity = this.genes.flying ?? 0;
     this.burrowingAffinity = this.genes.burrowing ?? 0;
@@ -117,7 +136,7 @@ export class Creature {
     this.children = []; // Track offspring
 
     this.target = null;
-    this.id = null;       // set by World.addCreature
+    this.id = null; // set by World.addCreature
     this.parentId = null; // set by World.addCreature
     this.parents = [];
     this.currentBiomeType = null;
@@ -128,9 +147,9 @@ export class Creature {
     this._cachedAssetType = null;
     this._cachedSpriteSet = null;
 
-    const baseMaxHealth = this.genes.predator ?
-      CreatureTuning.DEFAULT_MAX_HEALTH * 1.25 :
-      CreatureTuning.DEFAULT_MAX_HEALTH;
+    const baseMaxHealth = this.genes.predator
+      ? CreatureTuning.DEFAULT_MAX_HEALTH * 1.25
+      : CreatureTuning.DEFAULT_MAX_HEALTH;
     this.maxHealth = baseMaxHealth;
 
     // Apply disorder health modifiers
@@ -148,18 +167,29 @@ export class Creature {
     this.logVersion = 0;
     this.temperament = generateTemperament(genes.temperament || {});
     this.personality = {
-      packInstinct: clamp(this.genes.packInstinct ??
-        (this.genes.predator ?
-          CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.PACK_INSTINCT.predator :
-          CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.PACK_INSTINCT.herbivore), 0, 1),
-      ambushDelay: Math.max(0, this.genes.ambushDelay ??
-        (this.genes.predator ?
-          CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.AMBUSH_DELAY.predator :
-          CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.AMBUSH_DELAY.herbivore)),
-      aggression: clamp(this.genes.aggression ??
-        (this.genes.predator ?
-          CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.AGGRESSION.predator :
-          CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.AGGRESSION.herbivore), 0.4, 2.2),
+      packInstinct: clamp(
+        this.genes.packInstinct ??
+          (this.genes.predator
+            ? CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.PACK_INSTINCT.predator
+            : CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.PACK_INSTINCT.herbivore),
+        0,
+        1
+      ),
+      ambushDelay: Math.max(
+        0,
+        this.genes.ambushDelay ??
+          (this.genes.predator
+            ? CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.AMBUSH_DELAY.predator
+            : CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.AMBUSH_DELAY.herbivore)
+      ),
+      aggression: clamp(
+        this.genes.aggression ??
+          (this.genes.predator
+            ? CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.AGGRESSION.predator
+            : CreatureConfig.GENETICS.PERSONALITY_DEFAULTS.AGGRESSION.herbivore),
+        0.4,
+        2.2
+      ),
       ambushTimer: 0,
       huntCooldown: 0,
       lastSignalAt: -Infinity,
@@ -241,7 +271,7 @@ export class Creature {
     // Cache expensive calculations
     this._cachedBaseBurn = null;
     this._senseRadius2Cache = null;
-    this._halfFovRad = (genes.fov * 0.5) * Math.PI / 180; // Cache FOV in radians
+    this._halfFovRad = (genes.fov * 0.5 * Math.PI) / 180; // Cache FOV in radians
 
     // FEATURE 2: Learning & Memory
     const memoryCapacity = clamp(
@@ -289,11 +319,11 @@ export class Creature {
 
     // FEATURE 5: Emotional States
     this.emotions = {
-      fear: 0,          // 0-1, increases when attacked/near predators
-      hunger: 0,        // 0-1, increases when low energy
+      fear: 0, // 0-1, increases when attacked/near predators
+      hunger: 0, // 0-1, increases when low energy
       confidence: CreatureConfig.EMOTIONS.DEFAULT_CONFIDENCE,
       curiosity: clamp(genes.sense / 150, 0, 1), // exploration drive
-      stress: 0,        // 0-1, accumulates from negative events
+      stress: 0, // 0-1, accumulates from negative events
       contentment: CreatureConfig.EMOTIONS.DEFAULT_CONTENTMENT
     };
 
@@ -334,7 +364,7 @@ export class Creature {
     this.ecosystem = createEcosystemState({
       stress: 16,
       energy: clamp(68 + rand(-6, 8), 40, 90),
-      curiosity: clamp(45 + (genes.sense / 2), 30, 90),
+      curiosity: clamp(45 + genes.sense / 2, 30, 90),
       stability: clamp(70 + rand(-8, 8), 45, 90)
     });
 
@@ -343,9 +373,12 @@ export class Creature {
 
     // FEATURE 7: Problem Solving & Intelligence
     this.intelligence = {
-      level: clamp((genes.sense / CreatureConfig.INTELLIGENCE.LEVEL_SENSE_RATIO) *
-        (genes.metabolism ?? CreatureConfig.INTELLIGENCE.LEVEL_METABOLISM_MULTIPLIER),
-      0, CreatureConfig.INTELLIGENCE.LEVEL_MAX),
+      level: clamp(
+        (genes.sense / CreatureConfig.INTELLIGENCE.LEVEL_SENSE_RATIO) *
+          (genes.metabolism ?? CreatureConfig.INTELLIGENCE.LEVEL_METABOLISM_MULTIPLIER),
+        0,
+        CreatureConfig.INTELLIGENCE.LEVEL_MAX
+      ),
       patterns: [], // learned successful strategies
       experiencePoints: 0,
       learningRate: CreatureConfig.INTELLIGENCE.PATTERN_LEARNING
@@ -365,18 +398,27 @@ export class Creature {
     this.behaviorSystem = new CreatureBehaviorSystem(this);
   }
 
-  baseBurn() { return baseBurn(this); }
+  baseBurn() {
+    return baseBurn(this);
+  }
 
-  hasQuirk(id) { return hasQuirk(this, id); }
+  hasQuirk(id) {
+    return hasQuirk(this, id);
+  }
 
-  getQuirkMultiplier(kind) { return getQuirkMultiplier(this, kind); }
+  getQuirkMultiplier(kind) {
+    return getQuirkMultiplier(this, kind);
+  }
 
   seek(foodList, pheromone) {
-    let best = null, bestD2 = Infinity;
+    let best = null,
+      bestD2 = Infinity;
     const senseRadius = this.genes.sense * (0.7 + (BehaviorConfig.forageWeight || 1) * 0.6);
     const senseRadius2 = senseRadius * senseRadius;
 
-    const myX = this.x, myY = this.y, myDir = this.dir;
+    const myX = this.x,
+      myY = this.y,
+      myDir = this.dir;
     const halfFov = this._halfFovRad;
     const forageWeight = BehaviorConfig.forageWeight || 1;
 
@@ -384,7 +426,8 @@ export class Creature {
 
     for (let i = 0; i < count; i++) {
       const f = foodList[i];
-      const dx = f.x - myX, dy = f.y - myY;
+      const dx = f.x - myX,
+        dy = f.y - myY;
 
       // Fast distance threshold check before expensive math
       if (Math.abs(dx) > senseRadius || Math.abs(dy) > senseRadius) continue;
@@ -398,14 +441,18 @@ export class Creature {
       if (Math.abs(delta) > halfFov) continue;
 
       const bias = d2 / forageWeight;
-      if (bias < bestD2) { bestD2 = bias; best = f; }
+      if (bias < bestD2) {
+        bestD2 = bias;
+        best = f;
+      }
     }
 
     if (!best && pheromone) {
       const gx = Math.floor(myX / pheromone.cell);
       const gy = Math.floor(myY / pheromone.cell);
       const here = pheromone.get(gx, gy);
-      let maxVal = here, target = null;
+      let maxVal = here,
+        target = null;
       for (let oy = -1; oy <= 1; oy++) {
         for (let ox = -1; ox <= 1; ox++) {
           if (!ox && !oy) continue;
@@ -442,9 +489,8 @@ export class Creature {
       return;
     }
 
-    const signal = persona.packInstinct > 0.25
-      ? world.samplePredatorSignal(this.x, this.y, detectionRadius * 1.15, this.id)
-      : null;
+    const signal =
+      persona.packInstinct > 0.25 ? world.samplePredatorSignal(this.x, this.y, detectionRadius * 1.15, this.id) : null;
     if (signal) {
       this.target = { x: signal.x, y: signal.y, signal: true, strength: signal.strength };
       persona.currentTargetId = null;
@@ -595,7 +641,8 @@ export class Creature {
     if (!this._aiUpdateFrame) this._aiUpdateFrame = Math.floor(Math.random() * 10);
     this._aiUpdateFrame++;
 
-    if (this._aiUpdateFrame >= 10) { // Every ~10 frames
+    if (this._aiUpdateFrame >= 10) {
+      // Every ~10 frames
       this._aiUpdateFrame = 0;
       if (this._updateMemory) this._updateMemory(dt * 10, world);
       if (this._updateSocialBehavior) this._updateSocialBehavior(world);
@@ -641,7 +688,7 @@ export class Creature {
       const grit = this.genes.grit ?? 0;
       let penalty = 1;
       if (this.damageFx.recentDamage > 0) {
-        penalty -= Math.min(0.55, (0.45 - grit * 0.25));
+        penalty -= Math.min(0.55, 0.45 - grit * 0.25);
       }
       if (bleedStatus) {
         penalty -= Math.min(0.5, (bleedStatus.stacks ?? 0) * 0.18 * (1 - grit * 0.35));
@@ -807,8 +854,8 @@ export class Creature {
           this._setMemoryFocus?.(memoryTarget, world.t);
         }
       } else if (goal === 'REST') {
-        const shouldRecallCalm = (this.needs?.energy ?? 100) < 45 ||
-          (this.needs?.stress ?? 0) >= CreatureConfig.MEMORY.CALM_STRESS_MAX;
+        const shouldRecallCalm =
+          (this.needs?.energy ?? 100) < 45 || (this.needs?.stress ?? 0) >= CreatureConfig.MEMORY.CALM_STRESS_MAX;
         if (shouldRecallCalm) {
           const memoryTarget = this._selectMemory('calm', world);
           if (memoryTarget) {
@@ -863,27 +910,29 @@ export class Creature {
         desiredAngle = desiredAngle * 0.7 + wetDir * 0.3;
       }
     }
-    const memoryAvoid = (this.needs?.stress ?? 0) >= CreatureConfig.MEMORY.STRESS_THRESHOLD
-      ? this._getMemoryAvoidance?.('danger')
-      : null;
+    const memoryAvoid =
+      (this.needs?.stress ?? 0) >= CreatureConfig.MEMORY.STRESS_THRESHOLD ? this._getMemoryAvoidance?.('danger') : null;
     const homeBias = getHomeBias(this, world, goal);
     const migrationBias = this.migration?.bias;
     const avoidScale = CreatureConfig.MEMORY.AVOID_STRENGTH;
-    const steeringX = Math.cos(desiredAngle) +
+    const steeringX =
+      Math.cos(desiredAngle) +
       (this._separation?.x ?? 0) +
       (this._edgeAvoid?.x ?? 0) +
-      ((memoryAvoid?.x ?? 0) * avoidScale) +
+      (memoryAvoid?.x ?? 0) * avoidScale +
       (homeBias?.x ?? 0) +
       (migrationBias?.x ?? 0);
-    const steeringY = Math.sin(desiredAngle) +
+    const steeringY =
+      Math.sin(desiredAngle) +
       (this._separation?.y ?? 0) +
       (this._edgeAvoid?.y ?? 0) +
-      ((memoryAvoid?.y ?? 0) * avoidScale) +
+      (memoryAvoid?.y ?? 0) * avoidScale +
       (homeBias?.y ?? 0) +
       (migrationBias?.y ?? 0);
     desiredAngle = Math.atan2(steeringY, steeringX);
 
-    const aggressiveTurn = this.genes.predator && this.target && this.target.creatureId != null && this.personality.ambushTimer <= 0;
+    const aggressiveTurn =
+      this.genes.predator && this.target && this.target.creatureId != null && this.personality.ambushTimer <= 0;
     const turnRate = aggressiveTurn ? 0.22 : 0.15;
     const turnClamp = clamp(turnRate * (dt / 0.016), 0.08, aggressiveTurn ? 0.34 : 0.24);
     const delta = Math.atan2(Math.sin(desiredAngle - this.dir), Math.cos(desiredAngle - this.dir));
@@ -910,7 +959,7 @@ export class Creature {
     if (inWater) {
       if (this.aquaticAffinity > 0.5) {
         // Aquatic creatures are fast in water
-        _baseSpeed *= currentBiome.aquaticSpeed || (1.2 + this.aquaticAffinity * 0.3);
+        _baseSpeed *= currentBiome.aquaticSpeed || 1.2 + this.aquaticAffinity * 0.3;
       } else if (this.aquaticAffinity > 0.2) {
         // Semi-aquatic creatures are okay in water
         _baseSpeed *= 0.7 + this.aquaticAffinity * 0.5;
@@ -974,11 +1023,12 @@ export class Creature {
       speedBoost += (elderAid.intensity ?? 0) * 0.08;
     }
     _speedScalar *= clamp(speedBoost, 0.6, 1.9);
-    const goalSpeedFactor = goal === 'REST'
-      ? CreatureAgentTuning.MOVEMENT.REST_SPEED_MULT
-      : goal === 'SEEK_MATE'
-        ? CreatureAgentTuning.MOVEMENT.SEEK_MATE_SPEED_MULT
-        : 1;
+    const goalSpeedFactor =
+      goal === 'REST'
+        ? CreatureAgentTuning.MOVEMENT.REST_SPEED_MULT
+        : goal === 'SEEK_MATE'
+          ? CreatureAgentTuning.MOVEMENT.SEEK_MATE_SPEED_MULT
+          : 1;
     _speedScalar *= arriveFactor * goalSpeedFactor;
     const recallUntil = this.memory?.focus?.recallUntil ?? -Infinity;
     if (world.t < recallUntil) {
@@ -1048,17 +1098,29 @@ export class Creature {
     } else if (boundaryMode === 'clamp') {
       // Hard boundaries (bounce at edge)
       const margin = 10;
-      if (this.x < margin) { this.x = margin; this.vx = Math.abs(this.vx); this.dir = Math.atan2(this.vy, this.vx); }
-      else if (this.x > world.width - margin) { this.x = world.width - margin; this.vx = -Math.abs(this.vx); this.dir = Math.atan2(this.vy, this.vx); }
-      if (this.y < margin) { this.y = margin; this.vy = Math.abs(this.vy); this.dir = Math.atan2(this.vy, this.vx); }
-      else if (this.y > world.height - margin) { this.y = world.height - margin; this.vy = -Math.abs(this.vy); this.dir = Math.atan2(this.vy, this.vx); }
+      if (this.x < margin) {
+        this.x = margin;
+        this.vx = Math.abs(this.vx);
+        this.dir = Math.atan2(this.vy, this.vx);
+      } else if (this.x > world.width - margin) {
+        this.x = world.width - margin;
+        this.vx = -Math.abs(this.vx);
+        this.dir = Math.atan2(this.vy, this.vx);
+      }
+      if (this.y < margin) {
+        this.y = margin;
+        this.vy = Math.abs(this.vy);
+        this.dir = Math.atan2(this.vy, this.vx);
+      } else if (this.y > world.height - margin) {
+        this.y = world.height - margin;
+        this.vy = -Math.abs(this.vy);
+        this.dir = Math.atan2(this.vy, this.vx);
+      }
     }
     // boundaryMode 'none' = no restrictions (current behavior)
 
     const restZone = this.senses?.restZone;
-    const inRestZone = restZone
-      ? Math.hypot(restZone.x - this.x, restZone.y - this.y) <= restZone.radius
-      : false;
+    const inRestZone = restZone ? Math.hypot(restZone.x - this.x, restZone.y - this.y) <= restZone.radius : false;
     const nest = this.senses?.homeNest || this.senses?.nest;
     const inNest = nest ? Math.hypot(nest.x - this.x, nest.y - this.y) <= nest.radius : false;
 
@@ -1113,7 +1175,10 @@ export class Creature {
             this.energy += 14; // BALANCED: Less OP, need more strategic hunting
             applyHungerRelief(this, 14);
             this.stats.kills += 1;
-            this.logEvent(attackResult.victim?.id != null ? `Claimed prey #${attackResult.victim.id}` : 'Claimed prey', world.t);
+            this.logEvent(
+              attackResult.victim?.id != null ? `Claimed prey #${attackResult.victim.id}` : 'Claimed prey',
+              world.t
+            );
             const victim = attackResult.victim;
             if (victim && typeof victim.logEvent === 'function') {
               victim.logEvent(this.id != null ? `Killed by predator #${this.id}` : 'Killed by predator', world.t);
@@ -1135,8 +1200,9 @@ export class Creature {
       if (canScavenge && this.target?.isCorpse && this.target.corpse) {
         const eaten = world.tryEatCorpse(this, this.target.corpse);
         if (eaten) {
-          const wasHungry = (this.needs?.hunger ?? 0) >= CreatureConfig.MEMORY.HUNGER_THRESHOLD &&
-            (world.t - (this.needs?.lastEatAt ?? -Infinity) > 6);
+          const wasHungry =
+            (this.needs?.hunger ?? 0) >= CreatureConfig.MEMORY.HUNGER_THRESHOLD &&
+            world.t - (this.needs?.lastEatAt ?? -Infinity) > 6;
           applyHungerRelief(this, eaten.energy);
           if (wasHungry) {
             try {
@@ -1158,8 +1224,9 @@ export class Creature {
       if (this.target?.isCorpse && this.target.corpse) {
         const eaten = world.tryEatCorpse(this, this.target.corpse);
         if (eaten) {
-          const wasHungry = (this.needs?.hunger ?? 0) >= CreatureConfig.MEMORY.HUNGER_THRESHOLD &&
-            (world.t - (this.needs?.lastEatAt ?? -Infinity) > 6);
+          const wasHungry =
+            (this.needs?.hunger ?? 0) >= CreatureConfig.MEMORY.HUNGER_THRESHOLD &&
+            world.t - (this.needs?.lastEatAt ?? -Infinity) > 6;
           applyHungerRelief(this, eaten.energy);
           if (wasHungry) {
             try {
@@ -1182,8 +1249,9 @@ export class Creature {
           if (eaten) {
             const energyGain = eaten.energy || 0;
             const food = eaten.food;
-            const wasHungry = (this.needs?.hunger ?? 0) >= CreatureConfig.MEMORY.HUNGER_THRESHOLD &&
-              (world.t - (this.needs?.lastEatAt ?? -Infinity) > 6);
+            const wasHungry =
+              (this.needs?.hunger ?? 0) >= CreatureConfig.MEMORY.HUNGER_THRESHOLD &&
+              world.t - (this.needs?.lastEatAt ?? -Infinity) > 6;
             this.energy += energyGain;
             this.health = Math.min(this.maxHealth, this.health + energyGain * 0.15);
             this.stats.food += 1;
@@ -1241,8 +1309,9 @@ export class Creature {
         if (eaten) {
           const energyGain = eaten.energy || 0;
           const food = eaten.food;
-          const wasHungry = (this.needs?.hunger ?? 0) >= CreatureConfig.MEMORY.HUNGER_THRESHOLD &&
-            (world.t - (this.needs?.lastEatAt ?? -Infinity) > 6);
+          const wasHungry =
+            (this.needs?.hunger ?? 0) >= CreatureConfig.MEMORY.HUNGER_THRESHOLD &&
+            world.t - (this.needs?.lastEatAt ?? -Infinity) > 6;
           this.energy += energyGain;
           this.health = Math.min(this.maxHealth, this.health + energyGain * 0.15);
           this.stats.food += 1;
@@ -1287,7 +1356,8 @@ export class Creature {
     // NEW: Age stage metabolism modifiers (smooth transitions)
     energyDrain *= getAgeMetabolismMultiplier(this.age);
 
-    if (adrenalineStatus) energyDrain += 2.6 + (adrenalineStatus.metadata?.boost ?? adrenalineStatus.intensity ?? 0) * 2;
+    if (adrenalineStatus)
+      energyDrain += 2.6 + (adrenalineStatus.metadata?.boost ?? adrenalineStatus.intensity ?? 0) * 2;
     if (herdBuff && !this.genes.predator) energyDrain += (herdBuff.intensity ?? 0) * 0.8;
     if (bleedStatus) energyDrain += 0.35 + (bleedStatus.stacks ?? 0) * 0.4;
     if (playBurst) energyDrain += 0.45;
@@ -1338,19 +1408,19 @@ export class Creature {
     // Day/Night cycle: nocturnal creatures use less energy at night
     if (world.dayNightEnabled && this.genes.nocturnal !== undefined) {
       const hour = world.timeOfDay % 24;
-      const isNight = (hour < 6 || hour >= 20);
+      const isNight = hour < 6 || hour >= 20;
       const nocturnalPref = this.genes.nocturnal; // 0=diurnal, 1=nocturnal
 
       if (isNight && nocturnalPref > 0.5) {
         // Nocturnal creatures active at night: bonus efficiency
-        energyDrain *= (1.0 - (nocturnalPref - 0.5) * 0.3); // Up to 15% reduction
+        energyDrain *= 1.0 - (nocturnalPref - 0.5) * 0.3; // Up to 15% reduction
       } else if (!isNight && nocturnalPref < 0.5) {
         // Diurnal creatures active during day: bonus efficiency
-        energyDrain *= (1.0 - (0.5 - nocturnalPref) * 0.3); // Up to 15% reduction
+        energyDrain *= 1.0 - (0.5 - nocturnalPref) * 0.3; // Up to 15% reduction
       } else {
         // Active at wrong time: penalty
         const penalty = Math.abs(nocturnalPref - (isNight ? 1 : 0));
-        energyDrain *= (1.0 + penalty * 0.2); // Up to 20% increase
+        energyDrain *= 1.0 + penalty * 0.2; // Up to 20% increase
       }
     }
 
@@ -1367,7 +1437,8 @@ export class Creature {
     }
 
     // NEW: Needs-driven mating loop (controlled + goal-based)
-    const canReproduce = this.ageStage === 'adult' ||
+    const canReproduce =
+      this.ageStage === 'adult' ||
       (this.lifeStage === 'elder' && this.age < CreatureAgentTuning.LIFE_STAGE.ELDER_FADE_START);
     const socialReady = (this.needs?.socialDrive ?? 0) >= CreatureAgentTuning.MATING.SOCIAL_THRESHOLD;
     const calmEnough = (this.needs?.stress ?? 100) <= CreatureAgentTuning.MATING.STRESS_MAX;
@@ -1377,7 +1448,8 @@ export class Creature {
     if (goal === 'SEEK_MATE' && canReproduce && socialReady && calmEnough && mateCooldownReady && energyReady && mate) {
       const elderChance = this.lifeStage === 'elder' ? CreatureAgentTuning.MATING.ELDER_CHANCE_MULT : 1;
       const mateElderChance = mate.lifeStage === 'elder' ? CreatureAgentTuning.MATING.ELDER_CHANCE_MULT : 1;
-      const mateReady = mate.goal?.current === 'SEEK_MATE' &&
+      const mateReady =
+        mate.goal?.current === 'SEEK_MATE' &&
         mate.needs?.socialDrive >= CreatureAgentTuning.MATING.SOCIAL_THRESHOLD &&
         mate.needs?.stress <= CreatureAgentTuning.MATING.STRESS_MAX &&
         (mate.goal?.mateCooldown ?? 0) <= 0 &&
@@ -1386,11 +1458,17 @@ export class Creature {
         Math.random() < mateElderChance;
       const distance = Math.hypot(mate.x - this.x, mate.y - this.y);
       const population = world.creatures.length;
-      if (population < CreatureAgentTuning.MATING.POPULATION_HARD_CAP && mateReady && distance <= CreatureAgentTuning.MATING.RANGE) {
+      if (
+        population < CreatureAgentTuning.MATING.POPULATION_HARD_CAP &&
+        mateReady &&
+        distance <= CreatureAgentTuning.MATING.RANGE
+      ) {
         const overload = Math.max(0, population - CreatureAgentTuning.MATING.POPULATION_SOFT_CAP);
-        const bondMultiplier = overload > 0
-          ? CreatureAgentTuning.MATING.OVERCROWD_BOND_MULT * (1 + overload / CreatureAgentTuning.MATING.POPULATION_SOFT_CAP)
-          : 1;
+        const bondMultiplier =
+          overload > 0
+            ? CreatureAgentTuning.MATING.OVERCROWD_BOND_MULT *
+              (1 + overload / CreatureAgentTuning.MATING.POPULATION_SOFT_CAP)
+            : 1;
         const bondDuration = CreatureAgentTuning.MATING.BOND_TIME * bondMultiplier;
         const bonded = updateMatingBond(this, world, mate, dt, bondDuration);
 
@@ -1446,9 +1524,7 @@ export class Creature {
 
     if (this.health <= 0 || this.age > CreatureAgentTuning.LIFE_STAGE.ELDER_FADE_END) {
       this.alive = false;
-      const cause = this.health <= 0
-        ? (this.energy <= 0 ? 'Starved' : 'Fatigued')
-        : 'Faded peacefully';
+      const cause = this.health <= 0 ? (this.energy <= 0 ? 'Starved' : 'Fatigued') : 'Faded peacefully';
       this.deathCause = this.health <= 0 ? (this.energy <= 0 ? 'starvation' : 'health') : 'elder';
       this.logEvent(cause, world.t);
       if (!this.genes.predator) world.addFood(this.x, this.y, 1.5);
@@ -1518,7 +1594,9 @@ export class Creature {
   _processStatusEffects(dt, world) {
     const disease = this.getStatus('disease');
     if (disease) {
-      const severity = clamp(disease.intensity ?? 0.6, 0.1, 2.2) * (this.getQuirkMultiplier ? this.getQuirkMultiplier('damage_resist') : 1);
+      const severity =
+        clamp(disease.intensity ?? 0.6, 0.1, 2.2) *
+        (this.getQuirkMultiplier ? this.getQuirkMultiplier('damage_resist') : 1);
       // Increase stress and reduce energy
       this.energy = Math.max(0, this.energy - severity * 0.5 * dt);
       if (this.emotions) {
@@ -1611,7 +1689,7 @@ export class Creature {
         const anchor = this.lifecycle.familyAnchor;
         const dx = anchor.x - this.x;
         const dy = anchor.y - this.y;
-        if ((dx * dx + dy * dy) > 45 * 45) {
+        if (dx * dx + dy * dy > 45 * 45) {
           this.target = { x: anchor.x, y: anchor.y, family: true };
         }
       }
@@ -1620,8 +1698,7 @@ export class Creature {
 
   _emitElderSupport(world) {
     const radius = clamp(this.genes.sense * 0.7, 60, 150);
-    const allies = world.queryCreatures(this.x, this.y, radius)
-      .filter(c => c !== this && c.alive && !c.genes.predator);
+    const allies = world.queryCreatures(this.x, this.y, radius).filter(c => c !== this && c.alive && !c.genes.predator);
     if (!allies.length) return;
     const bondStrength = clamp((this.genes.herdInstinct ?? 0.4) + (this.genes.grit ?? 0.2), 0.2, 1);
     for (const ally of allies) {
@@ -1747,7 +1824,9 @@ export class Creature {
    * @param {number} amount - Initial damage amount
    * @param {Object} ctx - Damage context (attacker, type, etc.)
    */
-  recordDamage(amount, ctx = {}) { return recordDamage(this, amount, ctx); }
+  recordDamage(amount, ctx = {}) {
+    return recordDamage(this, amount, ctx);
+  }
 
   /**
    * Calculates the current speed of the creature based on genes, biome, state, and boosters.
@@ -1755,7 +1834,9 @@ export class Creature {
    * @param {Object} world - Simulation world
    * @returns {number} The current speed in px/s
    */
-  calculateCurrentSpeed(dt, world) { return calculateCurrentSpeed(this, dt, world); }
+  calculateCurrentSpeed(dt, world) {
+    return calculateCurrentSpeed(this, dt, world);
+  }
 
   _calculateCollisionDamage(amount) {
     const threshold = CreatureTuning.COLLISION_DAMAGE_THRESHOLD;
@@ -1764,9 +1845,13 @@ export class Creature {
     return normalized * (CreatureTuning.DAMAGE_CLAMP_MAX * 0.45);
   }
 
-  applyImpactDamage(amount, opts = {}) { return applyImpactDamage(this, amount, opts); }
+  applyImpactDamage(amount, opts = {}) {
+    return applyImpactDamage(this, amount, opts);
+  }
 
-  applyImpulse(vx, vy, opts = {}) { return applyImpulse(this, vx, vy, opts); }
+  applyImpulse(vx, vy, opts = {}) {
+    return applyImpulse(this, vx, vy, opts);
+  }
 
   _applyExternalImpulse(dt) {
     const impulse = this.externalImpulse;
@@ -1784,13 +1869,21 @@ export class Creature {
     impulse.vy *= decayFactor;
   }
 
-  reactToPoke(opts = {}) { return reactToPoke(this, opts); }
+  reactToPoke(opts = {}) {
+    return reactToPoke(this, opts);
+  }
 
-  reactToGrab(opts = {}) { return reactToGrab(this, opts); }
+  reactToGrab(opts = {}) {
+    return reactToGrab(this, opts);
+  }
 
-  reactToDrop(opts = {}) { return reactToDrop(this, opts); }
+  reactToDrop(opts = {}) {
+    return reactToDrop(this, opts);
+  }
 
-  reactToCollision(amount, opts = {}) { return reactToCollision(this, amount, opts); }
+  reactToCollision(amount, opts = {}) {
+    return reactToCollision(this, amount, opts);
+  }
 
   _triggerReaction(type, intensity = 0.5, duration = 0.35) {
     const reaction = this.animation?.reaction;
@@ -1799,13 +1892,16 @@ export class Creature {
     const eco = this.ecosystem;
     const stressBoost = eco ? clamp(eco.stress / 100, 0, 1) : 0;
     const stabilityFactor = eco ? clamp(0.75 + (1 - eco.stability / 100) * 0.5, 0.6, 1.3) : 1;
-    const stateBoost = eco?.state === ECOSYSTEM_STATES.PANICKED ? 1.15
-      : eco?.state === ECOSYSTEM_STATES.STRESSED ? 1.08
-        : 1;
+    const stateBoost =
+      eco?.state === ECOSYSTEM_STATES.PANICKED ? 1.15 : eco?.state === ECOSYSTEM_STATES.STRESSED ? 1.08 : 1;
     reaction.type = type;
     reaction.timer = duration;
     reaction.duration = duration;
-    reaction.intensity = clamp(intensity * chaosBoost * stateBoost * (1 + stressBoost * 0.25) * stabilityFactor, 0.1, 1.8);
+    reaction.intensity = clamp(
+      intensity * chaosBoost * stateBoost * (1 + stressBoost * 0.25) * stabilityFactor,
+      0.1,
+      1.8
+    );
   }
 
   _updateReaction(dt) {
@@ -1819,7 +1915,9 @@ export class Creature {
     }
   }
 
-  setMood(icon, duration = 0.6) { return setMood(this, icon, duration); }
+  setMood(icon, duration = 0.6) {
+    return setMood(this, icon, duration);
+  }
 
   _updateMood(dt) {
     if (!this.mood || this.mood.timer <= 0) return;
@@ -2003,18 +2101,18 @@ export class Creature {
     }
 
     const ecoState = this.ecosystem?.state;
-    const shouldRest = ecoState === ECOSYSTEM_STATES.RESTING ||
-      this.energy < 15 ||
-      this.goal?.current === 'REST';
+    const shouldRest = ecoState === ECOSYSTEM_STATES.RESTING || this.energy < 15 || this.goal?.current === 'REST';
 
     // Check if sleeping (low energy or resting state, and stationary)
     if (shouldRest && speed < 5) {
       anim.sleepTimer += step * (ecoState === ECOSYSTEM_STATES.RESTING ? 1.3 : 1);
-      if (anim.sleepTimer > 2.0) { // Sleep after 2 seconds of low energy
+      if (anim.sleepTimer > 2.0) {
+        // Sleep after 2 seconds of low energy
         anim.state = 'sleeping';
 
         // Emit Zzz particles occasionally
-        if (Math.random() < 0.008) { // Throttled to reduce visual spam
+        if (Math.random() < 0.008) {
+          // Throttled to reduce visual spam
           const world = this._lastWorld; // Will be set in update()
           if (world && world.particles) {
             world.particles.addSleepParticle(this.x, this.y + this.size);
@@ -2040,27 +2138,39 @@ export class Creature {
     }
   }
 
-  getBadges() { return _getBadges(this); }
+  getBadges() {
+    return _getBadges(this);
+  }
 
-  draw(ctx, opts = {}) { return _drawCreature(this, ctx, opts); }
+  draw(ctx, opts = {}) {
+    return _drawCreature(this, ctx, opts);
+  }
 
   /**
    * Select a prepared sprite frame for this creature's current animation state.
    * @private
    */
-  _getCachedSpriteFrame(worldTime = 0) { return _getCachedSpriteFrame(this, worldTime); }
+  _getCachedSpriteFrame(worldTime = 0) {
+    return _getCachedSpriteFrame(this, worldTime);
+  }
 
   /**
    * Update the cached canvas for this creature's appearance
    * @private
    */
-  _updateCachedCanvas(assetType, colorStr) { return _updateCachedCanvas(this, assetType, colorStr); }
+  _updateCachedCanvas(assetType, colorStr) {
+    return _updateCachedCanvas(this, assetType, colorStr);
+  }
 
   /**
    * Draw a small icon/indicator showing the creature's current behavior state
    * This makes AI behavior much more legible to players
    */
-  _drawBehaviorState(ctx) { return _drawBehaviorState(this, ctx); }
+  _drawBehaviorState(ctx) {
+    return _drawBehaviorState(this, ctx);
+  }
 
-  _drawTraits(ctx, g, hue, r) { return _drawTraits(this, ctx, g, hue, r); }
+  _drawTraits(ctx, g, hue, r) {
+    return _drawTraits(this, ctx, g, hue, r);
+  }
 }

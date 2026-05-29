@@ -66,13 +66,23 @@ export class NotificationSystem {
     }
 
     if (herbivores === 0 && pop > 0 && !this.triggeredMilestones.has('herbivore_extinct')) {
-      this.addNotification({ type: 'warning', title: 'Herbivores Extinct!', message: 'Only predators remain. Ecosystem collapsing.', duration: 5000 });
+      this.addNotification({
+        type: 'warning',
+        title: 'Herbivores Extinct!',
+        message: 'Only predators remain. Ecosystem collapsing.',
+        duration: 5000
+      });
       this.triggeredMilestones.add('herbivore_extinct');
     }
     if (herbivores > 0) this.triggeredMilestones.delete('herbivore_extinct');
 
     if (predators === 0 && pop > 0 && !this.triggeredMilestones.has('predator_extinct')) {
-      this.addNotification({ type: 'info', title: 'Predators Extinct', message: 'Only herbivores remain. Peaceful times.', duration: 4000 });
+      this.addNotification({
+        type: 'info',
+        title: 'Predators Extinct',
+        message: 'Only herbivores remain. Peaceful times.',
+        duration: 4000
+      });
       this.triggeredMilestones.add('predator_extinct');
     }
     if (predators > 0) this.triggeredMilestones.delete('predator_extinct');
@@ -202,13 +212,15 @@ export class NotificationSystem {
       container.setAttribute('role', 'region');
       container.setAttribute('aria-live', 'polite');
       container.setAttribute('aria-label', 'Notifications');
-      container.style.cssText = 'position:fixed;top:100px;left:50%;transform:translateX(-50%);z-index:3000;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
+      container.style.cssText =
+        'position:fixed;top:100px;left:50%;transform:translateX(-50%);z-index:3000;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
       document.body.appendChild(container);
     }
 
     const el = document.createElement('div');
     el.className = `toast toast-${notif.type}`;
-    el.style.cssText = 'padding:10px 18px;border-radius:999px;font:600 13px system-ui,sans-serif;box-shadow:0 4px 12px rgba(0,0,0,0.4);backdrop-filter:blur(8px);opacity:0;transform:translateY(-12px);transition:opacity 0.25s ease,transform 0.25s ease;max-width:320px;text-align:center;pointer-events:auto;';
+    el.style.cssText =
+      'padding:10px 18px;border-radius:999px;font:600 13px system-ui,sans-serif;box-shadow:0 4px 12px rgba(0,0,0,0.4);backdrop-filter:blur(8px);opacity:0;transform:translateY(-12px);transition:opacity 0.25s ease,transform 0.25s ease;max-width:320px;text-align:center;pointer-events:auto;';
 
     const colors = {
       warning: { bg: 'rgba(245,158,11,0.92)', text: '#1a1a1a' },
@@ -323,16 +335,21 @@ export class NotificationSystem {
       const priority = notif.priority ?? this._priorityForType(notif.type);
       const useEdgeLane = objectiveRailVisible && railAwareTypes.has(notif.type) && priority <= 4;
       const cssX = useEdgeLane
-        ? (compactViewport ? layoutWidth / 2 : Math.max(150, layoutWidth - 172))
+        ? compactViewport
+          ? layoutWidth / 2
+          : Math.max(150, layoutWidth - 172)
         : layoutWidth / 2;
       const cssY = useEdgeLane
         ? Math.max(
           compactViewport ? 150 : 132,
-          layoutHeight - Math.max(bottomChrome, compactViewport ? 92 : 72) - (compactViewport ? 52 : 58) - (i * (compactViewport ? 34 : 42))
+          layoutHeight -
+              Math.max(bottomChrome, compactViewport ? 92 : 72) -
+              (compactViewport ? 52 : 58) -
+              i * (compactViewport ? 34 : 42)
         )
-        : ((compactViewport ? 112 : 100) + (i * (compactViewport ? 38 : 44)));
+        : (compactViewport ? 112 : 100) + i * (compactViewport ? 38 : 44);
       const x = cssX * pixelRatio;
-      const y = useEdgeLane ? cssY * pixelRatio : startY + (i * spacing);
+      const y = useEdgeLane ? cssY * pixelRatio : startY + i * spacing;
 
       this._drawNotification(ctx, notif, x, y, viewportWidth, {
         layoutWidth,
@@ -383,7 +400,7 @@ export class NotificationSystem {
     // Compact pill design
     const compactViewport = layoutWidth <= 520;
     const width = compactViewport
-      ? Math.min(210 * pixelRatio, viewportWidth - (56 * pixelRatio))
+      ? Math.min(210 * pixelRatio, viewportWidth - 56 * pixelRatio)
       : (options.edgeLane ? 230 : 260) * pixelRatio;
     const height = (compactViewport ? 30 : 38) * pixelRatio;
     const radius = height / 2;
@@ -426,10 +443,8 @@ export class NotificationSystem {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    const displayText = notif.title
-      ? `${notif.title} ${notif.message}`.trim()
-      : notif.message;
-    const fittedText = this._fitText(ctx, displayText, width - (30 * pixelRatio));
+    const displayText = notif.title ? `${notif.title} ${notif.message}`.trim() : notif.message;
+    const fittedText = this._fitText(ctx, displayText, width - 30 * pixelRatio);
     ctx.fillText(fittedText, x, y);
 
     ctx.restore();
@@ -447,9 +462,11 @@ export class NotificationSystem {
 
 // Lightweight type guard to verify a notification system instance
 export function isNotificationSystem(candidate) {
-  return !!candidate &&
+  return (
+    !!candidate &&
     typeof candidate.show === 'function' &&
     typeof candidate.update === 'function' &&
     typeof candidate.draw === 'function' &&
-    Array.isArray(candidate.notifications);
+    Array.isArray(candidate.notifications)
+  );
 }

@@ -5,6 +5,7 @@ Entries older than 2026-03-01.
 ## Session Audit (2026-01-29)
 
 ### Focus
+
 1. Confirm mobile side panels no longer cover the playfield on load.
 2. Ensure panels open as bottom sheets on small screens.
 3. Update docs + changelog entries after verification.
@@ -12,6 +13,7 @@ Entries older than 2026-03-01.
 ## Session Audit (2026-02-08)
 
 ### Focus
+
 1. Reproduce the spawn/visibility regression with instrumentation.
 2. Trace spawn → store → render pipeline and fix root cause.
 3. Update smoke tests + recovery report after verification.
@@ -19,6 +21,7 @@ Entries older than 2026-03-01.
 ## Session Audit (2026-02-09)
 
 ### Focus
+
 1. Verify quick action controls behave as documented (food drop, spawn drawer toggles).
 2. Fix season progression when day/night is toggled off.
 3. Polish control strip accessibility state (pressed/expanded).
@@ -26,6 +29,7 @@ Entries older than 2026-03-01.
 ## Session Audit (2026-02-07)
 
 ### Focus
+
 1. Verify baseline app behavior (home screen, New Sandbox, core loop) in browser.
 2. Tune health, damage, and recovery for calmer, longer-lived creatures.
 3. Reduce abrupt failures (impact/fall damage, hunger/stress spikes) and document balance values.
@@ -34,12 +38,15 @@ Entries older than 2026-03-01.
 ## Session Fix (2026-01-28)
 
 ### Issue
+
 Creatures not rendering after clicking "New Game" despite being spawned correctly.
 
 ### Root Cause
+
 **Duplicate `<canvas id="view">` elements in index.html** (lines 34 and 862). Having two elements with the same ID causes `document.getElementById('view')` to potentially return the wrong canvas - the second one at line 862 had no styling and was not visible.
 
 ### Fix Applied
+
 1. Removed duplicate `<canvas id="view"></canvas>` at line 862 of `index.html`
 2. Added debug overlay toggle ('D' key) to help diagnose future rendering issues
    - Shows creature count, camera position, view bounds, canvas size, render stats
@@ -48,11 +55,13 @@ Creatures not rendering after clicking "New Game" despite being spawned correctl
    - Added `renderDebugOverlay()` method in `game-loop.js`
 
 ### Verification
+
 - `node -c` syntax checks pass on all modified files
 - Single canvas element confirmed with correct ID
 - Debug overlay provides visibility into render pipeline state
 
 ### Files Changed
+
 - `creature-sim/index.html` — Removed duplicate canvas element
 - `creature-sim/src/game-loop.js` — Added debug overlay rendering
 - `creature-sim/src/game-state.js` — Added showDebugOverlay property
@@ -61,9 +70,11 @@ Creatures not rendering after clicking "New Game" despite being spawned correctl
 ## Session Debug (2026-01-26)
 
 ### Issue
+
 Creatures not showing after clicking "New Game".
 
 ### Investigation
+
 - Verified creature spawning works correctly (76 creatures created via `world.seed()`)
 - Verified world initialization sequence is correct
 - Verified renderer receives correct world reference
@@ -71,21 +82,25 @@ Creatures not showing after clicking "New Game".
 - Save system tests pass
 
 ### Debug Logging Added
+
 - `game-loop.js`: Log creature count and canvas size on first renders
 - `renderer.js`: Log creatures passed to drawCreatures, view bounds, rendered vs culled counts
 
 ### Next Steps
+
 - Check browser console for debug output after clicking "New Game"
 - Identify if issue is: no creatures, all culled, or drawing failure
 
 ## Session Audit (2026-01-24)
 
 ### Focus
+
 1. Bug check and polish pass across the codebase.
 2. Fix lint errors and ensure all systems initialize correctly.
 3. Polish controls for clearer tool state feedback.
 
 ### Changed
+
 - `creature-sim/src/ui.js` — Fixed undefined `biome` variable in `renderSelectedInfo` by extracting biome from world at creature position.
 - `creature-sim/src/ui-controller.js` — Added `updateToolIndicator()` method to show active tool state on quick action buttons with visual feedback; added tool:changed event listener. Fixed dropdown menus: removed auto-close timeouts that prevented item selection, converted buttons to toggle behavior, added `closeAllDropdowns()` helper, added global click handler to close dropdowns when clicking outside.
 - `creature-sim/src/input-manager.js` — Emit `tool:changed` events when tool modes change via keyboard shortcuts.
@@ -100,6 +115,7 @@ Creatures not showing after clicking "New Game".
 - `creature-sim/src/notification-system.js` — Added slide-in animation and improved notification colors.
 
 ### UI Polish Pass
+
 - Home screen: feature icons glow on hover, improved button hover states
 - Inspector: custom scrollbar, section fade-in animation
 - Watch mode: slide-up animation, better button hover/active states, improved moments panel
@@ -114,17 +130,20 @@ Creatures not showing after clicking "New Game".
 - Keyboard shortcuts: slide-up animation, 3D kbd key styling with hover glow
 
 ### Verified
+
 - `npm test` — pass
 - `npm run lint` — 0 errors
 
 ## Session Audit (2026-02-04)
 
 ### Focus
+
 1. Environmental rhythm (day/night + food cycles) with subtle behavior biasing.
 2. Lightweight weather mood (wind/calm) for ambient variation.
 3. Optional god mode tools with minimal UI + save/load safety.
 
 ### Integration Points (pre-change)
+
 - World update loop: `World.step()` → `WorldEnvironment.update()` + `WorldEcosystem.update()` + `World.updateFood()` in `creature-sim/src/world-core.js`.
 - Creature needs + goals: `_updateNeeds()` and `_selectGoal()` in `creature-sim/src/creature.js`; movement speed in `creature-sim/src/creature-behavior.js`.
 - Rendering overlays: day/night + season tint in `creature-sim/src/renderer.js`.
@@ -132,6 +151,7 @@ Creatures not showing after clicking "New Game".
 - Save/load: environment fields in `creature-sim/src/save-system.js`.
 
 ### Planned Actions
+
 - Add cached day/night phase + influence values in `WorldEnvironment`.
 - Wire day/night bias into needs decay, goal scoring, and movement speed.
 - Implement food regrowth patches with time-of-day + population pressure influences.
@@ -143,11 +163,13 @@ Creatures not showing after clicking "New Game".
 ## Session Audit (2026-02-06)
 
 ### Focus
+
 1. Add nests, territory pressure, and home-region preference for creatures.
 2. Implement migration scoring + settlement with group bias and cooldowns.
 3. Integrate moments/auto-director hooks, save/load persistence, and observer UI toggles.
 
 ### Integration Points (pre-change)
+
 - World state + spatial partitioning: `World` in `creature-sim/src/world-core.js`.
 - Creature needs, memory, and goals: `creature-sim/src/creature.js` + `creature-sim/src/creature-features.js`.
 - Ecosystem food patches/rest zones: `creature-sim/src/world-ecosystem.js`.
@@ -156,6 +178,7 @@ Creatures not showing after clicking "New Game".
 - Save/load migrations: `creature-sim/src/save-system.js`.
 
 ### Planned Actions
+
 - Add region partitioning with pressure/food stats and nest tracking on a throttled cadence.
 - Introduce nest entities with comfort, occupancy, and overcrowding penalties.
 - Add home nest/region preferences, migration scoring, and settlement memory.
@@ -165,17 +188,20 @@ Creatures not showing after clicking "New Game".
 ## Session Audit (2026-02-05)
 
 ### Focus
+
 1. Watch mode (observer-first UI + auto-camera) with minimal overlays.
 2. Moments log + session summary for emergent storytelling.
 3. Light ecosystem role tension (herbivore/scavenger/predator-lite) with migration cues.
 
 ### Integration Points (pre-change)
+
 - Event hooks: `eventSystem` and existing creature/world emitters (`creature-sim/src/event-system.js`, `creature-sim/src/world-core.js`).
 - Camera follow + travel: `creature-sim/src/camera.js` with input overrides (`creature-sim/src/input-manager.js`).
 - UI overlays: HUD/menu in `creature-sim/index.html`, `creature-sim/styles.css`, `creature-sim/src/ui-controller.js`.
 - Save/load: `creature-sim/src/save-system.js` metadata for lightweight session summaries.
 
 ### Planned Actions
+
 - Add watch mode control strip with follow toggle, speed, moments, and god mode shortcut.
 - Implement auto-director (event-driven) with smooth travel + user override.
 - Add moments log + session summary panel with camera jump targets.
@@ -186,11 +212,13 @@ Creatures not showing after clicking "New Game".
 ## Session Audit (2026-02-03)
 
 ### Focus
+
 1. Creature memory + place learning with lightweight reinforcement/decay.
 2. Life stages + elder fade-out tuning for smoother generational pacing.
 3. Save/load migration + observer debug overlays for validation.
 
 ### Planned Actions
+
 - Add memory slots with decay, reinforcement, and danger/calm tagging.
 - Bias goals with remembered food/calm/nest locations and danger avoidance.
 - Add life-stage tuning (baby/adult/elder), elder fade, and reproduction throttles.
@@ -200,22 +228,28 @@ Creatures not showing after clicking "New Game".
 ## Session Audit (2026-01-29)
 
 ### Phase 1 Gameplay Audit (code inspection)
+
 **Interactions too strong / inconsistent**
+
 - Throw impulses use raw drag velocity with a high cap (420), leading to extreme launches.
 - Bounce/spinner props and creature bump impulses stack high forces without weight scaling.
 - External impulses ignore creature size, so larger creatures feel too light.
 
 **Actions that dominate play**
+
 - Rapid drag/throw can override normal locomotion, making props feel secondary.
 
 **Systems lacking feedback or consequence**
+
 - Collision reactions can trigger in rapid succession on bumps, reducing readability.
 - Camera movement never fully settles due to tiny residual interpolation.
 
 **Chaos: fun vs frustrating**
+
 - Physics chaos is playful, but extreme launches and jittery camera transitions can feel unfair.
 
 **Primary imbalance sources**
+
 - Physics values: throw caps, prop strength, bump forces, impulse decay.
 - Camera smoothing and movement thresholds.
 - Touch thresholds for grab activation and pan sensitivity.
@@ -223,11 +257,13 @@ Creatures not showing after clicking "New Game".
 ## Session Audit (2026-01-30)
 
 ### Focus
+
 1. Health/damage tuning pass to reduce accidental deaths.
 2. Ecosystem internal state loop (stress/energy/curiosity/stability) with emergent signals.
 3. Save/load migration support for new creature state fields.
 
 ### Planned Actions
+
 - Add tuning constants for health + damage thresholds/i-frames.
 - Smooth combat damage and add attack cooldowns.
 - Implement lightweight ecosystem state updates with crowd pressure + social contagion.
@@ -236,11 +272,13 @@ Creatures not showing after clicking "New Game".
 ## Session Audit (2026-02-01)
 
 ### Focus
+
 1. Needs-driven creature agents (hunger/energy/social/stress) with utility goals.
 2. Rest zones + food bite consumption with scent-based sensing.
 3. Mating loop with cooldowns, population guardrails, and save/load support.
 
 ### Planned Actions
+
 - Add centralized agent tuning constants and per-creature needs/goal state.
 - Add rest zones and bite-based food consumption (local scent sensing).
 - Update mating logic with controlled offspring + population caps.
@@ -249,27 +287,33 @@ Creatures not showing after clicking "New Game".
 ## Session Audit (2026-01-26)
 
 ### Phase 1 Gameplay Audit (code inspection)
+
 **What the player can do**
+
 - Spawn, inspect, and erase creatures; paint food; pause/resume; adjust speeds.
 - Toggle simulation features, pan/zoom camera, follow selected creature.
 - Use gene editor, scenario lab, campaigns, and goals for longer-term play.
 
 **World reactions**
+
 - Creatures move, hunt, eat, reproduce, and die with visual/audio feedback.
 - Selection glow, poke/drop reactions, and particle effects on events.
 - Environmental seasons/weather, disasters, and ecosystem balancing.
 
 **Choices that matter**
+
 - Spawn/food placement affects population health and predator-prey balance.
 - Gene edits affect traits and emergent survival.
 - Tool usage (erase/spawn) and goal selection guide session direction.
 
 ### Gameplay dead zones
+
 - Creature interaction is mostly observational after spawn (limited direct manipulation).
 - Many UI actions (feature toggles) provide little immediate causal feedback.
 - Sandbox lacks tactile props or environment rules for quick experiments.
 
 ### Missing affordances
+
 - Drag/throw creatures or objects to test physics outcomes.
 - Placeable props/zones (bounce, gravity, spinner) for emergent play.
 - Clear contextual prompts for what to try next in the sandbox.
@@ -277,6 +321,7 @@ Creatures not showing after clicking "New Game".
 ## Session Audit (2026-01-24)
 
 ### 10 most visible rough edges (inspection)
+
 1. Overflow menu lacked in-context help after condensation.
 2. Save/load hotkeys documented but not implemented for file downloads.
 3. Selected creature card disappeared entirely when nothing was selected.
@@ -289,6 +334,7 @@ Creatures not showing after clicking "New Game".
 10. Menu mapping for condensed HUD was not visible in-app.
 
 ### Top 3 performance hotspots (inspection)
+
 1. Per-frame ecosystem health recalculation in `GameLoop.updateSubsystems`.
 2. Frequent UI updates for stats/selected info even when unchanged.
 3. Pointer move allocations during continuous panning.
@@ -296,6 +342,7 @@ Creatures not showing after clicking "New Game".
 ## Session Audit (2026-01-25)
 
 ### Focus
+
 1. Creature feel upgrades (personality reactions + selection feedback).
 2. Session nudges for manual spawns.
 3. Home screen tone polish.
@@ -309,38 +356,45 @@ Creatures not showing after clicking "New Game".
 ### 2026-01-25 (Session 2: Button Handler Fix)
 
 **Changed:**
+
 - `creature-sim/src/main.js` — Removed duplicate New Game button handler (lines 1086-1115)
 - `package.json` — Updated Node.js requirement from >=14.0.0 to >=18.0.0
 - `creature-sim/docs/RECOVERY_REPORT.md` — Documented button handler fix
 
 **Why:**
+
 - Duplicate button handlers (onclick + addEventListener) caused conflicts
 - Single handler in showHomePage() is correct approach
 - Node 14 is EOL, 18 is current LTS
 
 **Verified:**
+
 - Removed conflicting onclick assignment
 - Single addEventListener remains in showHomePage()
 - Console logging present for debugging
 - Syntax check passed
 
 **Notes:**
+
 - New Game button should now work correctly
 - Manual browser testing required to confirm fix
 
 ### 2026-01-25 (Session 1: Syntax Fix)
 
 **Changed:**
+
 - `creature-sim/src/main.js` — Removed stray '1' character on line 1163 that caused syntax error
 - `creature-sim/docs/RECOVERY_REPORT.md` — Created recovery report documenting baseline assessment and fixes
 - `creature-sim/docs/SMOKE_TESTS.md` — Updated with comprehensive critical tests and recovery status
 
 **Why:**
+
 - Fix P0 blocker preventing app from booting (syntax error)
 - Establish recovery baseline and test plan
 - Simplest change: remove single typo character
 
 **Verified:**
+
 - `node -c creature-sim/src/main.js` — syntax check passed
 - `node -c creature-sim/src/ui-controller.js` — syntax check passed
 - Button handlers confirmed present in showHomePage() function
@@ -349,6 +403,7 @@ Creatures not showing after clicking "New Game".
 ### 2026-01-29
 
 **Changed:**
+
 - `creature-sim/src/creature.js` — added landing/fall/overreaction reactions, mood icons, eye tracking, silly badges, and recovery poses.
 - `creature-sim/src/sandbox-props.js` — added spring/launch/see-saw/conveyor/slope/fan/sticky props with tuned forces and chaos scaling.
 - `creature-sim/src/renderer.js` — drew new prop affordances and impact highlights.
@@ -357,15 +412,18 @@ Creatures not showing after clicking "New Game".
 - `docs/SMOKE_TESTS.md`, `docs/ROADMAP.md`, `README.md`, `CHANGELOG.md` — documented playful pass updates.
 
 **Why:**
+
 - Increase tactile feedback, replayable toy interactions, and fun prompts while keeping the core loop intact.
 
 **Verified:**
+
 - `npm test`
 - `npm run lint`
 
 ### 2026-01-29
 
 **Changed:**
+
 - `creature-sim/src/input-manager.js` — tuned grab/throw thresholds, added throw caps, and scaled impact feedback by throw intensity.
 - `creature-sim/src/creature.js` — normalized external impulse by size, added collision reaction cooldown, and made animation timing frame-rate independent.
 - `creature-sim/src/sandbox-props.js` — reduced prop strengths and impulse caps for bounce/spinner/gravity.
@@ -375,15 +433,18 @@ Creatures not showing after clicking "New Game".
 - `docs/SMOKE_TESTS.md`, `docs/ROADMAP.md`, `README.md`, `CHANGELOG.md` — documented balance pass checks and notes.
 
 **Why:**
+
 - Improve interaction fairness, reduce extreme launches, and stabilize camera/touch feel without changing the core loop.
 
 **Verified:**
+
 - `npm test`
 - `npm run lint` (warnings only)
 
 ### 2026-01-28
 
 **Changed:**
+
 - `creature-sim/index.html` — added mobile spawn sheet markup and dismissible interaction hint button.
 - `creature-sim/styles.css` — styled mobile spawn sheet, hint close affordance, and selection highlight.
 - `creature-sim/src/ui-controller.js` — centralized spawn selection state, mobile spawn sheet handlers, and hint lifecycle clearing.
@@ -392,15 +453,18 @@ Creatures not showing after clicking "New Game".
 - `docs/SMOKE_TESTS.md`, `docs/ROADMAP.md`, `README.md`, `CHANGELOG.md` — documented mobile spawn selection + help hint lifecycle updates.
 
 **Why:**
+
 - Fix mobile creature selection and ensure help hints dismiss cleanly without blocking touch interactions.
 
 **Verified:**
+
 - `npm test`
 - `npm run lint` (warnings only)
 
 ### 2026-01-27
 
 **Changed:**
+
 - `creature-sim/src/input-manager.js` — added hover affordance tracking, grab cursor feedback, and grab/drop reactions during drag.
 - `creature-sim/src/creature.js` — added grab reaction animation response.
 - `creature-sim/src/renderer.js` — added hover/grab outlines for clear interaction affordance.
@@ -409,15 +473,18 @@ Creatures not showing after clicking "New Game".
 - `README.md`, `CHANGELOG.md` — documented new grab affordances.
 
 **Why:**
+
 - Improve direct manipulation clarity and creature expressiveness without changing the core loop.
 
 **Verified:**
+
 - `npm test`
 - `npm run lint`
 
 ### 2026-01-24
 
 **Changed:**
+
 - `creature-sim/src/hud-menu.js` — added Help section to overflow menu/sheet.
 - `creature-sim/src/ui.js` — added empty-state guidance for selected creature card.
 - `creature-sim/src/main.js` — implemented save/load hotkeys, dev-only FPS overlay/timing logs, load helpers.
@@ -431,15 +498,18 @@ Creatures not showing after clicking "New Game".
 - `README.md`, `CHANGELOG.md` — documented save/load hotkeys and help section.
 
 **Why:**
+
 - Improve UX clarity on mobile/desktop, add feedback for key actions, and tighten mobile performance.
 
 **Verified:**
+
 - `npm test`
 - `npm run lint`
 
 ### 2026-01-23
 
 **Changed:**
+
 - `creature-sim/index.html` — condensed top HUD markup and added overflow sheet containers.
 - `creature-sim/src/menu-model.js` — centralized HUD action model with grouping metadata.
 - `creature-sim/src/hud-menu.js` — renders HUD primary/overflow menus with keyboard support.
@@ -453,15 +523,18 @@ Creatures not showing after clicking "New Game".
 - `CHANGELOG.md` — noted condensed HUD behavior.
 
 **Why:**
+
 - Reduce top menu clutter while keeping all actions within 1-2 taps and preserving accessibility.
 
 **Verified:**
+
 - `npm test` (pass)
 - `npm run lint` (0 errors, 77 warnings)
 
 ### 2026-01-22
 
 **Changed:**
+
 - `creature-sim/src/gene-editor.js` — Wired gene editor controls, spawn-mode feedback, and code sharing helpers
 - `creature-sim/index.html` — Added gene code share UI, nameplates/reduced motion toggles, and improved button labels
 - `creature-sim/styles.css` — Added reduced motion styles, gene code UI styles, larger tap targets, and mobile-safe panel sizing
@@ -474,29 +547,35 @@ Creatures not showing after clicking "New Game".
 - `CHANGELOG.md` — Added Unreleased notes for this pass
 
 **Why:**
+
 - Improve mobile viewport stability, accessibility affordances, and lightweight sharing features without changing the core loop
 
 **Verified:**
+
 - `npm test` — pass
 - `npm run lint` — 0 errors, 80 warnings (unused vars)
 
 ### 2026-01-21
 
 **Changed:**
+
 - `creature-sim/src/enhanced-analytics.js` — Made analytics dashboard responsive to viewport sizing and resizable charts
 - `README.md` — Documented responsive analytics dashboard behavior
 - `CHANGELOG.md` — Added Unreleased note for responsive analytics sizing
 
 **Why:**
+
 - Ensure the analytics dashboard fits smaller screens and scales chart canvases when resizing.
 
 **Verified:**
+
 - `npm test` — pass
 - `npm run lint` — 0 errors, 80 warnings (unused vars)
 
 ### 2026-01-21
 
 **Changed:**
+
 - `creature-sim/src/input-manager.js` — Added brush size hotkeys for tools
 - `creature-sim/src/tools.js` — Added brush size clamping helpers
 - `creature-sim/src/ui.js` — Added tool HUD indicator in stats
@@ -511,16 +590,19 @@ Creatures not showing after clicking "New Game".
 - `README.md` — Documented brush size shortcuts
 
 **Why:**
+
 - Make tool state more visible and editing faster without touching core simulation logic
 - Lock the core loop into documented smoke tests and roadmap guidance
 
 **Verified:**
+
 - `npm test` — pass
 - `npm run lint` — 0 errors, 80 warnings (unused vars)
 
 ### 2026-01-21
 
 **Changed:**
+
 - `creature-sim/src/batch-renderer.js` — Created stub to fix missing import (P0 blocker)
 - `creature-sim/src/ecs.js` — Created stub to fix missing import (P0 blocker)
 - `creature-sim/src/renderer.js` — Removed duplicate `timeOfDay`/`dayNightSpeed` assignment (lines 44-46)
@@ -546,6 +628,7 @@ Creatures not showing after clicking "New Game".
 - `creature-sim/src/input-manager.js` — Routed paint/spawn/erase through ToolController and wired Cmd/Ctrl+Z / Cmd/Ctrl+Shift+Z to undo/redo
 
 **Why:**
+
 - App would fail to load due to missing ES module imports (`batch-renderer.js`, `ecs.js`)
 - Duplicate property assignments shadowed config values from RendererConfig
 - Startup logs cluttered browser console; now use `console.debug` (hidden by default)
@@ -555,6 +638,7 @@ Creatures not showing after clicking "New Game".
 - Added undo/redo so accidental spawns/erases/food paints can be reversed safely
 
 **Verified:**
+
 - `npm test` — Save system tests pass
 - `npm run lint` — 0 errors, 80 warnings (unused vars only)
 - HTTP 200 from local server
@@ -562,6 +646,7 @@ Creatures not showing after clicking "New Game".
 - `npm test` — Save system tests pass after undo/redo changes
 
 **Performance Audit:**
+
 - Renderer has frustum culling (creatures outside view are skipped)
 - Zoom-based detail reduction (shadows, trails, names disabled when zoomed out)
 - Clustering throttled to ~4Hz, skipped when zoomed out
@@ -570,6 +655,7 @@ Creatures not showing after clicking "New Game".
 - No performance issues identified for 500+ creatures
 
 **Notes:**
+
 - PLAN.md created as per CLAUDE.md requirements
 - Full codebase audit complete (see invariants below)
 - Keyboard help accessible via `?` key (mentioned in home page footer)

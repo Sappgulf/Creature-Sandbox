@@ -15,13 +15,13 @@ export const CREATURE_SPAWN_TYPES = {
 export const DEFAULT_SPAWN_TYPE = 'herbivore';
 
 export function applyUiSpawnMethods(UIController) {
-  UIController.prototype.bindPropControls = function() {
+  UIController.prototype.bindPropControls = function () {
     const propToolBtn = domCache.get('propToolBtn');
     const propDropdown = domCache.get('propDropdown');
 
     if (propToolBtn && propDropdown) {
       // Toggle dropdown on button click
-      propToolBtn.addEventListener('click', (e) => {
+      propToolBtn.addEventListener('click', e => {
         e.stopPropagation();
         const isOpen = !propDropdown.classList.contains('hidden');
         // Close other dropdowns first
@@ -34,7 +34,7 @@ export function applyUiSpawnMethods(UIController) {
       // Handle dropdown item clicks
       const dropdownItems = propDropdown.querySelectorAll('.dropdown-item');
       dropdownItems.forEach(item => {
-        item.addEventListener('click', (event) => {
+        item.addEventListener('click', event => {
           event.stopPropagation();
           const propType = item.dataset.prop;
           this.setPropType(propType);
@@ -45,14 +45,14 @@ export function applyUiSpawnMethods(UIController) {
     }
   };
 
-  UIController.prototype.closeAllDropdowns = function() {
+  UIController.prototype.closeAllDropdowns = function () {
     const creatureDropdown = domCache.get('creatureDropdown');
     const propDropdown = domCache.get('propDropdown');
     if (creatureDropdown) creatureDropdown.classList.add('hidden');
     if (propDropdown) propDropdown.classList.add('hidden');
   };
 
-  UIController.prototype.setPropType = function(type) {
+  UIController.prototype.setPropType = function (type) {
     if (!type) return;
     const safeType = SANDBOX_PROP_TYPES[type] ? type : 'bounce';
     gameState.selectedPropType = safeType;
@@ -67,14 +67,14 @@ export function applyUiSpawnMethods(UIController) {
     }
   };
 
-  UIController.prototype.cyclePropType = function(direction = 1) {
+  UIController.prototype.cyclePropType = function (direction = 1) {
     const current = gameState.selectedPropType || 'bounce';
     const idx = this.propTypeOrder.indexOf(current);
     const nextIdx = (idx + direction + this.propTypeOrder.length) % this.propTypeOrder.length;
     this.setPropType(this.propTypeOrder[nextIdx]);
   };
 
-  UIController.prototype.updatePropButton = function(type) {
+  UIController.prototype.updatePropButton = function (type) {
     const propToolBtn = domCache.get('propToolBtn');
 
     const meta = SANDBOX_PROP_TYPES[type] || SANDBOX_PROP_TYPES.bounce;
@@ -82,16 +82,15 @@ export function applyUiSpawnMethods(UIController) {
       propToolBtn.textContent = meta.icon;
       propToolBtn.title = `${meta.label} (P)`;
     }
-
   };
 
-  UIController.prototype.bindSpawnCreatureControls = function() {
+  UIController.prototype.bindSpawnCreatureControls = function () {
     const spawnCreatureBtn = domCache.get('spawnCreatureBtn');
     const creatureDropdown = domCache.get('creatureDropdown');
 
     if (spawnCreatureBtn && creatureDropdown) {
       // Toggle dropdown on button click
-      spawnCreatureBtn.addEventListener('click', (e) => {
+      spawnCreatureBtn.addEventListener('click', e => {
         e.stopPropagation();
         const isOpen = !creatureDropdown.classList.contains('hidden');
         // Close other dropdowns first
@@ -104,7 +103,7 @@ export function applyUiSpawnMethods(UIController) {
       // Handle dropdown item clicks
       const dropdownItems = creatureDropdown.querySelectorAll('.dropdown-item');
       dropdownItems.forEach(item => {
-        item.addEventListener('click', (e) => {
+        item.addEventListener('click', e => {
           e.stopPropagation();
           const creatureType = item.dataset.creature;
           this.applySpawnSelection(creatureType);
@@ -112,12 +111,10 @@ export function applyUiSpawnMethods(UIController) {
           creatureDropdown.classList.add('hidden');
         });
       });
-
-
     }
 
     // Global click handler to close dropdowns
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', e => {
       // Don't close if clicking inside a dropdown
       if (e.target.closest('.dropdown-menu') || e.target.closest('.spawn-dropdown')) {
         return;
@@ -126,7 +123,7 @@ export function applyUiSpawnMethods(UIController) {
     });
   };
 
-  UIController.prototype.onSpawnCreature = function(type) {
+  UIController.prototype.onSpawnCreature = function (type) {
     const safeType = this.resolveSpawnType(type, { notifyOnFallback: true });
     if (!safeType) return;
     const x = this.world.width / 2 + (Math.random() - 0.5) * 200;
@@ -154,7 +151,7 @@ export function applyUiSpawnMethods(UIController) {
     console.debug(`🦌 Spawned ${safeType} at (${x.toFixed(0)}, ${y.toFixed(0)})`);
   };
 
-  UIController.prototype.updateSpawnButton = function(type) {
+  UIController.prototype.updateSpawnButton = function (type) {
     const spawnCreatureBtn = domCache.get('spawnCreatureBtn');
     if (!spawnCreatureBtn) return;
 
@@ -163,9 +160,13 @@ export function applyUiSpawnMethods(UIController) {
     const label = meta.label;
     spawnCreatureBtn.textContent = icon;
     spawnCreatureBtn.title = `Spawn ${label}`;
+    spawnCreatureBtn.setAttribute(
+      'aria-label',
+      `Spawn ${label} — last used creature type is remembered across sessions`
+    );
   };
 
-  UIController.prototype.updateSpawnDropdownSelection = function(type) {
+  UIController.prototype.updateSpawnDropdownSelection = function (type) {
     const creatureDropdown = domCache.get('creatureDropdown');
     if (!creatureDropdown) return;
     creatureDropdown.querySelectorAll('.dropdown-item').forEach(item => {
@@ -173,7 +174,7 @@ export function applyUiSpawnMethods(UIController) {
     });
   };
 
-  UIController.prototype.applySpawnSelection = function(type, { silent = false } = {}) {
+  UIController.prototype.applySpawnSelection = function (type, { silent = false } = {}) {
     const safeType = CREATURE_SPAWN_TYPES[type] ? type : DEFAULT_SPAWN_TYPE;
     if (!CREATURE_SPAWN_TYPES[type] && !silent && this.hasNotifications()) {
       this.notifications.show('Unknown creature type. Defaulting to herbivore.', 'warning', 2000);
@@ -186,13 +187,11 @@ export function applyUiSpawnMethods(UIController) {
     return safeType;
   };
 
-  UIController.prototype.resolveSpawnType = function(type, { notifyOnFallback = false } = {}) {
+  UIController.prototype.resolveSpawnType = function (type, { notifyOnFallback = false } = {}) {
     const directType = CREATURE_SPAWN_TYPES[type] ? type : null;
     if (directType) return directType;
 
-    const fallback = CREATURE_SPAWN_TYPES[this.lastSpawnType]
-      ? this.lastSpawnType
-      : DEFAULT_SPAWN_TYPE;
+    const fallback = CREATURE_SPAWN_TYPES[this.lastSpawnType] ? this.lastSpawnType : DEFAULT_SPAWN_TYPE;
 
     if (notifyOnFallback && this.hasNotifications()) {
       const message = type
@@ -203,7 +202,7 @@ export function applyUiSpawnMethods(UIController) {
     return fallback;
   };
 
-  UIController.prototype.onPropTool = function() {
+  UIController.prototype.onPropTool = function () {
     this.tools?.setMode?.('prop');
     eventSystem.emit('tool:changed', { mode: 'prop' });
     if (!gameState.selectedPropType) {

@@ -51,7 +51,8 @@ export class PersonalitySystem {
     }
 
     // Average parents' traits with mutation
-    const parentAvg = parentPersonalities.reduce((sum, p) => sum + (p[traitName] ?? defaultValue), 0) / parentPersonalities.length;
+    const parentAvg =
+      parentPersonalities.reduce((sum, p) => sum + (p[traitName] ?? defaultValue), 0) / parentPersonalities.length;
     const mutation = (Math.random() - 0.5) * variance * 2;
 
     return Math.max(0, Math.min(1, parentAvg + mutation));

@@ -31,7 +31,7 @@ export class UnlockableAchievements {
         name: 'Growing Colony',
         description: 'Reach 25 creatures',
         category: 'population',
-        check: (world) => world.creatures.length >= 25,
+        check: world => world.creatures.length >= 25,
         reward: { type: 'tool', value: 'heal' },
         points: 10
       },
@@ -40,7 +40,7 @@ export class UnlockableAchievements {
         name: 'Thriving Ecosystem',
         description: 'Reach 50 creatures',
         category: 'population',
-        check: (world) => world.creatures.length >= 50,
+        check: world => world.creatures.length >= 50,
         reward: { type: 'tool', value: 'boost' },
         points: 20
       },
@@ -49,7 +49,7 @@ export class UnlockableAchievements {
         name: 'Megafauna Paradise',
         description: 'Reach 100 creatures',
         category: 'population',
-        check: (world) => world.creatures.length >= 100,
+        check: world => world.creatures.length >= 100,
         reward: { type: 'feature', value: 'advanced_analytics' },
         points: 50
       },
@@ -60,7 +60,7 @@ export class UnlockableAchievements {
         name: 'Evolution in Action',
         description: 'Witness a rare genetic mutation',
         category: 'genetics',
-        check: (world) => world.creatures.some(c => c.rareMutations && c.rareMutations.length > 0),
+        check: world => world.creatures.some(c => c.rareMutations && c.rareMutations.length > 0),
         reward: { type: 'feature', value: 'gene_viewer' },
         points: 15
       },
@@ -69,9 +69,7 @@ export class UnlockableAchievements {
         name: 'Legendary Lineage',
         description: 'Create a creature with a legendary mutation',
         category: 'genetics',
-        check: (world) => world.creatures.some(c =>
-          c.rareMutations?.some(m => m.rarity === 'legendary')
-        ),
+        check: world => world.creatures.some(c => c.rareMutations?.some(m => m.rarity === 'legendary')),
         reward: { type: 'skin', value: 'cosmic' },
         points: 75
       },
@@ -80,7 +78,7 @@ export class UnlockableAchievements {
         name: 'Against Nature',
         description: 'Witness the mythic Chimera mutation',
         category: 'genetics',
-        check: (world) => world.creatures.some(c => c.genes?.chimera),
+        check: world => world.creatures.some(c => c.genes?.chimera),
         reward: { type: 'particles', value: 'mythic' },
         points: 100
       },
@@ -91,7 +89,7 @@ export class UnlockableAchievements {
         name: 'Wisdom of Ages',
         description: 'Have 5 elders alive simultaneously',
         category: 'survival',
-        check: (world) => world.creatures.filter(c => c.ageStage === 'elder').length >= 5,
+        check: world => world.creatures.filter(c => c.ageStage === 'elder').length >= 5,
         reward: { type: 'biome', value: 'ancient_grove' },
         points: 30
       },
@@ -100,7 +98,7 @@ export class UnlockableAchievements {
         name: 'Dynasty',
         description: 'Reach generation 10',
         category: 'survival',
-        check: (world) => world.creatures.some(c => c.generation >= 10),
+        check: world => world.creatures.some(c => c.generation >= 10),
         reward: { type: 'feature', value: 'family_tree' },
         points: 40
       },
@@ -113,7 +111,7 @@ export class UnlockableAchievements {
         category: 'ecosystem',
         isTimeBased: true,
         duration: 60,
-        check: (world) => {
+        check: world => {
           const preds = world.creatures.filter(c => c.genes?.predator).length;
           const herbs = world.creatures.filter(c => !c.genes?.predator).length;
           return preds >= 10 && preds <= 20 && herbs >= 50;
@@ -126,7 +124,7 @@ export class UnlockableAchievements {
         name: 'Genetic Tapestry',
         description: 'Have 10 distinct hue families',
         category: 'ecosystem',
-        check: (world) => {
+        check: world => {
           const hues = new Set(world.creatures.map(c => Math.floor((c.genes?.hue ?? 0) / 36)));
           return hues.size >= 10;
         },
@@ -140,7 +138,7 @@ export class UnlockableAchievements {
         name: 'Apex Predators',
         description: 'Witness coordinated pack hunting',
         category: 'behavior',
-        check: (world) => world.packHuntingOccurred === true,
+        check: world => world.packHuntingOccurred === true,
         reward: { type: 'feature', value: 'behavior_analytics' },
         points: 25
       },
@@ -149,18 +147,19 @@ export class UnlockableAchievements {
         name: 'Safety in Numbers',
         description: 'Observe a school of 15+ herbivores',
         category: 'behavior',
-        check: (world) => {
+        check: world => {
           // Check for clusters of herbivores
           const herbs = world.creatures.filter(c => !c.genes?.predator);
           if (herbs.length < 15) return false;
 
           // Simple clustering check
-          return herbs.some(h1 =>
-            herbs.filter(h2 => {
-              const dx = h1.x - h2.x;
-              const dy = h1.y - h2.y;
-              return dx * dx + dy * dy < 100 * 100;
-            }).length >= 15
+          return herbs.some(
+            h1 =>
+              herbs.filter(h2 => {
+                const dx = h1.x - h2.x;
+                const dy = h1.y - h2.y;
+                return dx * dx + dy * dy < 100 * 100;
+              }).length >= 15
           );
         },
         reward: { type: 'feature', value: 'social_network_view' },
@@ -173,9 +172,7 @@ export class UnlockableAchievements {
         name: 'Master of Environment',
         description: 'Have a creature adapted to 5 biomes',
         category: 'biome',
-        check: (world) => world.creatures.some(c =>
-          c.biomeAdaptations && Object.keys(c.biomeAdaptations).length >= 5
-        ),
+        check: world => world.creatures.some(c => c.biomeAdaptations && Object.keys(c.biomeAdaptations).length >= 5),
         reward: { type: 'biome', value: 'nexus' },
         points: 55
       },
@@ -186,7 +183,7 @@ export class UnlockableAchievements {
         name: 'Speedster',
         description: 'Evolve a creature with speed > 2.0',
         category: 'special',
-        check: (world) => world.creatures.some(c => (c.genes?.speed ?? 1) > 2.0),
+        check: world => world.creatures.some(c => (c.genes?.speed ?? 1) > 2.0),
         reward: { type: 'particles', value: 'speed_lines' },
         points: 30
       },
@@ -195,7 +192,7 @@ export class UnlockableAchievements {
         name: 'All-Seeing',
         description: 'Evolve a creature with sense > 250',
         category: 'special',
-        check: (world) => world.creatures.some(c => (c.genes?.sense ?? 100) > 250),
+        check: world => world.creatures.some(c => (c.genes?.sense ?? 100) > 250),
         reward: { type: 'feature', value: 'omniscient_view' },
         points: 35
       },
@@ -266,7 +263,7 @@ export class UnlockableAchievements {
 
       if (achievement.isTimeBased) {
         if (conditionMet) {
-          this.progress[achievement.id] += 1/60; // Assume 60 FPS
+          this.progress[achievement.id] += 1 / 60; // Assume 60 FPS
           if (this.progress[achievement.id] >= achievement.duration) {
             this.unlockAchievement(achievement, world);
           }
@@ -353,9 +350,7 @@ export class UnlockableAchievements {
    * Get total achievement points
    */
   getTotalPoints() {
-    return this.achievements
-      .filter(a => this.unlockedAchievements.has(a.id))
-      .reduce((sum, a) => sum + a.points, 0);
+    return this.achievements.filter(a => this.unlockedAchievements.has(a.id)).reduce((sum, a) => sum + a.points, 0);
   }
 
   /**

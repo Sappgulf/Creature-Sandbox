@@ -17,16 +17,19 @@ function escapeHtml(value) {
 }
 
 export function applyUiPlayableMethods(UIController) {
-  UIController.prototype.bindPlayableControls = function() {
+  UIController.prototype.bindPlayableControls = function () {
     const select = domCache.get('playableScenarioSelect');
     const startBtn = domCache.get('playableScenarioStart');
     if (!this.playableScenarios) return;
 
     if (select) {
-      select.innerHTML = this.playableScenarios.getScenarios()
-        .map((scenario) => {
+      select.innerHTML = this.playableScenarios
+        .getScenarios()
+        .map(scenario => {
           const progress = scenario.progress || {};
-          const suffix = progress.completions ? ` (${progress.completions} clear${progress.completions === 1 ? '' : 's'})` : '';
+          const suffix = progress.completions
+            ? ` (${progress.completions} clear${progress.completions === 1 ? '' : 's'})`
+            : '';
           return `<option value="${scenario.id}">${scenario.icon} ${escapeHtml(scenario.name)}${suffix}</option>`;
         })
         .join('');
@@ -39,7 +42,7 @@ export function applyUiPlayableMethods(UIController) {
     this.renderPlayableDirector();
   };
 
-  UIController.prototype.onPlayableScenarioStart = function() {
+  UIController.prototype.onPlayableScenarioStart = function () {
     if (!this.playableScenarios) return;
     const select = domCache.get('playableScenarioSelect');
     const id = select?.value || this.playableScenarios.getScenarios()[0]?.id;
@@ -49,11 +52,11 @@ export function applyUiPlayableMethods(UIController) {
     this.dismissInteractionHint?.();
   };
 
-  UIController.prototype.renderPlayableDirector = function(snapshot = null) {
+  UIController.prototype.renderPlayableDirector = function (snapshot = null) {
     const root = domCache.get('playableDirector');
     const select = domCache.get('playableScenarioSelect');
     if (!root || !this.playableScenarios) return;
-    const directorSnapshot = snapshot?.playable ? snapshot : (this.gameDirector?.getSnapshot?.() || null);
+    const directorSnapshot = snapshot?.playable ? snapshot : this.gameDirector?.getSnapshot?.() || null;
     const data = snapshot?.playable
       ? snapshot.playable
       : snapshot || directorSnapshot?.playable || this.playableScenarios.getSnapshot();
@@ -78,7 +81,10 @@ export function applyUiPlayableMethods(UIController) {
       : '';
     const objectives = objectiveCards.length
       ? `<div class="director-objectives" aria-label="Current objectives">
-          ${objectiveCards.slice(0, 4).map(card => `
+          ${objectiveCards
+    .slice(0, 4)
+    .map(
+      card => `
             <div class="director-objective-card ${escapeHtml(card.level || 'active')}">
               <span class="objective-mark">${escapeHtml(card.icon || '🎯')}</span>
               <span class="objective-text">
@@ -87,7 +93,9 @@ export function applyUiPlayableMethods(UIController) {
               </span>
               <span class="objective-ring" style="--objective-progress:${Math.round((card.progress || 0) * 100)}%"></span>
             </div>
-          `).join('')}
+          `
+    )
+    .join('')}
         </div>`
       : '';
 

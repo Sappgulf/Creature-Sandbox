@@ -24,9 +24,11 @@ export class MobileSupport {
   }
 
   detectMobile() {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-           (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) ||
-           ('ontouchstart' in window);
+    return (
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+      (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) ||
+      'ontouchstart' in window
+    );
   }
 
   init() {
@@ -46,10 +48,10 @@ export class MobileSupport {
   ensureTouchHandlers() {
     if (this.touchHandlersAttached) return;
     this.touchHandlersAttached = true;
-    this.registerListener(this.canvas, 'touchstart', (e) => this.handleTouchStart(e), { passive: false });
-    this.registerListener(this.canvas, 'touchmove', (e) => this.handleTouchMove(e), { passive: false });
-    this.registerListener(this.canvas, 'touchend', (e) => this.handleTouchEnd(e), { passive: false });
-    this.registerListener(this.canvas, 'touchcancel', (e) => this.handleTouchEnd(e), { passive: false });
+    this.registerListener(this.canvas, 'touchstart', e => this.handleTouchStart(e), { passive: false });
+    this.registerListener(this.canvas, 'touchmove', e => this.handleTouchMove(e), { passive: false });
+    this.registerListener(this.canvas, 'touchend', e => this.handleTouchEnd(e), { passive: false });
+    this.registerListener(this.canvas, 'touchcancel', e => this.handleTouchEnd(e), { passive: false });
   }
 
   applyMobileStyles() {
@@ -104,9 +106,11 @@ export class MobileSupport {
       }
 
       if (wasMobile !== this.isMobile) {
-        window.dispatchEvent(new CustomEvent('creature:mobile-layout-change', {
-          detail: { active: this.isMobile }
-        }));
+        window.dispatchEvent(
+          new CustomEvent('creature:mobile-layout-change', {
+            detail: { active: this.isMobile }
+          })
+        );
       }
     };
 
@@ -127,7 +131,7 @@ export class MobileSupport {
       this.registerListener(window.visualViewport, 'resize', syncMobileLayoutProfile);
     }
 
-    this.registerListener(document, 'focusin', (event) => {
+    this.registerListener(document, 'focusin', event => {
       if (!this.isMobile) return;
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
@@ -168,10 +172,7 @@ export class MobileSupport {
       this._longPressTimer = setTimeout(() => {
         const stored = this.touches.get(touch.identifier);
         if (stored) {
-          const distance = Math.hypot(
-            stored.currentX - stored.startX,
-            stored.currentY - stored.startY
-          );
+          const distance = Math.hypot(stored.currentX - stored.startX, stored.currentY - stored.startY);
           if (distance < 10) {
             this.handleLongPress(stored.currentX, stored.currentY);
           }
@@ -203,10 +204,7 @@ export class MobileSupport {
         stored.currentX = touch.clientX;
         stored.currentY = touch.clientY;
         // Cancel long-press if moved too far
-        const distance = Math.hypot(
-          stored.currentX - stored.startX,
-          stored.currentY - stored.startY
-        );
+        const distance = Math.hypot(stored.currentX - stored.startX, stored.currentY - stored.startY);
         if (distance > 10 && this._longPressTimer) {
           clearTimeout(this._longPressTimer);
           this._longPressTimer = null;
@@ -235,10 +233,7 @@ export class MobileSupport {
       const stored = this.touches.get(touch.identifier);
       if (stored) {
         const duration = Date.now() - stored.startTime;
-        const distance = Math.hypot(
-          stored.currentX - stored.startX,
-          stored.currentY - stored.startY
-        );
+        const distance = Math.hypot(stored.currentX - stored.startX, stored.currentY - stored.startY);
 
         // It's a tap if quick and not moved much
         if (duration < 300 && distance < 10) {
@@ -289,10 +284,7 @@ export class MobileSupport {
   }
 
   handlePinchStart(touches) {
-    const distance = Math.hypot(
-      touches[1].clientX - touches[0].clientX,
-      touches[1].clientY - touches[0].clientY
-    );
+    const distance = Math.hypot(touches[1].clientX - touches[0].clientX, touches[1].clientY - touches[0].clientY);
     this.lastPinchDistance = distance;
 
     const centerX = (touches[0].clientX + touches[1].clientX) / 2;
@@ -302,10 +294,7 @@ export class MobileSupport {
 
   handlePinchMove(touches) {
     this.noteCameraOverride();
-    const distance = Math.hypot(
-      touches[1].clientX - touches[0].clientX,
-      touches[1].clientY - touches[0].clientY
-    );
+    const distance = Math.hypot(touches[1].clientX - touches[0].clientX, touches[1].clientY - touches[0].clientY);
 
     if (this.lastPinchDistance) {
       // Zoom
@@ -363,16 +352,20 @@ export class MobileSupport {
     this.lastTapTime = now;
 
     // Emit tap event for creature selection
-    this.canvas.dispatchEvent(new CustomEvent('mobiletap', {
-      detail: { x, y }
-    }));
+    this.canvas.dispatchEvent(
+      new CustomEvent('mobiletap', {
+        detail: { x, y }
+      })
+    );
   }
 
   handleLongPress(x, y) {
     // Emit long-press event for creature inspect/context menu
-    this.canvas.dispatchEvent(new CustomEvent('mobilelongpress', {
-      detail: { x, y }
-    }));
+    this.canvas.dispatchEvent(
+      new CustomEvent('mobilelongpress', {
+        detail: { x, y }
+      })
+    );
   }
 
   // Get world coordinates from touch

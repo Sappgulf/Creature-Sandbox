@@ -1,6 +1,7 @@
 Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/plugins/cache/openai-curated/game-studio/689b4b481d14af5234d311d42b0fb7e9375f699b/skills/web-game-foundations/SKILL.md) [$game-studio:web-3d-asset-pipeline](/Users/austinbeatty/.codex/plugins/cache/openai-curated/game-studio/689b4b481d14af5234d311d42b0fb7e9375f699b/skills/web-3d-asset-pipeline/SKILL.md) [$develop-web-game](/Users/austinbeatty/.codex/skills/develop-web-game/SKILL.md) lets go over everything we got and improve and upgrade everything. better than ever. smooth web and mobile gameplay. push and commit when finished
 
 2026-04-14
+
 - Session started. Goal: improve overall smoothness and usability for desktop and mobile without destabilizing the simulation.
 - Initial repo scan: large canvas-based ecosystem sim with modular architecture, existing mobile support, control strip UI, deterministic hooks (`window.render_game_to_text`, `window.advanceTime`) already present.
 - Constraints adopted from AGENT.md: stability first, minimal change surface, measurable verification, changelog updates required.
@@ -62,6 +63,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Residual note: the main bundle is materially smaller, but still large enough that more aggressive chunking would be the next perf pass if we keep pushing startup further.
 
 2026-04-15
+
 - New request: fix the world screen being overwhelmingly green, then add follow-on visual polish and ship the result.
 - Root visual issue found in `renderer.js`:
 - the world base used a dark green background, biome rendering drew large green-biased rectangular samples, and spring added another fresh-green seasonal wash on top.
@@ -85,6 +87,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - `npm run build` ✅
 
 2026-04-17
+
 - New request: broad test/polish pass with subagents, then commit and push when finished.
 - Baseline verification before edits:
 - `npm test` ✅
@@ -105,6 +108,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Residual note: the repo still only has unit tests plus browser smoke via the Codex client; promoting that browser smoke into a checked-in repo script would make the next pass easier to repeat.
 
 2026-04-23
+
 - Continuing the broad polish pass requested for the browser game shell.
 - Current edits tightened the control strip and overflow drawer, moved rare tools into the drawer, lowered startup density, shortened onboarding/hint copy, and hid the session-meta rail by default to protect the playfield.
 - Follow-up sync patch keeps God Mode truthful across the strip, overflow menu, watch strip, and panel controller when the state changes from any entry point.
@@ -175,6 +179,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - mobile smoke at `390x844` reported home hidden, mobile layout true, 319x692 canvas, 47 creatures, 188 food, and no console warnings/errors.
 
 2026-04-30
+
 - New request: audit everything using skills and browser for gameplay, visuals, performance, and polish fixes.
 - Baseline before edits:
 - `npm test` ✅ (148 passing)
@@ -219,6 +224,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Residual note: smoke screenshots finish in watch/god state by design, so primary-strip screenshots were partly limited by a local Playwright screenshot timeout after gameplay start; the checked-in smoke state still confirmed 30 registered sprites, no missing asset errors, and no console errors.
 
 2026-05-26
+
 - New request: use relevant skills, propose improvements, then execute selected tranche 1-8.
 - Implemented HUD/player-facing polish:
 - objective rail now carries active God/watch mode plus day/night/season/resource rhythm.
@@ -266,6 +272,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - `output/browser-smoke/desktop.png`
 
 2026-05-02
+
 - New request: audit everything and implement polish/upgrades across 11 categories.
 - Implemented DevEx (11): `npm run analyze` with rollup-plugin-visualizer, `.prettierrc`, and `@ts-check` on 4 new modules.
 - Implemented Accessibility (7): high-contrast CSS toggle in Features panel with persistence, enhanced `sim-announcer` narrative events with auto-clear.
@@ -285,6 +292,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
 
 2026-05-02 (continued)
+
 - New request: implement follow-up polish round 2 (PWA, color-blind, sound volumes, camera bookmarks, lifetime stats).
 - Implemented PWA (1): `manifest.json` with icons/screenshots, linked in `index.html` with `theme-color` and `apple-mobile-web-app` meta tags.
 - Implemented Accessibility (2): CSS color-blind modes (`protanopia`, `deuteranopia`, `tritanopia`) with canvas `hue-rotate` filters; selector in Features panel with `localStorage` persistence.
@@ -298,6 +306,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - `npm run smoke:browser` ✅ (desktop, mobile-compact, mobile-large)
 
 2026-05-04
+
 - New request: use Browser, web-game foundations, develop-web-game, and game UI frontend skills across the app; improve features, menus, and overall polish; test everything; commit and push when finished.
 - Starting from `main...origin/main` with one pre-existing untracked image (`asset-polish-mcp-home.png`).
 - Architectural frame for this pass: keep the canvas as the playfield, keep simulation state outside renderer/UI, protect the center/lower playfield with compact DOM HUD surfaces, preserve `window.render_game_to_text` and `window.advanceTime`, and verify both checked-in browser smoke plus the external web-game client where possible.
@@ -325,6 +334,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - committed and pushed menu-flow polish to `origin/main`.
 
 2026-05-05
+
 - New request: after repo audit, implement items 1-10 from the proposed backlog.
 - Implemented active playable runtime persistence:
   - Added shared runtime save metadata for playable scenario state, UI state, moments, and preview summaries.
@@ -351,6 +361,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - Screenshot review: `output/browser-smoke/desktop.png`, `mobile-large.png`, and `desktop-overflow.png`
 
 2026-05-10
+
 - New request: implement the full 1-38 upgrade list, create a tracked todo, use Codex skills, and use subagents.
 - Created `docs/superpowers/plans/2026-05-10-creature-sandbox-full-upgrade.md` with the approved 38-item checklist and phase map.
 - Used Codex skills: `superpowers:writing-plans`, `superpowers:subagent-driven-development`, `develop-web-game`, and `game-playtest`; dispatched focused subagents for runtime and docs/release review.
@@ -380,6 +391,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Screenshot coverage: `home-desktop.png`, `desktop-clean.png`, `desktop-selected.png`, `desktop-overflow.png`, `desktop-watch.png`, `desktop-god.png`, plus compact/large mobile equivalents under `output/browser-smoke/`.
 
 2026-05-13
+
 - New request: repo-wide audit follow-through for smooth web/mobile gameplay with subagents.
 - Implemented focused stability/input fixes:
   - `World.step()` no longer calls `WorldEcosystem.update()` twice per tick, avoiding doubled balance work and unintended ecosystem drift.
@@ -389,6 +401,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Verification pending for this pass.
 
 2026-05-14
+
 - Continued the full redo mission as a non-destructive architecture/gameplay consolidation pass.
 - Baseline audit map:
   - working core to preserve: Canvas 2D renderer, `World` subsystem split, creature behavior/genetics modules, manifest sprite loader, runtime save migration, mobile support, control strip, Playable Scenarios, Session Goals, Moments, and browser smoke hooks.
@@ -414,6 +427,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - external `$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js` failed before launch because its cached Playwright Chromium executable was missing; the checked-in browser smoke remained the reliable browser lane.
 
 2026-05-24
+
 - New request: audit everything with applicable Codex skills and drastically improve gameplay/visuals.
 - Skills used for this pass: `develop-web-game`, `game-studio:web-game-foundations`, `game-studio:game-ui-frontend`, and `game-studio:game-playtest`.
 - Baseline gates:
@@ -446,6 +460,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - Playwright MCP opened `http://127.0.0.1:4173/?smoke=1&v=final-open-20260524b` with no new console warnings in the tool output.
 
 2026-05-24
+
 - Continued with the `develop-web-game` and `web-game-foundations` constraints: keep Canvas 2D + DOM overlays, preserve `window.render_game_to_text` / `window.advanceTime`, and verify with checked-in smoke because the external browser client remained unreliable.
 - Live desktop/mobile smoke screenshots showed the challenge canvas card was using generic `Goal` labels, compact/mobile startup could show stacked notification pills over the playfield, smoke URLs still registered the service worker, and early sprite frame requests could cache unavailable manifest sprites before the manifest settled.
 - Implemented a bounded overlay/runtime reliability pass:
@@ -463,6 +478,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - inspected `output/browser-smoke/desktop.png`, `mobile-compact.png`, and `mobile-large.png`, plus local before/after screenshots in `output/manual-audit/`.
 
 2026-05-24
+
 - Continued the gameplay/visual audit after the opening pass with a HUD readability/regression-lock pass.
 - Implemented:
   - mobile objective rail now uses a full-width compact panel with two-line goal titles and a retained action subtitle instead of hiding the second line entirely.
@@ -481,6 +497,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - `node "$HOME/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js" --url "http://127.0.0.1:4173/?smoke=1&v=opening-hud-client-20260524" ...` ✅ captured `output/web-game/opening-hud-pass/shot-0.png` and `state-0.json` with desktop zoom `0.9`, 12 visible creatures, and 0 startup props.
 
 2026-05-24
+
 - Continued the audit after pushing `20f6796` to `origin/main`.
 - Next target: first-action clarity and playfield chrome.
 - Implemented:
@@ -502,6 +519,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - external `develop-web-game` client ✅ captured `output/web-game/opening-focus-pass/shot-0.png` and `state-0.json` with `objectiveRailVisible: true`, `challengeOverlayVisible: false`, desktop selected creature present, zoom `0.9`, 12 visible creatures, and 0 startup props.
 
 2026-05-24
+
 - Continued the audit with `develop-web-game`, `game-studio:game-ui-frontend`, `game-studio:game-playtest`, and finishing workflow because the user asked to keep improving and then commit/push to `main`.
 - Next target: remaining normal-play chrome weight.
 - Implemented:
@@ -521,6 +539,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - external `develop-web-game` client ✅ captured `output/web-game/dossier-pass/shot-0.png` and `state-0.json` with `objectiveRailVisible: true`, `challengeOverlayVisible: false`, `miniGraphsVisible: false`, desktop camera zoom `0.9`, and `0` startup props.
 
 2026-05-27
+
 - Continued a bounded docs-grounded polish pass from `docs/FEATURE_MATRIX.md`: Gene Editor settings existed but were still listed as not persisted as UI preferences.
 - Implemented Gene Editor local preference persistence for custom gene values plus spawn count/spread, with clamped restore and safe localStorage fallback.
 - Added a browser-smoke hook/assertion that writes Gene Editor preferences, reloads them from storage, and restores the previous user values after proof.
@@ -528,6 +547,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Verification completed in the following audit pass.
 
 2026-05-27
+
 - New request: continue the broad audit/test/polish pass and make sure the game is fully working.
 - Baseline before edits:
   - `npm test` ✅ (154 passing)
@@ -554,6 +574,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Residual note: main-thread smoke still reports slow real-time frame pacing after the full scripted interaction sequence, even with the particle budget enforced. Worker mode is the smooth opt-in lane and is now passing with stable mobile frame pacing.
 
 2026-05-27
+
 - Follow-up main-thread fallback smoothness pass.
 - Baseline from current `output/browser-smoke-main/runtime-readiness.json`: fallback proof is green, desktop avg `33.33ms` / p95 `49.9ms`, non-`drawImage` `3.5231ms/frame`, top scope `world-step`; mobile p95 remains `<=17.7ms`.
 - Implemented a narrow render-path fix:
@@ -563,6 +584,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Verification pending.
 
 2026-05-27
+
 - Approved tranche 1-5: main-thread smoothness, drag/throw/prop proof, mobile God Mode panel polish, Upgrade Hub pass, and scenario result polish.
 - Implemented:
   - reduced sprite-tint startup pressure by quantizing creature sprite tint colors and preparing only the base 64px sprite set immediately; close-zoom sizes now load lazily.
@@ -587,6 +609,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Residual note: desktop main-thread smoke is much better but still below 60fps in the final watch/god/result state. Next pass should profile full-view draw volume, especially creature/food `drawImage` cost.
 
 2026-05-27
+
 - Approved tranche 1-3: desktop draw-volume profiling, Upgrade Hub result focus, and worker-mode candidate promotion.
 - Implemented:
   - smoke frame-pacing samples now install a scoped `drawImage` profiler and write call count, per-frame volume, total draw time, max draw time, and canvas buckets into every browser-smoke JSON artifact.
@@ -609,6 +632,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Residual note: main-thread desktop final-state pacing is improved and now profile-backed, but still not at 60fps. The next draw pass should use the new `drawImage.byCanvas` artifacts plus creature sprite counts to decide whether to reduce creature sprite detail or batch more creature/food decoration in low quality.
 
 2026-05-27
+
 - Approved tranche 1-5: desktop smoothness pass, worker release-candidate controls, scenario depth, Upgrade Hub run-history polish, and release packaging/tag prep.
 - Implemented:
   - desktop/full-view rendering now uses vector creature LOD for non-focused creatures at overview zooms, tighter particle budgets, simplified dense food rendering, and a lower desktop canvas render scale to favor pacing.
@@ -631,6 +655,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Residual note: main-thread desktop final heavy state is materially improved and draw volume is bounded, but it is still not a 60fps claim. Worker mode is the smoother candidate lane; the next upgrade should profile remaining non-`drawImage` frame time before making worker default.
 
 2026-05-27
+
 - Follow-up test/audit pass after `v2.0.0-rc1`.
 - Re-ran the release checklist proof on clean `main`, then inspected screenshots/state artifacts.
 - Found one concrete visual polish issue: fallback achievement unlock toasts could still render as a large desktop card over the Inspector lane while Upgrade Hub scenario result/history was focused.
@@ -656,6 +681,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - install Vercel CLI (`npm i -g vercel`) before the next deployment proof so `vercel deploy`, `vercel logs`, and env pulls are available.
 
 2026-05-27
+
 - Approved tranche 1-4: non-`drawImage` frame profile proof, achievement-toast bounds smoke assertion, longer worker scenario soak, and Vercel CLI install/verify.
 - Implemented:
   - frame-pacing smoke samples now temporarily enable/reset the profiler and write `mainThread` scope evidence into every JSON artifact, including profiled non-`drawImage` total/per-frame cost and top scoped rows.
@@ -678,6 +704,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Residual note: desktop main-thread heavy state still is not a 60fps claim. The profile evidence now points at `world-step` and `render` as the next concrete optimization targets; worker remains the smoother candidate lane.
 
 2026-05-27
+
 - Approved tranche 1-4: desktop perf optimization, worker default-readiness pass, production deploy health, and visual polish sweep.
 - Implemented:
   - render and simulation hot paths now reuse more buffers: creature render options, food visual constants, ecosystem/world nearby-query outputs, behavior pack/herd/predator query arrays, and caller-provided spatial query result arrays.
@@ -702,6 +729,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Residual note: functional release proof is healthy, production is reachable, and worker diagnostics are stronger. Performance is still environment-sensitive under local CPU load from concurrent builds; the next upgrade should target `world-step`/`subsystem-update` and the completed-scenario result flow before promoting worker by default.
 
 2026-05-27
+
 - Approved tranche 1-8: clean perf re-baseline, world-step optimization, worker default-readiness, quality recovery polish, mobile result polish, production smoke, scenario depth, and release evidence board.
 - Implemented:
   - production-safe smoke URL probing, custom smoke output folders, and a `smoke:production` lane.
@@ -727,6 +755,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Residual note: shipping default remains `main`; worker is now a candidate-ready opt-in lane for a defaulting discussion, not an automatic default change.
 
 2026-05-27
+
 - Approved tranche 1-4: worker default product decision, production smoke in CI, longer scenario balance proof, and continued desktop frame-time polish.
 - Implemented:
   - worker runtime is now the shipping default, with `?worker=0` and `npm run smoke:main` preserving explicit main-thread fallback proof.
@@ -756,6 +785,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Residual note: desktop main-thread mode is now explicitly fallback-only. Worker default proof is green locally; production proof must be rerun after the worker-bundle fix commit is live so `/build-info.json` matches `HEAD`.
 
 2026-05-27
+
 - Approved tranche 1-3: production realtime perf proof, compact release evidence summary, and another safe main-thread fallback optimization before commit/push.
 - Implemented so far:
   - production smoke is now realtime-gated against the public Vercel alias and the release evidence board blocks stale or non-ready production artifacts instead of counting them as present proof.
@@ -779,6 +809,7 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
 - Next verification: commit/push, wait for production `/build-info.json` to match the new SHA, rerun production smoke and release evidence, then report final proof.
 
 2026-05-28
+
 - Approved tranche 1-3: production Web Vitals lane, repeated scenario-balance sampling, and main-thread fallback polish, then commit/push.
 - Implemented:
   - added `npm run smoke:production:vitals` via `scripts/production-vitals-smoke.mjs`, with desktop/mobile startup timing, FCP/LCP, CLS, long-task, sprite, worker-ready, and screenshot artifacts.

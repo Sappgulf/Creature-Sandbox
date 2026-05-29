@@ -144,7 +144,8 @@ export class WorldCreatureManager {
     // Apply environmental mutations
     if (this.world.environment) {
       const seasonModifier = this.world.environment.getSeasonModifier('reproduction');
-      if (rand() < 0.1 * seasonModifier) { // 10% mutation rate, modified by season
+      if (rand() < 0.1 * seasonModifier) {
+        // 10% mutation rate, modified by season
         childGenes = mutateGenes(childGenes);
       }
     }
@@ -163,8 +164,7 @@ export class WorldCreatureManager {
 
     const parentTraits = parent1.traits || { bounce: 1, temperament: 0.5 };
     const mateTraits = parent2?.traits || parentTraits;
-    const blend = (a, b, variance, min, max) =>
-      clamp((a + b) * 0.5 + rand(-variance, variance), min, max);
+    const blend = (a, b, variance, min, max) => clamp((a + b) * 0.5 + rand(-variance, variance), min, max);
     if (child.traits) {
       child.traits.bounce = blend(parentTraits.bounce ?? 1, mateTraits.bounce ?? 1, 0.12, 0.7, 1.3);
       child.traits.temperament = blend(parentTraits.temperament ?? 0.5, mateTraits.temperament ?? 0.5, 0.1, 0, 1);
@@ -392,9 +392,7 @@ export class WorldCreatureManager {
   // Query creatures in radius
   queryCreatures(x, y, radius) {
     const r2 = radius * radius;
-    return this.world.creatures.filter(c =>
-      c.alive && (c.x - x) * (c.x - x) + (c.y - y) * (c.y - y) <= r2
-    );
+    return this.world.creatures.filter(c => c.alive && (c.x - x) * (c.x - x) + (c.y - y) * (c.y - y) <= r2);
   }
 
   // Fast spatial query using grid buckets

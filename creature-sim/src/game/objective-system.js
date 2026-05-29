@@ -61,11 +61,11 @@ function biomeHealthScore(metrics = {}) {
   const restScore = clamp(Number(metrics.restZones || 0) / 3, 0, 1);
   return clamp(
     foodScore * 0.26 +
-    stressScore * 0.24 +
-    hungerScore * 0.18 +
-    energyScore * 0.14 +
-    diversityScore * 0.10 +
-    restScore * 0.08,
+      stressScore * 0.24 +
+      hungerScore * 0.18 +
+      energyScore * 0.14 +
+      diversityScore * 0.1 +
+      restScore * 0.08,
     0,
     1
   );
@@ -90,9 +90,7 @@ function progressForObjective(objective, metrics = {}) {
   const target = safeTarget(objective.target, type === 'biome_health' ? 0.72 : 1);
 
   if (type === 'biome_health') {
-    const targetScore = typeof target === 'object'
-      ? Number(target.score ?? target.min ?? 0.72)
-      : Number(target);
+    const targetScore = typeof target === 'object' ? Number(target.score ?? target.min ?? 0.72) : Number(target);
     return biomeHealthScore(metrics) / Math.max(0.1, targetScore || 0.72);
   }
 
@@ -164,13 +162,9 @@ export class ObjectiveSystem {
       metrics.elapsed = Number(context.elapsed);
     }
 
-    const cards = objectives
-      .filter(Boolean)
-      .map(goal => this.toCard(this.normalizeObjective(goal), metrics));
+    const cards = objectives.filter(Boolean).map(goal => this.toCard(this.normalizeObjective(goal), metrics));
     const completed = cards.filter(card => card.completed).length;
-    const progress = cards.length
-      ? cards.reduce((sum, card) => sum + card.progress, 0) / cards.length
-      : 0;
+    const progress = cards.length ? cards.reduce((sum, card) => sum + card.progress, 0) / cards.length : 0;
 
     this.lastSnapshot = {
       metrics,

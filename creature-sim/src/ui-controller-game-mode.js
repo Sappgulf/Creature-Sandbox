@@ -1,14 +1,15 @@
 import { domCache } from './dom-cache.js';
 
 export function applyUiGameModeMethods(UIController) {
-  UIController.prototype.bindGameplayModeControls = function() {
+  UIController.prototype.bindGameplayModeControls = function () {
     if (!this.gameplayModes) return;
     const modeSelect = domCache.get('modeSelect');
     const modeApplyBtn = domCache.get('modeApplyBtn');
     const modeCycleBtn = domCache.get('modeCycleBtn');
 
     if (modeSelect) {
-      modeSelect.innerHTML = this.gameplayModes.getModes()
+      modeSelect.innerHTML = this.gameplayModes
+        .getModes()
         .map(m => `<option value="${m.id}">${m.icon} ${m.name}</option>`)
         .join('');
       modeSelect.value = this.gameplayModes.getActiveMode()?.id;
@@ -25,7 +26,7 @@ export function applyUiGameModeMethods(UIController) {
     this.renderGameMode();
   };
 
-  UIController.prototype.onModeChange = function() {
+  UIController.prototype.onModeChange = function () {
     const select = domCache.get('modeSelect');
     if (!select || !this.gameplayModes) return;
     const value = select.value;
@@ -34,7 +35,7 @@ export function applyUiGameModeMethods(UIController) {
     this.dismissInteractionHint();
   };
 
-  UIController.prototype.onModeCycle = function() {
+  UIController.prototype.onModeCycle = function () {
     if (!this.gameplayModes) return;
     this.gameplayModes.cycleMode(1);
     const select = domCache.get('modeSelect');
@@ -45,7 +46,7 @@ export function applyUiGameModeMethods(UIController) {
     this.dismissInteractionHint();
   };
 
-  UIController.prototype.renderGameMode = function(modeData = null) {
+  UIController.prototype.renderGameMode = function (modeData = null) {
     const active = modeData || this.gameplayModes?.getActiveMode?.();
     const nameEl = domCache.get('modeName');
     const descEl = domCache.get('modeDescription');
@@ -63,7 +64,7 @@ export function applyUiGameModeMethods(UIController) {
     }
   };
 
-  UIController.prototype.bindSessionGoalControls = function() {
+  UIController.prototype.bindSessionGoalControls = function () {
     const refreshBtn = domCache.get('refreshGoalsBtn');
     if (refreshBtn) {
       refreshBtn.addEventListener('click', this.boundHandlers.onRefreshGoals);
@@ -71,13 +72,13 @@ export function applyUiGameModeMethods(UIController) {
     this.renderSessionGoals();
   };
 
-  UIController.prototype.onRefreshGoals = function() {
+  UIController.prototype.onRefreshGoals = function () {
     if (!this.sessionGoals) return;
     this.sessionGoals.refresh();
     this.renderSessionGoals();
   };
 
-  UIController.prototype.renderSessionGoals = function(goals = null) {
+  UIController.prototype.renderSessionGoals = function (goals = null) {
     const container = domCache.get('goalList');
     const card = domCache.get('goalCard');
     const goalData = goals || this.sessionGoals?.getGoals?.() || [];
@@ -88,10 +89,11 @@ export function applyUiGameModeMethods(UIController) {
       return;
     }
 
-    container.innerHTML = goalData.map(goal => {
-      const percent = Math.min(100, Math.round((goal.progress || 0) * 100));
-      const complete = goal.completed || percent >= 100;
-      return `
+    container.innerHTML = goalData
+      .map(goal => {
+        const percent = Math.min(100, Math.round((goal.progress || 0) * 100));
+        const complete = goal.completed || percent >= 100;
+        return `
         <div class="goal-row ${complete ? 'complete' : ''}">
           <div class="goal-row-header">
             <span class="goal-icon">${goal.icon || '🎯'}</span>
@@ -105,7 +107,8 @@ export function applyUiGameModeMethods(UIController) {
           </div>
         </div>
       `;
-    }).join('');
+      })
+      .join('');
 
     if (card && goalData.some(g => g.completed)) {
       card.classList.add('celebrate');
@@ -113,7 +116,7 @@ export function applyUiGameModeMethods(UIController) {
     }
   };
 
-  UIController.prototype.onCampaignToggle = function() {
+  UIController.prototype.onCampaignToggle = function () {
     // Campaign panel toggle handled in main.js (kept for unified menu model)
   };
 }

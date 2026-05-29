@@ -27,10 +27,12 @@ import {
 
 // Local helper to validate notification subsystem shape without depending on cross-module export availability
 function isNotificationSystem(candidate) {
-  return !!candidate &&
+  return (
+    !!candidate &&
     typeof candidate.show === 'function' &&
     typeof candidate.update === 'function' &&
-    typeof candidate.draw === 'function';
+    typeof candidate.draw === 'function'
+  );
 }
 
 export class GameLoop {
@@ -47,9 +49,7 @@ export class GameLoop {
     this.achievements = subsystems.achievements;
     this.audio = subsystems.audio;
     this.particles = subsystems.particles;
-    this.notifications = isNotificationSystem(subsystems.notifications)
-      ? subsystems.notifications
-      : null;
+    this.notifications = isNotificationSystem(subsystems.notifications) ? subsystems.notifications : null;
     this.heatmaps = subsystems.heatmaps;
     this.lineageTracker = subsystems.lineageTracker;
     this.miniGraphs = subsystems.miniGraphs;
@@ -195,9 +195,8 @@ export class GameLoop {
 
   syncParticleBudget() {
     if (!this.particles) return;
-    const quality = this.renderer?.performance?.getCurrentQuality?.() ||
-      this.renderer?.performance?.currentQuality ||
-      'medium';
+    const quality =
+      this.renderer?.performance?.getCurrentQuality?.() || this.renderer?.performance?.currentQuality || 'medium';
     const maxParticles = RendererConfig.QUALITY_PRESETS[quality]?.maxParticles;
     if (quality === this._lastSyncedParticleQuality && this.particles.maxParticles === maxParticles) return;
     if (Number.isFinite(maxParticles) && maxParticles > 0) {
@@ -228,7 +227,8 @@ export class GameLoop {
    */
   setupEventListeners() {
     const resolveEventPoint = (data, fallbackCreature = null) => {
-      const creature = data?.creature || data?.prey || data?.attacker || data?.nest || data?.region || fallbackCreature || null;
+      const creature =
+        data?.creature || data?.prey || data?.attacker || data?.nest || data?.region || fallbackCreature || null;
       const x = Number.isFinite(data?.x)
         ? data.x
         : Number.isFinite(creature?.x)
@@ -263,7 +263,7 @@ export class GameLoop {
     });
 
     // Creature events
-    eventSystem.on(GameEvents.CREATURE_BORN, (data) => {
+    eventSystem.on(GameEvents.CREATURE_BORN, data => {
       if (this.lineageTracker) this.lineageTracker.onCreatureBorn(data.creature, this.world);
       if (this.audio) this.audio.playCreatureSound(data.creature, 'birth', this.camera);
       if (this.visualEffects && data.creature) {
@@ -277,11 +277,16 @@ export class GameLoop {
       lifetimeStats.updateMax('highestPopulation', this.world?.creatures?.length || 0);
     });
 
-    eventSystem.on(GameEvents.CREATURE_DIED, (data) => {
+    eventSystem.on(GameEvents.CREATURE_DIED, data => {
       if (this.lineageTracker) this.lineageTracker.onCreatureDied(data.creature);
       if (this.audio) this.audio.playCreatureSound(data.creature, 'death', this.camera);
       if (this.visualEffects && data.creature) {
-        this.visualEffects.createDeathEffect(data.creature.x, data.creature.y, data.creature.genes?.hue ?? 0, data.creature.genes?.predator);
+        this.visualEffects.createDeathEffect(
+          data.creature.x,
+          data.creature.y,
+          data.creature.genes?.hue ?? 0,
+          data.creature.genes?.predator
+        );
       }
       if (this.particles && data.creature) {
         const diet = data.creature.genes?.diet ?? (data.creature.genes?.predator ? 1.0 : 0.0);
@@ -298,7 +303,7 @@ export class GameLoop {
       lifetimeStats.updateMax('longestCreatureLived', age);
     });
 
-    eventSystem.on(GameEvents.CREATURE_EAT, (data) => {
+    eventSystem.on(GameEvents.CREATURE_EAT, data => {
       const point = emitParticleEffect('eat', data, {
         color: data?.source === 'corpse' ? '#f59e0b' : '#88ff88'
       });
@@ -308,7 +313,7 @@ export class GameLoop {
       lifetimeStats.increment('totalFoodEaten');
     });
 
-    eventSystem.on(GameEvents.CREATURE_BOND, (data) => {
+    eventSystem.on(GameEvents.CREATURE_BOND, data => {
       if (this.audio && data?.creature) {
         this.audio.playCreatureSound(data.creature, 'mating', this.camera);
       }
@@ -319,7 +324,7 @@ export class GameLoop {
       lifetimeStats.increment('totalMatings');
     });
 
-    eventSystem.on(GameEvents.CREATURE_PANIC, (data) => {
+    eventSystem.on(GameEvents.CREATURE_PANIC, data => {
       if (this.audio && data?.creature) {
         this.audio.playCreatureSound(data.creature, 'play', this.camera);
       }
@@ -327,17 +332,26 @@ export class GameLoop {
       this.particles?.triggerShake?.(2.4);
     });
 
-    eventSystem.on(GameEvents.CREATURE_KILLED, (data) => {
+    eventSystem.on(GameEvents.CREATURE_KILLED, data => {
       if (this.audio && data?.attacker) {
         this.audio.playCreatureSound(data.attacker, 'attack', this.camera);
       }
       if (this.visualEffects && data?.prey) {
-        this.visualEffects.createHitEffect(data.prey.x, data.prey.y, Math.max(6, Number(data?.damage || data?.prey?.size || 0) * 1.5));
+        this.visualEffects.createHitEffect(
+          data.prey.x,
+          data.prey.y,
+          Math.max(6, Number(data?.damage || data?.prey?.size || 0) * 1.5)
+        );
       }
-      const point = emitParticleEffect('combat', data, {
-        damage: Math.max(6, Number(data?.damage || data?.prey?.size || 0) * 1.5),
-        isKill: true
-      }, data?.prey || data?.attacker || null);
+      const point = emitParticleEffect(
+        'combat',
+        data,
+        {
+          damage: Math.max(6, Number(data?.damage || data?.prey?.size || 0) * 1.5),
+          isKill: true
+        },
+        data?.prey || data?.attacker || null
+      );
       if (point) {
         this.particles?.triggerShake?.(1.6);
       }
@@ -349,38 +363,38 @@ export class GameLoop {
       }
     });
 
-    eventSystem.on(GameEvents.WORLD_MIGRATION_START, (data) => {
+    eventSystem.on(GameEvents.WORLD_MIGRATION_START, data => {
       const point = emitParticleEffect('migration', data, { color: '#9ad9ff' });
       if (point) {
         this.particles?.triggerShake?.(Math.min(3.0, 1 + (Number(data?.count) || 0) * 0.12));
       }
     });
 
-    eventSystem.on(GameEvents.WORLD_MIGRATION_SETTLED, (data) => {
+    eventSystem.on(GameEvents.WORLD_MIGRATION_SETTLED, data => {
       emitParticleEffect('nest', data, { color: '#7FDB6A' });
     });
 
-    eventSystem.on(GameEvents.NEST_ESTABLISHED, (data) => {
+    eventSystem.on(GameEvents.NEST_ESTABLISHED, data => {
       emitParticleEffect('nest', data, { color: '#7FDB6A' });
       this.particles?.triggerShake?.(0.6);
     });
 
-    eventSystem.on(GameEvents.NEST_OVERCROWDED, (data) => {
+    eventSystem.on(GameEvents.NEST_OVERCROWDED, data => {
       emitParticleEffect('scarcity', data, { color: '#f59e0b' });
       this.particles?.triggerShake?.(1.1);
     });
 
-    eventSystem.on(GameEvents.WORLD_REGION_DEPLETED, (data) => {
+    eventSystem.on(GameEvents.WORLD_REGION_DEPLETED, data => {
       emitParticleEffect('region-depleted', data, { color: '#9ca3af' });
       this.particles?.triggerShake?.(1.0);
     });
 
-    eventSystem.on(GameEvents.WORLD_REGION_THRIVING, (data) => {
+    eventSystem.on(GameEvents.WORLD_REGION_THRIVING, data => {
       emitParticleEffect('region-thriving', data, { color: '#34d399' });
     });
 
     // Achievement events
-    eventSystem.on(GameEvents.ACHIEVEMENT_UNLOCKED, (data) => {
+    eventSystem.on(GameEvents.ACHIEVEMENT_UNLOCKED, data => {
       const uiHandlesNotifications = this.uiController && typeof this.uiController.hasNotifications === 'function';
       const uiHasAudio = !!this.uiController?.audio;
 
@@ -392,7 +406,7 @@ export class GameLoop {
       }
     });
 
-    eventSystem.on(GameEvents.CREATURE_THROWN, (data) => {
+    eventSystem.on(GameEvents.CREATURE_THROWN, data => {
       this.curiosityState.throwCount += 1;
       const speed = Number(data?.speed ?? 0);
       const now = performance.now();
@@ -402,7 +416,7 @@ export class GameLoop {
       }
     });
 
-    eventSystem.on(GameEvents.SANDBOX_PROP_TRIGGERED, (data) => {
+    eventSystem.on(GameEvents.SANDBOX_PROP_TRIGGERED, data => {
       this.curiosityState.propCount += 1;
       const type = data?.type;
       if (!type || !this.hasNotifications()) return;
@@ -555,12 +569,16 @@ export class GameLoop {
 
       // Per-frame updates for systems that want wall-clock cadence
       try {
-        eventSystem.emit(GameEvents.FRAME_UPDATE, {
-          dt,
-          now,
-          worldTime: this.world.t,
-          timeScale: gameState.timeScale
-        }, { throwOnError: false });
+        eventSystem.emit(
+          GameEvents.FRAME_UPDATE,
+          {
+            dt,
+            now,
+            worldTime: this.world.t,
+            timeScale: gameState.timeScale
+          },
+          { throwOnError: false }
+        );
       } catch {
         // Ignore frame update listener failures to keep loop alive
       }
@@ -604,7 +622,6 @@ export class GameLoop {
           this.logPerformanceSnapshot();
         }
       }
-
     } catch (error) {
       // STABILITY: Log error but don't crash - attempt recovery
       console.error('Game loop error:', error);
@@ -691,7 +708,8 @@ export class GameLoop {
     }
 
     // Emit world update event (reuse object to reduce allocations)
-    if (this.frameCount % 30 === 0) { // Every 0.5 seconds
+    if (this.frameCount % 30 === 0) {
+      // Every 0.5 seconds
       this.worldUpdateEvent.time = this.world.t;
       this.worldUpdateEvent.creatureCount = this.world.creatures.length;
       this.worldUpdateEvent.foodCount = this.world.food.length;
@@ -769,7 +787,6 @@ export class GameLoop {
         // Target died or lost, return to free mode
         this.camera.followMode = 'free';
         this.camera.followTarget = null;
-
       }
     }
   }
@@ -783,7 +800,9 @@ export class GameLoop {
     // DEBUG: Log creature count on first few renders
     if (!this._debugRenderCount) this._debugRenderCount = 0;
     if (this._debugRenderCount < 3) {
-      console.debug(`🎬 Render #${this._debugRenderCount}: ${this.world.creatures?.length || 0} creatures, canvas: ${canvas?.width}x${canvas?.height}`);
+      console.debug(
+        `🎬 Render #${this._debugRenderCount}: ${this.world.creatures?.length || 0} creatures, canvas: ${canvas?.width}x${canvas?.height}`
+      );
       this._debugRenderCount++;
     }
 
@@ -791,9 +810,7 @@ export class GameLoop {
     this.renderer.clear(canvas.width, canvas.height);
 
     // Get camera state for rendering
-    const cameraTravelState = typeof this.camera.getTravelState === 'function'
-      ? this.camera.getTravelState()
-      : null;
+    const cameraTravelState = typeof this.camera.getTravelState === 'function' ? this.camera.getTravelState() : null;
 
     // Update reusable render options (reduces per-frame allocations)
     const opts = this.renderOptions;
@@ -822,16 +839,15 @@ export class GameLoop {
 
     this.renderer.drawWorld(this.world, opts);
 
-    const objectiveRail = typeof document !== 'undefined'
-      ? document.getElementById('objective-rail')
-      : null;
-    const objectiveRailVisible = !!objectiveRail &&
+    const objectiveRail = typeof document !== 'undefined' ? document.getElementById('objective-rail') : null;
+    const objectiveRailVisible =
+      !!objectiveRail &&
       objectiveRail.textContent.trim().length > 0 &&
       !document.body.classList.contains('home-active');
 
     // Draw challenge system UI overlay only when the DOM rail is unavailable or debug goals are enabled.
-    const shouldDrawChallengeOverlay = !!this.challengeSystem?.draw &&
-      (!objectiveRailVisible || gameState.showGoalDebug || gameState.showObserverDebug);
+    const shouldDrawChallengeOverlay =
+      !!this.challengeSystem?.draw && (!objectiveRailVisible || gameState.showGoalDebug || gameState.showObserverDebug);
     gameState.challengeOverlayVisible = shouldDrawChallengeOverlay;
     if (shouldDrawChallengeOverlay) {
       const ctx = this.renderer.ctx;
@@ -839,9 +855,7 @@ export class GameLoop {
       const layoutHeight = this.camera.viewportHeight || canvas.height;
       const compactLayout = layoutWidth <= 520;
       const bottomChrome = gameState.hudBottomHeight || (compactLayout ? 118 : 84);
-      const challengeY = compactLayout
-        ? Math.max(118, layoutHeight - bottomChrome - 104)
-        : 112;
+      const challengeY = compactLayout ? Math.max(118, layoutHeight - bottomChrome - 104) : 112;
       this.challengeSystem.draw(ctx, 12, challengeY, {
         viewportWidth: canvas.width,
         viewportHeight: canvas.height,
@@ -857,9 +871,8 @@ export class GameLoop {
       this.visualEffects.draw(ctx);
     }
 
-    const drawEstimate = (this.renderer.renderedCount || 0) +
-      (this.world.food?.length || 0) +
-      (this.world.corpses?.length || 0);
+    const drawEstimate =
+      (this.renderer.renderedCount || 0) + (this.world.food?.length || 0) + (this.world.corpses?.length || 0);
     performanceProfiler.updateRenderMetrics(
       drawEstimate,
       this.renderer.renderedCount || 0,
@@ -908,13 +921,20 @@ export class GameLoop {
 
     ctx.fillStyle = '#0f0';
     let y = 14;
-    const line = (text) => { ctx.fillText(text, 14, y); y += 14; };
+    const line = text => {
+      ctx.fillText(text, 14, y);
+      y += 14;
+    };
 
     line(`Grid Cull: ${cullPct}% | ${totalRendered} rendered / ${totalObjs} total`);
-    line(`Creatures: ${this.world.creatures?.length || 0} (R:${this.renderer.renderedCount || 0} C:${this.renderer.culledCount || 0})`);
+    line(
+      `Creatures: ${this.world.creatures?.length || 0} (R:${this.renderer.renderedCount || 0} C:${this.renderer.culledCount || 0})`
+    );
     line(`Food: ${this.world.food?.length || 0} | Corpses: ${this.world.corpses?.length || 0}`);
     line(`Camera: (${cam.x.toFixed(0)}, ${cam.y.toFixed(0)}) zoom=${cam.zoom.toFixed(2)}`);
-    line(`ViewBounds: (${bounds?.x1?.toFixed(0) || '?'}, ${bounds?.y1?.toFixed(0) || '?'}) to (${bounds?.x2?.toFixed(0) || '?'}, ${bounds?.y2?.toFixed(0) || '?'})`);
+    line(
+      `ViewBounds: (${bounds?.x1?.toFixed(0) || '?'}, ${bounds?.y1?.toFixed(0) || '?'}) to (${bounds?.x2?.toFixed(0) || '?'}, ${bounds?.y2?.toFixed(0) || '?'})`
+    );
     line(`Canvas: ${canvas.width}x${canvas.height}`);
     line(`World: ${this.world.width}x${this.world.height}`);
     line(`FPS: ${gameState.fps.toFixed(1)} | gameStarted: ${gameState.gameStarted}`);
@@ -966,10 +986,9 @@ export class GameLoop {
 
     // Render notifications
     if (this.hasNotifications()) {
-      const objectiveRail = typeof document !== 'undefined'
-        ? document.getElementById('objective-rail')
-        : null;
-      const objectiveRailVisible = !!objectiveRail &&
+      const objectiveRail = typeof document !== 'undefined' ? document.getElementById('objective-rail') : null;
+      const objectiveRailVisible =
+        !!objectiveRail &&
         objectiveRail.textContent.trim().length > 0 &&
         !document.body.classList.contains('home-active');
       this.notifications.draw(ctx, this.renderer.ctx.canvas.width, this.renderer.ctx.canvas.height, {
@@ -1108,7 +1127,6 @@ export class GameLoop {
       if (this.uiController?.updatePauseButton) {
         this.uiController.updatePauseButton();
       }
-
     }
 
     // Update stats UI every 5 frames (~12Hz)
@@ -1257,24 +1275,31 @@ export class GameLoop {
   renderInspectorPanel(focusCreature) {
     const focusId = focusCreature?.id ?? null;
     const lineageRootId = gameState.lineageRootId ?? null;
-    const rootId = lineageRootId || (focusCreature && this.lineageTracker?.getRoot
-      ? this.lineageTracker.getRoot(this.world, focusCreature.id)
-      : null);
+    const rootId =
+      lineageRootId ||
+      (focusCreature && this.lineageTracker?.getRoot
+        ? this.lineageTracker.getRoot(this.world, focusCreature.id)
+        : null);
     const events = Array.isArray(this.lineageTracker?.events) ? this.lineageTracker.events : [];
-    const activity = focusCreature && rootId
-      ? events
-        .filter(event => event.rootId === rootId || event.creatureId === focusCreature.id)
-        .slice(0, 4)
-        .map(event => ({
-          time: Number(event.time ?? this.world?.t ?? 0),
-          message: event.title || event.message || 'Activity recorded'
-        }))
-      : [];
-    const ancestors = focusCreature && this.world?.getAncestors
-      ? this.world.getAncestors(focusCreature.id, 8).map(entry => entry.creature ?? entry).filter(Boolean)
-      : [];
+    const activity =
+      focusCreature && rootId
+        ? events
+          .filter(event => event.rootId === rootId || event.creatureId === focusCreature.id)
+          .slice(0, 4)
+          .map(event => ({
+            time: Number(event.time ?? this.world?.t ?? 0),
+            message: event.title || event.message || 'Activity recorded'
+          }))
+        : [];
+    const ancestors =
+      focusCreature && this.world?.getAncestors
+        ? this.world
+          .getAncestors(focusCreature.id, 8)
+          .map(entry => entry.creature ?? entry)
+          .filter(Boolean)
+        : [];
 
-    const inspectId = (id) => {
+    const inspectId = id => {
       const creature = this.world?.getAnyCreatureById?.(id);
       if (!creature) return;
       gameState.selectCreature(creature.id);
@@ -1285,42 +1310,45 @@ export class GameLoop {
       this._inspectorSignature = '';
     };
 
-    renderInspector({
-      creature: focusCreature,
-      stats: focusCreature?.stats ?? null,
-      world: this.world,
-      badges: [],
-      activity,
-      pinned: !!(focusId && gameState.pinnedId === focusId),
-      isRoot: !!(focusId && lineageRootId === focusId),
-      lineageRootId,
-      lineage: this.buildInspectorLineage(lineageRootId),
-      ancestors,
-      lineageStories: this.lineageTracker?.getStories?.() ?? [],
-      lineageLeaders: this.buildLineageLeaders()
-    }, {
-      onClose: () => {
-        gameState.setInspectorVisible(false);
-        gameState.setInspectorAutoOpen(false);
-        this.uiController?.updateInspectorVisibility?.();
+    renderInspector(
+      {
+        creature: focusCreature,
+        stats: focusCreature?.stats ?? null,
+        world: this.world,
+        badges: [],
+        activity,
+        pinned: !!(focusId && gameState.pinnedId === focusId),
+        isRoot: !!(focusId && lineageRootId === focusId),
+        lineageRootId,
+        lineage: this.buildInspectorLineage(lineageRootId),
+        ancestors,
+        lineageStories: this.lineageTracker?.getStories?.() ?? [],
+        lineageLeaders: this.buildLineageLeaders()
       },
-      onMinimize: () => document.getElementById('inspector')?.classList.toggle('minimized'),
-      onTogglePin: () => {
-        gameState.togglePin();
-        this._inspectorSignature = '';
-      },
-      onSetRoot: () => {
-        if (!focusId) return;
-        gameState.setLineageRoot(focusId);
-        this._inspectorSignature = '';
-      },
-      onSetRootId: (id) => {
-        gameState.setLineageRoot(id);
-        this._inspectorSignature = '';
-      },
-      onInspectId: inspectId,
-      onFocusParent: inspectId
-    });
+      {
+        onClose: () => {
+          gameState.setInspectorVisible(false);
+          gameState.setInspectorAutoOpen(false);
+          this.uiController?.updateInspectorVisibility?.();
+        },
+        onMinimize: () => document.getElementById('inspector')?.classList.toggle('minimized'),
+        onTogglePin: () => {
+          gameState.togglePin();
+          this._inspectorSignature = '';
+        },
+        onSetRoot: () => {
+          if (!focusId) return;
+          gameState.setLineageRoot(focusId);
+          this._inspectorSignature = '';
+        },
+        onSetRootId: id => {
+          gameState.setLineageRoot(id);
+          this._inspectorSignature = '';
+        },
+        onInspectId: inspectId,
+        onFocusParent: inspectId
+      }
+    );
   }
 
   buildInspectorLineage(rootId) {
@@ -1443,9 +1471,7 @@ export class GameLoop {
     this.lastAdvancedAnalyticsUpdate = now;
 
     // Update phylogeny if panel is visible
-    const phylogenyList = this.getCachedElement('phylogeny-list', () =>
-      document.getElementById('phylogeny-list')
-    );
+    const phylogenyList = this.getCachedElement('phylogeny-list', () => document.getElementById('phylogeny-list'));
     if (phylogenyList && this.analytics) {
       const phylogenySection = phylogenyList.closest('.panel-body');
       const isVisible = phylogenySection && phylogenySection.offsetParent !== null;
@@ -1471,16 +1497,14 @@ export class GameLoop {
     }
 
     // Update species groups
-    const speciesList = this.getCachedElement('species-list', () =>
-      document.getElementById('species-list')
-    );
+    const speciesList = this.getCachedElement('species-list', () => document.getElementById('species-list'));
     if (speciesList && this.analytics.speciesGroups) {
       if (this.analytics.speciesGroups.length > 0) {
         let html = '<div class="species-groups">';
         for (let i = 0; i < Math.min(5, this.analytics.speciesGroups.length); i++) {
           const group = this.analytics.speciesGroups[i];
           const diet = group.avgGenes.diet || 0;
-          const icon = diet > 0.7 ? '🦁' : (diet > 0.3 ? '🦡' : '🦌');
+          const icon = diet > 0.7 ? '🦁' : diet > 0.3 ? '🦡' : '🦌';
           html += `<div class="species-item">
             <span class="species-icon">${icon}</span>
             <span class="species-size">${group.members} individuals</span>
@@ -1571,14 +1595,10 @@ export class GameLoop {
    * Update scenario status
    */
   updateScenarioStatus() {
-    const scenarioStatus = this.getCachedElement('scenario-status', () =>
-      document.getElementById('scenario-status')
-    );
+    const scenarioStatus = this.getCachedElement('scenario-status', () => document.getElementById('scenario-status'));
     if (!scenarioStatus) return;
 
-    const pending = typeof this.world.getPendingDisasters === 'function'
-      ? this.world.getPendingDisasters()
-      : [];
+    const pending = typeof this.world.getPendingDisasters === 'function' ? this.world.getPendingDisasters() : [];
     const active = this.world.getActiveDisaster();
 
     if (active) {
@@ -1596,12 +1616,10 @@ export class GameLoop {
     }
 
     // Update queue display
-    const version = typeof this.world.getPendingDisastersVersion === 'function'
-      ? this.world.getPendingDisastersVersion()
-      : 0;
+    const version =
+      typeof this.world.getPendingDisastersVersion === 'function' ? this.world.getPendingDisastersVersion() : 0;
     const now = performance.now();
-    const shouldRefresh = gameState.scenarioPanelVisible &&
-      (now - gameState.lastScenarioQueueRender > 250);
+    const shouldRefresh = gameState.scenarioPanelVisible && now - gameState.lastScenarioQueueRender > 250;
 
     if (version !== gameState.scenarioQueueVersion || shouldRefresh) {
       this.renderScenarioQueue(pending);
@@ -1614,25 +1632,23 @@ export class GameLoop {
    * Render scenario queue
    */
   renderScenarioQueue(pending = null) {
-    const scenarioQueueList = this.getCachedElement('scenario-queue', () =>
-      document.getElementById('scenario-queue')
-    );
+    const scenarioQueueList = this.getCachedElement('scenario-queue', () => document.getElementById('scenario-queue'));
     if (!scenarioQueueList) return;
 
-    const items = pending ?? (typeof this.world.getPendingDisasters === 'function'
-      ? this.world.getPendingDisasters()
-      : []);
+    const items =
+      pending ?? (typeof this.world.getPendingDisasters === 'function' ? this.world.getPendingDisasters() : []);
 
     if (!items.length) {
       scenarioQueueList.innerHTML = '<div class="scenario-queue-empty muted">No queued scenarios.</div>';
       return;
     }
 
-    const html = items.map(item => {
-      const durationLabel = item.duration ? `${Math.round(item.duration)}s` : '—';
-      const intensityLabel = (item.intensity ?? 1).toFixed(1);
-      const waitLabel = item.waitForClear ? 'wait' : 'overlap';
-      return `
+    const html = items
+      .map(item => {
+        const durationLabel = item.duration ? `${Math.round(item.duration)}s` : '—';
+        const intensityLabel = (item.intensity ?? 1).toFixed(1);
+        const waitLabel = item.waitForClear ? 'wait' : 'overlap';
+        return `
         <div class="scenario-queue-item">
           <div class="scenario-queue-item-header">
             <span class="scenario-queue-name">${item.name}</span>
@@ -1646,7 +1662,8 @@ export class GameLoop {
           <button class="scenario-queue-remove" data-queue-id="${item.id}" title="Remove">✕</button>
         </div>
       `;
-    }).join('');
+      })
+      .join('');
     scenarioQueueList.innerHTML = html;
   }
 
@@ -1739,7 +1756,11 @@ export class GameLoop {
       }
       case 'spawnCreature': {
         const c = this.world.getAnyCreatureById?.(action.creatureId);
-        if (c) { c.alive = false; c.deathTime = this.world.t; undone = true; }
+        if (c) {
+          c.alive = false;
+          c.deathTime = this.world.t;
+          undone = true;
+        }
         break;
       }
       case 'placeFood': {
@@ -1759,7 +1780,8 @@ export class GameLoop {
         }
         break;
       }
-      default: break;
+      default:
+        break;
     }
     if (undone) {
       this.godModeRedoStack.push(action);

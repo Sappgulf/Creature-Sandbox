@@ -13,6 +13,7 @@
 ## Approved 38-Item Todo
 
 ### Player Clarity + Game Feel
+
 - [x] 1. Surface life-stage visibility in selected creature cards, smoke text, and small in-world/nameplate cues.
 - [x] 2. Add an ecosystem story layer that explains why major events matter.
 - [x] 3. Upgrade follow camera modes: youngest, most stressed, alpha, hunter, lineage founder.
@@ -25,6 +26,7 @@
 - [x] 10. Improve nests/territory/migration UI surfacing when relevant.
 
 ### UI Polish + Presentation
+
 - [x] 11. Make the home screen preview creature-forward with actual game sprites/scene state.
 - [x] 12. Improve the first 30 seconds with one obvious creature cluster, food, and a watch cue.
 - [x] 13. Add event action cards that offer context-specific actions such as Paint Food, Calm Zone, and Watch Herd.
@@ -37,6 +39,7 @@
 - [x] 20. Add save-slot screenshot thumbnails.
 
 ### Gameplay Depth
+
 - [x] 21. Add a Discovery Journal for first mutation, birth, elder, migration, hunt, and similar milestones.
 - [x] 22. Add a creature bonds screen for friends, rivals, parent/child, and mate candidates.
 - [x] 23. Add a season challenge chain across Spring, Summer, Autumn, Winter.
@@ -49,6 +52,7 @@
 - [x] 30. Add world postcards: screenshot plus seed, population, season, strongest event.
 
 ### Engineering + Release Confidence
+
 - [x] 31. Patch dependencies and clear the PostCSS audit warning.
 - [x] 32. Fix perf metric truth so browser smoke reports real rendered/culled counters.
 - [x] 33. Split `app-bootstrap.js` responsibilities without changing behavior.
@@ -65,6 +69,7 @@
 ### Phase 1: Release Hygiene + Verification Truth
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `package-lock.json`
 - Modify: `scripts/browser-smoke.mjs`
@@ -88,6 +93,7 @@
 ### Phase 2: Player Clarity + UI Polish
 
 **Files:**
+
 - Modify: `creature-sim/index.html`
 - Modify: `creature-sim/styles.css`
 - Modify: `creature-sim/src/ui.js`
@@ -113,6 +119,7 @@
 ### Phase 3: Gameplay Systems + Saveable Player Progress
 
 **Files:**
+
 - Modify: `creature-sim/src/playable-scenarios.js`
 - Modify: `creature-sim/src/session-goals.js`
 - Modify: `creature-sim/src/moments-system.js`
@@ -136,6 +143,7 @@
 ### Phase 4: Architecture Cleanup + Worker Contract
 
 **Files:**
+
 - Modify: `creature-sim/src/app-bootstrap.js`
 - Modify/Create: focused bootstrap modules under `creature-sim/src/`
 - Modify: `creature-sim/src/simulation-proxy.js`

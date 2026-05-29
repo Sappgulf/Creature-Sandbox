@@ -4,10 +4,8 @@ import { BiomeGenerator } from './perlin-noise.js';
 
 export class SimulationProxy {
   constructor(workerPath) {
-    this.worker = typeof workerPath === 'function'
-      ? new workerPath()
-      : new Worker(workerPath, { type: 'module' });
-    this.worker.onerror = (e) => {
+    this.worker = typeof workerPath === 'function' ? new workerPath() : new Worker(workerPath, { type: 'module' });
+    this.worker.onerror = e => {
       console.error('🚨 SimulationProxy: Worker Error', e.message, e.filename, e.lineno);
       this._recordWorkerError({
         message: e.message || 'Worker error',
@@ -85,24 +83,18 @@ export class SimulationProxy {
       creatureManager: {
         creatureGrid: {
           queryRect: (x1, y1, x2, y2) => {
-            return this.worldSnapshot.creatures.filter(c =>
-              c.x >= x1 && c.x <= x2 && c.y >= y1 && c.y <= y2
-            );
+            return this.worldSnapshot.creatures.filter(c => c.x >= x1 && c.x <= x2 && c.y >= y1 && c.y <= y2);
           }
         }
       },
       foodGrid: {
         queryRect: (x1, y1, x2, y2) => {
-          return this.worldSnapshot.food.filter(f =>
-            f.x >= x1 && f.x <= x2 && f.y >= y1 && f.y <= y2
-          );
+          return this.worldSnapshot.food.filter(f => f.x >= x1 && f.x <= x2 && f.y >= y1 && f.y <= y2);
         }
       },
       corpseGrid: {
         queryRect: (x1, y1, x2, y2) => {
-          return this.worldSnapshot.corpses.filter(c =>
-            c.x >= x1 && c.x <= x2 && c.y >= y1 && c.y <= y2
-          );
+          return this.worldSnapshot.corpses.filter(c => c.x >= x1 && c.x <= x2 && c.y >= y1 && c.y <= y2);
         }
       }
     };
@@ -129,7 +121,7 @@ export class SimulationProxy {
       this._send('SEED', { nHerb, nPred, nFood });
     };
 
-    this.step = (dt) => {
+    this.step = dt => {
       this._send('STEP_AND_SYNC', { dt });
     };
 
@@ -137,11 +129,11 @@ export class SimulationProxy {
       this._send('SPAWN_MANUAL', { x, y, predator });
     };
 
-    this.pause = (paused) => {
+    this.pause = paused => {
       this._send('PAUSE', { paused });
     };
 
-    this.setTimeScale = (scale) => {
+    this.setTimeScale = scale => {
       this._send('SET_TIME_SCALE', { scale });
     };
 
@@ -155,7 +147,7 @@ export class SimulationProxy {
       return null;
     };
 
-    this.killCreature = (id) => {
+    this.killCreature = id => {
       this._send('KILL_CREATURE', { id });
     };
 
@@ -167,7 +159,7 @@ export class SimulationProxy {
       return null;
     };
 
-    this.removeFood = (id) => {
+    this.removeFood = id => {
       if (id) this._send('REMOVE_FOOD', { id });
     };
 
@@ -217,7 +209,7 @@ export class SimulationProxy {
       }
     });
 
-    this.worker.onmessage = (e) => this.handleMessage(e);
+    this.worker.onmessage = e => this.handleMessage(e);
     console.debug('✅ SimulationProxy [v3] Hard-Initialized');
     window.__SIM_PROXY_VERSION = '2.0.1';
 
@@ -308,7 +300,9 @@ export class SimulationProxy {
           target.getSeasonInfo = () => ({
             name: environment.currentSeason,
             progress: environment.seasonPhase,
-            label: environment.currentSeason ? (environment.currentSeason.charAt(0).toUpperCase() + environment.currentSeason.slice(1)) : 'Unknown'
+            label: environment.currentSeason
+              ? environment.currentSeason.charAt(0).toUpperCase() + environment.currentSeason.slice(1)
+              : 'Unknown'
           });
           target.getWeatherState = () => ({
             type: environment.weatherType,
@@ -340,63 +334,133 @@ export class SimulationProxy {
   }
 
   // Getters to match World interface
-  get t() { return this.worldSnapshot.t; }
-  get width() { return this.worldSnapshot.width; }
-  get height() { return this.worldSnapshot.height; }
-  get creatures() { return this.worldSnapshot.creatures; }
-  get food() { return this.worldSnapshot.food; }
-  get corpses() { return this.worldSnapshot.corpses; }
-  get pheromone() { return this.worldSnapshot.pheromone; }
-  get temperature() { return this.worldSnapshot.temperature; }
-  get creatureManager() { return this.worldSnapshot.creatureManager; }
-  get foodGrid() { return this.worldSnapshot.foodGrid; }
-  get corpseGrid() { return this.worldSnapshot.corpseGrid; }
-  get ecosystem() { return this.worldSnapshot.ecosystem; }
-  get foodGridDirty() { return this.worldSnapshot.foodGridDirty; }
-  get corpseGridDirty() { return this.worldSnapshot.corpseGridDirty; }
-  get lineageTracker() { return this.worldSnapshot.lineageTracker; }
-  get particles() { return this.worldSnapshot.particles; }
-  get heatmaps() { return this.worldSnapshot.heatmaps; }
-  get audio() { return this.worldSnapshot.audio; }
-  get notificationSystem() { return this.worldSnapshot.notificationSystem; }
-  get proceduralSounds() { return this.worldSnapshot.proceduralSounds; }
-  get unlockableAchievements() { return this.worldSnapshot.unlockableAchievements; }
-  get familyBonds() { return this.worldSnapshot.familyBonds; }
-  get memoryLearning() { return this.worldSnapshot.memoryLearning; }
+  get t() {
+    return this.worldSnapshot.t;
+  }
+  get width() {
+    return this.worldSnapshot.width;
+  }
+  get height() {
+    return this.worldSnapshot.height;
+  }
+  get creatures() {
+    return this.worldSnapshot.creatures;
+  }
+  get food() {
+    return this.worldSnapshot.food;
+  }
+  get corpses() {
+    return this.worldSnapshot.corpses;
+  }
+  get pheromone() {
+    return this.worldSnapshot.pheromone;
+  }
+  get temperature() {
+    return this.worldSnapshot.temperature;
+  }
+  get creatureManager() {
+    return this.worldSnapshot.creatureManager;
+  }
+  get foodGrid() {
+    return this.worldSnapshot.foodGrid;
+  }
+  get corpseGrid() {
+    return this.worldSnapshot.corpseGrid;
+  }
+  get ecosystem() {
+    return this.worldSnapshot.ecosystem;
+  }
+  get foodGridDirty() {
+    return this.worldSnapshot.foodGridDirty;
+  }
+  get corpseGridDirty() {
+    return this.worldSnapshot.corpseGridDirty;
+  }
+  get lineageTracker() {
+    return this.worldSnapshot.lineageTracker;
+  }
+  get particles() {
+    return this.worldSnapshot.particles;
+  }
+  get heatmaps() {
+    return this.worldSnapshot.heatmaps;
+  }
+  get audio() {
+    return this.worldSnapshot.audio;
+  }
+  get notificationSystem() {
+    return this.worldSnapshot.notificationSystem;
+  }
+  get proceduralSounds() {
+    return this.worldSnapshot.proceduralSounds;
+  }
+  get unlockableAchievements() {
+    return this.worldSnapshot.unlockableAchievements;
+  }
+  get familyBonds() {
+    return this.worldSnapshot.familyBonds;
+  }
+  get memoryLearning() {
+    return this.worldSnapshot.memoryLearning;
+  }
 
-  get randomDisasters() { return this.worldSnapshot.randomDisasters; }
+  get randomDisasters() {
+    return this.worldSnapshot.randomDisasters;
+  }
   set randomDisasters(val) {
     this.worldSnapshot.randomDisasters = val;
     this._send('SET_PROP', { path: 'randomDisasters', value: val });
   }
 
-  get disasterCooldown() { return this.worldSnapshot.disasterCooldown; }
+  get disasterCooldown() {
+    return this.worldSnapshot.disasterCooldown;
+  }
   set disasterCooldown(val) {
     this.worldSnapshot.disasterCooldown = val;
     this._send('SET_PROP', { path: 'disasterCooldown', value: val });
   }
 
-  get autoBalanceSettings() { return this.worldSnapshot.autoBalanceSettings; }
-  get environment() { return this.worldSnapshot.environment; }
+  get autoBalanceSettings() {
+    return this.worldSnapshot.autoBalanceSettings;
+  }
+  get environment() {
+    return this.worldSnapshot.environment;
+  }
 
-  get seasonSpeed() { return this.worldSnapshot.seasonSpeed; }
+  get seasonSpeed() {
+    return this.worldSnapshot.seasonSpeed;
+  }
   set seasonSpeed(val) {
     this.worldSnapshot.seasonSpeed = val;
     this._send('SET_PROP', { path: 'seasonSpeed', value: val });
   }
 
-  get dayLength() { return this.worldSnapshot.dayLength; }
+  get dayLength() {
+    return this.worldSnapshot.dayLength;
+  }
   set dayLength(val) {
     this.worldSnapshot.dayLength = val;
     this._send('SET_PROP', { path: 'dayLength', value: val });
   }
 
-  get dayPhase() { return this.worldSnapshot.dayPhase || 'day'; }
-  get dayLight() { return this.worldSnapshot.dayLight ?? 1; }
-  get currentSeason() { return this.worldSnapshot.currentSeason || 'spring'; }
-  get moodState() { return this.worldSnapshot.moodState; }
-  get weatherType() { return this.worldSnapshot.weatherType; }
-  get regions() { return this.worldSnapshot.regions; }
+  get dayPhase() {
+    return this.worldSnapshot.dayPhase || 'day';
+  }
+  get dayLight() {
+    return this.worldSnapshot.dayLight ?? 1;
+  }
+  get currentSeason() {
+    return this.worldSnapshot.currentSeason || 'spring';
+  }
+  get moodState() {
+    return this.worldSnapshot.moodState;
+  }
+  get weatherType() {
+    return this.worldSnapshot.weatherType;
+  }
+  get regions() {
+    return this.worldSnapshot.regions;
+  }
 
   // Search helper
   getAnyCreatureById(id) {
@@ -429,18 +493,34 @@ export class SimulationProxy {
   attachLineageTracker(tracker) {
     this.worldSnapshot.lineageTracker = tracker;
     this.worldSnapshot.creatureManager.lineageTracker = tracker;
-    this.worldSnapshot.creatureManager.attachLineageTracker = (nextTracker) => {
+    this.worldSnapshot.creatureManager.attachLineageTracker = nextTracker => {
       this.worldSnapshot.lineageTracker = nextTracker;
       this.worldSnapshot.creatureManager.lineageTracker = nextTracker;
     };
   }
 
-  attachParticleSystem(particles) { this.worldSnapshot.particles = particles; }
-  attachHeatmapSystem(heatmaps) { this.worldSnapshot.heatmaps = heatmaps; }
-  attachAudioSystem(audio) { this.worldSnapshot.audio = audio; }
-  attachNotificationSystem(notifications) { this.worldSnapshot.notificationSystem = notifications; }
-  attachProceduralSounds(proceduralSounds) { this.worldSnapshot.proceduralSounds = proceduralSounds; }
-  attachUnlockableAchievements(unlockableAchievements) { this.worldSnapshot.unlockableAchievements = unlockableAchievements; }
-  attachFamilyBonds(familyBonds) { this.worldSnapshot.familyBonds = familyBonds; }
-  attachMemoryLearning(memoryLearning) { this.worldSnapshot.memoryLearning = memoryLearning; }
+  attachParticleSystem(particles) {
+    this.worldSnapshot.particles = particles;
+  }
+  attachHeatmapSystem(heatmaps) {
+    this.worldSnapshot.heatmaps = heatmaps;
+  }
+  attachAudioSystem(audio) {
+    this.worldSnapshot.audio = audio;
+  }
+  attachNotificationSystem(notifications) {
+    this.worldSnapshot.notificationSystem = notifications;
+  }
+  attachProceduralSounds(proceduralSounds) {
+    this.worldSnapshot.proceduralSounds = proceduralSounds;
+  }
+  attachUnlockableAchievements(unlockableAchievements) {
+    this.worldSnapshot.unlockableAchievements = unlockableAchievements;
+  }
+  attachFamilyBonds(familyBonds) {
+    this.worldSnapshot.familyBonds = familyBonds;
+  }
+  attachMemoryLearning(memoryLearning) {
+    this.worldSnapshot.memoryLearning = memoryLearning;
+  }
 }

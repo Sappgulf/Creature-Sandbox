@@ -13,9 +13,12 @@ export class GhostTrailSystem {
 
   recordDeath(x, y, creature) {
     const hue = creature?.genes?.hue ?? 200;
-    const isPredator = creature?.genes?.predator || (creature?.genes?.diet > 0.7);
+    const isPredator = creature?.genes?.predator || creature?.genes?.diet > 0.7;
     this.ghosts.push({
-      x, y, hue, isPredator,
+      x,
+      y,
+      hue,
+      isPredator,
       bornAt: performance.now() * 0.001,
       size: creature?.size || 5
     });
@@ -30,7 +33,7 @@ export class GhostTrailSystem {
     let writeIndex = 0;
     for (let i = 0; i < this.ghosts.length; i++) {
       const ghost = this.ghosts[i];
-      if ((now - ghost.bornAt) >= this.fadeDuration) continue;
+      if (now - ghost.bornAt >= this.fadeDuration) continue;
       if (writeIndex !== i) {
         this.ghosts[writeIndex] = ghost;
       }

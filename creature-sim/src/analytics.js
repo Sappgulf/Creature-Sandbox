@@ -45,7 +45,7 @@ export class AnalyticsTracker {
 
     try {
       this.worker = new Worker(new URL('./analytics-worker.js', import.meta.url), { type: 'module' });
-      this.worker.onmessage = (event) => {
+      this.worker.onmessage = event => {
         this._workerPending = false;
         if (event?.data) {
           this._applySample(event.data);
@@ -58,7 +58,7 @@ export class AnalyticsTracker {
           this.worker.postMessage(next);
         }
       };
-      this.worker.onerror = (err) => {
+      this.worker.onerror = err => {
         console.warn('Analytics worker error, falling back to main thread.', err);
         this._disableWorker();
       };
@@ -76,7 +76,6 @@ export class AnalyticsTracker {
     this._workerPending = false;
     this._workerQueued = null;
   }
-
 
   update(world, dt) {
     this._accum += dt;
@@ -100,12 +99,17 @@ export class AnalyticsTracker {
 
   capture(world) {
     const pop = world.creatures.length;
-    let herb = 0, pred = 0;
-    let sumSpeed = 0, sumSpeed2 = 0;
-    let sumMetabolism = 0, sumMetabolism2 = 0;
-    let sumSense = 0, sumSense2 = 0;
+    let herb = 0,
+      pred = 0;
+    let sumSpeed = 0,
+      sumSpeed2 = 0;
+    let sumMetabolism = 0,
+      sumMetabolism2 = 0;
+    let sumSense = 0,
+      sumSense2 = 0;
     let sumEnergy = 0;
-    let sumHealth = 0, sumMaxHealth = 0;
+    let sumHealth = 0,
+      sumMaxHealth = 0;
     let sumPackInstinct = 0;
     let sumAggression = 0;
     let sumAmbushDelay = 0;
@@ -138,11 +142,11 @@ export class AnalyticsTracker {
       pred,
       food: world.food.length,
       meanSpeed: pop ? sumSpeed / pop : 0,
-      speedVar: pop ? (sumSpeed2 / pop) - Math.pow(sumSpeed / pop, 2) : 0,
+      speedVar: pop ? sumSpeed2 / pop - Math.pow(sumSpeed / pop, 2) : 0,
       meanMetabolism: pop ? sumMetabolism / pop : 0,
-      metabolismVar: pop ? (sumMetabolism2 / pop) - Math.pow(sumMetabolism / pop, 2) : 0,
+      metabolismVar: pop ? sumMetabolism2 / pop - Math.pow(sumMetabolism / pop, 2) : 0,
       meanSense: pop ? sumSense / pop : 0,
-      senseVar: pop ? (sumSense2 / pop) - Math.pow(sumSense / pop, 2) : 0,
+      senseVar: pop ? sumSense2 / pop - Math.pow(sumSense / pop, 2) : 0,
       meanEnergy: pop ? sumEnergy / pop : 0,
       meanHealth: meanHealthRatio,
       meanMaxHealth: pop ? sumMaxHealth / pop : 0,
@@ -208,7 +212,7 @@ export class AnalyticsTracker {
       meanSense: this.samples.map(s => s.meanSense),
       senseVar: this.samples.map(s => s.senseVar),
       food: this.samples.map(s => s.food),
-      predatorRatio: this.samples.map(s => s.pop ? s.pred / s.pop : 0),
+      predatorRatio: this.samples.map(s => (s.pop ? s.pred / s.pop : 0)),
       meanHealth: this.samples.map(s => s.meanHealth ?? 0),
       meanMaxHealth: this.samples.map(s => s.meanMaxHealth ?? 0),
       meanPackInstinct: this.samples.map(s => s.meanPackInstinct ?? 0),
@@ -282,10 +286,7 @@ export class AnalyticsTracker {
       for (let j = i + 1; j < world.creatures.length; j++) {
         if (assigned.has(j)) continue;
 
-        const dist = this._geneticDistance(
-          world.creatures[i].genes,
-          world.creatures[j].genes
-        );
+        const dist = this._geneticDistance(world.creatures[i].genes, world.creatures[j].genes);
 
         if (dist < threshold) {
           group.push(j);
@@ -312,11 +313,7 @@ export class AnalyticsTracker {
     const dietDiff = Math.abs((g1.diet || 0) - (g2.diet || 0));
 
     return Math.sqrt(
-      speedDiff * speedDiff +
-      senseDiff * senseDiff +
-      metabDiff * metabDiff +
-      hueDiff * hueDiff +
-      dietDiff * dietDiff
+      speedDiff * speedDiff + senseDiff * senseDiff + metabDiff * metabDiff + hueDiff * hueDiff + dietDiff * dietDiff
     );
   }
 
@@ -336,7 +333,7 @@ export class AnalyticsTracker {
       avg.sense += g.sense;
       avg.metabolism += g.metabolism;
       avg.hue += g.hue;
-      avg.diet += (g.diet || 0);
+      avg.diet += g.diet || 0;
     }
 
     const n = genesList.length;
@@ -365,11 +362,11 @@ export class AnalyticsTracker {
 
     // OPTIMIZATION: Use a more stable cache key - only invalidate when population changes significantly
     // Check if population changed by more than 5% or if more than 5 seconds passed
-    const populationChanged = !this._lastPopulation ||
+    const populationChanged =
+      !this._lastPopulation ||
       Math.abs(this._lastPopulation - world.creatures.length) > Math.max(5, this._lastPopulation * 0.05);
 
-    const timeChanged = !this._lastPhylogenyTime ||
-      (world.t - this._lastPhylogenyTime) > 5.0; // 5 seconds
+    const timeChanged = !this._lastPhylogenyTime || world.t - this._lastPhylogenyTime > 5.0; // 5 seconds
 
     if (!populationChanged && !timeChanged && this.phylogenyData) {
       return this.phylogenyData; // Return cached result - no need to recompute
@@ -460,7 +457,8 @@ export class AnalyticsTracker {
   exportGeneHistoryCSV() {
     if (this.geneHistory.length === 0) return 'No gene history data';
 
-    let csv = 'Time,Speed_Mean,Speed_Var,Sense_Mean,Sense_Var,Metabolism_Mean,Metabolism_Var,Diet_Mean,Diet_Var,Nocturnal_Mean,Nocturnal_Var\n';
+    let csv =
+      'Time,Speed_Mean,Speed_Var,Sense_Mean,Sense_Var,Metabolism_Mean,Metabolism_Var,Diet_Mean,Diet_Var,Nocturnal_Mean,Nocturnal_Var\n';
 
     for (const sample of this.geneHistory) {
       csv += `${sample.t.toFixed(2)},${sample.speed.mean.toFixed(3)},${sample.speed.variance.toFixed(4)},${sample.sense.mean.toFixed(3)},${sample.sense.variance.toFixed(4)},${sample.metabolism.mean.toFixed(3)},${sample.metabolism.variance.toFixed(4)},${sample.diet.mean.toFixed(3)},${sample.diet.variance.toFixed(4)},${sample.nocturnal.mean.toFixed(3)},${sample.nocturnal.variance.toFixed(4)}\n`;

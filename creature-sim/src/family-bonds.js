@@ -91,9 +91,7 @@ export class FamilyBondsSystem {
     for (const [otherId, otherData] of this.relationships.entries()) {
       if (otherId === creature.id) continue;
 
-      const sharedParents = relationshipData.parents.filter(p =>
-        otherData.parents.includes(p)
-      );
+      const sharedParents = relationshipData.parents.filter(p => otherData.parents.includes(p));
 
       if (sharedParents.length > 0) {
         // They're siblings!

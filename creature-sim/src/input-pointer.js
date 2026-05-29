@@ -8,11 +8,10 @@ import { clamp } from './utils.js';
 import { getDebugFlags } from './debug-flags.js';
 
 export function applyInputPointerMethods(InputManager) {
-
   /**
    * Handle pointer down events
    */
-  InputManager.prototype.onPointerDown = function(e) {
+  InputManager.prototype.onPointerDown = function (e) {
     const rect = this.canvas.getBoundingClientRect();
     const canvasX = e.clientX - rect.left;
     const canvasY = e.clientY - rect.top;
@@ -83,7 +82,6 @@ export function applyInputPointerMethods(InputManager) {
         gameState.travelPreview = null;
       }
 
-
       this.handlePointerAction(e, false);
     }
   };
@@ -91,7 +89,7 @@ export function applyInputPointerMethods(InputManager) {
   /**
    * Handle pointer move events
    */
-  InputManager.prototype.onPointerMove = function(e) {
+  InputManager.prototype.onPointerMove = function (e) {
     if (this.godHoldPointerId === e.pointerId && this.godHoldStart) {
       const dx = e.clientX - this.godHoldStart.x;
       const dy = e.clientY - this.godHoldStart.y;
@@ -152,7 +150,7 @@ export function applyInputPointerMethods(InputManager) {
   /**
    * Handle pointer up events
    */
-  InputManager.prototype.onPointerUp = function(e) {
+  InputManager.prototype.onPointerUp = function (e) {
     this.canvas.releasePointerCapture?.(e.pointerId);
     this.clearGodHold();
 
@@ -201,14 +199,14 @@ export function applyInputPointerMethods(InputManager) {
   /**
    * Handle pointer leave events
    */
-  InputManager.prototype.onPointerLeave = function() {
+  InputManager.prototype.onPointerLeave = function () {
     this._setHoveredCreature(null);
   };
 
   /**
    * Handle wheel events for zooming
    */
-  InputManager.prototype.onWheel = function(e) {
+  InputManager.prototype.onWheel = function (e) {
     e.preventDefault();
     const now = performance.now();
     gameState.autoDirectorOverrideUntil = now + 2000;
@@ -229,15 +227,19 @@ export function applyInputPointerMethods(InputManager) {
   /**
    * Handle mini-map clicks
    */
-  InputManager.prototype.handleMiniMapClick = function(canvasX, canvasY, event) {
+  InputManager.prototype.handleMiniMapClick = function (canvasX, canvasY, event) {
     const renderer = this.world?.renderer;
     if (!renderer?.enableMiniMap) return false;
 
     const bounds = renderer.lastMiniMap;
     if (!bounds) return false;
 
-    if (canvasX < bounds.x || canvasX > bounds.x + bounds.width ||
-      canvasY < bounds.y || canvasY > bounds.y + bounds.height) {
+    if (
+      canvasX < bounds.x ||
+      canvasX > bounds.x + bounds.width ||
+      canvasY < bounds.y ||
+      canvasY > bounds.y + bounds.height
+    ) {
       return false;
     }
 
@@ -261,7 +263,7 @@ export function applyInputPointerMethods(InputManager) {
   /**
    * Handle pointer actions (drawing/spawning/selecting)
    */
-  InputManager.prototype.handlePointerAction = function(e, isDrag) {
+  InputManager.prototype.handlePointerAction = function (e, isDrag) {
     const rect = this.canvas.getBoundingClientRect();
     const canvasX = e.clientX - rect.left;
     const canvasY = e.clientY - rect.top;
@@ -379,7 +381,7 @@ export function applyInputPointerMethods(InputManager) {
   /**
    * Prepare creature for dragging
    */
-  InputManager.prototype._prepareCreatureDrag = function(x, y, event) {
+  InputManager.prototype._prepareCreatureDrag = function (x, y, event) {
     if (this.tools.mode !== 'inspect' || event.shiftKey) return false;
     const creature = this._findCreatureAt(x, y);
     if (!creature) return false;
@@ -407,7 +409,7 @@ export function applyInputPointerMethods(InputManager) {
   /**
    * Activate creature drag after threshold
    */
-  InputManager.prototype._activateCreatureDrag = function(worldX, worldY) {
+  InputManager.prototype._activateCreatureDrag = function (worldX, worldY) {
     const { creature } = this.dragState;
     if (!creature) return;
     this.dragState.active = true;
@@ -428,7 +430,7 @@ export function applyInputPointerMethods(InputManager) {
   /**
    * Update creature drag position
    */
-  InputManager.prototype._updateCreatureDrag = function(event) {
+  InputManager.prototype._updateCreatureDrag = function (event) {
     if (event.pointerId !== this.dragState.pointerId) return;
 
     const rect = this.canvas.getBoundingClientRect();
@@ -474,7 +476,7 @@ export function applyInputPointerMethods(InputManager) {
   /**
    * Release creature drag
    */
-  InputManager.prototype._releaseCreatureDrag = function(event) {
+  InputManager.prototype._releaseCreatureDrag = function (event) {
     if (event.pointerId !== this.dragState.pointerId) return;
     const creature = this.dragState.creature;
     if (!creature) return;
@@ -518,7 +520,7 @@ export function applyInputPointerMethods(InputManager) {
   /**
    * Update hover target
    */
-  InputManager.prototype._updateHoverTarget = function(event) {
+  InputManager.prototype._updateHoverTarget = function (event) {
     if (this.tools.mode !== 'inspect') {
       this._setHoveredCreature(null);
       return;
@@ -543,7 +545,7 @@ export function applyInputPointerMethods(InputManager) {
   /**
    * Set hovered creature
    */
-  InputManager.prototype._setHoveredCreature = function(id) {
+  InputManager.prototype._setHoveredCreature = function (id) {
     if (gameState.hoveredId === id) return;
     gameState.hoveredId = id;
     if (this.dragState.active) {
@@ -560,7 +562,7 @@ export function applyInputPointerMethods(InputManager) {
   /**
    * Find creature at world coordinates
    */
-  InputManager.prototype._findCreatureAt = function(x, y, searchRadius = 25 / this.camera.zoom) {
+  InputManager.prototype._findCreatureAt = function (x, y, searchRadius = 25 / this.camera.zoom) {
     let nearest = null;
     let minDist = searchRadius;
 
@@ -579,7 +581,7 @@ export function applyInputPointerMethods(InputManager) {
   /**
    * Select creature with camera
    */
-  InputManager.prototype._selectCreatureWithCamera = function(creature, { preferZoom = 0.9 } = {}) {
+  InputManager.prototype._selectCreatureWithCamera = function (creature, { preferZoom = 0.9 } = {}) {
     if (!creature) return;
     gameState.selectCreature(creature.id);
     this.tutorial?.trackSelection?.();
@@ -603,5 +605,4 @@ export function applyInputPointerMethods(InputManager) {
       this.updateInspectorVisibility();
     }
   };
-
 }

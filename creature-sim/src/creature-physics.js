@@ -28,7 +28,7 @@ export function calculateCreatureCurrentSpeed(creature, dt, world) {
   // Environmental/Biome modifiers
   if (inWater) {
     if (creature.aquaticAffinity > 0.5) {
-      baseSpeed *= biome.aquaticSpeed || (1.2 + creature.aquaticAffinity * 0.3);
+      baseSpeed *= biome.aquaticSpeed || 1.2 + creature.aquaticAffinity * 0.3;
     } else if (creature.aquaticAffinity > 0.2) {
       baseSpeed *= 0.7 + creature.aquaticAffinity * 0.5;
     } else {
@@ -78,7 +78,11 @@ export function calculateCreatureCurrentSpeed(creature, dt, world) {
   if (creature.target) {
     const dist = Math.hypot(creature.target.x - creature.x, creature.target.y - creature.y);
     if (dist < CreatureAgentTuning.MOVEMENT.SLOW_RADIUS) {
-      arriveFactor = clamp(dist / CreatureAgentTuning.MOVEMENT.SLOW_RADIUS, CreatureAgentTuning.MOVEMENT.MIN_ARRIVE_SPEED, 1);
+      arriveFactor = clamp(
+        dist / CreatureAgentTuning.MOVEMENT.SLOW_RADIUS,
+        CreatureAgentTuning.MOVEMENT.MIN_ARRIVE_SPEED,
+        1
+      );
     }
   }
 
@@ -216,10 +220,24 @@ export function updateCreaturePosition(creature, dt, world, spd) {
   } else if (boundaryMode === 'clamp') {
     // Hard boundaries (bounce at edge)
     const margin = 10;
-    if (creature.x < margin) { creature.x = margin; creature.vx = Math.abs(creature.vx); creature.dir = Math.atan2(creature.vy, creature.vx); }
-    else if (creature.x > world.width - margin) { creature.x = world.width - margin; creature.vx = -Math.abs(creature.vx); creature.dir = Math.atan2(creature.vy, creature.vx); }
-    if (creature.y < margin) { creature.y = margin; creature.vy = Math.abs(creature.vy); creature.dir = Math.atan2(creature.vy, creature.vx); }
-    else if (creature.y > world.height - margin) { creature.y = world.height - margin; creature.vy = -Math.abs(creature.vy); creature.dir = Math.atan2(creature.vy, creature.vx); }
+    if (creature.x < margin) {
+      creature.x = margin;
+      creature.vx = Math.abs(creature.vx);
+      creature.dir = Math.atan2(creature.vy, creature.vx);
+    } else if (creature.x > world.width - margin) {
+      creature.x = world.width - margin;
+      creature.vx = -Math.abs(creature.vx);
+      creature.dir = Math.atan2(creature.vy, creature.vx);
+    }
+    if (creature.y < margin) {
+      creature.y = margin;
+      creature.vy = Math.abs(creature.vy);
+      creature.dir = Math.atan2(creature.vy, creature.vx);
+    } else if (creature.y > world.height - margin) {
+      creature.y = world.height - margin;
+      creature.vy = -Math.abs(creature.vy);
+      creature.dir = Math.atan2(creature.vy, creature.vx);
+    }
   }
   // boundaryMode 'none' = no restrictions (current behavior)
 }

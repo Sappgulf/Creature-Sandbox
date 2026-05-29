@@ -18,17 +18,13 @@ function toSet(values = []) {
 }
 
 function setsToArrays(unlocks = {}) {
-  return Object.fromEntries(
-    Object.entries(unlocks).map(([key, value]) => [key, Array.from(value || [])])
-  );
+  return Object.fromEntries(Object.entries(unlocks).map(([key, value]) => [key, Array.from(value || [])]));
 }
 
 export class ProgressionSystem {
   constructor({ storageKey = STORAGE_KEY } = {}) {
     this.storageKey = storageKey;
-    this.unlocks = Object.fromEntries(
-      Object.entries(DEFAULT_UNLOCKS).map(([key, value]) => [key, toSet(value)])
-    );
+    this.unlocks = Object.fromEntries(Object.entries(DEFAULT_UNLOCKS).map(([key, value]) => [key, toSet(value)]));
     this.completedScenarios = {};
     this.stats = {
       highestPopulation: 0,
@@ -93,9 +89,8 @@ export class ProgressionSystem {
     const seconds = Number(payload.seconds ?? payload.elapsed ?? 0);
     this.completedScenarios[id] = {
       completions: existing.completions + 1,
-      bestSeconds: existing.bestSeconds == null || (seconds && seconds < existing.bestSeconds)
-        ? seconds
-        : existing.bestSeconds,
+      bestSeconds:
+        existing.bestSeconds == null || (seconds && seconds < existing.bestSeconds) ? seconds : existing.bestSeconds,
       completedAt: Date.now()
     };
     this.unlock('scenarios', id);

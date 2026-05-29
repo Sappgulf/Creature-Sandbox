@@ -425,9 +425,12 @@ export class ParticleSystem {
       winter: '#B0E0E6'
     };
     const key = (label || '').toLowerCase();
-    const tint = key.includes('winter') ? palette.winter
-      : key.includes('autumn') ? palette.autumn
-        : key.includes('summer') ? palette.summer
+    const tint = key.includes('winter')
+      ? palette.winter
+      : key.includes('autumn')
+        ? palette.autumn
+        : key.includes('summer')
+          ? palette.summer
           : palette.spring;
     for (let i = 0; i < 24; i++) {
       const angle = Math.random() * Math.PI * 2;
@@ -965,7 +968,7 @@ export class ParticleSystem {
 
       case 'gravestone':
         // Fade in effect
-        if (p.fadeInTime && (p.maxLife - p.life) < p.fadeInTime) {
+        if (p.fadeInTime && p.maxLife - p.life < p.fadeInTime) {
           p.opacity = (p.maxLife - p.life) / p.fadeInTime;
         } else if (p.life < 2.0) {
           p.opacity = p.life / 2.0;
@@ -1176,12 +1179,13 @@ export class ParticleSystem {
     }
 
     if (!this._particleSpriteRequest) {
-      this._particleSpriteRequest = assetLoader.requestSpriteFrames('particle_sparkle', { size: 32 })
-        .then((sprite) => {
+      this._particleSpriteRequest = assetLoader
+        .requestSpriteFrames('particle_sparkle', { size: 32 })
+        .then(sprite => {
           if (sprite?.frames?.length) this._particleSpriteRuntime = sprite;
           return this._particleSpriteRuntime;
         })
-        .catch((error) => {
+        .catch(error => {
           console.debug('[ParticleSystem] particle sprite load failed:', error);
           return null;
         })
@@ -1376,9 +1380,7 @@ export class ParticleSystem {
       } else if (p.type === 'ripple') {
         // Water ripple effect
         const rippleColor = p.color || 'rgba(147, 197, 253, 1)';
-        const strokeColor = rippleColor.includes('rgba')
-          ? rippleColor.replace('1)', `${p.opacity})`)
-          : rippleColor;
+        const strokeColor = rippleColor.includes('rgba') ? rippleColor.replace('1)', `${p.opacity})`) : rippleColor;
         ctx.strokeStyle = strokeColor;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
@@ -1483,7 +1485,6 @@ export class ParticleSystem {
         ctx.stroke();
         ctx.restore();
       }
-
     }
     ctx.globalAlpha = 1.0;
   }

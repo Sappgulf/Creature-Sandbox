@@ -63,7 +63,7 @@ export class EcosystemHealth {
 
     // Overall health is weighted average
     const { BIODIVERSITY, STABILITY, SUSTAINABILITY } = ECOSYSTEM_CONFIG.WEIGHTS;
-    const overall = (biodiversity * BIODIVERSITY + stability * STABILITY + sustainability * SUSTAINABILITY);
+    const overall = biodiversity * BIODIVERSITY + stability * STABILITY + sustainability * SUSTAINABILITY;
 
     this.metrics = { biodiversity, stability, sustainability, overall };
 
@@ -127,7 +127,7 @@ export class EcosystemHealth {
     const predatorRatio = world.creatures.length > 0 ? predators / world.creatures.length : 0;
     const balanceScore = (1 - Math.abs(predatorRatio - ECOSYSTEM_CONFIG.TARGETS.PREDATOR_RATIO)) * 100;
 
-    return (popScore * 0.4 + foodScore * 0.3 + balanceScore * 0.3);
+    return popScore * 0.4 + foodScore * 0.3 + balanceScore * 0.3;
   }
 
   calculateSustainability(world) {
@@ -163,7 +163,7 @@ export class EcosystemHealth {
     const avgEnergy = world.creatures.length > 0 ? totalEnergy / world.creatures.length : 0;
     const energyScore = clamp((avgEnergy / ECOSYSTEM_CONFIG.TARGETS.AVERAGE_ENERGY) * 100, 0, 100);
 
-    return (birthDeathScore * 0.4 + healthScore * 0.3 + energyScore * 0.3);
+    return birthDeathScore * 0.4 + healthScore * 0.3 + energyScore * 0.3;
   }
 
   scorePopulation(count) {
@@ -171,7 +171,7 @@ export class EcosystemHealth {
     if (count === 0) return 0;
     if (count >= MIN_OPTIMAL && count <= MAX_OPTIMAL) return 100;
     if (count < MIN_OPTIMAL) return (count / MIN_OPTIMAL) * 100;
-    if (count > MAX_OPTIMAL) return Math.max(0, 100 - ((count - MAX_OPTIMAL) / OVERPOPULATION_PENALTY_RATE));
+    if (count > MAX_OPTIMAL) return Math.max(0, 100 - (count - MAX_OPTIMAL) / OVERPOPULATION_PENALTY_RATE);
     return 50;
   }
 
@@ -247,4 +247,3 @@ export class EcosystemHealth {
     this.visible = false;
   }
 }
-

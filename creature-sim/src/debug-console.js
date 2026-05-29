@@ -7,14 +7,14 @@ export class DebugConsole {
     this.visible = false;
     this.commands = {
       help: () => this.showHelp(),
-      spawn: (count) => this.spawnCreatures(count),
-      food: (count) => this.spawnFood(count),
+      spawn: count => this.spawnCreatures(count),
+      food: count => this.spawnFood(count),
       clear: () => this.clearAll(),
       killall: () => this.killAll(),
       boost: () => this.boostAll(),
       heal: () => this.healAll(),
-      speed: (multiplier) => this.setSpeed(multiplier),
-      zoom: (level) => this.setZoom(level),
+      speed: multiplier => this.setSpeed(multiplier),
+      zoom: level => this.setZoom(level),
       goto: (x, y) => this.gotoPosition(x, y),
       pause: () => this.togglePause(),
       stats: () => this.showStats(),
@@ -52,29 +52,30 @@ export class DebugConsole {
     console.log('%c  debug.nofood()         %c- Remove all food', 'color: #ffc800;', 'color: #c3c6e4;');
     console.log('%c  debug.god()            %c- God mode: immortal creatures', 'color: #ffc800;', 'color: #c3c6e4;');
     console.log('%c  debug.chaos()          %c- Chaos mode: random events', 'color: #ffc800;', 'color: #c3c6e4;');
-    console.log('%c  debug.goals()          %c- Toggle goal/target debug overlays', 'color: #ffc800;', 'color: #c3c6e4;');
-    console.log('%c  debug.observe()        %c- Toggle life-stage + memory observer overlays', 'color: #ffc800;', 'color: #c3c6e4;');
+    console.log(
+      '%c  debug.goals()          %c- Toggle goal/target debug overlays',
+      'color: #ffc800;',
+      'color: #c3c6e4;'
+    );
+    console.log(
+      '%c  debug.observe()        %c- Toggle life-stage + memory observer overlays',
+      'color: #ffc800;',
+      'color: #c3c6e4;'
+    );
     console.log('%c  debug.export()         %c- Export world state to console', 'color: #ffc800;', 'color: #c3c6e4;');
     console.log('\n%c💡 Tip: Type "debug" to access the console object', 'color: #9aa0c6; font-style: italic;');
   }
 
   spawnCreatures(count = 10) {
     for (let i = 0; i < count; i++) {
-      this.world.spawnManual(
-        Math.random() * this.world.width,
-        Math.random() * this.world.height,
-        Math.random() > 0.8
-      );
+      this.world.spawnManual(Math.random() * this.world.width, Math.random() * this.world.height, Math.random() > 0.8);
     }
     console.log(`✅ Spawned ${count} creatures`);
   }
 
   spawnFood(count = 50) {
     for (let i = 0; i < count; i++) {
-      this.world.addFood(
-        Math.random() * this.world.width,
-        Math.random() * this.world.height
-      );
+      this.world.addFood(Math.random() * this.world.width, Math.random() * this.world.height);
     }
     console.log(`✅ Spawned ${count} food pieces`);
   }
@@ -135,8 +136,11 @@ export class DebugConsole {
     console.log(`  Time: ${this.world.t.toFixed(1)}s`);
     console.log(`  World Size: ${this.world.width} × ${this.world.height}`);
 
-    let herbs = 0, omnis = 0, preds = 0;
-    let totalEnergy = 0, totalHealth = 0;
+    let herbs = 0,
+      omnis = 0,
+      preds = 0;
+    let totalEnergy = 0,
+      totalHealth = 0;
     for (const c of this.world.creatures) {
       const diet = c.genes.diet ?? (c.genes.predator ? 1 : 0);
       if (diet > 0.7) preds++;
@@ -190,9 +194,9 @@ export class DebugConsole {
   chaosMode() {
     console.log('✅ CHAOS MODE - Random mutations incoming!');
     for (const c of this.world.creatures) {
-      c.genes.speed *= (0.5 + Math.random());
-      c.genes.sense *= (0.5 + Math.random());
-      c.genes.metabolism *= (0.5 + Math.random());
+      c.genes.speed *= 0.5 + Math.random();
+      c.genes.sense *= 0.5 + Math.random();
+      c.genes.metabolism *= 0.5 + Math.random();
     }
     // Spawn random disasters
     if (this.world.triggerDisaster) {

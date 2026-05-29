@@ -190,12 +190,9 @@ export class MiniGraphs {
     const chartW = w - 10;
     const chartH = h - 25;
 
-    this._drawSparkline(ctx, graph.data, chartX, chartY, chartW, chartH, maxPop,
-      d => d.herb, graph.colors.herb);
-    this._drawSparkline(ctx, graph.data, chartX, chartY, chartW, chartH, maxPop,
-      d => d.pred, graph.colors.pred);
-    this._drawSparkline(ctx, graph.data, chartX, chartY, chartW, chartH, maxPop,
-      d => d.omni, graph.colors.omni);
+    this._drawSparkline(ctx, graph.data, chartX, chartY, chartW, chartH, maxPop, d => d.herb, graph.colors.herb);
+    this._drawSparkline(ctx, graph.data, chartX, chartY, chartW, chartH, maxPop, d => d.pred, graph.colors.pred);
+    this._drawSparkline(ctx, graph.data, chartX, chartY, chartW, chartH, maxPop, d => d.omni, graph.colors.omni);
 
     // Legend
     const latest = graph.data[graph.data.length - 1];
@@ -237,12 +234,30 @@ export class MiniGraphs {
     const chartH = h - 25;
 
     // Draw speed line
-    this._drawSparkline(ctx, graph.data, chartX, chartY, chartW, chartH, maxSpeed * 1.1,
-      d => d.avgSpeed, graph.colors.speed);
+    this._drawSparkline(
+      ctx,
+      graph.data,
+      chartX,
+      chartY,
+      chartW,
+      chartH,
+      maxSpeed * 1.1,
+      d => d.avgSpeed,
+      graph.colors.speed
+    );
 
     // Draw metabolism line
-    this._drawSparkline(ctx, graph.data, chartX, chartY, chartW, chartH, maxMetab * 1.1,
-      d => d.avgMetabolism, graph.colors.metabolism);
+    this._drawSparkline(
+      ctx,
+      graph.data,
+      chartX,
+      chartY,
+      chartW,
+      chartH,
+      maxMetab * 1.1,
+      d => d.avgMetabolism,
+      graph.colors.metabolism
+    );
 
     // Legend
     const latest = graph.data[graph.data.length - 1];
@@ -316,8 +331,7 @@ export class MiniGraphs {
     const chartW = w - 10;
     const chartH = h - 25;
 
-    this._drawSparkline(ctx, graph.data, chartX, chartY, chartW, chartH, maxCount * 1.1,
-      d => d.count, graph.color);
+    this._drawSparkline(ctx, graph.data, chartX, chartY, chartW, chartH, maxCount * 1.1, d => d.count, graph.color);
 
     // Current value
     const latest = graph.data[graph.data.length - 1];

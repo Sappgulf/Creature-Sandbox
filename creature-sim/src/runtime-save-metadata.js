@@ -42,23 +42,26 @@ export function buildRuntimeSaveMetadata({
       food,
       props,
       worldTime,
-      camera: camera ? {
-        x: Number(camera.x?.toFixed?.(1) ?? camera.x ?? 0),
-        y: Number(camera.y?.toFixed?.(1) ?? camera.y ?? 0),
-        zoom: Number(camera.zoom?.toFixed?.(2) ?? camera.zoom ?? 1)
-      } : null,
-      scenario: activeScenario ? {
-        id: activeScenario.id,
-        name: activeScenario.name,
-        progress: playableScenarios?.getSnapshot?.()?.progress ?? playable?.activeRun?.progress ?? 0,
-        state: playable?.activeRun?.state ?? null
-      } : null,
+      camera: camera
+        ? {
+          x: Number(camera.x?.toFixed?.(1) ?? camera.x ?? 0),
+          y: Number(camera.y?.toFixed?.(1) ?? camera.y ?? 0),
+          zoom: Number(camera.zoom?.toFixed?.(2) ?? camera.zoom ?? 1)
+        }
+        : null,
+      scenario: activeScenario
+        ? {
+          id: activeScenario.id,
+          name: activeScenario.name,
+          progress: playableScenarios?.getSnapshot?.()?.progress ?? playable?.activeRun?.progress ?? 0,
+          state: playable?.activeRun?.state ?? null
+        }
+        : null,
       summary: momentState?.summary ?? null
     },
     share: {
-      seed: typeof window !== 'undefined'
-        ? window.location.hash?.replace(/^#seed=/, '').replace(/^#/, '') || null
-        : null,
+      seed:
+        typeof window !== 'undefined' ? window.location.hash?.replace(/^#seed=/, '').replace(/^#/, '') || null : null,
       selectedCreatureId: gameState?.selectedId ?? null,
       favoriteCreatureId: gameState?.pinnedId ?? null
     }
@@ -80,16 +83,19 @@ export function buildRuntimeSaveMetadata({
   return metadata;
 }
 
-export function restoreRuntimeSaveMetadata(metadata = {}, {
-  playableScenarios,
-  sessionGoals,
-  challengeSystem,
-  moments,
-  gameState,
-  uiController,
-  upgradeController,
-  gameDirector
-} = {}) {
+export function restoreRuntimeSaveMetadata(
+  metadata = {},
+  {
+    playableScenarios,
+    sessionGoals,
+    challengeSystem,
+    moments,
+    gameState,
+    uiController,
+    upgradeController,
+    gameDirector
+  } = {}
+) {
   const restored = {
     playable: false,
     sessionGoals: false,
@@ -161,9 +167,7 @@ export function formatSavePreview(metadata = {}, timestamp = null) {
   }
 
   if (preview.scenario?.name) {
-    const progress = Number.isFinite(preview.scenario.progress)
-      ? ` ${Math.round(preview.scenario.progress)}%`
-      : '';
+    const progress = Number.isFinite(preview.scenario.progress) ? ` ${Math.round(preview.scenario.progress)}%` : '';
     parts.push(`${preview.scenario.name}${progress}`);
   }
 

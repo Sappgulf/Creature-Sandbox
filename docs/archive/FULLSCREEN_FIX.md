@@ -3,6 +3,7 @@
 ## ❌ THE PROBLEM
 
 The canvas was NOT truly fullscreen on desktop or mobile:
+
 - Black borders around the game
 - Canvas not filling entire viewport
 - Mismatched internal resolution vs display size
@@ -11,25 +12,47 @@ The canvas was NOT truly fullscreen on desktop or mobile:
 ## ✅ THE SOLUTION
 
 ### 1. **CSS: True Fullscreen Layout**
+
 Changed from percentage-based to viewport units:
+
 ```css
 /* BEFORE */
-html, body { height: 100%; width: 100%; }
-#view { position: absolute; width: 100%; height: 100%; }
+html,
+body {
+  height: 100%;
+  width: 100%;
+}
+#view {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
 
 /* AFTER */
-html { height: 100vh; width: 100vw; }
-body { height: 100vh; width: 100vw; }
-#view { position: fixed; width: 100vw; height: 100vh; }
+html {
+  height: 100vh;
+  width: 100vw;
+}
+body {
+  height: 100vh;
+  width: 100vw;
+}
+#view {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+}
 ```
 
 **Why this works:**
+
 - `100vh/100vw` = viewport units (guaranteed fullscreen)
 - `position: fixed` = ignores scrolling, always covers screen
 - `box-sizing: border-box` = prevents overflow issues
 - `touch-action: none` = prevents mobile browser gestures
 
 ### 2. **JavaScript: Proper Canvas Sizing with DPI Support**
+
 ```javascript
 // BEFORE (WRONG)
 canvas.width = window.innerWidth;
@@ -50,12 +73,14 @@ camera.viewportHeight = rect.height;
 ```
 
 **Why this works:**
+
 - `getBoundingClientRect()` = actual rendered size (CSS-controlled)
 - `devicePixelRatio` = handles Retina/high-DPI displays
 - `ctx.scale(dpr, dpr)` = crisp rendering on high-res screens
 - Camera uses CSS dimensions, not internal resolution
 
 ### 3. **Rendering: Use Camera Dimensions (Not Canvas Resolution)**
+
 ```javascript
 // BEFORE (WRONG)
 renderer.clear(canvas.width, canvas.height);
@@ -67,33 +92,37 @@ ctx.translate(camera.viewportWidth / 2, camera.viewportHeight / 2);
 ```
 
 **Why this works:**
+
 - After `ctx.scale(dpr, dpr)`, we draw in CSS coordinates
 - Camera viewport = actual screen size users see
 - Internal canvas resolution = high-DPI buffer (hidden from code)
 
 ### 4. **Resize Handling: Proper DPI Re-scaling**
+
 ```javascript
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
-  
+
   canvas.width = rect.width * dpr;
   canvas.height = rect.height * dpr;
-  
+
   // CRITICAL: Re-apply scale after resize (canvas reset)
   ctx.scale(dpr, dpr);
-  
+
   camera.viewportWidth = rect.width;
   camera.viewportHeight = rect.height;
 }
 ```
 
 **Why this works:**
+
 - Setting `canvas.width/height` resets the context
 - Must re-apply `ctx.scale(dpr, dpr)` after every resize
 - Updates camera viewport to match new size
 
 ### 5. **Initial Load: Force Resize After DOM Ready**
+
 ```javascript
 // Force initial resize after brief delay
 setTimeout(() => {
@@ -103,6 +132,7 @@ setTimeout(() => {
 ```
 
 **Why this works:**
+
 - Ensures canvas is properly sized even if DOM loads slowly
 - Catches edge cases where initial size is wrong
 - 100ms delay is imperceptible to users
@@ -111,14 +141,14 @@ setTimeout(() => {
 
 ## 📊 BEFORE vs AFTER
 
-| Aspect | Before | After |
-|--------|--------|-------|
-| **Desktop Fullscreen** | ❌ Black borders | ✅ True fullscreen |
-| **Mobile Fullscreen** | ❌ Address bar issues | ✅ True fullscreen |
-| **High-DPI (Retina)** | ❌ Blurry rendering | ✅ Crisp rendering |
-| **Window Resize** | ❌ Incorrect scaling | ✅ Proper rescaling |
-| **Touch Gestures** | ❌ Browser scroll | ✅ Prevented |
-| **Canvas Resolution** | ❌ Mismatched | ✅ DPI-aware |
+| Aspect                 | Before                | After               |
+| ---------------------- | --------------------- | ------------------- |
+| **Desktop Fullscreen** | ❌ Black borders      | ✅ True fullscreen  |
+| **Mobile Fullscreen**  | ❌ Address bar issues | ✅ True fullscreen  |
+| **High-DPI (Retina)**  | ❌ Blurry rendering   | ✅ Crisp rendering  |
+| **Window Resize**      | ❌ Incorrect scaling  | ✅ Proper rescaling |
+| **Touch Gestures**     | ❌ Browser scroll     | ✅ Prevented        |
+| **Canvas Resolution**  | ❌ Mismatched         | ✅ DPI-aware        |
 
 ---
 
@@ -139,11 +169,13 @@ setTimeout(() => {
    - NOT used in drawing code after scale is applied
 
 ### **Device Pixel Ratio (DPR):**
+
 - Standard display: DPR = 1 (1 CSS pixel = 1 canvas pixel)
 - Retina display: DPR = 2 (1 CSS pixel = 2 canvas pixels)
 - High-end mobile: DPR = 3 (1 CSS pixel = 3 canvas pixels)
 
 Example:
+
 - CSS size: 1920x1080 (what you see)
 - DPR: 2 (Retina MacBook)
 - Canvas internal: 3840x2160 (actual buffer)
@@ -154,6 +186,7 @@ Example:
 ## 🧪 TESTING CHECKLIST
 
 ### Desktop
+
 - [ ] Fullscreen on 1920x1080 monitor
 - [ ] Fullscreen on 1366x768 monitor
 - [ ] Fullscreen on 2560x1440 monitor
@@ -163,6 +196,7 @@ Example:
 - [ ] Multi-monitor (move window between screens)
 
 ### Mobile
+
 - [ ] iPhone (portrait)
 - [ ] iPhone (landscape)
 - [ ] iPad (portrait)
@@ -173,6 +207,7 @@ Example:
 - [ ] Address bar hide/show
 
 ### Rendering
+
 - [ ] No black borders
 - [ ] No white gaps
 - [ ] Crisp text/creatures (not blurry)
@@ -233,6 +268,7 @@ If fullscreen still doesn't work, check:
 5. **Test resize**: Open console, resize window, check new dimensions
 
 Example console output:
+
 ```
 🖼️ Canvas: 1920x1080 (3840x2160 internal @ 2x DPI)
 📐 Canvas resized: 1920x1080 (3840x2160 internal @ 2x DPI)
@@ -241,7 +277,6 @@ Example console output:
 
 ---
 
-*Last updated: November 4, 2025*
-*Issue: Fullscreen not working on desktop/mobile*
-*Status: ✅ FIXED*
-
+_Last updated: November 4, 2025_
+_Issue: Fullscreen not working on desktop/mobile_
+_Status: ✅ FIXED_

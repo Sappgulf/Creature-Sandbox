@@ -17,9 +17,12 @@ export class EnhancedBehaviors {
     const separationStrength = 0.4;
     const separationRadius = 25;
 
-    let alignVx = 0, alignVy = 0;
-    let cohesionX = 0, cohesionY = 0;
-    let separateVx = 0, separateVy = 0;
+    let alignVx = 0,
+      alignVy = 0;
+    let cohesionX = 0,
+      cohesionY = 0;
+    let separateVx = 0,
+      separateVy = 0;
     let schoolCount = 0;
     let separateCount = 0;
 
@@ -88,11 +91,13 @@ export class EnhancedBehaviors {
     let packSize = 1;
     for (let i = 0; i < nearbyPredators.length; i++) {
       const other = nearbyPredators[i];
-      if (other !== predator &&
-          other?.alive &&
-          other.genes?.predator &&
-          other.target === prey &&
-          dist2(other.x, other.y, predator.x, predator.y) < packRadiusSq) {
+      if (
+        other !== predator &&
+        other?.alive &&
+        other.genes?.predator &&
+        other.target === prey &&
+        dist2(other.x, other.y, predator.x, predator.y) < packRadiusSq
+      ) {
         packSize++;
       }
     }
@@ -105,7 +110,7 @@ export class EnhancedBehaviors {
 
     // Predator takes a flanking position
     const flankSide = predator.id % 2 === 0 ? 1 : -1;
-    const targetAngle = preyAngle + (flankAngle * flankSide);
+    const targetAngle = preyAngle + flankAngle * flankSide;
     const flankDistance = 40;
 
     return {

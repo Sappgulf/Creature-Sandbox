@@ -26,11 +26,11 @@ function run(command, args) {
 }
 
 function request(method, url) {
-  return new Promise((resolve) => {
-    const req = https.request(url, { method, timeout: 20000 }, (res) => {
+  return new Promise(resolve => {
+    const req = https.request(url, { method, timeout: 20000 }, res => {
       let body = '';
       res.setEncoding('utf8');
-      res.on('data', (chunk) => {
+      res.on('data', chunk => {
         if (body.length < 65536) body += chunk;
       });
       res.on('end', () => {
@@ -43,7 +43,7 @@ function request(method, url) {
         });
       });
     });
-    req.on('error', (error) => resolve({ url, method, error: error.message }));
+    req.on('error', error => resolve({ url, method, error: error.message }));
     req.on('timeout', () => {
       req.destroy();
       resolve({ url, method, error: 'timeout' });
@@ -84,7 +84,8 @@ const summary = {
   }
 };
 
-const passed = version.passed &&
+const passed =
+  version.passed &&
   inspect.passed &&
   Number(head.statusCode || 0) >= 200 &&
   Number(head.statusCode || 0) < 400 &&

@@ -28,16 +28,18 @@ class ScenarioTemplate {
     // Initial creatures
     this.creatures = {
       initialCount: 10,
-      species: [{
-        name: 'Starter Species',
-        count: 10,
-        genes: {
-          speed: { min: 0.5, max: 1.5, default: 0.8 },
-          sense: { min: 50, max: 150, default: 90 },
-          metabolism: { min: 0.8, max: 1.2, default: 1.0 },
-          size: { min: 2.5, max: 5.0, default: 3.5 }
+      species: [
+        {
+          name: 'Starter Species',
+          count: 10,
+          genes: {
+            speed: { min: 0.5, max: 1.5, default: 0.8 },
+            sense: { min: 50, max: 150, default: 90 },
+            metabolism: { min: 0.8, max: 1.2, default: 1.0 },
+            size: { min: 2.5, max: 5.0, default: 3.5 }
+          }
         }
-      }]
+      ]
     };
 
     // Food and resources
@@ -617,7 +619,7 @@ export class ScenarioEditor {
     this.setupSliderListeners();
 
     // Keyboard shortcut (Ctrl+Shift+S)
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       if (e.ctrlKey && e.shiftKey && e.key === 'S') {
         e.preventDefault();
         this.toggle();
@@ -660,17 +662,17 @@ export class ScenarioEditor {
 
     const header = this.panel.querySelector('h2');
 
-    header.addEventListener('mousedown', (e) => {
+    header.addEventListener('mousedown', e => {
       isDragging = true;
       dragOffsetX = e.clientX - this.panel.offsetLeft;
       dragOffsetY = e.clientY - this.panel.offsetTop;
       this.panel.style.cursor = 'grabbing';
     });
 
-    document.addEventListener('mousemove', (e) => {
+    document.addEventListener('mousemove', e => {
       if (isDragging) {
-        this.panel.style.left = (e.clientX - dragOffsetX) + 'px';
-        this.panel.style.top = (e.clientY - dragOffsetY) + 'px';
+        this.panel.style.left = e.clientX - dragOffsetX + 'px';
+        this.panel.style.top = e.clientY - dragOffsetY + 'px';
       }
     });
 
@@ -829,11 +831,11 @@ export class ScenarioEditor {
     input.accept = '.json';
     input.style.display = 'none';
 
-    input.addEventListener('change', (e) => {
+    input.addEventListener('change', e => {
       const file = e.target.files[0];
       if (file) {
         const reader = new FileReader();
-        reader.onload = (event) => {
+        reader.onload = event => {
           try {
             const scenarioData = JSON.parse(event.target.result);
             this.currentScenario = ScenarioTemplate.fromJSON(scenarioData);

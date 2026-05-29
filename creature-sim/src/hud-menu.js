@@ -4,8 +4,9 @@ const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:
 
 function getFocusableElements(container) {
   if (!container) return [];
-  return Array.from(container.querySelectorAll(FOCUSABLE_SELECTOR))
-    .filter((el) => !el.hasAttribute('disabled') && el.getAttribute('aria-hidden') !== 'true');
+  return Array.from(container.querySelectorAll(FOCUSABLE_SELECTOR)).filter(
+    el => !el.hasAttribute('disabled') && el.getAttribute('aria-hidden') !== 'true'
+  );
 }
 
 export class HudMenu {
@@ -44,7 +45,7 @@ export class HudMenu {
       this.overflowSheetContent.innerHTML = '';
     }
 
-    this.actions.forEach((action) => {
+    this.actions.forEach(action => {
       const button = document.getElementById(action.id);
       if (!button) return;
 
@@ -69,7 +70,7 @@ export class HudMenu {
   }
 
   bindActionHandlers() {
-    this.actions.forEach((action) => {
+    this.actions.forEach(action => {
       const button = document.getElementById(action.id);
       if (!button || button.dataset.hudBound === 'true') return;
 
@@ -85,13 +86,13 @@ export class HudMenu {
     if (!container) return;
 
     const groupedActions = this.groups
-      .map((group) => ({
+      .map(group => ({
         group,
-        actions: this.actions.filter((action) => action.group === group.id && !action.primary)
+        actions: this.actions.filter(action => action.group === group.id && !action.primary)
       }))
-      .filter((entry) => entry.actions.length > 0);
+      .filter(entry => entry.actions.length > 0);
 
-    groupedActions.forEach((entry) => {
+    groupedActions.forEach(entry => {
       const groupWrapper = document.createElement('div');
       groupWrapper.className = `hud-menu-group hud-menu-group-${variant}`;
       groupWrapper.setAttribute('role', 'presentation');
@@ -105,7 +106,7 @@ export class HudMenu {
       groupItems.setAttribute('role', 'group');
       groupItems.setAttribute('aria-label', entry.group.label);
 
-      entry.actions.forEach((action) => {
+      entry.actions.forEach(action => {
         const button = document.getElementById(action.id);
         if (!button) return;
 
@@ -177,7 +178,7 @@ export class HudMenu {
   }
 
   updateActionStates() {
-    this.actions.forEach((action) => {
+    this.actions.forEach(action => {
       const button = document.getElementById(action.id);
       if (!button || typeof action.enabledWhen !== 'function') return;
 
@@ -189,7 +190,7 @@ export class HudMenu {
 
   bindOverflowControls() {
     if (this.overflowTrigger) {
-      this.overflowTrigger.addEventListener('click', (event) => {
+      this.overflowTrigger.addEventListener('click', event => {
         event.stopPropagation();
         this.toggleMenu();
       });
@@ -204,22 +205,22 @@ export class HudMenu {
     }
 
     if (this.overflowMenu) {
-      this.overflowMenu.addEventListener('keydown', (event) => this.handleMenuKeydown(event));
-      this.overflowMenu.addEventListener('click', (event) => {
+      this.overflowMenu.addEventListener('keydown', event => this.handleMenuKeydown(event));
+      this.overflowMenu.addEventListener('click', event => {
         const target = event.target.closest('button');
         if (target) this.closeMenu();
       });
     }
 
     if (this.overflowSheet) {
-      this.overflowSheet.addEventListener('keydown', (event) => this.handleSheetKeydown(event));
-      this.overflowSheet.addEventListener('click', (event) => {
+      this.overflowSheet.addEventListener('keydown', event => this.handleSheetKeydown(event));
+      this.overflowSheet.addEventListener('click', event => {
         const target = event.target.closest('button');
         if (target && target.id !== 'hud-overflow-close') this.closeMenu();
       });
     }
 
-    document.addEventListener('click', (event) => {
+    document.addEventListener('click', event => {
       if (!this.isOpen) return;
       const isTrigger = this.overflowTrigger && this.overflowTrigger.contains(event.target);
       const isMenu = this.overflowMenu && this.overflowMenu.contains(event.target);
@@ -229,7 +230,7 @@ export class HudMenu {
       }
     });
 
-    document.addEventListener('keydown', (event) => {
+    document.addEventListener('keydown', event => {
       if (!this.isOpen) return;
       if (event.key === 'Escape') {
         event.preventDefault();
@@ -311,7 +312,7 @@ export class HudMenu {
   focusFirstMenuItem(container) {
     const menuItems = getFocusableElements(container);
     if (menuItems.length > 0) {
-      menuItems.forEach((item) => {
+      menuItems.forEach(item => {
         if (item.classList.contains('hud-menu-item')) {
           item.tabIndex = -1;
         }

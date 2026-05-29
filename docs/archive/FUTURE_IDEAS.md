@@ -7,6 +7,7 @@ After comprehensive codebase analysis, here are **50+ upgrade ideas** organized 
 ## 🧬 **1. CREATURE MECHANICS** (15 Ideas)
 
 ### 1.1 **Age Stages & Life Cycle**
+
 - **Baby → Juvenile → Adult → Elder** visual changes
 - Size grows with age (20% → 100% → 80% in old age)
 - Different behaviors per stage (juveniles play, elders teach)
@@ -14,13 +15,15 @@ After comprehensive codebase analysis, here are **50+ upgrade ideas** organized 
 - **Impact:** More realistic, emotional attachment
 
 ### 1.2 **Aquatic Creatures**
+
 - New gene: `aquatic` (0=land, 0.5=amphibian, 1=water-only)
 - Swim in wetland biomes
 - Different movement patterns (sinusoidal swimming)
 - Fishing predators (hunt aquatic prey)
 - **Impact:** 3D ecosystem diversity
 
-### 1.3 **Flying Creatures** 
+### 1.3 **Flying Creatures**
+
 - New gene: `flight` (wing size 0-1)
 - Fly over obstacles and water
 - Higher energy cost but faster travel
@@ -29,6 +32,7 @@ After comprehensive codebase analysis, here are **50+ upgrade ideas** organized 
 - **Impact:** Vertical dimension to gameplay
 
 ### 1.4 **Symbiotic Relationships**
+
 ```javascript
 relationships: {
   parasitism: null, // attached parasite ID
@@ -36,12 +40,14 @@ relationships: {
   commensalism: [] // neutral freeloaders
 }
 ```
+
 - Cleaner fish remove parasites
 - Birds warn herbivores of predators
 - Remora attach to large creatures
 - **Impact:** Complex ecological interactions
 
 ### 1.5 **Disease & Plague System**
+
 - Creatures can be infected (visible symptom: purple tint)
 - Spreads on contact (R0 value based on population density)
 - Symptoms: reduced speed, vision, energy drain
@@ -50,6 +56,7 @@ relationships: {
 - **Impact:** Realistic population dynamics
 
 ### 1.6 **Tool Use by Intelligent Creatures**
+
 - IQ > 1.5 unlocks tool use
 - Use rocks to crack hard food
 - Use sticks to fish
@@ -58,6 +65,7 @@ relationships: {
 - **Impact:** Emergent intelligence behaviors
 
 ### 1.7 **Shelter & Nest Building**
+
 ```javascript
 class Nest {
   owner: creatureId,
@@ -67,6 +75,7 @@ class Nest {
   defenseBonus: number
 }
 ```
+
 - Smart creatures build nests
 - Provides +20% health regen
 - Safer reproduction
@@ -74,6 +83,7 @@ class Nest {
 - **Impact:** Home base strategy
 
 ### 1.8 **Venomous Creatures**
+
 - New gene: `venom` (0-1 potency)
 - Poison DOT effect (damage over time)
 - Warning coloration (bright colors = venomous)
@@ -81,6 +91,7 @@ class Nest {
 - **Impact:** Rock-paper-scissors balance
 
 ### 1.9 **Camouflage & Stealth**
+
 - New gene: `camouflage` (0-1)
 - Creature color matches biome
 - Harder for predators to detect
@@ -88,6 +99,7 @@ class Nest {
 - **Impact:** Hide-and-seek gameplay
 
 ### 1.10 **Seasonal Breeding**
+
 - Only reproduce during spring/summer
 - Synchronized mating seasons
 - Population booms and crashes
@@ -95,6 +107,7 @@ class Nest {
 - **Impact:** Realistic ecological cycles
 
 ### 1.11 **Parental Care**
+
 - Parents stay near offspring for X seconds
 - Defend babies from predators
 - Teach hunting/foraging (XP transfer)
@@ -102,6 +115,7 @@ class Nest {
 - **Impact:** Emotional gameplay
 
 ### 1.12 **Creature Voices & Communication**
+
 - Procedural vocalizations (chirps, roars, howls)
 - Mating calls
 - Alarm calls (warn herd of danger)
@@ -110,6 +124,7 @@ class Nest {
 - **Impact:** Audio feedback (part of audio system)
 
 ### 1.13 **Hibernation**
+
 - Creatures with low energy enter sleep mode
 - Reduced metabolism (90% less drain)
 - Vulnerable to predators while sleeping
@@ -117,6 +132,7 @@ class Nest {
 - **Impact:** Survival strategy
 
 ### 1.14 **Mutation Visualization**
+
 - Show mutation sparkles when baby is born
 - Highlight mutated genes in inspector
 - "Evolutionary leap" announcements for big mutations
@@ -124,6 +140,7 @@ class Nest {
 - **Impact:** Educational value
 
 ### 1.15 **Creature Moods & Personality Traits**
+
 ```javascript
 personality: {
   brave: 0-1, // less fleeing
@@ -133,6 +150,7 @@ personality: {
   social: 0-1, // seeks companionship
 }
 ```
+
 - Each creature feels unique
 - Inherited traits (50% from parent)
 - Affects decision-making
@@ -143,6 +161,7 @@ personality: {
 ## 🌍 **2. WORLD & ENVIRONMENT** (12 Ideas)
 
 ### 2.1 **Four Seasons System**
+
 ```javascript
 seasons: {
   spring: { foodBonus: 1.5, temperate, breeding++ },
@@ -151,12 +170,14 @@ seasons: {
   winter: { foodBonus: 0.3, freezing, survival }
 }
 ```
+
 - 120-second cycles (30s per season)
 - Visual changes (snow, leaves, flowers)
 - Different challenges each season
 - **Impact:** Dynamic gameplay
 
 ### 2.2 **Water Bodies**
+
 - Rivers, lakes, ponds as distinct areas
 - Creatures must drink water (new need)
 - Fish spawn in water
@@ -165,6 +186,7 @@ seasons: {
 - **Impact:** Resource competition
 
 ### 2.3 **Dynamic Weather**
+
 - Rain (reduces vision, increases wetland food)
 - Snow (slows movement, freezes water)
 - Fog (hides predators)
@@ -173,6 +195,7 @@ seasons: {
 - **Impact:** Tactical considerations
 
 ### 2.4 **Vegetation Diversity**
+
 - Berry bushes (high-value food source)
 - Fruit trees (seasonal)
 - Grass (low value, abundant)
@@ -181,6 +204,7 @@ seasons: {
 - **Impact:** Foraging strategy
 
 ### 2.5 **Elevation & Terrain**
+
 - Mountains: high elevation, low oxygen (energy penalty)
 - Valleys: sheltered, more food
 - Cliffs: fall damage
@@ -188,6 +212,7 @@ seasons: {
 - **Impact:** 3D world feel
 
 ### 2.6 **Natural Landmarks**
+
 - Giant trees (nest locations)
 - Rock formations (navigation)
 - Waterfalls (audio/visual)
@@ -196,6 +221,7 @@ seasons: {
 - **Impact:** Memorable locations
 
 ### 2.7 **Biome Transitions & Ecotones**
+
 - Gradual blending between biomes
 - Edge effects (higher biodiversity)
 - Creatures prefer certain transitions
@@ -203,6 +229,7 @@ seasons: {
 - **Impact:** Realistic ecology
 
 ### 2.8 **Destructible Environment**
+
 - Trampled grass (paths form)
 - Eaten bushes take time to regrow
 - Corpses fertilize soil (food grows nearby)
@@ -210,12 +237,14 @@ seasons: {
 - **Impact:** Player impact visible
 
 ### 2.9 **Invasive Species Event**
+
 - Spawn aggressive predator from off-map
 - Disrupts balance
 - Player must decide: eliminate or adapt
 - **Impact:** Crisis management
 
 ### 2.10 **Volcanic Eruption Disaster**
+
 - New disaster type
 - Creates ash clouds (reduces light)
 - Lava flows (instant death zones)
@@ -223,6 +252,7 @@ seasons: {
 - **Impact:** Dramatic events
 
 ### 2.11 **Solar Eclipse Event**
+
 - Rare random event
 - Darkness triggers nocturnal behaviors
 - Predators hunt more successfully
@@ -230,6 +260,7 @@ seasons: {
 - **Impact:** Memorable moments
 
 ### 2.12 **World Size Options**
+
 - Small (1000x700) - fast, intense
 - Medium (4000x2800) - current default
 - Large (8000x5600) - epic scale
@@ -241,7 +272,9 @@ seasons: {
 ## 🎮 **3. GAMEPLAY & MODES** (10 Ideas)
 
 ### 3.1 **Campaign Mode**
+
 Sequential challenges with story:
+
 1. **Level 1**: "First Steps" - Keep 10 creatures alive for 5 minutes
 2. **Level 2**: "Predator Problem" - Survive predator invasion
 3. **Level 3**: "Ice Age" - Endure harsh winter
@@ -249,6 +282,7 @@ Sequential challenges with story:
 5. **Boss Level**: "Apex Challenge" - Defeat mega-predator
 
 **Unlocks:**
+
 - New biomes per level
 - God mode tools gradually unlocked
 - Cosmetic rewards
@@ -256,6 +290,7 @@ Sequential challenges with story:
 **Impact:** Clear progression, tutorial replacement
 
 ### 3.2 **Sandbox Modes**
+
 - **Peaceful Mode**: No predators, focus on evolution
 - **Chaos Mode**: Constant disasters, max difficulty
 - **Creative Mode**: Unlimited god powers, no restrictions
@@ -265,6 +300,7 @@ Sequential challenges with story:
 **Impact:** Replayability
 
 ### 3.3 **Challenge of the Day**
+
 - Daily rotating challenge (same for all players)
 - Leaderboard for best score
 - Unique scenarios (e.g., "Survive with 1 food/minute")
@@ -272,6 +308,7 @@ Sequential challenges with story:
 - **Impact:** Daily engagement
 
 ### 3.4 **Scenario Editor**
+
 ```javascript
 class Scenario {
   name: string,
@@ -288,12 +325,14 @@ class Scenario {
   events: TimedEvent[]
 }
 ```
+
 - Create custom scenarios
 - Share via JSON export
 - Community scenario library
 - **Impact:** User-generated content
 
 ### 3.5 **Multiplayer Observer Mode**
+
 - Watch same simulation with friends
 - Shared camera view or individual views
 - Compete: who can predict outcomes?
@@ -302,6 +341,7 @@ class Scenario {
 - **Impact:** Social experience
 
 ### 3.6 **Competitive Modes**
+
 - **Evolution Race**: First to evolve X trait wins
 - **Survival Challenge**: Last family standing
 - **Territory Control**: Dominate most area
@@ -309,6 +349,7 @@ class Scenario {
 - **Impact:** Competitive engagement
 
 ### 3.7 **Time Travel / Rewind**
+
 - Rewind simulation by 60 seconds
 - Create alternate timelines
 - "What if" experiments
@@ -316,6 +357,7 @@ class Scenario {
 - **Impact:** Experimentation tool
 
 ### 3.8 **Photo Mode**
+
 - Pause and free-roam camera
 - Apply filters (sepia, black & white, etc.)
 - Frame creatures for screenshots
@@ -324,6 +366,7 @@ class Scenario {
 - **Impact:** Social media sharing
 
 ### 3.9 **Speed Modes**
+
 - 0.25x (slow motion for combat)
 - 0.5x (detailed observation)
 - 1x (default)
@@ -332,6 +375,7 @@ class Scenario {
 - **Impact:** Flexibility
 
 ### 3.10 **Genetic Engineering Lab**
+
 ```javascript
 class GeneticLab {
   createCustomCreature(genes) {
@@ -339,7 +383,7 @@ class GeneticLab {
     // Preview appearance
     // Spawn with custom genes
   }
-  
+
   crossbreed(creatureA, creatureB) {
     // Mix genes from two creatures
     // Choose which traits to keep
@@ -347,6 +391,7 @@ class GeneticLab {
   }
 }
 ```
+
 - Design the "perfect" creature
 - Test hypotheses
 - Selective breeding interface
@@ -357,23 +402,26 @@ class GeneticLab {
 ## 📊 **4. DATA & ANALYTICS** (8 Ideas)
 
 ### 4.1 **AI Narrator**
+
 ```javascript
 class NarratorAI {
   analyze(world) {
     // Detect interesting events
     // Generate commentary
-    "The Smith lineage has dominated for 3 minutes..."
-    "A new apex predator has emerged!"
-    "Population crash detected - famine incoming"
+    'The Smith lineage has dominated for 3 minutes...';
+    'A new apex predator has emerged!';
+    'Population crash detected - famine incoming';
   }
 }
 ```
+
 - Natural language descriptions
 - Highlights key moments
 - Educational explanations
 - **Impact:** Storytelling
 
 ### 4.2 **Heatmaps & Visualizations**
+
 - Death heatmap (where do creatures die?)
 - Birth heatmap (breeding hotspots)
 - Predation heatmap (danger zones)
@@ -382,6 +430,7 @@ class NarratorAI {
 - **Impact:** Strategic insights
 
 ### 4.3 **Phylogenetic Tree Viewer**
+
 - Interactive family tree diagram
 - Click any creature to explore ancestry
 - Color-coded by traits
@@ -390,6 +439,7 @@ class NarratorAI {
 - **Impact:** Visual genealogy
 
 ### 4.4 **Gene Pool Analysis**
+
 - Gene frequency over time graphs
 - Identify dominant alleles
 - Genetic diversity index (Simpson's)
@@ -397,20 +447,23 @@ class NarratorAI {
 - **Impact:** Scientific depth
 
 ### 4.5 **Ecosystem Health Score**
+
 ```javascript
 healthScore = {
-  biodiversity: 0-100,
-  stability: 0-100, // low variance
-  sustainability: 0-100, // can last indefinitely
-  complexity: 0-100 // interaction richness
-}
+  biodiversity: 0 - 100,
+  stability: 0 - 100, // low variance
+  sustainability: 0 - 100, // can last indefinitely
+  complexity: 0 - 100 // interaction richness
+};
 ```
+
 - Overall grade (A+ to F)
 - Recommendations for improvement
 - Track score over time
 - **Impact:** Clear feedback
 
 ### 4.6 **Research Papers Generation**
+
 - Auto-generate scientific report
 - Methods, results, conclusions
 - Graphs and tables included
@@ -419,6 +472,7 @@ healthScore = {
 - **Impact:** Educational tool
 
 ### 4.7 **Comparison Mode**
+
 - Run two simulations side-by-side
 - Same seed, different parameters
 - "Control vs Experiment" setup
@@ -426,6 +480,7 @@ healthScore = {
 - **Impact:** Scientific method
 
 ### 4.8 **Predictive AI**
+
 - Machine learning model predicts:
   - Which lineages will dominate
   - When extinctions will occur
@@ -437,6 +492,7 @@ healthScore = {
 ## 🎨 **5. VISUALS & POLISH** (8 Ideas)
 
 ### 5.1 **Creature Customization**
+
 - Player-designed color schemes
 - Pattern editor (spots, stripes, etc.)
 - Cosmetic mutations (antlers, horns, fur)
@@ -444,6 +500,7 @@ healthScore = {
 - **Impact:** Personalization
 
 ### 5.2 **Biome Themes**
+
 - Tropical rainforest (vibrant colors)
 - Arctic tundra (white, blue)
 - Savanna (golden, dry)
@@ -452,6 +509,7 @@ healthScore = {
 - **Impact:** Visual variety
 
 ### 5.3 **Dynamic Lighting**
+
 - Spotlights follow selected creatures
 - Shadows based on sun position
 - Bioluminescence for nocturnal creatures
@@ -459,6 +517,7 @@ healthScore = {
 - **Impact:** Atmosphere
 
 ### 5.4 **Combat Cinematics**
+
 - Dramatic camera zoom during kills
 - Slow-motion for critical moments
 - Screen shake intensity based on impact
@@ -466,6 +525,7 @@ healthScore = {
 - **Impact:** Excitement
 
 ### 5.5 **Weather Particles**
+
 - Rain (with ripples on water)
 - Snow (accumulates on ground)
 - Falling leaves in autumn
@@ -474,6 +534,7 @@ healthScore = {
 - **Impact:** Immersion
 
 ### 5.6 **UI Themes**
+
 - Light mode / dark mode
 - Futuristic (neon, sci-fi)
 - Minimalist (clean, simple)
@@ -482,6 +543,7 @@ healthScore = {
 - **Impact:** Accessibility
 
 ### 5.7 **Creature Animations**
+
 - Walk/run cycles (not just glide)
 - Attack animations (lunge, bite)
 - Eat animations (head dips down)
@@ -490,6 +552,7 @@ healthScore = {
 - **Impact:** Life-like feel
 
 ### 5.8 **Particle Effects Library**
+
 ```javascript
 ParticleEffects = {
   birth: sparkles,
@@ -501,6 +564,7 @@ ParticleEffects = {
   achievement: fireworks
 }
 ```
+
 - Rich visual feedback for everything
 - **Impact:** Polish
 
@@ -509,27 +573,30 @@ ParticleEffects = {
 ## 🔧 **6. TOOLS & MODDING** (5 Ideas)
 
 ### 6.1 **Mod API**
+
 ```javascript
 // creature-sim/mods/example-mod.js
 export default {
-  name: "Super Speed Mod",
-  version: "1.0",
-  
+  name: 'Super Speed Mod',
+  version: '1.0',
+
   onCreatureSpawn(creature) {
     creature.genes.speed *= 2;
   },
-  
+
   onWorldStep(world, dt) {
     // Custom logic
   }
-}
+};
 ```
+
 - Load custom JavaScript mods
 - Hook into game events
 - Add new genes, biomes, disasters
 - **Impact:** Infinite possibilities
 
 ### 6.2 **Debug Console**
+
 ```javascript
 // In-game console (press ~)
 > spawn herbivore 100
@@ -538,12 +605,14 @@ export default {
 > teleport camera 1000 500
 > export lineage Smith
 ```
+
 - Developer-style commands
 - Advanced god mode
 - Scripting support
 - **Impact:** Power users
 
 ### 6.3 **Performance Profiler**
+
 - Show FPS breakdown (render, update, etc.)
 - Creature count limits by device
 - Quality presets (low, medium, high, ultra)
@@ -551,6 +620,7 @@ export default {
 - **Impact:** Optimization feedback
 
 ### 6.4 **Replay System**
+
 - Record entire simulation (compressed)
 - Playback at any speed
 - Export as video (WebM)
@@ -558,6 +628,7 @@ export default {
 - **Impact:** Content creation
 
 ### 6.5 **Community Hub**
+
 - Share save files
 - Browse scenarios
 - Download mods
@@ -570,6 +641,7 @@ export default {
 ## 💎 **7. MONETIZATION IDEAS** (Optional)
 
 ### 7.1 **Premium Features**
+
 - Larger world sizes (8k, 16k)
 - More save slots (unlimited)
 - Custom biome creator
@@ -577,6 +649,7 @@ export default {
 - Priority support
 
 ### 7.2 **Cosmetic Store**
+
 - Creature skins packs
 - UI themes
 - Particle effect bundles
@@ -584,6 +657,7 @@ export default {
 - Support development
 
 ### 7.3 **Donations / Patreon**
+
 - "Buy me a coffee" button
 - Patreon tiers with perks
 - Early access to features
@@ -595,20 +669,23 @@ export default {
 ## 🚀 **8. TECHNICAL UPGRADES** (7 Ideas)
 
 ### 8.1 **Web Workers for Multi-threading**
+
 ```javascript
 // Simulation runs on separate thread
 worker.postMessage({ type: 'step', dt });
-worker.onmessage = (e) => {
+worker.onmessage = e => {
   world = e.data.world;
   render();
-}
+};
 ```
+
 - Physics/AI on worker thread
 - Rendering on main thread
 - 2x performance improvement
 - **Impact:** Better FPS
 
 ### 8.2 **WebAssembly Port**
+
 - Rewrite hot paths in Rust/C++
 - Compile to WASM
 - 5-10x performance boost
@@ -616,6 +693,7 @@ worker.onmessage = (e) => {
 - **Impact:** Massive scale
 
 ### 8.3 **IndexedDB for Saves**
+
 - Replace localStorage (limited to 5-10MB)
 - Store unlimited saves
 - Faster serialization
@@ -623,6 +701,7 @@ worker.onmessage = (e) => {
 - **Impact:** Better persistence
 
 ### 8.4 **Procedural Music Generation**
+
 - Web Audio API synthesis
 - Music adapts to population/tension
 - Each playthrough sounds unique
@@ -630,6 +709,7 @@ worker.onmessage = (e) => {
 - **Impact:** Dynamic soundtrack
 
 ### 8.5 **Shader-Based Rendering**
+
 - Move more to GPU (even in Canvas 2D)
 - Custom shaders for biomes
 - Post-processing effects
@@ -637,6 +717,7 @@ worker.onmessage = (e) => {
 - **Impact:** Visual quality
 
 ### 8.6 **Server-Side Simulations**
+
 - Run simulations on server
 - Client only renders
 - Multiplayer synchronization
@@ -644,10 +725,12 @@ worker.onmessage = (e) => {
 - **Impact:** MMO potential
 
 ### 8.7 **Machine Learning Integration**
+
 ```javascript
 // TensorFlow.js
 model.predict(creatureState) => optimalAction
 ```
+
 - Creatures learn from successful strategies
 - Evolve AI, not just genes
 - Player trains creatures
@@ -658,6 +741,7 @@ model.predict(creatureState) => optimalAction
 ## 📱 **9. PLATFORM EXPANSION** (4 Ideas)
 
 ### 9.1 **Desktop App (Electron)**
+
 - Standalone application
 - Better performance
 - File system access
@@ -665,6 +749,7 @@ model.predict(creatureState) => optimalAction
 - **Impact:** Professional feel
 
 ### 9.2 **VR Mode**
+
 - Walk through the world in 3D
 - Hand-tracked god mode tools
 - Immersive experience
@@ -672,6 +757,7 @@ model.predict(creatureState) => optimalAction
 - **Impact:** Cutting-edge
 
 ### 9.3 **Steam Release**
+
 - Paid version on Steam
 - Steam Workshop for mods
 - Achievements (Steam integration)
@@ -679,6 +765,7 @@ model.predict(creatureState) => optimalAction
 - **Impact:** Revenue stream
 
 ### 9.4 **Educational Version**
+
 - Lesson plans included
 - Teacher dashboard
 - Student progress tracking
@@ -690,6 +777,7 @@ model.predict(creatureState) => optimalAction
 ## 🎯 **PRIORITY RANKING**
 
 ### 🔥 **HOT** (Do Next - High Impact, Low Effort)
+
 1. Age stages (baby → elder)
 2. Four seasons system
 3. Campaign mode (5 levels)
@@ -702,6 +790,7 @@ model.predict(creatureState) => optimalAction
 10. Community hub
 
 ### 🌟 **MEDIUM** (Major Features)
+
 11. Flying creatures
 12. Aquatic creatures
 13. Disease system
@@ -714,6 +803,7 @@ model.predict(creatureState) => optimalAction
 20. Web Workers optimization
 
 ### 🚀 **LONG-TERM** (Ambitious)
+
 21. VR mode
 22. WebAssembly port
 23. Server-side simulations
@@ -739,19 +829,17 @@ model.predict(creatureState) => optimalAction
 
 ## 🎮 **COMPLETE GAME MODES EXPANSION**
 
-| Mode | Description | Win Condition | Difficulty |
-|------|-------------|---------------|------------|
-| **Story Mode** | 10-level campaign | Complete all levels | ⭐⭐ |
-| **Endless** | Current mode | Survive as long as possible | ⭐⭐⭐ |
-| **Speed Evolution** | Race to specific trait | First to evolve wins | ⭐⭐ |
-| **God Mode** | Creative sandbox | No win, pure fun | ⭐ |
-| **Nightmare** | Constant disasters | Survive 10 minutes | ⭐⭐⭐⭐⭐ |
-| **Versus** | AI vs Player creatures | Dominate the map | ⭐⭐⭐ |
-| **Time Attack** | Complete objective fast | Beat the clock | ⭐⭐⭐ |
-| **Puzzle** | Specific setup problems | Solve the scenario | ⭐⭐⭐⭐ |
+| Mode                | Description             | Win Condition               | Difficulty |
+| ------------------- | ----------------------- | --------------------------- | ---------- |
+| **Story Mode**      | 10-level campaign       | Complete all levels         | ⭐⭐       |
+| **Endless**         | Current mode            | Survive as long as possible | ⭐⭐⭐     |
+| **Speed Evolution** | Race to specific trait  | First to evolve wins        | ⭐⭐       |
+| **God Mode**        | Creative sandbox        | No win, pure fun            | ⭐         |
+| **Nightmare**       | Constant disasters      | Survive 10 minutes          | ⭐⭐⭐⭐⭐ |
+| **Versus**          | AI vs Player creatures  | Dominate the map            | ⭐⭐⭐     |
+| **Time Attack**     | Complete objective fast | Beat the clock              | ⭐⭐⭐     |
+| **Puzzle**          | Specific setup problems | Solve the scenario          | ⭐⭐⭐⭐   |
 
 ---
 
 This document contains **50+ ideas** that could take the game from excellent to **legendary status**. Pick and choose based on your vision! 🎮🧬🌍
-
-

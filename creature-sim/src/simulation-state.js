@@ -23,7 +23,7 @@ export const LAYOUT = {
   HUE: 12,
   ALIVE: 13,
   AGE_STAGE: 14, // Packed int: 0: baby, 1: juvenile, 2: adult, 3: elder
-  LUCKY: 15     // Flags (mutation, etc)
+  LUCKY: 15 // Flags (mutation, etc)
 };
 
 /**

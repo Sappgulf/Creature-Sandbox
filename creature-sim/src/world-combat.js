@@ -48,7 +48,8 @@ export class WorldCombat {
       // Predators can eat herbivores and smaller omnivores
       // Omnivores can eat herbivores and small creatures
       // Herbivores can't eat other creatures
-      const canEat = (predatorDiet > 0.7 && preyDiet < 0.7) || // Predator
+      const canEat =
+        (predatorDiet > 0.7 && preyDiet < 0.7) || // Predator
         (predatorDiet > 0.3 && predatorDiet < 0.7 && preyDiet < 0.3) || // Omnivore eating herbivore
         (predatorDiet > 0.3 && predatorDiet < 0.7 && c.size < predator.size * 0.8); // Omnivore eating smaller creature
 
@@ -79,8 +80,8 @@ export class WorldCombat {
     if (!predator.alive || !prey.alive) return null;
 
     // Calculate attack success
-    const predatorStrength = predator.size * predator.energy / predator.maxHealth;
-    const preyStrength = prey.size * prey.energy / prey.maxHealth;
+    const predatorStrength = (predator.size * predator.energy) / predator.maxHealth;
+    const preyStrength = (prey.size * prey.energy) / prey.maxHealth;
 
     // Nocturnal predator bonus at night
     const dayNight = this.world?.dayNightState;
@@ -107,7 +108,8 @@ export class WorldCombat {
       return { success: true, damage: appliedDamage, prey };
     } else {
       // Attack fails - possible counterattack
-      if (rand() < 0.3) { // 30% chance of counterattack
+      if (rand() < 0.3) {
+        // 30% chance of counterattack
         const counterDamage = this.calculateDamage(prey, predator) * 0.5;
         this.applyDamage(predator, counterDamage, { attacker: prey, attackType: 'counterattack' });
       }
@@ -291,11 +293,7 @@ export class WorldCombat {
 
   // Drop pheromone at location
   dropPheromone(x, y, val = 1.0) {
-    this.world.pheromone.add(
-      Math.floor(x / this.world.pheromone.cell),
-      Math.floor(y / this.world.pheromone.cell),
-      val
-    );
+    this.world.pheromone.add(Math.floor(x / this.world.pheromone.cell), Math.floor(y / this.world.pheromone.cell), val);
   }
 
   // Register predator signal
@@ -306,7 +304,10 @@ export class WorldCombat {
     }
 
     this.world.predatorSignals.push({
-      x, y, strength, ttl,
+      x,
+      y,
+      strength,
+      ttl,
       sourceId,
       timestamp: this.world.t
     });
@@ -320,16 +321,14 @@ export class WorldCombat {
     const now = this.world.t;
 
     // Clean up expired signals
-    this.world.predatorSignals = this.world.predatorSignals.filter(signal =>
-      now - signal.timestamp < signal.ttl
-    );
+    this.world.predatorSignals = this.world.predatorSignals.filter(signal => now - signal.timestamp < signal.ttl);
 
     for (const signal of this.world.predatorSignals) {
       if (excludeSource && signal.sourceId === excludeSource) continue;
 
       const dist = dist2(x, y, signal.x, signal.y);
       if (dist <= radius * radius) {
-        const falloff = 1 - (dist / (radius * radius));
+        const falloff = 1 - dist / (radius * radius);
         totalStrength += signal.strength * falloff;
       }
     }

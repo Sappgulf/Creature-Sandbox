@@ -62,27 +62,15 @@ export class CreatureEcosystemSystem {
     const moveEnergyDrain = idle ? 0.6 : 3.2;
 
     eco.energy = clamp(eco.energy + (idleEnergyGain - moveEnergyDrain) * dt, 0, 100);
-    eco.stability = clamp(
-      eco.stability + (idle ? 4.5 : 1.2) * calmBonus * dt - crowdPressure * 4 * dt,
-      0,
-      100
-    );
+    eco.stability = clamp(eco.stability + (idle ? 4.5 : 1.2) * calmBonus * dt - crowdPressure * 4 * dt, 0, 100);
 
     const stressDecay = idle ? 4.2 : 2.2;
     const energyStress = eco.energy < 35 ? 2.8 : 0;
-    eco.stress = clamp(
-      eco.stress + (crowdPressure * 6.5 + energyStress - stressDecay * calmBonus) * dt,
-      0,
-      100
-    );
+    eco.stress = clamp(eco.stress + (crowdPressure * 6.5 + energyStress - stressDecay * calmBonus) * dt, 0, 100);
 
     const curiosityGain = idle ? 2.8 : 0.8;
     const curiosityPenalty = eco.stress > 55 ? 3.4 : 1.1;
-    eco.curiosity = clamp(
-      eco.curiosity + (curiosityGain - curiosityPenalty) * dt,
-      0,
-      100
-    );
+    eco.curiosity = clamp(eco.curiosity + (curiosityGain - curiosityPenalty) * dt, 0, 100);
 
     this.applySocialContagion(eco, nearby, dt);
     eco.state = this._deriveState(eco);

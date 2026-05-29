@@ -69,7 +69,11 @@ export const PLAYABLE_SCENARIOS = [
     minAlive: 32,
     setup: { herbivore: 38, omnivore: 6, predator: 4, food: 130, props: ['calm'] },
     tuning: { mode: 'balanced', foodRate: 0.62, disasters: false, season: 'winter' },
-    steps: ['Paint food sparingly near hungry groups', 'Use calm zones to save energy', 'Avoid spawning too many predators']
+    steps: [
+      'Paint food sparingly near hungry groups',
+      'Use calm zones to save energy',
+      'Avoid spawning too many predators'
+    ]
   },
   {
     id: 'tiny_island',
@@ -109,7 +113,13 @@ export const PLAYABLE_SCENARIOS = [
     targetSeconds: 120,
     minAlive: 28,
     minProps: 4,
-    setup: { herbivore: 32, omnivore: 5, predator: 2, food: 240, props: ['bounce', 'spring', 'fan', 'conveyor', 'launch'] },
+    setup: {
+      herbivore: 32,
+      omnivore: 5,
+      predator: 2,
+      food: 240,
+      props: ['bounce', 'spring', 'fan', 'conveyor', 'launch']
+    },
     tuning: { mode: 'chill', foodRate: 1.3, disasters: false },
     steps: ['Place props at the edge of herds', 'Use gentle throws', 'Calm stressed creatures after chaos']
   },
@@ -168,7 +178,11 @@ export const PLAYABLE_SCENARIOS = [
     minVariants: 5,
     setup: { herbivore: 14, omnivore: 4, predator: 2, aquatic: 6, flying: 6, burrowing: 6, food: 240, props: ['calm'] },
     tuning: { mode: 'chill', foodRate: 1.3, disasters: false },
-    steps: ['Follow each variant type', 'Use the inspector to compare traits', 'Save the seed if the mix is interesting']
+    steps: [
+      'Follow each variant type',
+      'Use the inspector to compare traits',
+      'Save the seed if the mix is interesting'
+    ]
   },
   {
     id: 'drought_rescue',
@@ -211,7 +225,16 @@ export const PLAYABLE_SCENARIOS = [
     minAlive: 30,
     minVariants: 3,
     maxStress: 60,
-    setup: { herbivore: 20, omnivore: 5, predator: 3, aquatic: 6, flying: 6, burrowing: 6, food: 245, props: ['slope', 'fan', 'spring', 'calm'] },
+    setup: {
+      herbivore: 20,
+      omnivore: 5,
+      predator: 3,
+      aquatic: 6,
+      flying: 6,
+      burrowing: 6,
+      food: 245,
+      props: ['slope', 'fan', 'spring', 'calm']
+    },
     tuning: { mode: 'chill', foodRate: 1.18, disasters: false },
     steps: ['Follow one of each variant', 'Open food corridors', 'Calm the crossing before stress spikes']
   },
@@ -228,7 +251,11 @@ export const PLAYABLE_SCENARIOS = [
     maxStress: 48,
     setup: { herbivore: 74, omnivore: 10, predator: 0, food: 430, props: ['calm', 'spring', 'fan'], radius: 780 },
     tuning: { mode: 'chill', foodRate: 1.38, disasters: false, autoBalance: false, season: 'spring' },
-    steps: ['Calm the densest herd first', 'Paint food outside crowded pockets', 'Watch stress before spawning more life']
+    steps: [
+      'Calm the densest herd first',
+      'Paint food outside crowded pockets',
+      'Watch stress before spawning more life'
+    ]
   },
   {
     id: 'scavenger_bridge',
@@ -248,7 +275,16 @@ export const PLAYABLE_SCENARIOS = [
 ];
 
 export class PlayableScenarios {
-  constructor({ world, camera, gameplayModes = null, sessionGoals = null, notifications = null, audio = null, moments = null, autoDirector = null } = {}) {
+  constructor({
+    world,
+    camera,
+    gameplayModes = null,
+    sessionGoals = null,
+    notifications = null,
+    audio = null,
+    moments = null,
+    autoDirector = null
+  } = {}) {
     this.world = world;
     this.camera = camera;
     this.gameplayModes = gameplayModes;
@@ -345,21 +381,23 @@ export class PlayableScenarios {
   serialize() {
     return {
       progress: this.progress,
-      activeRun: this.activeRun ? {
-        id: this.activeRun.id,
-        startedAt: Number(this.activeRun.startedAt ?? 0),
-        elapsed: Number(this.activeRun.elapsed ?? 0),
-        progress: Number(this.activeRun.progress ?? 0),
-        completed: !!this.activeRun.completed,
-        failed: !!this.activeRun.failed,
-        state: this.activeRun.state || 'running',
-        scenario: {
-          id: this.activeRun.scenario?.id,
-          name: this.activeRun.scenario?.name,
-          objective: this.activeRun.scenario?.objective,
-          icon: this.activeRun.scenario?.icon
+      activeRun: this.activeRun
+        ? {
+          id: this.activeRun.id,
+          startedAt: Number(this.activeRun.startedAt ?? 0),
+          elapsed: Number(this.activeRun.elapsed ?? 0),
+          progress: Number(this.activeRun.progress ?? 0),
+          completed: !!this.activeRun.completed,
+          failed: !!this.activeRun.failed,
+          state: this.activeRun.state || 'running',
+          scenario: {
+            id: this.activeRun.scenario?.id,
+            name: this.activeRun.scenario?.name,
+            objective: this.activeRun.scenario?.objective,
+            icon: this.activeRun.scenario?.icon
+          }
         }
-      } : null,
+        : null,
       lastSnapshot: this.lastSnapshot
     };
   }
@@ -575,21 +613,36 @@ export class PlayableScenarios {
     const populationProgress = clamp(metrics.alive / Math.max(1, scenario.minAlive || 1), 0, 1);
     const foodProgress = scenario.minFood ? clamp(metrics.food / scenario.minFood, 0, 1) : 1;
     const predatorProgress = scenario.minPredators ? clamp(metrics.predators / scenario.minPredators, 0, 1) : 1;
-    const stressProgress = scenario.maxStress ? clamp(1 - Math.max(0, metrics.averageStress - scenario.maxStress) / 60, 0, 1) : 1;
+    const stressProgress = scenario.maxStress
+      ? clamp(1 - Math.max(0, metrics.averageStress - scenario.maxStress) / 60, 0, 1)
+      : 1;
     const variantProgress = scenario.minVariants ? clamp(metrics.variants / scenario.minVariants, 0, 1) : 1;
     const propProgress = scenario.minProps ? clamp(metrics.props / scenario.minProps, 0, 1) : 1;
     const generationProgress = scenario.minGeneration ? clamp(metrics.maxGeneration / scenario.minGeneration, 0, 1) : 1;
-    const progress = Math.min(timeProgress, populationProgress, foodProgress, predatorProgress, stressProgress, variantProgress, propProgress, generationProgress);
+    const progress = Math.min(
+      timeProgress,
+      populationProgress,
+      foodProgress,
+      predatorProgress,
+      stressProgress,
+      variantProgress,
+      propProgress,
+      generationProgress
+    );
 
     this.activeRun.elapsed = elapsed;
     this.activeRun.progress = progress;
 
-    if (metrics.alive <= 0 || (elapsed > 20 && metrics.alive < Math.max(6, Math.floor((scenario.minAlive || 20) * 0.35)))) {
+    if (
+      metrics.alive <= 0 ||
+      (elapsed > 20 && metrics.alive < Math.max(6, Math.floor((scenario.minAlive || 20) * 0.35)))
+    ) {
       this._failRun('The ecosystem collapsed.');
       return;
     }
 
-    const complete = elapsed >= scenario.targetSeconds &&
+    const complete =
+      elapsed >= scenario.targetSeconds &&
       metrics.alive >= (scenario.minAlive || 0) &&
       (!scenario.minFood || metrics.food >= scenario.minFood) &&
       (!scenario.minPredators || metrics.predators >= scenario.minPredators) &&
@@ -609,21 +662,21 @@ export class PlayableScenarios {
     metrics.foodPerCreature = Number(foodPerCreature(metrics).toFixed(2));
     const elapsed = this.activeRun ? Math.max(0, (this.world?.t ?? 0) - this.activeRun.startedAt) : 0;
     const risk = this._risk(metrics, scenario);
-    const progress = this.activeRun
-      ? Math.round((this.activeRun.progress || 0) * 100)
-      : 0;
+    const progress = this.activeRun ? Math.round((this.activeRun.progress || 0) * 100) : 0;
 
     return {
       active: !!this.activeRun,
       state: this.activeRun?.state || 'idle',
-      scenario: this.activeRun ? {
-        id: scenario.id,
-        icon: scenario.icon,
-        name: scenario.name,
-        fantasy: scenario.fantasy,
-        objective: scenario.objective,
-        steps: scenario.steps || []
-      } : null,
+      scenario: this.activeRun
+        ? {
+          id: scenario.id,
+          icon: scenario.icon,
+          name: scenario.name,
+          fantasy: scenario.fantasy,
+          objective: scenario.objective,
+          steps: scenario.steps || []
+        }
+        : null,
       elapsed,
       targetSeconds: scenario.targetSeconds || 0,
       progress,
@@ -718,7 +771,7 @@ export class PlayableScenarios {
     const survival = Math.round(clamp((metrics.alive || 0) / Math.max(1, scenario.minAlive || 25), 0, 1.4) * 100);
     const foodStability = Math.round(clamp((metrics.foodPerCreature || 0) / 6, 0, 1) * 100);
     const stressScore = Math.round(clamp(1 - (metrics.averageStress || 0) / 100, 0, 1) * 100);
-    const score = Math.round(clamp((survival * 0.45) + (foodStability * 0.25) + (stressScore * 0.3), 0, 100));
+    const score = Math.round(clamp(survival * 0.45 + foodStability * 0.25 + stressScore * 0.3, 0, 100));
     const medal = score >= 90 ? 'Gold' : score >= 72 ? 'Silver' : score >= 55 ? 'Bronze' : 'Practice';
 
     return {

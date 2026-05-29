@@ -16,7 +16,8 @@ export class VisualEffects {
     // Expanding circle
     this.effects.push({
       type: 'expand',
-      x, y,
+      x,
+      y,
       radius: 5,
       maxRadius: 30,
       speed: 60,
@@ -30,7 +31,8 @@ export class VisualEffects {
       const angle = (i / 12) * Math.PI * 2;
       this.effects.push({
         type: 'sparkle',
-        x, y,
+        x,
+        y,
         vx: Math.cos(angle) * 40,
         vy: Math.sin(angle) * 40,
         size: 2 + Math.random() * 2,
@@ -48,7 +50,8 @@ export class VisualEffects {
     // Cross/X mark for death
     this.effects.push({
       type: 'death-mark',
-      x, y,
+      x,
+      y,
       size: 20,
       rotation: 0,
       rotationSpeed: 2,
@@ -80,7 +83,8 @@ export class VisualEffects {
       const angle = Math.random() * Math.PI * 2;
       this.effects.push({
         type: 'nom',
-        x, y,
+        x,
+        y,
         vx: Math.cos(angle) * 20,
         vy: Math.sin(angle) * 20 - 10,
         size: 2 + Math.random(),
@@ -120,7 +124,8 @@ export class VisualEffects {
       const delay = i * 0.02;
       this.effects.push({
         type: 'spiral',
-        x, y,
+        x,
+        y,
         angle,
         radius: 5,
         radiusGrowth: 30,
@@ -135,7 +140,8 @@ export class VisualEffects {
     // Star burst
     this.effects.push({
       type: 'starburst',
-      x, y,
+      x,
+      y,
       rays: 8,
       length: 40,
       color: '#ffffff',
@@ -151,7 +157,8 @@ export class VisualEffects {
     // Impact flash
     this.effects.push({
       type: 'flash',
-      x, y,
+      x,
+      y,
       radius: 15,
       color: '#ff3333',
       alpha: 0.8,
@@ -161,7 +168,8 @@ export class VisualEffects {
     // Damage number
     this.effects.push({
       type: 'damage-number',
-      x, y: y - 10,
+      x,
+      y: y - 10,
       text: Math.floor(damage).toString(),
       vy: -40,
       color: '#ff5555',
@@ -175,7 +183,8 @@ export class VisualEffects {
    */
   createRipple(x, y) {
     this.ripples.push({
-      x, y,
+      x,
+      y,
       radius: 2,
       maxRadius: 30,
       speed: 50,
@@ -306,10 +315,10 @@ export class VisualEffects {
           ctx.translate(effect.x, effect.y);
           ctx.rotate(effect.rotation);
           ctx.beginPath();
-          ctx.moveTo(-effect.size/2, -effect.size/2);
-          ctx.lineTo(effect.size/2, effect.size/2);
-          ctx.moveTo(effect.size/2, -effect.size/2);
-          ctx.lineTo(-effect.size/2, effect.size/2);
+          ctx.moveTo(-effect.size / 2, -effect.size / 2);
+          ctx.lineTo(effect.size / 2, effect.size / 2);
+          ctx.moveTo(effect.size / 2, -effect.size / 2);
+          ctx.lineTo(-effect.size / 2, effect.size / 2);
           ctx.stroke();
           break;
 
@@ -335,10 +344,7 @@ export class VisualEffects {
             const angle = (i / effect.rays) * Math.PI * 2;
             ctx.beginPath();
             ctx.moveTo(effect.x, effect.y);
-            ctx.lineTo(
-              effect.x + Math.cos(angle) * effect.length,
-              effect.y + Math.sin(angle) * effect.length
-            );
+            ctx.lineTo(effect.x + Math.cos(angle) * effect.length, effect.y + Math.sin(angle) * effect.length);
             ctx.stroke();
           }
           break;

@@ -30,14 +30,10 @@ for (const file of jsFiles) {
   });
 }
 
-const oversized = results.filter(result =>
-  result.bytes > maxChunkBytes || result.gzipBytes > maxChunkGzipBytes
-);
+const oversized = results.filter(result => result.bytes > maxChunkBytes || result.gzipBytes > maxChunkGzipBytes);
 
-assert.deepEqual(
-  oversized,
-  [],
-  `JS chunk budget exceeded: ${JSON.stringify(oversized)}`
-);
+assert.deepEqual(oversized, [], `JS chunk budget exceeded: ${JSON.stringify(oversized)}`);
 
-console.log(`Bundle budget passed: ${results.map(result => `${result.file} ${result.bytes}B/${result.gzipBytes}B gzip`).join(', ')}`);
+console.log(
+  `Bundle budget passed: ${results.map(result => `${result.file} ${result.bytes}B/${result.gzipBytes}B gzip`).join(', ')}`
+);

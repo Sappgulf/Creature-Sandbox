@@ -21,10 +21,12 @@ import { applyUiPanelMethods } from './ui-controller-panels.js?v=20260526-tranch
 
 // Local helper to validate notification subsystem shape without relying on external export
 export function isNotificationSystem(candidate) {
-  return !!candidate &&
+  return (
+    !!candidate &&
     typeof candidate.show === 'function' &&
     typeof candidate.update === 'function' &&
-    typeof candidate.draw === 'function';
+    typeof candidate.draw === 'function'
+  );
 }
 
 export class UIController {
@@ -40,9 +42,7 @@ export class UIController {
     this.tutorial = subsystems.tutorial;
     this.achievements = subsystems.achievements;
     this.audio = subsystems.audio;
-    this.notifications = isNotificationSystem(subsystems.notifications)
-      ? subsystems.notifications
-      : null;
+    this.notifications = isNotificationSystem(subsystems.notifications) ? subsystems.notifications : null;
     this.debugConsole = subsystems.debugConsole;
     this.geneEditor = subsystems.geneEditor;
     this.ecoHealth = subsystems.ecoHealth;
@@ -100,7 +100,7 @@ export class UIController {
   setupEventListeners() {
     // Performance alerts are now silent by default
     // They only show when explicitly enabled via performanceProfiler.setOverlayAlerts(true)
-    eventSystem.on('performance:alert', (alert) => {
+    eventSystem.on('performance:alert', alert => {
       // Only show if notifications are configured to show performance alerts
       if (this.hasNotifications() && this.notifications.showPerformanceAlerts) {
         this.notifications.show(`⚠️ ${alert.message}`, 'performance', 3000);
@@ -108,18 +108,18 @@ export class UIController {
     });
 
     // Generic UI notifications (campaign, disease, etc.)
-    eventSystem.on(GameEvents.NOTIFICATION, (data) => {
+    eventSystem.on(GameEvents.NOTIFICATION, data => {
       if (!data || !this.hasNotifications()) return;
       const message = data.message || '';
       if (!message) return;
       this.notifications.show(message, data.type || 'info', data.duration || 3000);
     });
 
-    eventSystem.on(GameEvents.GOD_MODE_TOGGLE, (data) => {
+    eventSystem.on(GameEvents.GOD_MODE_TOGGLE, data => {
       this.setGodModeActive(!gameState.godModeActive, { source: data?.source || 'gesture' });
     });
 
-    eventSystem.on('god:tool-changed', (data) => {
+    eventSystem.on('god:tool-changed', data => {
       const tool = data?.tool;
       if (!tool) return;
       this.setGodTool(tool, {
@@ -129,7 +129,7 @@ export class UIController {
     });
 
     // Listen for achievement unlocks
-    eventSystem.on(GameEvents.ACHIEVEMENT_UNLOCKED, (data) => {
+    eventSystem.on(GameEvents.ACHIEVEMENT_UNLOCKED, data => {
       const notificationsEnabled = this.achievements?.notificationsEnabled !== false;
       if (this.hasNotifications() && notificationsEnabled) {
         this.notifications.show(`🏆 ${data.name}`, 'achievement', 3000);
@@ -141,7 +141,7 @@ export class UIController {
     });
 
     // XP grants (campaign rewards, etc.)
-    eventSystem.on(GameEvents.ACHIEVEMENT_XP, (data) => {
+    eventSystem.on(GameEvents.ACHIEVEMENT_XP, data => {
       const amount = Number(data?.amount) || 0;
       const levelUp = !!data?.levelUp;
       const notificationsEnabled = this.achievements?.notificationsEnabled !== false;
@@ -167,15 +167,15 @@ export class UIController {
       this.renderAchievementsPanel();
     });
 
-    eventSystem.on(GameEvents.GAME_MODE_CHANGED, (data) => {
+    eventSystem.on(GameEvents.GAME_MODE_CHANGED, data => {
       this.renderGameMode(data);
     });
 
-    eventSystem.on(GameEvents.SESSION_GOAL_UPDATED, (goals) => {
+    eventSystem.on(GameEvents.SESSION_GOAL_UPDATED, goals => {
       this.renderSessionGoals(goals);
     });
 
-    eventSystem.on(GameEvents.SESSION_GOAL_COMPLETED, (_goal) => {
+    eventSystem.on(GameEvents.SESSION_GOAL_COMPLETED, _goal => {
       const card = domCache.get('goalCard');
       if (card) {
         card.classList.add('pulse');
@@ -184,7 +184,7 @@ export class UIController {
       if (this.audio) this.audio.playUISound?.('success');
     });
 
-    eventSystem.on('playable:updated', (snapshot) => {
+    eventSystem.on('playable:updated', snapshot => {
       this.renderPlayableDirector(snapshot);
       if (snapshot?.active) {
         this.updateSessionMetaVisibility();
@@ -194,16 +194,14 @@ export class UIController {
     // Listen for game pause/resume events (from blur/focus)
     eventSystem.on('game:paused', () => {
       this.updatePauseButton();
-
     });
 
     eventSystem.on('game:resumed', () => {
       this.updatePauseButton();
-
     });
 
     // Tool change events (from keyboard shortcuts)
-    eventSystem.on('tool:changed', (data) => {
+    eventSystem.on('tool:changed', data => {
       if (data?.mode) {
         this.updateToolIndicator(data.mode);
       }
@@ -244,7 +242,8 @@ export class UIController {
 
   applyMobileDefaults() {
     if (this.mobileDefaultsApplied) return;
-    const isMobile = document.body.classList.contains('mobile-device') ||
+    const isMobile =
+      document.body.classList.contains('mobile-device') ||
       (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
     if (!isMobile) return;
 
@@ -272,7 +271,8 @@ export class UIController {
     if (this.responsiveLayoutSyncBound) return;
     this.responsiveLayoutSyncBound = true;
     const sync = () => {
-      const isMobile = document.body.classList.contains('mobile-device') ||
+      const isMobile =
+        document.body.classList.contains('mobile-device') ||
         (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
       if (!isMobile) return;
 
@@ -356,7 +356,6 @@ export class UIController {
     const spawnFoodBtn = domCache.get('spawnFoodBtn');
     if (spawnFoodBtn) {
       spawnFoodBtn.addEventListener('click', this.boundHandlers.onFood);
-
     }
 
     // Spawn creature button and dropdown
@@ -367,13 +366,13 @@ export class UIController {
     const hint = domCache.get('interactionHint');
     const hintClose = domCache.get('interactionHintClose');
     if (hintClose) {
-      hintClose.addEventListener('click', (event) => {
+      hintClose.addEventListener('click', event => {
         event.stopPropagation();
         this.dismissInteractionHint();
       });
     }
 
-    document.addEventListener('pointerdown', (event) => {
+    document.addEventListener('pointerdown', event => {
       if (!hint || hint.classList.contains('hidden')) return;
       if (!hint.contains(event.target)) {
         this.dismissInteractionHint();
@@ -415,9 +414,8 @@ export class UIController {
     const chaosValue = domCache.get('chaosValue');
     if (!chaosSlider) return;
 
-    const stored = typeof window !== 'undefined'
-      ? Number(window.localStorage?.getItem('creatureSandboxChaosLevel'))
-      : null;
+    const stored =
+      typeof window !== 'undefined' ? Number(window.localStorage?.getItem('creatureSandboxChaosLevel')) : null;
     const initialLevel = Number.isFinite(stored) ? stored : gameState.chaosLevel;
     const safeLevel = clamp(initialLevel, 0, 1);
     gameState.chaosLevel = safeLevel;
@@ -497,7 +495,8 @@ export class UIController {
     const interactionHint = domCache.get('interactionHint');
     const scenarioPanel = domCache.get('scenarioPanel') || document.getElementById('scenario-panel');
     const geneEditorPanel = domCache.get('geneEditorPanel') || document.getElementById('gene-editor-panel');
-    const editorOpen = (scenarioPanel && !scenarioPanel.classList.contains('hidden')) ||
+    const editorOpen =
+      (scenarioPanel && !scenarioPanel.classList.contains('hidden')) ||
       (geneEditorPanel && !geneEditorPanel.classList.contains('hidden'));
     const godModeActive = gameState.godModeActive;
     const watchMode = gameState.watchModeEnabled;
@@ -709,7 +708,7 @@ export class UIController {
   }
 
   bindSliderFills() {
-    const updateSliderFill = (slider) => {
+    const updateSliderFill = slider => {
       const min = Number(slider.min) || 0;
       const max = Number(slider.max) || 100;
       const val = Number(slider.value) || 0;
@@ -724,7 +723,7 @@ export class UIController {
     }
 
     if (typeof MutationObserver !== 'undefined') {
-      const observer = new MutationObserver((mutations) => {
+      const observer = new MutationObserver(mutations => {
         for (const mutation of mutations) {
           for (const node of mutation.addedNodes) {
             if (node.nodeType === 1) {

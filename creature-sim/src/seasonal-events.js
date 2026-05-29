@@ -218,9 +218,7 @@ export class SeasonalEventsSystem {
    */
   initiateSeasonalMigration(world) {
     // Some creatures will migrate to better biomes
-    const migrants = world.creatures.filter(c =>
-      c.genes?.migrationInstinct && c.genes.migrationInstinct > 0.6
-    );
+    const migrants = world.creatures.filter(c => c.genes?.migrationInstinct && c.genes.migrationInstinct > 0.6);
 
     for (const creature of migrants) {
       const route = this.createMigrationRoute(creature, world);

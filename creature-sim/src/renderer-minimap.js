@@ -8,7 +8,7 @@ export function applyMinimapMethods(Renderer) {
     return canvas;
   };
 
-  Renderer.prototype.drawMiniMap = function(world, opts = {}) {
+  Renderer.prototype.drawMiniMap = function (world, opts = {}) {
     const ctx = this.ctx;
     const camera = this.camera;
 
@@ -32,19 +32,7 @@ export function applyMinimapMethods(Renderer) {
 
     const dpr = window.devicePixelRatio || 1;
     const layout = this._getMiniMapLayout(world, opts, dpr);
-    const {
-      mapXCss,
-      mapYCss,
-      mapX,
-      mapY,
-      mapW,
-      mapH,
-      mapWCanvas,
-      mapHCanvas,
-      scaleX,
-      scaleY,
-      aspectRatio
-    } = layout;
+    const { mapXCss, mapYCss, mapX, mapY, mapW, mapH, mapWCanvas, mapHCanvas, scaleX, scaleY, aspectRatio } = layout;
     // Store CSS coordinates for click handler
     this.lastMiniMap = {
       x: mapXCss,
@@ -61,9 +49,8 @@ export function applyMinimapMethods(Renderer) {
     ctx.fillStyle = 'rgba(8, 10, 14, 0.95)';
     ctx.fillRect(mapX, mapY, mapWCanvas, mapHCanvas);
 
-    const activeDisaster = (this.miniMapSettings.disaster && typeof world.getActiveDisaster === 'function')
-      ? world.getActiveDisaster()
-      : null;
+    const activeDisaster =
+      this.miniMapSettings.disaster && typeof world.getActiveDisaster === 'function' ? world.getActiveDisaster() : null;
     if (activeDisaster) {
       const tint = this._getDisasterTint(activeDisaster.type);
       if (tint) {
@@ -91,12 +78,13 @@ export function applyMinimapMethods(Renderer) {
       // Check if we need to update the heatmap cache
       const cache = this._heatmapCache;
       this.performance.frameCount = (this.performance.frameCount || 0) + 1;
-      const shouldUpdate = !cache.data ||
+      const shouldUpdate =
+        !cache.data ||
         cache.width !== heatmapW ||
         cache.height !== heatmapH ||
         cache.canvasWidth !== heatmapCanvasW ||
         cache.canvasHeight !== heatmapCanvasH ||
-        (this.performance.frameCount - cache.lastUpdate) >= cache.updateInterval;
+        this.performance.frameCount - cache.lastUpdate >= cache.updateInterval;
 
       if (shouldUpdate) {
         // Reuse or create heatmap array
@@ -136,12 +124,7 @@ export function applyMinimapMethods(Renderer) {
               if (count > 0) {
                 const intensity = Math.min(count / 3, 1);
                 heatmapCtx.fillStyle = `rgba(123, 183, 255, ${intensity * 0.8})`;
-                heatmapCtx.fillRect(
-                  (hx / heatmapW) * heatmapCanvasW,
-                  (hy / heatmapH) * heatmapCanvasH,
-                  cellW,
-                  cellH
-                );
+                heatmapCtx.fillRect((hx / heatmapW) * heatmapCanvasW, (hy / heatmapH) * heatmapCanvasH, cellW, cellH);
               }
             }
           }
@@ -252,7 +235,7 @@ export function applyMinimapMethods(Renderer) {
     ctx.restore();
   };
 
-  Renderer.prototype._getMiniMapLayout = function(world, opts = {}, dpr = 1) {
+  Renderer.prototype._getMiniMapLayout = function (world, opts = {}, dpr = 1) {
     const canvas = this.ctx.canvas;
     const cssWidth = Math.max(
       1,
@@ -322,17 +305,11 @@ export function applyMinimapMethods(Renderer) {
     return layout;
   };
 
-  Renderer.prototype._getMiniMapBiomeLayer = function(world, layout) {
+  Renderer.prototype._getMiniMapBiomeLayer = function (world, layout) {
     const sampleSize = 100; // Larger samples = less detail, easier to read
     const canvasWidth = Math.max(1, Math.ceil(layout.mapWCanvas));
     const canvasHeight = Math.max(1, Math.ceil(layout.mapHCanvas));
-    const key = [
-      Math.round(world.width),
-      Math.round(world.height),
-      canvasWidth,
-      canvasHeight,
-      sampleSize
-    ].join('|');
+    const key = [Math.round(world.width), Math.round(world.height), canvasWidth, canvasHeight, sampleSize].join('|');
     const cache = this._miniMapBiomeCache || (this._miniMapBiomeCache = { key: null, canvas: null });
     if (cache.key === key && cache.canvas) return cache.canvas;
 
@@ -365,7 +342,7 @@ export function applyMinimapMethods(Renderer) {
   };
 
   // NEW: Draw biome labels on mini-map
-  Renderer.prototype._drawBiomeLabels = function(world, mapX, mapY, scaleX, scaleY, dpr = 1) {
+  Renderer.prototype._drawBiomeLabels = function (world, mapX, mapY, scaleX, scaleY, dpr = 1) {
     const ctx = this.ctx;
     const scaleXPx = scaleX * dpr;
     const scaleYPx = scaleY * dpr;
@@ -408,13 +385,18 @@ export function applyMinimapMethods(Renderer) {
     }
   };
 
-  Renderer.prototype._getDisasterTint = function(type) {
+  Renderer.prototype._getDisasterTint = function (type) {
     switch (type) {
-      case 'meteorStorm': return 'rgba(248, 113, 113, 0.18)';
-      case 'iceAge': return 'rgba(96, 165, 250, 0.18)';
-      case 'plague': return 'rgba(192, 132, 252, 0.18)';
-      case 'drought': return 'rgba(250, 204, 21, 0.16)';
-      default: return null;
+      case 'meteorStorm':
+        return 'rgba(248, 113, 113, 0.18)';
+      case 'iceAge':
+        return 'rgba(96, 165, 250, 0.18)';
+      case 'plague':
+        return 'rgba(192, 132, 252, 0.18)';
+      case 'drought':
+        return 'rgba(250, 204, 21, 0.16)';
+      default:
+        return null;
     }
   };
 }

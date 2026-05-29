@@ -105,8 +105,7 @@ export class WorldEcosystem {
 
   // Food growth rate calculation
   foodGrowthRate() {
-    const seasonMultiplier = this.world.environment ?
-      this.world.environment.getSeasonModifier('food') : 1.0;
+    const seasonMultiplier = this.world.environment ? this.world.environment.getSeasonModifier('food') : 1.0;
 
     const weatherMultiplier = 1.0 + (this.world.environment?.weatherIntensity || 0) * 0.2;
     const dayNightMultiplier = this.world.environment?.getDayNightState?.().foodGrowthMult ?? 1.0;
@@ -120,7 +119,14 @@ export class WorldEcosystem {
 
     const eventMultiplier = this.world.eventModifiers?.foodGrowth ?? 1;
 
-    return seasonMultiplier * weatherMultiplier * dayNightMultiplier * populationMultiplier * this.foodGrowthMultiplier * eventMultiplier;
+    return (
+      seasonMultiplier *
+      weatherMultiplier *
+      dayNightMultiplier *
+      populationMultiplier *
+      this.foodGrowthMultiplier *
+      eventMultiplier
+    );
   }
 
   // Add food to the world
@@ -149,7 +155,9 @@ export class WorldEcosystem {
     const bites = Math.max(1, Math.round(config.energy / CreatureAgentTuning.FOOD.BITE_ENERGY));
     const biteEnergy = config.energy / bites;
     const food = {
-      x, y, r,
+      x,
+      y,
+      r,
       type,
       energy: config.energy,
       bites,
@@ -181,7 +189,7 @@ export class WorldEcosystem {
     for (const food of foods) {
       if (dist2(x, y, food.x, food.y) <= reach * reach) {
         const bites = Math.max(1, biteSize);
-        const biteEnergy = food.biteEnergy ?? (food.energy ?? 1);
+        const biteEnergy = food.biteEnergy ?? food.energy ?? 1;
         const consumedBites = Math.min(food.bites ?? 1, bites);
         const consumedEnergy = biteEnergy * consumedBites;
         food.bites = (food.bites ?? 1) - consumedBites;
@@ -217,10 +225,7 @@ export class WorldEcosystem {
     this.foodPatchId = 1;
     const count = CreatureAgentTuning.FOOD_PATCHES.COUNT;
     for (let i = 0; i < count; i++) {
-      const radius = rand(
-        CreatureAgentTuning.FOOD_PATCHES.RADIUS_MIN,
-        CreatureAgentTuning.FOOD_PATCHES.RADIUS_MAX
-      );
+      const radius = rand(CreatureAgentTuning.FOOD_PATCHES.RADIUS_MIN, CreatureAgentTuning.FOOD_PATCHES.RADIUS_MAX);
       const fertility = rand(
         CreatureAgentTuning.FOOD_PATCHES.FERTILITY_MIN,
         CreatureAgentTuning.FOOD_PATCHES.FERTILITY_MAX
@@ -279,16 +284,15 @@ export class WorldEcosystem {
         patch.depletedTimer = Math.max(0, patch.depletedTimer - dt);
       }
 
-      const pressureScalar = clamp(
-        1 - patch.pressure * CreatureAgentTuning.FOOD_PATCHES.PRESSURE_IMPACT,
-        0.35,
-        1
-      );
-      const depletionScalar = patch.depletedTimer > 0
-        ? CreatureAgentTuning.FOOD_PATCHES.DEPLETION_MULT
-        : 1;
-      const growth = CreatureAgentTuning.FOOD_PATCHES.REGROWTH_RATE *
-        growthRate * pressureScalar * depletionScalar * patch.fertility * dt;
+      const pressureScalar = clamp(1 - patch.pressure * CreatureAgentTuning.FOOD_PATCHES.PRESSURE_IMPACT, 0.35, 1);
+      const depletionScalar = patch.depletedTimer > 0 ? CreatureAgentTuning.FOOD_PATCHES.DEPLETION_MULT : 1;
+      const growth =
+        CreatureAgentTuning.FOOD_PATCHES.REGROWTH_RATE *
+        growthRate *
+        pressureScalar *
+        depletionScalar *
+        patch.fertility *
+        dt;
       patch.stock = clamp(patch.stock + growth, 0, patch.maxStock);
 
       patch.spawnCooldown -= dt;
@@ -548,8 +552,8 @@ export class WorldEcosystem {
   }
 
   cullExcessPredators() {
-    const predators = this.world.creatures.filter(c =>
-      c.alive && (c.genes.diet ?? (c.genes.predator ? 1.0 : 0.0)) > 0.7
+    const predators = this.world.creatures.filter(
+      c => c.alive && (c.genes.diet ?? (c.genes.predator ? 1.0 : 0.0)) > 0.7
     );
 
     if (predators.length > 0) {

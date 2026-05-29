@@ -27,11 +27,13 @@ const commands = [
   [npmCmd, ['run', 'smoke:main']],
   [npmCmd, ['run', 'smoke:worker']],
   [npmCmd, ['run', 'smoke:scenarios']],
-  ...(includeProduction ? [
-    [npmCmd, ['run', 'proof:vercel']],
-    [npmCmd, ['run', 'smoke:production']],
-    [npmCmd, ['run', 'smoke:production:vitals']]
-  ] : []),
+  ...(includeProduction
+    ? [
+        [npmCmd, ['run', 'proof:vercel']],
+        [npmCmd, ['run', 'smoke:production']],
+        [npmCmd, ['run', 'smoke:production:vitals']]
+      ]
+    : []),
   [npmCmd, ['run', 'evidence:release']]
 ];
 
@@ -77,9 +79,9 @@ async function writeSummary(passed) {
 }
 
 function markdown(summary) {
-  const rows = summary.results.map((item) =>
-    `| ${item.command} | ${item.passed ? 'pass' : 'fail'} | ${item.durationMs} |`
-  ).join('\n');
+  const rows = summary.results
+    .map(item => `| ${item.command} | ${item.passed ? 'pass' : 'fail'} | ${item.durationMs} |`)
+    .join('\n');
   return `# Release Proof
 
 Generated: ${summary.generatedAt}

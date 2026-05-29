@@ -3,7 +3,7 @@ import { domCache } from './dom-cache.js';
 import { loadEnhancedAnalyticsModule } from './enhanced-analytics-loader.js';
 
 export function applyUiPanelMethods(UIController) {
-  UIController.prototype.setPanelVisibility = function(panel, visible) {
+  UIController.prototype.setPanelVisibility = function (panel, visible) {
     if (!panel) return false;
     const isVisible = !!visible;
     if (!isVisible) {
@@ -20,14 +20,16 @@ export function applyUiPanelMethods(UIController) {
     }
     if (isVisible) {
       requestAnimationFrame(() => {
-        const firstFocusable = panel.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        const firstFocusable = panel.querySelector(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
         if (firstFocusable) firstFocusable.focus();
       });
     }
     return isVisible;
   };
 
-  UIController.prototype.closeMajorPanels = function(exceptPanelId = null) {
+  UIController.prototype.closeMajorPanels = function (exceptPanelId = null) {
     const panelIds = [
       'features-panel',
       'sound-panel',
@@ -53,17 +55,18 @@ export function applyUiPanelMethods(UIController) {
     }
   };
 
-  UIController.prototype.togglePanelVisibility = function(panel) {
+  UIController.prototype.togglePanelVisibility = function (panel) {
     if (!panel) return false;
     const nextVisible = panel.classList.contains('hidden');
     return this.setPanelVisibility(panel, nextVisible);
   };
 
-  UIController.prototype.bindPanelControls = function() {
+  UIController.prototype.bindPanelControls = function () {
     const featuresCloseBtn = domCache.get('featuresCloseBtn') || document.getElementById('btn-features-close');
     const soundCloseBtn = document.getElementById('btn-sound-close');
     const scenarioCloseBtn = domCache.get('scenarioCloseBtn') || document.getElementById('btn-scenario-close');
-    const achievementsCloseBtn = domCache.get('achievementsCloseBtn') || document.getElementById('btn-achievements-close');
+    const achievementsCloseBtn =
+      domCache.get('achievementsCloseBtn') || document.getElementById('btn-achievements-close');
     const geneEditorCloseBtn = domCache.get('geneEditorCloseBtn') || document.getElementById('btn-gene-editor-close');
     const ecoHealthCloseBtn = domCache.get('ecoHealthCloseBtn') || document.getElementById('btn-eco-health-close');
     const shortcutsCloseBtn = document.getElementById('btn-shortcuts-close');
@@ -85,17 +88,15 @@ export function applyUiPanelMethods(UIController) {
     if (ecoHealthCloseBtn) ecoHealthCloseBtn.addEventListener('click', this.boundHandlers.onEcoHealthToggle);
   };
 
-  UIController.prototype.toggleShortcutsHelp = function(forceVisible = null) {
+  UIController.prototype.toggleShortcutsHelp = function (forceVisible = null) {
     const overlay = document.getElementById('shortcuts-overlay');
     if (!overlay) return;
-    const shouldShow = forceVisible === null
-      ? overlay.classList.contains('hidden')
-      : !!forceVisible;
+    const shouldShow = forceVisible === null ? overlay.classList.contains('hidden') : !!forceVisible;
     overlay.classList.toggle('hidden', !shouldShow);
     overlay.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
   };
 
-  UIController.prototype.bindFeaturesEnhancements = function() {
+  UIController.prototype.bindFeaturesEnhancements = function () {
     const panel = document.getElementById('features-panel');
     if (!panel) return;
 
@@ -110,14 +111,14 @@ export function applyUiPanelMethods(UIController) {
       const allRows = [...panel.querySelectorAll('.feature-toggle')];
       let visibleCount = 0;
 
-      allRows.forEach((row) => {
+      allRows.forEach(row => {
         const matches = !query || row.textContent.toLowerCase().includes(query);
         row.classList.toggle('feature-hidden', !matches);
         if (matches) visibleCount += 1;
       });
 
       const sections = [...panel.querySelectorAll('.features-section')];
-      sections.forEach((section) => {
+      sections.forEach(section => {
         const hasVisible = section.querySelector('.feature-toggle:not(.feature-hidden)');
         section.classList.toggle('section-hidden', !hasVisible);
       });
@@ -130,7 +131,7 @@ export function applyUiPanelMethods(UIController) {
     };
 
     const setControls = (ids, checked) => {
-      ids.forEach((id) => {
+      ids.forEach(id => {
         const input = document.getElementById(id);
         if (!input || input.checked === checked) return;
         input.checked = checked;
@@ -146,41 +147,47 @@ export function applyUiPanelMethods(UIController) {
 
     if (enableVisualsBtn && !enableVisualsBtn._boundFeaturesAction) {
       enableVisualsBtn.addEventListener('click', () => {
-        setControls([
-          'toggle-vision',
-          'toggle-clustering',
-          'toggle-territories',
-          'toggle-memory',
-          'toggle-social',
-          'toggle-nameplates',
-          'toggle-migration',
-          'toggle-nests',
-          'toggle-emotions',
-          'toggle-sensory',
-          'toggle-intelligence',
-          'toggle-mating',
-          'toggle-minigraphs'
-        ], true);
+        setControls(
+          [
+            'toggle-vision',
+            'toggle-clustering',
+            'toggle-territories',
+            'toggle-memory',
+            'toggle-social',
+            'toggle-nameplates',
+            'toggle-migration',
+            'toggle-nests',
+            'toggle-emotions',
+            'toggle-sensory',
+            'toggle-intelligence',
+            'toggle-mating',
+            'toggle-minigraphs'
+          ],
+          true
+        );
       });
       enableVisualsBtn._boundFeaturesAction = true;
     }
 
     if (disableOverlaysBtn && !disableOverlaysBtn._boundFeaturesAction) {
       disableOverlaysBtn.addEventListener('click', () => {
-        setControls([
-          'toggle-vision',
-          'toggle-clustering',
-          'toggle-territories',
-          'toggle-memory',
-          'toggle-social',
-          'toggle-migration',
-          'toggle-nests',
-          'toggle-emotions',
-          'toggle-sensory',
-          'toggle-intelligence',
-          'toggle-mating',
-          'toggle-minigraphs'
-        ], false);
+        setControls(
+          [
+            'toggle-vision',
+            'toggle-clustering',
+            'toggle-territories',
+            'toggle-memory',
+            'toggle-social',
+            'toggle-migration',
+            'toggle-nests',
+            'toggle-emotions',
+            'toggle-sensory',
+            'toggle-intelligence',
+            'toggle-mating',
+            'toggle-minigraphs'
+          ],
+          false
+        );
         const offRadio = document.getElementById('toggle-heatmap-off');
         if (offRadio && !offRadio.checked) {
           offRadio.checked = true;
@@ -206,7 +213,7 @@ export function applyUiPanelMethods(UIController) {
     }
   };
 
-  UIController.prototype.onFeaturesToggle = function() {
+  UIController.prototype.onFeaturesToggle = function () {
     const featuresPanel = domCache.get('featuresPanel') || document.getElementById('features-panel');
     if (featuresPanel) {
       const willShow = featuresPanel.classList.contains('hidden');
@@ -219,7 +226,7 @@ export function applyUiPanelMethods(UIController) {
     this.dismissInteractionHint();
   };
 
-  UIController.prototype.onSoundToggle = function() {
+  UIController.prototype.onSoundToggle = function () {
     const soundPanel = document.getElementById('sound-panel');
     if (soundPanel) {
       const willShow = soundPanel.classList.contains('hidden');
@@ -231,7 +238,7 @@ export function applyUiPanelMethods(UIController) {
     this.dismissInteractionHint();
   };
 
-  UIController.prototype.onScenarioToggle = function() {
+  UIController.prototype.onScenarioToggle = function () {
     const scenarioPanel = domCache.get('scenarioPanel') || document.getElementById('scenario-panel');
     if (scenarioPanel) {
       const willShow = scenarioPanel.classList.contains('hidden');
@@ -245,7 +252,7 @@ export function applyUiPanelMethods(UIController) {
     this.dismissInteractionHint();
   };
 
-  UIController.prototype.onGeneEditorToggle = async function() {
+  UIController.prototype.onGeneEditorToggle = async function () {
     const panel = domCache.get('geneEditorPanel') || document.getElementById('gene-editor-panel');
     const shouldShow = panel?.classList.contains('hidden') ?? false;
     let editor = null;
@@ -275,7 +282,7 @@ export function applyUiPanelMethods(UIController) {
     this.dismissInteractionHint();
   };
 
-  UIController.prototype.onEcoHealthToggle = function() {
+  UIController.prototype.onEcoHealthToggle = function () {
     const panel = document.getElementById('eco-health-panel');
     if (panel) {
       if (panel.classList.contains('hidden')) {
@@ -286,18 +293,18 @@ export function applyUiPanelMethods(UIController) {
     this.dismissInteractionHint();
   };
 
-  UIController.prototype.onAnalyticsToggle = async function() {
+  UIController.prototype.onAnalyticsToggle = async function () {
     const { analyticsDashboard } = await loadEnhancedAnalyticsModule();
     analyticsDashboard.toggle();
   };
 
-  UIController.prototype.onDebugToggle = function() {
+  UIController.prototype.onDebugToggle = function () {
     if (this.debugConsole) {
       this.debugConsole.toggle();
     }
   };
 
-  UIController.prototype.onPerformanceToggle = function() {
+  UIController.prototype.onPerformanceToggle = function () {
     // Performance monitor is toggled with F12 key
     const monitor = document.querySelector('#performance-monitor');
     if (monitor) {

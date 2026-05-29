@@ -80,9 +80,7 @@ export class GameDirector {
   buildSnapshot() {
     const playable = this.playableScenarios?.getSnapshot?.() || null;
     const activeScenarioId = playable?.scenario?.id || null;
-    const scenarioObjectives = activeScenarioId
-      ? this.scenarioRegistry.getObjectives(activeScenarioId)
-      : [];
+    const scenarioObjectives = activeScenarioId ? this.scenarioRegistry.getObjectives(activeScenarioId) : [];
     const sessionGoals = this.sessionGoals?.getGoals?.() || [];
     const objectiveSource = sessionGoals.length ? sessionGoals : scenarioObjectives;
     const objectives = this.objectiveSystem.evaluate(

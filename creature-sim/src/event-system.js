@@ -84,8 +84,7 @@ export class EventSystem {
     if (this.listeners.has(eventType)) {
       const listeners = this.listeners.get(eventType);
       for (const boundCallback of listeners) {
-        if (boundCallback._originalCallback === callback &&
-            boundCallback._context === context) {
+        if (boundCallback._originalCallback === callback && boundCallback._context === context) {
           listeners.delete(boundCallback);
           break;
         }
@@ -101,8 +100,7 @@ export class EventSystem {
     if (this.onceListeners.has(eventType)) {
       const listeners = this.onceListeners.get(eventType);
       for (const boundCallback of listeners) {
-        if (boundCallback._originalCallback === callback &&
-            boundCallback._context === context) {
+        if (boundCallback._originalCallback === callback && boundCallback._context === context) {
           listeners.delete(boundCallback);
           break;
         }

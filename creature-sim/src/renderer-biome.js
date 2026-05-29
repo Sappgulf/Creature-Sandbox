@@ -36,14 +36,21 @@ export function getSeasonalGroundTint(season, phase) {
 
 export function getBiomeTint(biomeType) {
   switch (biomeType) {
-    case 'forest': return 'rgba(72, 96, 84, 0.4)';
-    case 'desert': return 'rgba(150, 118, 84, 0.32)';
-    case 'mountain': return 'rgba(111, 102, 96, 0.28)';
-    case 'wetland': return 'rgba(86, 122, 111, 0.36)';
-    case 'water': return 'rgba(76, 112, 146, 0.46)';
-    case 'meadow': return 'rgba(129, 143, 104, 0.34)';
+    case 'forest':
+      return 'rgba(72, 96, 84, 0.4)';
+    case 'desert':
+      return 'rgba(150, 118, 84, 0.32)';
+    case 'mountain':
+      return 'rgba(111, 102, 96, 0.28)';
+    case 'wetland':
+      return 'rgba(86, 122, 111, 0.36)';
+    case 'water':
+      return 'rgba(76, 112, 146, 0.46)';
+    case 'meadow':
+      return 'rgba(129, 143, 104, 0.34)';
     case 'grassland':
-    default: return 'rgba(114, 124, 92, 0.34)';
+    default:
+      return 'rgba(114, 124, 92, 0.34)';
   }
 }
 
@@ -58,14 +65,14 @@ export function drawBiomeGround(renderer, ctx, world) {
   const visibleWidth = bounds.x2 - bounds.x1;
   const visibleHeight = bounds.y2 - bounds.y1;
   const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
-  ctx.fillRect(bounds.x1 - extendAmount, bounds.y1 - extendAmount, visibleWidth + extendAmount * 2, visibleHeight + extendAmount * 2);
-
-  const atmosphereGradient = ctx.createLinearGradient(
-    bounds.x1,
-    bounds.y1,
-    bounds.x2,
-    bounds.y2
+  ctx.fillRect(
+    bounds.x1 - extendAmount,
+    bounds.y1 - extendAmount,
+    visibleWidth + extendAmount * 2,
+    visibleHeight + extendAmount * 2
   );
+
+  const atmosphereGradient = ctx.createLinearGradient(bounds.x1, bounds.y1, bounds.x2, bounds.y2);
   atmosphereGradient.addColorStop(0, 'rgba(40, 64, 92, 0.12)');
   atmosphereGradient.addColorStop(0.48, 'rgba(5, 8, 18, 0.04)');
   atmosphereGradient.addColorStop(1, 'rgba(0, 0, 0, 0.16)');
@@ -95,14 +102,7 @@ export function drawBiomeGround(renderer, ctx, world) {
           continue;
         }
 
-        const gradient = ctx.createRadialGradient(
-          cx,
-          cy,
-          influenceRadius * 0.12,
-          cx,
-          cy,
-          influenceRadius
-        );
+        const gradient = ctx.createRadialGradient(cx, cy, influenceRadius * 0.12, cx, cy, influenceRadius);
         const tintedColor = [
           clamp(biomeColor[0] + seasonGroundTint.r * 100, 0, 255),
           clamp(biomeColor[1] + seasonGroundTint.g * 100, 0, 255),
@@ -112,12 +112,7 @@ export function drawBiomeGround(renderer, ctx, world) {
         gradient.addColorStop(0.55, `rgba(${tintedColor.join(',')}, ${overlayAlpha * 0.46})`);
         gradient.addColorStop(1, `rgba(${tintedColor.join(',')}, 0)`);
         ctx.fillStyle = gradient;
-        ctx.fillRect(
-          cx - influenceRadius,
-          cy - influenceRadius,
-          influenceRadius * 2,
-          influenceRadius * 2
-        );
+        ctx.fillRect(cx - influenceRadius, cy - influenceRadius, influenceRadius * 2, influenceRadius * 2);
       }
     }
   }
@@ -135,11 +130,12 @@ export function drawBiomeGround(renderer, ctx, world) {
         const x = gx + textureSpacing * 0.5 + jitterX;
         const y = gy + textureSpacing * 0.5 + jitterY;
         const biome = world.getBiomeAt?.(x, y);
-        const tint = biome?.type === 'water'
-          ? 'rgba(120, 190, 230, 0.12)'
-          : biome?.type === 'desert'
-            ? 'rgba(244, 190, 120, 0.1)'
-            : 'rgba(170, 210, 170, 0.08)';
+        const tint =
+          biome?.type === 'water'
+            ? 'rgba(120, 190, 230, 0.12)'
+            : biome?.type === 'desert'
+              ? 'rgba(244, 190, 120, 0.1)'
+              : 'rgba(170, 210, 170, 0.08)';
         ctx.fillStyle = tint;
         ctx.beginPath();
         ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
@@ -178,7 +174,11 @@ export function drawWaterBiomes(renderer, ctx, world) {
       const isDeep = depth > 0.7;
       const isShallow = depth < 0.3;
 
-      const baseColor = isDeep ? 'rgba(30, 64, 175, 0.6)' : isShallow ? 'rgba(96, 165, 250, 0.45)' : 'rgba(59, 130, 246, 0.5)';
+      const baseColor = isDeep
+        ? 'rgba(30, 64, 175, 0.6)'
+        : isShallow
+          ? 'rgba(96, 165, 250, 0.45)'
+          : 'rgba(59, 130, 246, 0.5)';
       ctx.fillStyle = baseColor;
       ctx.fillRect(x, y, sampleSize, sampleSize);
 
@@ -331,8 +331,12 @@ export function drawCreatureTerritoryZones(renderer, ctx, world) {
 
       // Draw territory gradient
       const gradient = ctx.createRadialGradient(
-        x + cellSize / 2, y + cellSize / 2, 0,
-        x + cellSize / 2, y + cellSize / 2, cellSize * 0.7
+        x + cellSize / 2,
+        y + cellSize / 2,
+        0,
+        x + cellSize / 2,
+        y + cellSize / 2,
+        cellSize * 0.7
       );
       gradient.addColorStop(0, dominantColor.replace(/[\d.]+\)$/, `${dominantAlpha})`));
       gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
@@ -369,11 +373,12 @@ export function drawDayNightOverlay(renderer, ctx, world) {
   }
 
   if (phase === 'dawn' || phase === 'dusk' || phase === 'night') {
-    const tint = phase === 'dawn'
-      ? `rgba(255, 170, 120, ${0.12 * (1 - darkness * 0.5)})`
-      : phase === 'dusk'
-        ? `rgba(120, 110, 200, ${0.12 * (1 - darkness * 0.4)})`
-        : `rgba(35, 60, 120, ${0.08 + darkness * 0.15})`;
+    const tint =
+      phase === 'dawn'
+        ? `rgba(255, 170, 120, ${0.12 * (1 - darkness * 0.5)})`
+        : phase === 'dusk'
+          ? `rgba(120, 110, 200, ${0.12 * (1 - darkness * 0.4)})`
+          : `rgba(35, 60, 120, ${0.08 + darkness * 0.15})`;
     const bounds = renderer._viewBounds;
     const visibleWidth = bounds.x2 - bounds.x1;
     const visibleHeight = bounds.y2 - bounds.y1;
@@ -442,9 +447,8 @@ export function drawMoodOverlay(renderer, ctx, world, intensity, type) {
   const visibleWidth = bounds.x2 - bounds.x1;
   const visibleHeight = bounds.y2 - bounds.y1;
   const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
-  const tint = type === 'wind'
-    ? `rgba(129, 167, 255, ${0.08 * intensity})`
-    : `rgba(110, 200, 180, ${0.08 * intensity})`;
+  const tint =
+    type === 'wind' ? `rgba(129, 167, 255, ${0.08 * intensity})` : `rgba(110, 200, 180, ${0.08 * intensity})`;
   ctx.fillStyle = tint;
   ctx.fillRect(
     bounds.x1 - extendAmount,
@@ -469,7 +473,7 @@ export function drawWindStreaks(renderer, ctx, world, intensity) {
     const seed = i * 73.1;
     const x = bounds.x1 + ((seed * 31) % 1) * (bounds.x2 - bounds.x1);
     const y = bounds.y1 + ((seed * 17) % 1) * (bounds.y2 - bounds.y1);
-    const offset = Math.sin((world.t * 0.6) + seed) * 12;
+    const offset = Math.sin(world.t * 0.6 + seed) * 12;
     ctx.beginPath();
     ctx.moveTo(x - baseLength * 0.4, y + offset);
     ctx.lineTo(x + baseLength * 0.6, y + offset - baseLength * 0.2);
@@ -480,11 +484,16 @@ export function drawWindStreaks(renderer, ctx, world, intensity) {
 
 export function getDecorationSpriteAsset(dec) {
   switch (dec.type) {
-    case 'tree': return 'env_trees';
-    case 'rock': return 'env_rocks';
-    case 'flower': return 'env_flowers';
-    case 'grass': return 'env_flowers';
-    default: return null;
+    case 'tree':
+      return 'env_trees';
+    case 'rock':
+      return 'env_rocks';
+    case 'flower':
+      return 'env_flowers';
+    case 'grass':
+      return 'env_flowers';
+    default:
+      return null;
   }
 }
 

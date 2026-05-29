@@ -198,7 +198,7 @@ export class AdvancedGenetics {
 
     // Armored - reduce incoming damage
     if (g.armored && creature.incomingDamage) {
-      creature.incomingDamage *= (1 - g.armorStrength);
+      creature.incomingDamage *= 1 - g.armorStrength;
     }
 
     // Elemental effects

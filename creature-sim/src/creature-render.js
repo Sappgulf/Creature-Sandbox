@@ -13,7 +13,7 @@ const BASE_SPRITE_CACHE_SIZE = 64;
 function quantizeHue(value, step = 24) {
   const hue = Number(value);
   if (!Number.isFinite(hue)) return 0;
-  return ((Math.round(hue / step) * step) % 360 + 360) % 360;
+  return (((Math.round(hue / step) * step) % 360) + 360) % 360;
 }
 
 function quantizeLightness(value, step = 5) {
@@ -55,16 +55,36 @@ export function getBadges(creature) {
   const rareMutations = creature.rareMutations || creature.mutations || [];
   for (const mutation of rareMutations) {
     switch (mutation.name) {
-      case 'Bioluminescence': badges.push('✨ Glow'); break;
-      case 'Regeneration': badges.push('💚 Heal'); break;
-      case 'Gigantism': badges.push('🦖 Giant'); break;
-      case 'Dwarfism': badges.push('🐹 Tiny'); break;
-      case 'Albinism': badges.push('⚪ Albino'); break;
-      case 'Melanism': badges.push('⬛ Dark'); break;
-      case 'Chameleon': badges.push('🌈 Hidden'); break;
-      case 'Venomous': badges.push('🐍 Venom'); break;
-      case 'Armored Shell': badges.push('🛡️ Armor'); break;
-      case 'Telepathy': badges.push('📡 Mind'); break;
+      case 'Bioluminescence':
+        badges.push('✨ Glow');
+        break;
+      case 'Regeneration':
+        badges.push('💚 Heal');
+        break;
+      case 'Gigantism':
+        badges.push('🦖 Giant');
+        break;
+      case 'Dwarfism':
+        badges.push('🐹 Tiny');
+        break;
+      case 'Albinism':
+        badges.push('⚪ Albino');
+        break;
+      case 'Melanism':
+        badges.push('⬛ Dark');
+        break;
+      case 'Chameleon':
+        badges.push('🌈 Hidden');
+        break;
+      case 'Venomous':
+        badges.push('🐍 Venom');
+        break;
+      case 'Armored Shell':
+        badges.push('🛡️ Armor');
+        break;
+      case 'Telepathy':
+        badges.push('📡 Mind');
+        break;
     }
   }
   return badges;
@@ -97,7 +117,7 @@ export function drawCreature(creature, ctx, opts = {}) {
       baseTrailColor = { r: 255, g: 240, b: 180 };
     } else if (g?.bioluminescent) {
       // Bioluminescent creatures leave glowing trails
-      const glowHue = (opts.worldTime || 0) * 20 % 360;
+      const glowHue = ((opts.worldTime || 0) * 20) % 360;
       const hsl = `hsl(${glowHue}, 100%, 70%)`;
       ctx.shadowColor = hsl;
       ctx.shadowBlur = 8;
@@ -105,11 +125,20 @@ export function drawCreature(creature, ctx, opts = {}) {
     } else if (g?.elementalAffinity) {
       // Elemental creatures leave elemental trails
       switch (g.elementalAffinity) {
-        case 'fire': baseTrailColor = { r: 255, g: 150, b: 50 }; break;
-        case 'ice': baseTrailColor = { r: 200, g: 230, b: 255 }; break;
-        case 'electric': baseTrailColor = { r: 255, g: 255, b: 150 }; break;
-        case 'earth': baseTrailColor = { r: 139, g: 119, b: 101 }; break;
-        default: baseTrailColor = { r: 200, g: 210, b: 255 };
+        case 'fire':
+          baseTrailColor = { r: 255, g: 150, b: 50 };
+          break;
+        case 'ice':
+          baseTrailColor = { r: 200, g: 230, b: 255 };
+          break;
+        case 'electric':
+          baseTrailColor = { r: 255, g: 255, b: 150 };
+          break;
+        case 'earth':
+          baseTrailColor = { r: 139, g: 119, b: 101 };
+          break;
+        default:
+          baseTrailColor = { r: 200, g: 210, b: 255 };
       }
     } else if (g?.predator) {
       baseTrailColor = { r: 255, g: 180, b: 180 };
@@ -156,12 +185,16 @@ export function drawCreature(creature, ctx, opts = {}) {
     ctx.arc(creature.x, creature.y, senseRadius, 0, TAU);
     const hasTarget = creature.target !== null;
     const senseColor = hasTarget
-      ? (creature.genes.predator ? 'rgba(255,100,100,0.08)' : 'rgba(100,255,100,0.08)')
+      ? creature.genes.predator
+        ? 'rgba(255,100,100,0.08)'
+        : 'rgba(100,255,100,0.08)'
       : 'rgba(200,200,255,0.05)';
     ctx.fillStyle = senseColor;
     ctx.fill();
     ctx.strokeStyle = hasTarget
-      ? (creature.genes.predator ? 'rgba(255,100,100,0.25)' : 'rgba(100,255,100,0.25)')
+      ? creature.genes.predator
+        ? 'rgba(255,100,100,0.25)'
+        : 'rgba(100,255,100,0.25)'
       : 'rgba(200,200,255,0.15)';
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 3]);
@@ -174,31 +207,33 @@ export function drawCreature(creature, ctx, opts = {}) {
     ctx.arc(creature.x, creature.y, senseRadius, creature.dir - halfFov, creature.dir + halfFov);
     ctx.closePath();
     ctx.fillStyle = hasTarget
-      ? (creature.genes.predator ? 'rgba(255,80,80,0.12)' : 'rgba(80,255,80,0.12)')
+      ? creature.genes.predator
+        ? 'rgba(255,80,80,0.12)'
+        : 'rgba(80,255,80,0.12)'
       : 'rgba(255,255,150,0.08)';
     ctx.fill();
     ctx.strokeStyle = hasTarget
-      ? (creature.genes.predator ? 'rgba(255,80,80,0.4)' : 'rgba(80,255,80,0.4)')
+      ? creature.genes.predator
+        ? 'rgba(255,80,80,0.4)'
+        : 'rgba(80,255,80,0.4)'
       : 'rgba(255,255,150,0.25)';
     ctx.lineWidth = 1.2;
     ctx.stroke();
 
-    if (creature.target && (creature.target.x !== undefined && creature.target.y !== undefined)) {
+    if (creature.target && creature.target.x !== undefined && creature.target.y !== undefined) {
       const targetDist = Math.sqrt((creature.target.x - creature.x) ** 2 + (creature.target.y - creature.y) ** 2);
       const lineLength = Math.min(targetDist, senseRadius * 0.8);
       const angle = Math.atan2(creature.target.y - creature.y, creature.target.x - creature.x);
 
       ctx.beginPath();
       ctx.moveTo(creature.x, creature.y);
-      ctx.lineTo(
-        creature.x + Math.cos(angle) * lineLength,
-        creature.y + Math.sin(angle) * lineLength
-      );
-      ctx.strokeStyle = creature.target.creatureId !== undefined
-        ? 'rgba(255,100,100,0.6)'
-        : creature.target.isCorpse
-          ? 'rgba(180,130,80,0.5)'
-          : 'rgba(100,220,100,0.5)';
+      ctx.lineTo(creature.x + Math.cos(angle) * lineLength, creature.y + Math.sin(angle) * lineLength);
+      ctx.strokeStyle =
+        creature.target.creatureId !== undefined
+          ? 'rgba(255,100,100,0.6)'
+          : creature.target.isCorpse
+            ? 'rgba(180,130,80,0.5)'
+            : 'rgba(100,220,100,0.5)';
       ctx.lineWidth = 1.5;
       ctx.setLineDash([4, 4]);
       ctx.stroke();
@@ -222,7 +257,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   const spawnScale = creature.spawnScale ?? 1;
   if (spawnScale < 1) {
     ctx.scale(spawnScale, spawnScale);
-    ctx.globalAlpha *= (0.4 + spawnScale * 0.6);
+    ctx.globalAlpha *= 0.4 + spawnScale * 0.6;
   }
 
   const shouldAnimate = isSelected || isPinned || (opts.zoom && opts.zoom > 0.8);
@@ -290,12 +325,17 @@ export function drawCreature(creature, ctx, opts = {}) {
   if (isNight && !isSelected && !isPinned) {
     const isNocturnal = (g.nocturnal ?? 0.5) > 0.5;
     const nocturnalBonus = isNocturnal ? g.nocturnal * 1.5 : 0;
-    const nightGlowIntensity = ((1 - dayLight) * 0.15) + nocturnalBonus * 0.25;
+    const nightGlowIntensity = (1 - dayLight) * 0.15 + nocturnalBonus * 0.25;
     let nightGlowColor;
     if (rareMutations.some(m => m.name === 'Bioluminescence')) {
       nightGlowColor = `hsla(${displayHue + 180}, 100%, 70%, ${nightGlowIntensity * 2})`;
     } else if (g.elementalAffinity) {
-      const elemColors = { fire: '30, 100%, 50%', ice: '200, 100%, 85%', electric: '60, 100%, 70%', earth: '30, 50%, 40%' };
+      const elemColors = {
+        fire: '30, 100%, 50%',
+        ice: '200, 100%, 85%',
+        electric: '60, 100%, 70%',
+        earth: '30, 50%, 40%'
+      };
       nightGlowColor = `hsla(${elemColors[g.elementalAffinity] || '60, 100%, 70%'}, ${nightGlowIntensity})`;
     } else if (isNocturnal) {
       nightGlowColor = `hsla(${displayHue}, 80%, 75%, ${nightGlowIntensity})`;
@@ -396,10 +436,10 @@ export function drawCreature(creature, ctx, opts = {}) {
       const fearPhase = worldTime * 2.5;
       const contagionRadius = 80 + fear * 40;
       for (let i = 0; i < 3; i++) {
-        const waveProgress = ((fearPhase + i * 0.4) % 1);
+        const waveProgress = (fearPhase + i * 0.4) % 1;
         const waveRadius = r * (1 + waveProgress * 4);
         if (waveRadius > contagionRadius) break;
-        const waveAlpha = (1 - waveProgress) * 0.2 * (fear - 0.7) / 0.3;
+        const waveAlpha = ((1 - waveProgress) * 0.2 * (fear - 0.7)) / 0.3;
         ctx.beginPath();
         ctx.arc(0, 0, waveRadius, 0, TAU);
         ctx.strokeStyle = `rgba(160, 100, 180, ${waveAlpha})`;
@@ -411,9 +451,9 @@ export function drawCreature(creature, ctx, opts = {}) {
       // (moved to a separate post-pass in renderer-features-viz.js to avoid O(n²))
       if (opts.world?.creatureManager && zoom > 0.4) {
         const nearbyRadius = 60 + fear * 30;
-        const nearby = opts.world.creatureManager.queryCreaturesFast(
-          creature.x, creature.y, nearbyRadius
-        ).filter(c => c !== creature && c.alive && c.emotions);
+        const nearby = opts.world.creatureManager
+          .queryCreaturesFast(creature.x, creature.y, nearbyRadius)
+          .filter(c => c !== creature && c.alive && c.emotions);
         for (const other of nearby) {
           const dist = Math.sqrt((other.x - creature.x) ** 2 + (other.y - creature.y) ** 2);
           const influence = (1 - dist / nearbyRadius) * (fear - 0.5) * 0.15;
@@ -436,7 +476,8 @@ export function drawCreature(creature, ctx, opts = {}) {
     }
   }
 
-  const showTraitDetails = opts.showTraitVisualization !== false && (isSelected || isPinned || (opts.zoom && opts.zoom > 1.0));
+  const showTraitDetails =
+    opts.showTraitVisualization !== false && (isSelected || isPinned || (opts.zoom && opts.zoom > 1.0));
 
   const diet = g.diet ?? (g.predator ? 1.0 : 0.0);
   const creatureType = creature.traits?.creatureType;
@@ -473,7 +514,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   // Enhanced Bioluminescence glow effect with pulsing animation
   const bioGlow = mutationSet.has('Bioluminescence');
   if (bioGlow) {
-    const pulsePhase = (worldTime * 3) + (creature.id % 100) * 0.1;
+    const pulsePhase = worldTime * 3 + (creature.id % 100) * 0.1;
     const pulseIntensity = 0.5 + Math.sin(pulsePhase) * 0.3;
     const nightBoost = opts.dayLight !== undefined ? (1 - opts.dayLight) * 0.5 : 0;
     const totalIntensity = Math.min(1, pulseIntensity + nightBoost);
@@ -679,7 +720,8 @@ export function drawCreature(creature, ctx, opts = {}) {
             const eAngle = (i / 3) * TAU + boltPhase;
             ctx.beginPath();
             ctx.moveTo(0, 0);
-            let ex = 0, ey = 0;
+            let ex = 0,
+              ey = 0;
             for (let j = 0; j < 4; j++) {
               ex += Math.cos(eAngle + (Math.random() - 0.5) * 0.5) * r * 0.5;
               ey += Math.sin(eAngle + (Math.random() - 0.5) * 0.5) * r * 0.5;
@@ -717,7 +759,8 @@ export function drawCreature(creature, ctx, opts = {}) {
               Math.cos(rockAngle) * rockDist,
               Math.sin(rockAngle) * rockDist,
               3 + Math.sin(elemPhase + i) * 1.5,
-              0, TAU
+              0,
+              TAU
             );
             ctx.fill();
           }
@@ -731,7 +774,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   if (telepathyMut) {
     const telepathyPhase = worldTime * 3;
     for (let i = 0; i < 3; i++) {
-      const waveProgress = ((telepathyPhase + i * 0.33) % 1);
+      const waveProgress = (telepathyPhase + i * 0.33) % 1;
       const waveRadius = r * (1 + waveProgress * 3);
       const waveAlpha = (1 - waveProgress) * 0.3;
       ctx.beginPath();
@@ -748,7 +791,7 @@ export function drawCreature(creature, ctx, opts = {}) {
     const venomPhase = worldTime * 2;
     // Dripping poison drops
     for (let i = 0; i < 2; i++) {
-      const dripProgress = ((venomPhase + i * 0.5) % 1);
+      const dripProgress = (venomPhase + i * 0.5) % 1;
       const dripY = r * 0.5 + dripProgress * r * 1.5;
       const dripX = Math.sin(venomPhase * 3 + i) * r * 0.3;
       ctx.beginPath();
@@ -773,7 +816,7 @@ export function drawCreature(creature, ctx, opts = {}) {
     const gigStrength = g.size ? Math.min(2, g.size / 6) : 1.5;
     // Power ripples expanding outward
     for (let i = 0; i < 3; i++) {
-      const waveProgress = ((gigPhase + i * 0.4) % 1);
+      const waveProgress = (gigPhase + i * 0.4) % 1;
       const waveRadius = r * (1.5 + waveProgress * 4 * gigStrength);
       const waveAlpha = (1 - waveProgress) * 0.25;
       ctx.beginPath();
@@ -907,12 +950,7 @@ export function drawCreature(creature, ctx, opts = {}) {
       const wispAngle = melanoPhase + i * Math.PI;
       const wispDist = r * (1.5 + Math.sin(melanoPhase * 0.5 + i) * 0.3);
       ctx.beginPath();
-      ctx.arc(
-        Math.cos(wispAngle) * wispDist,
-        Math.sin(wispAngle) * wispDist,
-        r * 0.1,
-        0, TAU
-      );
+      ctx.arc(Math.cos(wispAngle) * wispDist, Math.sin(wispAngle) * wispDist, r * 0.1, 0, TAU);
       ctx.fillStyle = `rgba(50, 30, 80, ${0.3 + Math.sin(melanoPhase + i * 2) * 0.2})`;
       ctx.fill();
     }
@@ -933,7 +971,7 @@ export function drawCreature(creature, ctx, opts = {}) {
     ctx.fill();
     // Age indicator rings
     for (let i = 0; i < 3; i++) {
-      const ringProgress = ((longevPhase * 0.3 + i * 0.33) % 1);
+      const ringProgress = (longevPhase * 0.3 + i * 0.33) % 1;
       const ringRadius = r * (1.2 + ringProgress * 2);
       const ringAlpha = (1 - ringProgress) * 0.3;
       ctx.beginPath();
@@ -947,12 +985,7 @@ export function drawCreature(creature, ctx, opts = {}) {
       const sparkleAngle = longevPhase * 0.8 + (i / 4) * TAU;
       const sparkleDist = r * (1.8 + Math.sin(longevPhase * 2 + i) * 0.4);
       ctx.beginPath();
-      ctx.arc(
-        Math.cos(sparkleAngle) * sparkleDist,
-        Math.sin(sparkleAngle) * sparkleDist,
-        r * 0.08,
-        0, TAU
-      );
+      ctx.arc(Math.cos(sparkleAngle) * sparkleDist, Math.sin(sparkleAngle) * sparkleDist, r * 0.08, 0, TAU);
       ctx.fillStyle = `rgba(255, 235, 150, ${0.5 + Math.sin(longevPhase + i) * 0.3})`;
       ctx.fill();
     }
@@ -964,7 +997,7 @@ export function drawCreature(creature, ctx, opts = {}) {
     const accelPhase = worldTime * 8;
     // Rapid ticking rings
     for (let i = 0; i < 4; i++) {
-      const tickProgress = ((accelPhase + i * 0.25) % 1);
+      const tickProgress = (accelPhase + i * 0.25) % 1;
       const tickRadius = r * (1 + tickProgress * 2);
       const tickAlpha = (1 - tickProgress) * 0.4;
       ctx.beginPath();
@@ -978,12 +1011,7 @@ export function drawCreature(creature, ctx, opts = {}) {
       const particleAngle = accelPhase * 2 + (i / 6) * TAU;
       const particleDist = r * (1.3 + Math.sin(accelPhase * 4 + i) * 0.3);
       ctx.beginPath();
-      ctx.arc(
-        Math.cos(particleAngle) * particleDist,
-        Math.sin(particleAngle) * particleDist,
-        r * 0.06,
-        0, TAU
-      );
+      ctx.arc(Math.cos(particleAngle) * particleDist, Math.sin(particleAngle) * particleDist, r * 0.06, 0, TAU);
       ctx.fillStyle = `rgba(200, 150, 100, ${0.6 + Math.sin(accelPhase + i * 1.5) * 0.3})`;
       ctx.fill();
     }
@@ -1004,7 +1032,7 @@ export function drawCreature(creature, ctx, opts = {}) {
     const senseRange = g.sense ? Math.min(3, g.sense / 100) : 1.8;
     // Radar sweep
     for (let i = 0; i < 2; i++) {
-      const radarProgress = ((sensePhase + i * 0.5) % 1);
+      const radarProgress = (sensePhase + i * 0.5) % 1;
       const radarRadius = r * (1 + radarProgress * 3 * senseRange);
       const radarAlpha = (1 - radarProgress) * 0.25;
       ctx.beginPath();
@@ -1017,10 +1045,7 @@ export function drawCreature(creature, ctx, opts = {}) {
     const sweepAngle = sensePhase * TAU;
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.lineTo(
-      Math.cos(sweepAngle) * r * 4 * senseRange,
-      Math.sin(sweepAngle) * r * 4 * senseRange
-    );
+    ctx.lineTo(Math.cos(sweepAngle) * r * 4 * senseRange, Math.sin(sweepAngle) * r * 4 * senseRange);
     ctx.strokeStyle = `rgba(255, 255, 100, ${0.3 + Math.sin(sensePhase * 2) * 0.2})`;
     ctx.lineWidth = 1;
     ctx.stroke();
@@ -1029,12 +1054,7 @@ export function drawCreature(creature, ctx, opts = {}) {
       const pAngle = (i / 5) * TAU + sensePhase * 0.3;
       const pDist = r * (1.5 + Math.sin(sensePhase * 2 + i) * 0.5);
       ctx.beginPath();
-      ctx.arc(
-        Math.cos(pAngle) * pDist,
-        Math.sin(pAngle) * pDist,
-        r * 0.08,
-        0, TAU
-      );
+      ctx.arc(Math.cos(pAngle) * pDist, Math.sin(pAngle) * pDist, r * 0.08, 0, TAU);
       ctx.fillStyle = `rgba(255, 255, 150, ${0.4 + Math.sin(sensePhase + i) * 0.3})`;
       ctx.fill();
     }
@@ -1072,12 +1092,7 @@ export function drawCreature(creature, ctx, opts = {}) {
         const sparkleAngle = photoPhase * 0.5 + (i / 3) * TAU;
         const sparkleDist = r * (1.2 + Math.sin(photoPhase * 1.5 + i) * 0.3);
         ctx.beginPath();
-        ctx.arc(
-          Math.cos(sparkleAngle) * sparkleDist,
-          Math.sin(sparkleAngle) * sparkleDist,
-          r * 0.1,
-          0, TAU
-        );
+        ctx.arc(Math.cos(sparkleAngle) * sparkleDist, Math.sin(sparkleAngle) * sparkleDist, r * 0.1, 0, TAU);
         ctx.fillStyle = `rgba(150, 255, 100, ${0.5 + Math.sin(photoPhase + i * 2) * 0.3})`;
         ctx.fill();
       }
@@ -1100,19 +1115,21 @@ export function drawCreature(creature, ctx, opts = {}) {
     ctx.arc(0, 0, r * 2.2, 0, TAU);
     ctx.fill();
     // Trait indicator particles
-    const traitCount = [hybridTraits.hasWings, hybridTraits.hasTail, hybridTraits.hasHorns, hybridTraits.multipleEyes].filter(Boolean).length || 2;
-    const traitColors = ['rgba(255, 200, 100, ', 'rgba(100, 200, 255, ', 'rgba(255, 150, 200, ', 'rgba(200, 100, 255, '];
+    const traitCount =
+      [hybridTraits.hasWings, hybridTraits.hasTail, hybridTraits.hasHorns, hybridTraits.multipleEyes].filter(Boolean)
+        .length || 2;
+    const traitColors = [
+      'rgba(255, 200, 100, ',
+      'rgba(100, 200, 255, ',
+      'rgba(255, 150, 200, ',
+      'rgba(200, 100, 255, '
+    ];
     for (let i = 0; i < Math.max(2, traitCount); i++) {
       const tAngle = chimPhase + (i / traitCount) * TAU;
       const tDist = r * (1.6 + Math.sin(chimPhase * 1.5 + i) * 0.4);
       const colorIdx = i % traitColors.length;
       ctx.beginPath();
-      ctx.arc(
-        Math.cos(tAngle) * tDist,
-        Math.sin(tAngle) * tDist,
-        r * 0.12,
-        0, TAU
-      );
+      ctx.arc(Math.cos(tAngle) * tDist, Math.sin(tAngle) * tDist, r * 0.12, 0, TAU);
       ctx.fillStyle = `${traitColors[colorIdx]}${0.5 + Math.sin(chimPhase + i) * 0.3})`;
       ctx.fill();
     }
@@ -1144,7 +1161,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   const zoom = Math.max(0.01, opts.zoom || 1);
-  const minimumSpriteScreenSize = (isSelected || isPinned) ? 22 : 14;
+  const minimumSpriteScreenSize = isSelected || isPinned ? 22 : 14;
   const renderSize = Math.max(r * 5 * eatScale, minimumSpriteScreenSize / zoom);
   const spriteFrame = getCachedSpriteFrame(creature, worldTime, renderSize);
   if (spriteFrame) {
@@ -1211,15 +1228,16 @@ export function drawCreature(creature, ctx, opts = {}) {
       ctx.rotate(-creature.dir);
 
       if (opts.world?.creatureManager) {
-        const packMembers = opts.world.creatureManager.queryCreaturesFast(
-          creature.x, creature.y, 150
-        ).filter(c =>
-          c !== creature &&
-          c.alive &&
-          c.genes.predator &&
-          c.genes.packInstinct > 0.5 &&
-          Math.abs((c.genes.hue || 0) - (g.hue || 0)) < 0.2
-        );
+        const packMembers = opts.world.creatureManager
+          .queryCreaturesFast(creature.x, creature.y, 150)
+          .filter(
+            c =>
+              c !== creature &&
+              c.alive &&
+              c.genes.predator &&
+              c.genes.packInstinct > 0.5 &&
+              Math.abs((c.genes.hue || 0) - (g.hue || 0)) < 0.2
+          );
 
         if (packMembers.length > 0) {
           ctx.strokeStyle = `rgba(255, 120, 80, ${0.25 + Math.sin(packPulse) * 0.15})`;
@@ -1246,8 +1264,12 @@ export function drawCreature(creature, ctx, opts = {}) {
           const packCenterLocalY = relPositions.reduce((s, p) => s + p.ry, 0) / (packMembers.length + 1);
           const auraRadius = r * (2 + packMembers.length * 0.5);
           const packAura = ctx.createRadialGradient(
-            packCenterLocalX, packCenterLocalY, r * 0.5,
-            packCenterLocalX, packCenterLocalY, auraRadius
+            packCenterLocalX,
+            packCenterLocalY,
+            r * 0.5,
+            packCenterLocalX,
+            packCenterLocalY,
+            auraRadius
           );
           packAura.addColorStop(0, `rgba(255, 80, 40, ${0.12 + Math.sin(packPulse) * 0.05})`);
           packAura.addColorStop(0.5, `rgba(200, 60, 30, ${0.06 + Math.sin(packPulse) * 0.03})`);
@@ -1257,9 +1279,10 @@ export function drawCreature(creature, ctx, opts = {}) {
           ctx.arc(packCenterLocalX, packCenterLocalY, auraRadius, 0, TAU);
           ctx.fill();
 
-          const prey = creature.target?.creatureId !== undefined
-            ? opts.world.getAnyCreatureById?.(creature.target.creatureId)
-            : null;
+          const prey =
+            creature.target?.creatureId !== undefined
+              ? opts.world.getAnyCreatureById?.(creature.target.creatureId)
+              : null;
           if (prey && prey.alive) {
             const targetX = prey.x + (prey.vx || 0) * 5 - creature.x;
             const targetY = prey.y + (prey.vy || 0) * 5 - creature.y;
@@ -1388,17 +1411,25 @@ export function getCachedSpriteFrame(creature, worldTime = 0, renderSize = 64) {
       const expectedAssetType = creature._cachedAssetType;
       const expectedColor = creature._cachedColor;
       spriteSets[`pending-${chosenSize}`] = true;
-      assetLoader.requestSpriteFrames(expectedAssetType, { color: expectedColor, size: chosenSize }).then(nextSet => {
-        if (creature._cachedColor === expectedColor && creature._cachedAssetType === expectedAssetType && nextSet?.frames?.length) {
-          creature._cachedSpriteSets[chosenSize] = nextSet;
-        }
-      }).catch(error => {
-        console.debug(`Failed to prepare sprite frames for ${expectedAssetType} at size ${chosenSize}:`, error);
-      }).finally(() => {
-        if (creature._cachedSpriteSets === spriteSets) {
-          delete creature._cachedSpriteSets[`pending-${chosenSize}`];
-        }
-      });
+      assetLoader
+        .requestSpriteFrames(expectedAssetType, { color: expectedColor, size: chosenSize })
+        .then(nextSet => {
+          if (
+            creature._cachedColor === expectedColor &&
+            creature._cachedAssetType === expectedAssetType &&
+            nextSet?.frames?.length
+          ) {
+            creature._cachedSpriteSets[chosenSize] = nextSet;
+          }
+        })
+        .catch(error => {
+          console.debug(`Failed to prepare sprite frames for ${expectedAssetType} at size ${chosenSize}:`, error);
+        })
+        .finally(() => {
+          if (creature._cachedSpriteSets === spriteSets) {
+            delete creature._cachedSpriteSets[`pending-${chosenSize}`];
+          }
+        });
     }
     spriteSet = spriteSets[BASE_SPRITE_CACHE_SIZE];
   }
@@ -1432,14 +1463,17 @@ export function updateCachedCanvas(creature, assetType, colorStr) {
   creature._cachedAssetType = assetType;
   creature._cachedSpriteSets = {};
 
-  assetLoader.requestSpriteFrames(assetType, { color: colorStr, size: BASE_SPRITE_CACHE_SIZE }).then(spriteSet => {
-    if (creature._cachedColor === colorStr && creature._cachedAssetType === assetType) {
-      creature._cachedSpriteSets[BASE_SPRITE_CACHE_SIZE] = spriteSet;
-      creature._cachedCanvas = spriteSet?.frames?.[0] || null;
-    }
-  }).catch(error => {
-    console.debug(`Failed to prepare sprite frames for ${assetType} at size ${BASE_SPRITE_CACHE_SIZE}:`, error);
-  });
+  assetLoader
+    .requestSpriteFrames(assetType, { color: colorStr, size: BASE_SPRITE_CACHE_SIZE })
+    .then(spriteSet => {
+      if (creature._cachedColor === colorStr && creature._cachedAssetType === assetType) {
+        creature._cachedSpriteSets[BASE_SPRITE_CACHE_SIZE] = spriteSet;
+        creature._cachedCanvas = spriteSet?.frames?.[0] || null;
+      }
+    })
+    .catch(error => {
+      console.debug(`Failed to prepare sprite frames for ${assetType} at size ${BASE_SPRITE_CACHE_SIZE}:`, error);
+    });
 }
 
 export function drawBehaviorState(creature, ctx) {

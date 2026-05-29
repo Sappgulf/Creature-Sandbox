@@ -53,8 +53,11 @@ export function recordDamage(creature, amount, ctx = {}) {
   creature.reactToCollision(finalDamage, { skipDamage: true });
 
   // Handle memory of danger
-  if (creature.memory && finalDamage > 0.6 &&
-    now - (creature.memory.lastDangerAt ?? -Infinity) >= CreatureConfig.MEMORY.DANGER_COOLDOWN) {
+  if (
+    creature.memory &&
+    finalDamage > 0.6 &&
+    now - (creature.memory.lastDangerAt ?? -Infinity) >= CreatureConfig.MEMORY.DANGER_COOLDOWN
+  ) {
     const strength = clamp(0.3 + (finalDamage / 12) * 0.6, 0.3, 0.9);
     creature.rememberLocation?.(creature.x, creature.y, 'danger', strength, now);
     creature.memory.lastDangerAt = now;
@@ -104,7 +107,7 @@ export function calculateCurrentSpeed(creature, dt, world) {
   // Environmental/Biome modifiers
   if (inWater) {
     if (creature.aquaticAffinity > 0.5) {
-      baseSpeed *= biome.aquaticSpeed || (1.2 + creature.aquaticAffinity * 0.3);
+      baseSpeed *= biome.aquaticSpeed || 1.2 + creature.aquaticAffinity * 0.3;
     } else if (creature.aquaticAffinity > 0.2) {
       baseSpeed *= 0.7 + creature.aquaticAffinity * 0.5;
     } else {
@@ -157,7 +160,11 @@ export function calculateCurrentSpeed(creature, dt, world) {
   if (creature.target) {
     const dist = Math.hypot(creature.target.x - creature.x, creature.target.y - creature.y);
     if (dist < CreatureAgentTuning.MOVEMENT.SLOW_RADIUS) {
-      arriveFactor = clamp(dist / CreatureAgentTuning.MOVEMENT.SLOW_RADIUS, CreatureAgentTuning.MOVEMENT.MIN_ARRIVE_SPEED, 1);
+      arriveFactor = clamp(
+        dist / CreatureAgentTuning.MOVEMENT.SLOW_RADIUS,
+        CreatureAgentTuning.MOVEMENT.MIN_ARRIVE_SPEED,
+        1
+      );
     }
   }
 
@@ -187,9 +194,10 @@ export function applyImpactDamage(creature, amount, { cause = 'impact', intensit
   if (worldTime < (creature.damageFx?.iframesUntil ?? -Infinity)) return 0;
 
   const clamped = clamp(amount, 0, CreatureTuning.DAMAGE_CLAMP_MAX);
-  const finalDamage = typeof creature.recordDamage === 'function'
-    ? creature.recordDamage(clamped, { type: cause, ignoreIframes: true })
-    : 0;
+  const finalDamage =
+    typeof creature.recordDamage === 'function'
+      ? creature.recordDamage(clamped, { type: cause, ignoreIframes: true })
+      : 0;
   if (finalDamage <= 0) return 0;
 
   if (creature.damageFx) {
@@ -197,8 +205,11 @@ export function applyImpactDamage(creature, amount, { cause = 'impact', intensit
     creature.damageFx.lastDamageTime = worldTime;
   }
 
-  if (creature.memory && finalDamage > 0.6 &&
-    worldTime - (creature.memory.lastDangerAt ?? -Infinity) >= CreatureConfig.MEMORY.DANGER_COOLDOWN) {
+  if (
+    creature.memory &&
+    finalDamage > 0.6 &&
+    worldTime - (creature.memory.lastDangerAt ?? -Infinity) >= CreatureConfig.MEMORY.DANGER_COOLDOWN
+  ) {
     const strength = clamp(0.3 + (finalDamage / CreatureTuning.DAMAGE_CLAMP_MAX) * 0.6, 0.3, 0.9);
     creature.rememberLocation?.(creature.x, creature.y, 'danger', strength, worldTime);
     creature.memory.lastDangerAt = worldTime;

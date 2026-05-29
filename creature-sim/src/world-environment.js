@@ -187,7 +187,7 @@ export class WorldEnvironment {
 
     // Update day/night cycle
     if (this.dayNightEnabled) {
-      this.timeOfDay = (this.timeOfDay + (24 * dt / this.dayLength)) % 24;
+      this.timeOfDay = (this.timeOfDay + (24 * dt) / this.dayLength) % 24;
       this.updateDayNightState();
     } else {
       this.applyStaticDayNightState();
@@ -221,11 +221,14 @@ export class WorldEnvironment {
 
     // Announce season change if requested
     if (announce && this.world.lineageTracker) {
-      this.world.lineageTracker.recordEvent({
-        type: 'season_change',
-        season: this.currentSeason,
-        config: config
-      }, this.world);
+      this.world.lineageTracker.recordEvent(
+        {
+          type: 'season_change',
+          season: this.currentSeason,
+          config: config
+        },
+        this.world
+      );
     }
   }
 
@@ -233,8 +236,7 @@ export class WorldEnvironment {
     if (!config.weather) return;
 
     this.weatherType = config.weather.type;
-    this.weatherTargetIntensity = config.weather.baseIntensity +
-      (rand() - 0.5) * config.weather.variation * 2;
+    this.weatherTargetIntensity = config.weather.baseIntensity + (rand() - 0.5) * config.weather.variation * 2;
     this.weatherTransitionTime = config.weather.transition;
   }
 
@@ -449,10 +451,14 @@ export class WorldEnvironment {
     if (!config) return 1.0;
 
     switch (kind) {
-      case 'food': return clamp(config.foodMultiplier, 0.7, 1.35);
-      case 'reproduction': return clamp(config.reproductionMultiplier, 0.5, 1.2);
-      case 'metabolism': return clamp(config.metabolismScalar, 0.85, 1.25);
-      default: return 1.0;
+      case 'food':
+        return clamp(config.foodMultiplier, 0.7, 1.35);
+      case 'reproduction':
+        return clamp(config.reproductionMultiplier, 0.5, 1.2);
+      case 'metabolism':
+        return clamp(config.metabolismScalar, 0.85, 1.25);
+      default:
+        return 1.0;
     }
   }
 
@@ -497,9 +503,7 @@ export class WorldEnvironment {
     // Optimal temperature range: 0.4-0.6 (slightly cool to warm)
     const optimalMin = 0.4;
     const optimalMax = 0.6;
-    const penalty = Math.max(0,
-      Math.abs(temp - 0.5) - (optimalMax - optimalMin) / 2
-    ) / 0.3; // Normalize to 0-1 scale
+    const penalty = Math.max(0, Math.abs(temp - 0.5) - (optimalMax - optimalMin) / 2) / 0.3; // Normalize to 0-1 scale
 
     return clamp(penalty, 0, 1);
   }

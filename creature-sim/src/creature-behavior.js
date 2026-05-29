@@ -73,7 +73,8 @@ export class CreatureBehaviorSystem {
         }
       } else if (this.creature.target.creatureId !== undefined) {
         // Creature target - check if still alive
-        const targetCreature = world.getAnyCreatureById?.(this.creature.target.creatureId) ||
+        const targetCreature =
+          world.getAnyCreatureById?.(this.creature.target.creatureId) ||
           world.creatures.find(c => c.id === this.creature.target.creatureId);
         if (!targetCreature || !targetCreature.alive) {
           this.creature.target = null;
@@ -207,9 +208,10 @@ export class CreatureBehaviorSystem {
       // Avoid danger zones
       if (memory?.dangerZones && memory.dangerZones.length > 0) {
         const now = Date.now();
-        const recentDangers = memory.dangerZones.filter(zone =>
-          now - zone.lastEncounter < 60000 && // Last 60s
-          Math.hypot(zone.x - this.creature.x, zone.y - this.creature.y) < 100
+        const recentDangers = memory.dangerZones.filter(
+          zone =>
+            now - zone.lastEncounter < 60000 && // Last 60s
+            Math.hypot(zone.x - this.creature.x, zone.y - this.creature.y) < 100
         );
 
         // If in danger zone, flee instead of hunting
@@ -457,7 +459,7 @@ export class CreatureBehaviorSystem {
       if (Math.abs(normalizedDelta) > halfFov) continue;
 
       // Bias toward closer food, weighted by biome preference
-      const bias = d2 * (1 + Math.abs(normalizedDelta) / halfFov * 0.5) / biomePreference;
+      const bias = (d2 * (1 + (Math.abs(normalizedDelta) / halfFov) * 0.5)) / biomePreference;
       if (bias < bestD2) {
         bestD2 = bias;
         best = food;
@@ -515,10 +517,7 @@ export class CreatureBehaviorSystem {
 
     // Calculate desired movement direction
     if (this.creature.target) {
-      desiredAngle = Math.atan2(
-        this.creature.target.y - this.creature.y,
-        this.creature.target.x - this.creature.x
-      );
+      desiredAngle = Math.atan2(this.creature.target.y - this.creature.y, this.creature.target.x - this.creature.x);
     } else if (this.creature.lifecycle?.playTimer > 0) {
       // Play behavior - random movement
       desiredAngle = this.creature.dir + (rand() - 0.5) * 2;
@@ -562,7 +561,7 @@ export class CreatureBehaviorSystem {
     this.creature.dir += (rand() - 0.5) * wanderStrength * dt;
 
     // Homebody bias toward anchor
-    if (this.creature.getQuirkMultiplier && (this.creature.getQuirkMultiplier('home_pull') > 1.0)) {
+    if (this.creature.getQuirkMultiplier && this.creature.getQuirkMultiplier('home_pull') > 1.0) {
       const anchor = this.creature.homeAnchor;
       if (anchor) {
         const dx = anchor.x - this.creature.x;
@@ -579,8 +578,7 @@ export class CreatureBehaviorSystem {
    */
   updateAquaticMovement(world, desiredAngle) {
     // Check if in wetland biome
-    const inWetland = world.getBiomeAt ?
-      world.getBiomeAt(this.creature.x, this.creature.y)?.type === 'wetland' : false;
+    const inWetland = world.getBiomeAt ? world.getBiomeAt(this.creature.x, this.creature.y)?.type === 'wetland' : false;
 
     if (!inWetland && (!this.creature.target || this.creature.target.family)) {
       // Seek wetland
@@ -601,8 +599,7 @@ export class CreatureBehaviorSystem {
       return desiredAngle;
     }
 
-    const biome = world.getBiomeAt ?
-      world.getBiomeAt(this.creature.x, this.creature.y) : null;
+    const biome = world.getBiomeAt ? world.getBiomeAt(this.creature.x, this.creature.y) : null;
     const elevation = biome?.elevation ?? 0.5;
 
     // Flying creatures prefer high elevations
@@ -639,8 +636,7 @@ export class CreatureBehaviorSystem {
       return desiredAngle;
     }
 
-    const biome = world.getBiomeAt ?
-      world.getBiomeAt(this.creature.x, this.creature.y) : null;
+    const biome = world.getBiomeAt ? world.getBiomeAt(this.creature.x, this.creature.y) : null;
     const isUnderground = biome?.type === 'mountain' || (biome?.elevation ?? 0) > 0.65;
 
     // Burrowing creatures prefer underground areas
@@ -781,11 +777,16 @@ export class CreatureBehaviorSystem {
       return this.creature._getAgeSpeedMultiplier();
     }
     switch (this.creature.ageStage) {
-      case 'baby': return 1.0;
-      case 'juvenile': return 0.95;
-      case 'adult': return 1.0;
-      case 'elder': return 0.85;
-      default: return 1.0;
+      case 'baby':
+        return 1.0;
+      case 'juvenile':
+        return 0.95;
+      case 'adult':
+        return 1.0;
+      case 'elder':
+        return 0.85;
+      default:
+        return 1.0;
     }
   }
 
@@ -853,10 +854,7 @@ export class CreatureBehaviorSystem {
     // Pheromone signaling
     if (this.creature.personality.lastSignalAt < world.t - 2) {
       this.creature.personality.lastSignalAt = world.t;
-      world.combat?.registerPredatorSignal(
-        this.creature.x, this.creature.y,
-        0.5, 5, this.creature.id
-      );
+      world.combat?.registerPredatorSignal(this.creature.x, this.creature.y, 0.5, 5, this.creature.id);
     }
   }
 
@@ -871,12 +869,8 @@ export class CreatureBehaviorSystem {
 
     // Find nearby pack members
     const packRadius = 150;
-    const packMembers = world.creatureManager?.queryCreaturesFast(
-      this.creature.x,
-      this.creature.y,
-      packRadius,
-      this._packMembers
-    ) || [];
+    const packMembers =
+      world.creatureManager?.queryCreaturesFast(this.creature.x, this.creature.y, packRadius, this._packMembers) || [];
     const distToPrey = Math.hypot(prey.x - this.creature.x, prey.y - this.creature.y);
     const distToPreySq = distToPrey * distToPrey;
     let packCount = 0;
@@ -886,11 +880,13 @@ export class CreatureBehaviorSystem {
 
     for (let i = 0; i < packMembers.length; i++) {
       const candidate = packMembers[i];
-      if (candidate === this.creature ||
-          !candidate?.alive ||
-          !candidate.genes?.predator ||
-          candidate.genes.packInstinct <= 0.5 ||
-          Math.abs((candidate.genes.hue || 0) - (this.creature.genes.hue || 0)) >= 0.2) {
+      if (
+        candidate === this.creature ||
+        !candidate?.alive ||
+        !candidate.genes?.predator ||
+        candidate.genes.packInstinct <= 0.5 ||
+        Math.abs((candidate.genes.hue || 0) - (this.creature.genes.hue || 0)) >= 0.2
+      ) {
         continue;
       }
       packMembers[packCount++] = candidate;
@@ -954,9 +950,8 @@ export class CreatureBehaviorSystem {
     }
 
     // Advanced evasion when predators are nearby
-    const nearbyPredators = world.creatureManager?.queryCreaturesFast(
-      this.creature.x, this.creature.y, 120, this._nearbyPredators
-    ) || [];
+    const nearbyPredators =
+      world.creatureManager?.queryCreaturesFast(this.creature.x, this.creature.y, 120, this._nearbyPredators) || [];
     let predatorCount = 0;
     for (let i = 0; i < nearbyPredators.length; i++) {
       const candidate = nearbyPredators[i];
@@ -966,9 +961,7 @@ export class CreatureBehaviorSystem {
     }
     nearbyPredators.length = predatorCount;
     if (predatorCount > 0) {
-      const evasion = AdvancedPredatorPreyAI.applyEvasionStrategy(
-        this.creature, nearbyPredators, world, dt
-      );
+      const evasion = AdvancedPredatorPreyAI.applyEvasionStrategy(this.creature, nearbyPredators, world, dt);
       if (evasion && evasion.x != null && evasion.y != null) {
         this.creature.target = {
           x: evasion.x,
@@ -987,16 +980,17 @@ export class CreatureBehaviorSystem {
    * Update herd behavior
    */
   updateHerdBehavior(world, dt) {
-    const herdMembers = world.creatureManager?.queryCreaturesFast(
-      this.creature.x, this.creature.y, 50, this._herdMembers
-    ) || [];
+    const herdMembers =
+      world.creatureManager?.queryCreaturesFast(this.creature.x, this.creature.y, 50, this._herdMembers) || [];
     let herdCount = 0;
     for (let i = 0; i < herdMembers.length; i++) {
       const candidate = herdMembers[i];
-      if (candidate !== this.creature &&
-          candidate?.alive &&
-          !candidate.genes?.predator &&
-          candidate.genes?.herdInstinct > 0.3) {
+      if (
+        candidate !== this.creature &&
+        candidate?.alive &&
+        !candidate.genes?.predator &&
+        candidate.genes?.herdInstinct > 0.3
+      ) {
         herdMembers[herdCount++] = candidate;
       }
     }
@@ -1046,8 +1040,14 @@ export class CreatureBehaviorSystem {
     const herdStrength = this.creature.genes.herdInstinct;
     const quirkCohesion = this.creature.getQuirkMultiplier?.('cohesion') ?? 1;
     const totalForce = {
-      x: separationForce.x * 0.5 + alignmentForce.x * 0.3 * quirkCohesion + cohesionForce.x * 0.2 * socialPull * quirkCohesion,
-      y: separationForce.y * 0.5 + alignmentForce.y * 0.3 * quirkCohesion + cohesionForce.y * 0.2 * socialPull * quirkCohesion
+      x:
+        separationForce.x * 0.5 +
+        alignmentForce.x * 0.3 * quirkCohesion +
+        cohesionForce.x * 0.2 * socialPull * quirkCohesion,
+      y:
+        separationForce.y * 0.5 +
+        alignmentForce.y * 0.3 * quirkCohesion +
+        cohesionForce.y * 0.2 * socialPull * quirkCohesion
     };
 
     if (totalForce.x !== 0 || totalForce.y !== 0) {
@@ -1062,18 +1062,17 @@ export class CreatureBehaviorSystem {
   updateAdvancedAI(world, dt) {
     // Schooling for non-predators
     if (!this.creature.genes.predator) {
-      const nearby = world.creatureManager?.queryCreaturesFast(
-        this.creature.x, this.creature.y, 100, this._schoolingNeighbors
-      ) || [];
+      const nearby =
+        world.creatureManager?.queryCreaturesFast(this.creature.x, this.creature.y, 100, this._schoolingNeighbors) ||
+        [];
       EnhancedBehaviors.applySchooling(this.creature, nearby, dt);
     }
 
     // Pack hunting flanking for predators
     if (this.creature.genes.predator && this.creature.target?.creatureId) {
       const prey = world.getAnyCreatureById?.(this.creature.target.creatureId);
-      const nearbyPredators = world.creatureManager?.queryCreaturesFast(
-        this.creature.x, this.creature.y, 150, this._nearbyPredators
-      ) || [];
+      const nearbyPredators =
+        world.creatureManager?.queryCreaturesFast(this.creature.x, this.creature.y, 150, this._nearbyPredators) || [];
       let predatorCount = 0;
       for (let i = 0; i < nearbyPredators.length; i++) {
         const candidate = nearbyPredators[i];
@@ -1082,9 +1081,7 @@ export class CreatureBehaviorSystem {
         }
       }
       nearbyPredators.length = predatorCount;
-      const flank = EnhancedBehaviors.applyPackHunting(
-        this.creature, nearbyPredators, prey, dt
-      );
+      const flank = EnhancedBehaviors.applyPackHunting(this.creature, nearbyPredators, prey, dt);
       if (flank && flank.x != null && flank.y != null) {
         this.creature.target.x = flank.x;
         this.creature.target.y = flank.y;
@@ -1137,7 +1134,8 @@ export class CreatureBehaviorSystem {
    */
   updateJuvenilePlay(dt, world) {
     if (this.creature.lifecycle.playCooldown <= 0 && this.creature.energy > 12) {
-      if (rand() < 0.005) { // 0.5% chance per frame
+      if (rand() < 0.005) {
+        // 0.5% chance per frame
         this.creature.lifecycle.playTimer = 3 + rand() * 2; // 3-5 seconds
         this.creature.lifecycle.playCooldown = rand(
           CreatureConfig.SOCIAL.PLAY_COOLDOWN.min,
@@ -1197,14 +1195,10 @@ export class CreatureBehaviorSystem {
    * Emit elder support aura
    */
   emitElderSupport(world) {
-    const allies = world.creatureManager?.queryCreatures(
-      this.creature.x, this.creature.y, 40
-    ).filter(c =>
-      c !== this.creature &&
-      c.alive &&
-      !c.genes.predator &&
-      c.ageStage !== 'elder'
-    ) || [];
+    const allies =
+      world.creatureManager
+        ?.queryCreatures(this.creature.x, this.creature.y, 40)
+        .filter(c => c !== this.creature && c.alive && !c.genes.predator && c.ageStage !== 'elder') || [];
 
     if (allies.length === 0) return;
 
@@ -1279,8 +1273,7 @@ export class CreatureBehaviorSystem {
 
       if (child.ageStage === 'adult') continue; // Adults are independent
 
-      const score = child.ageStage === 'juvenile' ? 2 :
-        child.ageStage === 'baby' ? 3 : 1;
+      const score = child.ageStage === 'juvenile' ? 2 : child.ageStage === 'baby' ? 3 : 1;
 
       if (score > bestScore) {
         bestScore = score;

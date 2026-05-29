@@ -3,9 +3,11 @@
 ## ✅ WHAT'S BEEN DONE
 
 ### **The Problem**
+
 Mini-map and stats graphs were always visible, blocking the view and getting in the way.
 
 ### **The Solution**
+
 Added intelligent auto-hide system that fades overlays out when the camera is moving and brings them back when stationary!
 
 ---
@@ -13,6 +15,7 @@ Added intelligent auto-hide system that fades overlays out when the camera is mo
 ## 🎮 HOW IT WORKS
 
 ### **Auto-Hide Logic**
+
 1. **Camera Tracks Movement**: Camera now has `isMoving` property
 2. **Movement Detection**: Checks if camera position differs from target
 3. **Smooth Fade**: Overlays fade out (opacity 0.0) when moving
@@ -20,12 +23,14 @@ Added intelligent auto-hide system that fades overlays out when the camera is mo
 5. **Threshold**: 0.5 pixels difference = "moving"
 
 ### **What Triggers Auto-Hide**
+
 - Panning camera (dragging mouse/touch)
 - Zooming (pinch or scroll)
 - Camera travel (mini-map clicks)
 - Follow mode (tracking creature)
 
 ### **When Overlays Show**
+
 - Camera is stationary (target reached)
 - Auto-hide is disabled (press 'A')
 - Always visible if feature is toggled on
@@ -34,13 +39,14 @@ Added intelligent auto-hide system that fades overlays out when the camera is mo
 
 ## ⌨️ KEYBOARD SHORTCUTS
 
-| Key | Action | Description |
-|-----|--------|-------------|
-| **N** | Toggle Mini-Map | Show/hide the world map overlay |
-| **L** | Toggle Stats Graphs | Show/hide the live statistics |
-| **A** | Toggle Auto-Hide | Enable/disable auto-hide behavior |
+| Key   | Action              | Description                       |
+| ----- | ------------------- | --------------------------------- |
+| **N** | Toggle Mini-Map     | Show/hide the world map overlay   |
+| **L** | Toggle Stats Graphs | Show/hide the live statistics     |
+| **A** | Toggle Auto-Hide    | Enable/disable auto-hide behavior |
 
 ### **Usage Examples**
+
 ```
 Press 'N' → Mini-map disappears/appears
 Press 'L' → Stats graphs disappear/appear
@@ -52,6 +58,7 @@ Press 'A' → Auto-hide ON (hides when moving) / OFF (always show)
 ## 🔧 TECHNICAL DETAILS
 
 ### **Camera.js Changes**
+
 ```javascript
 // New properties
 this.isMoving = false;
@@ -61,10 +68,11 @@ this.movementThreshold = 0.5;
 const dx = Math.abs(this.x - this.targetX);
 const dy = Math.abs(this.y - this.targetY);
 const dz = Math.abs(this.zoom - this.targetZoom);
-this.isMoving = (dx > 0.5 || dy > 0.5 || dz > 0.01) || this.travel !== null;
+this.isMoving = dx > 0.5 || dy > 0.5 || dz > 0.01 || this.travel !== null;
 ```
 
 ### **Renderer.js Changes**
+
 ```javascript
 // New properties
 this.miniMapAutoHide = true;
@@ -89,6 +97,7 @@ ctx.globalAlpha = this.miniMapOpacity;
 ```
 
 ### **Mini-Graphs.js Changes**
+
 ```javascript
 // New properties
 this.autoHide = true;
@@ -113,6 +122,7 @@ ctx.globalAlpha = this.opacity;
 ```
 
 ### **Main.js Changes**
+
 ```javascript
 // Pass cameraMoving flag to renderers
 renderer.drawWorld(world, {
@@ -143,12 +153,14 @@ if (e.key.toLowerCase() === 'a') {
 ## 🎨 USER EXPERIENCE
 
 ### **Before**
+
 ❌ Mini-map always visible (blocking view)
 ❌ Stats graphs always visible (distracting)
 ❌ No way to hide except disabling entirely
 ❌ Hard to see creatures behind overlays
 
 ### **After**
+
 ✅ Overlays auto-hide when exploring
 ✅ Overlays return when you stop moving
 ✅ Smooth fade transitions (not jarring)
@@ -160,16 +172,19 @@ if (e.key.toLowerCase() === 'a') {
 ## 📊 FADE ANIMATION
 
 ### **Fade Speed**
+
 - Fade out: 0.15 lerp factor (~500ms to fully fade)
 - Fade in: 0.15 lerp factor (~500ms to fully appear)
 - Smooth interpolation (not instant)
 
 ### **Opacity Levels**
+
 - Fully visible: `opacity = 1.0`
 - Fully hidden: `opacity = 0.0`
 - Skip rendering: `opacity < 0.01` (optimization)
 
 ### **Performance**
+
 - No performance impact when hidden (skip drawing)
 - Smooth 60 FPS fade animations
 - Uses `ctx.globalAlpha` for fade
@@ -179,14 +194,17 @@ if (e.key.toLowerCase() === 'a') {
 ## 🎯 MOVEMENT DETECTION
 
 ### **Movement Threshold**
+
 ```javascript
-movementThreshold = 0.5 // pixels
+movementThreshold = 0.5; // pixels
 ```
+
 - Camera is "moving" if distance to target > 0.5 pixels
 - Also considers zoom changes (> 0.01 difference)
 - Also considers camera travel mode (animated movement)
 
 ### **Movement States**
+
 ```javascript
 isMoving = true  → Camera is panning/zooming → Hide overlays
 isMoving = false → Camera is stationary → Show overlays
@@ -209,6 +227,7 @@ isMoving = false → Camera is stationary → Show overlays
 ## 🎮 RECOMMENDED SETTINGS
 
 ### **For Exploration**
+
 - Auto-hide: **ON** (press 'A' if needed)
 - Mini-map: **ON** (press 'N' to enable)
 - Stats: **ON** (press 'L' to enable)
@@ -216,6 +235,7 @@ isMoving = false → Camera is stationary → Show overlays
 **Result**: Overlays appear when you stop to look around, hide when moving.
 
 ### **For Clean View**
+
 - Auto-hide: **OFF** (press 'A')
 - Mini-map: **OFF** (press 'N')
 - Stats: **OFF** (press 'L')
@@ -223,6 +243,7 @@ isMoving = false → Camera is stationary → Show overlays
 **Result**: No overlays at all, maximum screen space.
 
 ### **For Always Visible**
+
 - Auto-hide: **OFF** (press 'A')
 - Mini-map: **ON** (press 'N')
 - Stats: **ON** (press 'L')
@@ -273,6 +294,5 @@ isMoving = false → Camera is stationary → Show overlays
 
 ---
 
-*Last updated: November 4, 2025*
-*Status: ✅ COMPLETE*
-
+_Last updated: November 4, 2025_
+_Status: ✅ COMPLETE_

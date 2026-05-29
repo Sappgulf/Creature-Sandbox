@@ -1,7 +1,7 @@
 import { domCache } from './dom-cache.js';
 
 export function applyUiAchievementsMethods(UIController) {
-  UIController.prototype.onAchievementsToggle = function() {
+  UIController.prototype.onAchievementsToggle = function () {
     const panel = domCache.get('achievementsPanel') || document.getElementById('achievements-panel');
     if (panel) {
       if (panel.classList.contains('hidden')) {
@@ -16,7 +16,7 @@ export function applyUiAchievementsMethods(UIController) {
     this.dismissInteractionHint();
   };
 
-  UIController.prototype.onAchievementsReset = function() {
+  UIController.prototype.onAchievementsReset = function () {
     if (!this.achievements?.resetAll) return;
     const ok = typeof window === 'undefined' ? true : window.confirm('Reset all achievements and XP?');
     if (ok) {
@@ -25,7 +25,7 @@ export function applyUiAchievementsMethods(UIController) {
     }
   };
 
-  UIController.prototype.bindAchievementsControls = function() {
+  UIController.prototype.bindAchievementsControls = function () {
     const filter = document.getElementById('achievements-filter');
     const sort = document.getElementById('achievements-sort');
     const resetBtn = document.getElementById('btn-achievements-reset');
@@ -44,7 +44,7 @@ export function applyUiAchievementsMethods(UIController) {
     }
   };
 
-  UIController.prototype.renderAchievementsPanel = function() {
+  UIController.prototype.renderAchievementsPanel = function () {
     const panel = document.getElementById('achievements-panel');
     if (!panel || panel.classList.contains('hidden')) return;
 
@@ -64,7 +64,9 @@ export function applyUiAchievementsMethods(UIController) {
 
     switch (sortValue) {
       case 'unlocked':
-        items.sort((a, b) => (b.unlocked === a.unlocked) ? (b.progress.percent - a.progress.percent) : (b.unlocked - a.unlocked));
+        items.sort((a, b) =>
+          b.unlocked === a.unlocked ? b.progress.percent - a.progress.percent : b.unlocked - a.unlocked
+        );
         break;
       case 'recent':
         items.sort((a, b) => (b.unlockedAt || 0) - (a.unlockedAt || 0));
@@ -74,7 +76,9 @@ export function applyUiAchievementsMethods(UIController) {
         break;
       case 'locked':
       default:
-        items.sort((a, b) => (a.unlocked === b.unlocked) ? (b.progress.percent - a.progress.percent) : (a.unlocked - b.unlocked));
+        items.sort((a, b) =>
+          a.unlocked === b.unlocked ? b.progress.percent - a.progress.percent : a.unlocked - b.unlocked
+        );
         break;
     }
 
@@ -93,15 +97,17 @@ export function applyUiAchievementsMethods(UIController) {
       </div>
     `;
 
-    listEl.innerHTML = items.map(item => {
-      const isSecretLocked = item.secret && !item.unlocked;
-      const name = isSecretLocked ? '???' : item.name;
-      const desc = isSecretLocked ? 'Hidden achievement' : (item.description || '');
-      const icon = isSecretLocked ? '❓' : (item.icon || '🏅');
-      const goal = item.progress.goal;
-      const current = item.progress.current;
-      const percent = item.progress.percent || 0;
-      const progressHtml = goal ? `
+    listEl.innerHTML = items
+      .map(item => {
+        const isSecretLocked = item.secret && !item.unlocked;
+        const name = isSecretLocked ? '???' : item.name;
+        const desc = isSecretLocked ? 'Hidden achievement' : item.description || '';
+        const icon = isSecretLocked ? '❓' : item.icon || '🏅';
+        const goal = item.progress.goal;
+        const current = item.progress.current;
+        const percent = item.progress.percent || 0;
+        const progressHtml = goal
+          ? `
         <div class="achievement-progress-bar">
           <div class="achievement-progress-fill" style="width:${Math.round(percent * 100)}%"></div>
         </div>
@@ -109,9 +115,10 @@ export function applyUiAchievementsMethods(UIController) {
           <span>${Math.floor(current)}/${goal}</span>
           <span>${Math.round(percent * 100)}%</span>
         </div>
-      ` : '';
+      `
+          : '';
 
-      return `
+        return `
         <div class="achievement-item ${item.unlocked ? 'unlocked' : ''}">
           <div class="achievement-icon">${icon}</div>
           <div class="achievement-main">
@@ -124,6 +131,7 @@ export function applyUiAchievementsMethods(UIController) {
           </div>
         </div>
       `;
-    }).join('');
+      })
+      .join('');
   };
 }

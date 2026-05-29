@@ -2,27 +2,20 @@
  * Main Entry Point - Simplified initialization using modular architecture
  * This replaces the massive 2000+ line main.js with clean, focused modules
  */
-import { World } from './world-core.js?v=20260528-vitals1';
+import { World, Creature, makeGenes, BiomeGenerator } from './core/index.js';
+import { Renderer, ParticleSystem, HeatmapSystem, MiniGraphs } from './render/index.js';
 import { SimulationProxy } from './simulation-proxy.js';
 import SimulationWorker from './worker-simulation.js?worker';
-import { Creature } from './creature.js';
 import './creature-features.js'; // Load feature extensions
-import { makeGenes } from './genetics.js';
 import { Camera } from './camera.js?v=20260524-opening1';
-import { Renderer } from './renderer.js?v=20260527-perf1';
-import { ToolController } from './tools.js';
 import { AnalyticsTracker } from './analytics.js';
 import { LineageTracker } from './lineage-tracker.js';
-import { MiniGraphs } from './mini-graphs.js?v=20260524-dossier1';
 import { SaveSystem } from './save-system.js';
-import { ParticleSystem } from './particle-system.js?v=20260423-smoke3';
 import { NotificationSystem } from './notification-system.js?v=20260526-tranche1';
-import { HeatmapSystem } from './heatmap-system.js';
 import { EcosystemHealth } from './ecosystem-health.js';
 import { AudioSystem } from './audio-system.js';
 import { TutorialSystem } from './tutorial-system.js';
 import { AchievementSystem } from './achievement-system.js?v=20260527-audit2';
-import { BiomeGenerator } from './perlin-noise.js';
 import { GameplayModes } from './gameplay-modes.js';
 import { SessionGoals } from './session-goals.js';
 import { PlayableScenarios } from './playable-scenarios.js?v=20260528-vitals1';
@@ -33,12 +26,9 @@ import { ControlStripController } from './control-strip.js?v=20260524-opening1';
 import { encodeSeed, getSeedFromUrl, setSeedInUrl } from './seed-utils.js';
 import { mobileGestureTutorial } from './mobile-gesture-tutorial.js?v=20260504-menu1';
 
-// Import new modular systems
-import { domCache } from './dom-cache.js';
+// Import new modular systems (via barrels where available)
+import { domCache, InputManager, UIController, GameLoop, ToolController } from './ui/index.js';
 import { gameState } from './game-state.js';
-import { InputManager } from './input-manager.js';
-import { UIController } from './ui-controller.js?v=20260526-tranche1';
-import { GameLoop } from './game-loop.js?v=20260527-main-fallback1';
 import { errorHandler } from './error-handler.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
@@ -65,25 +55,25 @@ import {
   ScenarioRegistry,
   StoryDirector
 } from './game/index.js';
-import {
-  buildRuntimeSaveMetadata,
-  formatSavePreview,
-  restoreRuntimeSaveMetadata
-} from './runtime-save-metadata.js';
+import { buildRuntimeSaveMetadata, formatSavePreview, restoreRuntimeSaveMetadata } from './runtime-save-metadata.js';
 
 // Local helper to validate notification subsystem shape
 function isNotificationSystem(candidate) {
-  return !!candidate &&
+  return (
+    !!candidate &&
     typeof candidate.show === 'function' &&
     typeof candidate.update === 'function' &&
-    typeof candidate.draw === 'function';
+    typeof candidate.draw === 'function'
+  );
 }
 
 const RUNTIME_MODE_STORAGE_KEY = 'creature-sandbox-runtime-mode';
 const DEFAULT_RUNTIME_MODE = 'worker';
 
 function normalizeRuntimeMode(value) {
-  const mode = String(value || '').trim().toLowerCase();
+  const mode = String(value || '')
+    .trim()
+    .toLowerCase();
   if (mode === '1' || mode === 'true' || mode === 'worker') return 'worker';
   if (mode === '0' || mode === 'false' || mode === 'main') return 'main';
   return null;
@@ -123,7 +113,8 @@ function getDevToolsConfig() {
   const debugFlags = getDebugFlags();
   const params = new URLSearchParams(window.location.search);
   const enabled = debugFlags.enabled;
-  const fpsOverlay = enabled && (params.has('fps') || localStorage.getItem('creature-sim-fps') === 'true' || params.has('devtools'));
+  const fpsOverlay =
+    enabled && (params.has('fps') || localStorage.getItem('creature-sim-fps') === 'true' || params.has('devtools'));
   const timingLogs = enabled && (params.has('timing') || localStorage.getItem('creature-sim-timing') === 'true');
   const timingLogInterval = Number(params.get('timingInterval') || 5000) || 5000;
   return {
@@ -181,7 +172,7 @@ function getRuntimeProfile() {
     };
   }
 
-  const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches || ('ontouchstart' in window);
+  const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches || 'ontouchstart' in window;
   const mobileViewport = coarsePointer || window.matchMedia?.('(max-width: 768px)').matches;
   const shortEdge = Math.min(window.innerWidth || 0, window.innerHeight || 0);
   const compactViewport = mobileViewport && shortEdge > 0 && shortEdge <= 430;
@@ -196,7 +187,12 @@ function getRuntimeProfile() {
     renderScale,
     defaultZoom: mobileViewport ? 0.4 : 0.38,
     openingZoom: mobileViewport ? (compactViewport ? 0.68 : 0.74) : 0.9,
-    startupSeed: compactViewport || lowMemory ? COMPACT_MOBILE_STARTUP_SEED : (mobileViewport ? MOBILE_STARTUP_SEED : DESKTOP_STARTUP_SEED)
+    startupSeed:
+      compactViewport || lowMemory
+        ? COMPACT_MOBILE_STARTUP_SEED
+        : mobileViewport
+          ? MOBILE_STARTUP_SEED
+          : DESKTOP_STARTUP_SEED
   };
 }
 
@@ -214,7 +210,7 @@ async function ensureScenarioEditor() {
         scenarioEditorInstance = scenarioEditor;
         return scenarioEditor;
       })
-      .catch((error) => {
+      .catch(error => {
         scenarioEditorPromise = null;
         throw error;
       });
@@ -230,7 +226,7 @@ async function ensureCampaignSystem() {
         campaignSystemInstance = campaignSystem;
         return campaignSystem;
       })
-      .catch((error) => {
+      .catch(error => {
         campaignSystemPromise = null;
         throw error;
       });
@@ -246,7 +242,7 @@ async function ensureGeneEditor() {
         geneEditorInstance = new GeneEditor();
         return geneEditorInstance;
       })
-      .catch((error) => {
+      .catch(error => {
         geneEditorPromise = null;
         throw error;
       });
@@ -263,7 +259,7 @@ function createDebugConsoleProxy(world, camera) {
           debugConsoleInstance = new DebugConsole(world, camera);
           return debugConsoleInstance;
         })
-        .catch((error) => {
+        .catch(error => {
           debugConsolePromise = null;
           throw error;
         });
@@ -277,7 +273,7 @@ function createDebugConsoleProxy(world, camera) {
     },
     ensure: ensureDebugConsole,
     toggle() {
-      void ensureDebugConsole().then((consoleInstance) => consoleInstance.toggle?.());
+      void ensureDebugConsole().then(consoleInstance => consoleInstance.toggle?.());
     },
     update(dt) {
       debugConsoleInstance?.update?.(dt);
@@ -287,7 +283,8 @@ function createDebugConsoleProxy(world, camera) {
 
 // Preload sprite assets
 console.debug('🎨 Loading sprite assets...');
-assetLoader.loadManifest('./assets/sprites/sprite-manifest.json', { optional: true })
+assetLoader
+  .loadManifest('./assets/sprites/sprite-manifest.json', { optional: true })
   .then(manifest => {
     if (!manifest) {
       assetLoader.loadSVG('creature_herbivore', './assets/creature_herbivore.svg');
@@ -312,12 +309,16 @@ export function initializeApp() {
   console.debug('📄 DOM ready, initializing Creature Sandbox...');
 
   // Initialize DOM cache first (critical for performance)
-  errorHandler.safeExecute(() => {
-    domCache.initialize();
-  }, 'DOM cache initialization', () => {
-    errorHandler.criticalError(new Error('Failed to initialize DOM cache'), 'DOM cache initialization');
-    return;
-  });
+  errorHandler.safeExecute(
+    () => {
+      domCache.initialize();
+    },
+    'DOM cache initialization',
+    () => {
+      errorHandler.criticalError(new Error('Failed to initialize DOM cache'), 'DOM cache initialization');
+      return;
+    }
+  );
 
   const devTools = getDevToolsConfig();
   if (devTools.enabled) {
@@ -329,7 +330,10 @@ export function initializeApp() {
     if (localStorage.getItem('creature-sim-high-contrast') === 'true') {
       document.body.classList.add('high-contrast');
     }
-    if (localStorage.getItem('creature-sim-reduced-motion') === 'true' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (
+      localStorage.getItem('creature-sim-reduced-motion') === 'true' ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
       document.body.classList.add('reduced-motion');
     }
   } catch {
@@ -342,9 +346,13 @@ export function initializeApp() {
   }
 
   // Get core canvas element
-  const canvas = errorHandler.safeExecute(() => {
-    return domCache.get('canvas');
-  }, 'Canvas element retrieval', null);
+  const canvas = errorHandler.safeExecute(
+    () => {
+      return domCache.get('canvas');
+    },
+    'Canvas element retrieval',
+    null
+  );
 
   if (!canvas) {
     errorHandler.criticalError(new Error('Canvas element not found'), 'Canvas initialization');
@@ -352,9 +360,13 @@ export function initializeApp() {
   }
 
   // Get canvas context
-  const ctx = errorHandler.safeExecute(() => {
-    return canvas.getContext('2d');
-  }, 'Canvas context retrieval', null);
+  const ctx = errorHandler.safeExecute(
+    () => {
+      return canvas.getContext('2d');
+    },
+    'Canvas context retrieval',
+    null
+  );
 
   if (!ctx) {
     errorHandler.criticalError(new Error('Failed to get canvas 2D context'), 'Canvas context initialization');
@@ -388,7 +400,9 @@ export function initializeApp() {
         window.camera.viewportHeight = rect.height;
       }
 
-      console.debug(`🖼️ Canvas: ${rect.width}x${rect.height} (${canvas.width}x${canvas.height} internal @ ${dpr.toFixed(2)}x render scale)`);
+      console.debug(
+        `🖼️ Canvas: ${rect.width}x${rect.height} (${canvas.width}x${canvas.height} internal @ ${dpr.toFixed(2)}x render scale)`
+      );
     }, 'Canvas resize');
   }
 
@@ -416,20 +430,27 @@ export function initializeApp() {
   const startupSeed = getStartupSeedForRuntime(startupProfile, USE_SIM_WORKER);
 
   // World and core entities
-  const world = errorHandler.safeExecute(() => {
-    if (USE_SIM_WORKER) {
-      console.debug('🚀 Initializing Simulation Worker...');
-      const w = new SimulationProxy(SimulationWorker);
-      w.init(4000, 2800);
-      w.seed(startupSeed.herbivores, startupSeed.predators, startupSeed.food);
-      return w;
-    } else {
-      const w = new World(4000, 2800);
-      w.scalarFieldStepInterval = 3;
-      w.seed(startupSeed.herbivores, startupSeed.predators, startupSeed.food);
-      return w;
-    }
-  }, 'World initialization', null);
+  const world = errorHandler.safeExecute(
+    () => {
+      if (USE_SIM_WORKER) {
+        console.debug('🚀 Initializing Simulation Worker...');
+        const w = new SimulationProxy(SimulationWorker);
+        w.init(4000, 2800);
+        w.seed(startupSeed.herbivores, startupSeed.predators, startupSeed.food);
+        return w;
+      } else {
+        // Main-thread fallback path: more aggressive scalar field throttling
+        // (recent smokes show ~3.4-3.5ms non-draw work even with interval=3).
+        // Raising to 4 gives headroom while keeping pheromone/temperature responsive.
+        const w = new World(4000, 2800);
+        w.scalarFieldStepInterval = 4;
+        w.seed(startupSeed.herbivores, startupSeed.predators, startupSeed.food);
+        return w;
+      }
+    },
+    'World initialization',
+    null
+  );
 
   if (!world) {
     errorHandler.criticalError(new Error('Failed to create world'), 'World initialization');
@@ -437,19 +458,23 @@ export function initializeApp() {
   }
 
   // Camera system
-  const camera = errorHandler.safeExecute(() => {
-    return new Camera({
-      x: world.width * 0.5,
-      y: world.height * 0.5,
-      zoom: getRuntimeProfile().defaultZoom,
-      minZoom: 0.1,
-      maxZoom: 3,
-      worldWidth: world.width,
-      worldHeight: world.height,
-      viewportWidth: canvas.getBoundingClientRect().width,
-      viewportHeight: canvas.getBoundingClientRect().height
-    });
-  }, 'Camera initialization', null);
+  const camera = errorHandler.safeExecute(
+    () => {
+      return new Camera({
+        x: world.width * 0.5,
+        y: world.height * 0.5,
+        zoom: getRuntimeProfile().defaultZoom,
+        minZoom: 0.1,
+        maxZoom: 3,
+        worldWidth: world.width,
+        worldHeight: world.height,
+        viewportWidth: canvas.getBoundingClientRect().width,
+        viewportHeight: canvas.getBoundingClientRect().height
+      });
+    },
+    'Camera initialization',
+    null
+  );
 
   if (!camera) {
     errorHandler.criticalError(new Error('Failed to create camera'), 'Camera initialization');
@@ -457,14 +482,22 @@ export function initializeApp() {
   }
 
   // Renderer
-  const renderer = errorHandler.safeExecute(() => {
-    return new Renderer(ctx, camera);
-  }, 'Renderer initialization', null);
+  const renderer = errorHandler.safeExecute(
+    () => {
+      return new Renderer(ctx, camera);
+    },
+    'Renderer initialization',
+    null
+  );
 
   // Enable dedicated mobile/touch support (pinch, pan, taps)
-  errorHandler.safeExecute(() => {
-    return new MobileSupport(canvas, camera);
-  }, 'Mobile support initialization', null);
+  errorHandler.safeExecute(
+    () => {
+      return new MobileSupport(canvas, camera);
+    },
+    'Mobile support initialization',
+    null
+  );
 
   if (!renderer) {
     errorHandler.criticalError(new Error('Failed to create renderer'), 'Renderer initialization');
@@ -484,7 +517,7 @@ export function initializeApp() {
     const storedPreference = window.localStorage?.getItem('creatureSandboxReducedMotion');
     const initialReduced = storedPreference ? storedPreference === 'true' : prefersReduced;
 
-    const applyReducedMotion = (enabled) => {
+    const applyReducedMotion = enabled => {
       document.body.classList.toggle('reduced-motion', enabled);
     };
 
@@ -521,7 +554,7 @@ export function initializeApp() {
     if (colorblindSelect) {
       const storedMode = localStorage.getItem('creature-sim-colorblind') || '';
       colorblindSelect.value = storedMode;
-      const applyColorblind = (mode) => {
+      const applyColorblind = mode => {
         document.body.classList.remove('colorblind-protanopia', 'colorblind-deuteranopia', 'colorblind-tritanopia');
         if (mode) document.body.classList.add(`colorblind-${mode}`);
       };
@@ -546,12 +579,8 @@ export function initializeApp() {
       if (runtimeModeNote) {
         const storedMode = readStoredRuntimeMode();
         const activeLabel = USE_SIM_WORKER ? 'Worker runtime is active' : 'Main-thread runtime is active';
-        const nextLabel = storedMode
-          ? `Next load preference: ${storedMode}.`
-          : 'No saved runtime preference.';
-        const queryLabel = runtimeModePreference.source === 'query'
-          ? ' URL query overrides this load.'
-          : '';
+        const nextLabel = storedMode ? `Next load preference: ${storedMode}.` : 'No saved runtime preference.';
+        const queryLabel = runtimeModePreference.source === 'query' ? ' URL query overrides this load.' : '';
         runtimeModeNote.textContent = `${activeLabel}. ${nextLabel}${queryLabel}`;
       }
     };
@@ -604,9 +633,13 @@ export function initializeApp() {
   }, 'Feature toggles');
 
   // Tools system
-  const tools = errorHandler.safeExecute(() => {
-    return new ToolController(world, camera);
-  }, 'Tools initialization', null);
+  const tools = errorHandler.safeExecute(
+    () => {
+      return new ToolController(world, camera);
+    },
+    'Tools initialization',
+    null
+  );
 
   if (!tools) {
     console.warn('⚠️ Tools system failed to initialize, continuing without tools');
@@ -617,28 +650,48 @@ export function initializeApp() {
   // ============================================================================
 
   // Analytics and tracking
-  const analytics = errorHandler.safeExecute(() => {
-    return new AnalyticsTracker({
-      useWorker: configManager.get('performance', 'analyticsWorker', true)
-    });
-  }, 'Analytics initialization', null);
+  const analytics = errorHandler.safeExecute(
+    () => {
+      return new AnalyticsTracker({
+        useWorker: configManager.get('performance', 'analyticsWorker', true)
+      });
+    },
+    'Analytics initialization',
+    null
+  );
 
-  const lineageTracker = errorHandler.safeExecute(() => {
-    return new LineageTracker();
-  }, 'Lineage tracker initialization', null);
+  const lineageTracker = errorHandler.safeExecute(
+    () => {
+      return new LineageTracker();
+    },
+    'Lineage tracker initialization',
+    null
+  );
 
   // Visual effects
-  const miniGraphs = errorHandler.safeExecute(() => {
-    return new MiniGraphs();
-  }, 'Mini-graphs initialization', null);
+  const miniGraphs = errorHandler.safeExecute(
+    () => {
+      return new MiniGraphs();
+    },
+    'Mini-graphs initialization',
+    null
+  );
 
-  const particles = errorHandler.safeExecute(() => {
-    return new ParticleSystem();
-  }, 'Particle system initialization', null);
+  const particles = errorHandler.safeExecute(
+    () => {
+      return new ParticleSystem();
+    },
+    'Particle system initialization',
+    null
+  );
 
-  let notifications = errorHandler.safeExecute(() => {
-    return new NotificationSystem();
-  }, 'Notification system initialization', null);
+  let notifications = errorHandler.safeExecute(
+    () => {
+      return new NotificationSystem();
+    },
+    'Notification system initialization',
+    null
+  );
 
   // Ensure we always have a valid notification system (avoid serialized/plain objects)
   if (!isNotificationSystem(notifications)) {
@@ -646,22 +699,38 @@ export function initializeApp() {
     notifications = errorHandler.safeExecute(() => new NotificationSystem(), 'Notification system fallback', null);
   }
 
-  const heatmaps = errorHandler.safeExecute(() => {
-    return new HeatmapSystem(world);
-  }, 'Heatmap system initialization', null);
+  const heatmaps = errorHandler.safeExecute(
+    () => {
+      return new HeatmapSystem(world);
+    },
+    'Heatmap system initialization',
+    null
+  );
 
-  const moments = errorHandler.safeExecute(() => {
-    return new MomentsSystem({ world, camera, notifications });
-  }, 'Moments system initialization', null);
+  const moments = errorHandler.safeExecute(
+    () => {
+      return new MomentsSystem({ world, camera, notifications });
+    },
+    'Moments system initialization',
+    null
+  );
 
-  const autoDirector = errorHandler.safeExecute(() => {
-    return new AutoDirector({ world, camera });
-  }, 'Auto-director initialization', null);
+  const autoDirector = errorHandler.safeExecute(
+    () => {
+      return new AutoDirector({ world, camera });
+    },
+    'Auto-director initialization',
+    null
+  );
 
   // Game systems
-  const saveSystem = errorHandler.safeExecute(() => {
-    return new SaveSystem();
-  }, 'Save system initialization', null);
+  const saveSystem = errorHandler.safeExecute(
+    () => {
+      return new SaveSystem();
+    },
+    'Save system initialization',
+    null
+  );
 
   const geneEditor = {
     get isActive() {
@@ -696,15 +765,23 @@ export function initializeApp() {
     });
   }, 'Gene editor spawn binding');
 
-  const ecoHealth = errorHandler.safeExecute(() => {
-    return new EcosystemHealth();
-  }, 'Ecosystem health initialization', null);
+  const ecoHealth = errorHandler.safeExecute(
+    () => {
+      return new EcosystemHealth();
+    },
+    'Ecosystem health initialization',
+    null
+  );
 
   const debugConsole = createDebugConsoleProxy(world, camera);
 
-  const audio = errorHandler.safeExecute(() => {
-    return new AudioSystem();
-  }, 'Audio system initialization', null);
+  const audio = errorHandler.safeExecute(
+    () => {
+      return new AudioSystem();
+    },
+    'Audio system initialization',
+    null
+  );
 
   // Sound panel volume controls (must be after audio init)
   errorHandler.safeExecute(() => {
@@ -753,54 +830,90 @@ export function initializeApp() {
     }
   }, 'Sound panel controls');
 
-  const gameplayModes = errorHandler.safeExecute(() => {
-    return new GameplayModes(world, { notifications, audio });
-  }, 'Gameplay modes initialization', null);
+  const gameplayModes = errorHandler.safeExecute(
+    () => {
+      return new GameplayModes(world, { notifications, audio });
+    },
+    'Gameplay modes initialization',
+    null
+  );
 
-  const sessionGoals = errorHandler.safeExecute(() => {
-    return new SessionGoals({ notifications, audio });
-  }, 'Session goals initialization', null);
+  const sessionGoals = errorHandler.safeExecute(
+    () => {
+      return new SessionGoals({ notifications, audio });
+    },
+    'Session goals initialization',
+    null
+  );
 
-  const playableScenarios = errorHandler.safeExecute(() => {
-    return new PlayableScenarios({
-      world,
-      camera,
-      gameplayModes,
-      sessionGoals,
-      notifications,
-      audio,
-      moments,
-      autoDirector
-    });
-  }, 'Playable scenarios initialization', null);
+  const playableScenarios = errorHandler.safeExecute(
+    () => {
+      return new PlayableScenarios({
+        world,
+        camera,
+        gameplayModes,
+        sessionGoals,
+        notifications,
+        audio,
+        moments,
+        autoDirector
+      });
+    },
+    'Playable scenarios initialization',
+    null
+  );
 
-  const tutorial = errorHandler.safeExecute(() => {
-    return new TutorialSystem();
-  }, 'Tutorial system initialization', null);
+  const tutorial = errorHandler.safeExecute(
+    () => {
+      return new TutorialSystem();
+    },
+    'Tutorial system initialization',
+    null
+  );
 
-  const achievements = errorHandler.safeExecute(() => {
-    return new AchievementSystem();
-  }, 'Achievement system initialization', null);
+  const achievements = errorHandler.safeExecute(
+    () => {
+      return new AchievementSystem();
+    },
+    'Achievement system initialization',
+    null
+  );
 
   // Initialize new advanced systems
   // ProceduralSounds is deprecated - its generators merged into AudioSystem
   const proceduralSounds = null;
 
-  const unlockableAchievements = errorHandler.safeExecute(() => {
-    return new UnlockableAchievements();
-  }, 'Unlockable achievements initialization', null);
+  const unlockableAchievements = errorHandler.safeExecute(
+    () => {
+      return new UnlockableAchievements();
+    },
+    'Unlockable achievements initialization',
+    null
+  );
 
-  const familyBonds = errorHandler.safeExecute(() => {
-    return new FamilyBondsSystem();
-  }, 'Family bonds system initialization', null);
+  const familyBonds = errorHandler.safeExecute(
+    () => {
+      return new FamilyBondsSystem();
+    },
+    'Family bonds system initialization',
+    null
+  );
 
-  const memoryLearning = errorHandler.safeExecute(() => {
-    return new MemoryLearningSystem();
-  }, 'Memory learning system initialization', null);
+  const memoryLearning = errorHandler.safeExecute(
+    () => {
+      return new MemoryLearningSystem();
+    },
+    'Memory learning system initialization',
+    null
+  );
 
-  const challengeSystem = errorHandler.safeExecute(() => {
-    return new ChallengeSystem({ sessionGoals, notifications, audio });
-  }, 'Challenge system initialization', null);
+  const challengeSystem = errorHandler.safeExecute(
+    () => {
+      return new ChallengeSystem({ sessionGoals, notifications, audio });
+    },
+    'Challenge system initialization',
+    null
+  );
 
   const scenarioRegistry = new ScenarioRegistry();
   const objectiveSystem = new ObjectiveSystem();
@@ -823,7 +936,7 @@ export function initializeApp() {
     element.setAttribute('aria-hidden', hidden ? 'true' : 'false');
   };
 
-  const setHomePageActive = (active) => {
+  const setHomePageActive = active => {
     document.body.classList.toggle('home-active', !!active);
   };
 
@@ -831,19 +944,20 @@ export function initializeApp() {
   let godToolSystem = null;
   let gameDirector = null;
 
-  const getRuntimeSaveMetadata = () => buildRuntimeSaveMetadata({
-    world,
-    camera,
-    playableScenarios,
-    sessionGoals,
-    challengeSystem,
-    moments,
-    gameState,
-    tools,
-    upgradeController,
-    gameDirector,
-    canvas
-  });
+  const getRuntimeSaveMetadata = () =>
+    buildRuntimeSaveMetadata({
+      world,
+      camera,
+      playableScenarios,
+      sessionGoals,
+      challengeSystem,
+      moments,
+      gameState,
+      tools,
+      upgradeController,
+      gameDirector,
+      canvas
+    });
 
   saveSystem?.setMetadataProvider?.(getRuntimeSaveMetadata);
 
@@ -919,9 +1033,13 @@ export function initializeApp() {
   // ============================================================================
 
   // Input manager (handles all keyboard/mouse/touch input)
-  const inputManager = errorHandler.safeExecute(() => {
-    return new InputManager(canvas, camera, tools, world);
-  }, 'Input manager initialization', null);
+  const inputManager = errorHandler.safeExecute(
+    () => {
+      return new InputManager(canvas, camera, tools, world);
+    },
+    'Input manager initialization',
+    null
+  );
 
   if (!inputManager) {
     console.warn('⚠️ Input manager failed to initialize, controls may not work');
@@ -930,46 +1048,58 @@ export function initializeApp() {
   }
 
   // UI controller (handles all UI state and DOM manipulation)
-  const uiController = errorHandler.safeExecute(() => {
-    return new UIController(world, camera, tools, {
-      tutorial,
-      achievements,
-      audio,
-      notifications,
-      debugConsole,
-      geneEditor,
-      ecoHealth,
-      gameplayModes,
-      sessionGoals,
-      playableScenarios,
-      autoDirector,
-      moments
-    });
-  }, 'UI controller initialization', null);
+  const uiController = errorHandler.safeExecute(
+    () => {
+      return new UIController(world, camera, tools, {
+        tutorial,
+        achievements,
+        audio,
+        notifications,
+        debugConsole,
+        geneEditor,
+        ecoHealth,
+        gameplayModes,
+        sessionGoals,
+        playableScenarios,
+        autoDirector,
+        moments
+      });
+    },
+    'UI controller initialization',
+    null
+  );
 
   if (!uiController) {
     console.warn('⚠️ UI controller failed to initialize, UI may not work');
   }
 
-  godToolSystem = errorHandler.safeExecute(() => {
-    return new GodToolSystem({ tools, uiController });
-  }, 'God tool system initialization', null);
+  godToolSystem = errorHandler.safeExecute(
+    () => {
+      return new GodToolSystem({ tools, uiController });
+    },
+    'God tool system initialization',
+    null
+  );
 
   // Control strip controller (new mobile-first bottom control bar)
-  const controlStrip = errorHandler.safeExecute(() => {
-    return new ControlStripController({
-      world,
-      camera,
-      renderer,
-      tools,
-      uiController
-    });
-  }, 'Control strip initialization', null);
+  const controlStrip = errorHandler.safeExecute(
+    () => {
+      return new ControlStripController({
+        world,
+        camera,
+        renderer,
+        tools,
+        uiController
+      });
+    },
+    'Control strip initialization',
+    null
+  );
 
   if (controlStrip) {
     console.debug('🎮 Control strip initialized (new bottom UI)');
     let lastControlStripSync = 0;
-    eventSystem.on(GameEvents.FRAME_UPDATE, (data) => {
+    eventSystem.on(GameEvents.FRAME_UPDATE, data => {
       const now = Number(data?.now) || performance.now();
       if (now - lastControlStripSync < 150) return;
       lastControlStripSync = now;
@@ -981,82 +1111,94 @@ export function initializeApp() {
     renderer.performance?.setQualityOverride?.(startupProfile.mobile ? 'low' : 'medium');
   }
 
-  upgradeController = errorHandler.safeExecute(() => {
-    const controller = new UpgradeController({
-      world,
-      camera,
-      playableScenarios,
-      sessionGoals,
-      notifications,
-      audio,
-      moments,
-      renderer,
-      canvas,
-      tools,
-      uiController
-    });
-    controller.init();
-    return controller;
-  }, 'Upgrade controller initialization', null);
+  upgradeController = errorHandler.safeExecute(
+    () => {
+      const controller = new UpgradeController({
+        world,
+        camera,
+        playableScenarios,
+        sessionGoals,
+        notifications,
+        audio,
+        moments,
+        renderer,
+        canvas,
+        tools,
+        uiController
+      });
+      controller.init();
+      return controller;
+    },
+    'Upgrade controller initialization',
+    null
+  );
 
-  gameDirector = errorHandler.safeExecute(() => {
-    return new GameDirector({
-      world,
-      playableScenarios,
-      sessionGoals,
-      challengeSystem,
-      achievements,
-      unlockableAchievements,
-      scenarioRegistry,
-      objectiveSystem,
-      progressionSystem,
-      storyDirector,
-      godToolSystem
-    });
-  }, 'Game director initialization', null);
+  gameDirector = errorHandler.safeExecute(
+    () => {
+      return new GameDirector({
+        world,
+        playableScenarios,
+        sessionGoals,
+        challengeSystem,
+        achievements,
+        unlockableAchievements,
+        scenarioRegistry,
+        objectiveSystem,
+        progressionSystem,
+        storyDirector,
+        godToolSystem
+      });
+    },
+    'Game director initialization',
+    null
+  );
 
   if (uiController) {
     uiController.gameDirector = gameDirector;
   }
 
   // Game loop (handles main simulation loop and rendering)
-  const gameLoop = errorHandler.safeExecute(() => {
-    return new GameLoop(world, camera, renderer, analytics, uiController, {
-      tutorial,
-      achievements,
-      audio,
-      particles,
-      notifications,
-      heatmaps,
-      lineageTracker,
-      miniGraphs,
-      debugConsole,
-      saveSystem,
-      geneEditor,
-      ecoHealth,
-      gameplayModes,
-      sessionGoals,
-      playableScenarios,
-      autoDirector,
-      moments,
-      devTools,
-      // New advanced systems
-      proceduralSounds,
-      unlockableAchievements,
-      familyBonds,
-      memoryLearning,
-      upgradeController,
-      challengeSystem,
-      gameDirector,
-      objectiveSystem,
-      progressionSystem,
-      storyDirector,
-      godToolSystem,
-      seasonalEvents: seasonalEventsSystem,
-      advancedAI,
-      godPowers
-    });
-  }, 'Game loop initialization', null);
+  const gameLoop = errorHandler.safeExecute(
+    () => {
+      return new GameLoop(world, camera, renderer, analytics, uiController, {
+        tutorial,
+        achievements,
+        audio,
+        particles,
+        notifications,
+        heatmaps,
+        lineageTracker,
+        miniGraphs,
+        debugConsole,
+        saveSystem,
+        geneEditor,
+        ecoHealth,
+        gameplayModes,
+        sessionGoals,
+        playableScenarios,
+        autoDirector,
+        moments,
+        devTools,
+        // New advanced systems
+        proceduralSounds,
+        unlockableAchievements,
+        familyBonds,
+        memoryLearning,
+        upgradeController,
+        challengeSystem,
+        gameDirector,
+        objectiveSystem,
+        progressionSystem,
+        storyDirector,
+        godToolSystem,
+        seasonalEvents: seasonalEventsSystem,
+        advancedAI,
+        godPowers
+      });
+    },
+    'Game loop initialization',
+    null
+  );
 
   if (!gameLoop) {
     errorHandler.criticalError(new Error('Failed to create game loop'), 'Game loop initialization');
@@ -1086,7 +1228,7 @@ export function initializeApp() {
     }
   };
 
-  const handleLoadFromFile = async (file) => {
+  const handleLoadFromFile = async file => {
     if (!saveSystem || !file) return;
     try {
       const loaded = await saveSystem.loadFromFile(
@@ -1115,24 +1257,28 @@ export function initializeApp() {
     saveFileInput.value = '';
   });
 
-  window.addEventListener('keydown', (event) => {
-    const target = event.target;
-    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
-    if (!saveSystem) return;
-    if ((event.ctrlKey || event.metaKey) && !event.altKey) {
-      const key = event.key.toLowerCase();
-      if (key === 's') {
-        event.preventDefault();
-        event.stopPropagation();
-        handleSaveToFile();
+  window.addEventListener(
+    'keydown',
+    event => {
+      const target = event.target;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+      if (!saveSystem) return;
+      if ((event.ctrlKey || event.metaKey) && !event.altKey) {
+        const key = event.key.toLowerCase();
+        if (key === 's') {
+          event.preventDefault();
+          event.stopPropagation();
+          handleSaveToFile();
+        }
+        if (key === 'o') {
+          event.preventDefault();
+          event.stopPropagation();
+          saveFileInput.click();
+        }
       }
-      if (key === 'o') {
-        event.preventDefault();
-        event.stopPropagation();
-        saveFileInput.click();
-      }
-    }
-  }, { capture: true });
+    },
+    { capture: true }
+  );
 
   // ============================================================================
   // ENHANCED SYSTEMS INITIALIZATION
@@ -1173,12 +1319,13 @@ export function initializeApp() {
 
       const campaignSystem = await ensureCampaignSystem();
       const levels = campaignSystem.getAllLevels();
-      campaignLevelsContainer.innerHTML = levels.map(level => {
-        const progress = level.progress;
-        const isCompleted = progress?.completed;
-        const stars = progress?.stars || 0;
+      campaignLevelsContainer.innerHTML = levels
+        .map(level => {
+          const progress = level.progress;
+          const isCompleted = progress?.completed;
+          const stars = progress?.stars || 0;
 
-        return `
+          return `
           <div class="campaign-level-card ${level.unlocked ? '' : 'locked'} ${isCompleted ? 'completed' : ''}" 
                data-level-id="${level.id}">
             <div class="campaign-level-header">
@@ -1197,7 +1344,8 @@ export function initializeApp() {
             </div>
           </div>
         `;
-      }).join('');
+        })
+        .join('');
 
       // Add click handlers for unlocked levels
       campaignLevelsContainer.querySelectorAll('.campaign-level-card:not(.locked)').forEach(card => {
@@ -1221,11 +1369,7 @@ export function initializeApp() {
 
       const config = level.worldConfig;
       world.pendingCampaignConfig = config;
-      world.seed(
-        config.initialCreatures ?? 10,
-        config.initialPredators ?? 0,
-        config.initialFood ?? 100
-      );
+      world.seed(config.initialCreatures ?? 10, config.initialPredators ?? 0, config.initialFood ?? 100);
 
       // Start campaign tracking
       const started = campaignSystem.startLevel(levelId, world, { applyWorldConfig: false });
@@ -1323,7 +1467,7 @@ export function initializeApp() {
     }
 
     // Update campaign during game loop
-    eventSystem.on(GameEvents.FRAME_UPDATE, (data) => {
+    eventSystem.on(GameEvents.FRAME_UPDATE, data => {
       const campaignSystem = campaignSystemInstance;
       if (!campaignSystem) return;
       if (campaignSystem.isActive) {
@@ -1347,9 +1491,8 @@ export function initializeApp() {
   // ============================================================================
 
   const startupParams = new URLSearchParams(window.location.search);
-  const shouldAutoStartSandbox = startupParams.has('autostart') ||
-    startupParams.has('autosandbox') ||
-    startupParams.has('smoke');
+  const shouldAutoStartSandbox =
+    startupParams.has('autostart') || startupParams.has('autosandbox') || startupParams.has('smoke');
 
   if (shouldAutoStartSandbox) {
     installSmokeCanvasSnapshotGuard();
@@ -1386,18 +1529,22 @@ export function initializeApp() {
   }
 
   // Check for auto-save and show home page
-  errorHandler.safeExecute(() => {
-    if (shouldAutoStartSandbox) {
-      const homePage = domCache.get('homePage') || document.getElementById('home-page');
-      setElementHidden(homePage, true);
-      setHomePageActive(false);
-      startNewGame();
-      return;
-    }
+  errorHandler.safeExecute(
+    () => {
+      if (shouldAutoStartSandbox) {
+        const homePage = domCache.get('homePage') || document.getElementById('home-page');
+        setElementHidden(homePage, true);
+        setHomePageActive(false);
+        startNewGame();
+        return;
+      }
 
-    // Always show home page first (handles both new game and continue)
-    showHomePage();
-  }, 'Startup logic', () => startNewGame());
+      // Always show home page first (handles both new game and continue)
+      showHomePage();
+    },
+    'Startup logic',
+    () => startNewGame()
+  );
 
   // Home page initialization
   function showHomePage() {
@@ -1410,8 +1557,6 @@ export function initializeApp() {
     const newGameBtn = domCache.get('newGameBtn') || document.getElementById('btn-new-game');
     const campaignBtn = domCache.get('campaignBtn') || document.getElementById('btn-campaign');
 
-
-
     // Show home page
     errorHandler.safeExecute(() => {
       setElementHidden(homePage, false);
@@ -1423,14 +1568,13 @@ export function initializeApp() {
         if (continueHint) {
           try {
             const saveInfo = saveSystem.getAutoSaveInfo?.();
-            const previewText = saveInfo
-              ? formatSavePreview(saveInfo.metadata || {}, saveInfo.timestamp)
-              : '';
+            const previewText = saveInfo ? formatSavePreview(saveInfo.metadata || {}, saveInfo.timestamp) : '';
             if (previewText) {
               continueHint.textContent = previewText;
             } else if (saveInfo?.timestamp) {
               const date = new Date(saveInfo.timestamp);
-              const timeStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const timeStr =
+                date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               continueHint.textContent = timeStr;
             }
           } catch {
@@ -1568,13 +1712,7 @@ export function initializeApp() {
 
       // Draw creature-like blob
       ctx.beginPath();
-      ctx.ellipse(
-        p.x + wobbleOffset,
-        p.y,
-        p.size,
-        p.size * 0.8,
-        0, 0, Math.PI * 2
-      );
+      ctx.ellipse(p.x + wobbleOffset, p.y, p.size, p.size * 0.8, 0, 0, Math.PI * 2);
       ctx.fillStyle = `hsla(${p.hue}, 60%, 50%, ${p.alpha})`;
       ctx.fill();
 
@@ -1671,7 +1809,11 @@ export function initializeApp() {
       world.triggerChaosNudge?.(0.16, 3.2);
       world.environment?.triggerWindBurst?.(0.18, 4.2);
       for (let i = 0; i < 1; i++) {
-        world.spawnCreatureType?.('aquatic', startX + (Math.random() - 0.5) * 420, startY + (Math.random() - 0.5) * 320);
+        world.spawnCreatureType?.(
+          'aquatic',
+          startX + (Math.random() - 0.5) * 420,
+          startY + (Math.random() - 0.5) * 320
+        );
       }
     }
 
@@ -1707,12 +1849,7 @@ export function initializeApp() {
     for (let i = 0; i < foodTypes.length; i++) {
       const angle = (Math.PI * 2 * i) / foodTypes.length - Math.PI / 5;
       const radius = 70 + (i % 2) * 46;
-      world.addFood?.(
-        x + Math.cos(angle) * radius,
-        y + Math.sin(angle) * radius,
-        1.8,
-        foodTypes[i]
-      );
+      world.addFood?.(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, 1.8, foodTypes[i]);
     }
 
     world.addCalmZone?.(x, y, 120, 24, 0.5);
@@ -1795,7 +1932,7 @@ export function initializeApp() {
 
   const getFocusCreature = () => {
     const focusId = gameState.pinnedId ?? gameState.selectedId ?? null;
-    return focusId ? world.getAnyCreatureById?.(focusId) ?? null : null;
+    return focusId ? (world.getAnyCreatureById?.(focusId) ?? null) : null;
   };
 
   const getViewportBounds = () => {
@@ -1814,11 +1951,12 @@ export function initializeApp() {
     const bounds = getViewportBounds();
     return (world.creatures || [])
       .filter(creature => creature?.alive !== false)
-      .filter(creature =>
-        creature.x >= bounds.left &&
-        creature.x <= bounds.right &&
-        creature.y >= bounds.top &&
-        creature.y <= bounds.bottom
+      .filter(
+        creature =>
+          creature.x >= bounds.left &&
+          creature.x <= bounds.right &&
+          creature.y >= bounds.top &&
+          creature.y <= bounds.bottom
       )
       .slice(0, limit)
       .map(creature => ({
@@ -1837,11 +1975,8 @@ export function initializeApp() {
   const getVisibleFood = (limit = 10) => {
     const bounds = getViewportBounds();
     return (world.food || [])
-      .filter(food =>
-        food.x >= bounds.left &&
-        food.x <= bounds.right &&
-        food.y >= bounds.top &&
-        food.y <= bounds.bottom
+      .filter(
+        food => food.x >= bounds.left && food.x <= bounds.right && food.y >= bounds.top && food.y <= bounds.bottom
       )
       .slice(0, limit)
       .map(food => ({
@@ -1876,7 +2011,10 @@ export function initializeApp() {
         godTool: gameState.godModeTool ?? null,
         mobileLayout: document.body.classList.contains('mobile-device'),
         focusMode: document.body.classList.contains('mobile-focus-mode'),
-        objectiveRailVisible: !!objectiveRail && objectiveRail.textContent.trim().length > 0 && !document.body.classList.contains('home-active'),
+        objectiveRailVisible:
+          !!objectiveRail &&
+          objectiveRail.textContent.trim().length > 0 &&
+          !document.body.classList.contains('home-active'),
         objectiveMode: upgradeController?.getRailModeChip?.()?.id || null,
         worldRhythm: upgradeController?.getWorldRhythmChip?.()?.label || null,
         challengeOverlayVisible: !!gameState.challengeOverlayVisible,
@@ -1903,31 +2041,42 @@ export function initializeApp() {
         worldTime: Number(world.t?.toFixed?.(2) ?? world.t ?? 0),
         fps: Number(gameState.fps?.toFixed?.(1) ?? 0)
       },
-      selectedCreature: focusCreature ? {
-        id: focusCreature.id,
-        species: focusCreature.species || focusCreature.kind || focusCreature.genes?.species || null,
-        stage: focusCreature.lifeStage || null,
-        x: Number(focusCreature.x?.toFixed?.(1) ?? 0),
-        y: Number(focusCreature.y?.toFixed?.(1) ?? 0),
-        energy: Number(focusCreature.energy?.toFixed?.(1) ?? 0),
-        age: Number(focusCreature.age?.toFixed?.(1) ?? 0),
-        status: focusCreature.currentGoal || focusCreature.state || null,
-        why: focusCreature.goal?.reason || focusCreature.goal?.current || focusCreature.currentGoal || focusCreature.state || null,
-        presentation: upgradeController?.getCreaturePresentation?.(focusCreature) ?? null,
-        memoryFocus: focusCreature.memory?.focus ? {
-          type: focusCreature.memory.focus.tag || focusCreature.memory.focus.entry?.type || 'memory',
-          recallUntil: Number(focusCreature.memory.focus.recallUntil?.toFixed?.(2) ?? focusCreature.memory.focus.recallUntil ?? 0)
-        } : null,
-        memories: Array.isArray(focusCreature.memory?.locations)
-          ? focusCreature.memory.locations.slice(0, 5).map(memory => ({
-            type: memory.type || memory.tag || 'memory',
-            strength: Number(memory.strength?.toFixed?.(2) ?? memory.strength ?? 0),
-            x: Number(memory.x?.toFixed?.(1) ?? 0),
-            y: Number(memory.y?.toFixed?.(1) ?? 0),
-            age: Number(Math.max(0, (world.t ?? 0) - (memory.timestamp ?? world.t ?? 0)).toFixed(1))
-          }))
-          : []
-      } : null,
+      selectedCreature: focusCreature
+        ? {
+          id: focusCreature.id,
+          species: focusCreature.species || focusCreature.kind || focusCreature.genes?.species || null,
+          stage: focusCreature.lifeStage || null,
+          x: Number(focusCreature.x?.toFixed?.(1) ?? 0),
+          y: Number(focusCreature.y?.toFixed?.(1) ?? 0),
+          energy: Number(focusCreature.energy?.toFixed?.(1) ?? 0),
+          age: Number(focusCreature.age?.toFixed?.(1) ?? 0),
+          status: focusCreature.currentGoal || focusCreature.state || null,
+          why:
+              focusCreature.goal?.reason ||
+              focusCreature.goal?.current ||
+              focusCreature.currentGoal ||
+              focusCreature.state ||
+              null,
+          presentation: upgradeController?.getCreaturePresentation?.(focusCreature) ?? null,
+          memoryFocus: focusCreature.memory?.focus
+            ? {
+              type: focusCreature.memory.focus.tag || focusCreature.memory.focus.entry?.type || 'memory',
+              recallUntil: Number(
+                focusCreature.memory.focus.recallUntil?.toFixed?.(2) ?? focusCreature.memory.focus.recallUntil ?? 0
+              )
+            }
+            : null,
+          memories: Array.isArray(focusCreature.memory?.locations)
+            ? focusCreature.memory.locations.slice(0, 5).map(memory => ({
+              type: memory.type || memory.tag || 'memory',
+              strength: Number(memory.strength?.toFixed?.(2) ?? memory.strength ?? 0),
+              x: Number(memory.x?.toFixed?.(1) ?? 0),
+              y: Number(memory.y?.toFixed?.(1) ?? 0),
+              age: Number(Math.max(0, (world.t ?? 0) - (memory.timestamp ?? world.t ?? 0)).toFixed(1))
+            }))
+            : []
+        }
+        : null,
       systems: {
         activeEvent: world.events?.activeEvent?.type ?? null,
         activeDisaster: world.disaster?.activeDisaster?.type ?? null,
@@ -1966,7 +2115,7 @@ export function initializeApp() {
   const advanceTime = (ms = 16) => {
     const requestedMs = Number(ms);
     const safeMs = Number.isFinite(requestedMs) ? Math.max(0, requestedMs) : 16;
-    const fixedStepMs = Math.max(1, Math.round((gameLoop.fixedDt || (1 / 60)) * 1000));
+    const fixedStepMs = Math.max(1, Math.round((gameLoop.fixedDt || 1 / 60) * 1000));
     const steps = Math.max(1, Math.round(safeMs / fixedStepMs));
     const previousPaused = gameState.paused;
 
@@ -1983,12 +2132,16 @@ export function initializeApp() {
     gameLoop.updateSubsystems(renderDt);
 
     try {
-      eventSystem.emit(GameEvents.FRAME_UPDATE, {
-        dt: renderDt,
-        now: performance.now(),
-        worldTime: world.t,
-        timeScale: renderDt > 0 ? 1 : 0
-      }, { throwOnError: false });
+      eventSystem.emit(
+        GameEvents.FRAME_UPDATE,
+        {
+          dt: renderDt,
+          now: performance.now(),
+          worldTime: world.t,
+          timeScale: renderDt > 0 ? 1 : 0
+        },
+        { throwOnError: false }
+      );
     } catch {
       // Keep the testing hook resilient.
     }
@@ -2024,7 +2177,7 @@ export function initializeApp() {
       byCanvas: {}
     };
 
-    const getCanvasKey = (context) => {
+    const getCanvasKey = context => {
       const source = context?.canvas;
       if (!source) return 'unknown';
       if (source.id) return source.id;
@@ -2092,7 +2245,7 @@ export function initializeApp() {
     if (!scopeMap || typeof scopeMap.forEach !== 'function') return [];
 
     const totals = new Map();
-    const addScope = (scope) => {
+    const addScope = scope => {
       if (!scope || !scope.name) return;
       const duration = Number(scope.duration);
       if (Number.isFinite(duration)) {
@@ -2112,12 +2265,12 @@ export function initializeApp() {
       }
     };
 
-    scopeMap.forEach((scopes) => {
+    scopeMap.forEach(scopes => {
       if (Array.isArray(scopes)) scopes.forEach(addScope);
     });
 
     return Array.from(totals.values())
-      .map((row) => ({
+      .map(row => ({
         name: row.name,
         count: row.count,
         totalMs: Number(row.totalMs.toFixed(3)),
@@ -2129,13 +2282,11 @@ export function initializeApp() {
 
   const summarizeMainThreadProfile = (sample, intervals, drawImageSummary, durationMs) => {
     const scopeRows = readProfilerScopeRows();
-    const rootScope = scopeRows.find((row) => row.name === 'game-loop') || null;
+    const rootScope = scopeRows.find(row => row.name === 'game-loop') || null;
     const profiledTotalMs = rootScope?.totalMs || 0;
     const drawImageMs = Number(drawImageSummary?.timeMs || 0);
     const frames = Math.max(1, intervals.length);
-    const topScopes = scopeRows
-      .filter((row) => row.name !== 'game-loop')
-      .slice(0, 8);
+    const topScopes = scopeRows.filter(row => row.name !== 'game-loop').slice(0, 8);
 
     return {
       sampleMs: durationMs,
@@ -2149,7 +2300,7 @@ export function initializeApp() {
     };
   };
 
-  const getSmokeRect = (element) => {
+  const getSmokeRect = element => {
     if (!element || element.classList?.contains('hidden')) return null;
     const rect = element.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return null;
@@ -2181,7 +2332,8 @@ export function initializeApp() {
         performanceProfiler?.reset?.();
         const startedAt = performance.now();
         const startPerf = renderer?.performance?.getStats?.() ?? {};
-        const startQuality = renderer?.performance?.getCurrentQuality?.() || renderer?.performance?.currentQuality || null;
+        const startQuality =
+          renderer?.performance?.getCurrentQuality?.() || renderer?.performance?.currentQuality || null;
         frameSampleState = {
           startedAt,
           previousProfilerEnabled,
@@ -2201,7 +2353,7 @@ export function initializeApp() {
         frameSampleState.drawImageProbe = installDrawImageProbe();
         try {
           if (typeof PerformanceObserver === 'function') {
-            frameSampleState.longTaskObserver = new PerformanceObserver((list) => {
+            frameSampleState.longTaskObserver = new PerformanceObserver(list => {
               for (const entry of list.getEntries()) {
                 frameSampleState.longTasks.push({
                   startTime: Number((entry.startTime - startedAt).toFixed(1)),
@@ -2321,7 +2473,8 @@ export function initializeApp() {
           };
 
           return {
-            ok: loadedCounts.creatures === before.creatures &&
+            ok:
+              loadedCounts.creatures === before.creatures &&
               loadedCounts.food >= Math.min(before.food, 1) &&
               loadedCounts.props === before.props &&
               loadedCounts.playable === before.playable &&
@@ -2350,7 +2503,8 @@ export function initializeApp() {
         };
 
         return {
-          ok: !!applied &&
+          ok:
+            !!applied &&
             after.creatures === before.creatures &&
             after.food >= Math.min(before.food, 1) &&
             after.props === before.props &&
@@ -2368,8 +2522,7 @@ export function initializeApp() {
         const [visible] = getVisibleCreatures(1);
         if (!visible) return { ok: false, reason: 'no-visible-creature' };
         gameState.selectCreature(visible.id);
-        const creature = world.registry?.get?.(visible.id) ||
-          world.creatures?.find(item => item.id === visible.id);
+        const creature = world.registry?.get?.(visible.id) || world.creatures?.find(item => item.id === visible.id);
         if (creature && camera?.travelTo) {
           camera.travelTo(creature.x, creature.y, { zoom: 0.92, duration: 0.25 });
         }
@@ -2382,15 +2535,17 @@ export function initializeApp() {
       },
       playableCatalog: () => ({
         count: playableScenarios?.getScenarios?.()?.length || 0,
-        scenarios: playableScenarios?.getScenarios?.().map(item => ({
-          id: item.id,
-          name: item.name,
-          objective: item.objective,
-          progress: item.progress || null
-        })) || []
+        scenarios:
+          playableScenarios?.getScenarios?.().map(item => ({
+            id: item.id,
+            name: item.name,
+            objective: item.objective,
+            progress: item.progress || null
+          })) || []
       }),
       startScenario: (id = 'first_ecosystem') => {
-        const snapshot = gameDirector?.startScenario?.(id, { announce: false }) ||
+        const snapshot =
+          gameDirector?.startScenario?.(id, { announce: false }) ||
           playableScenarios?.startScenario?.(id, { announce: false }) ||
           null;
         uiController?.updateSessionMetaVisibility?.();
@@ -2425,11 +2580,14 @@ export function initializeApp() {
         return upgradeController?.getSnapshot?.() ?? null;
       },
       showAchievementToastForSmoke: () => {
-        achievements?.showNotification?.({
-          icon: '★',
-          name: 'Smoke Toast Bounds',
-          xp: 1
-        }, { forceFallback: true });
+        achievements?.showNotification?.(
+          {
+            icon: '★',
+            name: 'Smoke Toast Bounds',
+            xp: 1
+          },
+          { forceFallback: true }
+        );
         const toast = document.querySelector('.achievement-notification');
         const toastRect = getSmokeRect(toast);
         const inspectorRect = getSmokeRect(document.getElementById('inspector'));
@@ -2445,7 +2603,7 @@ export function initializeApp() {
         };
       },
       clearAchievementToastsForSmoke: () => {
-        document.querySelectorAll('.achievement-notification').forEach((toast) => toast.remove());
+        document.querySelectorAll('.achievement-notification').forEach(toast => toast.remove());
         return true;
       },
       runtimeModePreference: () => ({
@@ -2493,7 +2651,8 @@ export function initializeApp() {
       },
       runInteractionProbe: () => {
         const visible = getVisibleCreatures(1)[0];
-        const creature = (visible && (world.registry?.get?.(visible.id) || world.creatures?.find(item => item.id === visible.id))) ||
+        const creature =
+          (visible && (world.registry?.get?.(visible.id) || world.creatures?.find(item => item.id === visible.id))) ||
           world.creatures?.find(item => item?.alive !== false);
         if (!creature) return { ok: false, reason: 'no-creature' };
 
@@ -2541,7 +2700,8 @@ export function initializeApp() {
       },
       completeScenarioForSmoke: (id = 'first_ecosystem') => {
         if (!playableScenarios) return { ok: false, reason: 'playable-unavailable' };
-        const started = gameDirector?.startScenario?.(id, { announce: false }) ||
+        const started =
+          gameDirector?.startScenario?.(id, { announce: false }) ||
           playableScenarios.startScenario?.(id, { announce: false }) ||
           null;
         const run = playableScenarios.activeRun;
@@ -2578,15 +2738,19 @@ export function initializeApp() {
         const applied = editor.applyPreferenceSnapshot(target, { persist: true, sync: false });
         const stored = editor.readSavedPreferences();
 
-        editor.applyPreferenceSnapshot({
-          genes: { speed: 0.25, hue: 1, diet: 0, aggression: 0.4 },
-          spawnCount: 1,
-          spawnSpread: 0
-        }, { persist: false, sync: false });
+        editor.applyPreferenceSnapshot(
+          {
+            genes: { speed: 0.25, hue: 1, diet: 0, aggression: 0.4 },
+            spawnCount: 1,
+            spawnSpread: 0
+          },
+          { persist: false, sync: false }
+        );
         const restored = editor.reloadSavedPreferences();
         editor.applyPreferenceSnapshot(before, { persist: true, sync: true });
 
-        const matches = (snapshot) => snapshot &&
+        const matches = snapshot =>
+          snapshot &&
           Math.abs(Number(snapshot.genes?.speed) - target.genes.speed) < 0.001 &&
           Math.abs(Number(snapshot.genes?.diet) - target.genes.diet) < 0.001 &&
           Math.abs(Number(snapshot.genes?.aggression) - target.genes.aggression) < 0.001 &&
@@ -2617,7 +2781,9 @@ export function initializeApp() {
             culled: Number(rendererStats.culled ?? culled) || 0,
             totalObjects,
             cullRatio: Number(rendererStats.cullRatio?.toFixed?.(3) ?? rendererStats.cullRatio ?? 0),
-            renderEfficiency: Number(rendererStats.renderEfficiency?.toFixed?.(3) ?? rendererStats.renderEfficiency ?? 0),
+            renderEfficiency: Number(
+              rendererStats.renderEfficiency?.toFixed?.(3) ?? rendererStats.renderEfficiency ?? 0
+            ),
             quality: renderer?.performance?.getCurrentQuality?.() || renderer?.performance?.currentQuality || null
           },
           gameStateCounters: {
@@ -2665,11 +2831,15 @@ export function initializeApp() {
   // ============================================================================
 
   // Start the modular game loop
-  errorHandler.safeExecute(() => {
-    gameLoop.start();
-  }, 'Game loop startup', () => {
-    errorHandler.criticalError(new Error('Failed to start game loop'), 'Game loop startup');
-  });
+  errorHandler.safeExecute(
+    () => {
+      gameLoop.start();
+    },
+    'Game loop startup',
+    () => {
+      errorHandler.criticalError(new Error('Failed to start game loop'), 'Game loop startup');
+    }
+  );
 
   // ============================================================================
   // UI AUTO-HIDE SYSTEM

@@ -2,7 +2,7 @@ import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
 
 export function applyUiWatchMethods(UIController) {
-  UIController.prototype.bindWatchControls = function() {
+  UIController.prototype.bindWatchControls = function () {
     const momentsPanel = domCache.get('momentsPanel') || document.getElementById('moments-panel');
     const momentsList = domCache.get('momentsList') || document.getElementById('moments-list');
     const momentsSummary = domCache.get('momentsSummary') || document.getElementById('moments-summary');
@@ -18,7 +18,7 @@ export function applyUiWatchMethods(UIController) {
     }
   };
 
-  UIController.prototype.onWatchModeToggle = function() {
+  UIController.prototype.onWatchModeToggle = function () {
     gameState.watchModeEnabled = !gameState.watchModeEnabled;
     if (gameState.watchModeEnabled) {
       const speed = Math.min(2, Math.max(0.5, gameState.fastForward || 1));
@@ -28,16 +28,16 @@ export function applyUiWatchMethods(UIController) {
     this.updateSandboxUiVisibility();
   };
 
-  UIController.prototype.onWatchPause = function() {
+  UIController.prototype.onWatchPause = function () {
     this.onPause();
   };
 
-  UIController.prototype.onWatchSpeed = function() {
+  UIController.prototype.onWatchSpeed = function () {
     gameState.cycleWatchSpeed();
     this.updateWatchModeUI();
   };
 
-  UIController.prototype.onWatchFollow = function() {
+  UIController.prototype.onWatchFollow = function () {
     const hasFollow = this.camera.followMode !== 'free';
     if (hasFollow) {
       this.camera.followMode = 'free';
@@ -62,20 +62,20 @@ export function applyUiWatchMethods(UIController) {
     this.updateWatchModeUI();
   };
 
-  UIController.prototype.onWatchMoments = function() {
+  UIController.prototype.onWatchMoments = function () {
     this.moments?.togglePanel?.();
   };
 
-  UIController.prototype.onWatchGodMode = function() {
+  UIController.prototype.onWatchGodMode = function () {
     this.onGodModeToggle();
   };
 
-  UIController.prototype.onWatchRecenter = function() {
+  UIController.prototype.onWatchRecenter = function () {
     this.autoDirector?.recenter?.();
     this.updateWatchModeUI();
   };
 
-  UIController.prototype.updateWatchModeUI = function() {
+  UIController.prototype.updateWatchModeUI = function () {
     const watchStrip = domCache.get('watchStrip');
     const watchToggleBtn = domCache.get('watchModeBtn');
     const watchSpeedBtn = domCache.get('watchSpeedBtn');

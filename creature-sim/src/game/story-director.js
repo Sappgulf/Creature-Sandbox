@@ -47,7 +47,10 @@ export class StoryDirector {
       });
     }
 
-    if (metrics.population > 0 && metrics.population <= Math.max(6, Math.floor((metrics.totalCreatures || 20) * 0.22))) {
+    if (
+      metrics.population > 0 &&
+      metrics.population <= Math.max(6, Math.floor((metrics.totalCreatures || 20) * 0.22))
+    ) {
       this.emitOnce('extinction_risk', {
         icon: '⚠️',
         text: 'Extinction risk: the population is near collapse',

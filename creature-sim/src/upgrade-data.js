@@ -36,14 +36,30 @@ export const SANDBOX_RECIPES = [
     label: 'Migration Lab',
     icon: '🧭',
     description: 'Large map pressure with food trails and nest/territory visibility.',
-    setup: { herbivore: 34, omnivore: 10, predator: 4, flying: 5, burrowing: 5, food: 240, calmZones: 2, props: ['slope', 'fan'] }
+    setup: {
+      herbivore: 34,
+      omnivore: 10,
+      predator: 4,
+      flying: 5,
+      burrowing: 5,
+      food: 240,
+      calmZones: 2,
+      props: ['slope', 'fan']
+    }
   },
   {
     id: 'tiny_toybox',
     label: 'Tiny Toybox',
     icon: '🧩',
     description: 'Compact chaos with props placed around a small creature cluster.',
-    setup: { herbivore: 24, omnivore: 5, predator: 2, food: 170, calmZones: 2, props: ['bounce', 'spring', 'spinner', 'seesaw', 'launch'] }
+    setup: {
+      herbivore: 24,
+      omnivore: 5,
+      predator: 2,
+      food: 170,
+      calmZones: 2,
+      props: ['bounce', 'spring', 'spinner', 'seesaw', 'launch']
+    }
   }
 ];
 
@@ -83,14 +99,18 @@ export function getCreatureEmotion(creature = {}) {
   if (hunger >= 72 || energy < 14) return { id: 'hungry', label: 'Hungry', icon: '+', tone: 'warning' };
   if (goal === 'rest' || energy < 28) return { id: 'tired', label: 'Tired', icon: 'z', tone: 'muted' };
   if (social >= 65 || goal === 'mate') return { id: 'bonded', label: 'Bonded', icon: '♥', tone: 'warm' };
-  if (goal === 'wander' || Number(creature.needs?.curiosity ?? 0) > 60) return { id: 'curious', label: 'Curious', icon: '?', tone: 'accent' };
+  if (goal === 'wander' || Number(creature.needs?.curiosity ?? 0) > 60)
+    return { id: 'curious', label: 'Curious', icon: '?', tone: 'accent' };
   return { id: 'steady', label: 'Steady', icon: '•', tone: 'calm' };
 }
 
 export function buildBondsSummary(creature = {}, world = null) {
   const parentId = creature.parentId ?? null;
   const children = Array.isArray(world?.creatures)
-    ? world.creatures.filter(item => item?.parentId === creature.id).slice(0, 4).map(item => item.id)
+    ? world.creatures
+      .filter(item => item?.parentId === creature.id)
+      .slice(0, 4)
+      .map(item => item.id)
     : [];
   const bondCount = Array.isArray(creature.socialBonds)
     ? creature.socialBonds.length
@@ -104,7 +124,9 @@ export function buildBondsSummary(creature = {}, world = null) {
       parentId ? `Parent #${parentId}` : 'Founder',
       children.length ? `${children.length} children` : null,
       bondCount ? `${bondCount} bonds` : null
-    ].filter(Boolean).join(' · ')
+    ]
+      .filter(Boolean)
+      .join(' · ')
   };
 }
 
@@ -114,7 +136,8 @@ export function buildEcosystemStory(world = null, playableSnapshot = null) {
   const predators = alive.filter(creature => creature.genes?.predator || (creature.genes?.diet ?? 0) >= 0.7).length;
   const food = world?.food?.length || 0;
   const stress = alive.length
-    ? alive.reduce((sum, creature) => sum + Number(creature.needs?.stress ?? creature.ecosystem?.stress ?? 0), 0) / alive.length
+    ? alive.reduce((sum, creature) => sum + Number(creature.needs?.stress ?? creature.ecosystem?.stress ?? 0), 0) /
+      alive.length
     : 0;
   const foodPerCreature = alive.length ? food / alive.length : 0;
   const predatorRatio = alive.length ? predators / alive.length : 0;
@@ -164,7 +187,8 @@ export function buildObjectiveRail(playableSnapshot = null, goals = []) {
       icon: playableSnapshot.scenario?.icon || '🎯',
       title: playableSnapshot.scenario?.name || 'Scenario',
       progress: clamp(Number(playableSnapshot.progress ?? 0), 0, 100),
-      action: playableSnapshot.director?.nextAction ||
+      action:
+        playableSnapshot.director?.nextAction ||
         playableSnapshot.scenario?.steps?.[0] ||
         playableSnapshot.scenario?.objective ||
         'Keep the ecosystem stable.'
@@ -207,26 +231,32 @@ export function buildScenarioResult(snapshot = null) {
   const metrics = snapshot.metrics || {};
   const state = snapshot.state || 'running';
   const progress = Math.round(clamp(Number(snapshot.progress ?? 0), 0, 100));
-  const survival = Math.round(clamp((metrics.alive || 0) / Math.max(1, snapshot.scenario?.minAlive || 25), 0, 1.4) * 100);
+  const survival = Math.round(
+    clamp((metrics.alive || 0) / Math.max(1, snapshot.scenario?.minAlive || 25), 0, 1.4) * 100
+  );
   const foodStability = Math.round(clamp((metrics.foodPerCreature || 0) / 6, 0, 1) * 100);
   const stressScore = Math.round(clamp(1 - (metrics.averageStress || 0) / 100, 0, 1) * 100);
-  const discoveries = [metrics.variants ? 'Variants' : null, metrics.hunts ? 'Hunts' : null, metrics.props ? 'Props' : null].filter(Boolean);
-  const score = Math.round(clamp((survival * 0.45) + (foodStability * 0.25) + (stressScore * 0.3), 0, 100));
+  const discoveries = [
+    metrics.variants ? 'Variants' : null,
+    metrics.hunts ? 'Hunts' : null,
+    metrics.props ? 'Props' : null
+  ].filter(Boolean);
+  const score = Math.round(clamp(survival * 0.45 + foodStability * 0.25 + stressScore * 0.3, 0, 100));
   const medal = score >= 90 ? 'Gold' : score >= 72 ? 'Silver' : score >= 55 ? 'Bronze' : 'Practice';
   const scenarioName = snapshot.scenario?.name || 'Scenario';
-  const label = state === 'complete'
-    ? `${medal} finish`
-    : state === 'failed'
-      ? 'Run failed'
-      : `${progress}% in progress`;
-  const summary = state === 'complete'
-    ? `${scenarioName} finished with ${metrics.alive || 0} creatures and ${foodStability}% food stability.`
-    : state === 'failed'
-      ? `${scenarioName} ended early. Reset with a safer recipe or reduce pressure.`
-      : `${scenarioName} is active. Keep survival, food, and stress inside the target range.`;
-  const nextAction = snapshot.director?.nextAction || (state === 'complete'
-    ? 'Save the seed or try a harder scenario.'
-    : 'Follow the active objective and react to the next pressure point.');
+  const label =
+    state === 'complete' ? `${medal} finish` : state === 'failed' ? 'Run failed' : `${progress}% in progress`;
+  const summary =
+    state === 'complete'
+      ? `${scenarioName} finished with ${metrics.alive || 0} creatures and ${foodStability}% food stability.`
+      : state === 'failed'
+        ? `${scenarioName} ended early. Reset with a safer recipe or reduce pressure.`
+        : `${scenarioName} is active. Keep survival, food, and stress inside the target range.`;
+  const nextAction =
+    snapshot.director?.nextAction ||
+    (state === 'complete'
+      ? 'Save the seed or try a harder scenario.'
+      : 'Follow the active objective and react to the next pressure point.');
   const statCards = [
     { id: 'survival', label: 'Survival', value: `${survival}%`, tone: survival >= 100 ? 'stable' : 'watch' },
     { id: 'food', label: 'Food', value: `${foodStability}%`, tone: foodStability >= 55 ? 'stable' : 'watch' },

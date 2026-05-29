@@ -78,7 +78,7 @@ export class AutoDirector {
   }
 
   _bindEvents() {
-    eventSystem.on(GameEvents.CREATURE_BORN, (data) => {
+    eventSystem.on(GameEvents.CREATURE_BORN, data => {
       const creature = data?.creature;
       if (creature) {
         this.focusOnEvent(GameEvents.CREATURE_BORN, creature.x, creature.y, {
@@ -88,7 +88,7 @@ export class AutoDirector {
       }
     });
 
-    eventSystem.on(GameEvents.CREATURE_EAT, (data) => {
+    eventSystem.on(GameEvents.CREATURE_EAT, data => {
       const creature = data?.creature;
       if (creature && data?.hungry) {
         this.focusOnEvent(GameEvents.CREATURE_EAT, creature.x, creature.y, {
@@ -98,7 +98,7 @@ export class AutoDirector {
       }
     });
 
-    eventSystem.on(GameEvents.CREATURE_BOND, (data) => {
+    eventSystem.on(GameEvents.CREATURE_BOND, data => {
       const creature = data?.creature;
       if (creature) {
         this.focusOnEvent(GameEvents.CREATURE_BOND, creature.x, creature.y, {
@@ -108,7 +108,7 @@ export class AutoDirector {
       }
     });
 
-    eventSystem.on(GameEvents.CREATURE_PANIC, (data) => {
+    eventSystem.on(GameEvents.CREATURE_PANIC, data => {
       const creature = data?.creature;
       if (creature) {
         this.focusOnEvent(GameEvents.CREATURE_PANIC, creature.x, creature.y, {
@@ -118,21 +118,21 @@ export class AutoDirector {
       }
     });
 
-    eventSystem.on(GameEvents.CREATURE_OVERCROWD, (data) => {
+    eventSystem.on(GameEvents.CREATURE_OVERCROWD, data => {
       if (!data) return;
       this.focusOnEvent(GameEvents.CREATURE_OVERCROWD, data.x, data.y, {
         zoomMultiplier: 0.95
       });
     });
 
-    eventSystem.on(GameEvents.WORLD_FOOD_SCARCITY, (data) => {
+    eventSystem.on(GameEvents.WORLD_FOOD_SCARCITY, data => {
       if (!data) return;
       this.focusOnEvent(GameEvents.WORLD_FOOD_SCARCITY, data.x, data.y, {
         zoomMultiplier: 0.92
       });
     });
 
-    eventSystem.on(GameEvents.WORLD_MIGRATION_START, (data) => {
+    eventSystem.on(GameEvents.WORLD_MIGRATION_START, data => {
       if (!data) return;
       if (data.count != null && data.count < CreatureAgentTuning.MIGRATION.FOCUS_GROUP_MIN) return;
       this.focusOnEvent(GameEvents.WORLD_MIGRATION_START, data.x, data.y, {
@@ -140,35 +140,35 @@ export class AutoDirector {
       });
     });
 
-    eventSystem.on(GameEvents.WORLD_MIGRATION_SETTLED, (data) => {
+    eventSystem.on(GameEvents.WORLD_MIGRATION_SETTLED, data => {
       if (!data) return;
       this.focusOnEvent(GameEvents.WORLD_MIGRATION_SETTLED, data.x, data.y, {
         zoomMultiplier: 1.05
       });
     });
 
-    eventSystem.on(GameEvents.NEST_ESTABLISHED, (data) => {
+    eventSystem.on(GameEvents.NEST_ESTABLISHED, data => {
       if (!data) return;
       this.focusOnEvent(GameEvents.NEST_ESTABLISHED, data.x, data.y, {
         zoomMultiplier: 1.1
       });
     });
 
-    eventSystem.on(GameEvents.WORLD_REGION_DEPLETED, (data) => {
+    eventSystem.on(GameEvents.WORLD_REGION_DEPLETED, data => {
       if (!data) return;
       this.focusOnEvent(GameEvents.WORLD_REGION_DEPLETED, data.x, data.y, {
         zoomMultiplier: 0.92
       });
     });
 
-    eventSystem.on(GameEvents.WORLD_REGION_THRIVING, (data) => {
+    eventSystem.on(GameEvents.WORLD_REGION_THRIVING, data => {
       if (!data) return;
       this.focusOnEvent(GameEvents.WORLD_REGION_THRIVING, data.x, data.y, {
         zoomMultiplier: 0.95
       });
     });
 
-    eventSystem.on(GameEvents.PREDATOR_LITE_CHASE, (data) => {
+    eventSystem.on(GameEvents.PREDATOR_LITE_CHASE, data => {
       if (!data) return;
       this.focusOnEvent(GameEvents.PREDATOR_LITE_CHASE, data.x, data.y, {
         zoomMultiplier: 1.02
@@ -193,7 +193,11 @@ export class AutoDirector {
     const currentZoom = this.camera.targetZoom ?? this.camera.zoom ?? 1;
     const desired = clamp(currentZoom * zoomMultiplier, this.camera.minZoom ?? 0.2, this.camera.maxZoom ?? 3);
     const maxStep = 0.35;
-    const nextZoom = clamp(currentZoom + clamp(desired - currentZoom, -maxStep, maxStep), this.camera.minZoom, this.camera.maxZoom);
+    const nextZoom = clamp(
+      currentZoom + clamp(desired - currentZoom, -maxStep, maxStep),
+      this.camera.minZoom,
+      this.camera.maxZoom
+    );
     this.camera.targetZoom = nextZoom;
     let duration = reason === GameEvents.CREATURE_PANIC ? 1.1 : 1.6;
     if (this.storyMode && this._storyEvents.has(reason)) {

@@ -68,9 +68,7 @@ export class MemoryLearningSystem {
     const memory = this.getOrCreateMemory(creature);
 
     // Check if location already known
-    const existing = memory.foodLocations.find(loc =>
-      Math.abs(loc.x - x) < 20 && Math.abs(loc.y - y) < 20
-    );
+    const existing = memory.foodLocations.find(loc => Math.abs(loc.x - x) < 20 && Math.abs(loc.y - y) < 20);
 
     if (existing) {
       existing.lastSeen = Date.now();
@@ -78,7 +76,8 @@ export class MemoryLearningSystem {
       existing.quality = (existing.quality + quality) / 2;
     } else {
       memory.foodLocations.push({
-        x, y,
+        x,
+        y,
         quality,
         lastSeen: Date.now(),
         visits: 1
@@ -101,16 +100,15 @@ export class MemoryLearningSystem {
   rememberDanger(creature, x, y, threat = 0.8) {
     const memory = this.getOrCreateMemory(creature);
 
-    const existing = memory.dangerZones.find(loc =>
-      Math.abs(loc.x - x) < 30 && Math.abs(loc.y - y) < 30
-    );
+    const existing = memory.dangerZones.find(loc => Math.abs(loc.x - x) < 30 && Math.abs(loc.y - y) < 30);
 
     if (existing) {
       existing.lastEncounter = Date.now();
       existing.threat = Math.max(existing.threat, threat);
     } else {
       memory.dangerZones.push({
-        x, y,
+        x,
+        y,
         threat,
         lastEncounter: Date.now()
       });
@@ -133,16 +131,15 @@ export class MemoryLearningSystem {
   rememberSafeZone(creature, x, y, safety = 0.7) {
     const memory = this.getOrCreateMemory(creature);
 
-    const existing = memory.safeZones.find(loc =>
-      Math.abs(loc.x - x) < 30 && Math.abs(loc.y - y) < 30
-    );
+    const existing = memory.safeZones.find(loc => Math.abs(loc.x - x) < 30 && Math.abs(loc.y - y) < 30);
 
     if (existing) {
       existing.lastVisit = Date.now();
       existing.safety = Math.max(existing.safety, safety);
     } else {
       memory.safeZones.push({
-        x, y,
+        x,
+        y,
         safety,
         lastVisit: Date.now()
       });
@@ -232,9 +229,7 @@ export class MemoryLearningSystem {
     if (!memory || memory.foodLocations.length === 0) return null;
 
     // Filter out stale memories (>5 minutes old)
-    const fresh = memory.foodLocations.filter(loc =>
-      Date.now() - loc.lastSeen < 300000
-    );
+    const fresh = memory.foodLocations.filter(loc => Date.now() - loc.lastSeen < 300000);
 
     if (fresh.length === 0) return null;
 
@@ -274,7 +269,8 @@ export class MemoryLearningSystem {
       if (dist < 50 && danger.threat > threshold) {
         // Recent danger is more concerning
         const age = Date.now() - danger.lastEncounter;
-        if (age < 60000) { // Within last minute
+        if (age < 60000) {
+          // Within last minute
           return true;
         }
       }
@@ -359,13 +355,11 @@ export class MemoryLearningSystem {
     const decayThreshold = 600000; // 10 minutes
 
     // Decay food locations
-    memory.foodLocations = memory.foodLocations.filter(loc =>
-      now - loc.lastSeen < decayThreshold
-    );
+    memory.foodLocations = memory.foodLocations.filter(loc => now - loc.lastSeen < decayThreshold);
 
     // Decay danger zones (fear fades)
     for (const danger of memory.dangerZones) {
-      danger.threat *= (1 - memory.memoryDecayRate * dt);
+      danger.threat *= 1 - memory.memoryDecayRate * dt;
     }
     memory.dangerZones = memory.dangerZones.filter(d => d.threat > 0.1);
   }

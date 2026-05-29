@@ -1,6 +1,24 @@
 const NAMES = [
-  'Aurora', 'Zephyr', 'Nimbus', 'Marrow', 'Sylph', 'Ember', 'Quartz', 'Halcyon', 'Vanta', 'Caldera',
-  'Mistral', 'Solace', 'Echo', 'Tundra', 'Nova', 'Beryl', 'Thorne', 'Juniper', 'Fable', 'Lumen'
+  'Aurora',
+  'Zephyr',
+  'Nimbus',
+  'Marrow',
+  'Sylph',
+  'Ember',
+  'Quartz',
+  'Halcyon',
+  'Vanta',
+  'Caldera',
+  'Mistral',
+  'Solace',
+  'Echo',
+  'Tundra',
+  'Nova',
+  'Beryl',
+  'Thorne',
+  'Juniper',
+  'Fable',
+  'Lumen'
 ];
 
 export class LineageTracker {
@@ -26,9 +44,7 @@ export class LineageTracker {
    */
   onCreatureBorn(creature, world, parent = null) {
     const parentCreature =
-      parent ||
-      (creature?.parentId != null ? world?.getAnyCreatureById(creature.parentId) : null) ||
-      null;
+      parent || (creature?.parentId != null ? world?.getAnyCreatureById(creature.parentId) : null) || null;
     // Reuse existing noteBirth logic
     this.noteBirth(world, parentCreature, creature);
   }
@@ -94,10 +110,7 @@ export class LineageTracker {
 
     const time = Number(event.time ?? world?.t ?? 0);
     const rootId = event.rootId ?? event.root ?? event.creatureId ?? event.creature?.id ?? null;
-    const title =
-      typeof event.title === 'string' && event.title.trim()
-        ? event.title
-        : this._formatEventTitle(event);
+    const title = typeof event.title === 'string' && event.title.trim() ? event.title : this._formatEventTitle(event);
 
     this.events.unshift({
       ...event,
@@ -184,7 +197,10 @@ export class LineageTracker {
       path.push(node.parentId);
       node = world.getAnyCreatureById(node.parentId);
       if (node && node.parentId) depth++;
-      else { depth++; break; }
+      else {
+        depth++;
+        break;
+      }
     }
 
     // Cache generation for all nodes in path (backfill)

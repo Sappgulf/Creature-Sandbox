@@ -4,7 +4,16 @@ export const GOD_TOOL_REGISTRY = Object.freeze([
   { id: 'inspect', icon: '🔎', label: 'Inspect', mode: 'inspect', undoable: false, mobile: true, desktop: true },
   { id: 'food', icon: '🍃', label: 'Food', mode: 'food', undoable: true, mobile: true, desktop: true },
   { id: 'spawn', icon: '🧬', label: 'Spawn', mode: 'spawn', undoable: true, mobile: true, desktop: true },
-  { id: 'erase', icon: '🧹', label: 'Erase', mode: 'erase', undoable: true, mobile: true, desktop: true, aliases: ['remove'] },
+  {
+    id: 'erase',
+    icon: '🧹',
+    label: 'Erase',
+    mode: 'erase',
+    undoable: true,
+    mobile: true,
+    desktop: true,
+    aliases: ['remove']
+  },
   { id: 'calm', icon: '🌊', label: 'Calm', mode: 'god', undoable: false, mobile: true, desktop: true },
   { id: 'chaos', icon: '⚡', label: 'Chaos', mode: 'god', undoable: false, mobile: true, desktop: true },
   { id: 'prop', icon: '🧩', label: 'Prop', mode: 'prop', undoable: true, mobile: true, desktop: true },

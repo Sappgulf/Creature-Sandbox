@@ -10,11 +10,7 @@ const SEED_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
  * @returns {string}
  */
 export function encodeSeed(seed) {
-  const parts = [
-    seed.herbivores.toString(36),
-    seed.predators.toString(36),
-    seed.food.toString(36)
-  ];
+  const parts = [seed.herbivores.toString(36), seed.predators.toString(36), seed.food.toString(36)];
   if (seed.chaos !== undefined) parts.push(Math.round(seed.chaos * 100).toString(36));
   if (seed.mode) parts.push(seed.mode);
   return parts.join('-');

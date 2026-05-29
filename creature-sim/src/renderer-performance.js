@@ -33,7 +33,8 @@ export class RendererPerformanceMonitor {
     this.qualityLockDuration = 120; // ~2 seconds at 60fps
 
     // Detect mobile for default quality
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    const isMobile =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
       (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
     if (isMobile) {
       this.currentQuality = 'medium';
@@ -177,10 +178,8 @@ export class RendererPerformanceMonitor {
       fpsSampleCount: this._fpsSampleCount,
       qualityRecoveryStreak: this._qualityRecoveryStreak,
       qualityLockTimer: this.qualityLockTimer,
-      cullRatio: this.stats.totalObjects > 0 ?
-        this.stats.culled / this.stats.totalObjects : 0,
-      renderEfficiency: this.stats.totalObjects > 0 ?
-        this.stats.rendered / this.stats.totalObjects : 0
+      cullRatio: this.stats.totalObjects > 0 ? this.stats.culled / this.stats.totalObjects : 0,
+      renderEfficiency: this.stats.totalObjects > 0 ? this.stats.rendered / this.stats.totalObjects : 0
     };
   }
 
@@ -219,12 +218,8 @@ export class RendererPerformanceMonitor {
       this._qualityRecoveryStreak = 0;
       this.applyQualityPreset(presets[currentIndex - 1]);
       this.qualityLockTimer = this.qualityLockDuration;
-
-    }
-    else {
-      const recovering = this._fpsSampleCount >= 2 &&
-        this.currentFps > 50 &&
-        this._lastFpsSample > 52;
+    } else {
+      const recovering = this._fpsSampleCount >= 2 && this.currentFps > 50 && this._lastFpsSample > 52;
       this._qualityRecoveryStreak = recovering ? this._qualityRecoveryStreak + 1 : 0;
     }
 
@@ -233,7 +228,6 @@ export class RendererPerformanceMonitor {
       this._qualityRecoveryStreak = 0;
       this.applyQualityPreset(presets[currentIndex + 1]);
       this.qualityLockTimer = this.qualityLockDuration;
-
     }
 
     // Legacy threshold adjustments (fine-tuning) - use local copies instead of mutating global config
@@ -251,8 +245,10 @@ export class RendererPerformanceMonitor {
     // Clamp values to reasonable ranges
     cullDistance = Math.max(500, Math.min(2000, cullDistance));
     RendererConfig.THRESHOLDS.CULL_DISTANCE = cullDistance;
-    RendererConfig.THRESHOLDS.MAX_RENDERED_OBJECTS = Math.max(500,
-      Math.min(2000, RendererConfig.THRESHOLDS.MAX_RENDERED_OBJECTS));
+    RendererConfig.THRESHOLDS.MAX_RENDERED_OBJECTS = Math.max(
+      500,
+      Math.min(2000, RendererConfig.THRESHOLDS.MAX_RENDERED_OBJECTS)
+    );
   }
 
   /**

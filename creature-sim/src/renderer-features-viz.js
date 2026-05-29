@@ -1,7 +1,7 @@
 import { clamp } from './utils.js';
 
 export function applyFeatureVizMethods(Renderer) {
-  Renderer.prototype.drawNests = function(world) {
+  Renderer.prototype.drawNests = function (world) {
     if (!world.nestGrid || world.nests.length === 0) return;
     const ctx = this.ctx;
     const bounds = this._viewBounds;
@@ -29,7 +29,7 @@ export function applyFeatureVizMethods(Renderer) {
     }
   };
 
-  Renderer.prototype.drawTerritories = function(world) {
+  Renderer.prototype.drawTerritories = function (world) {
     const ctx = this.ctx;
 
     if (world.regions?.length) {
@@ -57,7 +57,7 @@ export function applyFeatureVizMethods(Renderer) {
       ctx.arc(territory.x, territory.y, territory.radius, 0, Math.PI * 2);
 
       // Color based on rank
-      const hue = territory.dominanceRank === 1 ? 0 : (territory.dominanceRank <= 3 ? 30 : 50);
+      const hue = territory.dominanceRank === 1 ? 0 : territory.dominanceRank <= 3 ? 30 : 50;
       const alpha = territory.dominanceRank === 1 ? 0.15 : 0.08;
       ctx.fillStyle = `hsla(${hue}, 80%, 50%, ${alpha})`;
       ctx.fill();
@@ -89,7 +89,7 @@ export function applyFeatureVizMethods(Renderer) {
     }
   };
 
-  Renderer.prototype.drawMemory = function(creature) {
+  Renderer.prototype.drawMemory = function (creature) {
     const ctx = this.ctx;
 
     for (const mem of creature.memory.locations) {
@@ -129,7 +129,7 @@ export function applyFeatureVizMethods(Renderer) {
     }
   };
 
-  Renderer.prototype.drawMemoryDebug = function(world) {
+  Renderer.prototype.drawMemoryDebug = function (world) {
     const ctx = this.ctx;
     const view = this._viewBounds;
 
@@ -158,7 +158,7 @@ export function applyFeatureVizMethods(Renderer) {
     ctx.restore();
   };
 
-  Renderer.prototype.drawLifeStageDebug = function(world) {
+  Renderer.prototype.drawLifeStageDebug = function (world) {
     const ctx = this.ctx;
     const view = this._viewBounds;
 
@@ -179,14 +179,15 @@ export function applyFeatureVizMethods(Renderer) {
     ctx.restore();
   };
 
-  Renderer.prototype.drawSocialBonds = function(world) {
+  Renderer.prototype.drawSocialBonds = function (world) {
     const ctx = this.ctx;
     const bounds = this._viewBounds;
 
     for (const creature of world.creatures) {
       if (!creature.social || !creature.alive) continue;
       // Spatial culling: skip creatures outside viewport
-      if (creature.x < bounds.x1 || creature.x > bounds.x2 || creature.y < bounds.y1 || creature.y > bounds.y2) continue;
+      if (creature.x < bounds.x1 || creature.x > bounds.x2 || creature.y < bounds.y1 || creature.y > bounds.y2)
+        continue;
 
       // Draw herding connections for herbivores
       if (!creature.genes.predator && creature.social.herdMates.length > 0) {
@@ -222,7 +223,7 @@ export function applyFeatureVizMethods(Renderer) {
     }
   };
 
-  Renderer.prototype.drawMigration = function(world) {
+  Renderer.prototype.drawMigration = function (world) {
     const ctx = this.ctx;
 
     for (const creature of world.creatures) {
@@ -263,7 +264,7 @@ export function applyFeatureVizMethods(Renderer) {
     }
   };
 
-  Renderer.prototype.drawEmotions = function(creature) {
+  Renderer.prototype.drawEmotions = function (creature) {
     if (!creature.emotions) return;
     const ctx = this.ctx;
     const em = creature.emotions;
@@ -307,7 +308,7 @@ export function applyFeatureVizMethods(Renderer) {
     ctx.restore();
   };
 
-  Renderer.prototype._getDominantEmotion = function(em) {
+  Renderer.prototype._getDominantEmotion = function (em) {
     const emotions = [
       { name: 'fear', strength: em.fear, color: 'rgba(255, 80, 80, 1)' },
       { name: 'stress', strength: em.stress, color: 'rgba(180, 80, 180, 1)' },
@@ -315,10 +316,10 @@ export function applyFeatureVizMethods(Renderer) {
       { name: 'curiosity', strength: em.curiosity, color: 'rgba(100, 200, 255, 1)' }
     ];
 
-    return emotions.reduce((max, e) => e.strength > max.strength ? e : max, emotions[0]);
+    return emotions.reduce((max, e) => (e.strength > max.strength ? e : max), emotions[0]);
   };
 
-  Renderer.prototype.drawSensoryViz = function(world) {
+  Renderer.prototype.drawSensoryViz = function (world) {
     const ctx = this.ctx;
 
     for (const creature of world.creatures) {
@@ -356,7 +357,7 @@ export function applyFeatureVizMethods(Renderer) {
     }
   };
 
-  Renderer.prototype.drawIntelligenceIndicators = function(world) {
+  Renderer.prototype.drawIntelligenceIndicators = function (world) {
     const ctx = this.ctx;
 
     for (const creature of world.creatures) {
@@ -378,7 +379,7 @@ export function applyFeatureVizMethods(Renderer) {
     }
   };
 
-  Renderer.prototype.drawGoalDebug = function(world) {
+  Renderer.prototype.drawGoalDebug = function (world) {
     const ctx = this.ctx;
     const view = this._viewBounds;
 
@@ -424,7 +425,7 @@ export function applyFeatureVizMethods(Renderer) {
     ctx.restore();
   };
 
-  Renderer.prototype.drawMatingDisplays = function(world) {
+  Renderer.prototype.drawMatingDisplays = function (world) {
     const ctx = this.ctx;
 
     for (const creature of world.creatures) {

@@ -62,14 +62,15 @@ function normalizedNumber(value, fallback, min, max, { integer = false } = {}) {
 }
 
 function normalizePreferenceSnapshot(snapshot = {}) {
-  const sourceGenes = snapshot.genes && typeof snapshot.genes === 'object'
-    ? snapshot.genes
-    : snapshot.customGenes && typeof snapshot.customGenes === 'object'
-      ? snapshot.customGenes
-      : {};
+  const sourceGenes =
+    snapshot.genes && typeof snapshot.genes === 'object'
+      ? snapshot.genes
+      : snapshot.customGenes && typeof snapshot.customGenes === 'object'
+        ? snapshot.customGenes
+        : {};
   const genes = cloneDefaultGenes();
 
-  Object.keys(genes).forEach((key) => {
+  Object.keys(genes).forEach(key => {
     const [min, max] = GENE_LIMITS[key] || [Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY];
     genes[key] = normalizedNumber(sourceGenes[key], genes[key], min, max);
   });
@@ -89,12 +90,62 @@ export class GeneEditor {
     this.customGenes = cloneDefaultGenes();
     this.presets = {
       'Fast Herbivore': { speed: 1.5, fov: 120, sense: 120, metabolism: 1.2, hue: 90, predator: 0, diet: 0.0 },
-      'Tank Herbivore': { speed: 0.6, fov: 60, sense: 80, metabolism: 0.6, hue: 150, predator: 0, diet: 0.0, spines: 0.8, grit: 0.9 },
-      'Pack Hunter': { speed: 1.3, fov: 110, sense: 140, metabolism: 1.1, hue: 0, predator: 1, diet: 1.0, packInstinct: 0.8, aggression: 1.3 },
-      'Ambush Predator': { speed: 0.9, fov: 80, sense: 160, metabolism: 0.8, hue: 30, predator: 1, diet: 1.0, ambushDelay: 0.9, aggression: 1.5 },
-      'Omnivore': { speed: 1.0, fov: 100, sense: 110, metabolism: 0.9, hue: 60, predator: 0, diet: 0.5 },
-      'Night Hunter': { speed: 1.2, fov: 140, sense: 150, metabolism: 1.0, hue: 270, predator: 1, diet: 1.0, nocturnal: 1.0, aggression: 1.2 },
-      'Herd Leader': { speed: 1.1, fov: 100, sense: 130, metabolism: 0.9, hue: 180, predator: 0, diet: 0.0, herdInstinct: 0.9, grit: 0.8 }
+      'Tank Herbivore': {
+        speed: 0.6,
+        fov: 60,
+        sense: 80,
+        metabolism: 0.6,
+        hue: 150,
+        predator: 0,
+        diet: 0.0,
+        spines: 0.8,
+        grit: 0.9
+      },
+      'Pack Hunter': {
+        speed: 1.3,
+        fov: 110,
+        sense: 140,
+        metabolism: 1.1,
+        hue: 0,
+        predator: 1,
+        diet: 1.0,
+        packInstinct: 0.8,
+        aggression: 1.3
+      },
+      'Ambush Predator': {
+        speed: 0.9,
+        fov: 80,
+        sense: 160,
+        metabolism: 0.8,
+        hue: 30,
+        predator: 1,
+        diet: 1.0,
+        ambushDelay: 0.9,
+        aggression: 1.5
+      },
+      Omnivore: { speed: 1.0, fov: 100, sense: 110, metabolism: 0.9, hue: 60, predator: 0, diet: 0.5 },
+      'Night Hunter': {
+        speed: 1.2,
+        fov: 140,
+        sense: 150,
+        metabolism: 1.0,
+        hue: 270,
+        predator: 1,
+        diet: 1.0,
+        nocturnal: 1.0,
+        aggression: 1.2
+      },
+      'Herd Leader': {
+        speed: 1.1,
+        fov: 100,
+        sense: 130,
+        metabolism: 0.9,
+        hue: 180,
+        predator: 0,
+        diet: 0.0,
+        herdInstinct: 0.9,
+        grit: 0.8
+      }
     };
     this.spawnCount = DEFAULT_SPAWN_COUNT;
     this.spawnSpread = DEFAULT_SPAWN_SPREAD;
@@ -321,7 +372,7 @@ export class GeneEditor {
 
     const presetSelect = document.getElementById('gene-preset-select');
     if (presetSelect) {
-      presetSelect.addEventListener('change', (e) => {
+      presetSelect.addEventListener('change', e => {
         const nextPreset = e.target.value;
         if (nextPreset) {
           this.applyPreset(nextPreset);
@@ -440,10 +491,13 @@ export class GeneEditor {
     if (!storage) return false;
 
     try {
-      storage.setItem(GENE_EDITOR_PREF_KEY, JSON.stringify({
-        version: 1,
-        ...this.getPreferenceSnapshot()
-      }));
+      storage.setItem(
+        GENE_EDITOR_PREF_KEY,
+        JSON.stringify({
+          version: 1,
+          ...this.getPreferenceSnapshot()
+        })
+      );
       return true;
     } catch {
       return false;

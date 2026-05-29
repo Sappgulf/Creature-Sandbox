@@ -170,12 +170,12 @@ export class InputManager {
     const renderer = this.world?.renderer;
     const miniGraphs = this.world?.miniGraphs;
     const godToolHotkeys = {
-      '1': 'food',
-      '2': 'calm',
-      '3': 'chaos',
-      '4': 'spawn',
-      '5': 'prop',
-      '6': 'remove'
+      1: 'food',
+      2: 'calm',
+      3: 'chaos',
+      4: 'spawn',
+      5: 'prop',
+      6: 'remove'
     };
     if (gameState.godModeActive) {
       const hotTool = godToolHotkeys[e.key];
@@ -436,7 +436,6 @@ export class InputManager {
       gameState.setInspectorAutoOpen(false);
       this.updateInspectorVisibility();
     }
-
   }
 
   /**
@@ -549,7 +548,6 @@ export class InputManager {
       }
     }
   }
-
 }
 
 applyInputPointerMethods(InputManager);

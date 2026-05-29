@@ -66,7 +66,7 @@ export const GENETIC_DISORDERS = {
 
 // Mutation types with their probabilities and effects
 export const MUTATION_TYPES = {
-  NEUTRAL: { weight: 0.70, multiplier: 1.0, label: 'Neutral' },
+  NEUTRAL: { weight: 0.7, multiplier: 1.0, label: 'Neutral' },
   BENEFICIAL: { weight: 0.15, multiplier: 1.4, label: 'Beneficial ✨' },
   HARMFUL: { weight: 0.15, multiplier: 1.6, label: 'Harmful ☠️', negative: true }
 };
@@ -74,18 +74,13 @@ export const MUTATION_TYPES = {
 /**
  * Create a diploid gene structure with two alleles
  */
-export function makeGenes(seed={}) {
+export function makeGenes(seed = {}) {
   const predator = seed.predator ?? 0;
   const diet = seed.diet ?? (predator ? 1.0 : 0.0);
   const seedKeys = Object.keys(seed);
-  const hasDeterministicTraitOverrides = seedKeys.some((key) => ![
-    'predator',
-    'diet',
-    'sex',
-    'mutations',
-    'disorders',
-    'randomDisorders'
-  ].includes(key));
+  const hasDeterministicTraitOverrides = seedKeys.some(
+    key => !['predator', 'diet', 'sex', 'mutations', 'disorders', 'randomDisorders'].includes(key)
+  );
 
   // Determine sex (50/50 split unless specified)
   const sex = seed.sex ?? (Math.random() < 0.5 ? 'male' : 'female');
@@ -103,8 +98,8 @@ export function makeGenes(seed={}) {
 
     // Color (polygenic - average of both alleles)
     hue: {
-      allele1: seed.hue ?? Math.floor(Math.random()*360),
-      allele2: seed.hue ?? Math.floor(Math.random()*360),
+      allele1: seed.hue ?? Math.floor(Math.random() * 360),
+      allele2: seed.hue ?? Math.floor(Math.random() * 360),
       expressed: null // Will be calculated
     },
 
@@ -367,19 +362,9 @@ export function applyMutations(genes, mutationRate = 0.05) {
 
       // Randomly mutate one or both alleles
       if (Math.random() < 0.5) {
-        mutatedGenes[key].allele1 = mutateValue(
-          trait.allele1,
-          trait.min,
-          trait.max,
-          mutation
-        );
+        mutatedGenes[key].allele1 = mutateValue(trait.allele1, trait.min, trait.max, mutation);
       } else {
-        mutatedGenes[key].allele2 = mutateValue(
-          trait.allele2,
-          trait.min,
-          trait.max,
-          mutation
-        );
+        mutatedGenes[key].allele2 = mutateValue(trait.allele2, trait.min, trait.max, mutation);
       }
 
       // Track the mutation
@@ -445,7 +430,7 @@ function mutateValue(value, min, max, mutation) {
  * Legacy function for backward compatibility
  * Converts old asexual mutation to new diploid system
  */
-export function mutateGenes(genes, amt=0.06) {
+export function mutateGenes(genes, amt = 0.06) {
   // If already diploid, use sexual reproduction system
   if (genes.speed && typeof genes.speed === 'object' && 'allele1' in genes.speed) {
     return applyMutations(genes, amt);
@@ -499,9 +484,10 @@ export function getGeneticInfo(genes) {
     disorders: genes.disorders || [],
     disorderLabels: (genes.disorders || []).map(d => GENETIC_DISORDERS[d]?.emoji + ' ' + GENETIC_DISORDERS[d]?.name),
     mutations: genes.mutations || [],
-    recentMutation: genes.mutations && genes.mutations.length > 0
-      ? MUTATION_TYPES[genes.mutations[genes.mutations.length - 1].type]?.label
-      : null
+    recentMutation:
+      genes.mutations && genes.mutations.length > 0
+        ? MUTATION_TYPES[genes.mutations[genes.mutations.length - 1].type]?.label
+        : null
   };
 
   return info;

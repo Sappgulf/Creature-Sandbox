@@ -14,7 +14,7 @@ export class ScalarField {
   }
 
   idx(x, y) {
-    return (y * this.w + x);
+    return y * this.w + x;
   }
 
   inb(x, y) {

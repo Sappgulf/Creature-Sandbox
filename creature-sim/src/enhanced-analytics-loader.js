@@ -12,11 +12,11 @@ export async function loadEnhancedAnalyticsModule() {
 
   if (!enhancedAnalyticsPromise) {
     enhancedAnalyticsPromise = import('./enhanced-analytics.js')
-      .then((module) => {
+      .then(module => {
         enhancedAnalyticsModule = module;
         return module;
       })
-      .catch((error) => {
+      .catch(error => {
         enhancedAnalyticsPromise = null;
         throw error;
       });

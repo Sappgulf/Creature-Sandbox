@@ -6,7 +6,7 @@ export function baseBurn(creature) {
     const g = creature.genes;
     const moveCost = 0.35 * g.speed * g.speed;
     const senseCost = 0.08 * (g.fov / 90) + 0.06 * (g.sense / 100);
-    creature._cachedBaseBurn = (0.4 * g.metabolism) + moveCost + senseCost;
+    creature._cachedBaseBurn = 0.4 * g.metabolism + moveCost + senseCost;
   }
   return creature._cachedBaseBurn;
 }
@@ -90,7 +90,11 @@ export function reactToPoke(creature, { x = null, y = null } = {}) {
 }
 
 export function reactToGrab(creature, { x = null, y = null } = {}) {
-  const intensity = clamp(0.3 + creature.personality.playfulness * 0.5 + creature.personality.reactivity * 0.3, 0.25, 1.2);
+  const intensity = clamp(
+    0.3 + creature.personality.playfulness * 0.5 + creature.personality.reactivity * 0.3,
+    0.25,
+    1.2
+  );
   creature._triggerReaction('grab', intensity, 0.4);
   creature.setMood('😮', 0.6);
   if (creature.emotions) {

@@ -62,9 +62,7 @@ export function renderStats(el, world, fps, extra = {}) {
   if (extra.tool) {
     const meta = toolMeta[extra.tool] || { icon: '🛠️', label: extra.tool };
     const brushSize = Number.isFinite(extra.brushSize) ? Math.round(extra.brushSize) : null;
-    const toolLabel = brushSize && extra.tool !== 'inspect'
-      ? `${meta.label} ${brushSize}px`
-      : meta.label;
+    const toolLabel = brushSize && extra.tool !== 'inspect' ? `${meta.label} ${brushSize}px` : meta.label;
     statParts.push(`<span class="stat-tool">${meta.icon} <span class="value">${toolLabel}</span></span>`);
   }
 
@@ -91,7 +89,7 @@ export function renderStats(el, world, fps, extra = {}) {
       prop: 'Prop',
       remove: 'Remove'
     };
-    const toolLabel = extra.godModeTool ? (godLabels[extra.godModeTool] || extra.godModeTool) : 'Mode';
+    const toolLabel = extra.godModeTool ? godLabels[extra.godModeTool] || extra.godModeTool : 'Mode';
     const label = `God ${toolLabel}`;
     statParts.push(`<span class="stat-tool">✨ <span class="value">${label}</span></span>`);
   }
@@ -133,20 +131,25 @@ export function renderStats(el, world, fps, extra = {}) {
     const evt = events[0];
     const icon = evt.icon || '✦';
     const label = evt.label || 'Event';
-    statParts.push(`<span style="color: var(--accent-warning);">${icon} ${label} · ${Math.ceil(evt.remaining)}s</span>`);
+    statParts.push(
+      `<span style="color: var(--accent-warning);">${icon} ${label} · ${Math.ceil(evt.remaining)}s</span>`
+    );
   }
 
   el.innerHTML = statParts.join('');
 }
 
-export function renderInteractionHint(el, {
-  tool = 'inspect',
-  propType = null,
-  hasSelection = false,
-  hintDurationMs = 3200,
-  customMessage = null,
-  customId = null
-} = {}) {
+export function renderInteractionHint(
+  el,
+  {
+    tool = 'inspect',
+    propType = null,
+    hasSelection = false,
+    hintDurationMs = 3200,
+    customMessage = null,
+    customId = null
+  } = {}
+) {
   if (!el) return;
   const propLabels = {
     bounce: 'Bounce Pad',
@@ -180,17 +183,14 @@ export function renderInteractionHint(el, {
     }
     case 'inspect':
     default:
-      message = hasSelection
-        ? 'Drag to move · tap to inspect'
-        : 'Tap a creature to inspect';
+      message = hasSelection ? 'Drag to move · tap to inspect' : 'Tap a creature to inspect';
       break;
   }
 
   const now = performance.now();
   const textEl = el.querySelector('.interaction-hint-text') || el;
-  const activeMessage = (customMessage && String(customMessage).trim().length > 0)
-    ? String(customMessage).trim()
-    : message;
+  const activeMessage =
+    customMessage && String(customMessage).trim().length > 0 ? String(customMessage).trim() : message;
   const messageKey = customMessage ? `prompt:${customId || activeMessage}` : activeMessage;
   const lastMessage = el.dataset.message || '';
 
@@ -248,7 +248,12 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
   let lineageName = null;
   let familyRootId = null;
   let generation = Number.isFinite(creature.generation) ? creature.generation : null;
-  if (world && lineageTracker && typeof lineageTracker.getRoot === 'function' && typeof lineageTracker.ensureName === 'function') {
+  if (
+    world &&
+    lineageTracker &&
+    typeof lineageTracker.getRoot === 'function' &&
+    typeof lineageTracker.ensureName === 'function'
+  ) {
     const rootId = lineageTracker.getRoot(world, creature.id);
     if (rootId != null) {
       familyRootId = rootId;
@@ -276,20 +281,26 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
 
   const statusClass = creature.alive ? 'alive' : 'dead';
   const sexEmoji = creature.sex === 'male' ? ' ♂️' : ' ♀️';
-  const disorderEmojis = (creature.disorders || []).map(d => {
-    const disorders = { ALBINISM: ' 🤍', HEMOPHILIA: ' 🩸', GIGANTISM: ' 🦕', DWARFISM: ' 🐁', HYPERMETABOLISM: ' ⚡' };
-    return disorders[d] || '';
-  }).join('');
+  const disorderEmojis = (creature.disorders || [])
+    .map(d => {
+      const disorders = {
+        ALBINISM: ' 🤍',
+        HEMOPHILIA: ' 🩸',
+        GIGANTISM: ' 🦕',
+        DWARFISM: ' 🐁',
+        HYPERMETABOLISM: ' ⚡'
+      };
+      return disorders[d] || '';
+    })
+    .join('');
 
-  const headline = lineageName ? `${lineageName} · #${creature.id}${sexEmoji}${disorderEmojis}` : `Creature #${creature.id}${sexEmoji}${disorderEmojis}`;
+  const headline = lineageName
+    ? `${lineageName} · #${creature.id}${sexEmoji}${disorderEmojis}`
+    : `Creature #${creature.id}${sexEmoji}${disorderEmojis}`;
   const lifeStage = getLifeStageDisplay(creature);
   const emotion = getCreatureEmotion(creature);
   const bonds = buildBondsSummary(creature, world);
-  const sublineParts = [
-    dietLabel,
-    `${lifeStage.icon} ${lifeStage.label}`,
-    `Age ${creature.age.toFixed(1)}s`
-  ];
+  const sublineParts = [dietLabel, `${lifeStage.icon} ${lifeStage.label}`, `Age ${creature.age.toFixed(1)}s`];
   if (creature.parentId) {
     sublineParts.push(`Parent #${creature.parentId}`);
   }
@@ -316,7 +327,9 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     night_owl: 'Night Owl',
     social_butterfly: 'Social Butterfly'
   };
-  const quirkLine = showQuirks ? `<div class="subline quirks">Quirks: ${quirks.map(q => quirkLabelMap[q] || q).join(', ')}</div>` : '';
+  const quirkLine = showQuirks
+    ? `<div class="subline quirks">Quirks: ${quirks.map(q => quirkLabelMap[q] || q).join(', ')}</div>`
+    : '';
   const quirkHint = quirks.length ? '<div class="hint">Press Q to toggle quirks</div>' : '';
   const hunger = Number(creature.needs?.hunger ?? 0);
   const stress = Number(creature.needs?.stress ?? creature.ecosystem?.stress ?? 0);
@@ -341,7 +354,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     memoryCount ? `${memoryCount} memories` : null
   ].filter(Boolean);
   const stateTagMarkup = `<div class="state-tags">${stateTags.map(tag => `<span>${tag}</span>`).join('')}</div>`;
-  const memoryTypeLabel = (memory) => {
+  const memoryTypeLabel = memory => {
     const type = memory?.type || memory?.tag || 'memory';
     const labels = {
       food: 'Food source',
@@ -353,9 +366,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     return labels[type] || String(type).replaceAll('_', ' ');
   };
   const memoryLocations = Array.isArray(creature.memory?.locations)
-    ? [...creature.memory.locations]
-      .sort((a, b) => (b.strength ?? 0) - (a.strength ?? 0))
-      .slice(0, isMobile ? 2 : 3)
+    ? [...creature.memory.locations].sort((a, b) => (b.strength ?? 0) - (a.strength ?? 0)).slice(0, isMobile ? 2 : 3)
     : [];
   const focusMemory = creature.memory?.focus;
   const whyLine = (() => {
@@ -367,13 +378,16 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     if (goal === 'eat') return 'Searching for food using scent and memory.';
     return `Current drive: ${readableState.toLowerCase()}.`;
   })();
-  const memoryRowsMarkup = memoryLocations.map(memory => {
-    const strength = Math.round((memory.strength ?? 0) * 100);
-    const age = Number.isFinite(memory.timestamp) && world?.t != null
-      ? `${Math.max(0, Math.round(world.t - memory.timestamp))}s ago`
-      : 'recent';
-    return `<span><strong>${memoryTypeLabel(memory)}</strong><em>${strength}% · ${age}</em></span>`;
-  }).join('');
+  const memoryRowsMarkup = memoryLocations
+    .map(memory => {
+      const strength = Math.round((memory.strength ?? 0) * 100);
+      const age =
+        Number.isFinite(memory.timestamp) && world?.t != null
+          ? `${Math.max(0, Math.round(world.t - memory.timestamp))}s ago`
+          : 'recent';
+      return `<span><strong>${memoryTypeLabel(memory)}</strong><em>${strength}% · ${age}</em></span>`;
+    })
+    .join('');
   const memoryTrailMarkup = `
     <div class="memory-trail">
       <div class="memory-trail-head">
@@ -381,11 +395,15 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
         <strong>${focusMemory?.tag ? 'Recall' : readableState}</strong>
       </div>
       <div class="memory-reason">${whyLine}</div>
-      ${memoryLocations.length ? `
+      ${
+  memoryLocations.length
+    ? `
         <div class="memory-list">
           ${memoryRowsMarkup}
         </div>
-      ` : '<div class="memory-list empty">No learned places yet.</div>'}
+      `
+    : '<div class="memory-list empty">No learned places yet.</div>'
+}
     </div>
   `;
   const desktopMemoryMarkup = `
@@ -486,7 +504,7 @@ export function renderInspector(model = {}, handlers = {}) {
   if (!body || !lineageSummaryEl || !activityFeedEl) return;
 
   const creature = model.creature ?? null;
-  const stats = creature ? model.stats ?? creature.stats : null;
+  const stats = creature ? (model.stats ?? creature.stats) : null;
   const worldRef = model.world ?? null;
   const badges = creature ? (model.badges ?? []) : [];
   const activity = creature ? (model.activity ?? []) : [];
@@ -531,7 +549,7 @@ export function renderInspector(model = {}, handlers = {}) {
       });
     }
   };
-  const toPulseMeta = (source) => {
+  const toPulseMeta = source => {
     if (!source) return null;
     return {
       name: source.name ?? `Lineage ${source.rootId}`,
@@ -545,36 +563,49 @@ export function renderInspector(model = {}, handlers = {}) {
   if (!creature) {
     body.innerHTML = '<div class="muted">Click a creature to inspect.<br/>Shift-click to set lineage root.</div>';
   } else {
-    const parentCell = creature.parentId ? `<button class="btn-link" id="btn-parent">#${creature.parentId}</button>` : '—';
+    const parentCell = creature.parentId
+      ? `<button class="btn-link" id="btn-parent">#${creature.parentId}</button>`
+      : '—';
     const sexEmoji = creature.sex === 'male' ? '♂️' : '♀️';
     const sexLabel = creature.sex === 'male' ? 'Male' : 'Female';
-    const disorderLabels = (creature.disorders || []).map(d => {
-      const disorders = {
-        ALBINISM: '🤍 Albinism',
-        HEMOPHILIA: '🩸 Hemophilia',
-        GIGANTISM: '🦕 Gigantism',
-        DWARFISM: '🐁 Dwarfism',
-        HYPERMETABOLISM: '⚡ Hypermetabolism'
-      };
-      return disorders[d] || d;
-    }).join(', ') || 'None';
+    const disorderLabels =
+      (creature.disorders || [])
+        .map(d => {
+          const disorders = {
+            ALBINISM: '🤍 Albinism',
+            HEMOPHILIA: '🩸 Hemophilia',
+            GIGANTISM: '🦕 Gigantism',
+            DWARFISM: '🐁 Dwarfism',
+            HYPERMETABOLISM: '⚡ Hypermetabolism'
+          };
+          return disorders[d] || d;
+        })
+        .join(', ') || 'None';
 
-    const mutationBadge = (creature.mutations && creature.mutations.length > 0) ?
-      ` <span class="chip" style="font-size:9px;padding:2px 6px;">🧬 ${creature.mutations.length}</span>` : '';
+    const mutationBadge =
+      creature.mutations && creature.mutations.length > 0
+        ? ` <span class="chip" style="font-size:9px;padding:2px 6px;">🧬 ${creature.mutations.length}</span>`
+        : '';
 
     const memoryLocations = Array.isArray(creature.memory?.locations)
       ? [...creature.memory.locations].sort((a, b) => (b.strength ?? 0) - (a.strength ?? 0)).slice(0, 4)
       : [];
     const memoryMarkup = memoryLocations.length
-      ? memoryLocations.map(memory => {
-        const label = String(memory.type || memory.tag || 'memory').replaceAll('_', ' ');
-        const strength = Math.round((memory.strength ?? 0) * 100);
-        return `<div class="row"><div>${label}</div><div>${strength}%</div></div>`;
-      }).join('')
+      ? memoryLocations
+        .map(memory => {
+          const label = String(memory.type || memory.tag || 'memory').replaceAll('_', ' ');
+          const strength = Math.round((memory.strength ?? 0) * 100);
+          return `<div class="row"><div>${label}</div><div>${strength}%</div></div>`;
+        })
+        .join('')
       : '<div class="muted tiny">No learned places yet.</div>';
-    const childMarkup = Array.isArray(creature.children) && creature.children.length
-      ? creature.children.slice(0, 6).map(id => `<button class="btn-link family-jump-body" data-id="${id}">#${id}</button>`).join(', ')
-      : '—';
+    const childMarkup =
+      Array.isArray(creature.children) && creature.children.length
+        ? creature.children
+          .slice(0, 6)
+          .map(id => `<button class="btn-link family-jump-body" data-id="${id}">#${id}</button>`)
+          .join(', ')
+        : '—';
     const familyMarkup = `
       <div class="row"><div>Parent</div><div>${parentCell}</div></div>
       <div class="row"><div>Children</div><div>${childMarkup}</div></div>
@@ -587,7 +618,7 @@ export function renderInspector(model = {}, handlers = {}) {
       <div class="row"><div>Age</div><div>${creature.age.toFixed(1)}s</div></div>
       <div class="row"><div>Energy</div><div>${creature.energy.toFixed(1)}</div></div>
       <div class="row"><div>Health</div><div>${creature.health.toFixed(1)} / ${creature.maxHealth.toFixed(0)}</div></div>
-      ${(creature.disorders && creature.disorders.length > 0) ? `<div class="row"><div>Disorders</div><div style="color:#ff6b6b;">${disorderLabels}</div></div>` : ''}
+      ${creature.disorders && creature.disorders.length > 0 ? `<div class="row"><div>Disorders</div><div style="color:#ff6b6b;">${disorderLabels}</div></div>` : ''}
       <div class="row"><div>Food eaten</div><div>${stats?.food ?? 0}</div></div>
       <div class="row"><div>Kills</div><div>${stats?.kills ?? 0}</div></div>
       <div class="row"><div>Damage</div><div>${(stats?.damageDealt ?? 0).toFixed(1)} / ${(stats?.damageTaken ?? 0).toFixed(1)}</div></div>
@@ -602,11 +633,15 @@ export function renderInspector(model = {}, handlers = {}) {
       <div class="row"><div>Herd</div><div>${((creature.genes.herdInstinct ?? 0) * 100).toFixed(0)}%</div></div>
       <div class="row"><div>Panic</div><div>${((creature.genes.panicPheromone ?? 0) * 100).toFixed(0)}%</div></div>
       <div class="row"><div>Grit</div><div>${((creature.genes.grit ?? 0) * 100).toFixed(0)}%</div></div>
-      ${creature.genes.predator ? `
+      ${
+  creature.genes.predator
+    ? `
         <div class="row"><div>Pack</div><div>${(creature.genes.packInstinct * 100).toFixed(0)}%</div></div>
         <div class="row"><div>Ambush</div><div>${creature.genes.ambushDelay.toFixed(1)}s</div></div>
         <div class="row"><div>Aggression</div><div>${creature.genes.aggression.toFixed(2)}</div></div>
-      ` : ''}
+      `
+    : ''
+}
     `;
 
     body.innerHTML = `
@@ -621,7 +656,7 @@ export function renderInspector(model = {}, handlers = {}) {
       <div class="inspector-tab-panel" data-tab-panel="family">${familyMarkup}</div>
       <div class="inspector-tab-panel" data-tab-panel="genes">${genesMarkup}</div>
     `;
-    const showInspectorTab = (tab) => {
+    const showInspectorTab = tab => {
       inspectorActiveTab = tab;
       body.querySelectorAll('.inspector-tab').forEach(button => {
         const active = button.dataset.tab === tab;
@@ -697,16 +732,21 @@ export function renderInspector(model = {}, handlers = {}) {
 
   if (familyPanel && familyContent) {
     if (creature) {
-      const parentIds = Array.isArray(creature.parents) && creature.parents.length
-        ? creature.parents
-        : (creature.parentId ? [creature.parentId] : []);
+      const parentIds =
+        Array.isArray(creature.parents) && creature.parents.length
+          ? creature.parents
+          : creature.parentId
+            ? [creature.parentId]
+            : [];
       const parentMarkup = parentIds.length
-        ? parentIds.map(id => {
-          const parent = worldRef?.getAnyCreatureById?.(id);
-          const alive = parent ? parent.alive !== false : false;
-          const label = alive ? `#${id}` : `#${id}✝`;
-          return `<button class="btn-link family-jump ${alive ? '' : 'muted'}" data-id="${id}">${label}</button>`;
-        }).join(', ')
+        ? parentIds
+          .map(id => {
+            const parent = worldRef?.getAnyCreatureById?.(id);
+            const alive = parent ? parent.alive !== false : false;
+            const label = alive ? `#${id}` : `#${id}✝`;
+            return `<button class="btn-link family-jump ${alive ? '' : 'muted'}" data-id="${id}">${label}</button>`;
+          })
+          .join(', ')
         : '<span class="muted">Unknown</span>';
 
       const childIds = Array.isArray(creature.children) ? creature.children : [];
@@ -714,12 +754,15 @@ export function renderInspector(model = {}, handlers = {}) {
       if (!childIds.length) {
         childrenMarkup = '<span class="muted">None</span>';
       } else {
-        const entries = childIds.slice(0, 6).map(id => {
-          const child = worldRef?.getAnyCreatureById?.(id);
-          const alive = child ? child.alive !== false : false;
-          const label = alive ? `#${id}` : `#${id}✝`;
-          return `<button class="btn-link family-jump ${alive ? '' : 'muted'}" data-id="${id}">${label}</button>`;
-        }).join(', ');
+        const entries = childIds
+          .slice(0, 6)
+          .map(id => {
+            const child = worldRef?.getAnyCreatureById?.(id);
+            const alive = child ? child.alive !== false : false;
+            const label = alive ? `#${id}` : `#${id}✝`;
+            return `<button class="btn-link family-jump ${alive ? '' : 'muted'}" data-id="${id}">${label}</button>`;
+          })
+          .join(', ');
         const extra = childIds.length > 6 ? `<span class="muted"> +${childIds.length - 6} more</span>` : '';
         childrenMarkup = `${entries}${extra}`;
       }
@@ -740,9 +783,10 @@ export function renderInspector(model = {}, handlers = {}) {
 
   if (lineageSummaryEl) {
     if (!model.lineageRootId) {
-      const ancestorStr = creature && model.ancestors && model.ancestors.length
-        ? `Ancestors: ${model.ancestors.map(a => formatId(a)).join(' ← ')}`
-        : 'Shift-click a creature to pick a lineage root.';
+      const ancestorStr =
+        creature && model.ancestors && model.ancestors.length
+          ? `Ancestors: ${model.ancestors.map(a => formatId(a)).join(' ← ')}`
+          : 'Shift-click a creature to pick a lineage root.';
       lineageSummaryEl.innerHTML = ancestorStr;
     } else {
       const overview = model.lineage ?? null;
@@ -751,10 +795,15 @@ export function renderInspector(model = {}, handlers = {}) {
       } else {
         let html = `<div>Root #${model.lineageRootId} · ${overview.totalDesc} descendants (${overview.aliveDesc} alive)</div>`;
         if (overview.levels.length) {
-          html += overview.levels.map(level => {
-            const samples = level.sample.filter(Boolean).map(id => `<button class="btn-link lineage-jump" data-id="${id}">#${id}</button>`).join(', ');
-            return `<div class="lineage-level"><span>Gen ${level.depth}</span><span class="count">${level.alive}/${level.total}</span>${samples ? `<span class="ids">${samples}</span>` : ''}</div>`;
-          }).join('');
+          html += overview.levels
+            .map(level => {
+              const samples = level.sample
+                .filter(Boolean)
+                .map(id => `<button class="btn-link lineage-jump" data-id="${id}">#${id}</button>`)
+                .join(', ');
+              return `<div class="lineage-level"><span>Gen ${level.depth}</span><span class="count">${level.alive}/${level.total}</span>${samples ? `<span class="ids">${samples}</span>` : ''}</div>`;
+            })
+            .join('');
         } else {
           html += '<div class="muted" style="margin-top:4px;">No descendants yet.</div>';
         }
@@ -795,10 +844,12 @@ export function renderInspector(model = {}, handlers = {}) {
       }
 
       if (primaryMeta) {
-        const trend = primaryMeta.delta > 0 ? `+${primaryMeta.delta}` : primaryMeta.delta < 0 ? `${primaryMeta.delta}` : '0';
+        const trend =
+          primaryMeta.delta > 0 ? `+${primaryMeta.delta}` : primaryMeta.delta < 0 ? `${primaryMeta.delta}` : '0';
         lineagePulseMeta.textContent = `${primaryMeta.name}: ${primaryMeta.current} alive (peak ${primaryMeta.peak}, trend ${trend})`;
       } else if (fallbackMeta) {
-        const trend = fallbackMeta.delta > 0 ? `+${fallbackMeta.delta}` : fallbackMeta.delta < 0 ? `${fallbackMeta.delta}` : '0';
+        const trend =
+          fallbackMeta.delta > 0 ? `+${fallbackMeta.delta}` : fallbackMeta.delta < 0 ? `${fallbackMeta.delta}` : '0';
         lineagePulseMeta.textContent = `${fallbackMeta.name}: ${fallbackMeta.current} alive (peak ${fallbackMeta.peak}, trend ${trend})`;
       } else {
         lineagePulseMeta.textContent = 'Collecting lineage data…';
@@ -807,11 +858,13 @@ export function renderInspector(model = {}, handlers = {}) {
       if (!leaders.length) {
         lineageTopEl.textContent = 'No dominant families yet.';
       } else {
-        lineageTopEl.innerHTML = leaders.map(entry => {
-          const trendClass = entry.delta > 0 ? 'up' : entry.delta < 0 ? 'down' : 'flat';
-          const trendVal = entry.delta > 0 ? `+${entry.delta}` : entry.delta < 0 ? `${entry.delta}` : '0';
-          return `<div class="family"><button class="family-root" data-root="${entry.rootId}">${entry.name}</button><div class="metrics"><span>${entry.alive}</span><span class="direction ${trendClass}">${trendVal}</span><span class="muted">pk ${entry.peak}</span></div></div>`;
-        }).join('');
+        lineageTopEl.innerHTML = leaders
+          .map(entry => {
+            const trendClass = entry.delta > 0 ? 'up' : entry.delta < 0 ? 'down' : 'flat';
+            const trendVal = entry.delta > 0 ? `+${entry.delta}` : entry.delta < 0 ? `${entry.delta}` : '0';
+            return `<div class="family"><button class="family-root" data-root="${entry.rootId}">${entry.name}</button><div class="metrics"><span>${entry.alive}</span><span class="direction ${trendClass}">${trendVal}</span><span class="muted">pk ${entry.peak}</span></div></div>`;
+          })
+          .join('');
         lineageTopEl.querySelectorAll('.family-root').forEach(btn => {
           btn.onclick = () => handlers.onSetRootId?.(Number(btn.dataset.root));
         });
@@ -826,9 +879,11 @@ export function renderInspector(model = {}, handlers = {}) {
       lineageStoriesEl.innerHTML = 'No milestones yet.';
     } else {
       lineageStoryPanel.classList.remove('hidden');
-      lineageStoriesEl.innerHTML = stories.map(evt => {
-        return `<button class="story" data-root="${evt.rootId}"><strong>${evt.title}</strong><br><span class="muted">t=${evt.time.toFixed(1)}s</span></button>`;
-      }).join('');
+      lineageStoriesEl.innerHTML = stories
+        .map(evt => {
+          return `<button class="story" data-root="${evt.rootId}"><strong>${evt.title}</strong><br><span class="muted">t=${evt.time.toFixed(1)}s</span></button>`;
+        })
+        .join('');
       lineageStoriesEl.querySelectorAll('.story').forEach(btn => {
         btn.onclick = () => handlers.onInspectId?.(Number(btn.dataset.root));
       });
@@ -841,10 +896,12 @@ export function renderInspector(model = {}, handlers = {}) {
     } else if (!activity.length) {
       activityFeedEl.innerHTML = 'No recent events.';
     } else {
-      const items = activity.map(entry => {
-        const time = entry.time != null ? `${entry.time.toFixed(1)}s` : '';
-        return `<li><time>${time}</time>${entry.message}</li>`;
-      }).join('');
+      const items = activity
+        .map(entry => {
+          const time = entry.time != null ? `${entry.time.toFixed(1)}s` : '';
+          return `<li><time>${time}</time>${entry.message}</li>`;
+        })
+        .join('');
       activityFeedEl.innerHTML = `<ul class="activity-list">${items}</ul>`;
     }
   }
@@ -856,27 +913,32 @@ export function renderAnalyticsCharts(ctxMap, data) {
     return;
   }
 
-  drawChart(ctxMap.pop, [
-    { series: data.population, color: '#7fd36a', label: 'Pop', decimals: 0 },
-    { series: data.predators, color: '#f37f7f', label: 'Pred', decimals: 0 }
-  ], { min: 0 });
+  drawChart(
+    ctxMap.pop,
+    [
+      { series: data.population, color: '#7fd36a', label: 'Pop', decimals: 0 },
+      { series: data.predators, color: '#f37f7f', label: 'Pred', decimals: 0 }
+    ],
+    { min: 0 }
+  );
 
-  drawChart(ctxMap.speed, [
-    { series: data.meanSpeed, color: '#76a9ff', label: 'Speed', decimals: 2 }
-  ]);
+  drawChart(ctxMap.speed, [{ series: data.meanSpeed, color: '#76a9ff', label: 'Speed', decimals: 2 }]);
 
-  drawChart(ctxMap.metabolism, [
-    { series: data.meanMetabolism, color: '#ffbd7a', label: 'Metab', decimals: 2 }
-  ]);
+  drawChart(ctxMap.metabolism, [{ series: data.meanMetabolism, color: '#ffbd7a', label: 'Metab', decimals: 2 }]);
 
-  drawChart(ctxMap.variance, [
-    { series: data.speedVar, color: '#8df0ff', label: 'Speed σ²', decimals: 3 },
-    { series: data.senseVar, color: '#d496ff', label: 'Sense σ²', decimals: 3 }
-  ], { min: 0 });
+  drawChart(
+    ctxMap.variance,
+    [
+      { series: data.speedVar, color: '#8df0ff', label: 'Speed σ²', decimals: 3 },
+      { series: data.senseVar, color: '#d496ff', label: 'Sense σ²', decimals: 3 }
+    ],
+    { min: 0 }
+  );
 
-  drawChart(ctxMap.ratio, [
-    { series: data.predatorRatio, color: '#ff8888', label: 'Pred %', decimals: 2 }
-  ], { min: 0, max: 1 });
+  drawChart(ctxMap.ratio, [{ series: data.predatorRatio, color: '#ff8888', label: 'Pred %', decimals: 2 }], {
+    min: 0,
+    max: 1
+  });
 
   drawChart(ctxMap.predators, [
     { series: data.meanPackInstinct, color: '#5bdadf', label: 'Pack', decimals: 2 },
@@ -884,10 +946,14 @@ export function renderAnalyticsCharts(ctxMap, data) {
     { series: data.meanAmbushDelay, color: '#d5b4ff', label: 'Amb', decimals: 2 }
   ]);
 
-  drawChart(ctxMap.health, [
-    { series: data.meanHealth, color: '#7fe07f', label: 'HP', decimals: 1 },
-    { series: data.meanMaxHealth, color: '#a3b0ff', label: 'HPmax', decimals: 1 }
-  ], { min: 0 });
+  drawChart(
+    ctxMap.health,
+    [
+      { series: data.meanHealth, color: '#7fe07f', label: 'HP', decimals: 1 },
+      { series: data.meanMaxHealth, color: '#a3b0ff', label: 'HPmax', decimals: 1 }
+    ],
+    { min: 0 }
+  );
 }
 
 function drawChart(ctx, lines, { min = null, max = null } = {}) {
@@ -920,7 +986,7 @@ function drawChart(ctx, lines, { min = null, max = null } = {}) {
       }
     }
   }
-  const range = (maxVal - minVal) || 1;
+  const range = maxVal - minVal || 1;
 
   // OPTIMIZATION: Draw baseline once
   ctx.strokeStyle = 'rgba(255,255,255,0.08)';
@@ -944,8 +1010,9 @@ function drawChart(ctx, lines, { min = null, max = null } = {}) {
     for (let j = 0; j < len; j++) {
       const value = line.series[j];
       const x = pad + j * xStep;
-      const y = h - pad - ((value - minVal) * yScale);
-      if (j === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      const y = h - pad - (value - minVal) * yScale;
+      if (j === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     }
     ctx.stroke();
   }

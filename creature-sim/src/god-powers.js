@@ -330,7 +330,8 @@ export class GodPowersSystem {
     if (world.visualEffects) {
       world.visualEffects.effects.push({
         type: 'lightning',
-        x, y,
+        x,
+        y,
         duration: 0.5,
         branches: this.generateLightningBranches(x, y, 5)
       });
@@ -461,7 +462,8 @@ export class GodPowersSystem {
     const affected = this.getCreaturesInRadius(x, y, world, radius);
 
     for (const creature of affected) {
-      if (Math.random() < 0.8) { // 80% death rate
+      if (Math.random() < 0.8) {
+        // 80% death rate
         creature.alive = false;
         creature.health = 0;
       }

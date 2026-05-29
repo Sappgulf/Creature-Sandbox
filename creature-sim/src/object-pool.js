@@ -148,7 +148,7 @@ export class ObjectPool {
    */
   getStats() {
     const totalRequests = this.hitCount + this.missCount;
-    const hitRate = totalRequests > 0 ? (this.hitCount / totalRequests * 100).toFixed(1) : '0.0';
+    const hitRate = totalRequests > 0 ? ((this.hitCount / totalRequests) * 100).toFixed(1) : '0.0';
 
     return {
       poolSize: this.pool.length,
@@ -158,7 +158,8 @@ export class ObjectPool {
       hitRate: hitRate + '%',
       hitCount: this.hitCount,
       missCount: this.missCount,
-      utilizationPercent: this.activeCount > 0 ? ((this.activeCount / (this.activeCount + this.pool.length)) * 100).toFixed(1) : '0.0'
+      utilizationPercent:
+        this.activeCount > 0 ? ((this.activeCount / (this.activeCount + this.pool.length)) * 100).toFixed(1) : '0.0'
     };
   }
 }
@@ -170,7 +171,10 @@ export class Vector2DPool extends ObjectPool {
   constructor(initialSize = 50, maxSize = 500) {
     super(
       () => ({ x: 0, y: 0 }),
-      (vec) => { vec.x = 0; vec.y = 0; },
+      vec => {
+        vec.x = 0;
+        vec.y = 0;
+      },
       initialSize,
       maxSize
     );
@@ -184,7 +188,9 @@ export class ArrayPool extends ObjectPool {
   constructor(initialSize = 20, maxSize = 200) {
     super(
       () => [],
-      (arr) => { arr.length = 0; },
+      arr => {
+        arr.length = 0;
+      },
       initialSize,
       maxSize
     );
@@ -212,28 +218,52 @@ export class ParticlePool extends ObjectPool {
   constructor(initialSize = 100, maxSize = 2000) {
     super(
       () => ({
-        x: 0, y: 0,
-        vx: 0, vy: 0,
-        life: 0, maxLife: 0,
-        size: 1, opacity: 1,
-        type: '', category: '',
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        life: 0,
+        maxLife: 0,
+        size: 1,
+        opacity: 1,
+        type: '',
+        category: '',
         color: '#ffffff',
-        twinkle: false, expandRate: 0,
-        targetX: 0, targetY: 0,
-        text: '', pulse: 0, delay: 0,
-        fadeInTime: 0, name: '', hue: 0, label: ''
+        twinkle: false,
+        expandRate: 0,
+        targetX: 0,
+        targetY: 0,
+        text: '',
+        pulse: 0,
+        delay: 0,
+        fadeInTime: 0,
+        name: '',
+        hue: 0,
+        label: ''
       }),
-      (particle) => {
-        particle.x = 0; particle.y = 0;
-        particle.vx = 0; particle.vy = 0;
-        particle.life = 0; particle.maxLife = 0;
-        particle.size = 1; particle.opacity = 1;
-        particle.type = ''; particle.category = '';
+      particle => {
+        particle.x = 0;
+        particle.y = 0;
+        particle.vx = 0;
+        particle.vy = 0;
+        particle.life = 0;
+        particle.maxLife = 0;
+        particle.size = 1;
+        particle.opacity = 1;
+        particle.type = '';
+        particle.category = '';
         particle.color = '#ffffff';
-        particle.twinkle = false; particle.expandRate = 0;
-        particle.targetX = 0; particle.targetY = 0;
-        particle.text = ''; particle.pulse = 0; particle.delay = 0;
-        particle.fadeInTime = 0; particle.name = ''; particle.hue = 0; particle.label = '';
+        particle.twinkle = false;
+        particle.expandRate = 0;
+        particle.targetX = 0;
+        particle.targetY = 0;
+        particle.text = '';
+        particle.pulse = 0;
+        particle.delay = 0;
+        particle.fadeInTime = 0;
+        particle.name = '';
+        particle.hue = 0;
+        particle.label = '';
       },
       initialSize,
       maxSize
@@ -255,7 +285,7 @@ export class StatusEffectPool extends ObjectPool {
         stacks: 0,
         source: null
       }),
-      (effect) => {
+      effect => {
         effect.type = '';
         effect.intensity = 0;
         effect.duration = 0;
@@ -282,7 +312,7 @@ export class MemoryPool extends ObjectPool {
         importance: 0,
         decay: 0
       }),
-      (memory) => {
+      memory => {
         memory.type = '';
         memory.data = null;
         memory.timestamp = 0;
@@ -304,11 +334,11 @@ export class RelationshipPool extends ObjectPool {
       () => ({
         targetId: 0,
         affinity: 0, // -1 to 1
-        trust: 0,    // 0 to 1
+        trust: 0, // 0 to 1
         lastInteraction: 0,
         interactionCount: 0
       }),
-      (rel) => {
+      rel => {
         rel.targetId = 0;
         rel.affinity = 0;
         rel.trust = 0;
@@ -336,7 +366,6 @@ export class PoolManager {
     this.registerPool('statusEffects', new StatusEffectPool());
     this.registerPool('memories', new MemoryPool());
     this.registerPool('relationships', new RelationshipPool());
-
   }
 
   /**
@@ -503,7 +532,7 @@ export class TempObjectPool extends ObjectPool {
   constructor(initialSize = 25) {
     super(
       () => ({}),
-      (obj) => {
+      obj => {
         for (const key in obj) {
           if (Object.prototype.hasOwnProperty.call(obj, key)) {
             delete obj[key];

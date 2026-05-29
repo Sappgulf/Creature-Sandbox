@@ -114,7 +114,7 @@ export function migrateSaveData(data) {
   let migrated = false;
 
   while (currentVersion !== CURRENT_SAVE_VERSION) {
-    const migration = SaveMigrations.find((m) => m.from === currentVersion);
+    const migration = SaveMigrations.find(m => m.from === currentVersion);
     if (!migration) {
       console.warn(`No migration path from ${currentVersion} to ${CURRENT_SAVE_VERSION}`);
       break;

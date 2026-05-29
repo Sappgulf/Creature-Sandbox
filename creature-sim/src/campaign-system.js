@@ -30,9 +30,7 @@ export const CAMPAIGN_LEVELS = [
         description: 'Reach 25 creatures'
       },
       timeLimit: 0, // No time limit
-      secondary: [
-        { type: 'no_extinctions', description: 'Keep at least 1 creature alive at all times' }
-      ]
+      secondary: [{ type: 'no_extinctions', description: 'Keep at least 1 creature alive at all times' }]
     },
 
     worldConfig: {
@@ -76,9 +74,7 @@ export const CAMPAIGN_LEVELS = [
         target: 180, // 3 minutes in seconds
         description: 'Survive for 3 minutes'
       },
-      failConditions: [
-        { type: 'extinction', description: 'All creatures die' }
-      ]
+      failConditions: [{ type: 'extinction', description: 'All creatures die' }]
     },
 
     worldConfig: {
@@ -115,9 +111,7 @@ export const CAMPAIGN_LEVELS = [
         description: 'A predator achieves 3 kills'
       },
       timeLimit: 300, // 5 minutes
-      secondary: [
-        { type: 'min_population', target: 10, description: 'Keep at least 10 creatures alive' }
-      ]
+      secondary: [{ type: 'min_population', target: 10, description: 'Keep at least 10 creatures alive' }]
     },
 
     worldConfig: {
@@ -154,9 +148,7 @@ export const CAMPAIGN_LEVELS = [
         description: 'Have 10+ creatures survive the plague'
       },
       timeLimit: 240, // 4 minutes
-      failConditions: [
-        { type: 'population_below', target: 5, description: 'Population drops below 5' }
-      ]
+      failConditions: [{ type: 'population_below', target: 5, description: 'Population drops below 5' }]
     },
 
     worldConfig: {
@@ -197,9 +189,7 @@ export const CAMPAIGN_LEVELS = [
         description: 'Survive through winter'
       },
       timeLimit: 0,
-      secondary: [
-        { type: 'min_population_end', target: 15, description: 'End with 15+ creatures' }
-      ]
+      secondary: [{ type: 'min_population_end', target: 15, description: 'End with 15+ creatures' }]
     },
 
     worldConfig: {
@@ -275,9 +265,7 @@ export const CAMPAIGN_LEVELS = [
         description: 'Maintain 100+ creatures for 2 minutes'
       },
       timeLimit: 600, // 10 minutes max
-      secondary: [
-        { type: 'biodiversity', target: 0.5, description: 'Maintain genetic diversity above 50%' }
-      ]
+      secondary: [{ type: 'biodiversity', target: 0.5, description: 'Maintain genetic diversity above 50%' }]
     },
 
     worldConfig: {
@@ -530,9 +518,7 @@ export class CampaignSystem {
       }
 
       case 'predator_kills': {
-        const predatorWithKills = aliveCreatures.find(
-          c => c.genes?.predator && c.stats?.kills >= objective.target
-        );
+        const predatorWithKills = aliveCreatures.find(c => c.genes?.predator && c.stats?.kills >= objective.target);
         return !!predatorWithKills;
       }
 

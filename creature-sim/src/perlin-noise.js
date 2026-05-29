@@ -318,4 +318,3 @@ export class BiomeGenerator {
     return { grid: biomeGrid, gridW, gridH, resolution };
   }
 }
-

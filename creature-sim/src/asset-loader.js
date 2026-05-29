@@ -187,16 +187,18 @@ export class AssetLoader {
       rawConfig.frameHeight ?? rawConfig.frameH ?? rawConfig.height ?? frameWidth,
       frameWidth
     );
-    const fps = Number.isFinite(Number(rawConfig.fps)) && Number(rawConfig.fps) > 0
-      ? Number(rawConfig.fps)
-      : DEFAULT_SPRITE_FPS;
+    const fps =
+      Number.isFinite(Number(rawConfig.fps)) && Number(rawConfig.fps) > 0 ? Number(rawConfig.fps) : DEFAULT_SPRITE_FPS;
     const defaultAnimation = rawConfig.defaultAnimation || rawConfig.default || 'idle';
     const tintable = rawConfig.tintable === true || rawConfig.tint === true;
     const format = String(rawConfig.format || path.split('.').pop() || 'svg').toLowerCase();
     const anchor = normalizePoint(rawConfig.anchor, { x: 0.5, y: 0.5 });
     const pivot = normalizePoint(rawConfig.pivot, anchor);
 
-    const sourceWidth = clampPositiveInt(rawConfig.sheetWidth ?? rawConfig.widthTotal ?? (frameWidth * framesHint), frameWidth);
+    const sourceWidth = clampPositiveInt(
+      rawConfig.sheetWidth ?? rawConfig.widthTotal ?? frameWidth * framesHint,
+      frameWidth
+    );
     const sourceHeight = clampPositiveInt(rawConfig.sheetHeight ?? rawConfig.heightTotal ?? frameHeight, frameHeight);
     const inferredFrames = clampPositiveInt(Math.floor(sourceWidth / frameWidth), framesHint);
     const frameCount = Math.max(1, rawConfig.frames ? framesHint : inferredFrames);
@@ -266,7 +268,7 @@ export class AssetLoader {
         URL.revokeObjectURL(url);
         resolve(img);
       };
-      img.onerror = (err) => {
+      img.onerror = err => {
         URL.revokeObjectURL(url);
         reject(err);
       };
@@ -308,8 +310,14 @@ export class AssetLoader {
         }
 
         if (normalized.image) {
-          const sourceWidth = clampPositiveInt(normalized.image.naturalWidth || normalized.image.width, normalized.sourceWidth);
-          const sourceHeight = clampPositiveInt(normalized.image.naturalHeight || normalized.image.height, normalized.sourceHeight);
+          const sourceWidth = clampPositiveInt(
+            normalized.image.naturalWidth || normalized.image.width,
+            normalized.sourceWidth
+          );
+          const sourceHeight = clampPositiveInt(
+            normalized.image.naturalHeight || normalized.image.height,
+            normalized.sourceHeight
+          );
           normalized.sourceWidth = sourceWidth;
           normalized.sourceHeight = sourceHeight;
           if (!config.frames && normalized.frameWidth > 0) {
@@ -502,11 +510,7 @@ export class AssetLoader {
       frameCanvas.width = size;
       frameCanvas.height = size;
       const frameCtx = frameCanvas.getContext('2d');
-      frameCtx.drawImage(
-        image,
-        i * srcFrameWidth, 0, srcFrameWidth, srcFrameHeight,
-        0, 0, size, size
-      );
+      frameCtx.drawImage(image, i * srcFrameWidth, 0, srcFrameWidth, srcFrameHeight, 0, 0, size, size);
       frames[i] = frameCanvas;
     }
 
@@ -593,9 +597,7 @@ export class AssetLoader {
             this.unavailableSpriteKeys.add(key);
             return null;
           }
-          const tintedSvg = svgText.includes('currentColor')
-            ? svgText.replace(/currentColor/g, tintColor)
-            : svgText;
+          const tintedSvg = svgText.includes('currentColor') ? svgText.replace(/currentColor/g, tintColor) : svgText;
           image = await this._loadImageFromSvgText(tintedSvg);
         } else {
           if (!sheet.image && sheet.svgText) {
@@ -642,24 +644,32 @@ export class AssetLoader {
   }
 
   getAnimationFrameIndex(spriteOrName, state = 'idle', worldTime = 0, speedScale = 1) {
-    const sprite = typeof spriteOrName === 'string'
-      ? this.getSpriteSheet(spriteOrName)
-      : spriteOrName;
+    const sprite = typeof spriteOrName === 'string' ? this.getSpriteSheet(spriteOrName) : spriteOrName;
     if (!sprite) return 0;
 
     const frameCount = Math.max(1, sprite.frameCount ?? sprite.frames?.length ?? 1);
     const clips = sprite.animations || null;
     const defaultState = sprite.defaultAnimation || 'idle';
-    const clip = clips?.[state] || clips?.[defaultState] || normalizeAnimationClip([0, frameCount, sprite.fps || DEFAULT_SPRITE_FPS], frameCount, sprite.fps || DEFAULT_SPRITE_FPS);
+    const clip =
+      clips?.[state] ||
+      clips?.[defaultState] ||
+      normalizeAnimationClip(
+        [0, frameCount, sprite.fps || DEFAULT_SPRITE_FPS],
+        frameCount,
+        sprite.fps || DEFAULT_SPRITE_FPS
+      );
     const start = Math.max(0, Math.min(frameCount - 1, clip.start ?? 0));
     const count = Math.max(1, Math.min(frameCount - start, clip.count ?? frameCount));
-    const scaledFps = Math.max(0.5, (clip.fps || sprite.fps || DEFAULT_SPRITE_FPS) * Math.max(0.1, Number(speedScale) || 1));
+    const scaledFps = Math.max(
+      0.5,
+      (clip.fps || sprite.fps || DEFAULT_SPRITE_FPS) * Math.max(0.1, Number(speedScale) || 1)
+    );
     const frameStep = Math.floor(Math.max(0, worldTime) * scaledFps);
 
     if (clip.pingPong && count > 1) {
       const cycle = count * 2 - 2;
       const step = cycle > 0 ? frameStep % cycle : 0;
-      return start + (step < count ? step : (cycle - step));
+      return start + (step < count ? step : cycle - step);
     }
 
     if (clip.loop === false) {

@@ -7,6 +7,7 @@ An advanced evolutionary simulation featuring autonomous creatures with genetic 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Sappgulf/Creature-Sandbox)
 
 ## 🎮 [Live Demo](https://creature-sandbox.vercel.app)
+
 Run the current hosted build, or deploy your own instance with the button above.
 
 ---
@@ -14,6 +15,7 @@ Run the current hosted build, or deploy your own instance with the button above.
 ## ✨ What's New in v2.0.0
 
 ### 🎭 **Advanced Systems**
+
 - **Personality System**: 7 core traits (boldness, curiosity, sociability, etc.), 15+ unique quirks, 5 temperaments
 - **Advanced Genetics**: 15 rare mutations (bioluminescence, regeneration, chameleon, etc.) with 5 rarity tiers
 - **Family Bonds**: Track parents, siblings, mates, friends, and rivals with bond strength and behaviors
@@ -23,22 +25,26 @@ Run the current hosted build, or deploy your own instance with the button above.
 - **First-Run Tutorial**: A five-step onboarding flow highlights the camera, creature selection, pause, and god mode controls
 
 ### 🧠 **Sophisticated AI**
+
 - **5 Hunting Strategies**: Ambush, chase, intercept, herd, patience
 - **5 Evasion Tactics**: Zigzag, hide, group flee, freeze
 - **Dynamic Strategy Selection**: AI adapts based on creature stats and situation
 - **Hunt Success Probability**: Realistic calculation based on speed, sense, defenses, and fatigue
 
 ### 🎵 **Immersive Audio**
+
 - **Procedural Sound System**: Web Audio API with tone/sweep/noise generators
 - **ADSR Envelopes**: Natural attack, decay, sustain, release for every sound
 - **10+ Sound Events**: Birth, death, eating, mating, attack, movement, biome ambience, weather
 
 ### 🌍 **Rich Environments**
+
 - **8 Unique Biomes**: Forest, desert, tundra, swamp, ocean, mountain, jungle, savanna
 - **Biome Adaptation System**: Creatures adapt over time, unlocking special bonuses
 - **Biome-Specific Effects**: Energy costs, stress levels, movement, detection, food preferences
 
 ### 🏆 **Progression Systems**
+
 - **30+ Achievements**: Unlock new biomes, creatures, tools, features, challenges, skins, particles, sounds
 - **8 Achievement Categories**: Population, genetics, survival, ecosystem, behavior, biome, special, mastery
 - **XP & Levels**: Achievement rewards now feed visible XP grants and level-up feedback
@@ -50,12 +56,14 @@ Run the current hosted build, or deploy your own instance with the button above.
 ## ✨ Core Features
 
 ### 🧬 Genetic Evolution
+
 - **Hereditary traits**: Speed, field of view, sense radius, metabolism
 - **Mutation system**: Random variations create genetic diversity
 - **Natural selection**: Better-adapted creatures survive and reproduce
 - **Lineage tracking**: Follow family trees across generations
 
 ### 🌍 Dynamic Ecosystem
+
 - **Predator-prey dynamics**: Herbivores graze, predators hunt
 - **Seasonal variations**: Environmental changes affect food availability
 - **Day/night rhythm**: Activity, rest biasing, and ambient lighting shift across the cycle
@@ -76,6 +84,7 @@ Run the current hosted build, or deploy your own instance with the button above.
 - **Migration flows**: Populations relocate based on food, pressure, and stress, then resettle
 
 ### 📊 Real-Time Analytics
+
 - **Population tracking**: Monitor herbivore/predator ratios
 - **Trait evolution**: Watch speed, metabolism, and sense evolve over time
 - **Variance analysis**: Track genetic diversity
@@ -84,6 +93,7 @@ Run the current hosted build, or deploy your own instance with the button above.
 - **Export data**: Download simulation snapshots as JSON
 
 ### 🎨 Interactive Interface
+
 - **Inspector panel**: Examine individual creatures in detail
 - **Lineage view**: Explore family trees and descendants
 - **Behavior tuning**: Adjust forage/wander/rest weights in real-time
@@ -108,6 +118,7 @@ Run the current hosted build, or deploy your own instance with the button above.
 - **Save previews**: Save slots include population, scenario context, runtime metadata, and canvas thumbnails
 
 ### ⚡ Performance Optimized
+
 - **Spatial partitioning**: O(1) proximity queries with grid-based optimization
 - **Double-buffering**: Eliminates 60+ allocations per second
 - **Intelligent caching**: Memoized lineage computations
@@ -119,6 +130,7 @@ Run the current hosted build, or deploy your own instance with the button above.
 ## 🚀 Quick Start
 
 ### Deploy to Vercel (Recommended)
+
 1. Click the "Deploy with Vercel" button above
 2. Connect your GitHub account
 3. Deploy! Your simulation will be live in ~30 seconds
@@ -126,6 +138,7 @@ Run the current hosted build, or deploy your own instance with the button above.
 For release candidates, run the local proof in [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) before tagging or promoting a deployed build.
 
 ### Run Locally
+
 ```bash
 # Clone the repository
 git clone https://github.com/Sappgulf/Creature-Sandbox.git
@@ -144,6 +157,7 @@ open http://localhost:5173
 ## 🎯 How to Use
 
 ### Basic Controls
+
 - **Space**: Pause/Resume simulation
 - **I**: Toggle inspector panel
 - **+/-**: Adjust simulation speed (1x to 5x)
@@ -158,6 +172,7 @@ open http://localhost:5173
 - **Upgrade Hub**: Open **⋯ More Actions** → **✨ Upgrade Hub** for recipe presets, action cards, scenario results, readability, seed gallery, and postcards
 
 ### Tool Modes (Keyboard Shortcuts)
+
 - **X**: Inspect mode (default)
 - **F**: Food painting mode
 - **S**: Spawn creature mode
@@ -166,6 +181,7 @@ open http://localhost:5173
 - **[ / ]**: Decrease/increase tool brush size
 
 ### Mobile Quick Actions
+
 - **Spawn**: Opens the creature picker sheet. Choose a type and tap **Spawn Selected**.
 - **Food**: Drops food clusters near the camera center.
 - **Props**: Cycles props, then tap the canvas to place.
@@ -173,11 +189,13 @@ open http://localhost:5173
 - **Panels**: Side panels start collapsed on mobile; reopen them from the ⋯ menu or the **Show inspector** button.
 
 ### God Mode (Optional)
+
 - **Enter/Exit**: Toggle via **⋯ More Actions** or long-press the world.
 - **Tools**: Place a food source, create a calm zone, nudge chaos, or spawn/remove a creature.
 - **Autonomy-first**: Leaving god mode resumes normal time and creature behavior.
 
 ### Inspector Panel
+
 - **Click creature**: Inspect individual stats and genes
 - **Shift+Click creature**: Set as lineage root to explore family tree
 - **Pin button**: Keep creature selected even if it moves
@@ -185,13 +203,16 @@ open http://localhost:5173
 - **Export button**: Download simulation data
 
 ### Developer / Observer Tools (Optional)
+
 - **`debug.goals()`**: Show goal labels and target lines for creatures.
 - **`debug.observe()`**: Show life-stage labels and remembered locations (memory markers).
 
 ### Behavior Weights
+
 Adjust how creatures prioritize actions:
+
 - **Forage**: Tendency to seek food
-- **Wander**: Random exploration behavior  
+- **Wander**: Random exploration behavior
 - **Rest**: Energy conservation when low on energy
 
 ---
@@ -199,6 +220,7 @@ Adjust how creatures prioritize actions:
 ## 🧪 Simulation Mechanics
 
 ### Creature Lifecycle
+
 1. **Birth**: Spawned with parent's genes + random mutations
 2. **Needs update**: Hunger/energy/social/stress drift over time and impacts
 3. **Goals**: Utility picks eat/rest/mate/wander using local sensing
@@ -213,6 +235,7 @@ Adjust how creatures prioritize actions:
 10. **Death**: Starvation (0 energy) or elder fade (≈300s)
 
 ### Genetic Traits
+
 - **Speed** (0.2-2.0): Movement velocity
 - **FOV** (20-160°): Visual field angle
 - **Sense** (20-200px): Detection radius
@@ -221,6 +244,7 @@ Adjust how creatures prioritize actions:
 - **Diet roles**: Herbivore, scavenger, and predator-lite (stress + scatter without instant kills)
 
 ### Energy Economy
+
 - **Base cost**: Metabolism + movement + sensory processing
 - **Temperature penalty**: Based on distance from comfort zone
 - **Food reward**: Bite-based energy per patch, predators gain ~14 per kill
@@ -228,7 +252,9 @@ Adjust how creatures prioritize actions:
 - **Birth cost**: Parents pay energy + social drive during mating
 
 ### Badges & Milestones
+
 Creatures earn badges for achievements:
+
 - **Swift**: Speed ≥ 1.45
 - **Scout**: Sense ≥ 150
 - **Efficient**: Metabolism ≤ 0.6
@@ -242,6 +268,7 @@ Creatures earn badges for achievements:
 ## 📐 Architecture
 
 ### Core Systems
+
 - **World** (`world-core.js` and `world-*` modules): Main simulation state, spatial grids, environment, ecosystem, combat, disaster, and lineage attachment points
 - **Creature** (`creature.js`): Individual behavior, pathfinding, energy management
 - **Genetics** (`genetics.js`): Gene generation and mutation
@@ -250,10 +277,12 @@ Creatures earn badges for achievements:
 - **Bootstrap** (`app-bootstrap.js` plus focused controllers): Wires systems, UI controllers, save metadata, smoke hooks, and startup/home flow
 
 ### Creature State (Centralized)
+
 - **Memory + learning**: Stored on each creature (`creature.js` + `creature-features.js`) and persisted via `save-system.js`.
 - **Life stages**: Age + life-stage state tracked per creature (`creature.js`) and restored in save/load migration.
 
 ### Performance Features
+
 - **Spatial Grid**: O(1) average-case proximity queries
 - **Double Buffering**: Scalar field updates without allocation
 - **BFS Optimization**: Index-based queues (no array.shift)
@@ -261,6 +290,7 @@ Creatures earn badges for achievements:
 - **Lazy Evaluation**: On-demand calculation with caching
 
 ### Data Structures
+
 - **Registry Map**: O(1) creature lookup by ID
 - **Children Map**: Parent → Set of child IDs
 - **Spatial Hash Grid**: Position-based entity bucketing
@@ -271,30 +301,40 @@ Creatures earn badges for achievements:
 ## 🎨 Customization
 
 ### Modify Initial Population
+
 Edit scenario setup in `creature-sim/src/playable-scenarios.js` or seed calls in `creature-sim/src/app-bootstrap.js`:
+
 ```javascript
-world.seed(70, 6, 200);  // (herbivores, predators, food)
+world.seed(70, 6, 200); // (herbivores, predators, food)
 ```
 
 ### Adjust World Parameters
+
 Edit `creature-sim/src/world-core.js` or subsystem constants:
+
 ```javascript
-this.seasonSpeed = 0.015;  // Season cycle rate
-this.maxFood = Math.floor((width * height) / 320);  // Food cap
+this.seasonSpeed = 0.015; // Season cycle rate
+this.maxFood = Math.floor((width * height) / 320); // Food cap
 ```
 
 ### Change Mutation Rate
+
 Edit the reproduction path in `creature-sim/src/world-creature-manager.js`:
+
 ```javascript
-const childGenes = mutateGenes(parent.genes, 0.05);  // Mutation amount
+const childGenes = mutateGenes(parent.genes, 0.05); // Mutation amount
 ```
 
 ### Tune Energy Values
+
 Edit `creature.js`:
+
 ```javascript
-this.energy = isChild ? 36 : 52;  // Starting energy
+this.energy = isChild ? 36 : 52; // Starting energy
 ```
+
 Edit `creature-agent-constants.js` for food bite rewards:
+
 ```javascript
 BITE_ENERGY: 4.5, // Energy gained per food bite
 ```
@@ -313,6 +353,7 @@ BITE_ENERGY: 4.5, // Energy gained per food bite
 ## 📊 Performance Metrics
 
 **Optimized Performance:**
+
 - 100 creatures: 60 FPS (stable)
 - 200 creatures: 45-50 FPS
 - CPU usage: 30-50% reduction vs baseline
@@ -320,6 +361,7 @@ BITE_ENERGY: 4.5, // Energy gained per food bite
 - Frame variance: -60%
 
 **Complexity:**
+
 - Creature update: O(1) per creature
 - Spatial queries: O(1) average case
 - Lineage traversal: O(depth) or O(1) cached
@@ -360,6 +402,7 @@ npm run lint:fix # Auto-fix lint issues
 ## 📦 Module Structure
 
 The codebase is organized into focused modules:
+
 - `creature-sim/src/creature*.js` — Creature logic (genetics, age, render, agent-needs)
 - `creature-sim/src/renderer*.js` — Renderer (features-viz, minimap, creatures)
 - `creature-sim/src/ui-controller*.js` — UI (spawn, god-mode, watch, panels, game-mode, exports)
@@ -367,6 +410,7 @@ The codebase is organized into focused modules:
 - `scripts/*.test.mjs` — Unit tests (155 checks)
 
 **Large files split:**
+
 - `creature.js`: 3377 → 2266 lines
 - `renderer.js`: 2681 → 1377 lines
 - `ui-controller.js`: 1777 → 688 lines
@@ -390,7 +434,8 @@ Optimized for production deployment with comprehensive algorithmic improvements.
 
 ## 🐛 Issues & Contributing
 
-Found a bug? Have a feature idea? 
+Found a bug? Have a feature idea?
+
 - Open an issue on GitHub
 - Submit a pull request
 - Star the repo if you find it useful! ⭐
