@@ -5,3 +5,5 @@ export { assetLoader } from '../asset-loader.js';
 // Visual & effects (gradual barrel adoption)
 export { HeatmapSystem } from '../heatmap-system.js';
 export { MiniGraphs } from '../mini-graphs.js';
+export { VisualEffects } from '../visual-effects.js';
+export { RendererConfig } from '../renderer-config.js';

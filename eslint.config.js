@@ -1,4 +1,5 @@
 import globals from 'globals';
+import eslintConfigPrettier from 'eslint-config-prettier';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -17,20 +18,11 @@ export default [
       'no-console': ['warn', { allow: ['warn', 'error', 'info', 'debug'] }],
       'prefer-const': 'warn',
       'no-var': 'warn',
-      'eqeqeq': ['warn', 'smart'],
+      eqeqeq: ['warn', 'smart'],
       'no-duplicate-imports': 'error',
       'no-unreachable': 'error',
       'no-constant-condition': ['warn', { checkLoops: false }],
-      'no-empty': ['warn', { allowEmptyCatch: true }],
-      'no-extra-semi': 'warn',
-      'semi': ['warn', 'always'],
-      'quotes': ['warn', 'single', { avoidEscape: true }],
-      'indent': ['warn', 2, { SwitchCase: 1 }],
-      'comma-dangle': ['warn', 'never'],
-      'no-trailing-spaces': 'warn',
-      'eol-last': ['warn', 'always'],
-      'object-curly-spacing': ['warn', 'always'],
-      'array-bracket-spacing': ['warn', 'never']
+      'no-empty': ['warn', { allowEmptyCatch: true }]
     }
   },
   {
@@ -41,5 +33,7 @@ export default [
     rules: {
       'no-console': 'off'
     }
-  }
+  },
+  // Turn off all formatting rules that conflict with Prettier
+  eslintConfigPrettier
 ];

@@ -108,9 +108,9 @@ export function buildBondsSummary(creature = {}, world = null) {
   const parentId = creature.parentId ?? null;
   const children = Array.isArray(world?.creatures)
     ? world.creatures
-      .filter(item => item?.parentId === creature.id)
-      .slice(0, 4)
-      .map(item => item.id)
+        .filter(item => item?.parentId === creature.id)
+        .slice(0, 4)
+        .map(item => item.id)
     : [];
   const bondCount = Array.isArray(creature.socialBonds)
     ? creature.socialBonds.length

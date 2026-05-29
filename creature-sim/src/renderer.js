@@ -330,15 +330,15 @@ export class Renderer {
         },
         creature: creature
           ? {
-            id: creature.id,
-            x: Number(creature.x.toFixed(2)),
-            y: Number(creature.y.toFixed(2)),
-            size: creature.size,
-            energy: Number(creature.energy?.toFixed?.(2) ?? creature.energy),
-            alpha,
-            inView,
-            visible: creature.visible !== false
-          }
+              id: creature.id,
+              x: Number(creature.x.toFixed(2)),
+              y: Number(creature.y.toFixed(2)),
+              size: creature.size,
+              energy: Number(creature.energy?.toFixed?.(2) ?? creature.energy),
+              alpha,
+              inView,
+              visible: creature.visible !== false
+            }
           : null,
         renderedCount: this.renderedCount,
         culledCount: this.culledCount

@@ -124,26 +124,26 @@ export class SaveSystem {
         dayLength: world.dayLength ?? 120,
         environment: world.environment
           ? {
-            timeOfDay: world.environment.timeOfDay,
-            dayLength: world.environment.dayLength,
-            dayNightEnabled: world.environment.dayNightEnabled,
-            seasonTime: world.environment.seasonTime,
-            seasonDuration: world.environment.seasonDuration,
-            currentSeason: world.environment.currentSeason,
-            seasonIndex: world.environment.seasonIndex,
-            seasonPhase: world.environment.seasonPhase,
-            seasonSpeed: world.environment.seasonSpeed,
-            weatherIntensity: world.environment.weatherIntensity,
-            weatherType: world.environment.weatherType,
-            weatherTransitionTime: world.environment.weatherTransitionTime,
-            weatherTargetIntensity: world.environment.weatherTargetIntensity,
-            diseaseTimer: world.environment.diseaseTimer,
-            moodType: world.environment.moodType,
-            moodIntensity: world.environment.moodIntensity,
-            moodTimer: world.environment.moodTimer,
-            moodDuration: world.environment.moodDuration,
-            windAngle: world.environment.windAngle
-          }
+              timeOfDay: world.environment.timeOfDay,
+              dayLength: world.environment.dayLength,
+              dayNightEnabled: world.environment.dayNightEnabled,
+              seasonTime: world.environment.seasonTime,
+              seasonDuration: world.environment.seasonDuration,
+              currentSeason: world.environment.currentSeason,
+              seasonIndex: world.environment.seasonIndex,
+              seasonPhase: world.environment.seasonPhase,
+              seasonSpeed: world.environment.seasonSpeed,
+              weatherIntensity: world.environment.weatherIntensity,
+              weatherType: world.environment.weatherType,
+              weatherTransitionTime: world.environment.weatherTransitionTime,
+              weatherTargetIntensity: world.environment.weatherTargetIntensity,
+              diseaseTimer: world.environment.diseaseTimer,
+              moodType: world.environment.moodType,
+              moodIntensity: world.environment.moodIntensity,
+              moodTimer: world.environment.moodTimer,
+              moodDuration: world.environment.moodDuration,
+              windAngle: world.environment.windAngle
+            }
           : null,
 
         // Creatures
@@ -177,53 +177,53 @@ export class SaveSystem {
           territoryAffinity: c.territoryAffinity ?? null,
           goal: c.goal
             ? {
-              current: c.goal.current,
-              lastChange: c.goal.lastChange,
-              cooldown: c.goal.cooldown,
-              mateCooldown: c.goal.mateCooldown
-            }
+                current: c.goal.current,
+                lastChange: c.goal.lastChange,
+                cooldown: c.goal.cooldown,
+                mateCooldown: c.goal.mateCooldown
+              }
             : null,
           ecosystem: c.ecosystem ? { ...c.ecosystem } : null,
           // Advanced features
           emotions: c.emotions ? { ...c.emotions } : null,
           intelligence: c.intelligence
             ? {
-              level: c.intelligence.level,
-              experiencePoints: c.intelligence.experiencePoints
-            }
+                level: c.intelligence.level,
+                experiencePoints: c.intelligence.experiencePoints
+              }
             : null,
           sexuality: c.sexuality
             ? {
-              lastMated: c.sexuality.lastMated,
-              attractiveness: c.sexuality.attractiveness
-            }
+                lastMated: c.sexuality.lastMated,
+                attractiveness: c.sexuality.attractiveness
+              }
             : null,
           migration: c.migration
             ? {
-              lastMigration: c.migration.lastMigration,
-              targetRegionId: c.migration.targetRegionId,
-              target: c.migration.target ? { ...c.migration.target } : null,
-              settled: c.migration.settled,
-              active: c.migration.active,
-              cooldownUntil: c.migration.cooldownUntil,
-              recentUntil: c.migration.recentUntil
-            }
+                lastMigration: c.migration.lastMigration,
+                targetRegionId: c.migration.targetRegionId,
+                target: c.migration.target ? { ...c.migration.target } : null,
+                settled: c.migration.settled,
+                active: c.migration.active,
+                cooldownUntil: c.migration.cooldownUntil,
+                recentUntil: c.migration.recentUntil
+              }
             : null,
           memory: c.memory
             ? {
-              capacity: c.memory.capacity,
-              locations: Array.isArray(c.memory.locations)
-                ? c.memory.locations.map(mem => ({
-                  id: mem.id ?? null,
-                  x: mem.x,
-                  y: mem.y,
-                  tag: mem.tag ?? mem.type ?? null,
-                  type: mem.type ?? mem.tag ?? null,
-                  strength: mem.strength,
-                  timestamp: mem.timestamp
-                }))
-                : []
-            }
+                capacity: c.memory.capacity,
+                locations: Array.isArray(c.memory.locations)
+                  ? c.memory.locations.map(mem => ({
+                      id: mem.id ?? null,
+                      x: mem.x,
+                      y: mem.y,
+                      tag: mem.tag ?? mem.type ?? null,
+                      type: mem.type ?? mem.tag ?? null,
+                      strength: mem.strength,
+                      timestamp: mem.timestamp
+                    }))
+                  : []
+              }
             : null
         })),
 
@@ -242,49 +242,49 @@ export class SaveSystem {
         })),
         foodPatches: world.ecosystem?.foodPatches
           ? world.ecosystem.foodPatches.map(patch => ({
-            id: patch.id,
-            x: patch.x,
-            y: patch.y,
-            radius: patch.radius,
-            fertility: patch.fertility,
-            maxStock: patch.maxStock,
-            stock: patch.stock,
-            pressure: patch.pressure,
-            depletedTimer: patch.depletedTimer,
-            spawnCooldown: patch.spawnCooldown,
-            tag: patch.tag ?? null
-          }))
+              id: patch.id,
+              x: patch.x,
+              y: patch.y,
+              radius: patch.radius,
+              fertility: patch.fertility,
+              maxStock: patch.maxStock,
+              stock: patch.stock,
+              pressure: patch.pressure,
+              depletedTimer: patch.depletedTimer,
+              spawnCooldown: patch.spawnCooldown,
+              tag: patch.tag ?? null
+            }))
           : [],
         restZones: world.restZones
           ? world.restZones.map(z => ({
-            id: z.id,
-            x: z.x,
-            y: z.y,
-            radius: z.radius
-          }))
+              id: z.id,
+              x: z.x,
+              y: z.y,
+              radius: z.radius
+            }))
           : [],
         nests: world.nests
           ? world.nests.map(nest => ({
-            id: nest.id,
-            x: nest.x,
-            y: nest.y,
-            radius: nest.radius,
-            capacity: nest.capacity,
-            comfort: nest.comfort,
-            createdAt: nest.createdAt ?? 0,
-            createdBy: nest.createdBy ?? null
-          }))
+              id: nest.id,
+              x: nest.x,
+              y: nest.y,
+              radius: nest.radius,
+              capacity: nest.capacity,
+              comfort: nest.comfort,
+              createdAt: nest.createdAt ?? 0,
+              createdBy: nest.createdBy ?? null
+            }))
           : [],
 
         // Corpses
         corpses: world.corpses
           ? world.corpses.map(c => ({
-            x: c.x,
-            y: c.y,
-            energy: c.energy,
-            age: c.age,
-            isPredator: c.isPredator
-          }))
+              x: c.x,
+              y: c.y,
+              energy: c.energy,
+              age: c.age,
+              isPredator: c.isPredator
+            }))
           : [],
 
         // Sandbox props
@@ -305,19 +305,19 @@ export class SaveSystem {
         disasterIntensity: world.disaster?.activeDisaster?.intensity ?? 1,
         disaster: world.disaster
           ? {
-            active: world.disaster.activeDisaster ?? null,
-            pending: Array.isArray(world.disaster.pendingDisasters)
-              ? world.disaster.pendingDisasters.map(item => ({ ...item }))
-              : [],
-            cooldown: world.disaster.disasterCooldown ?? 0
-          }
+              active: world.disaster.activeDisaster ?? null,
+              pending: Array.isArray(world.disaster.pendingDisasters)
+                ? world.disaster.pendingDisasters.map(item => ({ ...item }))
+                : [],
+              cooldown: world.disaster.disasterCooldown ?? 0
+            }
           : null,
         events: world.events
           ? {
-            active: world.events.activeEvent ? { ...world.events.activeEvent } : null,
-            cooldown: world.events.cooldown ?? 0,
-            modifiers: { ...(world.eventModifiers || {}) }
-          }
+              active: world.events.activeEvent ? { ...world.events.activeEvent } : null,
+              cooldown: world.events.cooldown ?? 0,
+              modifiers: { ...(world.eventModifiers || {}) }
+            }
           : null
       },
 
@@ -335,9 +335,9 @@ export class SaveSystem {
       // Analytics (condensed)
       analytics: analytics
         ? {
-          dataPoints: analytics.data ? analytics.data.slice(-300) : [], // Last 300 points
-          totalGenerations: analytics.totalGenerations || 0
-        }
+            dataPoints: analytics.data ? analytics.data.slice(-300) : [], // Last 300 points
+            totalGenerations: analytics.totalGenerations || 0
+          }
         : null,
 
       // Lineage names
@@ -634,9 +634,9 @@ export class SaveSystem {
         creature.migration.targetRegionId = migrationData.targetRegionId ?? creature.migration.targetRegionId ?? null;
         creature.migration.target = migrationData.target
           ? {
-            x: toNumber(migrationData.target.x, creature.x),
-            y: toNumber(migrationData.target.y, creature.y)
-          }
+              x: toNumber(migrationData.target.x, creature.x),
+              y: toNumber(migrationData.target.y, creature.y)
+            }
           : null;
         creature.migration.settled = migrationData.settled ?? creature.migration.settled ?? true;
         creature.migration.active = migrationData.active ?? creature.migration.active ?? false;

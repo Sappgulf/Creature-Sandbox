@@ -244,9 +244,11 @@ export class InputManager {
         break;
       case '[':
         this.tools?.adjustBrushSize?.(-4);
+        this.uiController?.updateToolIndicator?.(this.tools?.mode);
         break;
       case ']':
         this.tools?.adjustBrushSize?.(4);
+        this.uiController?.updateToolIndicator?.(this.tools?.mode);
         break;
 
       case '+':

@@ -383,20 +383,20 @@ export class PlayableScenarios {
       progress: this.progress,
       activeRun: this.activeRun
         ? {
-          id: this.activeRun.id,
-          startedAt: Number(this.activeRun.startedAt ?? 0),
-          elapsed: Number(this.activeRun.elapsed ?? 0),
-          progress: Number(this.activeRun.progress ?? 0),
-          completed: !!this.activeRun.completed,
-          failed: !!this.activeRun.failed,
-          state: this.activeRun.state || 'running',
-          scenario: {
-            id: this.activeRun.scenario?.id,
-            name: this.activeRun.scenario?.name,
-            objective: this.activeRun.scenario?.objective,
-            icon: this.activeRun.scenario?.icon
+            id: this.activeRun.id,
+            startedAt: Number(this.activeRun.startedAt ?? 0),
+            elapsed: Number(this.activeRun.elapsed ?? 0),
+            progress: Number(this.activeRun.progress ?? 0),
+            completed: !!this.activeRun.completed,
+            failed: !!this.activeRun.failed,
+            state: this.activeRun.state || 'running',
+            scenario: {
+              id: this.activeRun.scenario?.id,
+              name: this.activeRun.scenario?.name,
+              objective: this.activeRun.scenario?.objective,
+              icon: this.activeRun.scenario?.icon
+            }
           }
-        }
         : null,
       lastSnapshot: this.lastSnapshot
     };
@@ -669,13 +669,13 @@ export class PlayableScenarios {
       state: this.activeRun?.state || 'idle',
       scenario: this.activeRun
         ? {
-          id: scenario.id,
-          icon: scenario.icon,
-          name: scenario.name,
-          fantasy: scenario.fantasy,
-          objective: scenario.objective,
-          steps: scenario.steps || []
-        }
+            id: scenario.id,
+            icon: scenario.icon,
+            name: scenario.name,
+            fantasy: scenario.fantasy,
+            objective: scenario.objective,
+            steps: scenario.steps || []
+          }
         : null,
       elapsed,
       targetSeconds: scenario.targetSeconds || 0,

@@ -665,7 +665,16 @@ export class UIController {
 
     if (iconEl) iconEl.textContent = meta.icon;
     if (nameEl) nameEl.textContent = meta.label;
-    if (hintEl) hintEl.textContent = meta.hint;
+
+    // Live brush size in hint for relevant tools
+    const brush = this.tools?.brushSize;
+    if (hintEl) {
+      if ((mode === 'food' || mode === 'erase') && Number.isFinite(brush)) {
+        hintEl.textContent = `[/] ${Math.round(brush)}px`;
+      } else {
+        hintEl.textContent = meta.hint || '';
+      }
+    }
 
     indicator.classList.add('visible');
 

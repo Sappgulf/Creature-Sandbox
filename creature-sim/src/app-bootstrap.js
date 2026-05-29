@@ -67,46 +67,7 @@ function isNotificationSystem(candidate) {
   );
 }
 
-const RUNTIME_MODE_STORAGE_KEY = 'creature-sandbox-runtime-mode';
-const DEFAULT_RUNTIME_MODE = 'worker';
-
-function normalizeRuntimeMode(value) {
-  const mode = String(value || '')
-    .trim()
-    .toLowerCase();
-  if (mode === '1' || mode === 'true' || mode === 'worker') return 'worker';
-  if (mode === '0' || mode === 'false' || mode === 'main') return 'main';
-  return null;
-}
-
-function readStoredRuntimeMode() {
-  try {
-    return normalizeRuntimeMode(window.localStorage?.getItem(RUNTIME_MODE_STORAGE_KEY));
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredRuntimeMode(mode) {
-  const normalized = normalizeRuntimeMode(mode);
-  if (!normalized) return null;
-  try {
-    window.localStorage?.setItem(RUNTIME_MODE_STORAGE_KEY, normalized);
-  } catch {
-    return null;
-  }
-  return normalized;
-}
-
-function getRuntimeModePreference() {
-  if (typeof window === 'undefined') return { mode: DEFAULT_RUNTIME_MODE, source: 'default', stored: null };
-  const params = new URLSearchParams(window.location.search);
-  const queryMode = normalizeRuntimeMode(params.get('worker'));
-  if (queryMode) return { mode: queryMode, source: 'query', stored: readStoredRuntimeMode() };
-  const stored = readStoredRuntimeMode();
-  if (stored) return { mode: stored, source: 'storage', stored };
-  return { mode: DEFAULT_RUNTIME_MODE, source: 'default', stored: null };
-}
+import { getRuntimeModePreference, readStoredRuntimeMode, writeStoredRuntimeMode } from './bootstrap-runtime.js';
 
 function getDevToolsConfig() {
   if (typeof window === 'undefined') return { enabled: false, timingLogs: false, fpsOverlay: false };
@@ -2043,39 +2004,39 @@ export function initializeApp() {
       },
       selectedCreature: focusCreature
         ? {
-          id: focusCreature.id,
-          species: focusCreature.species || focusCreature.kind || focusCreature.genes?.species || null,
-          stage: focusCreature.lifeStage || null,
-          x: Number(focusCreature.x?.toFixed?.(1) ?? 0),
-          y: Number(focusCreature.y?.toFixed?.(1) ?? 0),
-          energy: Number(focusCreature.energy?.toFixed?.(1) ?? 0),
-          age: Number(focusCreature.age?.toFixed?.(1) ?? 0),
-          status: focusCreature.currentGoal || focusCreature.state || null,
-          why:
+            id: focusCreature.id,
+            species: focusCreature.species || focusCreature.kind || focusCreature.genes?.species || null,
+            stage: focusCreature.lifeStage || null,
+            x: Number(focusCreature.x?.toFixed?.(1) ?? 0),
+            y: Number(focusCreature.y?.toFixed?.(1) ?? 0),
+            energy: Number(focusCreature.energy?.toFixed?.(1) ?? 0),
+            age: Number(focusCreature.age?.toFixed?.(1) ?? 0),
+            status: focusCreature.currentGoal || focusCreature.state || null,
+            why:
               focusCreature.goal?.reason ||
               focusCreature.goal?.current ||
               focusCreature.currentGoal ||
               focusCreature.state ||
               null,
-          presentation: upgradeController?.getCreaturePresentation?.(focusCreature) ?? null,
-          memoryFocus: focusCreature.memory?.focus
-            ? {
-              type: focusCreature.memory.focus.tag || focusCreature.memory.focus.entry?.type || 'memory',
-              recallUntil: Number(
-                focusCreature.memory.focus.recallUntil?.toFixed?.(2) ?? focusCreature.memory.focus.recallUntil ?? 0
-              )
-            }
-            : null,
-          memories: Array.isArray(focusCreature.memory?.locations)
-            ? focusCreature.memory.locations.slice(0, 5).map(memory => ({
-              type: memory.type || memory.tag || 'memory',
-              strength: Number(memory.strength?.toFixed?.(2) ?? memory.strength ?? 0),
-              x: Number(memory.x?.toFixed?.(1) ?? 0),
-              y: Number(memory.y?.toFixed?.(1) ?? 0),
-              age: Number(Math.max(0, (world.t ?? 0) - (memory.timestamp ?? world.t ?? 0)).toFixed(1))
-            }))
-            : []
-        }
+            presentation: upgradeController?.getCreaturePresentation?.(focusCreature) ?? null,
+            memoryFocus: focusCreature.memory?.focus
+              ? {
+                  type: focusCreature.memory.focus.tag || focusCreature.memory.focus.entry?.type || 'memory',
+                  recallUntil: Number(
+                    focusCreature.memory.focus.recallUntil?.toFixed?.(2) ?? focusCreature.memory.focus.recallUntil ?? 0
+                  )
+                }
+              : null,
+            memories: Array.isArray(focusCreature.memory?.locations)
+              ? focusCreature.memory.locations.slice(0, 5).map(memory => ({
+                  type: memory.type || memory.tag || 'memory',
+                  strength: Number(memory.strength?.toFixed?.(2) ?? memory.strength ?? 0),
+                  x: Number(memory.x?.toFixed?.(1) ?? 0),
+                  y: Number(memory.y?.toFixed?.(1) ?? 0),
+                  age: Number(Math.max(0, (world.t ?? 0) - (memory.timestamp ?? world.t ?? 0)).toFixed(1))
+                }))
+              : []
+          }
         : null,
       systems: {
         activeEvent: world.events?.activeEvent?.type ?? null,

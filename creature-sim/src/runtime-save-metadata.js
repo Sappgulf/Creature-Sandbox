@@ -44,18 +44,18 @@ export function buildRuntimeSaveMetadata({
       worldTime,
       camera: camera
         ? {
-          x: Number(camera.x?.toFixed?.(1) ?? camera.x ?? 0),
-          y: Number(camera.y?.toFixed?.(1) ?? camera.y ?? 0),
-          zoom: Number(camera.zoom?.toFixed?.(2) ?? camera.zoom ?? 1)
-        }
+            x: Number(camera.x?.toFixed?.(1) ?? camera.x ?? 0),
+            y: Number(camera.y?.toFixed?.(1) ?? camera.y ?? 0),
+            zoom: Number(camera.zoom?.toFixed?.(2) ?? camera.zoom ?? 1)
+          }
         : null,
       scenario: activeScenario
         ? {
-          id: activeScenario.id,
-          name: activeScenario.name,
-          progress: playableScenarios?.getSnapshot?.()?.progress ?? playable?.activeRun?.progress ?? 0,
-          state: playable?.activeRun?.state ?? null
-        }
+            id: activeScenario.id,
+            name: activeScenario.name,
+            progress: playableScenarios?.getSnapshot?.()?.progress ?? playable?.activeRun?.progress ?? 0,
+            state: playable?.activeRun?.state ?? null
+          }
         : null,
       summary: momentState?.summary ?? null
     },

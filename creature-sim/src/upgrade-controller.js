@@ -688,27 +688,27 @@ export class UpgradeController {
     ).join('');
     const journalMarkup = this.discoveryJournal.length
       ? this.discoveryJournal
-        .slice(0, 6)
-        .map(
-          item =>
-            `<li>${escapeHtml(item.icon)} <strong>${escapeHtml(item.label)}</strong><span>${Math.round(item.worldTime || 0)}s</span></li>`
-        )
-        .join('')
+          .slice(0, 6)
+          .map(
+            item =>
+              `<li>${escapeHtml(item.icon)} <strong>${escapeHtml(item.label)}</strong><span>${Math.round(item.worldTime || 0)}s</span></li>`
+          )
+          .join('')
       : '<li class="muted">Discoveries will appear as the ecosystem develops.</li>';
     const seedMarkup = this.seedGallery.length
       ? this.seedGallery
-        .slice(0, 5)
-        .map(
-          item =>
-            `<li><strong>${escapeHtml(item.label)}</strong><span>${Number(item.population) || 0} creatures · ${escapeHtml(item.season)}</span></li>`
-        )
-        .join('')
+          .slice(0, 5)
+          .map(
+            item =>
+              `<li><strong>${escapeHtml(item.label)}</strong><span>${Number(item.population) || 0} creatures · ${escapeHtml(item.season)}</span></li>`
+          )
+          .join('')
       : '<li class="muted">Save favorite worlds to build a local seed gallery.</li>';
     const scenarioHistory = this.getScenarioHistory();
     const historyMarkup = scenarioHistory.length
       ? scenarioHistory
-        .map(
-          item => `
+          .map(
+            item => `
         <li class="scenario-history-item">
           <span class="scenario-history-main">
             <strong>${escapeHtml(item.icon || '🎯')} ${escapeHtml(item.scenarioName || 'Scenario')}</strong>
@@ -722,8 +722,8 @@ export class UpgradeController {
           <button class="chip ghost" data-upgrade-action="start-scenario" data-value="${escapeHtml(item.scenarioId)}">Retry</button>
         </li>
       `
-        )
-        .join('')
+          )
+          .join('')
       : '<li class="muted">Completed runs will appear here with score, medal, and retry controls.</li>';
     const postcard =
       this.lastPostcard ||
@@ -743,15 +743,15 @@ export class UpgradeController {
         <p>${escapeHtml(result.summary)}</p>
         <div class="scenario-result-stats">
           ${(result.statCards || [])
-    .map(
-      item => `
+            .map(
+              item => `
             <span data-tone="${escapeHtml(item.tone)}">
               <em>${escapeHtml(item.label)}</em>
               <strong>${escapeHtml(item.value)}</strong>
             </span>
           `
-    )
-    .join('')}
+            )
+            .join('')}
         </div>
         <div class="scenario-result-foot">
           <span>${result.discoveries?.length ? escapeHtml(result.discoveries.join(', ')) : 'No special discoveries yet'}</span>
@@ -790,8 +790,8 @@ export class UpgradeController {
       <section class="upgrade-section">
         <h3>Favorite Creature</h3>
         ${
-  selected
-    ? `
+          selected
+            ? `
           <div class="upgrade-selected">
             <strong>#${selected.id} · ${escapeHtml(selectedPresentation.lifeStage.icon)} ${escapeHtml(selectedPresentation.lifeStage.label)} · ${escapeHtml(selectedPresentation.emotion.icon)} ${escapeHtml(selectedPresentation.emotion.label)}</strong>
             <span>${escapeHtml(selectedPresentation.bonds.label)}</span>
@@ -801,8 +801,8 @@ export class UpgradeController {
             <button class="chip" data-upgrade-action="nickname">Save</button>
           </div>
         `
-    : '<p class="muted">Select or pin a creature to nickname it and review its bonds.</p>'
-}
+            : '<p class="muted">Select or pin a creature to nickname it and review its bonds.</p>'
+        }
       </section>
       <section class="upgrade-section">
         <h3>Recipe Presets</h3>

@@ -12,7 +12,7 @@ import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
 import { poolManager } from './object-pool.js';
 import { getEnhancedAnalyticsModule } from './enhanced-analytics-loader.js';
-import { VisualEffects } from './visual-effects.js';
+import { VisualEffects } from './render/index.js';
 import { ghostTrails } from './ecosystem-ghosts.js';
 import { lifetimeStats } from './lifetime-stats.js';
 import { RendererConfig } from './renderer-config.js?v=20260527-tranche4';
@@ -197,7 +197,13 @@ export class GameLoop {
     if (!this.particles) return;
     const quality =
       this.renderer?.performance?.getCurrentQuality?.() || this.renderer?.performance?.currentQuality || 'medium';
-    const maxParticles = RendererConfig.QUALITY_PRESETS[quality]?.maxParticles;
+    let maxParticles = RendererConfig.QUALITY_PRESETS[quality]?.maxParticles;
+
+    // Item 9: More aggressive particle budget in explicit main-thread fallback
+    if (!this.world?.isWorker && maxParticles) {
+      maxParticles = Math.floor(maxParticles * 0.65);
+    }
+
     if (quality === this._lastSyncedParticleQuality && this.particles.maxParticles === maxParticles) return;
     if (Number.isFinite(maxParticles) && maxParticles > 0) {
       this.particles.maxParticles = maxParticles;
@@ -697,9 +703,11 @@ export class GameLoop {
     this.profileEnd();
 
     // Update analytics (throttled)
-    if (this.analytics?.update && this.frameCount % 5 === 0) {
+    // Item 9: Even more aggressive throttling in main-thread fallback
+    const analyticsInterval = !this.world?.isWorker ? 12 : 5;
+    if (this.analytics?.update && this.frameCount % analyticsInterval === 0) {
       this.profileStart('analytics');
-      this.analytics.update(this.world, dt * 5);
+      this.analytics.update(this.world, dt * analyticsInterval);
 
       // Update enhanced analytics
       const enhancedAnalytics = getEnhancedAnalyticsModule();
@@ -1186,26 +1194,26 @@ export class GameLoop {
     ].join('|');
     const selectedSignature = focusCreature
       ? [
-        focusCreature.id,
-        focusCreature.alive ? 1 : 0,
-        focusCreature.lifeStage || '',
-        focusCreature.age?.toFixed?.(1) ?? 0,
-        focusCreature.energy?.toFixed?.(1) ?? 0,
-        focusCreature.needs?.hunger?.toFixed?.(0) ?? 0,
-        focusCreature.needs?.stress?.toFixed?.(0) ?? 0,
-        focusCreature.goal?.current || focusCreature.currentGoal || '',
-        focusCreature.health?.toFixed?.(0) ?? 0,
-        focusCreature.maxHealth?.toFixed?.(0) ?? 0,
-        focusCreature.x?.toFixed?.(1) ?? 0,
-        focusCreature.y?.toFixed?.(1) ?? 0,
-        focusCreature.currentBiomeType || this.world.getBiomeAt?.(focusCreature.x, focusCreature.y)?.type || '',
-        focusCreature.memory?.focus?.tag || '',
-        focusCreature.memory?.locations?.length || 0,
-        focusCreature.memory?.locations?.[0]?.strength?.toFixed?.(2) ?? '',
-        gameState.showQuirks ? 1 : 0,
-        (focusCreature.quirks || []).join(','),
-        gameState.inspectorVisible ? 'inspector' : 'field'
-      ].join('|')
+          focusCreature.id,
+          focusCreature.alive ? 1 : 0,
+          focusCreature.lifeStage || '',
+          focusCreature.age?.toFixed?.(1) ?? 0,
+          focusCreature.energy?.toFixed?.(1) ?? 0,
+          focusCreature.needs?.hunger?.toFixed?.(0) ?? 0,
+          focusCreature.needs?.stress?.toFixed?.(0) ?? 0,
+          focusCreature.goal?.current || focusCreature.currentGoal || '',
+          focusCreature.health?.toFixed?.(0) ?? 0,
+          focusCreature.maxHealth?.toFixed?.(0) ?? 0,
+          focusCreature.x?.toFixed?.(1) ?? 0,
+          focusCreature.y?.toFixed?.(1) ?? 0,
+          focusCreature.currentBiomeType || this.world.getBiomeAt?.(focusCreature.x, focusCreature.y)?.type || '',
+          focusCreature.memory?.focus?.tag || '',
+          focusCreature.memory?.locations?.length || 0,
+          focusCreature.memory?.locations?.[0]?.strength?.toFixed?.(2) ?? '',
+          gameState.showQuirks ? 1 : 0,
+          (focusCreature.quirks || []).join(','),
+          gameState.inspectorVisible ? 'inspector' : 'field'
+        ].join('|')
       : `none|${gameState.showQuirks ? 1 : 0}|${gameState.inspectorVisible ? 'inspector' : 'field'}`;
     if (statsEl && statsSignature !== this._statsUiSignature) {
       renderStats(statsEl, this.world, gameState.fps, {
@@ -1284,19 +1292,19 @@ export class GameLoop {
     const activity =
       focusCreature && rootId
         ? events
-          .filter(event => event.rootId === rootId || event.creatureId === focusCreature.id)
-          .slice(0, 4)
-          .map(event => ({
-            time: Number(event.time ?? this.world?.t ?? 0),
-            message: event.title || event.message || 'Activity recorded'
-          }))
+            .filter(event => event.rootId === rootId || event.creatureId === focusCreature.id)
+            .slice(0, 4)
+            .map(event => ({
+              time: Number(event.time ?? this.world?.t ?? 0),
+              message: event.title || event.message || 'Activity recorded'
+            }))
         : [];
     const ancestors =
       focusCreature && this.world?.getAncestors
         ? this.world
-          .getAncestors(focusCreature.id, 8)
-          .map(entry => entry.creature ?? entry)
-          .filter(Boolean)
+            .getAncestors(focusCreature.id, 8)
+            .map(entry => entry.creature ?? entry)
+            .filter(Boolean)
         : [];
 
     const inspectId = id => {

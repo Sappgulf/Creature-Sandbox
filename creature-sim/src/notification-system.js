@@ -341,12 +341,12 @@ export class NotificationSystem {
         : layoutWidth / 2;
       const cssY = useEdgeLane
         ? Math.max(
-          compactViewport ? 150 : 132,
-          layoutHeight -
+            compactViewport ? 150 : 132,
+            layoutHeight -
               Math.max(bottomChrome, compactViewport ? 92 : 72) -
               (compactViewport ? 52 : 58) -
               i * (compactViewport ? 34 : 42)
-        )
+          )
         : (compactViewport ? 112 : 100) + i * (compactViewport ? 38 : 44);
       const x = cssX * pixelRatio;
       const y = useEdgeLane ? cssY * pixelRatio : startY + i * spacing;

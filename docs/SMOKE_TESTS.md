@@ -38,10 +38,17 @@
    - Let the simulation run for 60–120 seconds while occasionally bumping/throwing a creature.
    - Confirm small bumps do not cause damage and creatures do not die accidentally.
    - Confirm hard impacts cause small, readable damage spikes rather than instant deaths.
+
+5. **Tool mode + brush size (Quick Win)**
+   - Press **F** (food) or **E** (erase).
+   - Press **]** several times and confirm the tool indicator (if visible) updates the brush size in real time (e.g. "Food 42px").
+   - Press **[** to shrink the brush and confirm the size decreases.
+   - Switch tools and confirm the indicator icon + label update correctly.
+   - On mobile, confirm the tool cycle buttons still work.
    - Confirm repeated rapid impacts respect brief i-frames (no rapid multi-hit damage).
    - Observe that creatures settle (less jitter) when left alone and show more wobble after repeated impacts.
 
-5. **Ecosystem agent loop**
+6. **Ecosystem agent loop**
    - Spawn at least two herbivores and one omnivore.
    - Paint a small food patch and confirm nearby creatures path toward it.
    - Observe a creature eating multiple bites (short pauses between bites).
@@ -51,7 +58,7 @@
    - Watch two adults with high social drive approach and perform a brief bonding interaction.
    - Confirm an offspring spawns and population growth slows if the world is overcrowded.
 
-6. **Memory + life-cycle loop**
+7. **Memory + life-cycle loop**
    - With `debug.observe()` enabled, watch a creature eat and note a green memory marker at that spot.
    - Move food away and confirm a hungry creature later drifts back toward the remembered area.
    - Trigger a high-stress event (hard impact or overcrowding) and confirm a red danger marker appears.
@@ -60,26 +67,26 @@
    - Speed up the sim (`debug.speed(5)`), wait for baby → adult → elder transitions, and confirm elders move slower and begin to fade.
    - Confirm offspring inherit visible traits (color/size variance) with small mutations.
 
-7. **Nest + territory + migration**
+8. **Nest + territory + migration**
    - Let a creature rest in a calm zone until a nest marker appears nearby.
    - Confirm babies and elders bias toward the nest when resting.
    - Crowd the nest with several creatures and watch stress rise slightly.
    - Let a region become crowded and observe some creatures drift to calmer regions.
    - Confirm “Nest established,” “Nest overcrowded,” “Migration started,” and “Migration settled” moments appear.
 
-8. **Environmental rhythm + food cycles**
+9. **Environmental rhythm + food cycles**
    - Let the simulation run for at least 2–3 minutes.
    - Confirm the ambient lighting shifts (day → dusk → night → dawn).
    - Observe creature behavior: higher activity/exploration during day and more resting at night.
    - Watch food patches slowly regrow over time, even without player input.
    - Overconsume a local patch and confirm nearby food thins out temporarily before regrowing.
 
-9. **Top menu navigation**
-   - Click **🎛️ Modes & Goals** and confirm the Game Mode + Session Goals card toggles.
-   - Open **⋯ More Actions** and verify every item opens its respective panel or toggle.
-   - Open **✨ Upgrade Hub** and confirm recipe presets, action cards, follow modes, readability modes, discovery journal, seed gallery, run history, and postcard controls render without covering the playfield.
+10. **Top menu navigation**
+    - Click **🎛️ Modes & Goals** and confirm the Game Mode + Session Goals card toggles.
+    - Open **⋯ More Actions** and verify every item opens its respective panel or toggle.
+    - Open **✨ Upgrade Hub** and confirm recipe presets, action cards, follow modes, readability modes, discovery journal, seed gallery, run history, and postcard controls render without covering the playfield.
 
-10. **Upgrade Hub + creature clarity**
+11. **Upgrade Hub + creature clarity**
     - Select a creature and open **✨ Upgrade Hub**.
     - Confirm the selected creature shows life stage, emotion, bonds/family copy, and a nickname input.
     - Save a nickname, close/reopen the panel, and confirm it persists.

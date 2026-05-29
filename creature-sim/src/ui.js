@@ -396,14 +396,14 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
       </div>
       <div class="memory-reason">${whyLine}</div>
       ${
-  memoryLocations.length
-    ? `
+        memoryLocations.length
+          ? `
         <div class="memory-list">
           ${memoryRowsMarkup}
         </div>
       `
-    : '<div class="memory-list empty">No learned places yet.</div>'
-}
+          : '<div class="memory-list empty">No learned places yet.</div>'
+      }
     </div>
   `;
   const desktopMemoryMarkup = `
@@ -592,19 +592,19 @@ export function renderInspector(model = {}, handlers = {}) {
       : [];
     const memoryMarkup = memoryLocations.length
       ? memoryLocations
-        .map(memory => {
-          const label = String(memory.type || memory.tag || 'memory').replaceAll('_', ' ');
-          const strength = Math.round((memory.strength ?? 0) * 100);
-          return `<div class="row"><div>${label}</div><div>${strength}%</div></div>`;
-        })
-        .join('')
+          .map(memory => {
+            const label = String(memory.type || memory.tag || 'memory').replaceAll('_', ' ');
+            const strength = Math.round((memory.strength ?? 0) * 100);
+            return `<div class="row"><div>${label}</div><div>${strength}%</div></div>`;
+          })
+          .join('')
       : '<div class="muted tiny">No learned places yet.</div>';
     const childMarkup =
       Array.isArray(creature.children) && creature.children.length
         ? creature.children
-          .slice(0, 6)
-          .map(id => `<button class="btn-link family-jump-body" data-id="${id}">#${id}</button>`)
-          .join(', ')
+            .slice(0, 6)
+            .map(id => `<button class="btn-link family-jump-body" data-id="${id}">#${id}</button>`)
+            .join(', ')
         : '—';
     const familyMarkup = `
       <div class="row"><div>Parent</div><div>${parentCell}</div></div>
@@ -634,14 +634,14 @@ export function renderInspector(model = {}, handlers = {}) {
       <div class="row"><div>Panic</div><div>${((creature.genes.panicPheromone ?? 0) * 100).toFixed(0)}%</div></div>
       <div class="row"><div>Grit</div><div>${((creature.genes.grit ?? 0) * 100).toFixed(0)}%</div></div>
       ${
-  creature.genes.predator
-    ? `
+        creature.genes.predator
+          ? `
         <div class="row"><div>Pack</div><div>${(creature.genes.packInstinct * 100).toFixed(0)}%</div></div>
         <div class="row"><div>Ambush</div><div>${creature.genes.ambushDelay.toFixed(1)}s</div></div>
         <div class="row"><div>Aggression</div><div>${creature.genes.aggression.toFixed(2)}</div></div>
       `
-    : ''
-}
+          : ''
+      }
     `;
 
     body.innerHTML = `
@@ -740,13 +740,13 @@ export function renderInspector(model = {}, handlers = {}) {
             : [];
       const parentMarkup = parentIds.length
         ? parentIds
-          .map(id => {
-            const parent = worldRef?.getAnyCreatureById?.(id);
-            const alive = parent ? parent.alive !== false : false;
-            const label = alive ? `#${id}` : `#${id}✝`;
-            return `<button class="btn-link family-jump ${alive ? '' : 'muted'}" data-id="${id}">${label}</button>`;
-          })
-          .join(', ')
+            .map(id => {
+              const parent = worldRef?.getAnyCreatureById?.(id);
+              const alive = parent ? parent.alive !== false : false;
+              const label = alive ? `#${id}` : `#${id}✝`;
+              return `<button class="btn-link family-jump ${alive ? '' : 'muted'}" data-id="${id}">${label}</button>`;
+            })
+            .join(', ')
         : '<span class="muted">Unknown</span>';
 
       const childIds = Array.isArray(creature.children) ? creature.children : [];

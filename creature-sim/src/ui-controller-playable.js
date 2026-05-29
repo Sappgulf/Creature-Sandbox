@@ -82,9 +82,9 @@ export function applyUiPlayableMethods(UIController) {
     const objectives = objectiveCards.length
       ? `<div class="director-objectives" aria-label="Current objectives">
           ${objectiveCards
-    .slice(0, 4)
-    .map(
-      card => `
+            .slice(0, 4)
+            .map(
+              card => `
             <div class="director-objective-card ${escapeHtml(card.level || 'active')}">
               <span class="objective-mark">${escapeHtml(card.icon || '🎯')}</span>
               <span class="objective-text">
@@ -94,8 +94,8 @@ export function applyUiPlayableMethods(UIController) {
               <span class="objective-ring" style="--objective-progress:${Math.round((card.progress || 0) * 100)}%"></span>
             </div>
           `
-    )
-    .join('')}
+            )
+            .join('')}
         </div>`
       : '';
 
