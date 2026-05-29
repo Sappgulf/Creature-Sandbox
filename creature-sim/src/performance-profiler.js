@@ -4,6 +4,7 @@
  */
 
 import { eventSystem } from './event-system.js';
+import { escapeHtml } from './safe-html.js';
 
 /**
  * Performance sample data structure
@@ -763,7 +764,7 @@ export class PerformanceMonitor {
     const alertHtml = alerts
       .map(alert => {
         const color = alert.severity === 'critical' ? '#ff4444' : '#ffa500';
-        return `<div style="color: ${color}; font-size: 10px;">${alert.message}</div>`;
+        return `<div style="color: ${color}; font-size: 10px;">${escapeHtml(alert.message)}</div>`;
       })
       .join('');
 

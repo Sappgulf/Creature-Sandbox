@@ -2,6 +2,7 @@
 // Progressive unlocks, tooltips, and interactive guidance
 
 import { eventSystem, GameEvents } from './event-system.js';
+import { escapeHtml } from './safe-html.js';
 
 const DEFAULT_STEPS = [
   {
@@ -399,8 +400,8 @@ export class TutorialSystem {
       tooltip.className = 'hover-tooltip';
       tooltip.setAttribute('role', 'tooltip');
       tooltip.innerHTML = `
-        <span class="tooltip-text">${config.text}</span>
-        ${config.shortcut ? `<kbd class="tooltip-shortcut">${config.shortcut}</kbd>` : ''}
+        <span class="tooltip-text">${escapeHtml(config.text)}</span>
+        ${config.shortcut ? `<kbd class="tooltip-shortcut">${escapeHtml(config.shortcut)}</kbd>` : ''}
         <button class="tooltip-dismiss" aria-label="Dismiss tooltip">×</button>
       `;
       tooltip.style.cssText = `

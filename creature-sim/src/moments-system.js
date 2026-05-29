@@ -1,6 +1,7 @@
 import { eventSystem, GameEvents } from './event-system.js';
 import { clamp } from './utils.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
+import { escapeHtml } from './safe-html.js';
 
 export class MomentsSystem {
   constructor({ world, camera, notifications } = {}) {
@@ -121,9 +122,9 @@ export class MomentsSystem {
     this.listEl.innerHTML = this.moments
       .map(
         moment => `
-      <button class="moment-row" data-moment-id="${moment.id}" type="button" aria-label="${moment.text}">
-        <span class="moment-icon">${moment.icon || '✨'}</span>
-        <span class="moment-text">${moment.text}</span>
+      <button class="moment-row" data-moment-id="${escapeHtml(moment.id)}" type="button" aria-label="${escapeHtml(moment.text)}">
+        <span class="moment-icon">${escapeHtml(moment.icon || '✨')}</span>
+        <span class="moment-text">${escapeHtml(moment.text)}</span>
         <span class="moment-time">${this._formatTime(moment.worldTime)}</span>
       </button>
     `

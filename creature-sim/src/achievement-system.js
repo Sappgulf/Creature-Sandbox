@@ -21,6 +21,7 @@ export class AchievementSystem {
     this.xpMultiplier = 1.0;
     this._broadcastingXP = false;
 
+    /** @type {Array<{event: string, handler: Function}>} */
     this._subscriptions = [];
     this._lastWorldTime = null;
 
@@ -72,6 +73,9 @@ export class AchievementSystem {
     }
   }
 
+  /**
+   * @param {Record<string, unknown>} def
+   */
   validateDefinition(def) {
     const issues = [];
     if (!def.id || typeof def.id !== 'string') issues.push('id');
@@ -89,6 +93,9 @@ export class AchievementSystem {
     }
   }
 
+  /**
+   * @param {Record<string, unknown>} def
+   */
   addAchievement(def) {
     this.validateDefinition(def);
 
@@ -114,42 +121,54 @@ export class AchievementSystem {
     // Kill events (predation)
     if (GameEvents.CREATURE_KILLED) {
       this._subscriptions.push(
-        eventSystem.on(GameEvents.CREATURE_KILLED, event => {
-          this.handleTrigger('kill', 1, event);
-        })
+        eventSystem.on(
+          GameEvents.CREATURE_KILLED,
+          /** @param {Record<string, unknown>} event */ event => {
+            this.handleTrigger('kill', 1, event);
+          }
+        )
       );
     }
 
     // Birth events (future-proof)
     this._subscriptions.push(
-      eventSystem.on(GameEvents.CREATURE_BORN, event => {
-        this.handleTrigger('birth', 1, event);
-      })
+      eventSystem.on(
+        GameEvents.CREATURE_BORN,
+        /** @param {Record<string, unknown>} event */ event => {
+          this.handleTrigger('birth', 1, event);
+        }
+      )
     );
 
     // God mode actions
     if (GameEvents.GOD_MODE_ACTION) {
       this._subscriptions.push(
-        eventSystem.on(GameEvents.GOD_MODE_ACTION, event => {
-          this.handleTrigger('god_action', 1, event);
-        })
+        eventSystem.on(
+          GameEvents.GOD_MODE_ACTION,
+          /** @param {Record<string, unknown>} event */ event => {
+            this.handleTrigger('god_action', 1, event);
+          }
+        )
       );
     }
 
     // Direct XP awards (campaign rewards, etc.)
     if (GameEvents.ACHIEVEMENT_XP) {
       this._subscriptions.push(
-        eventSystem.on(GameEvents.ACHIEVEMENT_XP, event => {
-          if (this._broadcastingXP || event?.source === 'achievement-system') {
-            return;
+        eventSystem.on(
+          GameEvents.ACHIEVEMENT_XP,
+          /** @param {Record<string, unknown>} event */ event => {
+            if (this._broadcastingXP || event?.source === 'achievement-system') {
+              return;
+            }
+            this.awardXP(event?.amount, {
+              save: event?.save !== false,
+              world: event?.world || null,
+              event,
+              origin: event?.source || 'external'
+            });
           }
-          this.awardXP(event?.amount, {
-            save: event?.save !== false,
-            world: event?.world || null,
-            event,
-            origin: event?.source || 'external'
-          });
-        })
+        )
       );
     }
 
@@ -259,6 +278,11 @@ export class AchievementSystem {
     return set.size;
   }
 
+  /**
+   * @param {string} trigger
+   * @param {number} amount
+   * @param {Record<string, unknown>} event
+   */
   handleTrigger(trigger, amount, event) {
     if (!this.enabled) return;
     for (const [id, achievement] of this.achievements) {

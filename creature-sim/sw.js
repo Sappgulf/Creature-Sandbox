@@ -1,35 +1,31 @@
 /**
  * Service Worker for Creature Sandbox
  * Provides offline caching for the game shell and lazy caching for chunks.
+ *
+ * The SHELL_ASSETS array is injected at build time by the Vite plugin
+ * to include the hashed entry chunks (index-*.js, index-*.css).
  */
 const CACHE_SHELL = 'creature-sandbox-shell-v2';
 const CACHE_DYNAMIC = 'creature-sandbox-dynamic-v2';
-const SHELL_ASSETS = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/src/main.js'
-];
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_SHELL).then((cache) => cache.addAll(SHELL_ASSETS))
-  );
+// Build-time injected assets (populated by vite.config.js closeBundle hook)
+const SHELL_ASSETS = self.__SHELL_ASSETS__ || ['/', '/index.html', '/styles.css'];
+
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE_SHELL).then(cache => cache.addAll(SHELL_ASSETS)));
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
+self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.filter((k) => k !== CACHE_SHELL && k !== CACHE_DYNAMIC).map((k) => caches.delete(k))
-      )
-    )
+    caches
+      .keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE_SHELL && k !== CACHE_DYNAMIC).map(k => caches.delete(k))))
   );
   self.clients.claim();
 });
 
-self.addEventListener('fetch', (event) => {
+self.addEventListener('fetch', event => {
   const { request } = event;
   if (request.method !== 'GET') return;
 

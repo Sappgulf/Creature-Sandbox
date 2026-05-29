@@ -4,9 +4,10 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "checkJs": true,
-    "strict": false,
+    "strict": true,
     "noEmit": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "*": ["creature-sim/src/*"]

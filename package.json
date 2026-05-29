@@ -27,7 +27,8 @@
     "format": "prettier --write \"creature-sim/src/**/*.js\" \"scripts/**/*.mjs\" \"*.md\" \"docs/**/*.md\" \"AGENTS.md\"",
     "format:check": "prettier --check \"creature-sim/src/**/*.js\" \"scripts/**/*.mjs\" \"*.md\" \"docs/**/*.md\" \"AGENTS.md\"",
     "prepare": "husky",
-    "analyze": "vite build --mode analyze"
+    "analyze": "vite build --mode analyze",
+    "type-check": "tsc --noEmit -p jsconfig.json"
   },
   "devDependencies": {
     "eslint": "^10.2.0",

@@ -44,9 +44,23 @@ import { UnlockableAchievements } from './unlockable-achievements.js';
 import { FamilyBondsSystem } from './family-bonds.js';
 import { MemoryLearningSystem } from './memory-learning.js';
 import { ChallengeSystem } from './challenge-system.js?v=20260524-opening2';
-import { getDebugFlags } from './debug-flags.js';
 import { setupDevExports } from './dev-exports.js';
-import { UpgradeController } from './upgrade-controller.js?v=20260528-tranche8';
+import {
+  getDevToolsConfig,
+  createDevFpsOverlay,
+  getRuntimeProfile,
+  getStartupSeedForRuntime
+} from './bootstrap-config.js';
+import {
+  ensureScenarioEditor,
+  ensureCampaignSystem,
+  ensureGeneEditor,
+  createDebugConsoleProxy,
+  ensureUpgradeController,
+  geneEditorInstance,
+  campaignSystemInstance
+} from './bootstrap-lazy-loaders.js';
+// UpgradeController is lazy-loaded via ensureUpgradeController()
 import {
   GameDirector,
   GodToolSystem,
@@ -68,179 +82,6 @@ function isNotificationSystem(candidate) {
 }
 
 import { getRuntimeModePreference, readStoredRuntimeMode, writeStoredRuntimeMode } from './bootstrap-runtime.js';
-
-function getDevToolsConfig() {
-  if (typeof window === 'undefined') return { enabled: false, timingLogs: false, fpsOverlay: false };
-  const debugFlags = getDebugFlags();
-  const params = new URLSearchParams(window.location.search);
-  const enabled = debugFlags.enabled;
-  const fpsOverlay =
-    enabled && (params.has('fps') || localStorage.getItem('creature-sim-fps') === 'true' || params.has('devtools'));
-  const timingLogs = enabled && (params.has('timing') || localStorage.getItem('creature-sim-timing') === 'true');
-  const timingLogInterval = Number(params.get('timingInterval') || 5000) || 5000;
-  return {
-    enabled,
-    fpsOverlay,
-    timingLogs,
-    timingLogInterval,
-    spawnDebug: debugFlags.spawnDebug,
-    renderDebug: debugFlags.renderDebug
-  };
-}
-
-function createDevFpsOverlay(enabled) {
-  if (!enabled || typeof document === 'undefined') return null;
-  const overlay = document.createElement('div');
-  overlay.id = 'dev-fps';
-  overlay.className = 'dev-fps';
-  overlay.setAttribute('aria-live', 'polite');
-  overlay.textContent = 'FPS --';
-  document.body.appendChild(overlay);
-  return overlay;
-}
-
-// ============================================================================
-// INITIALIZATION
-// ============================================================================
-
-console.debug('🚀 Starting Creature Sandbox...');
-
-const DESKTOP_STARTUP_SEED = { herbivores: 64, predators: 8, food: 280 };
-const MOBILE_STARTUP_SEED = { herbivores: 54, predators: 7, food: 230 };
-const COMPACT_MOBILE_STARTUP_SEED = { herbivores: 44, predators: 5, food: 190 };
-const MAIN_THREAD_DESKTOP_STARTUP_SEED = { herbivores: 54, predators: 7, food: 240 };
-const MAIN_THREAD_MOBILE_STARTUP_SEED = { herbivores: 44, predators: 5, food: 190 };
-
-let scenarioEditorInstance = null;
-let scenarioEditorPromise = null;
-let campaignSystemInstance = null;
-let campaignSystemPromise = null;
-let geneEditorInstance = null;
-let geneEditorPromise = null;
-let debugConsoleInstance = null;
-let debugConsolePromise = null;
-
-function getRuntimeProfile() {
-  if (typeof window === 'undefined') {
-    return {
-      mobile: false,
-      compact: false,
-      lowMemory: false,
-      renderScale: 1,
-      defaultZoom: 0.38,
-      openingZoom: 0.9,
-      startupSeed: DESKTOP_STARTUP_SEED
-    };
-  }
-
-  const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches || 'ontouchstart' in window;
-  const mobileViewport = coarsePointer || window.matchMedia?.('(max-width: 768px)').matches;
-  const shortEdge = Math.min(window.innerWidth || 0, window.innerHeight || 0);
-  const compactViewport = mobileViewport && shortEdge > 0 && shortEdge <= 430;
-  const deviceMemory = Number(navigator.deviceMemory || 0);
-  const lowMemory = mobileViewport && deviceMemory > 0 && deviceMemory <= 4;
-  const renderScale = mobileViewport ? (compactViewport || lowMemory ? 0.82 : 0.9) : 0.82;
-
-  return {
-    mobile: mobileViewport,
-    compact: compactViewport,
-    lowMemory,
-    renderScale,
-    defaultZoom: mobileViewport ? 0.4 : 0.38,
-    openingZoom: mobileViewport ? (compactViewport ? 0.68 : 0.74) : 0.9,
-    startupSeed:
-      compactViewport || lowMemory
-        ? COMPACT_MOBILE_STARTUP_SEED
-        : mobileViewport
-          ? MOBILE_STARTUP_SEED
-          : DESKTOP_STARTUP_SEED
-  };
-}
-
-function getStartupSeedForRuntime(runtimeProfile, useWorker) {
-  if (useWorker) return runtimeProfile.startupSeed;
-  if (runtimeProfile.mobile) return MAIN_THREAD_MOBILE_STARTUP_SEED;
-  return MAIN_THREAD_DESKTOP_STARTUP_SEED;
-}
-
-async function ensureScenarioEditor() {
-  if (scenarioEditorInstance) return scenarioEditorInstance;
-  if (!scenarioEditorPromise) {
-    scenarioEditorPromise = import('./scenario-editor.js')
-      .then(({ scenarioEditor }) => {
-        scenarioEditorInstance = scenarioEditor;
-        return scenarioEditor;
-      })
-      .catch(error => {
-        scenarioEditorPromise = null;
-        throw error;
-      });
-  }
-  return scenarioEditorPromise;
-}
-
-async function ensureCampaignSystem() {
-  if (campaignSystemInstance) return campaignSystemInstance;
-  if (!campaignSystemPromise) {
-    campaignSystemPromise = import('./campaign-system.js')
-      .then(({ campaignSystem }) => {
-        campaignSystemInstance = campaignSystem;
-        return campaignSystem;
-      })
-      .catch(error => {
-        campaignSystemPromise = null;
-        throw error;
-      });
-  }
-  return campaignSystemPromise;
-}
-
-async function ensureGeneEditor() {
-  if (geneEditorInstance) return geneEditorInstance;
-  if (!geneEditorPromise) {
-    geneEditorPromise = import('./gene-editor.js')
-      .then(({ GeneEditor }) => {
-        geneEditorInstance = new GeneEditor();
-        return geneEditorInstance;
-      })
-      .catch(error => {
-        geneEditorPromise = null;
-        throw error;
-      });
-  }
-  return geneEditorPromise;
-}
-
-function createDebugConsoleProxy(world, camera) {
-  const ensureDebugConsole = () => {
-    if (debugConsoleInstance) return Promise.resolve(debugConsoleInstance);
-    if (!debugConsolePromise) {
-      debugConsolePromise = import('./debug-console.js')
-        .then(({ DebugConsole }) => {
-          debugConsoleInstance = new DebugConsole(world, camera);
-          return debugConsoleInstance;
-        })
-        .catch(error => {
-          debugConsolePromise = null;
-          throw error;
-        });
-    }
-    return debugConsolePromise;
-  };
-
-  return {
-    get isActive() {
-      return !!debugConsoleInstance?.isActive;
-    },
-    ensure: ensureDebugConsole,
-    toggle() {
-      void ensureDebugConsole().then(consoleInstance => consoleInstance.toggle?.());
-    },
-    update(dt) {
-      debugConsoleInstance?.update?.(dt);
-    }
-  };
-}
 
 // Preload sprite assets
 console.debug('🎨 Loading sprite assets...');
@@ -266,7 +107,7 @@ assetLoader
   });
 
 // Wait for DOM to be ready before initializing
-export function initializeApp() {
+export async function initializeApp() {
   console.debug('📄 DOM ready, initializing Creature Sandbox...');
 
   // Initialize DOM cache first (critical for performance)
@@ -1072,27 +913,24 @@ export function initializeApp() {
     renderer.performance?.setQualityOverride?.(startupProfile.mobile ? 'low' : 'medium');
   }
 
-  upgradeController = errorHandler.safeExecute(
-    () => {
-      const controller = new UpgradeController({
-        world,
-        camera,
-        playableScenarios,
-        sessionGoals,
-        notifications,
-        audio,
-        moments,
-        renderer,
-        canvas,
-        tools,
-        uiController
-      });
-      controller.init();
-      return controller;
-    },
-    'Upgrade controller initialization',
-    null
-  );
+  try {
+    upgradeController = await ensureUpgradeController({
+      world,
+      camera,
+      playableScenarios,
+      sessionGoals,
+      notifications,
+      audio,
+      moments,
+      renderer,
+      canvas,
+      tools,
+      uiController
+    });
+  } catch (error) {
+    errorHandler.handleError(error, 'Upgrade controller initialization', 'error');
+    upgradeController = null;
+  }
 
   gameDirector = errorHandler.safeExecute(
     () => {

@@ -2,6 +2,7 @@
  * Error Handler - Centralized error handling and logging system
  * Provides structured error handling with recovery strategies
  */
+import { escapeHtml } from './safe-html.js';
 
 export class ErrorHandler {
   constructor() {
@@ -91,7 +92,7 @@ export class ErrorHandler {
         <div class="error-icon">⚠️</div>
         <div class="error-content">
           <div class="error-title">Something went wrong</div>
-          <div class="error-message">${context || 'An unexpected error occurred'}</div>
+          <div class="error-message">${escapeHtml(context || 'An unexpected error occurred')}</div>
         </div>
         <button class="error-dismiss">×</button>
       `;
@@ -198,14 +199,14 @@ export class ErrorHandler {
           <div class="critical-error-dialog">
             <h2>🚨 Critical Error</h2>
             <p>The simulation encountered a critical error and has been paused.</p>
-            <p class="error-context">${context}</p>
+            <p class="error-context">${escapeHtml(context)}</p>
             <div class="error-actions">
               <button id="reload-btn">Reload Page</button>
               <button id="continue-btn">Try to Continue</button>
             </div>
             <details class="error-details">
               <summary>Technical Details</summary>
-              <pre>${error.stack || error.message || error}</pre>
+              <pre>${escapeHtml(error.stack || error.message || error)}</pre>
             </details>
           </div>
         </div>

@@ -106,6 +106,25 @@ function copyRuntimeAssets() {
         recursive: true
       });
       fs.copyFileSync(path.join(appRoot, 'manifest.json'), path.join(outDir, 'manifest.json'));
+
+      // Copy and patch service worker with hashed entry assets
+      const swSrc = path.join(appRoot, 'sw.js');
+      const swDest = path.join(outDir, 'sw.js');
+      if (fs.existsSync(swSrc)) {
+        const assetsDir = path.join(outDir, 'assets');
+        const shellAssets = ['/', '/index.html', '/styles.css'];
+        if (fs.existsSync(assetsDir)) {
+          const files = fs.readdirSync(assetsDir);
+          const entryJs = files.find(f => f.startsWith('index-') && f.endsWith('.js'));
+          const entryCss = files.find(f => f.startsWith('index-') && f.endsWith('.css'));
+          if (entryJs) shellAssets.push(`/assets/${entryJs}`);
+          if (entryCss) shellAssets.push(`/assets/${entryCss}`);
+        }
+        let swContent = fs.readFileSync(swSrc, 'utf8');
+        swContent = swContent.replace('self.__SHELL_ASSETS__', JSON.stringify(shellAssets));
+        fs.writeFileSync(swDest, swContent);
+      }
+
       const sha =
         process.env.VERCEL_GIT_COMMIT_SHA ||
         process.env.GITHUB_SHA ||
@@ -131,7 +150,7 @@ export default defineConfig(({ mode }) => ({
     outDir: '../dist',
     emptyOutDir: true,
     chunkSizeWarningLimit: 700,
-    sourcemap: false,
+    sourcemap: 'hidden',
     rollupOptions: {
       output: {
         manualChunks

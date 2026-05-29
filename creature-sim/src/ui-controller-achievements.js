@@ -1,4 +1,5 @@
 import { domCache } from './dom-cache.js';
+import { escapeHtml } from './safe-html.js';
 
 export function applyUiAchievementsMethods(UIController) {
   UIController.prototype.onAchievementsToggle = function () {
@@ -123,10 +124,10 @@ export function applyUiAchievementsMethods(UIController) {
           <div class="achievement-icon">${icon}</div>
           <div class="achievement-main">
             <div class="achievement-title-row">
-              <div class="achievement-name">${name}</div>
-              <div class="achievement-type">${item.type || ''}</div>
+              <div class="achievement-name">${escapeHtml(name)}</div>
+              <div class="achievement-type">${escapeHtml(item.type || '')}</div>
             </div>
-            <div class="achievement-desc">${desc}</div>
+            <div class="achievement-desc">${escapeHtml(desc)}</div>
             ${progressHtml}
           </div>
         </div>

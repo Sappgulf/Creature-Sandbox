@@ -7,8 +7,10 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 const assetsDir = path.join(repoRoot, 'dist', 'assets');
-const maxChunkBytes = Number(process.env.CREATURE_MAX_JS_CHUNK_BYTES || 640_000);
-const maxChunkGzipBytes = Number(process.env.CREATURE_MAX_JS_CHUNK_GZIP_BYTES || 190_000);
+const maxChunkBytes = Number(process.env.CREATURE_MAX_JS_CHUNK_BYTES || 300_000);
+const maxChunkGzipBytes = Number(process.env.CREATURE_MAX_JS_CHUNK_GZIP_BYTES || 100_000);
+const maxMainChunkBytes = Number(process.env.CREATURE_MAX_MAIN_CHUNK_BYTES || 500_000);
+const maxMainChunkGzipBytes = Number(process.env.CREATURE_MAX_MAIN_CHUNK_GZIP_BYTES || 150_000);
 
 const entries = await fs.readdir(assetsDir, { withFileTypes: true });
 const jsFiles = entries
@@ -30,7 +32,14 @@ for (const file of jsFiles) {
   });
 }
 
-const oversized = results.filter(result => result.bytes > maxChunkBytes || result.gzipBytes > maxChunkGzipBytes);
+const mainChunk = results.find(r => r.file.startsWith('index-') && r.file.endsWith('.js'));
+
+const oversized = results.filter(result => {
+  const isMain = result === mainChunk;
+  const maxBytes = isMain ? maxMainChunkBytes : maxChunkBytes;
+  const maxGzip = isMain ? maxMainChunkGzipBytes : maxChunkGzipBytes;
+  return result.bytes > maxBytes || result.gzipBytes > maxGzip;
+});
 
 assert.deepEqual(oversized, [], `JS chunk budget exceeded: ${JSON.stringify(oversized)}`);
 

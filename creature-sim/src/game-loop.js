@@ -8,6 +8,7 @@
 import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
 import { performanceProfiler, updatePerformanceMonitor, profile } from './performance-profiler.js';
+import { escapeHtml } from './safe-html.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
 import { poolManager } from './object-pool.js';
@@ -1490,7 +1491,7 @@ export class GameLoop {
           let html = '<div class="phylogeny-roots">';
           for (const root of phylogeny.slice(0, 5)) {
             html += `<div class="phylogeny-item">
-              <span class="phylogeny-name">${root.name}</span>
+              <span class="phylogeny-name">${escapeHtml(root.name)}</span>
               <span class="phylogeny-stats">${root.alive}/${root.total} (${root.depth} gen)</span>
             </div>`;
           }
@@ -1595,7 +1596,7 @@ export class GameLoop {
       document.getElementById('health-recommendations-list')
     );
     if (recList) {
-      recList.innerHTML = recommendations.map(r => `<div>${r}</div>`).join('');
+      recList.innerHTML = recommendations.map(r => `<div>${escapeHtml(r)}</div>`).join('');
     }
   }
 
@@ -1659,7 +1660,7 @@ export class GameLoop {
         return `
         <div class="scenario-queue-item">
           <div class="scenario-queue-item-header">
-            <span class="scenario-queue-name">${item.name}</span>
+            <span class="scenario-queue-name">${escapeHtml(item.name)}</span>
             <span class="scenario-queue-start">${item.startsIn.toFixed(1)}s</span>
           </div>
           <div class="scenario-queue-meta">
@@ -1667,7 +1668,7 @@ export class GameLoop {
             <span>int ${intensityLabel}×</span>
             <span>${waitLabel}</span>
           </div>
-          <button class="scenario-queue-remove" data-queue-id="${item.id}" title="Remove">✕</button>
+          <button class="scenario-queue-remove" data-queue-id="${escapeHtml(item.id)}" title="Remove">✕</button>
         </div>
       `;
       })

@@ -1,5 +1,6 @@
 import { gameState } from './game-state.js';
 import { buildBondsSummary, getCreatureEmotion, getLifeStageDisplay } from './upgrade-data.js';
+import { escapeHtml } from './safe-html.js';
 
 // Animated number counter helper
 const _counterState = new Map();
@@ -564,7 +565,7 @@ export function renderInspector(model = {}, handlers = {}) {
     body.innerHTML = '<div class="muted">Click a creature to inspect.<br/>Shift-click to set lineage root.</div>';
   } else {
     const parentCell = creature.parentId
-      ? `<button class="btn-link" id="btn-parent">#${creature.parentId}</button>`
+      ? `<button class="btn-link" id="btn-parent">#${escapeHtml(creature.parentId)}</button>`
       : '—';
     const sexEmoji = creature.sex === 'male' ? '♂️' : '♀️';
     const sexLabel = creature.sex === 'male' ? 'Male' : 'Female';
@@ -578,13 +579,13 @@ export function renderInspector(model = {}, handlers = {}) {
             DWARFISM: '🐁 Dwarfism',
             HYPERMETABOLISM: '⚡ Hypermetabolism'
           };
-          return disorders[d] || d;
+          return escapeHtml(disorders[d] || d);
         })
         .join(', ') || 'None';
 
     const mutationBadge =
       creature.mutations && creature.mutations.length > 0
-        ? ` <span class="chip" style="font-size:9px;padding:2px 6px;">🧬 ${creature.mutations.length}</span>`
+        ? ` <span class="chip" style="font-size:9px;padding:2px 6px;">🧬 ${escapeHtml(creature.mutations.length)}</span>`
         : '';
 
     const memoryLocations = Array.isArray(creature.memory?.locations)
@@ -593,7 +594,7 @@ export function renderInspector(model = {}, handlers = {}) {
     const memoryMarkup = memoryLocations.length
       ? memoryLocations
           .map(memory => {
-            const label = String(memory.type || memory.tag || 'memory').replaceAll('_', ' ');
+            const label = escapeHtml(String(memory.type || memory.tag || 'memory').replaceAll('_', ' '));
             const strength = Math.round((memory.strength ?? 0) * 100);
             return `<div class="row"><div>${label}</div><div>${strength}%</div></div>`;
           })
@@ -603,7 +604,9 @@ export function renderInspector(model = {}, handlers = {}) {
       Array.isArray(creature.children) && creature.children.length
         ? creature.children
             .slice(0, 6)
-            .map(id => `<button class="btn-link family-jump-body" data-id="${id}">#${id}</button>`)
+            .map(
+              id => `<button class="btn-link family-jump-body" data-id="${escapeHtml(id)}">#${escapeHtml(id)}</button>`
+            )
             .join(', ')
         : '—';
     const familyMarkup = `
@@ -612,13 +615,13 @@ export function renderInspector(model = {}, handlers = {}) {
       <div class="row"><div>Births</div><div>${stats?.births ?? 0}</div></div>
     `;
     const statsMarkup = `
-      <div class="row"><div>ID</div><div>#${creature.id}${creature.alive ? '' : ' †'}${mutationBadge}</div></div>
+      <div class="row"><div>ID</div><div>#${escapeHtml(creature.id)}${creature.alive ? '' : ' †'}${mutationBadge}</div></div>
       <div class="row"><div>Sex</div><div>${sexEmoji} ${sexLabel}</div></div>
       <div class="row"><div>Type</div><div><span class="tag">${creature.genes.predator ? 'Predator' : 'Herbivore'}</span></div></div>
       <div class="row"><div>Age</div><div>${creature.age.toFixed(1)}s</div></div>
       <div class="row"><div>Energy</div><div>${creature.energy.toFixed(1)}</div></div>
       <div class="row"><div>Health</div><div>${creature.health.toFixed(1)} / ${creature.maxHealth.toFixed(0)}</div></div>
-      ${creature.disorders && creature.disorders.length > 0 ? `<div class="row"><div>Disorders</div><div style="color:#ff6b6b;">${disorderLabels}</div></div>` : ''}
+      ${creature.disorders && creature.disorders.length > 0 ? `<div class="row"><div>Disorders</div><div style="color:#ff6b6b;">${escapeHtml(disorderLabels)}</div></div>` : ''}
       <div class="row"><div>Food eaten</div><div>${stats?.food ?? 0}</div></div>
       <div class="row"><div>Kills</div><div>${stats?.kills ?? 0}</div></div>
       <div class="row"><div>Damage</div><div>${(stats?.damageDealt ?? 0).toFixed(1)} / ${(stats?.damageTaken ?? 0).toFixed(1)}</div></div>
@@ -722,7 +725,7 @@ export function renderInspector(model = {}, handlers = {}) {
       badgesPanel.classList.remove('hidden');
       badgesPanel.innerHTML = `
         <div class="section-title">Badges</div>
-        <div class="badge-list">${badges.map(b => `<span class="badge">${b}</span>`).join('')}</div>
+        <div class="badge-list">${badges.map(b => `<span class="badge">${escapeHtml(b)}</span>`).join('')}</div>
       `;
     } else {
       badgesPanel.classList.add('hidden');
@@ -743,8 +746,8 @@ export function renderInspector(model = {}, handlers = {}) {
             .map(id => {
               const parent = worldRef?.getAnyCreatureById?.(id);
               const alive = parent ? parent.alive !== false : false;
-              const label = alive ? `#${id}` : `#${id}✝`;
-              return `<button class="btn-link family-jump ${alive ? '' : 'muted'}" data-id="${id}">${label}</button>`;
+              const label = alive ? `#${escapeHtml(id)}` : `#${escapeHtml(id)}✝`;
+              return `<button class="btn-link family-jump ${alive ? '' : 'muted'}" data-id="${escapeHtml(id)}">${label}</button>`;
             })
             .join(', ')
         : '<span class="muted">Unknown</span>';
@@ -759,8 +762,8 @@ export function renderInspector(model = {}, handlers = {}) {
           .map(id => {
             const child = worldRef?.getAnyCreatureById?.(id);
             const alive = child ? child.alive !== false : false;
-            const label = alive ? `#${id}` : `#${id}✝`;
-            return `<button class="btn-link family-jump ${alive ? '' : 'muted'}" data-id="${id}">${label}</button>`;
+            const label = alive ? `#${escapeHtml(id)}` : `#${escapeHtml(id)}✝`;
+            return `<button class="btn-link family-jump ${alive ? '' : 'muted'}" data-id="${escapeHtml(id)}">${label}</button>`;
           })
           .join(', ');
         const extra = childIds.length > 6 ? `<span class="muted"> +${childIds.length - 6} more</span>` : '';
@@ -787,7 +790,7 @@ export function renderInspector(model = {}, handlers = {}) {
         creature && model.ancestors && model.ancestors.length
           ? `Ancestors: ${model.ancestors.map(a => formatId(a)).join(' ← ')}`
           : 'Shift-click a creature to pick a lineage root.';
-      lineageSummaryEl.innerHTML = ancestorStr;
+      lineageSummaryEl.textContent = ancestorStr;
     } else {
       const overview = model.lineage ?? null;
       if (!overview) {
@@ -799,7 +802,9 @@ export function renderInspector(model = {}, handlers = {}) {
             .map(level => {
               const samples = level.sample
                 .filter(Boolean)
-                .map(id => `<button class="btn-link lineage-jump" data-id="${id}">#${id}</button>`)
+                .map(
+                  id => `<button class="btn-link lineage-jump" data-id="${escapeHtml(id)}">#${escapeHtml(id)}</button>`
+                )
                 .join(', ');
               return `<div class="lineage-level"><span>Gen ${level.depth}</span><span class="count">${level.alive}/${level.total}</span>${samples ? `<span class="ids">${samples}</span>` : ''}</div>`;
             })
@@ -862,7 +867,7 @@ export function renderInspector(model = {}, handlers = {}) {
           .map(entry => {
             const trendClass = entry.delta > 0 ? 'up' : entry.delta < 0 ? 'down' : 'flat';
             const trendVal = entry.delta > 0 ? `+${entry.delta}` : entry.delta < 0 ? `${entry.delta}` : '0';
-            return `<div class="family"><button class="family-root" data-root="${entry.rootId}">${entry.name}</button><div class="metrics"><span>${entry.alive}</span><span class="direction ${trendClass}">${trendVal}</span><span class="muted">pk ${entry.peak}</span></div></div>`;
+            return `<div class="family"><button class="family-root" data-root="${escapeHtml(entry.rootId)}">${escapeHtml(entry.name)}</button><div class="metrics"><span>${entry.alive}</span><span class="direction ${trendClass}">${trendVal}</span><span class="muted">pk ${entry.peak}</span></div></div>`;
           })
           .join('');
         lineageTopEl.querySelectorAll('.family-root').forEach(btn => {
@@ -881,7 +886,7 @@ export function renderInspector(model = {}, handlers = {}) {
       lineageStoryPanel.classList.remove('hidden');
       lineageStoriesEl.innerHTML = stories
         .map(evt => {
-          return `<button class="story" data-root="${evt.rootId}"><strong>${evt.title}</strong><br><span class="muted">t=${evt.time.toFixed(1)}s</span></button>`;
+          return `<button class="story" data-root="${escapeHtml(evt.rootId)}"><strong>${escapeHtml(evt.title)}</strong><br><span class="muted">t=${evt.time.toFixed(1)}s</span></button>`;
         })
         .join('');
       lineageStoriesEl.querySelectorAll('.story').forEach(btn => {
@@ -899,7 +904,7 @@ export function renderInspector(model = {}, handlers = {}) {
       const items = activity
         .map(entry => {
           const time = entry.time != null ? `${entry.time.toFixed(1)}s` : '';
-          return `<li><time>${time}</time>${entry.message}</li>`;
+          return `<li><time>${time}</time>${escapeHtml(entry.message)}</li>`;
         })
         .join('');
       activityFeedEl.innerHTML = `<ul class="activity-list">${items}</ul>`;
