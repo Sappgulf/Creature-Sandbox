@@ -1480,6 +1480,8 @@ export async function initializeApp() {
 
     const ctx = canvas.getContext('2d');
     const particles = [];
+    const stars = [];
+    const nebulae = [];
     let animationId = null;
 
     // Resize canvas to fill screen
@@ -1490,7 +1492,35 @@ export async function initializeApp() {
     resize();
     window.addEventListener('resize', resize);
 
-    // Create floating particles (creature-like blobs)
+    // === LAYER 1: Deep starfield (parallax background) ===
+    const starCount = Math.min(120, Math.floor((canvas.width * canvas.height) / 12000));
+    for (let i = 0; i < starCount; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: 0.3 + Math.random() * 1.2,
+        alpha: 0.3 + Math.random() * 0.6,
+        twinkleSpeed: 0.5 + Math.random() * 2,
+        twinkleOffset: Math.random() * Math.PI * 2,
+        hue: 180 + Math.random() * 80
+      });
+    }
+
+    // === LAYER 2: Nebula clouds (soft, large, slow-moving) ===
+    const nebulaCount = 5;
+    for (let i = 0; i < nebulaCount; i++) {
+      nebulae.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: 150 + Math.random() * 200,
+        hue: i % 2 === 0 ? 195 : 270, // cyan or purple
+        alpha: 0.06 + Math.random() * 0.08,
+        vx: (Math.random() - 0.5) * 0.15,
+        vy: (Math.random() - 0.5) * 0.1
+      });
+    }
+
+    // === LAYER 3: Floating creature-like particles (foreground) ===
     const numParticles = 25;
     for (let i = 0; i < numParticles; i++) {
       particles.push({
@@ -1504,6 +1534,32 @@ export async function initializeApp() {
         wobble: Math.random() * Math.PI * 2,
         wobbleSpeed: 0.02 + Math.random() * 0.03
       });
+    }
+
+    function drawStar(star, time) {
+      const twinkle = 0.5 + 0.5 * Math.sin(time * star.twinkleSpeed + star.twinkleOffset);
+      ctx.fillStyle = `hsla(${star.hue}, 70%, 80%, ${star.alpha * twinkle})`;
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+      ctx.fill();
+      // Soft glow for larger stars
+      if (star.r > 0.8) {
+        ctx.fillStyle = `hsla(${star.hue}, 70%, 80%, ${star.alpha * twinkle * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.r * 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawNebula(nebula) {
+      const gradient = ctx.createRadialGradient(nebula.x, nebula.y, 0, nebula.x, nebula.y, nebula.r);
+      gradient.addColorStop(0, `hsla(${nebula.hue}, 60%, 50%, ${nebula.alpha})`);
+      gradient.addColorStop(0.5, `hsla(${nebula.hue}, 60%, 50%, ${nebula.alpha * 0.4})`);
+      gradient.addColorStop(1, `hsla(${nebula.hue}, 60%, 50%, 0)`);
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(nebula.x, nebula.y, nebula.r, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     function drawParticle(p) {
@@ -1526,15 +1582,31 @@ export async function initializeApp() {
     }
 
     function animate() {
+      const time = performance.now() * 0.001;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      // Draw nebulae (behind everything)
+      for (const n of nebulae) {
+        n.x += n.vx;
+        n.y += n.vy;
+        if (n.x < -n.r) n.x = canvas.width + n.r;
+        if (n.x > canvas.width + n.r) n.x = -n.r;
+        if (n.y < -n.r) n.y = canvas.height + n.r;
+        if (n.y > canvas.height + n.r) n.y = -n.r;
+        drawNebula(n);
+      }
+
+      // Draw stars
+      for (const star of stars) {
+        drawStar(star, time);
+      }
+
+      // Draw floating creature particles
       for (const p of particles) {
-        // Update position
         p.x += p.speedX;
         p.y += p.speedY;
         p.wobble += p.wobbleSpeed;
 
-        // Wrap around edges
         if (p.x < -p.size) p.x = canvas.width + p.size;
         if (p.x > canvas.width + p.size) p.x = -p.size;
         if (p.y < -p.size) p.y = canvas.height + p.size;

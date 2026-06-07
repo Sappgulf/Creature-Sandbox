@@ -9,15 +9,32 @@
   --bg-surface: #0b1019;
   --bg-elevated: #121925;
   --bg-hover: #1d2736;
-  /* Glass Effects */
+  /* Glass Effects — tiered system for visual hierarchy */
   --glass-bg: rgba(8, 13, 22, 0.88);
   --glass-bg-light: rgba(18, 25, 37, 0.78);
+  --glass-bg-hero: rgba(12, 18, 30, 0.94);
+  --glass-bg-panel: rgba(10, 15, 26, 0.86);
+  --glass-bg-chip: rgba(18, 25, 37, 0.68);
+  --glass-blur-hero: 20px;
+  --glass-blur-panel: 14px;
+  --glass-blur-chip: 8px;
   --glass-border: rgba(151, 183, 212, 0.16);
   --glass-border-hover: rgba(151, 218, 255, 0.28);
-  /* Accent Colors - Cyan/Purple futuristic */
+  --glass-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --glass-inner-glow-strong: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  /* Accent Colors — expanded palette for semantic meaning */
   --accent-primary: #39d5ff;
   --accent-primary-dim: rgba(57, 213, 255, 0.16);
+  --accent-primary-glow: rgba(57, 213, 255, 0.4);
   --accent-secondary: #b56cff;
+  --accent-secondary-dim: rgba(181, 108, 255, 0.18);
+  --accent-secondary-glow: rgba(181, 108, 255, 0.4);
+  --accent-bio: #4ade80;
+  --accent-bio-dim: rgba(74, 222, 128, 0.16);
+  --accent-eco: #fbbf24;
+  --accent-eco-dim: rgba(251, 191, 36, 0.16);
+  --accent-threat: #f87171;
+  --accent-threat-dim: rgba(248, 113, 113, 0.16);
   --accent-success: #22c55e;
   --accent-warning: #f59e0b;
   --accent-danger: #ef4444;
@@ -1195,6 +1212,81 @@ input[type="range"]:focus-visible {
     opacity: 0;
     transform: translateY(10px) scale(0.98);
   }
+}
+
+/* === TIERED GLASS SYSTEM === */
+/* Hero panels — the most important, full premium glass */
+.glass-hero {
+  background: var(--glass-bg-hero);
+  backdrop-filter: blur(var(--glass-blur-hero));
+  -webkit-backdrop-filter: blur(var(--glass-blur-hero));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-hard), var(--glass-inner-glow-strong);
+  border-radius: var(--radius-lg);
+}
+/* Standard panels — the default, balanced glass */
+.glass-panel {
+  background: var(--glass-bg-panel);
+  backdrop-filter: blur(var(--glass-blur-panel));
+  -webkit-backdrop-filter: blur(var(--glass-blur-panel));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-soft), var(--glass-inner-glow);
+  border-radius: var(--radius-md);
+}
+/* Chip-level — small floating controls, minimal glass */
+.glass-chip {
+  background: var(--glass-bg-chip);
+  backdrop-filter: blur(var(--glass-blur-chip));
+  -webkit-backdrop-filter: blur(var(--glass-blur-chip));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-inner-glow);
+  border-radius: var(--radius-pill);
+}
+
+/* === COLORED ACCENT BORDERS === */
+/* Each variant gives a panel a subtle colored border-glow to encode its
+   semantic function. Use with .glass-hero or .glass-panel. */
+.accent-border-cyan {
+  border-color: rgba(57, 213, 255, 0.32) !important;
+  box-shadow: var(--shadow-soft), var(--glass-inner-glow), 0 0 0 1px rgba(57, 213, 255, 0.12), 0 0 24px rgba(57, 213, 255, 0.08) !important;
+}
+.accent-border-purple {
+  border-color: rgba(181, 108, 255, 0.32) !important;
+  box-shadow: var(--shadow-soft), var(--glass-inner-glow), 0 0 0 1px rgba(181, 108, 255, 0.12), 0 0 24px rgba(181, 108, 255, 0.08) !important;
+}
+.accent-border-green {
+  border-color: rgba(74, 222, 128, 0.32) !important;
+  box-shadow: var(--shadow-soft), var(--glass-inner-glow), 0 0 0 1px rgba(74, 222, 128, 0.12), 0 0 24px rgba(74, 222, 128, 0.08) !important;
+}
+.accent-border-amber {
+  border-color: rgba(251, 191, 36, 0.32) !important;
+  box-shadow: var(--shadow-soft), var(--glass-inner-glow), 0 0 0 1px rgba(251, 191, 36, 0.12), 0 0 24px rgba(251, 191, 36, 0.08) !important;
+}
+.accent-border-red {
+  border-color: rgba(248, 113, 113, 0.32) !important;
+  box-shadow: var(--shadow-soft), var(--glass-inner-glow), 0 0 0 1px rgba(248, 113, 113, 0.12), 0 0 24px rgba(248, 113, 113, 0.08) !important;
+}
+
+/* === BUTTON PRESS MICRO-ANIMATION === */
+@keyframes pressPulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.93); }
+  100% { transform: scale(1); }
+}
+button:not(:disabled):active,
+.btn:not(:disabled):active,
+.chip:not(:disabled):active,
+.ctrl-btn:not(.disabled):active,
+.menu-item:not(.disabled):active {
+  animation: pressPulse 0.2s ease-out;
+  transform: scale(0.96);
+}
+/* Icon bounce on press */
+button:not(:disabled):active .ctrl-icon,
+.btn:not(:disabled):active .btn-icon,
+.chip:not(.disabled):active .chip-icon {
+  transform: scale(1.12);
+  transition: transform 0.08s ease-out;
 }
 .panel-header {
   display: flex;
@@ -2760,7 +2852,10 @@ select:focus-visible,
     box-shadow: 0 0 0 12px rgba(0, 212, 255, 0);
   }
 }
-#mobile-quick-actions button.ripple {
+#mobile-quick-actions button.ripple,
+.ctrl-btn.ripple,
+.menu-item.ripple,
+.chip.ripple {
   animation: action-ripple 0.4s ease-out;
 }
 /* Mobile spawn sheet */

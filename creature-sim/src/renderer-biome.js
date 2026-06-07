@@ -394,15 +394,18 @@ export function drawDayNightOverlay(renderer, ctx, world) {
 }
 
 // NEW: Draw season-based overlay tint with smooth transitions
+// Enhanced for visual impact — full-screen color grading that makes each
+// season feel distinct.
 export function drawSeasonOverlay(renderer, ctx, world) {
   const season = world.currentSeason || 'spring';
   const phase = world.seasonPhase || 0;
 
+  // More saturated, higher-alpha tints for visible seasonal shifts
   const seasonColors = {
-    spring: { r: 128, g: 202, b: 180, baseAlpha: 0.018 },
-    summer: { r: 246, g: 196, b: 118, baseAlpha: 0.02 },
-    autumn: { r: 214, g: 124, b: 68, baseAlpha: 0.026 },
-    winter: { r: 150, g: 190, b: 240, baseAlpha: 0.034 }
+    spring: { r: 156, g: 220, b: 186, baseAlpha: 0.06, warm: 0.0 },
+    summer: { r: 252, g: 212, b: 120, baseAlpha: 0.07, warm: 0.15 },
+    autumn: { r: 224, g: 130, b: 60, baseAlpha: 0.09, warm: 0.25 },
+    winter: { r: 170, g: 210, b: 250, baseAlpha: 0.1, warm: 0.0 }
   };
 
   const seasonOrder = ['spring', 'summer', 'autumn', 'winter'];
@@ -412,33 +415,56 @@ export function drawSeasonOverlay(renderer, ctx, world) {
   const current = seasonColors[season];
   const next = seasonColors[seasonOrder[nextIdx]];
 
-  let transitionTint;
+  let r, g, b, alpha, warm;
   if (phase < 0.7) {
     const t = phase / 0.7;
-    const r = Math.round(current.r + (next.r - current.r) * t);
-    const g = Math.round(current.g + (next.g - current.g) * t);
-    const b = Math.round(current.b + (next.b - current.b) * t);
-    const alpha = current.baseAlpha + (next.baseAlpha - current.baseAlpha) * t;
-    transitionTint = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    r = Math.round(current.r + (next.r - current.r) * t);
+    g = Math.round(current.g + (next.g - current.g) * t);
+    b = Math.round(current.b + (next.b - current.b) * t);
+    alpha = current.baseAlpha + (next.baseAlpha - current.baseAlpha) * t;
+    warm = current.warm + (next.warm - current.warm) * t;
   } else {
     const t = (phase - 0.7) / 0.3;
-    const r = Math.round(next.r + (next.r - current.r) * t * 0.3);
-    const g = Math.round(next.g + (next.g - current.g) * t * 0.3);
-    const b = Math.round(next.b + (next.b - current.b) * t * 0.3);
-    transitionTint = `rgba(${r}, ${g}, ${b}, ${next.baseAlpha})`;
+    r = Math.round(next.r + (next.r - current.r) * t * 0.3);
+    g = Math.round(next.g + (next.g - current.g) * t * 0.3);
+    b = Math.round(next.b + (next.b - current.b) * t * 0.3);
+    alpha = next.baseAlpha;
+    warm = next.warm;
   }
 
   const bounds = renderer._viewBounds;
   const visibleWidth = bounds.x2 - bounds.x1;
   const visibleHeight = bounds.y2 - bounds.y1;
   const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
-  ctx.fillStyle = transitionTint;
+
+  // Primary season color overlay
+  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
   ctx.fillRect(
     bounds.x1 - extendAmount,
     bounds.y1 - extendAmount,
     visibleWidth + extendAmount * 2,
     visibleHeight + extendAmount * 2
   );
+
+  // Warm/cool bias overlay (adds emotional temperature)
+  if (warm > 0) {
+    ctx.fillStyle = `rgba(255, 180, 80, ${warm * 0.12})`;
+    ctx.fillRect(
+      bounds.x1 - extendAmount,
+      bounds.y1 - extendAmount,
+      visibleWidth + extendAmount * 2,
+      visibleHeight + extendAmount * 2
+    );
+  } else if (season === 'winter') {
+    // Cool blue shadow overlay
+    ctx.fillStyle = 'rgba(80, 130, 200, 0.04)';
+    ctx.fillRect(
+      bounds.x1 - extendAmount,
+      bounds.y1 - extendAmount,
+      visibleWidth + extendAmount * 2,
+      visibleHeight + extendAmount * 2
+    );
+  }
 }
 
 export function drawMoodOverlay(renderer, ctx, world, intensity, type) {

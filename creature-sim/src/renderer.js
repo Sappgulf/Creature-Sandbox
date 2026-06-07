@@ -19,6 +19,7 @@ import {
   getBiomeTint
 } from './renderer-biome.js?v=20260423-assets1';
 import { drawWeatherEffects } from './renderer-weather.js';
+import { drawParallaxBackground, drawVignette, drawAmbientSpores, drawSeasonalParticles } from './renderer-parallax.js';
 import { ghostTrails } from './ecosystem-ghosts.js';
 
 // SPLIT: biome and weather rendering extracted to renderer-biome.js / renderer-weather.js
@@ -234,6 +235,9 @@ export class Renderer {
       this._lastDebugSpawnVersion = world._debugSpawn.version;
     }
 
+    // Parallax background layers (stars, midground orbs, ambient particles)
+    drawParallaxBackground(this, ctx, world);
+
     // Draw biomes
     this.drawBiomes(world);
 
@@ -390,6 +394,13 @@ export class Renderer {
     }
 
     ctx.restore();
+
+    // Store viewport size for screen-space overlays
+    this._viewportWidth = opts.viewportWidth;
+    this._viewportHeight = opts.viewportHeight;
+
+    // Vignette overlay (screen-space, pulls focus to center)
+    drawVignette(this, ctx);
 
     // Draw god mode effects
     this._drawGodModeEffects();
@@ -570,6 +581,9 @@ export class Renderer {
     // NEW: Season visual overlay
     drawSeasonOverlay(this, ctx, world);
 
+    // Seasonal ambient particles (pollen, leaves, snow)
+    drawSeasonalParticles(this, ctx, world);
+
     const mood = world.moodState || world.environment?.getMoodState?.();
     if (mood?.type && mood.type !== 'neutral') {
       drawMoodOverlay(this, ctx, world, mood.intensity, mood.type);
@@ -579,6 +593,9 @@ export class Renderer {
     if (this.enableWeather && this.weatherType) {
       drawWeatherEffects(this, ctx, world);
     }
+
+    // Ambient spore particles floating through the scene
+    drawAmbientSpores(this, ctx);
   }
 
   _getBiomeTint(biomeType) {

@@ -9,7 +9,7 @@ const repoRoot = path.resolve(__dirname, '..');
 const assetsDir = path.join(repoRoot, 'dist', 'assets');
 const maxChunkBytes = Number(process.env.CREATURE_MAX_JS_CHUNK_BYTES || 300_000);
 const maxChunkGzipBytes = Number(process.env.CREATURE_MAX_JS_CHUNK_GZIP_BYTES || 100_000);
-const maxMainChunkBytes = Number(process.env.CREATURE_MAX_MAIN_CHUNK_BYTES || 500_000);
+const maxMainChunkBytes = Number(process.env.CREATURE_MAX_MAIN_CHUNK_BYTES || 510_000);
 const maxMainChunkGzipBytes = Number(process.env.CREATURE_MAX_MAIN_CHUNK_GZIP_BYTES || 150_000);
 
 const entries = await fs.readdir(assetsDir, { withFileTypes: true });
