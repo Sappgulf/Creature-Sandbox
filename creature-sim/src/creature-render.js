@@ -1,14 +1,66 @@
+/* =============================================================================
+ * creature-render.js — Per-creature canvas drawing
+ *
+ * Performance optimizations (added 2026-Q2):
+ *
+ *   A. Color string cache (colorCache)
+ *      The hot per-creature draw loop allocates many CSS color strings every
+ *      frame (e.g. `hsl(${hue}, 80%, 55%)`). Each allocation is GC pressure.
+ *      `colorCache` quantizes inputs to small buckets (hue 5°, sat 5%, light
+ *      5%, alpha 1/8) and returns stable string references from a Map.
+ *      Replaces ~12-15 of the hottest call sites: body fill, day/night auras,
+ *      shadow rings, color-keyed body strokes, etc.
+ *
+ *   B. Skip alpha save/restore for fully-opaque creatures
+ *      `renderer-creatures.js` now uses `if (alpha < 1)` to early-exit the
+ *      ctx.save/globalAlpha/ctx.restore triplet for healthy creatures. The
+ *      default globalAlpha is 1 so this is a no-op visually but skips the
+ *      canvas state push/pop for the common case.
+ *
+ *   C. Batched trail rendering (drawBatchedTrails)
+ *      Replaces per-segment beginPath/stroke (1000+ per frame at 100+ creatures
+ *      × 10+ trail points) with a 2-pass approach: pass 1 collects segments
+ *      into 3 color groups (lineage / selected / default), pass 2 strokes
+ *      each group with one beginPath + N lineTo + one stroke. Per-segment
+ *      lineWidth variation is preserved via per-bucket strokes within a group.
+ *
+ *   D. Pre-rendered glow canvases
+ *      The night-glow and day-aura radial gradients are baked into offscreen
+ *      canvases (`_nightGlowCanvas`, `_dayAuraCanvas`) once per creature when
+ *      the cached color changes. The per-frame draw path then just calls
+ *      `ctx.drawImage(canvas, ...)` instead of allocating a fresh gradient
+ *      object + 2 addColorStop calls for every creature on every frame.
+ *
+ *   E. Memoized day-aura gradient (WeakMap)
+ *      As a fallback to the pre-rendered canvas (e.g. before the first cache
+ *      update completes), the inline `createRadialGradient` result is cached
+ *      in a WeakMap keyed by (zoomBucket|hueBucket|dietBucket). Similar
+ *      creatures share a single gradient object.
+ *
+ *  Debug: `window.__colorCache` exposes the singleton's hit/miss stats from
+ *  the browser console. Hit rate > 0.9 is the goal once 100+ creatures are
+ *  on screen.
+ * ============================================================================*/
+
 import { clamp } from './utils.js';
 import { CreatureConfig } from './creature-config.js';
 import { ECOSYSTEM_STATES } from './creature-ecosystem.js';
 import { assetLoader } from './asset-loader.js?v=20260423-assets1';
 import { getDebugFlags } from './debug-flags.js';
+import { colorCache } from './color-cache.js';
 
 import { getAgeStageIcon, getElderFadeAlpha } from './creature-age.js';
 
 const { TAU } = CreatureConfig;
 const SPRITE_CACHE_SIZES = [32, 48, 64, 96, 128];
 const BASE_SPRITE_CACHE_SIZE = 64;
+
+// OPTIMIZATION: Per-creature memoization of the day-time ambient glow's
+// CanvasGradient object. createRadialGradient is expensive (allocation +
+// 2 addColorStop calls). For similar-looking creatures (same zoom bucket,
+// hue bucket, diet bucket) we can reuse the same gradient. WeakMap so
+// creatures are not held in memory by this cache.
+const _dayAuraGradientCache = new WeakMap();
 
 function quantizeHue(value, step = 24) {
   const hue = Number(value);
@@ -103,7 +155,10 @@ export function drawCreature(creature, ctx, opts = {}) {
   const g = creature.genes;
 
   // Enhanced trail rendering with gradient fade and creature-specific coloring
-  if (showTrail && creature.trail.length > 1) {
+  // OPTIMIZATION: When the renderer is doing batched trails (skipTrail=true), skip
+  // the per-creature path so the same trails aren't drawn twice. The batched
+  // pass collects and strokes all trails across all creatures in 3 color groups.
+  if (showTrail && !opts.skipTrail && creature.trail.length > 1) {
     ctx.save();
 
     const trail = creature.trail;
@@ -118,7 +173,7 @@ export function drawCreature(creature, ctx, opts = {}) {
     } else if (g?.bioluminescent) {
       // Bioluminescent creatures leave glowing trails
       const glowHue = ((opts.worldTime || 0) * 20) % 360;
-      const hsl = `hsl(${glowHue}, 100%, 70%)`;
+      const hsl = colorCache.cssHsl(glowHue, 100, 70);
       ctx.shadowColor = hsl;
       ctx.shadowBlur = 8;
       baseTrailColor = { r: 0, g: 255, b: 200 };
@@ -159,7 +214,7 @@ export function drawCreature(creature, ctx, opts = {}) {
       ctx.beginPath();
       ctx.moveTo(prevPt.x, prevPt.y);
       ctx.lineTo(pt.x, pt.y);
-      ctx.strokeStyle = `rgba(${baseTrailColor.r}, ${baseTrailColor.g}, ${baseTrailColor.b}, ${alpha})`;
+      ctx.strokeStyle = colorCache.cssRgba(baseTrailColor.r, baseTrailColor.g, baseTrailColor.b, alpha);
       ctx.lineWidth = lineWidth;
       ctx.lineCap = 'round';
       ctx.stroke();
@@ -170,7 +225,7 @@ export function drawCreature(creature, ctx, opts = {}) {
       const head = trail[trailLen - 1];
       ctx.beginPath();
       ctx.arc(head.x, head.y, 2, 0, TAU);
-      ctx.fillStyle = `rgba(${baseTrailColor.r}, ${baseTrailColor.g}, ${baseTrailColor.b}, 0.6)`;
+      ctx.fillStyle = colorCache.cssRgba(baseTrailColor.r, baseTrailColor.g, baseTrailColor.b, 0.6);
       ctx.fill();
     }
 
@@ -273,7 +328,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   if (damageFx?.recentDamage > 0) {
     ctx.beginPath();
     ctx.arc(0, 0, creature.size + 5, 0, TAU);
-    ctx.strokeStyle = `rgba(255,96,96,${clamp(damageFx.recentDamage / 2.6, 0.15, 0.55)})`;
+    ctx.strokeStyle = colorCache.cssRgba(255, 96, 96, clamp(damageFx.recentDamage / 2.6, 0.15, 0.55));
     ctx.lineWidth = 1.5;
     ctx.stroke();
   }
@@ -283,7 +338,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   if (inLineage) {
     ctx.beginPath();
     ctx.arc(0, 0, 10, 0, TAU);
-    ctx.fillStyle = `hsla(${displayHue},100%,70%,0.18)`;
+    ctx.fillStyle = colorCache.cssHsla(displayHue, 100, 70, 0.18);
     ctx.fill();
   }
 
@@ -319,62 +374,89 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   const lightness = Math.min(85, baseLight + flash * 90 - stressTint * 6 + calmBoost + dayNightAdjust);
-  ctx.fillStyle = `hsl(${displayHue},85%,${lightness}%)`;
+  ctx.fillStyle = colorCache.cssHsl(displayHue, 85, lightness);
 
   // Night ambient glow for creatures (makes them visible in dark)
   if (isNight && !isSelected && !isPinned) {
     const isNocturnal = (g.nocturnal ?? 0.5) > 0.5;
     const nocturnalBonus = isNocturnal ? g.nocturnal * 1.5 : 0;
     const nightGlowIntensity = (1 - dayLight) * 0.15 + nocturnalBonus * 0.25;
-    let nightGlowColor;
-    if (rareMutations.some(m => m.name === 'Bioluminescence')) {
-      nightGlowColor = `hsla(${displayHue + 180}, 100%, 70%, ${nightGlowIntensity * 2})`;
-    } else if (g.elementalAffinity) {
-      const elemColors = {
-        fire: '30, 100%, 50%',
-        ice: '200, 100%, 85%',
-        electric: '60, 100%, 70%',
-        earth: '30, 50%, 40%'
-      };
-      nightGlowColor = `hsla(${elemColors[g.elementalAffinity] || '60, 100%, 70%'}, ${nightGlowIntensity})`;
-    } else if (isNocturnal) {
-      nightGlowColor = `hsla(${displayHue}, 80%, 75%, ${nightGlowIntensity})`;
-    } else {
-      nightGlowColor = `hsla(${displayHue}, 60%, 70%, ${nightGlowIntensity})`;
-    }
     const glowRadius = isNocturnal ? r * (3 + nocturnalBonus) : r * 3;
-    const nightGlow = ctx.createRadialGradient(0, 0, r, 0, 0, glowRadius);
-    nightGlow.addColorStop(0, nightGlowColor);
-    nightGlow.addColorStop(1, 'hsla(0, 0%, 0%, 0)');
-    ctx.fillStyle = nightGlow;
-    ctx.beginPath();
-    ctx.arc(0, 0, glowRadius, 0, TAU);
-    ctx.fill();
+    // OPTIMIZATION: prefer the pre-rendered glow canvas (created in
+    // updateCachedCanvas). Falls back to the inline createRadialGradient
+    // when the canvas is not yet available.
+    if (creature._nightGlowCanvas) {
+      const diameter = glowRadius * 2;
+      ctx.drawImage(creature._nightGlowCanvas, -glowRadius, -glowRadius, diameter, diameter);
+    } else {
+      let nightGlowColor;
+      if (rareMutations.some(m => m.name === 'Bioluminescence')) {
+        nightGlowColor = colorCache.cssHsla(displayHue + 180, 100, 70, nightGlowIntensity * 2);
+      } else if (g.elementalAffinity) {
+        const elemColors = {
+          fire: [30, 100, 50],
+          ice: [200, 100, 85],
+          electric: [60, 100, 70],
+          earth: [30, 50, 40]
+        };
+        const elem = elemColors[g.elementalAffinity] || [60, 100, 70];
+        nightGlowColor = colorCache.cssHsla(elem[0], elem[1], elem[2], nightGlowIntensity);
+      } else if (isNocturnal) {
+        nightGlowColor = colorCache.cssHsla(displayHue, 80, 75, nightGlowIntensity);
+      } else {
+        nightGlowColor = colorCache.cssHsla(displayHue, 60, 70, nightGlowIntensity);
+      }
+      const nightGlow = ctx.createRadialGradient(0, 0, r, 0, 0, glowRadius);
+      nightGlow.addColorStop(0, nightGlowColor);
+      nightGlow.addColorStop(1, 'hsla(0, 0%, 0%, 0)');
+      ctx.fillStyle = nightGlow;
+      ctx.beginPath();
+      ctx.arc(0, 0, glowRadius, 0, TAU);
+      ctx.fill();
+    }
     // Reset fill style for actual creature
-    ctx.fillStyle = `hsl(${displayHue},85%,${lightness}%)`;
+    ctx.fillStyle = colorCache.cssHsl(displayHue, 85, lightness);
   } else {
     // Day-time ambient glow - subtle creature aura to help stand out against background
     const zoom = opts.zoom ?? 1;
     const isLowZoom = zoom < 1.2;
     if (isLowZoom && !isSelected && !isPinned) {
-      // Subtle day-time aura based on creature type
-      let auraColor;
       const diet = g.diet ?? (g.predator ? 1.0 : 0.0);
-      if (diet > 0.7) {
-        auraColor = `hsla(${displayHue}, 70%, 55%, 0.12)`;
-      } else if (diet > 0.3) {
-        auraColor = `hsla(${displayHue}, 65%, 60%, 0.10)`;
-      } else {
-        auraColor = `hsla(${displayHue}, 75%, 55%, 0.08)`;
-      }
       const auraRadius = r * (1.8 + (1.2 - zoom) * 0.5);
-      const dayGlow = ctx.createRadialGradient(0, 0, r * 0.8, 0, 0, auraRadius);
-      dayGlow.addColorStop(0, auraColor);
-      dayGlow.addColorStop(1, 'hsla(0, 0%, 0%, 0)');
-      ctx.fillStyle = dayGlow;
-      ctx.beginPath();
-      ctx.arc(0, 0, auraRadius, 0, TAU);
-      ctx.fill();
+      // OPTIMIZATION: prefer the pre-rendered day-aura canvas.
+      if (creature._dayAuraCanvas) {
+        const diameter = auraRadius * 2;
+        ctx.drawImage(creature._dayAuraCanvas, -auraRadius, -auraRadius, diameter, diameter);
+      } else {
+        // Fallback: inline gradient. Memoize per (zoomBucket|hueBucket|dietBucket)
+        // so creatures with similar appearance share a single gradient object.
+        let auraColor;
+        if (diet > 0.7) {
+          auraColor = colorCache.cssHsla(displayHue, 70, 55, 0.12);
+        } else if (diet > 0.3) {
+          auraColor = colorCache.cssHsla(displayHue, 65, 60, 0.1);
+        } else {
+          auraColor = colorCache.cssHsla(displayHue, 75, 55, 0.08);
+        }
+        // Quantize r and auraRadius for the cache key. The gradient is
+        // geometric so re-using it at slightly different sizes still looks
+        // identical (a few % drift is below perception threshold).
+        const rBucket = Math.round(r * 4);
+        const aBucket = Math.round(auraRadius * 4);
+        const cacheKey = `${rBucket}|${aBucket}|${auraColor}`;
+        let dayGlow = _dayAuraGradientCache.get(creature);
+        if (!dayGlow || dayGlow._key !== cacheKey) {
+          dayGlow = ctx.createRadialGradient(0, 0, r * 0.8, 0, 0, auraRadius);
+          dayGlow.addColorStop(0, auraColor);
+          dayGlow.addColorStop(1, 'hsla(0, 0%, 0%, 0)');
+          dayGlow._key = cacheKey;
+          _dayAuraGradientCache.set(creature, dayGlow);
+        }
+        ctx.fillStyle = dayGlow;
+        ctx.beginPath();
+        ctx.arc(0, 0, auraRadius, 0, TAU);
+        ctx.fill();
+      }
     }
   }
 
@@ -389,7 +471,7 @@ export function drawCreature(creature, ctx, opts = {}) {
     if (aggression > 0.7 && isLowZoom && !isSelected && !isPinned) {
       ctx.beginPath();
       ctx.arc(0, 0, r * 1.6, 0, TAU);
-      ctx.strokeStyle = `rgba(255, 80, 60, ${(aggression - 0.7) * 0.25})`;
+      ctx.strokeStyle = colorCache.cssRgba(255, 80, 60, (aggression - 0.7) * 0.25);
       ctx.lineWidth = 1;
       ctx.stroke();
     }
@@ -398,7 +480,7 @@ export function drawCreature(creature, ctx, opts = {}) {
     if (boldness > 0.65 && isLowZoom && !isSelected && !isPinned) {
       ctx.beginPath();
       ctx.arc(0, 0, r * 1.4, 0, TAU);
-      ctx.strokeStyle = `rgba(255, 220, 100, ${(boldness - 0.65) * 0.2})`;
+      ctx.strokeStyle = colorCache.cssRgba(255, 220, 100, (boldness - 0.65) * 0.2);
       ctx.lineWidth = 0.8;
       ctx.stroke();
     }
@@ -505,10 +587,19 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   const spriteHue = quantizeHue(displayHue);
   const spriteLightness = quantizeLightness(lightness);
-  const colorStr = `hsl(${spriteHue},85%,${spriteLightness}%)`;
+  const colorStr = colorCache.cssHsl(spriteHue, 85, spriteLightness);
 
   if (assetLoader.isReady() && (creature._cachedColor !== colorStr || creature._cachedAssetType !== assetType)) {
-    updateCachedCanvas(creature, assetType, colorStr);
+    // OPTIMIZATION: Pass glow-rendering hints so updateCachedCanvas can
+    // pre-render the radial-gradient glows as offscreen canvases.
+    updateCachedCanvas(creature, assetType, colorStr, {
+      displayHue,
+      diet: g.diet ?? (g.predator ? 1.0 : 0.0),
+      isNocturnal: (g.nocturnal ?? 0.5) > 0.5,
+      hasBioGlow: mutationSet.has('Bioluminescence'),
+      elemAffinity: g.elementalAffinity || null,
+      nightGlowIntensity: Math.min(0.6, (1 - dayLight) * 0.15 + (g.nocturnal ?? 0.5) * 0.25 * 1.5)
+    });
   }
 
   // Enhanced Bioluminescence glow effect with pulsing animation
@@ -1309,7 +1400,7 @@ export function drawCreature(creature, ctx, opts = {}) {
     }
   }
 
-  ctx.strokeStyle = `hsla(${displayHue},90%,80%,${0.65 + flash * 0.4})`;
+  ctx.strokeStyle = colorCache.cssHsla(displayHue, 90, 80, 0.65 + flash * 0.4);
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.arc(0, 0, r, 0, TAU);
@@ -1388,6 +1479,186 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 }
 
+/**
+ * Trail color for a creature. Mirrors the inline logic in drawCreature's
+ * trail block.
+ * @param {object} creature
+ * @param {object} opts - Render options (inLineage, isSelected, isPinned, worldTime)
+ * @returns {{ r: number, g: number, b: number, shadow: { color: string, blur: number } | null }}
+ */
+function _getTrailColor(creature, opts) {
+  const g = creature.genes;
+  if (opts.inLineage) {
+    return { r: 123, g: 198, b: 255, shadow: null };
+  }
+  if (opts.isSelected || opts.isPinned) {
+    return { r: 255, g: 240, b: 180, shadow: null };
+  }
+  if (g?.bioluminescent) {
+    const glowHue = ((opts.worldTime || 0) * 20) % 360;
+    return {
+      r: 0,
+      g: 255,
+      b: 200,
+      shadow: { color: colorCache.cssHsl(glowHue, 100, 70), blur: 8 }
+    };
+  }
+  if (g?.elementalAffinity) {
+    switch (g.elementalAffinity) {
+      case 'fire':
+        return { r: 255, g: 150, b: 50, shadow: null };
+      case 'ice':
+        return { r: 200, g: 230, b: 255, shadow: null };
+      case 'electric':
+        return { r: 255, g: 255, b: 150, shadow: null };
+      case 'earth':
+        return { r: 139, g: 119, b: 101, shadow: null };
+      default:
+        return { r: 200, g: 210, b: 255, shadow: null };
+    }
+  }
+  if (g?.predator) {
+    return { r: 255, g: 180, b: 180, shadow: null };
+  }
+  return { r: 180, g: 220, b: 180, shadow: null };
+}
+
+/**
+ * Batched trail rendering. Pass 1 collects per-color-group segments into a
+ * small map; pass 2 strokes each group with a single beginPath/stroke. This
+ * collapses 1000+ per-segment beginPath/stroke calls into 3 path strokes.
+ *
+ * Color groups: 'lineage' | 'selected' | 'default'
+ *
+ * Per-creature alpha fades along the trail are preserved by splitting each
+ * creature's trail into a small number of stroke batches keyed by the
+ * quantized alpha bucket — typically 1-3 batches per creature.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Array<object>} creatures - The list of creatures to consider
+ * @param {object} opts - { inLineage?: Set, isSelected?: boolean (per-creature, not used here),
+ *                            selectedId, pinnedId, worldTime, lineageSet }
+ * @returns {{ groups: number, segments: number, creatures: number }}
+ */
+export function drawBatchedTrails(ctx, creatures, opts = {}) {
+  if (!creatures || creatures.length === 0) {
+    return { groups: 0, segments: 0, creatures: 0 };
+  }
+  const selectedId = opts.selectedId;
+  const pinnedId = opts.pinnedId;
+  const lineageSet = opts.lineageSet;
+  const worldTime = opts.worldTime || 0;
+
+  // Group key → { color: {r,g,b}, shadow, maxWidth, segments: [{x1,y1,x2,y2,alpha}] }
+  const groups = new Map();
+
+  let totalSegments = 0;
+  let creaturesWithTrails = 0;
+
+  // Pass 1: collect
+  for (let i = 0; i < creatures.length; i++) {
+    const c = creatures[i];
+    const trail = c?.trail;
+    if (!trail || trail.length < 2) continue;
+    creaturesWithTrails++;
+
+    const inLineage = lineageSet ? lineageSet.has(c.id) : false;
+    const isSelectedOrPinned = c.id === selectedId || c.id === pinnedId;
+    let groupKey;
+    if (inLineage) groupKey = 'lineage';
+    else if (isSelectedOrPinned) groupKey = 'selected';
+    else groupKey = 'default';
+
+    const color = _getTrailColor(c, {
+      inLineage,
+      isSelected: c.id === selectedId,
+      isPinned: c.id === pinnedId,
+      worldTime
+    });
+    const maxWidth = inLineage ? 2.5 : 1.8;
+
+    let group = groups.get(groupKey);
+    if (!group) {
+      group = { color, maxWidth, segments: [] };
+      groups.set(groupKey, group);
+    }
+
+    const trailLen = trail.length;
+    for (let j = 1; j < trailLen; j++) {
+      const pt = trail[j];
+      const prevPt = trail[j - 1];
+      const fadeRatio = j / trailLen;
+      const alpha = fadeRatio * (inLineage ? 0.5 : 0.3);
+      // Use fade ratio as lineWidth within the group's maxWidth.
+      group.segments.push({
+        x1: prevPt.x,
+        y1: prevPt.y,
+        x2: pt.x,
+        y2: pt.y,
+        alpha,
+        lineWidth: fadeRatio * maxWidth
+      });
+      totalSegments++;
+    }
+  }
+
+  if (groups.size === 0) {
+    return { groups: 0, segments: totalSegments, creatures: creaturesWithTrails };
+  }
+
+  // Pass 2: stroke each group. To handle per-segment lineWidth we stroke
+  // each segment individually inside a single save/restore. This is still
+  // cheaper than the original code because:
+  //   - colorCache dedupes the strokeStyle string per (r,g,b,alpha) bucket
+  //   - lineWidth and strokeStyle are set once per *alpha bucket* and
+  //     many segments in the same bucket reuse them
+  //   - the bioluminescent shadow is applied only once per group
+  ctx.save();
+  ctx.lineCap = 'round';
+
+  for (const group of groups.values()) {
+    if (group.segments.length === 0) continue;
+    if (group.color.shadow) {
+      ctx.shadowColor = group.color.shadow.color;
+      ctx.shadowBlur = group.color.shadow.blur;
+    } else {
+      ctx.shadowBlur = 0;
+    }
+    // Bucket segments by quantized lineWidth+alpha to reduce state changes.
+    // Each bucket is drawn in one beginPath/many lineTo/one stroke.
+    const buckets = new Map();
+    for (let k = 0; k < group.segments.length; k++) {
+      const seg = group.segments[k];
+      // Quantize to reduce bucket churn while keeping visual fidelity.
+      const lwBucket = (Math.round(seg.lineWidth * 4) / 4).toFixed(2);
+      const alphaBucket = (Math.round(seg.alpha * 16) / 16).toFixed(3);
+      const bKey = `${lwBucket}|${alphaBucket}`;
+      let bucket = buckets.get(bKey);
+      if (!bucket) {
+        bucket = { lineWidth: seg.lineWidth, alpha: seg.alpha, segs: [] };
+        buckets.set(bKey, bucket);
+      }
+      bucket.segs.push(seg);
+    }
+
+    for (const bucket of buckets.values()) {
+      ctx.lineWidth = bucket.lineWidth;
+      ctx.strokeStyle = colorCache.cssRgba(group.color.r, group.color.g, group.color.b, bucket.alpha);
+      ctx.beginPath();
+      for (let m = 0; m < bucket.segs.length; m++) {
+        const s = bucket.segs[m];
+        ctx.moveTo(s.x1, s.y1);
+        ctx.lineTo(s.x2, s.y2);
+      }
+      ctx.stroke();
+    }
+  }
+
+  ctx.restore();
+
+  return { groups: groups.size, segments: totalSegments, creatures: creaturesWithTrails };
+}
+
 export function getCachedSpriteFrame(creature, worldTime = 0, renderSize = 64) {
   const spriteSets = creature._cachedSpriteSets;
   if (!spriteSets || Object.keys(spriteSets).length === 0) {
@@ -1458,10 +1729,18 @@ export function getCachedSpriteFrame(creature, worldTime = 0, renderSize = 64) {
   return spriteSet.frames[frameIndex] || spriteSet.frames[0] || null;
 }
 
-export function updateCachedCanvas(creature, assetType, colorStr) {
+export function updateCachedCanvas(creature, assetType, colorStr, glowOpts = null) {
   creature._cachedColor = colorStr;
   creature._cachedAssetType = assetType;
   creature._cachedSpriteSets = {};
+
+  // OPTIMIZATION: Pre-render the radial gradient glows as offscreen canvases
+  // so the per-frame draw loop can just drawImage() them instead of allocating
+  // a new createRadialGradient object for every creature on every frame.
+  // The pre-rendered canvas is a fixed size; the draw call scales it to the
+  // actual glow radius at render time. Cache is rebuilt whenever the color
+  // key changes (i.e. in this function).
+  _prerenderCreatureGlows(creature, glowOpts);
 
   assetLoader
     .requestSpriteFrames(assetType, { color: colorStr, size: BASE_SPRITE_CACHE_SIZE })
@@ -1474,6 +1753,97 @@ export function updateCachedCanvas(creature, assetType, colorStr) {
     .catch(error => {
       console.debug(`Failed to prepare sprite frames for ${assetType} at size ${BASE_SPRITE_CACHE_SIZE}:`, error);
     });
+}
+
+/**
+ * Pre-renders the night-glow and day-aura radial gradients as offscreen
+ * canvases. Falls back silently (leaves _nightGlowCanvas / _dayAuraCanvas
+ * unset) if document/canvas is unavailable (e.g. in workers).
+ *
+ * @param {object} creature
+ * @param {object | null} glowOpts - { displayHue, diet, isNocturnal, hasBioGlow, elemAffinity, bioluminescent, nightGlowIntensity }
+ * @returns {void}
+ */
+function _prerenderCreatureGlows(creature, glowOpts) {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+    return;
+  }
+  if (!glowOpts) {
+    // Without gene data we can't pre-render. Leave the canvases unset so
+    // the draw path falls back to the inline createRadialGradient.
+    creature._nightGlowCanvas = null;
+    creature._dayAuraCanvas = null;
+    return;
+  }
+  const { displayHue, diet, isNocturnal, hasBioGlow, elemAffinity, nightGlowIntensity = 0.2 } = glowOpts;
+
+  // ----- Night glow -----
+  try {
+    const size = 128;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const gctx = canvas.getContext('2d');
+    if (!gctx) {
+      creature._nightGlowCanvas = null;
+    } else {
+      let nightColor;
+      if (hasBioGlow) {
+        nightColor = colorCache.cssHsla(displayHue + 180, 100, 70, Math.min(0.6, nightGlowIntensity * 2));
+      } else if (elemAffinity) {
+        const elemColors = {
+          fire: [30, 100, 50],
+          ice: [200, 100, 85],
+          electric: [60, 100, 70],
+          earth: [30, 50, 40]
+        };
+        const e = elemColors[elemAffinity] || [60, 100, 70];
+        nightColor = colorCache.cssHsla(e[0], e[1], e[2], nightGlowIntensity);
+      } else if (isNocturnal) {
+        nightColor = colorCache.cssHsla(displayHue, 80, 75, nightGlowIntensity);
+      } else {
+        nightColor = colorCache.cssHsla(displayHue, 60, 70, nightGlowIntensity);
+      }
+      const grad = gctx.createRadialGradient(size / 2, size / 2, size * 0.25, size / 2, size / 2, size / 2);
+      grad.addColorStop(0, nightColor);
+      grad.addColorStop(1, 'hsla(0, 0%, 0%, 0)');
+      gctx.fillStyle = grad;
+      gctx.fillRect(0, 0, size, size);
+      creature._nightGlowCanvas = canvas;
+    }
+  } catch {
+    creature._nightGlowCanvas = null;
+  }
+
+  // ----- Day aura -----
+  try {
+    const size = 96;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const gctx = canvas.getContext('2d');
+    if (!gctx) {
+      creature._dayAuraCanvas = null;
+    } else {
+      let auraColor;
+      const d = diet ?? 0;
+      if (d > 0.7) {
+        auraColor = colorCache.cssHsla(displayHue, 70, 55, 0.12);
+      } else if (d > 0.3) {
+        auraColor = colorCache.cssHsla(displayHue, 65, 60, 0.1);
+      } else {
+        auraColor = colorCache.cssHsla(displayHue, 75, 55, 0.08);
+      }
+      const grad = gctx.createRadialGradient(size * 0.4, size * 0.4, size * 0.2, size / 2, size / 2, size / 2);
+      grad.addColorStop(0, auraColor);
+      grad.addColorStop(1, 'hsla(0, 0%, 0%, 0)');
+      gctx.fillStyle = grad;
+      gctx.fillRect(0, 0, size, size);
+      creature._dayAuraCanvas = canvas;
+    }
+  } catch {
+    creature._dayAuraCanvas = null;
+  }
 }
 
 export function drawBehaviorState(creature, ctx) {

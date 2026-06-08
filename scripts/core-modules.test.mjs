@@ -9,6 +9,7 @@ if (!globalThis.performance) {
 }
 
 import { rand, clamp, dist2, lerp, invLerp, remap, randn, wrap } from '../creature-sim/src/utils.js';
+import { ColorCache, colorCache as sharedColorCache } from '../creature-sim/src/color-cache.js';
 import { collectGameplayMetrics, getObjectiveProgress } from '../creature-sim/src/gameplay-objectives.js';
 import {
   makeGenes,
@@ -227,6 +228,84 @@ test('randn: returns numbers (distribution smoke test)', () => {
     values.every(v => typeof v === 'number' && isFinite(v)),
     'randn should return finite numbers'
   );
+});
+
+// ============================================================================
+// color-cache.js
+// ============================================================================
+console.log('\n=== color-cache.js ===');
+
+test('ColorCache: cssHsl returns same reference for same quantized input', () => {
+  const cache = new ColorCache();
+  const a = cache.cssHsl(120, 50, 50);
+  const b = cache.cssHsl(120, 50, 50);
+  assert.equal(a, b, 'identical inputs should return the same string reference');
+  assert.equal(typeof a, 'string');
+  assert.ok(a.startsWith('hsl('), 'output should be an hsl() string');
+});
+
+test('ColorCache: cssHsl quantizes inputs so similar values collide', () => {
+  const cache = new ColorCache();
+  // 121° and 122° both round to the same 5° bucket (120°).
+  const a = cache.cssHsl(121, 50, 50);
+  const b = cache.cssHsl(122, 50, 50);
+  assert.equal(a, b, 'values within the same 5° bucket should collide');
+
+  // 123° rounds up to the next bucket (125°).
+  const c = cache.cssHsl(123, 50, 50);
+  assert.notEqual(a, c, 'values in different buckets should not collide');
+});
+
+test('ColorCache: cssHsla respects alpha bucketing (1/8 steps)', () => {
+  const cache = new ColorCache();
+  // 0.1 and 0.125 both round to 1/8 (0.125) — should collide.
+  const a = cache.cssHsla(100, 50, 50, 0.1);
+  const b = cache.cssHsla(100, 50, 50, 0.125);
+  assert.equal(a, b, 'alpha values within the same 1/8 bucket should collide');
+  // 0.3 rounds to 2/8 (0.25) — should NOT collide with 0.125.
+  const c = cache.cssHsla(100, 50, 50, 0.3);
+  assert.notEqual(a, c, 'alpha in a different bucket should not collide');
+});
+
+test('ColorCache: cssRgba caches rgba strings', () => {
+  const cache = new ColorCache();
+  const a = cache.cssRgba(255, 100, 50, 0.5);
+  const b = cache.cssRgba(255, 100, 50, 0.5);
+  assert.equal(a, b, 'identical rgba inputs should return the same reference');
+  assert.ok(a.startsWith('rgba('), 'output should be an rgba() string');
+});
+
+test('ColorCache: reset() clears all caches and stats', () => {
+  const cache = new ColorCache();
+  cache.cssHsl(50, 50, 50);
+  cache.cssHsla(50, 50, 50, 0.5);
+  cache.cssRgba(50, 50, 50, 0.5);
+  const before = cache.getStats();
+  assert.ok(before.size > 0, 'cache should have entries before reset');
+  assert.ok(before.misses > 0, 'cache should have misses before reset');
+
+  cache.reset();
+  const after = cache.getStats();
+  assert.equal(after.size, 0, 'cache should be empty after reset()');
+  assert.equal(after.hits, 0, 'hits should reset to 0');
+  assert.equal(after.misses, 0, 'misses should reset to 0');
+});
+
+test('ColorCache: getStats reports hits/misses and hitRate', () => {
+  const cache = new ColorCache();
+  cache.cssHsl(10, 10, 10); // miss
+  cache.cssHsl(10, 10, 10); // hit
+  cache.cssHsl(10, 10, 10); // hit
+  const stats = cache.getStats();
+  assert.equal(stats.hits, 2, 'should record 2 hits');
+  assert.equal(stats.misses, 1, 'should record 1 miss');
+  assert.equal(stats.size, 1, 'should have 1 unique entry');
+  assert.ok(stats.hitRate > 0.6 && stats.hitRate < 0.7, 'hitRate should be ~2/3');
+});
+
+test('ColorCache: shared singleton is exported and accessible', () => {
+  assert.ok(sharedColorCache, 'sharedColorCache should be exported');
+  assert.ok(sharedColorCache instanceof ColorCache, 'shared cache should be a ColorCache instance');
 });
 
 // ============================================================================

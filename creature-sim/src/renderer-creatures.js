@@ -1,5 +1,6 @@
 import { clamp } from './utils.js';
 import { getCreatureEmotion, getLifeStageDisplay } from './upgrade-data.js';
+import { drawBatchedTrails } from './creature-render.js?v=20260423-assets1';
 
 export function applyCreatureMethods(Renderer) {
   Renderer.prototype.drawCreatures = function (world, opts) {
@@ -118,7 +119,9 @@ export function applyCreatureMethods(Renderer) {
       const inLineage = opts.lineageSet ? opts.lineageSet.has(c.id) : false;
       const alpha = clamp((c.energy || 40) / 40, 0.25, 1);
 
-      if (alpha < 0.99) {
+      // OPTIMIZATION: Skip save/restore when alpha is the default (1).
+      // Most healthy creatures hit this path and avoid the canvas state overhead.
+      if (alpha < 1) {
         ctx.save();
         ctx.globalAlpha = alpha;
       }
@@ -134,6 +137,10 @@ export function applyCreatureMethods(Renderer) {
       renderOpts.isPinned = isPinned;
       renderOpts.inLineage = inLineage;
       renderOpts.showTrail = showTrails;
+      // OPTIMIZATION: Tell drawCreature to skip its per-creature trail block;
+      // the batched drawBatchedTrails pass at the end of this loop handles
+      // all trails with far fewer beginPath/stroke calls.
+      renderOpts.skipTrail = showTrails && this._enableBatchedTrails !== false;
       renderOpts.showVision = this.enableVision;
       renderOpts.clusterHue = clusterHue;
       renderOpts.zoom = zoom;
@@ -199,7 +206,7 @@ export function applyCreatureMethods(Renderer) {
         this._drawCreatureStatusCue(c, { isSelected, isPinned });
       }
 
-      if (alpha < 0.99) {
+      if (alpha < 1) {
         ctx.restore();
       }
     }
@@ -207,6 +214,18 @@ export function applyCreatureMethods(Renderer) {
     this.culledCount = creatures.length - this.renderedCount;
     this.performance.stats.rendered += this.renderedCount;
     this.performance.stats.culled += this.culledCount;
+
+    // OPTIMIZATION: Batched trail rendering. Replaces 1000+ per-segment
+    // beginPath/stroke calls with a small number of color-grouped strokes.
+    // Skip if the batched pass is disabled (e.g. tests or fallback path).
+    if (showTrails && this._enableBatchedTrails !== false) {
+      drawBatchedTrails(ctx, finalRenderList, {
+        selectedId: opts.selectedId,
+        pinnedId: opts.pinnedId,
+        lineageSet: opts.lineageSet,
+        worldTime
+      });
+    }
   };
 
   Renderer.prototype._drawVectorCreatureLOD = function (
