@@ -16,6 +16,10 @@ export const HUD_MENU_GROUPS = [
     label: 'Insights'
   },
   {
+    id: 'system',
+    label: 'System'
+  },
+  {
     id: 'developer',
     label: 'Developer'
   }
@@ -167,6 +171,19 @@ export function createHudMenuActions(handlers = {}) {
       risk: 'Low'
     },
     {
+      id: 'btn-replay-tutorial',
+      label: 'Replay Tutorial',
+      icon: '🎓',
+      group: 'system',
+      shortcut: '',
+      handler: handlers.onReplayTutorial,
+      enabledWhen: () => true,
+      primary: false,
+      context: 'Global',
+      frequency: 'Rare',
+      risk: 'Low'
+    },
+    {
       id: 'btn-god-mode',
       label: 'God Mode',
       icon: '✨',
@@ -193,6 +210,45 @@ export function createHudMenuActions(handlers = {}) {
       risk: 'Medium'
     },
     {
+      id: 'btn-replay',
+      label: 'Replay',
+      icon: '⏪',
+      group: 'insights',
+      shortcut: '',
+      handler: handlers.onReplayToggle,
+      enabledWhen: () => true,
+      primary: false,
+      context: 'Sandbox-only',
+      frequency: 'Medium',
+      risk: 'Low'
+    },
+    {
+      id: 'btn-lineage-album',
+      label: 'Lineage Album',
+      icon: '🌳',
+      group: 'insights',
+      shortcut: '',
+      handler: handlers.onLineageAlbumToggle,
+      enabledWhen: () => true,
+      primary: false,
+      context: 'Sandbox-only',
+      frequency: 'Medium',
+      risk: 'Low'
+    },
+    {
+      id: 'btn-insights',
+      label: 'Evolution Insights',
+      icon: '💡',
+      group: 'insights',
+      shortcut: '',
+      handler: handlers.onInsightsToggle,
+      enabledWhen: () => true,
+      primary: false,
+      context: 'Sandbox-only',
+      frequency: 'Medium',
+      risk: 'Low'
+    },
+    {
       id: 'debug-console-toggle',
       label: 'Debug Console',
       icon: '🔧',
@@ -212,6 +268,19 @@ export function createHudMenuActions(handlers = {}) {
       group: 'developer',
       shortcut: '',
       handler: handlers.onPerformanceToggle,
+      enabledWhen: () => true,
+      primary: false,
+      context: 'Debug-only',
+      frequency: 'Rare',
+      risk: 'Low'
+    },
+    {
+      id: 'profiler-overlay-toggle',
+      label: 'Profiler',
+      icon: '📈',
+      group: 'system',
+      shortcut: 'F8',
+      handler: handlers.onProfilerToggle,
       enabledWhen: () => true,
       primary: false,
       context: 'Debug-only',

@@ -3,6 +3,77 @@
 
 /** @typedef {import('./types.js').SaveData} SaveData */
 
+/**
+ * @typedef {Object} SaveMetadata
+ * @property {?number} slotNumber
+ * @property {string} [sessionSeed]
+ * @property {number} [playTime]
+ * @property {number} [saveCount]
+ * @property {boolean} [isAutoSave]
+ * @property {boolean} [isManualSave]
+ * @property {string} [saveName]
+ * @property {string} [source]
+ * @property {boolean} [highContrast]
+ * @property {boolean} [reducedMotion]
+ * @property {number} [chaosLevel]
+ * @property {number} [populationSize]
+ * @property {number} [timeElapsed]
+ * @property {number} [generationsElapsed]
+ * @property {Object} [playable]
+ * @property {Object} [moments]
+ * @property {Object} [preview]
+ */
+
+/**
+ * @typedef {Object} SaveCamera
+ * @property {number} x
+ * @property {number} y
+ * @property {number} zoom
+ * @property {string} [followMode]
+ * @property {?number} [followTarget]
+ * @property {number} [viewportWidth]
+ * @property {number} [viewportHeight]
+ */
+
+/**
+ * @typedef {Object} SaveWorld
+ * @property {number} width
+ * @property {number} height
+ * @property {number} t
+ * @property {?number} _nextId
+ * @property {number} [chaosLevel]
+ * @property {number} [timeOfDay]
+ * @property {number} [dayLength]
+ * @property {Object} [environment]
+ * @property {Array<Object>} [creatures]
+ * @property {Array<Object>} [food]
+ * @property {Array<Object>} [foodPatches]
+ * @property {Array<Object>} [restZones]
+ * @property {Array<Object>} [nests]
+ * @property {Array<Object>} [corpses]
+ * @property {Array<Object>} [sandboxProps]
+ * @property {Array<{parentId: number, childIds: number[]}>} [childrenOf]
+ * @property {number} [biomeSeed]
+ * @property {?Object} [activeDisaster]
+ * @property {Object} [disaster]
+ * @property {Object} [events]
+ * @property {number} [seasonPhase]
+ */
+
+/**
+ * @typedef {Object} SaveData
+ * @property {string} version
+ * @property {number} timestamp
+ * @property {string} savedAt
+ * @property {Object} meta
+ * @property {Object} settings
+ * @property {SaveWorld} world
+ * @property {SaveCamera} [camera]
+ * @property {?Object} [analytics]
+ * @property {Array<[number, string]>} [lineageNames]
+ * @property {SaveMetadata} [metadata]
+ */
+
 import { CreatureTuning } from './creature-tuning.js';
 import { createEcosystemState } from './creature-ecosystem.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
@@ -13,6 +84,11 @@ import { migrateSaveData } from './save-migration.js';
 const COMPRESSED_MARKER = 'C2:';
 const COMPRESSION_SUPPORTED = typeof CompressionStream !== 'undefined';
 
+/**
+ * Gzip + base64 encode a JSON string with a version marker.
+ * @param {string} jsonString
+ * @returns {Promise<string>}
+ */
 async function compressJson(jsonString) {
   if (!COMPRESSION_SUPPORTED) {
     return jsonString;
@@ -28,6 +104,11 @@ async function compressJson(jsonString) {
   return COMPRESSED_MARKER + base64;
 }
 
+/**
+ * Reverse of compressJson: decode the version marker + base64 + gzip.
+ * @param {string} compressedString
+ * @returns {Promise<?string>} Original JSON string, or null if it does not look compressed
+ */
 async function decompressJson(compressedString) {
   if (!COMPRESSED_MARKER || !compressedString.startsWith(COMPRESSED_MARKER)) {
     return null;
@@ -51,6 +132,10 @@ async function decompressJson(compressedString) {
 }
 
 export class SaveSystem {
+  /**
+   * Create a new SaveSystem. Auto-save is enabled by default with a 60s
+   * interval, and three rotating auto-save slots are used.
+   */
   constructor() {
     this.autoSaveEnabled = true;
     this.autoSaveInterval = 60;
@@ -63,6 +148,11 @@ export class SaveSystem {
     this.metadataProvider = null;
   }
 
+  /**
+   * Register a callback that returns runtime metadata to be embedded into every save.
+   * @param {?() => Object} provider
+   * @returns {void}
+   */
   setMetadataProvider(provider) {
     this.metadataProvider = typeof provider === 'function' ? provider : null;
   }
@@ -79,6 +169,11 @@ export class SaveSystem {
 
   /**
    * Serialize world state to JSON
+   * @param {import('./world-core.js').World} world - Active world
+   * @param {import('./camera.js').Camera} camera - Camera
+   * @param {?import('./analytics.js').AnalyticsTracker} analytics - Analytics tracker
+   * @param {?import('./lineage-tracker.js').LineageTracker} lineageTracker - Lineage tracker
+   * @param {Object} [additionalData] - Extra metadata to merge into `metadata`/`settings`
    * @returns {SaveData}
    */
   serialize(world, camera, analytics, lineageTracker, additionalData = {}) {
@@ -358,6 +453,14 @@ export class SaveSystem {
   /**
    * Deserialize JSON to world state
    * Supports migration from older save versions
+   * @param {SaveData} saveData
+   * @param {Function} World - World class constructor
+   * @param {Function} Creature - Creature class constructor
+   * @param {Function} Camera - Camera class constructor
+   * @param {Function} makeGenes - Helper to build a default gene set
+   * @param {Function} BiomeGenerator - BiomeGenerator class constructor
+   * @param {?import('./world-core.js').World} [existingWorld=null] - Reuse this world if dimensions match
+   * @returns {{world: import('./world-core.js').World, camera: ?import('./camera.js').Camera, lineageNames: Map<number, string>, metadata: Object, analytics: ?Object}}
    */
   deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld = null) {
     if (!saveData) {
@@ -814,7 +917,13 @@ export class SaveSystem {
   }
 
   /**
-   * Save to file (download)
+   * Save to file (download). Triggers a browser download of a .crsim file.
+   * @param {import('./world-core.js').World} world
+   * @param {import('./camera.js').Camera} camera
+   * @param {?import('./analytics.js').AnalyticsTracker} analytics
+   * @param {?import('./lineage-tracker.js').LineageTracker} lineageTracker
+   * @param {?string} [filename] - Override the file name
+   * @returns {Promise<void>}
    */
   async saveToFile(world, camera, analytics, lineageTracker, filename = null) {
     const saveData = this.serialize(world, camera, analytics, lineageTracker, {
@@ -846,6 +955,14 @@ export class SaveSystem {
 
   /**
    * Load from file (upload)
+   * @param {File} file - File object from input[type=file]
+   * @param {Function} World
+   * @param {Function} Creature
+   * @param {Function} Camera
+   * @param {Function} makeGenes
+   * @param {Function} BiomeGenerator
+   * @param {?import('./world-core.js').World} [existingWorld]
+   * @returns {Promise<{world: import('./world-core.js').World, camera: ?import('./camera.js').Camera, lineageNames: Map<number, string>, metadata: Object, analytics: ?Object}>}
    */
   async loadFromFile(file, World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld = null) {
     return new Promise((resolve, reject) => {
@@ -876,7 +993,14 @@ export class SaveSystem {
   }
 
   /**
-   * Auto-save to localStorage
+   * Auto-save to localStorage. Runs at most once per `autoSaveInterval` seconds
+   * via `requestIdleCallback` (with `setTimeout` fallback).
+   * @param {import('./world-core.js').World} world
+   * @param {import('./camera.js').Camera} camera
+   * @param {?import('./analytics.js').AnalyticsTracker} analytics
+   * @param {?import('./lineage-tracker.js').LineageTracker} lineageTracker
+   * @param {number} dt - Frame delta in seconds
+   * @returns {Promise<void>}
    */
   async autoSave(world, camera, analytics, lineageTracker, dt) {
     if (!this.autoSaveEnabled) return;
@@ -930,6 +1054,13 @@ export class SaveSystem {
 
   /**
    * Load from localStorage
+   * @param {Function} World
+   * @param {Function} Creature
+   * @param {Function} Camera
+   * @param {Function} makeGenes
+   * @param {Function} BiomeGenerator
+   * @param {?import('./world-core.js').World} [existingWorld]
+   * @returns {Promise<?{world: import('./world-core.js').World, camera: ?import('./camera.js').Camera, lineageNames: Map<number, string>, metadata: Object, analytics: ?Object}>}
    */
   async loadAutoSave(World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld = null) {
     try {
@@ -956,6 +1087,7 @@ export class SaveSystem {
 
   /**
    * Check if auto-save exists
+   * @returns {boolean}
    */
   hasAutoSave() {
     return !!localStorage.getItem('creature-sim-autosave');
@@ -963,6 +1095,7 @@ export class SaveSystem {
 
   /**
    * Clear auto-save
+   * @returns {void}
    */
   clearAutoSave() {
     localStorage.removeItem('creature-sim-autosave');

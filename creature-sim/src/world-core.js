@@ -18,7 +18,137 @@ import { eventSystem, GameEvents } from './event-system.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
 import { getDebugFlags } from './debug-flags.js';
 
+/**
+ * @typedef {Object} WorldCreature
+ * @property {number} id - Creature id
+ * @property {number} x - x position
+ * @property {number} y - y position
+ * @property {boolean} alive - Alive flag
+ * @property {number} energy - Energy
+ * @property {number} health - Health
+ * @property {number} maxHealth - Max health
+ * @property {CreatureGenes} [genes] - Genes
+ * @property {string} [sex] - Sex
+ * @property {number} [parentId] - Parent id
+ * @property {boolean} [predator] - Convenience flag
+ * @property {boolean} [isGrabbed] - Whether grabbed
+ * @property {Object} [externalImpulse] - External impulse
+ * @property {Object} [ecosystem] - Per-creature ecosystem state
+ * @property {Object} [needs] - Needs subsystem
+ * @property {Object} [goal] - Goal subsystem
+ * @property {Object} [memory] - Memory subsystem
+ * @property {Object} [migration] - Migration state
+ * @property {Object} [homeAnchor] - Home anchor
+ * @property {Object} [currentBiome] - Current biome
+ * @property {number} [age] - Age in seconds
+ * @property {number} [ageStage] - Age stage
+ * @property {number} [lifeStage] - Life stage
+ * @property {Object} [statuses] - Active statuses
+ * @property {Function} [applyImpulse] - Apply impulse
+ * @property {Function} [reactToCollision] - React to collision
+ * @property {Function} [setMood] - Show mood icon
+ * @property {Function} [update] - Per-frame update
+ * @property {Function} [_triggerReaction] - Internal reaction trigger
+ * @property {Function} [logEvent] - Append log entry
+ * @property {Function} [rememberLocation] - Remember a memory location
+ * @property {Function} [getAnyCreatureById] - Lookup by id
+ * @property {Function} [export] - Serialize for save
+ */
+
+/**
+ * @typedef {Object} WorldFood
+ * @property {number} x
+ * @property {number} y
+ * @property {number} energy
+ * @property {number} [bites]
+ * @property {number} [biteEnergy]
+ * @property {string} [type]
+ * @property {number} [scentRadius]
+ * @property {number} [t]
+ */
+
+/**
+ * @typedef {Object} WorldCorpse
+ * @property {number} x
+ * @property {number} y
+ * @property {number} energy
+ * @property {number} [age]
+ * @property {boolean} [isPredator]
+ * @property {number} decayTimer
+ */
+
+/**
+ * @typedef {Object} WorldNest
+ * @property {string} id
+ * @property {number} x
+ * @property {number} y
+ * @property {number} radius
+ * @property {number} capacity
+ * @property {number} comfort
+ * @property {number} comfortEffective
+ * @property {number} occupancy
+ * @property {boolean} overcrowded
+ * @property {number} createdAt
+ * @property {?number} createdBy
+ * @property {number} regionId
+ * @property {number} lastOvercrowdedAt
+ */
+
+/**
+ * @typedef {Object} WorldRegion
+ * @property {number} id
+ * @property {number} col
+ * @property {number} row
+ * @property {number} x
+ * @property {number} y
+ * @property {number} size
+ * @property {{x1: number, y1: number, x2: number, y2: number}} bounds
+ * @property {number} population
+ * @property {number} stressAvg
+ * @property {number} pressure
+ * @property {number} comfort
+ * @property {number} foodRatio
+ * @property {number} [foodStock]
+ * @property {number} [foodMax]
+ * @property {number} nestCount
+ * @property {number} nestComfort
+ * @property {number} lastDepletedAt
+ * @property {number} lastThrivingAt
+ */
+
+/**
+ * @typedef {Object} WorldChaos
+ * @property {number} level - 0..1
+ * @property {number} gravity - Gravity magnitude
+ * @property {number} bounceBoost - Bounce multiplier
+ * @property {number} wobbleBoost - Wobble multiplier
+ * @property {number} reactionBoost - Reaction multiplier
+ */
+
+/**
+ * @typedef {Object} WorldSnapshot
+ * @property {number} width
+ * @property {number} height
+ * @property {number} time
+ * @property {WorldCreature[]} creatures
+ * @property {WorldFood[]} food
+ * @property {WorldCorpse[]} corpses
+ * @property {any[]} restZones
+ * @property {WorldNest[]} nests
+ * @property {Object} environment
+ * @property {Object} ecosystem
+ * @property {Object} disaster
+ */
+
 export class World {
+  /**
+   * Creates a new World of the given dimensions. The constructor wires up
+   * spatial grids, environment/ecosystem/combat/disaster subsystems, and
+   * initial biome data. Width and height are immutable for the lifetime of
+   * the world; use `reset()` to re-init.
+   * @param {number} width - World width in pixels
+   * @param {number} height - World height in pixels
+   */
   constructor(width, height) {
     this.width = width;
     this.height = height;
@@ -153,6 +283,12 @@ export class World {
 
   // Main simulation step
   // STABILITY: Added defensive guards
+  /**
+   * Run one simulation tick. Updates environment, ecosystems, creatures, food,
+   * corpses, regions, nests, and the chaos nudge.
+   * @param {number} dt - Frame delta in seconds
+   * @returns {void}
+   */
   step(dt) {
     // STABILITY: Validate dt
     if (typeof dt !== 'number' || !isFinite(dt) || dt < 0) {
@@ -400,6 +536,14 @@ export class World {
   }
 
   // Seed initial world state with diverse creature types
+  /**
+   * Reset and seed the world with a diverse starter ecosystem (clusters of
+   * herbivores, scattered omnivores, aquatic scavengers, predators, food patches).
+   * @param {number} [nHerb=60] - Target total land creatures (split 65% pure herbivore / 35% omnivore)
+   * @param {number} [nPred=6] - Predator count
+   * @param {number} [nFood=180] - Food item count
+   * @returns {void}
+   */
   seed(nHerb = 60, nPred = 6, nFood = 180) {
     // Check for campaign pending config before resetting
     const campaignConfig = this.pendingCampaignConfig || null;
@@ -630,6 +774,13 @@ export class World {
   }
 
   // Reset world to empty state
+  /**
+   * Reset the world to an empty state, optionally resizing. Re-initializes
+   * spatial grids, biome map, and all subsystems.
+   * @param {number} [width=this.width] - New width
+   * @param {number} [height=this.height] - New height
+   * @returns {void}
+   */
   reset(width = this.width, height = this.height) {
     const nextWidth = Number.isFinite(width) && width > 0 ? width : this.width;
     const nextHeight = Number.isFinite(height) && height > 0 ? height : this.height;
@@ -693,43 +844,90 @@ export class World {
   }
 
   // Attach external systems
+  /**
+   * Attach a lineage tracker to receive world events.
+   * @param {import('./lineage-tracker.js').LineageTracker} tracker
+   * @returns {void}
+   */
   attachLineageTracker(tracker) {
     this.lineageTracker = tracker;
     this.creatureManager.attachLineageTracker(tracker);
   }
 
+  /**
+   * Attach a particle system for hit/visual effects.
+   * @param {import('./particle-system.js').ParticleSystem} particles
+   * @returns {void}
+   */
   attachParticleSystem(particles) {
     this.particles = particles;
   }
 
+  /**
+   * Attach a heatmap visualization system.
+   * @param {import('./heatmap-system.js').HeatmapSystem} heatmaps
+   * @returns {void}
+   */
   attachHeatmapSystem(heatmaps) {
     this.heatmaps = heatmaps;
   }
 
+  /**
+   * Attach the audio system for SFX hooks.
+   * @param {import('./audio-system.js').AudioSystem} audio
+   * @returns {void}
+   */
   attachAudioSystem(audio) {
     this.audio = audio;
   }
 
+  /**
+   * Attach the notification/toast system.
+   * @param {import('./notification-system.js').NotificationSystem} notifications
+   * @returns {void}
+   */
   attachNotificationSystem(notifications) {
     this.notificationSystem = notifications;
   }
 
+  /**
+   * @param {Object} proceduralSounds - Deprecated alias for AudioSystem generators
+   * @returns {void}
+   */
   attachProceduralSounds(proceduralSounds) {
     this.proceduralSounds = proceduralSounds;
   }
 
+  /**
+   * @param {import('./unlockable-achievements.js').UnlockableAchievements} unlockableAchievements
+   * @returns {void}
+   */
   attachUnlockableAchievements(unlockableAchievements) {
     this.unlockableAchievements = unlockableAchievements;
   }
 
+  /**
+   * @param {import('./family-bonds.js').FamilyBondsSystem} familyBonds
+   * @returns {void}
+   */
   attachFamilyBonds(familyBonds) {
     this.familyBonds = familyBonds;
   }
 
+  /**
+   * @param {import('./memory-learning.js').MemoryLearningSystem} memoryLearning
+   * @returns {void}
+   */
   attachMemoryLearning(memoryLearning) {
     this.memoryLearning = memoryLearning;
   }
 
+  /**
+   * Set the baseline chaos level (0..1). Higher values add gravity, wobble,
+   * bounce, and reaction boosts.
+   * @param {number} [level=0.5] - Chaos level
+   * @returns {void}
+   */
   setChaosLevel(level = 0.5) {
     const safeLevel = clamp(level, 0, 1);
     this.chaosBaseLevel = safeLevel;
@@ -746,6 +944,11 @@ export class World {
     this.chaos.reactionBoost = clamp(1 + offset * 0.7, 0.65, 1.4);
   }
 
+  /**
+   * Tick the chaos nudge timer, fading the nudge back to baseline.
+   * @param {number} dt - Frame delta in seconds
+   * @returns {void}
+   */
   updateChaosNudge(dt) {
     if (!this.chaosNudge || this.chaosNudge.timer <= 0) return;
     this.chaosNudge.timer = Math.max(0, this.chaosNudge.timer - dt);
@@ -757,6 +960,12 @@ export class World {
     }
   }
 
+  /**
+   * Schedule a temporary chaos surge (e.g. disasters, god powers).
+   * @param {number} [intensity=0.25] - Nudge intensity (0..0.6)
+   * @param {number} [duration=6] - Duration in seconds (2..12)
+   * @returns {void}
+   */
   triggerChaosNudge(intensity = 0.25, duration = 6) {
     const safeIntensity = clamp(intensity, 0.05, 0.6);
     const safeDuration = clamp(duration, 2, 12);
@@ -769,26 +978,60 @@ export class World {
   }
 
   // Query methods
+  /**
+   * Get a live creature by id, or null if not found / dead.
+   * @param {number} id
+   * @returns {?WorldCreature}
+   */
   getCreatureById(id) {
     return this.creatureManager.getCreatureById(id);
   }
 
+  /**
+   * Get any creature (alive or recently dead) by id.
+   * @param {number} id
+   * @returns {?WorldCreature}
+   */
   getAnyCreatureById(id) {
     return this.creatureManager.getAnyCreatureById(id);
   }
 
+  /**
+   * Register a creature with the world and assign it a new id.
+   * @param {WorldCreature} creature
+   * @param {?number} [parentId=null]
+   * @returns {?WorldCreature}
+   */
   addCreature(creature, parentId = null) {
     return this.creatureManager.addCreature(creature, parentId);
   }
 
+  /**
+   * Clone a creature (used for save/load deduplication etc).
+   * @param {WorldCreature} creature
+   * @returns {WorldCreature}
+   */
   cloneCreature(creature) {
     return this.creatureManager.cloneCreature(creature);
   }
 
+  /**
+   * Spawn a child creature from one or two parents.
+   * @param {WorldCreature} parent1
+   * @param {?WorldCreature} [parent2=null]
+   * @returns {?WorldCreature}
+   */
   spawnChild(parent1, parent2 = null) {
     return this.creatureManager.spawnChild(parent1, parent2);
   }
 
+  /**
+   * Manually spawn a herbivore or predator at the given location.
+   * @param {number} x
+   * @param {number} y
+   * @param {boolean} [predator=false]
+   * @returns {?WorldCreature}
+   */
   spawnManual(x, y, predator = false) {
     const debugFlags = getDebugFlags();
     const sanitized = this._sanitizeSpawnPoint(x, y);
@@ -816,6 +1059,13 @@ export class World {
     return creature;
   }
 
+  /**
+   * Manually spawn a creature with explicit gene overrides.
+   * @param {number} x
+   * @param {number} y
+   * @param {Object} genes
+   * @returns {?WorldCreature}
+   */
   spawnManualWithGenes(x, y, genes) {
     const debugFlags = getDebugFlags();
     const sanitized = this._sanitizeSpawnPoint(x, y);
@@ -905,6 +1155,13 @@ export class World {
     }
   }
 
+  /**
+   * Query creatures within a radius of (x, y) using the spatial grid.
+   * @param {number} x
+   * @param {number} y
+   * @param {number} radius
+   * @returns {WorldCreature[]}
+   */
   queryCreatures(x, y, radius) {
     return this.creatureManager.queryCreatures(x, y, radius);
   }
@@ -914,40 +1171,102 @@ export class World {
   }
 
   // Food helpers (proxy to ecosystem)
+  /**
+   * Add a food item at the given world position.
+   * @param {number} x
+   * @param {number} y
+   * @param {number} [r=1.5] - Radius/energy
+   * @param {?string} [type=null] - Food type tag
+   * @returns {WorldFood}
+   */
   addFood(x, y, r = 1.5, type = null) {
     return this.ecosystem.addFood(x, y, r, type);
   }
 
+  /**
+   * @param {number} x
+   * @param {number} y
+   * @param {number} radius
+   * @returns {WorldFood[]}
+   */
   nearbyFood(x, y, radius) {
     return this.ecosystem.nearbyFood(x, y, radius);
   }
 
+  /**
+   * Try to consume a food item at the given position.
+   * @param {number} x
+   * @param {number} y
+   * @param {number} [reach=8]
+   * @param {number} [biteSize=1]
+   * @returns {?{food: WorldFood, energy: number}}
+   */
   tryEatFoodAt(x, y, reach = 8, biteSize = 1) {
     return this.ecosystem.tryEatFoodAt(x, y, reach, biteSize);
   }
 
   // Combat helpers (proxy to combat subsystem)
+  /**
+   * @param {WorldCreature} predator
+   * @param {number} [radius=120]
+   * @returns {?WorldCreature}
+   */
   findPrey(predator, radius = 120) {
     return this.combat.findPrey(predator, radius);
   }
 
+  /**
+   * Attempt to perform a predation action for a predator this frame.
+   * @param {WorldCreature} predator
+   * @returns {?{victim: WorldCreature, damage: number, killed: boolean}}
+   */
   tryPredation(predator) {
     return this.combat.tryPredation(predator);
   }
 
+  /**
+   * Register a broadcast predator signal at the given world location.
+   * @param {number} x
+   * @param {number} y
+   * @param {number} [strength=1]
+   * @param {number} [ttl=5]
+   * @param {?number} [sourceId=null]
+   * @returns {void}
+   */
   registerPredatorSignal(x, y, strength = 1, ttl = 5, sourceId = null) {
     return this.combat.registerPredatorSignal(x, y, strength, ttl, sourceId);
   }
 
+  /**
+   * Sample the strongest nearby predator signal.
+   * @param {number} x
+   * @param {number} y
+   * @param {number} [radius=140]
+   * @param {?number} [excludeSource=null]
+   * @returns {?{x: number, y: number, strength: number}}
+   */
   samplePredatorSignal(x, y, radius = 140, excludeSource = null) {
     return this.combat.samplePredatorSignal(x, y, radius, excludeSource);
   }
 
+  /**
+   * Drop a pheromone marker at the given world position.
+   * @param {number} x
+   * @param {number} y
+   * @param {number} [val=1.0]
+   * @returns {void}
+   */
   dropPheromone(x, y, val = 1.0) {
     return this.combat.dropPheromone(x, y, val);
   }
 
   // Corpse helpers (lightweight fallback until a dedicated system is added)
+  /**
+   * @param {number} x
+   * @param {number} y
+   * @param {number} radius
+   * @returns {?WorldCorpse}
+   */
   findNearbyCorpse(x, y, radius) {
     const source = this.corpseGrid?.nearby ? this.corpseGrid.nearby(x, y, radius) : this.corpses;
     if (!source || source.length === 0) return null;
@@ -965,6 +1284,12 @@ export class World {
     return best;
   }
 
+  /**
+   * Let a scavenger consume a corpse, removing it from the world if depleted.
+   * @param {WorldCreature} scavenger
+   * @param {WorldCorpse} corpse
+   * @returns {false | {energy: number, corpse: WorldCorpse}}
+   */
   tryEatCorpse(scavenger, corpse) {
     if (!corpse || (corpse.energy !== undefined && corpse.energy < 0.5)) return false;
 
@@ -1036,6 +1361,12 @@ export class World {
     }
   }
 
+  /**
+   * Compute the region id for a world position.
+   * @param {number} x
+   * @param {number} y
+   * @returns {number}
+   */
   getRegionId(x, y) {
     const size = this.regionSize || CreatureAgentTuning.TERRITORY.REGION_SIZE;
     const col = clamp(Math.floor(x / size), 0, this.regionCols - 1);
@@ -1043,12 +1374,21 @@ export class World {
     return row * this.regionCols + col;
   }
 
+  /**
+   * @param {number} x
+   * @param {number} y
+   * @returns {?WorldRegion}
+   */
   getRegionAt(x, y) {
     if (!this.regions) return null;
     const id = this.getRegionId(x, y);
     return this.regions[id] || null;
   }
 
+  /**
+   * @param {number} id
+   * @returns {?WorldRegion}
+   */
   getRegionById(id) {
     if (!this.regions) return null;
     return this.regions[id] || null;
@@ -1136,6 +1476,13 @@ export class World {
     }
   }
 
+  /**
+   * Create a new nest at the given position.
+   * @param {number} x
+   * @param {number} y
+   * @param {Object} [options] - Nest options (radius, capacity, comfort, createdBy)
+   * @returns {?WorldNest}
+   */
   addNest(x, y, options = {}) {
     if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
     const nest = {
@@ -1165,11 +1512,21 @@ export class World {
     return nest;
   }
 
+  /**
+   * @param {string} id
+   * @returns {?WorldNest}
+   */
   getNestById(id) {
     if (!id) return null;
     return this.nests.find(nest => nest.id === id) || null;
   }
 
+  /**
+   * @param {number} x
+   * @param {number} y
+   * @param {number} [radius=CreatureAgentTuning.NESTS.DETECT_RADIUS]
+   * @returns {?WorldNest}
+   */
   getNearestNest(x, y, radius = CreatureAgentTuning.NESTS.DETECT_RADIUS) {
     const source = this.nestGrid?.nearby ? this.nestGrid.nearby(x, y, radius) : this.nests;
     if (!source || source.length === 0) return null;
@@ -1223,6 +1580,12 @@ export class World {
     }
   }
 
+  /**
+   * Emit a "migration settled" event for a creature that has finished migrating.
+   * @param {WorldCreature} creature
+   * @param {?WorldRegion} [region]
+   * @returns {void}
+   */
   registerMigrationSettled(creature, region) {
     const now = this.t ?? 0;
     const regionId = region?.id ?? this.getRegionId(creature.x, creature.y);
@@ -1238,6 +1601,12 @@ export class World {
   }
 
   // Biome helpers
+  /**
+   * Get the biome descriptor at the given world position (cached).
+   * @param {number} x
+   * @param {number} y
+   * @returns {?{type: string, moisture?: number, depth?: number, elevation?: number, movementSpeed?: number, aquaticSpeed?: number}}
+   */
   getBiomeAt(x, y) {
     const cacheKey = `${Math.floor(x / 50)},${Math.floor(y / 50)}`;
     if (this.biomeCache.has(cacheKey)) {
@@ -1248,12 +1617,23 @@ export class World {
     return biome;
   }
 
+  /**
+   * @param {number} x
+   * @param {number} y
+   * @returns {number} Numeric biome index (forest=0, grassland=1, desert=2, mountain=3, wetland=4, meadow=5)
+   */
   getBiomeIndexAt(x, y) {
     const biome = this.getBiomeAt(x, y);
     const typeMap = { forest: 0, grassland: 1, desert: 2, mountain: 3, wetland: 4, meadow: 5 };
     return typeMap[biome?.type] ?? 1;
   }
 
+  /**
+   * Probe the world for a random point inside the requested biome type.
+   * @param {string} targetType - Biome type name (e.g. 'wetland')
+   * @param {number} [attempts=12] - Number of probes
+   * @returns {{x: number, y: number}}
+   */
   findBiomeSpot(targetType, attempts = 12) {
     let fallback = null;
     for (let i = 0; i < attempts; i++) {
@@ -1275,18 +1655,33 @@ export class World {
   }
 
   // Environment helpers
+  /**
+   * @param {number} x
+   * @param {number} y
+   * @returns {number} Temperature energy penalty at this position
+   */
   tempPenaltyAt(x, y) {
     return this.environment.tempPenaltyAt(x, y);
   }
 
+  /**
+   * @param {string} kind - Modifier name (e.g. 'foodGrowth', 'activity')
+   * @returns {number}
+   */
   getSeasonModifier(kind) {
     return this.environment.getSeasonModifier(kind);
   }
 
+  /**
+   * @returns {Object}
+   */
   getSeasonInfo() {
     return this.environment.getSeasonInfo();
   }
 
+  /**
+   * @returns {Object} Current weather state descriptor
+   */
   getWeatherState() {
     return this.environment.getWeatherState();
   }
@@ -1351,19 +1746,40 @@ export class World {
     }
   }
 
+  /**
+   * Add a calm/rest zone where creatures are encouraged to rest.
+   * @param {number} x
+   * @param {number} y
+   * @param {number} radius
+   * @param {number} duration
+   * @param {number} strength
+   * @returns {void}
+   */
   addCalmZone(x, y, radius, duration, strength) {
     return this.environment.addCalmZone(x, y, radius, duration, strength);
   }
 
   // Disaster helpers
+  /**
+   * Trigger a world disaster (drought, fire, plague, etc.).
+   * @param {string} type - Disaster id
+   * @param {Object} [options] - Disaster options
+   * @returns {void}
+   */
   triggerDisaster(type, options = {}) {
     return this.disaster.triggerDisaster(type, options);
   }
 
+  /**
+   * @returns {?Object}
+   */
   getActiveDisaster() {
     return this.disaster.getActiveDisaster();
   }
 
+  /**
+   * @returns {Object[]}
+   */
   getPendingDisasters() {
     return this.disaster.getPendingDisasters();
   }
@@ -1381,14 +1797,28 @@ export class World {
     return this.creatureManager.registry;
   }
 
+  /**
+   * Get the descendant creature ids of a root id (depth-first).
+   * @param {number} rootId
+   * @returns {number[]}
+   */
   descendantsOf(rootId) {
     return this.creatureManager.descendantsOf(rootId);
   }
 
+  /**
+   * @param {number} rootId
+   * @param {number} [maxDepth=6]
+   * @returns {Object}
+   */
   buildLineageOverview(rootId, maxDepth = 6) {
     return this.creatureManager.buildLineageOverview(rootId, maxDepth);
   }
 
+  /**
+   * Rebuild spatial grids (corpses, rest zones, nests) when their dirty flag is set.
+   * @returns {void}
+   */
   ensureSpatial() {
     this.creatureManager.ensureSpatial();
     if (this.gridDirty && this.corpseGrid) {
@@ -1418,6 +1848,9 @@ export class World {
   }
 
   // Get ecosystem statistics
+  /**
+   * @returns {{time: number, creatures: Object, food: number, corpses: number, environment: Object, ecosystem: Object, disaster: Object}}
+   */
   getStats() {
     return {
       time: this.t,
@@ -1431,6 +1864,10 @@ export class World {
   }
 
   // Serialization support
+  /**
+   * Export a serializable snapshot of the world for save/load.
+   * @returns {WorldSnapshot}
+   */
   exportState() {
     return {
       width: this.width,
@@ -1447,6 +1884,11 @@ export class World {
     };
   }
 
+  /**
+   * Restore world state from a snapshot produced by `exportState()`.
+   * @param {?WorldSnapshot} snapshot
+   * @returns {void}
+   */
   importState(snapshot) {
     if (!snapshot) return;
 

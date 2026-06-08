@@ -56,6 +56,174 @@ import { recordDamage, applyImpactDamage, applyImpulse, calculateCurrentSpeed } 
 const { TRAIL_INTERVAL, TRAIL_MAX, LOG_MAX } = CreatureConfig;
 
 /**
+ * @typedef {Object} CreatureGenes
+ * @property {number} speed - Movement speed gene (0..2 typical)
+ * @property {number} sense - Sense radius gene
+ * @property {number} metabolism - Metabolic efficiency
+ * @property {number} fov - Field of view in degrees
+ * @property {number} diet - 0 = herbivore, 0.5 = omnivore, 1 = predator
+ * @property {boolean} predator - Convenience predator flag
+ * @property {number} hue - Base color hue
+ * @property {number} aquatic - Aquatic affinity (0..1)
+ * @property {number} flying - Flying affinity (0..1)
+ * @property {number} burrowing - Burrowing affinity (0..1)
+ * @property {number} herdInstinct - Herd behavior strength
+ * @property {number} nocturnal - 0=diurnal, 1=nocturnal
+ * @property {number} packInstinct - Pack-hunt cooperation
+ * @property {number} aggression - Aggression multiplier
+ * @property {number} ambushDelay - Seconds to wait before lunging
+ * @property {number} grit - Damage resistance (0..1)
+ * @property {number} panicPheromone - Strength of fear pheromone emission
+ * @property {string} [sex] - 'male' or 'female'
+ * @property {number} [sizeModifier] - Optional size modifier (disorder-driven)
+ * @property {number} [healthModifier] - Optional health modifier (disorder-driven)
+ * @property {Object<string, any>} [expressed] - Phenotype for diploid genes
+ */
+
+/**
+ * @typedef {Object} CreatureStats
+ * @property {number} food - Number of food items consumed
+ * @property {number} kills - Number of kills
+ * @property {number} births - Number of births produced
+ * @property {number} damageTaken - Total damage received
+ * @property {number} damageDealt - Total damage dealt
+ */
+
+/**
+ * @typedef {Object} CreatureTarget
+ * @property {number} x - Target x
+ * @property {number} y - Target y
+ * @property {string} [type] - Optional tag
+ * @property {number} [creatureId] - Creature id when targeting another creature
+ * @property {boolean} [mate] - Targeting a mate
+ * @property {boolean} [migration] - Migration waypoint
+ * @property {boolean} [memory] - Recalled memory target
+ * @property {string} [memoryTag] - Memory tag (food/calm/danger/...)
+ * @property {number} [memoryId] - Memory entry id
+ * @property {boolean} [nest] - Targeting a nest
+ * @property {string} [nestId] - Nest id
+ * @property {boolean} [restZone] - Targeting a rest zone
+ * @property {string} [zoneId] - Rest zone id
+ * @property {boolean} [isCorpse] - Targeting a corpse
+ * @property {Object} [corpse] - Corpse reference
+ * @property {boolean} [signal] - Predator signal target
+ * @property {number} [strength] - Signal strength
+ * @property {boolean} [family] - Family anchor
+ * @property {number} [priority] - Steering priority multiplier
+ * @property {boolean} [predatorLite] - Soft-predator tag target
+ */
+
+/**
+ * @typedef {Object} CreatureMemoryEntry
+ * @property {number} [id] - Unique id
+ * @property {number} x - World x
+ * @property {number} y - World y
+ * @property {string} [type] - 'food' | 'calm' | 'danger' | 'nest'
+ * @property {string} [tag] - Alias of type
+ * @property {number} strength - Recall strength 0..1
+ * @property {number} timestamp - World time when stored
+ */
+
+/**
+ * @typedef {Object} CreatureMemory
+ * @property {number} capacity - Max stored locations
+ * @property {CreatureMemoryEntry[]} locations - Stored memory entries
+ * @property {number} decayRate - How quickly memory fades
+ * @property {number} nextId - Next entry id
+ * @property {?{entry: CreatureMemoryEntry, recallUntil: number, tag: string}} focus - Current focus
+ * @property {number} lastCalmAt - Last time creature rested
+ * @property {number} lastDangerAt - Last time creature took damage
+ * @property {number} lastNestAt - Last time creature nested
+ */
+
+/**
+ * @typedef {Object} CreaturePersonality
+ * @property {number} packInstinct - 0..1
+ * @property {number} ambushDelay - Seconds
+ * @property {number} aggression - 0.4..2.2
+ * @property {number} ambushTimer - Seconds remaining
+ * @property {number} huntCooldown - Seconds remaining
+ * @property {number} lastSignalAt - World time
+ * @property {?number} currentTargetId - Current target creature id
+ * @property {number} attackCooldown - Seconds remaining
+ * @property {number} idleTempo - Idle bobbing tempo
+ * @property {number} idleSway - Idle sway strength
+ * @property {number} reactivity - Reaction sensitivity
+ * @property {number} playfulness - Play burst strength
+ * @property {boolean} isPackHunting - True when coordinating with pack
+ */
+
+/**
+ * @typedef {Object} CreatureNeeds
+ * @property {number} hunger - 0..100
+ * @property {number} energy - 0..100
+ * @property {number} socialDrive - 0..100
+ * @property {number} stress - 0..100
+ * @property {number} lastEatAt - World time
+ */
+
+/**
+ * @typedef {Object} CreatureGoal
+ * @property {string} current - WANDER | EAT | REST | SEEK_MATE
+ * @property {number} lastChange - World time
+ * @property {number} cooldown - Seconds
+ * @property {number} mateCooldown - Seconds
+ * @property {?number} bondingWith - Creature id currently being bonded with
+ * @property {number} bondTimer - Seconds of current bond
+ * @property {boolean} bondAnnounced - Whether bond-announce was emitted
+ * @property {number} score - Internal score
+ */
+
+/**
+ * @typedef {Object} CreatureEmotions
+ * @property {number} fear - 0..1
+ * @property {number} hunger - 0..1
+ * @property {number} confidence - 0..1
+ * @property {number} curiosity - 0..1
+ * @property {number} stress - 0..1
+ * @property {number} contentment - 0..1
+ * @property {number} [joy] - 0..1
+ */
+
+/**
+ * @typedef {Object} CreatureStatus
+ * @property {string} key - Status key (e.g. 'bleed', 'adrenaline')
+ * @property {number} [duration] - Remaining seconds
+ * @property {number} [elapsed] - Elapsed seconds
+ * @property {number} [intensity] - 0..1
+ * @property {number} [stacks] - Stack count
+ * @property {Object} [metadata] - Status metadata
+ */
+
+/**
+ * @typedef {Object} CreatureAnimation
+ * @property {string} state - 'idle' | 'walking' | 'running' | 'eating' | 'sleeping'
+ * @property {number} timer - Animation cycle timer
+ * @property {number} bobPhase - Random start phase
+ * @property {number} speedRatio - 0..1 ratio vs max speed
+ * @property {number} lastEat - World time
+ * @property {number} eatDuration - Eat anim length
+ * @property {number} sleepTimer - Seconds in current rest
+ * @property {Object} reaction - {type, timer, duration, intensity}
+ */
+
+/**
+ * @typedef {Object} CreatureDamageFx
+ * @property {number} recentDamage - Recent accumulated damage
+ * @property {number} hitFlash - Hit flash visual
+ * @property {number} iframesUntil - Invincibility-frames end time
+ * @property {number} lastDamageTime - World time
+ */
+
+/**
+ * @typedef {Object} CreatureExternalImpulse
+ * @property {number} vx
+ * @property {number} vy
+ * @property {number} decay
+ * @property {number} cap
+ */
+
+/**
  * Represents a creature in the simulation with genetic traits and behaviors.
  */
 export class Creature {
@@ -63,22 +231,34 @@ export class Creature {
    * Creates a new creature with the specified position and genetic makeup.
    * @param {number} x - The x-coordinate of the creature's position
    * @param {number} y - The y-coordinate of the creature's position
-   * @param {Object} genes - The creature's genetic traits
-   * @param {boolean} isChild - Whether this creature was born (affects starting energy)
+   * @param {CreatureGenes|Object} genes - The creature's genetic traits (haploid or diploid)
+   * @param {boolean} [isChild=false] - Whether this creature was born (affects starting energy)
    */
   constructor(x, y, genes, isChild = false) {
     // Core properties
+    /** @type {number} x position in world space */
     this.x = x;
+    /** @type {number} y position in world space */
     this.y = y;
+    /** @type {{x: number, y: number}} */
     this.homeAnchor = { x, y };
+    /** @type {number} */
     this.vx = 0;
+    /** @type {number} */
     this.vy = 0;
+    /** @type {number} facing direction in radians */
     this.dir = rand(0, CreatureConfig.TAU);
+    /** @type {CreatureExternalImpulse} */
     this.externalImpulse = { vx: 0, vy: 0, decay: 6, cap: 360 };
+    /** @type {boolean} */
     this.isGrabbed = false;
+    /** @type {{x: number, y: number}} */
     this.grabTarget = { x, y };
+    /** @type {number} */
     this.energy = isChild ? CreatureConfig.STARTING_ENERGY.baby : CreatureConfig.STARTING_ENERGY.adult;
+    /** @type {number} */
     this.age = 0;
+    /** @type {boolean} */
     this.alive = true;
 
     // OPTIMIZATION: Only process genetics if diploid genes detected
@@ -106,8 +286,11 @@ export class Creature {
     }
 
     // NEW: Age stages (baby → juvenile → adult → elder)
+    /** @type {('baby'|'juvenile'|'adult'|'elder')} */
     this.ageStage = isChild ? 'baby' : 'adult';
+    /** @type {('baby'|'juvenile'|'adult'|'elder')} */
     this.lifeStage = isChild ? 'baby' : 'adult';
+    /** @type {?number} */
     this.baseSize = null; // Will be set below
 
     // Size based on diet (omnivores are medium-sized)
@@ -119,8 +302,11 @@ export class Creature {
       ? CreatureConfig.GENETICS.SIZE_MODIFIERS.OMNIVORE
       : CreatureConfig.GENETICS.SIZE_MODIFIERS.HERBIVORE_BASE +
         (this.genes.predator ? CreatureConfig.GENETICS.SIZE_MODIFIERS.PREDATOR_BONUS : 0);
+    /** @type {number} 0..1 affinity for aquatic biomes */
     this.aquaticAffinity = this.genes.aquatic ?? 0;
+    /** @type {number} 0..1 affinity for flying */
     this.flyingAffinity = this.genes.flying ?? 0;
+    /** @type {number} 0..1 affinity for burrowing */
     this.burrowingAffinity = this.genes.burrowing ?? 0;
 
     // Apply disorder size modifiers
@@ -130,15 +316,22 @@ export class Creature {
 
     // Age-based size multiplier
     const ageSizeMultiplier = getAgeSizeMultiplier(this.age, this.ageStage);
+    /** @type {number} effective render size in pixels */
     this.size = this.baseSize * ageSizeMultiplier;
 
     // Parent tracking for parental care
+    /** @type {number[]} child creature ids */
     this.children = []; // Track offspring
 
+    /** @type {?CreatureTarget} */
     this.target = null;
+    /** @type {?number} */
     this.id = null; // set by World.addCreature
+    /** @type {?number} */
     this.parentId = null; // set by World.addCreature
+    /** @type {Array<{id: number, x: number, y: number}>} */
     this.parents = [];
+    /** @type {?string} */
     this.currentBiomeType = null;
 
     // NEW: SVG asset rendering cache
@@ -150,6 +343,7 @@ export class Creature {
     const baseMaxHealth = this.genes.predator
       ? CreatureTuning.DEFAULT_MAX_HEALTH * 1.25
       : CreatureTuning.DEFAULT_MAX_HEALTH;
+    /** @type {number} */
     this.maxHealth = baseMaxHealth;
 
     // Apply disorder health modifiers
@@ -157,15 +351,25 @@ export class Creature {
       this.maxHealth *= this.genesRaw.healthModifier;
     }
 
+    /** @type {number} */
     this.health = this.maxHealth;
+    /** @type {CreatureStats} */
     this.stats = { food: 0, kills: 0, births: 0, damageTaken: 0, damageDealt: 0 };
+    /** @type {{hardLandings: number, goofyFails: number, propBounces: number}} */
     this.funStats = { hardLandings: 0, goofyFails: 0, propBounces: 0 };
+    /** @type {string} */
     this.nameSuggestion = pickNameSuggestion(this.x + this.y + Math.random() * 1000);
+    /** @type {Array<{x: number, y: number}>} */
     this.trail = [{ x, y }];
+    /** @type {number} */
     this.trailTimer = 0;
+    /** @type {Array<{message: string, time: number, meta: any}>} */
     this.log = [];
+    /** @type {number} */
     this.logVersion = 0;
+    /** @type {{boldness: number, sociability: number, calmness: number, curiosity: number}} */
     this.temperament = generateTemperament(genes.temperament || {});
+    /** @type {CreaturePersonality} */
     this.personality = {
       packInstinct: clamp(
         this.genes.packInstinct ??
@@ -202,23 +406,29 @@ export class Creature {
       isPackHunting: false
     };
     const dietRole = resolveDietRole(this.genes);
+    /** @type {{bounce: number, temperament: number, dietRole: string}} */
     this.traits = {
       bounce: clamp(0.95 + rand(-0.08, 0.08), 0.75, 1.25),
       temperament: clamp(0.5 + rand(-0.18, 0.18), 0, 1),
       dietRole
     };
+    /** @type {{stressEase: number, quirkCooldown: number}} */
     this.temperamentTimers = {
       stressEase: 0,
       quirkCooldown: 0
     };
+    /** @type {string[]} */
     this.quirks = [];
+    /** @type {Map<string, CreatureStatus>} */
     this.statuses = new Map();
+    /** @type {{adrenaline: number, familyAid: number, predatorLite: number}} */
     this.cooldowns = {
       adrenaline: 0,
       familyAid: 0,
       predatorLite: 0
     };
     this._wasOvercrowded = false;
+    /** @type {CreatureDamageFx} */
     this.damageFx = {
       recentDamage: 0,
       hitFlash: 0,
@@ -231,15 +441,19 @@ export class Creature {
     this._fallReactCooldown = 0;
     this._lastExternalSpeed = 0;
     this._ragdollCooldown = 0;
+    /** @type {number} */
     this.recoveryPoseTimer = 0;
+    /** @type {{icon: ?string, timer: number}} */
     this.mood = {
       icon: null,
       timer: 0
     };
+    /** @type {{diseaseSpread: number, venomTick: number}} */
     this.statusTimers = {
       diseaseSpread: rand(0.6, 1.2),
       venomTick: 1.2
     };
+    /** @type {{playCooldown: number, playTimer: number, elderAidCooldown: number, familyCheck: number, familyAnchor: ?{x: number, y: number, id: number}}} */
     this.lifecycle = {
       playCooldown: rand(6, 12),
       playTimer: 0,
@@ -249,6 +463,7 @@ export class Creature {
     };
 
     // NEW: Animation state for visual feedback
+    /** @type {CreatureAnimation} */
     this.animation = {
       state: 'idle', // idle, walking, running, eating, sleeping
       timer: 0, // Animation cycle timer
@@ -265,7 +480,9 @@ export class Creature {
       }
     };
 
+    /** @type {number} seconds since spawn (for scale-in animation) */
     this.spawnTime = 0;
+    /** @type {number} 0..1 scale-in progress */
     this.spawnScale = 0;
 
     // Cache expensive calculations
@@ -279,6 +496,7 @@ export class Creature {
       CreatureConfig.MEMORY.SLOTS_MIN,
       CreatureConfig.MEMORY.SLOTS_MAX
     );
+    /** @type {CreatureMemory} */
     this.memory = {
       capacity: memoryCapacity,
       locations: [], // { x, y, type, strength, timestamp }
@@ -291,6 +509,7 @@ export class Creature {
     };
 
     // FEATURE 4: Social Behaviors
+    /** @type {{herdMates: any[], packTarget: any, offspring: number[], lastReproduction: number}} */
     this.social = {
       herdMates: [], // nearby same-species creatures
       packTarget: null, // shared target for pack hunting
@@ -299,6 +518,7 @@ export class Creature {
     };
 
     // FEATURE 9: Migration
+    /** @type {{instinct: number, targetRegionId: ?number, target: ?any, lastMigration: number, settled: boolean, active: boolean, cooldownUntil: number, recentUntil: number, settleTimer: number, nextCheckAt: number, bias?: {x: number, y: number}}} */
     this.migration = {
       instinct: clamp(genes.herdInstinct ?? 0.5, 0, 1), // how likely to migrate
       targetRegionId: null,
@@ -311,13 +531,17 @@ export class Creature {
       settleTimer: 0,
       nextCheckAt: rand(0.4, 1.4)
     };
+    /** @type {?string} */
     this.homeNestId = null;
+    /** @type {?number} */
     this.homeRegionId = null;
+    /** @type {number} 0.1..0.95 */
     this.territoryAffinity = clamp(0.25 + (genes.herdInstinct ?? 0.5) * 0.6, 0.1, 0.95);
     this._restNestTimer = 0;
     this._returnHomeUntil = -Infinity;
 
     // FEATURE 5: Emotional States
+    /** @type {CreatureEmotions} */
     this.emotions = {
       fear: 0, // 0-1, increases when attacked/near predators
       hunger: 0, // 0-1, increases when low energy
@@ -328,6 +552,7 @@ export class Creature {
     };
 
     // NEW: Needs-driven agent state
+    /** @type {CreatureNeeds} */
     this.needs = {
       hunger: CreatureAgentTuning.NEEDS.START.hunger,
       energy: CreatureAgentTuning.NEEDS.START.energy,
@@ -335,6 +560,7 @@ export class Creature {
       stress: CreatureAgentTuning.NEEDS.START.stress,
       lastEatAt: -Infinity
     };
+    /** @type {CreatureGoal} */
     this.goal = {
       current: 'WANDER',
       lastChange: 0,
@@ -345,6 +571,7 @@ export class Creature {
       bondAnnounced: false,
       score: 0
     };
+    /** @type {{food: any, restZone: any, nest: any, homeNest: any, mate: any, overcrowded: boolean, corpse: any}} */
     this.senses = {
       food: null,
       restZone: null,
@@ -369,9 +596,11 @@ export class Creature {
     });
 
     // FEATURE 6: Sensory Specialization
+    /** @type {string} */
     this.senseType = determineSenseType(genes);
 
     // FEATURE 7: Problem Solving & Intelligence
+    /** @type {{level: number, patterns: any[], experiencePoints: number, learningRate: number}} */
     this.intelligence = {
       level: clamp(
         (genes.sense / CreatureConfig.INTELLIGENCE.LEVEL_SENSE_RATIO) *
@@ -385,6 +614,7 @@ export class Creature {
     };
 
     // FEATURE 8: Sexual Selection
+    /** @type {{attractiveness: number, lastMated: number, choosiness: number, courtshipStyle: number, desiredTraits: any}} */
     this.sexuality = {
       attractiveness: calculateAttractiveness(genes),
       lastMated: -Infinity,
@@ -394,22 +624,45 @@ export class Creature {
     };
 
     // Initialize new modular systems
+    /** @type {CreatureStatusSystem} */
     this.statusSystem = new CreatureStatusSystem(this);
+    /** @type {CreatureBehaviorSystem} */
     this.behaviorSystem = new CreatureBehaviorSystem(this);
   }
 
+  /**
+   * Compute passive energy burn for this creature.
+   * @returns {number} Energy burn rate in units per second
+   */
   baseBurn() {
     return baseBurn(this);
   }
 
+  /**
+   * Check if this creature has a named quirk.
+   * @param {string} id - Quirk identifier
+   * @returns {boolean}
+   */
   hasQuirk(id) {
     return hasQuirk(this, id);
   }
 
+  /**
+   * Get a multiplier for a specific quirk category.
+   * @param {string} kind - Quirk category (e.g. 'damage_resist')
+   * @returns {number} Multiplier, default 1
+   */
   getQuirkMultiplier(kind) {
     return getQuirkMultiplier(this, kind);
   }
 
+  /**
+   * Find the best food target within this creature's forward field of view,
+   * optionally falling back to the strongest pheromone gradient in the cell.
+   * @param {Array<{x: number, y: number}>} foodList - Candidate food items
+   * @param {{cell: number, get: (gx: number, gy: number) => number} | null} [pheromone] - Pheromone grid
+   * @returns {void} Mutates `this.target`
+   */
   seek(foodList, pheromone) {
     let best = null,
       bestD2 = Infinity;
@@ -468,6 +721,13 @@ export class Creature {
     this.target = best;
   }
 
+  /**
+   * Predator hunt loop. Picks a prey target, registers a pack signal if
+   * applicable, and stores the result on `this.target`.
+   * @param {import('./world-core.js').World} world - Active world
+   * @param {number} dt - Time delta in seconds
+   * @returns {void}
+   */
   hunt(world, dt) {
     const persona = this.personality;
     persona.huntCooldown = Math.max(0, persona.huntCooldown - dt);
@@ -501,6 +761,13 @@ export class Creature {
     persona.currentTargetId = null;
   }
 
+  /**
+   * Soft predator "tag" chase for omnivores/predator-lite diet roles.
+   * Chases prey to apply an impulse and stress instead of killing.
+   * @param {import('./world-core.js').World} world - Active world
+   * @param {number} dt - Time delta in seconds
+   * @returns {void}
+   */
   huntLite(world, dt) {
     const persona = this.personality;
     const tuning = CreatureAgentTuning.PREDATOR_LITE;
@@ -581,7 +848,8 @@ export class Creature {
    * Updates the creature's state for one simulation frame.
    * OPTIMIZED: Early exits and reduced per-frame overhead
    * @param {number} dt - Time delta since last update (in seconds)
-   * @param {Object} world - The world object containing simulation state
+   * @param {import('./world-core.js').World} world - The world object containing simulation state
+   * @returns {void}
    */
   update(dt, world) {
     // OPTIMIZATION: Fast early exit for dead creatures
@@ -1822,7 +2090,8 @@ export class Creature {
    * Records damage taken by the creature, applying health reduction,
    * damage caps, and invincibility frames.
    * @param {number} amount - Initial damage amount
-   * @param {Object} ctx - Damage context (attacker, type, etc.)
+   * @param {Object} [ctx] - Damage context (attacker, type, etc.)
+   * @returns {number} Effective damage applied after caps
    */
   recordDamage(amount, ctx = {}) {
     return recordDamage(this, amount, ctx);
@@ -1831,7 +2100,7 @@ export class Creature {
   /**
    * Calculates the current speed of the creature based on genes, biome, state, and boosters.
    * @param {number} dt - Time delta
-   * @param {Object} world - Simulation world
+   * @param {import('./world-core.js').World} world - Simulation world
    * @returns {number} The current speed in px/s
    */
   calculateCurrentSpeed(dt, world) {
@@ -1845,10 +2114,23 @@ export class Creature {
     return normalized * (CreatureTuning.DAMAGE_CLAMP_MAX * 0.45);
   }
 
+  /**
+   * Apply environmental/collision impact damage to this creature.
+   * @param {number} amount - Damage amount
+   * @param {Object} [opts] - Options (cause, intensity)
+   * @returns {void}
+   */
   applyImpactDamage(amount, opts = {}) {
     return applyImpactDamage(this, amount, opts);
   }
 
+  /**
+   * Apply an instantaneous impulse to this creature's external velocity.
+   * @param {number} vx - x velocity component
+   * @param {number} vy - y velocity component
+   * @param {{decay?: number, cap?: number}} [opts] - Impulse options
+   * @returns {void}
+   */
   applyImpulse(vx, vy, opts = {}) {
     return applyImpulse(this, vx, vy, opts);
   }
@@ -1869,18 +2151,39 @@ export class Creature {
     impulse.vy *= decayFactor;
   }
 
+  /**
+   * React to a player poke interaction.
+   * @param {Object} [opts] - Poke options
+   * @returns {void}
+   */
   reactToPoke(opts = {}) {
     return reactToPoke(this, opts);
   }
 
+  /**
+   * React to being grabbed by the player.
+   * @param {Object} [opts] - Grab options
+   * @returns {void}
+   */
   reactToGrab(opts = {}) {
     return reactToGrab(this, opts);
   }
 
+  /**
+   * React to being dropped after a grab.
+   * @param {Object} [opts] - Drop options
+   * @returns {void}
+   */
   reactToDrop(opts = {}) {
     return reactToDrop(this, opts);
   }
 
+  /**
+   * React to a collision event (creature-bumped or fall).
+   * @param {number} amount - Collision intensity
+   * @param {Object} [opts] - Collision options
+   * @returns {void}
+   */
   reactToCollision(amount, opts = {}) {
     return reactToCollision(this, amount, opts);
   }
@@ -1915,6 +2218,12 @@ export class Creature {
     }
   }
 
+  /**
+   * Show a mood icon above this creature for a duration.
+   * @param {string} icon - Emoji or icon char
+   * @param {number} [duration=0.6] - Seconds to show
+   * @returns {void}
+   */
   setMood(icon, duration = 0.6) {
     return setMood(this, icon, duration);
   }
@@ -1944,6 +2253,11 @@ export class Creature {
     };
   }
 
+  /**
+   * Append a position to the trail buffer at a throttled interval.
+   * @param {number} dt - Frame delta
+   * @returns {void}
+   */
   updateTrail(dt) {
     this.trailTimer += dt;
     if (this.trailTimer >= TRAIL_INTERVAL) {
@@ -1953,12 +2267,25 @@ export class Creature {
     }
   }
 
+  /**
+   * Push an event entry into this creature's log.
+   * @param {string} message - Event description
+   * @param {number} time - World time
+   * @param {*} [meta] - Optional structured metadata
+   * @returns {void}
+   */
   logEvent(message, time, meta = null) {
     this.log.push({ message, time, meta });
     if (this.log.length > LOG_MAX) this.log.shift();
     this.logVersion += 1;
   }
 
+  /**
+   * Note that this creature gave birth to a child.
+   * @param {number} childId - Child creature id
+   * @param {number} time - World time
+   * @returns {void}
+   */
   noteBirth(childId, time) {
     this.stats.births += 1;
     this.logEvent(`Spawned child #${childId}`, time);
@@ -2138,10 +2465,20 @@ export class Creature {
     }
   }
 
+  /**
+   * Compute badge descriptors to draw on the creature (status, diet, etc.).
+   * @returns {Array<{type: string, label: string, color: string}>}
+   */
   getBadges() {
     return _getBadges(this);
   }
 
+  /**
+   * Draw this creature to a 2D context.
+   * @param {CanvasRenderingContext2D} ctx - Target canvas context
+   * @param {Object} [opts] - Draw options (e.g. selected highlight)
+   * @returns {void}
+   */
   draw(ctx, opts = {}) {
     return _drawCreature(this, ctx, opts);
   }

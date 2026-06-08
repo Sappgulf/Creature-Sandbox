@@ -355,6 +355,13 @@ export class InputManager {
         e.preventDefault();
         break;
 
+      case 'f8':
+        if (this.uiController?.onProfilerToggle) {
+          e.preventDefault();
+          this.uiController.onProfilerToggle();
+        }
+        break;
+
       case '?':
         this.toggleShortcutsHelp();
         break;

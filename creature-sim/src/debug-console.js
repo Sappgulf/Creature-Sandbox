@@ -1,10 +1,13 @@
 import { gameState } from './game-state.js';
+import { takeSnapshot, diffSnapshots, serializeSnapshot, parseSnapshot } from './snapshot-tools.js';
 
 export class DebugConsole {
   constructor(world, camera) {
     this.world = world;
     this.camera = camera;
     this.visible = false;
+    /** @type {Map<string, Object>} Named snapshot store. */
+    this.snapshots = new Map();
     this.commands = {
       help: () => this.showHelp(),
       spawn: count => this.spawnCreatures(count),
@@ -23,7 +26,12 @@ export class DebugConsole {
       god: () => this.godMode(),
       chaos: () => this.chaosMode(),
       goals: () => this.toggleGoalDebug(),
-      observe: () => this.toggleObserverDebug()
+      observe: () => this.toggleObserverDebug(),
+      snapshot: name => this.snapshotState(name),
+      diff: (nameA, nameB) => this.diffSnapshotsCommand(nameA, nameB),
+      exportSnapshot: name => this.exportSnapshot(name),
+      importSnapshot: (json, name) => this.importSnapshot(json, name),
+      listSnapshots: () => this.listSnapshots()
     };
   }
 
@@ -63,6 +71,11 @@ export class DebugConsole {
       'color: #c3c6e4;'
     );
     console.log('%c  debug.export()         %c- Export world state to console', 'color: #ffc800;', 'color: #c3c6e4;');
+    console.log('%c  debug.snapshot(name?)  %c- Capture a named world snapshot', 'color: #ffc800;', 'color: #c3c6e4;');
+    console.log('%c  debug.diff(a?, b?)     %c- Diff two named snapshots', 'color: #ffc800;', 'color: #c3c6e4;');
+    console.log('%c  debug.exportSnapshot() %c- Serialize a snapshot to JSON', 'color: #ffc800;', 'color: #c3c6e4;');
+    console.log('%c  debug.importSnapshot() %c- Parse and store a snapshot JSON', 'color: #ffc800;', 'color: #c3c6e4;');
+    console.log('%c  debug.listSnapshots()  %c- List all stored snapshot names', 'color: #ffc800;', 'color: #c3c6e4;');
     console.log('\n%c💡 Tip: Type "debug" to access the console object', 'color: #9aa0c6; font-style: italic;');
   }
 
@@ -214,6 +227,149 @@ export class DebugConsole {
   toggleObserverDebug() {
     gameState.showObserverDebug = !gameState.showObserverDebug;
     console.log(`✅ Observer overlays ${gameState.showObserverDebug ? 'enabled' : 'disabled'}`);
+  }
+
+  /**
+   * Capture a snapshot of the current world state and store it under `name`.
+   * @param {string} [name='current'] Snapshot name. Replaces any existing entry.
+   * @returns {Object|null} The captured snapshot, or null on error.
+   */
+  snapshotState(name = 'current') {
+    if (!this.world) {
+      console.warn('⚠️ No world attached to DebugConsole; cannot snapshot.');
+      return null;
+    }
+    try {
+      const snap = takeSnapshot(this.world, this.camera);
+      this.snapshots.set(name, snap);
+      console.log(
+        `📸 Snapshot "${name}" captured (t=${snap.world.t.toFixed(2)}s, pop=${snap.population.alive}, lineages=${snap.lineages.length}).`
+      );
+      return snap;
+    } catch (error) {
+      console.warn('⚠️ Failed to capture snapshot:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Diff two named snapshots and log the result.
+   * @param {string} [nameA='current']
+   * @param {string} [nameB='previous']
+   * @returns {Object|null} The diff object, or null if a snapshot is missing.
+   */
+  diffSnapshotsCommand(nameA = 'current', nameB = 'previous') {
+    const a = this.snapshots.get(nameA);
+    const b = this.snapshots.get(nameB);
+    if (!a || !b) {
+      console.warn(
+        `⚠️ Cannot diff: missing snapshot(s). Have: ${Array.from(this.snapshots.keys()).join(', ') || '(none)'}`
+      );
+      return null;
+    }
+    const diff = diffSnapshots(a, b);
+    this._logDiff(diff, nameA, nameB);
+    return diff;
+  }
+
+  /**
+   * Pretty-print a diff object to the console.
+   * @param {Object} diff
+   * @param {string} nameA
+   * @param {string} nameB
+   * @private
+   */
+  _logDiff(diff, nameA, nameB) {
+    if (!diff || diff.error) {
+      console.warn(`⚠️ Diff error: ${diff?.error || 'unknown'}`);
+      return;
+    }
+    console.log(`%c🔍 Diff: "${nameA}" → "${nameB}"`, 'color: #7bb7ff; font-weight: bold;');
+    console.log(`  timeDelta: ${diff.timeDelta.toFixed(2)}s`);
+    console.log('  populationDelta:');
+    for (const [key, value] of Object.entries(diff.populationDelta || {})) {
+      if (value !== 0) {
+        const sign = value > 0 ? '+' : '';
+        console.log(`    ${key}: ${sign}${value}`);
+      }
+    }
+    if (diff.newlyBorn.length > 0) {
+      console.log(`  newlyBorn (${diff.newlyBorn.length}):`);
+      for (const c of diff.newlyBorn) {
+        console.log(`    #${c.id}${c.name ? ` (${c.name})` : ''} energy=${c.energy.toFixed(1)}`);
+      }
+    }
+    if (diff.newlyDead.length > 0) {
+      console.log(`  newlyDead (${diff.newlyDead.length}):`);
+      for (const c of diff.newlyDead) {
+        console.log(`    #${c.id}${c.name ? ` (${c.name})` : ''} lastEnergy=${c.energy.toFixed(1)}`);
+      }
+    }
+    if (diff.lineageChanges.length > 0) {
+      console.log(`  lineageChanges (${diff.lineageChanges.length}):`);
+      for (const change of diff.lineageChanges) {
+        const sign = change.delta > 0 ? '+' : '';
+        console.log(
+          `    lineage ${change.id}${change.name ? ` (${change.name})` : ''}: ${change.aliveBefore} → ${change.aliveAfter} (${sign}${change.delta})`
+        );
+      }
+    }
+  }
+
+  /**
+   * Export a named snapshot as a JSON string.
+   * @param {string} [name='current']
+   * @returns {string|null} Serialized snapshot, or null if not found.
+   */
+  exportSnapshot(name = 'current') {
+    const snap = this.snapshots.get(name);
+    if (!snap) {
+      console.warn(`⚠️ No snapshot named "${name}".`);
+      return null;
+    }
+    const json = serializeSnapshot(snap);
+    console.log(`📤 Snapshot "${name}" exported (${json.length} bytes).`);
+    return json;
+  }
+
+  /**
+   * Parse and store a snapshot from a JSON string.
+   * @param {string} json
+   * @param {string} [name='imported']
+   * @returns {Object|null} The parsed snapshot, or null on failure.
+   */
+  importSnapshot(json, name = 'imported') {
+    const snap = parseSnapshot(json);
+    if (!snap) {
+      console.warn('⚠️ Failed to parse snapshot JSON.');
+      return null;
+    }
+    this.snapshots.set(name, snap);
+    console.log(
+      `📥 Snapshot imported as "${name}" (t=${snap.world?.t?.toFixed?.(2) ?? '?'}s, pop=${snap.population?.alive ?? '?'}).`
+    );
+    return snap;
+  }
+
+  /**
+   * List all stored snapshot names with their capture timestamps.
+   * @returns {Array<{name: string, timestamp: number}>}
+   */
+  listSnapshots() {
+    const entries = [];
+    for (const [name, snap] of this.snapshots.entries()) {
+      entries.push({ name, timestamp: snap?.timestamp ?? 0 });
+    }
+    if (entries.length === 0) {
+      console.log('📂 No snapshots stored. Use debug.snapshot("name") to capture one.');
+    } else {
+      console.log(`%c📂 Snapshots (${entries.length})`, 'color: #7bb7ff; font-weight: bold;');
+      for (const entry of entries) {
+        const t = entry.timestamp ? new Date(entry.timestamp).toISOString() : 'unknown';
+        console.log(`  - ${entry.name} @ ${t}`);
+      }
+    }
+    return entries;
   }
 
   /**

@@ -85,7 +85,9 @@ export class UIController {
       onWatchFollow: this.onWatchFollow.bind(this),
       onWatchMoments: this.onWatchMoments.bind(this),
       onWatchGodMode: this.onWatchGodMode.bind(this),
-      onWatchRecenter: this.onWatchRecenter.bind(this)
+      onWatchRecenter: this.onWatchRecenter.bind(this),
+
+      onReplayTutorial: this.onReplayTutorial.bind(this)
     };
 
     // Setup event listeners for enhanced systems

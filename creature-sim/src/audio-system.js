@@ -129,6 +129,87 @@ export class AudioSystem {
     };
   }
 
+  /**
+   * Play a tone with spatial panning AND a distance-based low-pass filter
+   * (muffles the sound as if it were heard from far away).
+   * Optionally applies a simplified Doppler shift when `velocity` is provided
+   * (in source units per second along the source→camera axis). Positive
+   * values mean the source is moving toward the camera (pitch up).
+   * @param {number} frequency
+   * @param {number} duration
+   * @param {string} type
+   * @param {number} volume
+   * @param {string} category
+   * @param {number} pan
+   * @param {number} filterCutoff - low-pass cutoff in Hz
+   * @param {number} [velocity=0] - relative velocity in source units/sec (positive = approaching)
+   * @param {number} [dopplerStrength=0.002] - scaling for doppler shift (small to avoid jarring changes)
+   */
+  playSpatialFilteredTone(
+    frequency,
+    duration,
+    type = 'sine',
+    volume = 1.0,
+    category = 'ui',
+    pan = 0,
+    filterCutoff = 8000,
+    velocity = 0,
+    dopplerStrength = 0.002
+  ) {
+    if (!this.soundsEnabled || !this.ctx) return;
+    if (this.playingSounds.size >= this.maxConcurrent) return;
+    if (typeof this.ctx.createBiquadFilter !== 'function') {
+      // Fall back to plain spatial tone if biquad unavailable
+      this.playSpatialTone(frequency, duration, type, volume, category, pan);
+      return;
+    }
+
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const filter = this.ctx.createBiquadFilter();
+
+      osc.type = type;
+      osc.frequency.value = frequency;
+
+      filter.type = 'lowpass';
+      const cutoff = Math.max(80, Math.min(20000, filterCutoff | 0));
+      filter.frequency.value = cutoff;
+      filter.Q.value = 0.7;
+
+      // Simple Doppler: detune proportional to relative velocity
+      // Capped to a sane range so the pitch never gets comical.
+      if (Number.isFinite(velocity) && velocity !== 0) {
+        const cents = Math.max(-400, Math.min(400, velocity * dopplerStrength * 1200));
+        osc.detune.value = cents;
+      }
+
+      gain.gain.setValueAtTime(0, this.ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(
+        volume * this.volumes[category] * this.masterVolume,
+        this.ctx.currentTime + 0.01
+      );
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      const dest = this._spatialNode(gain, pan) || this.masterCompressor || this.ctx.destination;
+      if (!dest) gain.connect(this.masterCompressor || this.ctx.destination);
+
+      const soundId = Math.random();
+      this.playingSounds.add(soundId);
+
+      osc.start(this.ctx.currentTime);
+      osc.stop(this.ctx.currentTime + duration);
+      osc.onended = () => {
+        this.playingSounds.delete(soundId);
+      };
+    } catch {
+      // Fall back to plain spatial tone on any error
+      this.playSpatialTone(frequency, duration, type, volume, category, pan);
+    }
+  }
+
   // Create a spatial panner node chain; returns the last node to connect to master
   _spatialNode(sourceGain, pan) {
     if (!this.ctx || typeof this.ctx.createStereoPanner !== 'function') return null;
@@ -141,6 +222,30 @@ export class AudioSystem {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Compute a spatial pan and attenuated volume for a sound at world position
+   * (x, y) relative to the camera. Uses an inverse-square-ish rolloff curve
+   * for a more natural distance attenuation than a linear 1 - d/max.
+   * @param {number} x - source x
+   * @param {number} y - source y
+   * @param {object} camera - must expose x, y, and viewportWidth
+   * @param {number} [falloff=240] - distance at which attenuation = 0.5
+   * @returns {{pan:number, spatialVolume:number, distance:number}}
+   */
+  computeSpatialAttenuation(x, y, camera, falloff = 240) {
+    if (!camera) return { pan: 0, spatialVolume: 1, distance: 0 };
+    const dx = x - camera.x;
+    const dy = y - camera.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const halfW = Math.max((camera.viewportWidth || 800) / 2, 1);
+    const pan = Math.max(-1, Math.min(1, dx / halfW));
+    // Inverse-square-ish rolloff: volume / (1 + (d / falloff)^2)
+    // Clamp to a small floor so very distant sounds don't vanish entirely.
+    const ratio = distance / Math.max(1, falloff);
+    const spatialVolume = Math.max(0.08, 1 / (1 + ratio * ratio));
+    return { pan, spatialVolume, distance };
   }
 
   // Generate creature sound based on genes
@@ -164,16 +269,31 @@ export class AudioSystem {
       // Volume based on size (larger = louder)
       const volume = Math.min(1.0, 0.3 + size / 15);
 
-      // Spatial attenuation and panning
+      // Spatial attenuation and panning (inverse-square-ish rolloff)
       let spatialVolume = 1;
       let pan = 0;
+      let distance = 0;
       if (camera && typeof creature.x === 'number') {
-        const dx = creature.x - camera.x;
-        const halfW = (camera.viewportWidth || 800) / 2;
-        pan = Math.max(-1, Math.min(1, dx / Math.max(halfW, 1)));
-        const dist = Math.sqrt(dx * dx + (creature.y - camera.y) ** 2);
-        const maxAudible = Math.max(halfW * 2, 600);
-        spatialVolume = Math.max(0.1, 1 - dist / maxAudible);
+        const atten = this.computeSpatialAttenuation(creature.x, creature.y, camera);
+        pan = atten.pan;
+        spatialVolume = atten.spatialVolume;
+        distance = atten.distance;
+      }
+
+      // Compute a low-pass cutoff that drops with distance (muffles far-away
+      // sounds). Closer than 80 units stays bright; beyond that it tapers
+      // toward a muffled 400Hz minimum.
+      const filterCutoff = Math.max(400, Math.min(12000, 12000 - distance * 18));
+
+      // Radial velocity for a tiny Doppler effect on noisy events. vx/vy are
+      // optional; default to 0 (no shift) so callers without velocity still
+      // work as before.
+      const vx = Number.isFinite(creature.vx) ? creature.vx : 0;
+      const vy = Number.isFinite(creature.vy) ? creature.vy : 0;
+      let radialVelocity = 0;
+      if (distance > 0) {
+        // Approach speed along the camera→source axis. Positive = approaching.
+        radialVelocity = -((vx * (creature.x - camera.x) + vy * (creature.y - camera.y)) / distance);
       }
 
       const _duration = 0.1;
@@ -181,11 +301,29 @@ export class AudioSystem {
 
       switch (event) {
         case 'impact':
-          this.playSpatialTone(pitch * 1.8, 0.06, 'triangle', volume * 0.45 * spatialVolume, 'creatures', pan);
+          this.playSpatialFilteredTone(
+            pitch * 1.8,
+            0.06,
+            'triangle',
+            volume * 0.45 * spatialVolume,
+            'creatures',
+            pan,
+            filterCutoff,
+            radialVelocity
+          );
           break;
         case 'birth':
           // Cute high-pitched chirp
-          this.playSpatialTone(pitch * 1.5, 0.15, 'sine', volume * 0.6 * spatialVolume, 'creatures', pan);
+          this.playSpatialFilteredTone(
+            pitch * 1.5,
+            0.15,
+            'sine',
+            volume * 0.6 * spatialVolume,
+            'creatures',
+            pan,
+            filterCutoff,
+            radialVelocity
+          );
           break;
 
         case 'death':
@@ -212,7 +350,16 @@ export class AudioSystem {
 
         case 'eat':
           // Quick nom sound (low frequency crunch)
-          this.playSpatialTone(pitch * 0.6, 0.08, 'square', volume * 0.5 * spatialVolume, 'creatures', pan);
+          this.playSpatialFilteredTone(
+            pitch * 0.6,
+            0.08,
+            'square',
+            volume * 0.5 * spatialVolume,
+            'creatures',
+            pan,
+            filterCutoff,
+            radialVelocity
+          );
           break;
 
         case 'attack':
@@ -696,6 +843,114 @@ export class AudioSystem {
     } catch (e) {
       console.warn('Ecosystem ambient error:', e);
     }
+  }
+
+  /**
+   * Play an ambient ecosystem sound whose spatial position is biased toward
+   * high-traffic areas (creature density hotspots). Falls back to the global
+   * ecosystem ambient if no creatures are present.
+   * @param {object} world - simulation world (must expose creatures + camera bounds)
+   * @param {object} camera - active camera
+   */
+  playSpatialAmbient(world, camera) {
+    if (!this.soundsEnabled || !this.ctx || !this.musicEnabled) return;
+
+    const now = this.ctx.currentTime;
+    if (now - this.lastAmbientTime < this.ambientInterval) return;
+    this.lastAmbientTime = now;
+
+    try {
+      const population = world?.creatures?.length || 0;
+
+      // Default to the global ambient call if we can't do spatial analysis.
+      if (population === 0 || !camera) {
+        this.playEcosystemAmbient(world);
+        return;
+      }
+
+      // Bucket creatures into a coarse grid and pick the densest cell near
+      // the camera. That gives a hotspot for the ambient sound to come from.
+      const halfW = Math.max((camera.viewportWidth || 800) / 2, 1);
+      const halfH = Math.max((camera.viewportHeight || 600) / 2, 1);
+      const left = camera.x - halfW;
+      const top = camera.y - halfH;
+      const cellSize = 240;
+      const cols = Math.max(1, Math.ceil((halfW * 2) / cellSize));
+      const rows = Math.max(1, Math.ceil((halfH * 2) / cellSize));
+      const buckets = new Map();
+
+      for (const c of world.creatures) {
+        if (!c || c.alive === false) continue;
+        const cx = Math.min(cols - 1, Math.max(0, Math.floor((c.x - left) / cellSize)));
+        const cy = Math.min(rows - 1, Math.max(0, Math.floor((c.y - top) / cellSize)));
+        const key = cx + ',' + cy;
+        const existing = buckets.get(key);
+        if (existing) {
+          existing.count += 1;
+          existing.sumX += c.x;
+          existing.sumY += c.y;
+        } else {
+          buckets.set(key, { count: 1, sumX: c.x, sumY: c.y });
+        }
+      }
+
+      if (buckets.size === 0) {
+        this.playEcosystemAmbient(world);
+        return;
+      }
+
+      let hotspot = null;
+      for (const entry of buckets.values()) {
+        if (!hotspot || entry.count > hotspot.count) {
+          hotspot = entry;
+        }
+      }
+
+      const hotspotX = hotspot.sumX / hotspot.count;
+      const hotspotY = hotspot.sumY / hotspot.count;
+
+      // Build a synthetic "biome" at the hotspot by looking up the world's
+      // biome helper if available, otherwise default to grassland.
+      const biome = world.getBiomeAt?.(hotspotX, hotspotY)?.type || 'grassland';
+
+      // Drive spatial panning + attenuation from the hotspot vs the camera.
+      const atten = this.computeSpatialAttenuation(hotspotX, hotspotY, camera, 360);
+      const filterCutoff = Math.max(500, Math.min(8000, 8000 - atten.distance * 6));
+      const ambientVolume = Math.min(0.18, 0.1 + Math.min(0.08, hotspot.count * 0.004));
+
+      // Use the existing ecosystem sound as the palette, scaled down and
+      // spatially placed.
+      const dayNight = world?.dayNightState || world?.environment?.getDayNightState?.();
+      const isNight = dayNight?.phase === 'night' || (dayNight?.light ?? 1) < 0.4;
+      let ambientType = isNight ? 'neutralNight' : 'neutralDay';
+      const health = world?.ecoHealth?.metrics?.overall ?? 50;
+      if (health >= 70) ambientType = isNight ? 'peacefulNight' : 'peacefulDay';
+      else if (health >= 40) ambientType = isNight ? 'calmNight' : 'calmDay';
+
+      this._playSpatiallyPlacedAmbient(ambientType, ambientVolume, atten.pan, filterCutoff, biome);
+    } catch (e) {
+      console.warn('Spatial ambient error:', e);
+      // Soft-fall back to the regular ambient path
+      this.playEcosystemAmbient(world);
+    }
+  }
+
+  /**
+   * Internal helper: play a chosen ecosystem ambient as a spatial tone in a
+   * specific panning/distance/filter slot. Falls back to the non-spatial
+   * helper if a biquad filter isn't available.
+   * @private
+   */
+  _playSpatiallyPlacedAmbient(ambientType, volume, pan, filterCutoff, _biome) {
+    if (!this.soundsEnabled || !this.ctx) return;
+    if (typeof this.ctx.createBiquadFilter !== 'function') {
+      this.playEcosystemSound(ambientType, volume);
+      return;
+    }
+    // Use a single short tone rather than the multi-tap pattern so the
+    // spatial placement stays coherent.
+    const baseFreq = 600 + Math.random() * 400;
+    this.playSpatialFilteredTone(baseFreq, 0.18, 'sine', volume, 'ambient', pan, filterCutoff);
   }
 
   // Play specific ecosystem ambient sound

@@ -25,6 +25,7 @@ import { MomentsSystem } from './moments-system.js';
 import { ControlStripController } from './control-strip.js?v=20260524-opening1';
 import { encodeSeed, getSeedFromUrl, setSeedInUrl } from './seed-utils.js';
 import { mobileGestureTutorial } from './mobile-gesture-tutorial.js?v=20260504-menu1';
+import { touchOnboarding } from './touch-onboarding.js?v=20260607-onboarding1';
 
 // Import new modular systems (via barrels where available)
 import { domCache, InputManager, UIController, GameLoop, ToolController } from './ui/index.js';
@@ -1794,7 +1795,16 @@ export async function initializeApp() {
       startTutorialIfNeeded();
 
       // Show mobile gesture tutorial on first mobile launch
-      setTimeout(() => mobileGestureTutorial.show(), 800);
+      setTimeout(() => {
+        // Prefer the new touch-first multi-step onboarding; the legacy
+        // single-card fallback remains in place for any code path that
+        // explicitly invokes it.
+        if (touchOnboarding.shouldShow()) {
+          touchOnboarding.show();
+        } else {
+          mobileGestureTutorial.show();
+        }
+      }, 800);
     }, 'New game initialization');
   }
 

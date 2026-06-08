@@ -55,4 +55,22 @@ export function setupDevExports({
       window.gameDirector = gameDirector;
     }, 'Debug exports');
   }
+  // Snapshot tools are exposed unconditionally so test harnesses and dev
+  // console helpers can reach them without depending on the devtools flag.
+  errorHandler.safeExecute(() => {
+    Promise.all([import('./snapshot-tools.js'), import('./debug-console.js')]).then(([snapshots]) => {
+      if (!window.snapshotTools) {
+        window.snapshotTools = {
+          takeSnapshot: snapshots.takeSnapshot,
+          diffSnapshots: snapshots.diffSnapshots,
+          serializeSnapshot: snapshots.serializeSnapshot,
+          parseSnapshot: snapshots.parseSnapshot
+        };
+      }
+      if (debugConsole && !debugConsole.snapshotToolsExposed) {
+        debugConsole.snapshotToolsExposed = true;
+        window.debug = debugConsole;
+      }
+    });
+  }, 'Snapshot tools exports');
 }

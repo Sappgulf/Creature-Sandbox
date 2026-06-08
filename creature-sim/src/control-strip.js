@@ -4,6 +4,8 @@
  */
 import { gameState } from './game-state.js';
 import { eventSystem } from './event-system.js';
+// battery-manager is initialized lazily via the bootstrap and signals
+// via the mobile-battery menu action; no direct import needed here.
 
 // Speed multipliers for cycling
 const SPEED_OPTIONS = [0.5, 1, 2, 4];
@@ -71,6 +73,11 @@ export class ControlStripController {
     this.menuMobileFocus = document.getElementById('menu-mobile-focus');
     this.menuMobileBattery = document.getElementById('menu-mobile-battery');
     this.menuMobileHaptics = document.getElementById('menu-mobile-haptics');
+
+    // Battery HUD indicator
+    this.batteryIndicatorEl = document.getElementById('battery-indicator');
+    this.batteryIconEl = this.batteryIndicatorEl?.querySelector('.battery-icon') || null;
+    this.batteryPercentEl = this.batteryIndicatorEl?.querySelector('.battery-percent') || null;
 
     // Spawn drawer
     this.spawnDrawer = document.getElementById('spawn-drawer');
@@ -170,6 +177,10 @@ export class ControlStripController {
     eventSystem.on('game:resumed', () => this.updatePauseButton());
     this.applyMobilePrefs({ syncMenu: true });
     eventSystem.on('tool:changed', () => this.updateToolButtons());
+
+    // Battery manager — auto-detect low battery, sync the HUD indicator,
+    // and let the menu action broadcast user overrides.
+    this._initBatteryManager();
   }
 
   loadMobilePrefs() {

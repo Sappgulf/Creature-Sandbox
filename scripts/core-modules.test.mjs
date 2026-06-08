@@ -59,6 +59,13 @@ import {
   ProgressionSystem,
   ScenarioRegistry
 } from '../creature-sim/src/game/index.js';
+import {
+  takeSnapshot,
+  diffSnapshots,
+  serializeSnapshot,
+  parseSnapshot,
+  SNAPSHOT_SCHEMA_VERSION
+} from '../creature-sim/src/snapshot-tools.js';
 
 let passed = 0;
 let failed = 0;
@@ -1691,6 +1698,129 @@ test('Sprite manifest: runtime asset keys are present and point to files', () =>
     assert.ok(Number.isFinite(Number(entry.anchor?.x)), `${key} should declare anchor.x`);
     assert.ok(Number.isFinite(Number(entry.anchor?.y)), `${key} should declare anchor.y`);
   }
+});
+
+// ============================================================================
+// snapshot-tools.js
+// ============================================================================
+console.log('\n=== snapshot-tools.js ===');
+
+test('snapshot-tools: takeSnapshot returns a schema-tagged object', () => {
+  const world = new World(400, 300);
+  world.seed(10, 1, 20);
+  const snap = takeSnapshot(world, null);
+  assert.equal(snap.schema, SNAPSHOT_SCHEMA_VERSION, 'schema should match version');
+  assert.ok(typeof snap.timestamp === 'number', 'timestamp should be a number');
+  assert.ok(snap.timestamp > 0, 'timestamp should be positive');
+});
+
+test('snapshot-tools: takeSnapshot includes population stats', () => {
+  const world = new World(400, 300);
+  world.seed(10, 1, 20);
+  const snap = takeSnapshot(world, null);
+  assert.ok(snap.population, 'population should be present');
+  assert.ok(typeof snap.population.total === 'number', 'population.total should be a number');
+  assert.ok(typeof snap.population.alive === 'number', 'population.alive should be a number');
+  assert.ok(typeof snap.population.food === 'number', 'population.food should be a number');
+  assert.equal(snap.population.total, world.creatures.length, 'population.total should match world.creatures.length');
+  assert.ok(snap.population.alive > 0, 'seeded world should have alive creatures');
+});
+
+test('snapshot-tools: takeSnapshot includes world metadata', () => {
+  const world = new World(400, 300);
+  world.seed(10, 1, 20);
+  const snap = takeSnapshot(world, null);
+  assert.ok(snap.world, 'world metadata should be present');
+  assert.equal(snap.world.width, 400, 'width should match');
+  assert.equal(snap.world.height, 300, 'height should match');
+  assert.ok(snap.world.t >= 0, 'time should be non-negative');
+  assert.ok('season' in snap.world, 'season should be in metadata');
+});
+
+test('snapshot-tools: takeSnapshot includes top creatures and lineages', () => {
+  const world = new World(400, 300);
+  world.seed(10, 1, 20);
+  const snap = takeSnapshot(world, null);
+  assert.ok(Array.isArray(snap.topCreatures), 'topCreatures should be an array');
+  assert.ok(snap.topCreatures.length > 0, 'topCreatures should not be empty after seed');
+  for (const c of snap.topCreatures) {
+    assert.equal(typeof c.id, 'number', 'creature id should be a number');
+    assert.equal(typeof c.alive, 'boolean', 'creature alive should be a boolean');
+  }
+  assert.ok(Array.isArray(snap.lineages), 'lineages should be an array');
+});
+
+test('snapshot-tools: takeSnapshot handles camera when provided', () => {
+  const world = new World(400, 300);
+  world.seed(10, 1, 20);
+  const camera = { x: 100, y: 50, zoom: 0.75, followMode: 'free' };
+  const snap = takeSnapshot(world, camera);
+  assert.ok(snap.camera, 'camera should be present when provided');
+  assert.equal(snap.camera.x, 100, 'camera x should be captured');
+  assert.equal(snap.camera.y, 50, 'camera y should be captured');
+  assert.equal(snap.camera.zoom, 0.75, 'camera zoom should be captured');
+});
+
+test('snapshot-tools: takeSnapshot omits camera when not provided', () => {
+  const world = new World(400, 300);
+  world.seed(10, 1, 20);
+  const snap = takeSnapshot(world, null);
+  assert.equal(snap.camera, undefined, 'camera should be undefined when not provided');
+});
+
+test('snapshot-tools: diffSnapshots handles missing snapshots', () => {
+  const a = { population: {}, world: {}, topCreatures: [], lineages: [] };
+  assert.ok(diffSnapshots(null, a).error, 'null first arg should error');
+  assert.ok(diffSnapshots(a, null).error, 'null second arg should error');
+});
+
+test('snapshot-tools: diffSnapshots computes population deltas', () => {
+  const world = new World(400, 300);
+  world.seed(20, 2, 50);
+  const a = takeSnapshot(world, null);
+  // Eat some food by clearing it to force a delta
+  world.food = [];
+  const b = takeSnapshot(world, null);
+  const diff = diffSnapshots(a, b);
+  assert.equal(diff.error, null, 'diff should succeed');
+  assert.ok(diff.populationDelta, 'populationDelta should be present');
+  assert.ok(diff.populationDelta.food < 0, 'food delta should be negative after clearing');
+  assert.equal(diff.timeDelta, b.world.t - a.world.t, 'timeDelta should match');
+});
+
+test('snapshot-tools: diffSnapshots detects newly born creatures', () => {
+  const world = new World(400, 300);
+  world.seed(10, 1, 20);
+  const a = takeSnapshot(world, null);
+  // Add a new creature and include it in the next top-N
+  const newCreature = new Creature(50, 50, makeGenes());
+  newCreature.energy = 200; // Force it into top 5 by energy
+  world.creatureManager.addCreature(newCreature);
+  const b = takeSnapshot(world, null);
+  const diff = diffSnapshots(a, b);
+  assert.ok(Array.isArray(diff.newlyBorn), 'newlyBorn should be an array');
+  assert.ok(diff.newlyBorn.length >= 0, 'newlyBorn length should be non-negative');
+});
+
+test('snapshot-tools: serializeSnapshot and parseSnapshot round-trip', () => {
+  const world = new World(400, 300);
+  world.seed(10, 1, 20);
+  const snap = takeSnapshot(world, null);
+  const json = serializeSnapshot(snap);
+  assert.equal(typeof json, 'string', 'serialize should return a string');
+  const parsed = parseSnapshot(json);
+  assert.ok(parsed, 'parse should return a non-null object');
+  assert.equal(parsed.schema, snap.schema, 'parsed schema should match');
+  assert.equal(parsed.population.alive, snap.population.alive, 'population.alive should round-trip');
+  assert.equal(parsed.world.width, snap.world.width, 'world.width should round-trip');
+});
+
+test('snapshot-tools: parseSnapshot returns null for invalid input', () => {
+  assert.equal(parseSnapshot(''), null, 'empty string should return null');
+  assert.equal(parseSnapshot(null), null, 'null should return null');
+  assert.equal(parseSnapshot(undefined), null, 'undefined should return null');
+  assert.equal(parseSnapshot('{not json'), null, 'malformed JSON should return null');
+  assert.equal(parseSnapshot(JSON.stringify({ schema: 'wrong-schema' })), null, 'wrong schema should return null');
 });
 
 // ============================================================================

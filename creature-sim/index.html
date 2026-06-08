@@ -214,6 +214,7 @@
   <!-- Legacy HUD action bank (hidden, kept for campaign compatibility) -->
   <div id="hud-action-bank" class="hidden" aria-hidden="true">
     <button id="btn-campaign" title="Campaign Mode" aria-label="Open campaign mode">🏆 Campaign</button>
+    <button id="btn-replay-tutorial" title="Replay Tutorial" aria-label="Replay onboarding tutorial">🎓 Replay Tutorial</button>
   </div>
 
   <!-- Tool indicator label -->
@@ -269,6 +270,26 @@
     <button id="interaction-hint-close" class="interaction-hint-close" aria-label="Dismiss hint">×</button>
   </div>
   <div id="objective-rail" class="objective-rail" aria-live="polite"></div>
+
+  <!-- Touch-first Onboarding Flow (mobile only) -->
+  <div id="touch-onboarding" class="touch-onboarding hidden" aria-hidden="true">
+    <div class="touch-onboarding-card glass-hero" role="document" tabindex="-1">
+      <div class="touch-onboarding-icon" aria-hidden="true"></div>
+      <div class="touch-onboarding-step" aria-live="polite"></div>
+      <div class="touch-onboarding-title"></div>
+      <div class="touch-onboarding-text"></div>
+      <div class="touch-onboarding-progress" aria-hidden="true">
+        <span class="touch-onboarding-dot" data-step="0"></span>
+        <span class="touch-onboarding-dot" data-step="1"></span>
+        <span class="touch-onboarding-dot" data-step="2"></span>
+      </div>
+      <div class="touch-onboarding-actions">
+        <button type="button" class="touch-onboarding-prev ghost-btn small" hidden>‹ Back</button>
+        <button type="button" class="touch-onboarding-next primary-btn small">Next ›</button>
+        <button type="button" class="touch-onboarding-done primary-btn small" hidden>Got it!</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Meta overlays: game mode + goals -->
   <div id="session-meta">
@@ -354,6 +375,10 @@
   <div id="hud-bottom-left">
     <div id="selected-info" class="hidden"></div>
     <div id="stats"></div>
+    <div id="battery-indicator" class="battery-indicator" hidden aria-live="polite">
+      <span class="battery-icon" aria-hidden="true">🔋</span>
+      <span class="battery-percent">100%</span>
+    </div>
   </div>
 
 
@@ -966,6 +991,92 @@
           <input type="range" id="sound-effects" min="0" max="100" step="1" value="30" aria-label="Effects volume" />
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Replay Panel -->
+  <div id="replay-panel" class="panel replay-panel hidden" role="dialog" aria-label="Replay timeline" aria-hidden="true">
+    <div class="panel-header" data-panel="replay">
+      <span class="panel-title">
+        <span class="panel-collapse-icon">▼</span>
+        ⏪ Replay
+      </span>
+      <button id="replay-close" class="panel-close" title="Close" aria-label="Close replay panel"
+        onclick="event.stopPropagation()">×</button>
+    </div>
+    <div class="panel-body replay-panel-body">
+      <div class="replay-toolbar">
+        <button id="replay-step-back" class="replay-btn ghost" aria-label="Step backward">⏮</button>
+        <button id="replay-play" class="replay-btn primary" aria-label="Play or pause">▶ Play</button>
+        <button id="replay-step-forward" class="replay-btn ghost" aria-label="Step forward">⏭</button>
+        <div class="replay-speed-group">
+          <button id="replay-speed-down" class="replay-btn ghost small" aria-label="Slow down">−</button>
+          <span id="replay-speed-value" class="replay-speed-value">1×</span>
+          <button id="replay-speed-up" class="replay-btn ghost small" aria-label="Speed up">+</button>
+        </div>
+        <button id="replay-live" class="replay-btn ghost small" aria-label="Follow live">Live</button>
+        <span id="replay-cursor" class="replay-cursor">0/0</span>
+      </div>
+      <input id="replay-scrubber" class="replay-scrubber" type="range" min="0" max="0" value="0" aria-label="Replay timeline" />
+      <div class="replay-actions">
+        <button id="replay-share" class="replay-btn ghost small">Share JSON</button>
+        <button id="replay-reset" class="replay-btn ghost small">Reset</button>
+      </div>
+      <div class="replay-list-wrap">
+        <div class="replay-list-title">Snapshots</div>
+        <div id="replay-snapshot-list" class="replay-snapshot-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lineage Album Panel -->
+  <div id="lineage-album-panel" class="lineage-album-overlay hidden" role="dialog" aria-label="Lineage album" aria-hidden="true">
+    <div class="lineage-album-modal">
+      <div class="lineage-album-header">
+        <div class="lineage-album-title">
+          <span>🌳</span>
+          <h2>Lineage Album</h2>
+        </div>
+        <div class="lineage-album-controls">
+          <label class="lineage-album-control">
+            <span class="muted tiny">Sort</span>
+            <select id="lineage-album-sort" class="lineage-album-select">
+              <option value="total">By Total</option>
+              <option value="peak">By Peak Generation</option>
+              <option value="alive">By Alive</option>
+              <option value="recent">By Recent Activity</option>
+            </select>
+          </label>
+          <label class="lineage-album-control">
+            <input type="checkbox" id="lineage-album-hero" />
+            <span class="muted tiny">Hero Generations</span>
+          </label>
+          <button id="lineage-album-close" class="panel-close" aria-label="Close lineage album">×</button>
+        </div>
+      </div>
+      <div id="lineage-album-grid" class="lineage-album-grid"></div>
+      <div id="lineage-album-tree-wrap" class="lineage-album-tree-wrap hidden">
+        <div class="lineage-album-tree-header">
+          <button id="lineage-album-back" class="replay-btn ghost small">← Back</button>
+          <span id="lineage-album-tree-title" class="lineage-album-tree-title"></span>
+        </div>
+        <div id="lineage-album-tree" class="lineage-album-tree"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insights Panel -->
+  <div id="insights-panel" class="panel insights-panel hidden" role="dialog" aria-label="Evolution insights" aria-hidden="true">
+    <div class="panel-header" data-panel="insights">
+      <span class="panel-title">
+        <span class="panel-collapse-icon">▼</span>
+        💡 Evolution Insights
+      </span>
+      <button id="insights-close" class="panel-close" title="Close" aria-label="Close insights panel"
+        onclick="event.stopPropagation()">×</button>
+    </div>
+    <div class="panel-body insights-body">
+      <div id="insights-feed" class="insights-feed" aria-live="polite"></div>
     </div>
   </div>
 

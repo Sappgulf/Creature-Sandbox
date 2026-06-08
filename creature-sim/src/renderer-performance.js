@@ -269,6 +269,43 @@ export class RendererPerformanceMonitor {
   }
 
   /**
+   * Toggle a reduced-particle mode on or off. When enabled, the particle
+   * cap is cut in half (clamped to a minimum of 4) regardless of the
+   * current quality preset. When disabled, the particle cap returns to
+   * the value from the current quality preset.
+   * @param {boolean} enabled
+   * @returns {boolean}  the new reduced-particle state
+   */
+  setReducedParticleMode(enabled) {
+    this.reducedParticleMode = !!enabled;
+    if (!this.renderer) return this.reducedParticleMode;
+    const particles = this.renderer.particles;
+    if (!particles) return this.reducedParticleMode;
+
+    if (this.reducedParticleMode) {
+      // Stash the un-reduced cap so we can restore it later.
+      if (this._savedMaxParticles == null) {
+        this._savedMaxParticles = particles.maxParticles;
+      }
+      particles.maxParticles = Math.max(4, Math.floor((this._savedMaxParticles || 60) * 0.5));
+    } else {
+      if (this._savedMaxParticles != null) {
+        particles.maxParticles = this._savedMaxParticles;
+      }
+      this._savedMaxParticles = null;
+    }
+    return this.reducedParticleMode;
+  }
+
+  /**
+   * Returns true when reduced-particle mode is currently active.
+   * @returns {boolean}
+   */
+  isReducedParticleMode() {
+    return !!this.reducedParticleMode;
+  }
+
+  /**
    * Get current FPS (rolling average)
    */
   getCurrentFps() {

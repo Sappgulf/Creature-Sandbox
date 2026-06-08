@@ -1,6 +1,7 @@
 import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
 import { loadEnhancedAnalyticsModule } from './enhanced-analytics-loader.js';
+import { touchOnboarding } from './touch-onboarding.js?v=20260607-onboarding1';
 
 export function applyUiPanelMethods(UIController) {
   UIController.prototype.setPanelVisibility = function (panel, visible) {
@@ -315,5 +316,12 @@ export function applyUiPanelMethods(UIController) {
         monitor.style.display = 'block';
       }
     }
+  };
+
+  UIController.prototype.onReplayTutorial = function () {
+    if (!touchOnboarding) return;
+    touchOnboarding.reset();
+    touchOnboarding.show({ force: true });
+    this.notifications?.show?.('🎓 Replaying tutorial…', 'info', 1600);
   };
 }
