@@ -1,3 +1,5 @@
+import { isPredatorFromGenes } from './creature-genetics-helpers.js';
+
 /**
  * Replay System — Periodic world-state snapshotting with playback controls.
  *
@@ -59,7 +61,7 @@ export class ReplaySystem {
     const summary = {
       population: creatures.length,
       alive: creatures.filter(c => c && c.alive !== false).length,
-      predators: creatures.filter(c => c && c.genes && (c.genes.predator || (c.genes.diet || 0) > 0.7)).length,
+      predators: creatures.filter(c => c && c.genes && isPredatorFromGenes(c.genes)).length,
       meanSpeed: average(creatures.map(c => c?.genes?.speed).filter(Number.isFinite)),
       meanEnergy: average(creatures.map(c => c?.energy).filter(Number.isFinite)),
       food: Array.isArray(world.food) ? world.food.length : 0
@@ -75,7 +77,7 @@ export class ReplaySystem {
           x: Number(c.x?.toFixed?.(2) ?? c.x ?? 0),
           y: Number(c.y?.toFixed?.(2) ?? c.y ?? 0),
           alive: c.alive !== false,
-          predator: !!(c.genes?.predator || (c.genes?.diet || 0) > 0.7)
+          predator: !!(c.genes && isPredatorFromGenes(c.genes))
         }))
       }
     };

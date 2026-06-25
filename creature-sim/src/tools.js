@@ -1,4 +1,5 @@
 import { isPredatorFromGenes } from './creature-genetics-helpers.js';
+import { eventSystem, GameEvents } from './event-system.js';
 
 export const ToolModes = Object.freeze({
   INSPECT: 'inspect',
@@ -16,7 +17,10 @@ const ActionType = {
   ERASE_CREATURES: 'erase_creatures',
   ADD_FOOD: 'add_food',
   PLACE_PROP: 'place_prop',
-  REMOVE_PROP: 'remove_prop'
+  REMOVE_PROP: 'remove_prop',
+  CALM_ZONE: 'calm_zone',
+  CHAOS_NUDGE: 'chaos_nudge',
+  GOD_FOOD: 'god_food'
 };
 
 export class ToolController {
@@ -172,6 +176,15 @@ export class ToolController {
       case ActionType.REMOVE_PROP:
         this.undoRemoveProp(action);
         break;
+      case ActionType.CALM_ZONE:
+        this.undoCalmZone(action);
+        break;
+      case ActionType.CHAOS_NUDGE:
+        this.undoChaosNudge(action);
+        break;
+      case ActionType.GOD_FOOD:
+        this.undoAddFood(action);
+        break;
     }
 
     return true;
@@ -205,9 +218,95 @@ export class ToolController {
       case ActionType.REMOVE_PROP:
         this.redoRemoveProp(action);
         break;
+      case ActionType.CALM_ZONE:
+        this.redoCalmZone(action);
+        break;
+      case ActionType.CHAOS_NUDGE:
+        this.redoChaosNudge(action);
+        break;
+      case ActionType.GOD_FOOD:
+        this.redoAddFood(action);
+        break;
     }
 
     return true;
+  }
+
+  recordCalmZone(zone) {
+    if (!zone) return;
+    this.pushAction({
+      type: ActionType.CALM_ZONE,
+      zone: {
+        id: zone.id,
+        x: zone.x,
+        y: zone.y,
+        radius: zone.radius,
+        strength: zone.strength,
+        duration: zone.t
+      }
+    });
+  }
+
+  undoCalmZone(action) {
+    const zones = this.world.environment?.calmZones;
+    if (!Array.isArray(zones) || !action.zone) return;
+    const idx = zones.findIndex(zone => zone.id === action.zone.id);
+    if (idx >= 0) zones.splice(idx, 1);
+  }
+
+  redoCalmZone(action) {
+    if (!action.zone || !this.world.addCalmZone) return;
+    this.world.addCalmZone(
+      action.zone.x,
+      action.zone.y,
+      action.zone.radius,
+      action.zone.duration,
+      action.zone.strength
+    );
+  }
+
+  recordChaosNudge(snapshot) {
+    if (!snapshot) return;
+    this.pushAction({
+      type: ActionType.CHAOS_NUDGE,
+      snapshot
+    });
+  }
+
+  undoChaosNudge(action) {
+    const snap = action.snapshot;
+    if (!snap || !this.world.chaos) return;
+    this.world.chaosBaseLevel = snap.chaosBaseLevel ?? this.world.chaosBaseLevel;
+    this.world.chaosNudge = snap.chaosNudge ? { ...snap.chaosNudge } : null;
+    const intensity = this.world.chaosNudge?.intensity || 0;
+    const fade =
+      this.world.chaosNudge?.duration > 0 ? (this.world.chaosNudge.timer || 0) / this.world.chaosNudge.duration : 0;
+    this.world._applyChaosLevel?.(this.world.chaosBaseLevel + intensity * fade);
+  }
+
+  redoChaosNudge(action) {
+    const snap = action.snapshot;
+    if (!snap?.applied) return;
+    this.world.triggerChaosNudge?.(snap.applied.intensity, snap.applied.duration);
+    if (snap.applied.windIntensity) {
+      this.world.environment?.triggerWindBurst?.(snap.applied.windIntensity, snap.applied.duration);
+    }
+  }
+
+  recordGodFood(foodItems) {
+    if (!Array.isArray(foodItems) || foodItems.length === 0) return;
+    this.pushAction({
+      type: ActionType.GOD_FOOD,
+      food: foodItems
+    });
+  }
+
+  snapshotChaosBeforeNudge(intensity, duration) {
+    return {
+      chaosBaseLevel: this.world.chaosBaseLevel,
+      chaosNudge: this.world.chaosNudge ? { ...this.world.chaosNudge } : null,
+      applied: { intensity, duration, windIntensity: intensity }
+    };
   }
 
   /**
@@ -241,6 +340,7 @@ export class ToolController {
         food: addedFood
       });
       this._reactToFoodDrop(x, y);
+      eventSystem.emit(GameEvents.FOOD_DROP, { count: addedFood.length, x, y });
     }
   }
 

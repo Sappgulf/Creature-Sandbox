@@ -1,5 +1,5 @@
 import { gameState } from './game-state.js';
-import { eventSystem } from './event-system.js';
+import { eventSystem, GameEvents } from './event-system.js';
 import { clamp } from './utils.js';
 import { collectGameplayMetrics } from './gameplay-objectives.js';
 
@@ -249,8 +249,15 @@ export const PLAYABLE_SCENARIOS = [
     minAlive: 28,
     minFood: 135,
     maxStress: 48,
-    setup: { herbivore: 74, omnivore: 10, predator: 0, food: 430, props: ['calm', 'spring', 'fan'], radius: 780 },
-    tuning: { mode: 'chill', foodRate: 1.38, disasters: false, autoBalance: false, season: 'spring' },
+    setup: {
+      herbivore: 68,
+      omnivore: 10,
+      predator: 0,
+      food: 480,
+      props: ['calm', 'spring', 'fan', 'calm'],
+      radius: 780
+    },
+    tuning: { mode: 'chill', foodRate: 1.44, disasters: false, autoBalance: false, season: 'spring' },
     steps: [
       'Calm the densest herd first',
       'Paint food outside crowded pockets',
@@ -268,8 +275,15 @@ export const PLAYABLE_SCENARIOS = [
     minAlive: 38,
     minPredators: 4,
     minFood: 125,
-    setup: { herbivore: 96, omnivore: 18, predator: 24, food: 500, props: ['conveyor', 'calm', 'bounce'], radius: 820 },
-    tuning: { mode: 'frontier', foodRate: 1.38, disasters: false, autoBalance: false, season: 'autumn' },
+    setup: {
+      herbivore: 92,
+      omnivore: 20,
+      predator: 20,
+      food: 540,
+      props: ['conveyor', 'calm', 'bounce', 'calm'],
+      radius: 820
+    },
+    tuning: { mode: 'frontier', foodRate: 1.42, disasters: false, autoBalance: false, season: 'autumn' },
     steps: ['Feed the bridge exits', 'Follow scavengers after hunts', 'Use calm zones if the corridor panics']
   }
 ];
@@ -360,6 +374,7 @@ export class PlayableScenarios {
       y: this.world.height * 0.5,
       worldTime: this.world.t
     });
+    eventSystem.emit(GameEvents.SCENARIO_STARTED, { id: scenario.id, name: scenario.name });
     this._emitUpdate();
     return this.getSnapshot();
   }

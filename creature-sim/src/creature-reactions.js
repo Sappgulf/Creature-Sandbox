@@ -60,7 +60,8 @@ export function setMood(creature, icon, duration = 0.6) {
 }
 
 export function reactToPoke(creature, { x = null, y = null } = {}) {
-  const intensity = clamp(0.42 + creature.personality.reactivity * 0.75, 0.35, 1.4);
+  const chaosBoost = creature._lastWorld?.chaos?.reactionBoost ?? 1;
+  const intensity = clamp((0.42 + creature.personality.reactivity * 0.75) * chaosBoost, 0.35, 1.55);
   const worldTime = creature._lastWorld?.t ?? 0;
   if (worldTime - creature._lastPokeAt < 0.75) {
     creature._pokeCombo += 1;

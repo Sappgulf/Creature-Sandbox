@@ -881,25 +881,36 @@ async function runScenario(browser, scenario) {
 
     console.log(`  ${scenario.name}: worker save/runtime parity`);
     const workerRoundTrip = await page.evaluate(() => window.__creatureSmoke.saveRoundTrip());
-    assert.equal(workerRoundTrip.ok, true, `${scenario.name}: worker save snapshot roundtrip should report ok`);
+    assert.equal(workerRoundTrip.ok, true, `${scenario.name}: worker save roundtrip should report ok`);
     assert.equal(
       workerRoundTrip.applied,
-      false,
-      `${scenario.name}: worker save parity should avoid mutating the live worker world`
+      true,
+      `${scenario.name}: worker save parity should apply through SimulationProxy.importState`
     );
     assert.equal(
       workerRoundTrip.workerSnapshotOnly,
-      true,
-      `${scenario.name}: worker save parity should report snapshot-only mode`
+      false,
+      `${scenario.name}: worker save parity should no longer be snapshot-only`
     );
     assert.equal(
-      workerRoundTrip.loaded.creatures,
+      workerRoundTrip.after.creatures,
       workerRoundTrip.before.creatures,
-      `${scenario.name}: worker serialized creatures should reload into a main-thread snapshot`
+      `${scenario.name}: worker roundtrip should preserve creature count`
     );
     assert.ok(
-      workerRoundTrip.loaded.food >= Math.min(workerRoundTrip.before.food, 1),
-      `${scenario.name}: worker serialized food should reload into a main-thread snapshot`
+      workerRoundTrip.after.food >= Math.min(workerRoundTrip.before.food, 1),
+      `${scenario.name}: worker roundtrip should preserve food count`
+    );
+
+    const beforeUndo = state.summary.totalCreatures;
+    const undoKey = process.platform === 'darwin' ? 'Meta+Z' : 'Control+Z';
+    await page.keyboard.press(undoKey);
+    await page.waitForTimeout(600);
+    await advance(page, 120);
+    state = await readGameState(page);
+    assert.ok(
+      state.summary.totalCreatures <= beforeUndo,
+      `${scenario.name}: Ctrl+Z should undo the last spawn in worker mode`
     );
 
     const workerSlotPreview = await page.evaluate(() => window.__creatureSmoke.saveSlotPreview(2));
@@ -998,7 +1009,7 @@ async function runScenario(browser, scenario) {
       `${scenario.name}: worker scenario save parity should serialize active scenario`
     );
     assert.equal(
-      workerScenarioRoundTrip.loaded.playable,
+      workerScenarioRoundTrip.after.playable,
       'apex_balance',
       `${scenario.name}: worker scenario save parity should reload active scenario metadata`
     );

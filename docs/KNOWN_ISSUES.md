@@ -2,9 +2,9 @@
 
 List issues that could not be fixed quickly, with severity and reproduction steps.
 
-1. **Camera world bounds are generous (200px margin)**
+1. **Camera world bounds still allow partial off-screen creatures (80px margin)**
    - **Severity:** Low
-   - **Description:** Camera clamping uses a 200px margin beyond world edges. Creatures very near the border may still appear partially off-screen after aggressive panning.
+   - **Description:** Camera clamping uses an 80px margin beyond world edges. Creatures very near the border may still appear partially off-screen after aggressive panning.
    - **Workaround:** Use focus-on-creature or the re-center button to snap back.
 
 2. **Main-thread simulation is now an explicit fallback, not the performance default**

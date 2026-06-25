@@ -256,6 +256,14 @@ export function selectGoal(creature, world) {
 
   let wanderScore = CreatureAgentTuning.GOALS.SCORE_BIAS.WANDER * wanderBias;
 
+  const temperament = creature.temperament;
+  if (temperament) {
+    eatScore *= 1 + (1 - (temperament.boldness ?? 0.5)) * 0.12;
+    wanderScore *= 1 + (temperament.curiosity ?? 0.5) * 0.18;
+    restScore *= 1 + (temperament.calmness ?? 0.5) * 0.14;
+    mateScore *= 1 + (temperament.sociability ?? 0.5) * 0.16;
+  }
+
   const nest = senses.homeNest || senses.nest;
   if (nest) {
     let nestBias = 1 + creature.territoryAffinity * 0.3;

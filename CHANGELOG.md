@@ -20,6 +20,20 @@
 
 ## [UNRELEASED]
 
+### 2026-06-25 — gameplay-tranche-1-12 — Planned
+
+- **Issues:** Worker save/load was snapshot-only (no `importState`), god-mode calm/chaos/food lacked undo, scenario balance needed tuning, onboarding skipped feed/scenario steps, watch mode ignored throws/props, moments lacked prop/chaos juice, temperament was invisible in UI, `geneValue` still leaked in analytics/replay, camera margins were too generous, browser smoke did not gate worker apply or Ctrl+Z undo, and mobile creature taps were slightly undersized.
+- **Root Causes:** `SaveSystem.deserialize` rebuilt a main-thread world instead of piping through `SimulationProxy.importState`, ToolController only recorded spawn/erase/prop actions, tutorial/event wiring omitted food drops and scenario starts, AutoDirector had no handlers for high-salience moments, personality biases were computed but not surfaced, several modules still read raw diploid genes, camera clamp used 200px slack, and smoke expected snapshot-only worker parity.
+- **Fixes:** Planned worker `IMPORT_STATE` + `importState()` round-trip, god-mode undo for calm/chaos/food, scenario retune for Stress Sanctuary and Scavenger Bridge, tutorial feed/scenario steps, watch-mode AutoDirector focus, moments/notifications for throws/props/chaos, temperament chips, `geneValue` rollout, 80px camera margin, 48px mobile tap radius, and smoke gates for apply + undo.
+- **Verification:** Planned: `npm test`, lint, build, bundle guard, browser/main/worker/scenario smokes, `proof:release`, commit, push.
+
+### 2026-06-25 — gameplay-tranche-1-12 — Implemented
+
+- **Issues:** Items 1–12 from the gameplay tranche needed landing in one release: worker save apply, scenario balance, god undo, onboarding, watch focus, chaos/prop juice, temperament UI, main-thread scalar cadence (already at interval 4), camera bounds, mobile taps, smoke undo lane, and `geneValue` cleanup.
+- **Root Causes:** Same as planned entry; worker proxy lacked state import, tool history omitted god actions, and smoke still referenced `loaded.*` after round-trip shape changed to `before`/`after`.
+- **Fixes:** Added `saveWorld` export + `SimulationProxy.importState` + worker `IMPORT_STATE`, god-mode calm/chaos/food record/undo in ToolController with touch drag wiring, retuned `stress_sanctuary`/`scavenger_bridge`, tutorial feed/scenario steps + `FOOD_DROP`/`SCENARIO_STARTED` events, AutoDirector watch focus for throws/props/god spawns, moments + chaos poke boost, temperament chips in inspect UI, `geneValue` in ecosystem-health/replay-system, camera margin 200→80, mobile tap radius 40→48, browser-smoke worker apply + Ctrl+Z undo assertions, fixed `gameState` import in moments-system, smoke `after.playable` parity check.
+- **Verification:** `npm test` (190 pass); `npm run lint` (pass); `npm run build` (pass); `npm run check:bundle` (pass); `npm run proof:release` (pass, 18 commands including browser/main/worker/scenario smokes); `npm run evidence:release` (pass); scenario balance Stress Sanctuary alive 47–54 / food 703–746, Scavenger Bridge alive 79–87 / predators 8–9.
+
 ### 2026-06-25 — gameplay-performance-polish — Implemented
 
 - **Issues:** Browser smoke failed on startup because `ControlStripController` called missing `_initBatteryManager`, worker disease spread could throw when `creatureManager.queryCreatures` was absent, duplicate `POP_PRESSURE_MAX` key in agent tuning, and casual play needed snappier food/rest recovery plus clearer poke reactions; subsystem updates ran at full rate even when adaptive fidelity dropped.

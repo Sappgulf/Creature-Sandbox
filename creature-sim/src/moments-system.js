@@ -1,4 +1,5 @@
 import { eventSystem, GameEvents } from './event-system.js';
+import { gameState } from './game-state.js';
 import { clamp } from './utils.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
 import { escapeHtml } from './safe-html.js';
@@ -473,6 +474,47 @@ export class MomentsSystem {
         x: data.x,
         y: data.y,
         worldTime: data?.worldTime
+      });
+    });
+
+    eventSystem.on(GameEvents.CREATURE_THROWN, data => {
+      if (!data) return;
+      const distance = Number(data.distance || data.speed || 0);
+      this.logMoment({
+        type: GameEvents.CREATURE_THROWN,
+        icon: '🚀',
+        text: distance > 180 ? 'Creature launched across the map' : 'Creature tossed into motion',
+        x: data.x,
+        y: data.y,
+        worldTime: data?.worldTime
+      });
+    });
+
+    eventSystem.on(GameEvents.SANDBOX_PROP_TRIGGERED, data => {
+      if (!data) return;
+      const propLabel = data.propType ? `${data.propType} prop` : 'Sandbox prop';
+      this.logMoment({
+        type: GameEvents.SANDBOX_PROP_TRIGGERED,
+        icon: '🎢',
+        text: `${propLabel} sent a creature flying`,
+        x: data.x,
+        y: data.y,
+        worldTime: data?.worldTime
+      });
+      if (this.notifications?.show && gameState.watchModeEnabled) {
+        this.notifications.show(`Prop combo: ${propLabel}`, 'info', 1800);
+      }
+    });
+
+    eventSystem.on(GameEvents.GOD_MODE_ACTION, data => {
+      if (!data || data.action !== 'chaos') return;
+      this.logMoment({
+        type: GameEvents.GOD_MODE_ACTION,
+        icon: '🌪️',
+        text: 'Chaos nudge rippled through the herd',
+        x: data.x,
+        y: data.y,
+        worldTime: this.world?.t
       });
     });
 

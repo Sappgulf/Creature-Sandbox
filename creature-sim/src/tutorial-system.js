@@ -23,6 +23,15 @@ const DEFAULT_STEPS = [
     autoAdvanceDelay: 9000
   },
   {
+    id: 'feed',
+    title: 'Feed the Herd',
+    text: 'Tap Food (F) and click near creatures to drop snacks.',
+    highlight: ['#ctrl-food', '#menu-food'],
+    waitFor: { type: 'food_drop', count: 1 },
+    autoAdvance: true,
+    autoAdvanceDelay: 10000
+  },
+  {
     id: 'camera',
     title: 'Move the Camera',
     text: 'Scroll to zoom. Middle-click or Alt-drag to pan.',
@@ -57,6 +66,15 @@ const DEFAULT_STEPS = [
     waitFor: { type: 'god_mode_action', count: 1 },
     autoAdvance: true,
     autoAdvanceDelay: 9000
+  },
+  {
+    id: 'scenario',
+    title: 'Earn a Scenario Medal',
+    text: 'Open More → Scenarios and try Stress Sanctuary for a guided medal run.',
+    highlight: ['#ctrl-more', '#menu-scenario'],
+    waitFor: { type: 'scenario_start', count: 1 },
+    autoAdvance: true,
+    autoAdvanceDelay: 12000
   }
 ];
 
@@ -317,6 +335,14 @@ export class TutorialSystem {
 
     eventSystem.on(GameEvents.CREATURE_SPAWN, () => {
       this.trackSpawn();
+    });
+
+    eventSystem.on(GameEvents.FOOD_DROP, () => {
+      this._progressWaitFor('food_drop');
+    });
+
+    eventSystem.on(GameEvents.SCENARIO_STARTED, () => {
+      this._progressWaitFor('scenario_start');
     });
   }
 
@@ -731,6 +757,14 @@ export class TutorialSystem {
       case 'spawn':
         this.listeners.spawn += 1;
         if (this.listeners.spawn >= count) this._advanceSoon();
+        return true;
+      case 'food_drop':
+        this.listeners.food_drop = (this.listeners.food_drop || 0) + 1;
+        if (this.listeners.food_drop >= count) this._advanceSoon();
+        return true;
+      case 'scenario_start':
+        this.listeners.scenario_start = (this.listeners.scenario_start || 0) + 1;
+        if (this.listeners.scenario_start >= count) this._advanceSoon();
         return true;
       case 'keypress':
         if (waitFor.key && waitFor.key !== key) return false;

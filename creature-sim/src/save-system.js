@@ -912,7 +912,8 @@ export class SaveSystem {
       camera,
       lineageNames,
       metadata: saveData.metadata,
-      analytics: saveData.analytics
+      analytics: saveData.analytics,
+      saveWorld: data
     };
   }
 

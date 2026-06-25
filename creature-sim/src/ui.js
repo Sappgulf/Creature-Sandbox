@@ -328,6 +328,21 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     night_owl: 'Night Owl',
     social_butterfly: 'Social Butterfly'
   };
+  const temperament = creature.temperament;
+  const temperamentChips = temperament
+    ? [
+        { label: 'Bold', value: temperament.boldness },
+        { label: 'Social', value: temperament.sociability },
+        { label: 'Calm', value: temperament.calmness },
+        { label: 'Curious', value: temperament.curiosity }
+      ]
+        .map(
+          trait =>
+            `<span class="temperament-chip" title="${trait.label} ${Math.round(trait.value * 100)}%">${trait.label} ${trait.value >= 0.65 ? '↑' : trait.value <= 0.35 ? '↓' : '•'}</span>`
+        )
+        .join('')
+    : '';
+  const temperamentLine = temperamentChips ? `<div class="subline temperament-chips">${temperamentChips}</div>` : '';
   const quirkLine = showQuirks
     ? `<div class="subline quirks">Quirks: ${quirks.map(q => quirkLabelMap[q] || q).join(', ')}</div>`
     : '';
@@ -465,6 +480,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     </div>
     <div class="subline">${sublineParts.join(' · ')}</div>
     ${nameSuggestion ? `<div class="muted tiny">${nameSuggestion}</div>` : ''}
+    ${temperamentLine || ''}
     ${quirkLine || ''}
     ${quirkHint}
     ${stateTagMarkup}

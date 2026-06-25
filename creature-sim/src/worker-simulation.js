@@ -13,8 +13,14 @@ self.onerror = function (message, source, lineno, colno, error) {
 };
 
 import { World } from './world-core.js';
+import { Creature } from './creature.js';
+import { makeGenes } from './genetics.js';
+import { BiomeGenerator } from './perlin-noise.js';
+import { SaveSystem } from './save-system.js';
 import { packCreature, createCreatureBuffer, compactCreature } from './simulation-state.js';
 import { eventSystem } from './event-system.js';
+
+const saveSystem = new SaveSystem();
 
 let world = null;
 const _lastTime = performance.now();
@@ -153,6 +159,21 @@ self.onmessage = function (e) {
 
       case 'SET_TIME_SCALE':
         timeScale = data.scale;
+        break;
+
+      case 'IMPORT_STATE':
+        if (world && data?.saveWorld) {
+          saveSystem.deserialize(
+            { version: data.version || '2.0', world: data.saveWorld },
+            World,
+            Creature,
+            null,
+            makeGenes,
+            BiomeGenerator,
+            world
+          );
+          sendSnapshot();
+        }
         break;
 
       case 'RESET':

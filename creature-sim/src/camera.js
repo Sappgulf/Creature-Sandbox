@@ -241,7 +241,7 @@ export class Camera {
 
   _clampTargets() {
     if (!Number.isFinite(this.worldWidth) || !Number.isFinite(this.worldHeight)) return;
-    const margin = 200;
+    const margin = 80;
     const hw = this.viewportWidth / 2 / this.targetZoom;
     const hh = this.viewportHeight / 2 / this.targetZoom;
     const minX = -margin + hw;
@@ -254,7 +254,7 @@ export class Camera {
 
   _clampPosition() {
     if (!Number.isFinite(this.worldWidth) || !Number.isFinite(this.worldHeight)) return;
-    const margin = 200;
+    const margin = 80;
     const hw = this.viewportWidth / 2 / this.zoom;
     const hh = this.viewportHeight / 2 / this.zoom;
     const minX = -margin + hw;
@@ -266,7 +266,7 @@ export class Camera {
   }
 
   _limits(zoom = this.zoom) {
-    const margin = 200;
+    const margin = 80;
     const hw = this.viewportWidth / 2 / zoom;
     const hh = this.viewportHeight / 2 / zoom;
     return {

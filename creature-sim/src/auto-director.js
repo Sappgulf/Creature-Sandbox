@@ -174,6 +174,28 @@ export class AutoDirector {
         zoomMultiplier: 1.02
       });
     });
+
+    eventSystem.on(GameEvents.CREATURE_THROWN, data => {
+      if (!data || !gameState.watchModeEnabled) return;
+      this.focusOnEvent(GameEvents.CREATURE_THROWN, data.x, data.y, {
+        zoomMultiplier: 1.12,
+        creatureId: data.creatureId
+      });
+    });
+
+    eventSystem.on(GameEvents.SANDBOX_PROP_TRIGGERED, data => {
+      if (!data || !gameState.watchModeEnabled) return;
+      this.focusOnEvent(GameEvents.SANDBOX_PROP_TRIGGERED, data.x, data.y, {
+        zoomMultiplier: 1.06
+      });
+    });
+
+    eventSystem.on(GameEvents.GOD_MODE_ACTION, data => {
+      if (!data || !gameState.watchModeEnabled || !data.x || !data.y) return;
+      if (data.action === 'calm' || data.action === 'spawn') {
+        this.focusOnEvent(GameEvents.GOD_MODE_ACTION, data.x, data.y, { zoomMultiplier: 1.04 });
+      }
+    });
   }
 
   focusOnEvent(eventKey, x, y, { creatureId = null, zoomMultiplier = 1 } = {}) {

@@ -475,6 +475,11 @@ export class SimulationProxy {
     return this.getAnyCreatureById(id);
   }
 
+  importState(saveWorld, version = '2.0') {
+    if (!saveWorld || typeof saveWorld !== 'object') return;
+    this._send('IMPORT_STATE', { saveWorld, version });
+  }
+
   queryCreatures(x, y, radius = 120) {
     const radiusSq = radius * radius;
     const creatures = this.worldSnapshot?.creatures;

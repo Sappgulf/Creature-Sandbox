@@ -18,7 +18,7 @@ export function applyInputTouchMethods(InputManager) {
     const { x, y } = this.camera.screenToWorld(sx, sy);
 
     let nearest = null;
-    let minDist = 40 / this.camera.zoom;
+    let minDist = 48 / this.camera.zoom;
 
     for (const c of this.world.creatures) {
       const d = Math.hypot(c.x - x, c.y - y);
@@ -78,34 +78,37 @@ export function applyInputTouchMethods(InputManager) {
     switch (tool) {
       case 'food': {
         if (isDrag) {
-          this.world.addFood?.(x, y, 2.2, 'grass');
+          const food = this.world.addFood?.(x, y, 2.2, 'grass');
+          if (food) this.tools?.recordGodFood?.([food]);
         } else {
           if (this.tools?.scatterFood) this.tools.scatterFood(x, y, 12);
-          else this.world.addFood?.(x, y, 2.2, 'grass');
+          else {
+            const food = this.world.addFood?.(x, y, 2.2, 'grass');
+            if (food) this.tools?.recordGodFood?.([food]);
+          }
         }
         eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'food', x, y });
         break;
       }
       case 'calm': {
-        this.world.addCalmZone(
+        const zone = this.world.addCalmZone(
           x,
           y,
           CreatureAgentTuning.GOD_MODE.CALM_RADIUS * (isDrag ? 0.72 : 1),
           CreatureAgentTuning.GOD_MODE.CALM_DURATION * (isDrag ? 0.55 : 1),
           CreatureAgentTuning.GOD_MODE.CALM_STRENGTH
         );
+        this.tools?.recordCalmZone?.(zone);
         eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'calm', x, y });
         break;
       }
       case 'chaos': {
-        this.world.triggerChaosNudge(
-          CreatureAgentTuning.GOD_MODE.CHAOS_INTENSITY,
-          CreatureAgentTuning.GOD_MODE.CHAOS_DURATION
-        );
-        this.world.environment?.triggerWindBurst?.(
-          CreatureAgentTuning.GOD_MODE.CHAOS_INTENSITY,
-          CreatureAgentTuning.GOD_MODE.CHAOS_DURATION
-        );
+        const intensity = CreatureAgentTuning.GOD_MODE.CHAOS_INTENSITY;
+        const duration = CreatureAgentTuning.GOD_MODE.CHAOS_DURATION;
+        const snapshot = this.tools?.snapshotChaosBeforeNudge?.(intensity, duration);
+        this.world.triggerChaosNudge(intensity, duration);
+        this.world.environment?.triggerWindBurst?.(intensity, duration);
+        this.tools?.recordChaosNudge?.(snapshot);
         eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'chaos', x, y });
         break;
       }

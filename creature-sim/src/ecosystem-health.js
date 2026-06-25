@@ -1,4 +1,5 @@
 import { clamp } from './utils.js';
+import { geneValue, isPredatorFromGenes } from './creature-genetics-helpers.js';
 
 /** Ecosystem health configuration constants */
 const ECOSYSTEM_CONFIG = {
@@ -92,10 +93,10 @@ export class EcosystemHealth {
     const diets = [];
 
     for (const c of world.creatures) {
-      speeds.push(c.genes.speed);
-      senses.push(c.genes.sense);
-      metabolisms.push(c.genes.metabolism);
-      diets.push(c.genes.diet ?? (c.genes.predator ? 1 : 0));
+      speeds.push(geneValue(c.genes, 'speed', 0));
+      senses.push(geneValue(c.genes, 'sense', 0));
+      metabolisms.push(geneValue(c.genes, 'metabolism', 0));
+      diets.push(geneValue(c.genes, 'diet', c.genes?.predator ? 1 : 0));
     }
 
     const speedVar = this.variance(speeds);
@@ -121,8 +122,7 @@ export class EcosystemHealth {
     // Predator/prey balance
     let predators = 0;
     for (const c of world.creatures) {
-      const diet = c.genes.diet ?? (c.genes.predator ? 1 : 0);
-      if (diet > 0.7) predators++;
+      if (isPredatorFromGenes(c.genes)) predators++;
     }
     const predatorRatio = world.creatures.length > 0 ? predators / world.creatures.length : 0;
     const balanceScore = (1 - Math.abs(predatorRatio - ECOSYSTEM_CONFIG.TARGETS.PREDATOR_RATIO)) * 100;
@@ -206,8 +206,7 @@ export class EcosystemHealth {
 
       let predators = 0;
       for (const c of world.creatures) {
-        const diet = c.genes.diet ?? (c.genes.predator ? 1 : 0);
-        if (diet > 0.7) predators++;
+        if (isPredatorFromGenes(c.genes)) predators++;
       }
       const predatorRatio = world.creatures.length > 0 ? predators / world.creatures.length : 0;
       if (predatorRatio > 0.3) {

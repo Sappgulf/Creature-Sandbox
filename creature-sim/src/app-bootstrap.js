@@ -771,7 +771,9 @@ export async function initializeApp() {
   const applyLoadedState = (loaded, source = 'save') => {
     if (!loaded) return false;
 
-    if (loaded.world && loaded.world !== world) {
+    if (typeof world.importState === 'function' && loaded.saveWorld) {
+      world.importState(loaded.saveWorld, loaded.metadata?.version || '2.0');
+    } else if (loaded.world && loaded.world !== world) {
       if (typeof world.importState === 'function' && typeof loaded.world.exportState === 'function') {
         world.importState(loaded.world.exportState());
       } else {
@@ -2336,47 +2338,16 @@ export async function initializeApp() {
           Camera,
           makeGenes,
           BiomeGenerator,
-          canApplyLoadedWorld ? world : null
+          canApplyLoadedWorld ? null : world
         );
-        if (USE_SIM_WORKER && !canApplyLoadedWorld) {
-          const loadedWorld = loaded?.world;
-          const after = {
-            creatures: world.creatures?.length || 0,
-            food: world.food?.length || 0,
-            props: world.sandbox?.props?.length || 0,
-            t: Number(world.t?.toFixed?.(2) ?? world.t ?? 0),
-            playable: playableScenarios?.getSnapshot?.()?.scenario?.id ?? null,
-            moments: moments?.moments?.length ?? 0,
-            watchMode: !!gameState.watchModeEnabled,
-            metadata: data.metadata?.preview ?? null
-          };
-          const loadedCounts = {
-            creatures: loadedWorld?.creatures?.length || 0,
-            food: loadedWorld?.food?.length || 0,
-            props: loadedWorld?.sandbox?.props?.length || 0,
-            t: Number(loadedWorld?.t?.toFixed?.(2) ?? loadedWorld?.t ?? 0),
-            playable: loaded.metadata?.preview?.scenario?.id ?? null
-          };
-
-          return {
-            ok:
-              loadedCounts.creatures === before.creatures &&
-              loadedCounts.food >= Math.min(before.food, 1) &&
-              loadedCounts.props === before.props &&
-              loadedCounts.playable === before.playable &&
-              after.creatures === before.creatures &&
-              after.food === before.food &&
-              after.watchMode === before.watchMode &&
-              Number.isFinite(loadedCounts.t),
-            applied: false,
-            workerSnapshotOnly: true,
-            before,
-            loaded: loadedCounts,
-            after
-          };
-        }
 
         const applied = applyLoadedState(loaded, 'browser-smoke');
+        if (canApplyLoadedWorld && applied) {
+          for (let attempt = 0; attempt < 40; attempt++) {
+            await new Promise(resolve => window.setTimeout(resolve, 50));
+            if ((world.creatures?.length || 0) === before.creatures) break;
+          }
+        }
         const after = {
           creatures: world.creatures?.length || 0,
           food: world.food?.length || 0,
