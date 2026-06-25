@@ -13,7 +13,7 @@ self.onerror = function (message, source, lineno, colno, error) {
 };
 
 import { World } from './world-core.js';
-import { packCreature, createCreatureBuffer } from './simulation-state.js';
+import { packCreature, createCreatureBuffer, compactCreature } from './simulation-state.js';
 import { eventSystem } from './event-system.js';
 
 let world = null;
@@ -29,26 +29,6 @@ const BRIDGE_EVENTS = [
   'ui:notification',
   'achievement:unlocked'
 ];
-
-function compactCreature(creature) {
-  if (!creature || typeof creature !== 'object') return creature ?? null;
-  return {
-    id: creature.id ?? null,
-    x: Number(creature.x ?? 0),
-    y: Number(creature.y ?? 0),
-    age: Number(creature.age ?? 0),
-    energy: Number(creature.energy ?? 0),
-    alive: creature.alive !== false,
-    species: creature.species || creature.kind || null,
-    parentId: creature.parentId ?? null,
-    genes: {
-      predator: !!creature.genes?.predator,
-      diet: Number(creature.genes?.diet ?? 0),
-      speed: Number(creature.genes?.speed ?? 0),
-      sense: Number(creature.genes?.sense ?? 0)
-    }
-  };
-}
 
 function sanitizeBridgePayload(payload) {
   if (!payload || typeof payload !== 'object') return payload ?? null;

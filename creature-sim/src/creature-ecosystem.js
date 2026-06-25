@@ -102,8 +102,8 @@ export class CreatureEcosystemSystem {
       }
       case 'poke': {
         const intensity = clamp(payload.intensity ?? 0.4, 0, 1.2);
-        eco.curiosity = clamp(eco.curiosity + intensity * 12, 0, 100);
-        eco.stress = clamp(eco.stress + intensity * 6, 0, 100);
+        eco.curiosity = clamp(eco.curiosity + intensity * 14, 0, 100);
+        eco.stress = clamp(eco.stress + intensity * 4, 0, 100);
         break;
       }
       case 'rest': {
@@ -136,8 +136,8 @@ export class CreatureEcosystemSystem {
 
     if (panicked === 0 && stressed === 0 && calm === 0) return;
 
-    const stressDelta = panicked * 1.4 + stressed * 0.6 - calm * 0.4;
-    const stabilityDelta = calm * 0.5 - panicked * 0.6;
+    const stressDelta = panicked * 1.4 + stressed * 0.6 - calm * 0.55;
+    const stabilityDelta = calm * 0.65 - panicked * 0.6;
 
     eco.stress = clamp(eco.stress + stressDelta * dt, 0, 100);
     eco.stability = clamp(eco.stability + stabilityDelta * dt, 0, 100);

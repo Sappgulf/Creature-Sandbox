@@ -144,9 +144,8 @@ export class InputManager {
         e.preventDefault();
         if (e.shiftKey) {
           this.tools?.redo?.();
-        } else if (gameState.godModeActive && this.gameLoop?.undoGodMode) {
-          this.gameLoop.undoGodMode();
         } else {
+          // Canvas tool undo/redo (spawn, erase, food, props) lives in ToolController for all modes.
           this.tools?.undo?.();
         }
         break;

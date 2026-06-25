@@ -1,15 +1,11 @@
 import { clamp } from './utils.js';
+import { geneValue, isPredatorFromGenes } from './creature-genetics-helpers.js';
 
-export function geneValue(genes, key, fallback = 0) {
-  const value = genes?.[key];
-  if (typeof value === 'number') return value;
-  if (value && typeof value === 'object' && Number.isFinite(value.expressed)) return value.expressed;
-  return fallback;
-}
+export { geneValue };
 
 export function isPredatorCreature(creature) {
   if (!creature?.genes) return false;
-  return !!creature.genes.predator || geneValue(creature.genes, 'diet', 0) >= 0.7;
+  return isPredatorFromGenes(creature.genes);
 }
 
 export function collectGameplayMetrics(world, counters = {}) {

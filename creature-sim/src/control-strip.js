@@ -4,8 +4,7 @@
  */
 import { gameState } from './game-state.js';
 import { eventSystem } from './event-system.js';
-// battery-manager is initialized lazily via the bootstrap and signals
-// via the mobile-battery menu action; no direct import needed here.
+import { batteryManager } from './battery-manager.js';
 
 // Speed multipliers for cycling
 const SPEED_OPTIONS = [0.5, 1, 2, 4];
@@ -178,9 +177,65 @@ export class ControlStripController {
     this.applyMobilePrefs({ syncMenu: true });
     eventSystem.on('tool:changed', () => this.updateToolButtons());
 
-    // Battery manager — auto-detect low battery, sync the HUD indicator,
-    // and let the menu action broadcast user overrides.
     this._initBatteryManager();
+  }
+
+  _initBatteryManager() {
+    this._disposeBatteryListener = batteryManager.onChange(state => {
+      this._updateBatteryIndicator(state);
+    });
+
+    batteryManager
+      .init({
+        getPrefs: () => ({ batterySaver: this.mobilePrefs.batterySaver }),
+        setPrefs: next => {
+          if (typeof next?.batterySaver !== 'boolean') return;
+          this.mobilePrefs.batterySaver = next.batterySaver;
+          this.saveMobilePref('creature-mobile-battery', next.batterySaver);
+          this.applyMobilePrefs({ syncMenu: true });
+          this.updateSpeedButton();
+          this.syncMenuState();
+        },
+        notifications: this.uiController?.notifications
+      })
+      .catch(error => {
+        console.warn('Battery manager init failed:', error);
+      });
+
+    eventSystem.on('battery:saver-auto-changed', () => {
+      this.syncMenuState();
+    });
+  }
+
+  _updateBatteryIndicator(state = batteryManager.getState()) {
+    if (!this.batteryIndicatorEl) return;
+
+    if (!state?.supported) {
+      this.batteryIndicatorEl.classList.add('hidden');
+      this.batteryIndicatorEl.setAttribute('aria-hidden', 'true');
+      return;
+    }
+
+    const level = Number.isFinite(state.level) ? state.level : 1;
+    const pct = Math.round(level * 100);
+    const charging = !!state.charging;
+    const low = !charging && level < 0.2;
+
+    if (this.batteryPercentEl) {
+      this.batteryPercentEl.textContent = `${pct}%`;
+    }
+    if (this.batteryIconEl) {
+      this.batteryIconEl.textContent = charging ? '⚡' : low ? '🪫' : '🔋';
+    }
+
+    this.batteryIndicatorEl.classList.toggle('low', low);
+    this.batteryIndicatorEl.classList.toggle('saver-active', !!state.saverOn || this.mobilePrefs.batterySaver);
+    this.batteryIndicatorEl.classList.remove('hidden');
+    this.batteryIndicatorEl.setAttribute('aria-hidden', 'false');
+    this.batteryIndicatorEl.setAttribute(
+      'aria-label',
+      charging ? `Battery charging, ${pct}%` : `Battery ${pct}%${low ? ', low' : ''}`
+    );
   }
 
   loadMobilePrefs() {
@@ -645,8 +700,10 @@ export class ControlStripController {
       case 'mobile-battery':
         this.mobilePrefs.batterySaver = !this.mobilePrefs.batterySaver;
         this.saveMobilePref('creature-mobile-battery', this.mobilePrefs.batterySaver);
+        batteryManager.notifyUserOverride();
         this.applyMobilePrefs({ syncMenu: true });
         this.updateSpeedButton();
+        this._updateBatteryIndicator();
         this.syncMenuState();
         this.buzz(this.mobilePrefs.batterySaver ? [16, 24, 24] : 10);
         break;

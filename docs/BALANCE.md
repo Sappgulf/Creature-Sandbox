@@ -19,9 +19,9 @@ This document captures the current balance targets for Creature Sandbox’s fina
 - **Social rate:** 0.55 per second (day/night adjusted).
 - **Stress decay:** 7/sec while resting, 3.2/sec while calm.
 - **Overcrowd stress gain:** 3.8/sec (scaled by day/night and life stage).
-- **Hunger relief:** 1.6 per energy gained.
-- **Food bite energy:** 4.5 per bite.
-- **Rest zone recovery:** 7.5 energy/sec, 5.5 stress/sec.
+- **Hunger relief:** 1.85 per energy gained.
+- **Food bite energy:** 5.0 per bite.
+- **Rest zone recovery:** 8.5 energy/sec, 6.5 stress/sec.
 - **Mating cooldown:** 36 seconds.
 
 ## Intent

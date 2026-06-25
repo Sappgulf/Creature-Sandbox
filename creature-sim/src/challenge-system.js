@@ -4,6 +4,11 @@
 
 import { eventSystem, GameEvents } from './event-system.js';
 import { clamp } from './utils.js';
+import { geneValue, isPredatorFromGenes } from './creature-genetics-helpers.js';
+
+function isChallengeCreatureAlive(creature) {
+  return !!creature && creature.alive !== false;
+}
 
 export class ChallengeSystem {
   constructor({ sessionGoals = null, notifications = null, audio = null } = {}) {
@@ -34,7 +39,7 @@ export class ChallengeSystem {
         title: 'Population Boom',
         description: 'Reach {target} total creatures',
         target: () => 50 + Math.floor(Math.random() * 100),
-        check: (world, target) => world.creatures.length >= target,
+        check: (world, target) => world.creatures.filter(isChallengeCreatureAlive).length >= target,
         points: 50
       },
       {
@@ -43,7 +48,9 @@ export class ChallengeSystem {
         description: 'Maintain {target} predators for 60 seconds',
         target: () => 5 + Math.floor(Math.random() * 10),
         check: (world, target, challenge, dt) => {
-          const predCount = world.creatures.filter(c => c.genes.predator).length;
+          const predCount = world.creatures.filter(
+            c => isChallengeCreatureAlive(c) && isPredatorFromGenes(c.genes)
+          ).length;
           if (predCount >= target) {
             challenge.elapsed = (challenge.elapsed || 0) + dt;
             challenge.progress = clamp(challenge.elapsed / 60, 0, 1);
@@ -62,7 +69,9 @@ export class ChallengeSystem {
         description: 'Have {target} distinct hue groups',
         target: () => 5 + Math.floor(Math.random() * 5),
         check: (world, target) => {
-          const hues = new Set(world.creatures.map(c => Math.floor(c.genes.hue / 30)));
+          const hues = new Set(
+            world.creatures.filter(isChallengeCreatureAlive).map(c => Math.floor(geneValue(c.genes, 'hue', 0) / 30))
+          );
           return hues.size >= target;
         },
         points: 60
@@ -74,7 +83,7 @@ export class ChallengeSystem {
         description: 'Have {target} elder creatures alive',
         target: () => 3 + Math.floor(Math.random() * 5),
         check: (world, target) => {
-          return world.creatures.filter(c => c.ageStage === 'elder').length >= target;
+          return world.creatures.filter(c => isChallengeCreatureAlive(c) && c.ageStage === 'elder').length >= target;
         },
         points: 80
       },
@@ -104,7 +113,10 @@ export class ChallengeSystem {
         description: 'Evolve {target} creatures with speed > 1.5',
         target: () => 3 + Math.floor(Math.random() * 7),
         check: (world, target) => {
-          return world.creatures.filter(c => c.genes.speed > 1.5).length >= target;
+          return (
+            world.creatures.filter(c => isChallengeCreatureAlive(c) && geneValue(c.genes, 'speed', 0) > 1.5).length >=
+            target
+          );
         },
         points: 70
       },
@@ -114,7 +126,7 @@ export class ChallengeSystem {
         description: 'Evolve a creature with sense range > {target}',
         target: () => 150 + Math.floor(Math.random() * 100),
         check: (world, target) => {
-          return world.creatures.some(c => c.genes.sense >= target);
+          return world.creatures.some(c => isChallengeCreatureAlive(c) && geneValue(c.genes, 'sense', 0) >= target);
         },
         points: 65
       }

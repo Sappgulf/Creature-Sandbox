@@ -1,5 +1,24 @@
 import { CreatureConfig } from './creature-config.js';
 
+/**
+ * Read a numeric gene trait from haploid or diploid gene objects.
+ * @param {Record<string, unknown>|null|undefined} genes
+ * @param {string} key
+ * @param {number} [fallback=0]
+ * @returns {number}
+ */
+export function geneValue(genes, key, fallback = 0) {
+  const value = genes?.[key];
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (value && typeof value === 'object' && Number.isFinite(value.expressed)) return value.expressed;
+  return fallback;
+}
+
+export function isPredatorFromGenes(genes) {
+  if (!genes) return false;
+  return !!genes.predator || geneValue(genes, 'diet', 0) > 0.7;
+}
+
 export const NAME_SUGGESTIONS = [
   'Fizz',
   'Pebble',
@@ -25,7 +44,7 @@ export function pickNameSuggestion(seed) {
 }
 
 export function determineSenseType(genes) {
-  const r = genes.hue / 360;
+  const r = geneValue(genes, 'hue', 0) / 360;
   if (r < CreatureConfig.GENETICS.SENSE_TYPE_THRESHOLDS.NORMAL_MAX) return 'normal';
   if (r < CreatureConfig.GENETICS.SENSE_TYPE_THRESHOLDS.CHEMICAL_MAX) return 'chemical';
   if (r < CreatureConfig.GENETICS.SENSE_TYPE_THRESHOLDS.THERMAL_MAX) return 'thermal';
@@ -33,7 +52,7 @@ export function determineSenseType(genes) {
 }
 
 export function resolveDietRole(genes) {
-  const diet = genes?.diet ?? (genes?.predator ? 1.0 : 0.0);
+  const diet = geneValue(genes, 'diet', genes?.predator ? 1.0 : 0.0);
   if (diet > 0.7) {
     return 'predator-lite';
   }
@@ -44,19 +63,20 @@ export function resolveDietRole(genes) {
 }
 
 export function calculateAttractiveness(genes) {
+  const speed = geneValue(genes, 'speed', 1);
+  const sense = geneValue(genes, 'sense', 90);
+  const metabolism = geneValue(genes, 'metabolism', 1);
+  const aggression = geneValue(genes, 'aggression', 0.85);
   return (
-    genes.speed * 0.3 +
-    genes.sense * 0.002 +
-    (2 - genes.metabolism) * 0.2 +
-    (genes.predator ? genes.aggression * 0.2 : 1 - genes.metabolism * 0.3)
+    speed * 0.3 + sense * 0.002 + (2 - metabolism) * 0.2 + (genes?.predator ? aggression * 0.2 : 1 - metabolism * 0.3)
   );
 }
 
 export function pickDesiredTraits(genes) {
   return {
-    speed: genes.speed > 1.2,
-    sense: genes.sense > 100,
+    speed: geneValue(genes, 'speed', 1) > 1.2,
+    sense: geneValue(genes, 'sense', 90) > 100,
     health: true,
-    predator: genes.predator
+    predator: !!genes?.predator
   };
 }

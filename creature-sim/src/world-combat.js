@@ -5,13 +5,7 @@ import { rand, clamp, dist2 } from './utils.js';
 
 import { eventSystem, GameEvents } from './event-system.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
-
-function geneValue(genes, key, fallback = 0) {
-  const value = genes?.[key];
-  if (typeof value === 'number') return value;
-  if (value && typeof value === 'object' && Number.isFinite(value.expressed)) return value.expressed;
-  return fallback;
-}
+import { geneValue } from './creature-genetics-helpers.js';
 
 export class WorldCombat {
   constructor(world) {

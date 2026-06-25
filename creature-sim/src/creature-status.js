@@ -216,9 +216,9 @@ export class CreatureStatusSystem {
     const diseaseType = disease.metadata?.diseaseType || 'fever';
     const contagiousness = disease.metadata?.contagiousness || disease.contagiousness || 0.2;
 
-    const neighbors = world.creatureManager.queryCreatures(this.creature.x, this.creature.y, 30);
+    const neighbors = world.creatureManager?.queryCreatures?.(this.creature.x, this.creature.y, 30) || [];
 
-    if (!neighbors || neighbors.length <= 1) return;
+    if (neighbors.length <= 1) return;
 
     for (const other of neighbors) {
       if (other === this.creature || !other.alive) continue;

@@ -20,6 +20,20 @@
 
 ## [UNRELEASED]
 
+### 2026-06-25 — gameplay-performance-polish — Implemented
+
+- **Issues:** Browser smoke failed on startup because `ControlStripController` called missing `_initBatteryManager`, worker disease spread could throw when `creatureManager.queryCreatures` was absent, duplicate `POP_PRESSURE_MAX` key in agent tuning, and casual play needed snappier food/rest recovery plus clearer poke reactions; subsystem updates ran at full rate even when adaptive fidelity dropped.
+- **Root Causes:** Battery HUD wiring referenced a method that was never implemented after `battery-manager.js` landed, `SimulationProxy` only exposed `queryCreatures` on the root proxy (not `creatureManager`), a copy-paste left a duplicate tuning key, and `updateSubsystems` ignored `simulationFidelity` throttling already used in the sim step.
+- **Fixes:** Implemented `_initBatteryManager` / `_updateBatteryIndicator` with auto-saver hooks, delegated `creatureManager.queryCreatures` on the worker proxy, hardened disease spread with optional chaining, bumped hunger relief / bite energy / rest-zone recovery, made poke reactions more visible with lighter stress cost and stronger calm contagion, fidelity-throttled audio/heatmaps/session goals/game director updates, and added proxy/battery regressions.
+- **Verification:** `npm test` (pass); `npm run lint` (pass); `npm run build` (pass); `npm run check:bundle` (pass); `npm run smoke:browser` (pass).
+
+### 2026-06-25 — runtime-correctness-bug-hunt — Implemented
+
+- **Issues:** God-mode Ctrl+Z bypassed ToolController undo, worker spawn/erase tools threw or no-oped without `queryCreatures`, type-based spawn redo stored empty `genes: {}`, duplicate `AudioSystem.update()` shadowed adaptive music, diploid gene reads still leaked in analytics/challenges/audio pitch, and worker event bridging dropped hue.
+- **Root Causes:** `SimulationProxy` lacked spatial queries, `eraseCreatures` called `queryCreatures` without fallback, spawn undo stored `{}` instead of `null` for type spawns, a second `update()` method overwrote the first, several modules still compared raw gene objects to numbers, and `compactCreature` lived only inside the worker without hue extraction.
+- **Fixes:** Added `SimulationProxy.queryCreatures`, shared `_queryCreaturesNearby` in ToolController with distance-sorted matching, spawn undo feedback + type/predator filters, merged `AudioSystem.update()`, rolled `geneValue`/`isPredatorFromGenes` through analytics/challenges/audio/helpers, moved `compactCreature` to `simulation-state.js` with hue, removed dead god-mode undo stacks, and expanded regression tests for proxy undo, compactCreature, pack/unpack round-trip, InputManager Ctrl+Z, and GameLoop forwarding.
+- **Verification:** `npm test` (pass); `npm run lint` (pass); `npm run build` (pass); `npm run check:bundle` (pass).
+
 ### 2026-05-28 — fallback-proof-release-polish — Planned
 
 - **Issues:** Approved tranche 1-8 targets main-thread fallback pacing, scenario variance depth, one-command release proof, HUD/CLS regression coverage, startup bundle pressure, Vercel deployment evidence, Upgrade Hub run receipts, and mobile touch polish before commit/push.

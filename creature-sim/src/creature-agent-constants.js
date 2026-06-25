@@ -18,7 +18,7 @@ export const CreatureAgentTuning = {
       socialDrive: 35,
       stress: 18
     },
-    HUNGER_RELIEF_PER_ENERGY: 1.6,
+    HUNGER_RELIEF_PER_ENERGY: 1.85,
     STARVATION_DAMAGE_RATE: 2.5 // Damage per second when at 0 energy
   },
   DAY_NIGHT: {
@@ -111,7 +111,7 @@ export const CreatureAgentTuning = {
   },
   FOOD: {
     BITE_INTERVAL: 0.6,
-    BITE_ENERGY: 4.5,
+    BITE_ENERGY: 5.0,
     SCENT_RADIUS: 180,
     CONSUME_RANGE: 8
   },
@@ -134,7 +134,6 @@ export const CreatureAgentTuning = {
     POP_PRESSURE_START: 45,
     POP_PRESSURE_RANGE: 80,
     POP_PRESSURE_MAX: 0.35,
-    POP_PRESSURE_MAX: 0.35,
     MIN_WORLD_FOOD_FRACTION: 0.18,
     GOLDEN_FRUIT_SPAWN_CHANCE: 0.005 // Rarely spawns in patches
   },
@@ -142,8 +141,8 @@ export const CreatureAgentTuning = {
     COUNT: 5,
     RADIUS: 90,
     DETECT_RADIUS: 200,
-    ENERGY_RECOVERY: 7.5,
-    STRESS_RECOVERY: 5.5
+    ENERGY_RECOVERY: 8.5,
+    STRESS_RECOVERY: 6.5
   },
   NESTS: {
     RADIUS: 70,

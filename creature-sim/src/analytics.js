@@ -1,3 +1,5 @@
+import { geneValue } from './creature-genetics-helpers.js';
+
 export class AnalyticsTracker {
   constructor({ maxSamples = 600, sampleInterval = 0.5, useWorker = true } = {}) {
     this.samples = [];
@@ -306,11 +308,13 @@ export class AnalyticsTracker {
 
   _geneticDistance(g1, g2) {
     // Euclidean distance in normalized gene space
-    const speedDiff = (g1.speed - g2.speed) / 2.0;
-    const senseDiff = (g1.sense - g2.sense) / 200.0;
-    const metabDiff = (g1.metabolism - g2.metabolism) / 2.0;
-    const hueDiff = Math.min(Math.abs(g1.hue - g2.hue), 360 - Math.abs(g1.hue - g2.hue)) / 360.0;
-    const dietDiff = Math.abs((g1.diet || 0) - (g2.diet || 0));
+    const speedDiff = (geneValue(g1, 'speed', 1) - geneValue(g2, 'speed', 1)) / 2.0;
+    const senseDiff = (geneValue(g1, 'sense', 90) - geneValue(g2, 'sense', 90)) / 200.0;
+    const metabDiff = (geneValue(g1, 'metabolism', 1) - geneValue(g2, 'metabolism', 1)) / 2.0;
+    const hue1 = geneValue(g1, 'hue', 0);
+    const hue2 = geneValue(g2, 'hue', 0);
+    const hueDiff = Math.min(Math.abs(hue1 - hue2), 360 - Math.abs(hue1 - hue2)) / 360.0;
+    const dietDiff = Math.abs(geneValue(g1, 'diet', 0) - geneValue(g2, 'diet', 0));
 
     return Math.sqrt(
       speedDiff * speedDiff + senseDiff * senseDiff + metabDiff * metabDiff + hueDiff * hueDiff + dietDiff * dietDiff
@@ -329,11 +333,11 @@ export class AnalyticsTracker {
     };
 
     for (const g of genesList) {
-      avg.speed += g.speed;
-      avg.sense += g.sense;
-      avg.metabolism += g.metabolism;
-      avg.hue += g.hue;
-      avg.diet += g.diet || 0;
+      avg.speed += geneValue(g, 'speed', 1);
+      avg.sense += geneValue(g, 'sense', 90);
+      avg.metabolism += geneValue(g, 'metabolism', 1);
+      avg.hue += geneValue(g, 'hue', 0);
+      avg.diet += geneValue(g, 'diet', 0);
     }
 
     const n = genesList.length;

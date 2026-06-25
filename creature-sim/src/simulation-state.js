@@ -1,3 +1,5 @@
+import { geneValue } from './creature-genetics-helpers.js';
+
 /**
  * Simulation State - Defines the binary memory layout for creature synchronization.
  * This allows super-fast data transfer between the worker and main thread.
@@ -48,9 +50,9 @@ export function packCreature(creature, buffer, index) {
   buffer[o + LAYOUT.HEALTH] = creature.health;
   buffer[o + LAYOUT.AGE] = creature.age;
   buffer[o + LAYOUT.SIZE] = creature.size || 0;
-  buffer[o + LAYOUT.PREDATOR] = creature.genes.predator ? 1 : 0;
-  buffer[o + LAYOUT.DIET] = creature.genes.diet || 0;
-  buffer[o + LAYOUT.HUE] = creature.genes.hue || 0;
+  buffer[o + LAYOUT.PREDATOR] = creature.genes?.predator ? 1 : 0;
+  buffer[o + LAYOUT.DIET] = geneValue(creature.genes, 'diet', creature.genes?.predator ? 1 : 0);
+  buffer[o + LAYOUT.HUE] = geneValue(creature.genes, 'hue', 0);
   buffer[o + LAYOUT.ALIVE] = creature.alive ? 1 : 0;
 
   // Pack age stage
@@ -60,7 +62,33 @@ export function packCreature(creature, buffer, index) {
   else if (creature.ageStage === 'elder') stage = 3;
   buffer[o + LAYOUT.AGE_STAGE] = stage;
 
-  buffer[o + LAYOUT.LUCKY] = creature.genes._luckyMutation ? 1 : 0;
+  buffer[o + LAYOUT.LUCKY] = creature.genes?._luckyMutation ? 1 : 0;
+}
+
+/**
+ * Compact a creature for worker→main thread event bridging.
+ * @param {any} creature
+ * @returns {any}
+ */
+export function compactCreature(creature) {
+  if (!creature || typeof creature !== 'object') return creature ?? null;
+  return {
+    id: creature.id ?? null,
+    x: Number(creature.x ?? 0),
+    y: Number(creature.y ?? 0),
+    age: Number(creature.age ?? 0),
+    energy: Number(creature.energy ?? 0),
+    alive: creature.alive !== false,
+    species: creature.species || creature.kind || null,
+    parentId: creature.parentId ?? null,
+    genes: {
+      predator: !!creature.genes?.predator,
+      diet: geneValue(creature.genes, 'diet', creature.genes?.predator ? 1 : 0),
+      hue: geneValue(creature.genes, 'hue', 0),
+      speed: geneValue(creature.genes, 'speed', 0),
+      sense: geneValue(creature.genes, 'sense', 0)
+    }
+  };
 }
 
 /**

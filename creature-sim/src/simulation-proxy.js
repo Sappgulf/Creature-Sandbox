@@ -179,6 +179,10 @@ export class SimulationProxy {
     const self = this;
     this._isInternalUpdate = false;
 
+    // Worker snapshots expose creatures on the proxy root; code paths that
+    // query via world.creatureManager need the same spatial helper.
+    this.worldSnapshot.creatureManager.queryCreatures = (x, y, radius) => self.queryCreatures(x, y, radius);
+
     // Make autoBalanceSettings reactive so UI changes propagate to worker
     this.worldSnapshot.autoBalanceSettings = new Proxy(this.worldSnapshot.autoBalanceSettings, {
       set(target, prop, value) {
@@ -469,6 +473,23 @@ export class SimulationProxy {
 
   getCreatureById(id) {
     return this.getAnyCreatureById(id);
+  }
+
+  queryCreatures(x, y, radius = 120) {
+    const radiusSq = radius * radius;
+    const creatures = this.worldSnapshot?.creatures;
+    if (!Array.isArray(creatures)) return [];
+
+    const matches = [];
+    for (const creature of creatures) {
+      if (!creature || creature.alive === false) continue;
+      const dx = creature.x - x;
+      const dy = creature.y - y;
+      if (dx * dx + dy * dy <= radiusSq) {
+        matches.push(creature);
+      }
+    }
+    return matches;
   }
 
   getRuntimeDiagnostics() {

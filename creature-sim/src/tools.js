@@ -1,3 +1,5 @@
+import { isPredatorFromGenes } from './creature-genetics-helpers.js';
+
 export const ToolModes = Object.freeze({
   INSPECT: 'inspect',
   FOOD: 'food',
@@ -18,9 +20,10 @@ const ActionType = {
 };
 
 export class ToolController {
-  constructor(world, camera) {
+  constructor(world, camera, options = {}) {
     this.world = world;
     this.camera = camera;
+    this.onActionFeedback = options.onActionFeedback || null;
     this.mode = ToolModes.INSPECT;
     this.brushSize = 26;
     this.minBrushSize = 8;
@@ -53,6 +56,59 @@ export class ToolController {
 
   adjustBrushSize(delta) {
     return this.setBrushSize(this.brushSize + delta);
+  }
+
+  _notifyActionFeedback(message, type = 'warning') {
+    if (typeof this.onActionFeedback === 'function') {
+      this.onActionFeedback(message, type);
+    }
+  }
+
+  _hasExplicitGenes(genes) {
+    return genes != null && typeof genes === 'object' && Object.keys(genes).length > 0;
+  }
+
+  _matchesSpawnAction(creature, action) {
+    if (!creature || creature.alive === false) return false;
+    if (this._hasExplicitGenes(action.genes)) return true;
+    if (action.creatureType === 'predator' || action.predator) {
+      return isPredatorFromGenes(creature.genes);
+    }
+    if (
+      action.creatureType === 'herbivore' ||
+      action.creatureType === 'omnivore' ||
+      action.creatureType === 'aquatic'
+    ) {
+      return !isPredatorFromGenes(creature.genes);
+    }
+    return true;
+  }
+
+  _queryCreaturesNearby(x, y, radius, filterFn = null) {
+    let candidates = [];
+    if (typeof this.world.queryCreatures === 'function') {
+      candidates = this.world.queryCreatures(x, y, radius) || [];
+    } else if (Array.isArray(this.world.creatures)) {
+      const radiusSq = radius * radius;
+      candidates = this.world.creatures.filter(creature => {
+        if (!creature || creature.alive === false) return false;
+        const dx = creature.x - x;
+        const dy = creature.y - y;
+        return dx * dx + dy * dy <= radiusSq;
+      });
+    }
+
+    if (typeof filterFn === 'function') {
+      candidates = candidates.filter(filterFn);
+    }
+
+    candidates.sort((a, b) => {
+      const da = (a.x - x) ** 2 + (a.y - y) ** 2;
+      const db = (b.x - x) ** 2 + (b.y - y) ** 2;
+      return da - db;
+    });
+
+    return candidates;
   }
 
   apply(localX, localY, opts = {}) {
@@ -299,32 +355,49 @@ export class ToolController {
       genes
     });
 
-    if (creature) {
-      this.pushAction({
-        type: ActionType.SPAWN_CREATURE,
-        creatureId: creature.id,
-        x,
-        y,
-        type,
-        predator,
-        genes: { ...(genes || creature.genesRaw || creature.genes) }
-      });
+    // Record undo even when worker proxy returns null synchronously.
+    this.pushAction({
+      type: ActionType.SPAWN_CREATURE,
+      creatureId: creature?.id ?? null,
+      x,
+      y,
+      creatureType: type,
+      predator,
+      genes: this._hasExplicitGenes(genes) ? { ...genes } : null
+    });
+  }
+
+  _resolveSpawnedCreatureId(action) {
+    if (action?.creatureId != null) {
+      return action.creatureId;
     }
+
+    const nearby = this._queryCreaturesNearby(action.x, action.y, 20, candidate =>
+      this._matchesSpawnAction(candidate, action)
+    );
+    return nearby[0]?.id ?? null;
   }
 
   undoSpawnCreature(action) {
-    if (typeof this.world.killCreature === 'function') {
-      this.world.killCreature(action.creatureId);
-      return;
+    const targetId = this._resolveSpawnedCreatureId(action);
+    if (targetId != null && typeof this.world.killCreature === 'function') {
+      this.world.killCreature(targetId);
+      return true;
     }
 
-    const creature = this.world.getAnyCreatureById(action.creatureId);
+    const creature = targetId != null ? this.world.getAnyCreatureById?.(targetId) : null;
     if (creature) {
       creature.alive = false;
       creature.deathTime = this.world.t;
-      this.world.creatureManager.removeCreature(creature);
-      this.world.gridDirty = true;
+      this.world.creatureManager?.removeCreature?.(creature);
+      if (this.world.gridDirty !== undefined) {
+        this.world.gridDirty = true;
+      }
+      return true;
     }
+
+    this._notifyActionFeedback('Could not undo spawn — no matching creature found');
+    return false;
   }
 
   redoSpawnCreature(action) {
@@ -336,7 +409,7 @@ export class ToolController {
   }
 
   eraseCreatures(x, y) {
-    const candidates = this.world.queryCreatures(x, y, this.brushSize * 0.7);
+    const candidates = this._queryCreaturesNearby(x, y, this.brushSize * 0.7);
     if (candidates.length === 0) return;
 
     // Store creature data for undo
@@ -375,12 +448,15 @@ export class ToolController {
   undoEraseCreatures(action) {
     // Restore erased creatures
     for (const data of action.creatures) {
-      const creature = this.world.spawnManualWithGenes(data.x, data.y, data.genes);
+      const creature = this.world.spawnManualWithGenes?.(data.x, data.y, data.genes) ?? null;
       if (creature) {
         creature.energy = data.energy;
         creature.health = data.health;
         creature.age = data.age;
         data.restoredId = creature.id;
+      } else if (typeof this.world.spawnManualWithGenes === 'function') {
+        // Worker proxy restores asynchronously; snapshot will pick up the respawn.
+        data.restoredId = null;
       } else {
         data.restoredId = null;
       }
@@ -400,7 +476,7 @@ export class ToolController {
       let creature = targetId ? this.world.getAnyCreatureById(targetId) : null;
 
       if (!creature) {
-        const nearby = this.world.queryCreatures(data.x, data.y, 20);
+        const nearby = this._queryCreaturesNearby(data.x, data.y, 20);
         creature = nearby[0] || null;
       }
 
@@ -413,14 +489,14 @@ export class ToolController {
   }
 
   _spawnForAction(action) {
-    const genes = action.genes ? { ...action.genes } : null;
+    const genes = this._hasExplicitGenes(action.genes) ? { ...action.genes } : null;
 
     if (genes && typeof this.world.spawnManualWithGenes === 'function') {
       return this.world.spawnManualWithGenes(action.x, action.y, genes);
     }
 
-    if (typeof this.world.spawnCreatureType === 'function' && action.type) {
-      return this.world.spawnCreatureType(action.type, action.x, action.y);
+    if (typeof this.world.spawnCreatureType === 'function' && action.creatureType) {
+      return this.world.spawnCreatureType(action.creatureType, action.x, action.y);
     }
 
     return this.world.spawnManual(action.x, action.y, action.predator);

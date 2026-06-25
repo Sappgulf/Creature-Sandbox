@@ -60,7 +60,7 @@ export function setMood(creature, icon, duration = 0.6) {
 }
 
 export function reactToPoke(creature, { x = null, y = null } = {}) {
-  const intensity = clamp(0.35 + creature.personality.reactivity * 0.7, 0.3, 1.3);
+  const intensity = clamp(0.42 + creature.personality.reactivity * 0.75, 0.35, 1.4);
   const worldTime = creature._lastWorld?.t ?? 0;
   if (worldTime - creature._lastPokeAt < 0.75) {
     creature._pokeCombo += 1;
@@ -70,15 +70,15 @@ export function reactToPoke(creature, { x = null, y = null } = {}) {
   creature._lastPokeAt = worldTime;
 
   if (creature._pokeCombo >= 3) {
-    creature._triggerReaction('overreact', intensity + 0.4, 0.55);
-    creature.setMood('😵', 1.1);
+    creature._triggerReaction('overreact', intensity + 0.45, 0.62);
+    creature.setMood('😵', 1.2);
     creature._pokeCombo = 0;
   } else {
-    creature._triggerReaction('poke', intensity, 0.35);
+    creature._triggerReaction('poke', intensity, 0.45);
   }
   if (creature.emotions) {
-    creature.emotions.curiosity = clamp(creature.emotions.curiosity + 0.08, 0, 1);
-    creature.emotions.confidence = clamp(creature.emotions.confidence + 0.03, 0, 1);
+    creature.emotions.curiosity = clamp(creature.emotions.curiosity + 0.1, 0, 1);
+    creature.emotions.confidence = clamp(creature.emotions.confidence + 0.04, 0, 1);
   }
   if (x !== null && y !== null) {
     creature.dir = Math.atan2(y - creature.y, x - creature.x);

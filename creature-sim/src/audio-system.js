@@ -1,6 +1,8 @@
 // Audio System - Procedural sound generation using Web Audio API
 // Zero dependencies, lightweight, efficient
 
+import { geneValue, isPredatorFromGenes } from './creature-genetics-helpers.js';
+
 export class AudioSystem {
   constructor() {
     // Initialize AudioContext (requires user interaction first)
@@ -256,8 +258,8 @@ export class AudioSystem {
     try {
       const genes = creature.genes;
       const size = creature.size || 4;
-      const sense = genes.sense || 80;
-      const isPredator = genes.predator || (genes.diet && genes.diet > 0.7);
+      const sense = geneValue(genes, 'sense', 80);
+      const isPredator = isPredatorFromGenes(genes);
 
       // Base pitch based on size (smaller = higher pitch)
       const basePitch = 300 - size * 20; // 220-400 Hz range
@@ -468,9 +470,7 @@ export class AudioSystem {
 
     try {
       const pop = world.creatures.length;
-      const predatorCount = world.creatures.filter(
-        c => c && c.alive && c.genes && (c.genes.predator || (c.genes.diet && c.genes.diet > 0.7))
-      ).length;
+      const predatorCount = world.creatures.filter(c => c && c.alive && c.genes && isPredatorFromGenes(c.genes)).length;
       const tension = predatorCount / Math.max(1, pop); // 0-1 scale
 
       // Determine music type based on state
@@ -642,23 +642,6 @@ export class AudioSystem {
   }
 
   /**
-   * Update method called each frame - currently handles adaptive music
-   * @param {number} dt - Delta time (unused but kept for interface consistency)
-   */
-  update(_dt, world = null) {
-    // Adaptive music
-    if (world && this.musicEnabled) {
-      this.playAdaptiveMusic(world);
-    }
-    // Ambient biome sounds (throttled)
-    if (world && this.soundsEnabled) {
-      const biome = world.getBiomeAt?.(world.width / 2, world.height / 2)?.type || 'grassland';
-      this.playAmbientSound(biome, 0.3);
-      this.playEcosystemAmbient(world);
-    }
-  }
-
-  /**
    * Play a named sound effect (convenience method for game-loop compatibility)
    * @param {string} soundName - Name of the sound to play
    */
@@ -816,8 +799,8 @@ export class AudioSystem {
 
       let predators = 0;
       for (const c of world.creatures) {
-        const diet = c.genes?.diet ?? (c.genes?.predator ? 1 : 0);
-        if (diet > 0.7) predators++;
+        if (!c || c.alive === false) continue;
+        if (isPredatorFromGenes(c.genes)) predators++;
       }
       const predatorRatio = predators / population;
       const tension = predatorRatio;
@@ -1023,23 +1006,30 @@ export class AudioSystem {
     }
   }
 
-  // Update method - call this regularly to trigger ambient sounds and dynamic music
-  update(dt, world) {
-    if (!this.soundsEnabled || !this.ctx) return;
+  // Update method - adaptive music, ambient biome sounds, and dynamic music layers
+  update(dt, world = null) {
+    if (!this.ctx || !world) return;
 
-    this.ambientTimer += dt;
-    this.musicLayerTimer += dt;
-
-    // Play ambient sounds periodically
-    if (this.ambientTimer >= this.ambientInterval) {
-      this.ambientTimer = 0;
-      this.playEcosystemAmbient(world);
+    if (this.musicEnabled) {
+      this.playAdaptiveMusic(world);
     }
 
-    // Dynamic music layer crossfading based on tension
-    if (this.musicLayerTimer >= this.musicLayerUpdateInterval) {
-      this.musicLayerTimer = 0;
-      this._updateMusicLayers(world);
+    if (this.soundsEnabled) {
+      const biome = world.getBiomeAt?.(world.width / 2, world.height / 2)?.type || 'grassland';
+      this.playAmbientSound(biome, 0.3);
+
+      this.ambientTimer += dt;
+      this.musicLayerTimer += dt;
+
+      if (this.ambientTimer >= this.ambientInterval) {
+        this.ambientTimer = 0;
+        this.playEcosystemAmbient(world);
+      }
+
+      if (this.musicLayerTimer >= this.musicLayerUpdateInterval) {
+        this.musicLayerTimer = 0;
+        this._updateMusicLayers(world);
+      }
     }
   }
 
@@ -1053,8 +1043,8 @@ export class AudioSystem {
 
     let predators = 0;
     for (const c of world.creatures) {
-      const diet = c.genes?.diet ?? (c.genes?.predator ? 1 : 0);
-      if (diet > 0.7) predators++;
+      if (!c || c.alive === false) continue;
+      if (isPredatorFromGenes(c.genes)) predators++;
     }
     const predatorRatio = predators / population;
     const health = world?.ecoHealth?.metrics?.overall ?? 50;

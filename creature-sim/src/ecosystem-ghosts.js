@@ -4,6 +4,8 @@
  * Records death positions and renders faint spectral trails over time.
  */
 
+import { geneValue, isPredatorFromGenes } from './creature-genetics-helpers.js';
+
 export class GhostTrailSystem {
   constructor() {
     this.ghosts = [];
@@ -12,8 +14,8 @@ export class GhostTrailSystem {
   }
 
   recordDeath(x, y, creature) {
-    const hue = creature?.genes?.hue ?? 200;
-    const isPredator = creature?.genes?.predator || creature?.genes?.diet > 0.7;
+    const hue = geneValue(creature?.genes, 'hue', 200);
+    const isPredator = isPredatorFromGenes(creature?.genes);
     this.ghosts.push({
       x,
       y,

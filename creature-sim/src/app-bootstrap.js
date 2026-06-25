@@ -502,6 +502,10 @@ export async function initializeApp() {
     notifications = errorHandler.safeExecute(() => new NotificationSystem(), 'Notification system fallback', null);
   }
 
+  if (tools && notifications) {
+    tools.onActionFeedback = (message, type) => notifications.show(message, type, 1800);
+  }
+
   const heatmaps = errorHandler.safeExecute(
     () => {
       return new HeatmapSystem(world);
@@ -993,7 +997,8 @@ export async function initializeApp() {
         godToolSystem,
         seasonalEvents: seasonalEventsSystem,
         advancedAI,
-        godPowers
+        godPowers,
+        tools
       });
     },
     'Game loop initialization',

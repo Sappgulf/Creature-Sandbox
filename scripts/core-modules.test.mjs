@@ -48,8 +48,24 @@ import {
   determineSenseType,
   resolveDietRole,
   calculateAttractiveness,
-  pickDesiredTraits
+  pickDesiredTraits,
+  geneValue,
+  isPredatorFromGenes
 } from '../creature-sim/src/creature-genetics-helpers.js';
+import {
+  packCreature,
+  unpackCreature,
+  createCreatureBuffer,
+  compactCreature
+} from '../creature-sim/src/simulation-state.js';
+import { ToolController } from '../creature-sim/src/tools.js';
+import { Camera } from '../creature-sim/src/camera.js';
+import { InputManager } from '../creature-sim/src/input-manager.js';
+import { GameLoop } from '../creature-sim/src/game-loop.js';
+import { GhostTrailSystem } from '../creature-sim/src/ecosystem-ghosts.js';
+import { ChallengeSystem } from '../creature-sim/src/challenge-system.js';
+import { SimulationProxy } from '../creature-sim/src/simulation-proxy.js';
+import { batteryManager } from '../creature-sim/src/battery-manager.js';
 import { World } from '../creature-sim/src/world-core.js';
 import { Creature } from '../creature-sim/src/creature.js';
 import { AdvancedGenetics } from '../creature-sim/src/advanced-genetics.js';
@@ -1403,6 +1419,30 @@ test('creature-genetics-helpers: resolveDietRole returns herbivore/predator-lite
   assert.equal(resolveDietRole({ diet: 0.1 }), 'herbivore', 'low diet should be herbivore');
   assert.equal(resolveDietRole({ diet: 0.9 }), 'predator-lite', 'high diet should be predator-lite');
   assert.equal(resolveDietRole({ predator: true }), 'predator-lite', 'predator flag should return predator-lite');
+  assert.equal(
+    resolveDietRole({ diet: { allele1: 0.9, allele2: 0.9, expressed: 0.9 } }),
+    'predator-lite',
+    'diploid high diet should be predator-lite'
+  );
+});
+
+test('creature-genetics-helpers: geneValue reads diploid expressed traits', () => {
+  assert.equal(geneValue({ diet: { expressed: 0.42 } }, 'diet', 0), 0.42, 'should read expressed diet');
+  assert.equal(geneValue({ hue: { expressed: 180 } }, 'hue', 0), 180, 'should read expressed hue');
+  assert.equal(
+    isPredatorFromGenes({ diet: { expressed: 0.75 } }),
+    true,
+    'high expressed diet should count as predator'
+  );
+  assert.equal(
+    isPredatorFromGenes({ diet: { expressed: 0.7 } }),
+    false,
+    'diet exactly 0.7 should not count as predator'
+  );
+  assert.equal(geneValue(null, 'diet', 3), 3, 'null genes should return fallback');
+  assert.equal(geneValue({ diet: { expressed: NaN } }, 'diet', 2), 2, 'NaN expressed should return fallback');
+  assert.equal(geneValue({ diet: 0.25 }, 'diet', 1), 0.25, 'haploid numeric diet should pass through');
+  assert.equal(isPredatorFromGenes({ predator: 1 }), true, 'predator flag should count');
 });
 
 test('creature-genetics-helpers: calculateAttractiveness returns number based on genes', () => {
@@ -1892,6 +1932,323 @@ test('snapshot-tools: serializeSnapshot and parseSnapshot round-trip', () => {
   assert.equal(parsed.schema, snap.schema, 'parsed schema should match');
   assert.equal(parsed.population.alive, snap.population.alive, 'population.alive should round-trip');
   assert.equal(parsed.world.width, snap.world.width, 'world.width should round-trip');
+});
+
+test('simulation-state: packCreature encodes diploid diet and hue traits', () => {
+  const buffer = createCreatureBuffer(1);
+  packCreature(
+    {
+      id: 7,
+      x: 10,
+      y: 20,
+      dir: 0,
+      vx: 0,
+      vy: 0,
+      energy: 12,
+      health: 12,
+      age: 3,
+      size: 4,
+      alive: true,
+      ageStage: 'adult',
+      genes: {
+        predator: 0,
+        diet: { allele1: 0.2, allele2: 0.2, expressed: 0.2 },
+        hue: { allele1: 90, allele2: 110, expressed: 100 }
+      }
+    },
+    buffer,
+    0
+  );
+  assert.ok(Math.abs(buffer[11] - 0.2) < 1e-5, 'diet slot should use expressed value');
+  assert.ok(Math.abs(buffer[12] - 100) < 1e-5, 'hue slot should use expressed value');
+});
+
+test('simulation-state: compactCreature bridges diploid traits with finite numbers', () => {
+  const compacted = compactCreature({
+    id: 9,
+    x: 12,
+    y: 34,
+    genes: {
+      predator: 0,
+      diet: { expressed: 0.55 },
+      hue: { expressed: 140 },
+      speed: { expressed: 1.1 },
+      sense: { expressed: 95 }
+    }
+  });
+  assert.equal(compacted.genes.hue, 140, 'hue should bridge expressed value');
+  assert.ok(Number.isFinite(compacted.genes.diet), 'diet should be finite');
+  assert.ok(Number.isFinite(compacted.genes.speed), 'speed should be finite');
+  assert.ok(Number.isFinite(compacted.genes.sense), 'sense should be finite');
+});
+
+test('simulation-state: packCreature and unpackCreature round-trip stays finite', () => {
+  const buffer = createCreatureBuffer(1);
+  packCreature(
+    {
+      id: 3,
+      x: 1,
+      y: 2,
+      dir: 0,
+      vx: 0,
+      vy: 0,
+      energy: 10,
+      health: 10,
+      age: 1,
+      size: 4,
+      alive: true,
+      ageStage: 'adult',
+      genes: {
+        predator: 1,
+        diet: { expressed: 0.95 },
+        hue: { expressed: 210 }
+      }
+    },
+    buffer,
+    0
+  );
+  for (let i = 0; i < buffer.length; i++) {
+    assert.ok(Number.isFinite(buffer[i]), `buffer slot ${i} should be finite`);
+  }
+  const unpacked = unpackCreature(buffer, 0);
+  assert.ok(unpacked.genes.diet > 0.9, 'unpacked diet should preserve predator diet');
+  assert.ok(Math.abs(unpacked.genes.hue - 210) < 1e-5, 'unpacked hue should round-trip');
+});
+
+test('SimulationProxy: queryCreatures filters alive creatures in radius', () => {
+  const priorWindow = globalThis.window;
+  globalThis.window = priorWindow || {};
+  const proxy = new SimulationProxy(
+    class {
+      constructor() {
+        this.onmessage = null;
+        this.onerror = null;
+      }
+      postMessage() {}
+    }
+  );
+  proxy.worldSnapshot.creatures = [
+    { id: 1, x: 50, y: 50, alive: true, genes: { predator: false, diet: 0.1 } },
+    { id: 2, x: 52, y: 51, alive: false, genes: { predator: true, diet: 1 } },
+    { id: 3, x: 200, y: 200, alive: true, genes: { predator: false, diet: 0.1 } }
+  ];
+  const nearby = proxy.queryCreatures(50, 50, 10);
+  assert.equal(nearby.length, 1, 'should return one alive creature in radius');
+  assert.equal(nearby[0].id, 1);
+  globalThis.window = priorWindow;
+});
+
+test('SimulationProxy: creatureManager.queryCreatures delegates to proxy helper', () => {
+  const priorWindow = globalThis.window;
+  globalThis.window = priorWindow || {};
+  const proxy = new SimulationProxy(
+    class {
+      constructor() {
+        this.onmessage = null;
+        this.onerror = null;
+      }
+      postMessage() {}
+    }
+  );
+  proxy.worldSnapshot.creatures = [
+    { id: 4, x: 10, y: 10, alive: true, genes: { diet: 0.2 } },
+    { id: 5, x: 11, y: 10, alive: true, genes: { diet: 0.3 } }
+  ];
+  assert.equal(typeof proxy.creatureManager.queryCreatures, 'function');
+  const viaManager = proxy.creatureManager.queryCreatures(10, 10, 5);
+  const viaProxy = proxy.queryCreatures(10, 10, 5);
+  assert.deepEqual(
+    viaManager.map(creature => creature.id),
+    viaProxy.map(creature => creature.id)
+  );
+  globalThis.window = priorWindow;
+});
+
+test('batteryManager: getState returns stable defaults when unsupported', () => {
+  const state = batteryManager.getState();
+  assert.equal(typeof state.supported, 'boolean');
+  assert.equal(typeof state.level, 'number');
+  assert.equal(typeof state.charging, 'boolean');
+  assert.ok(Number.isFinite(state.level));
+});
+
+test('tools: spawnCreature records undo when worker proxy returns null', () => {
+  const world = new World(200, 200);
+  const camera = new Camera({
+    x: 100,
+    y: 100,
+    zoom: 1,
+    worldWidth: 200,
+    worldHeight: 200,
+    viewportWidth: 800,
+    viewportHeight: 600
+  });
+  const proxyWorld = {
+    spawnManualWithGenes() {
+      return null;
+    },
+    spawnCreatureType() {
+      return null;
+    },
+    spawnManual() {
+      return null;
+    },
+    queryCreatures: world.queryCreatures.bind(world),
+    creatures: world.creatures,
+    t: world.t
+  };
+  const tools = new ToolController(proxyWorld, camera);
+  tools.setMode('spawn');
+  tools.spawnCreature(50, 60, { type: 'herbivore', predator: false });
+  assert.equal(tools.undoStack.length, 1, 'spawn should push undo action without sync creature return');
+  assert.equal(tools.undoStack[0].creatureId, null, 'worker-style spawn should store null creature id');
+  assert.equal(tools.undoStack[0].genes, null, 'type-based spawn should not store empty genes object');
+});
+
+test('tools: undoSpawnCreature resolves proxy creature and killCreature', () => {
+  const world = new World(200, 200);
+  const herb = world.spawnCreatureType('herbivore', 80, 90);
+  const predator = world.spawnCreatureType('predator', 82, 91);
+  let killedId = null;
+  const proxyWorld = {
+    creatures: world.creatures,
+    queryCreatures: (x, y, radius) => world.queryCreatures(x, y, radius),
+    getAnyCreatureById: id => world.getAnyCreatureById(id),
+    killCreature(id) {
+      killedId = id;
+    },
+    t: world.t
+  };
+  const camera = new Camera({
+    x: 100,
+    y: 100,
+    zoom: 1,
+    worldWidth: 200,
+    worldHeight: 200,
+    viewportWidth: 800,
+    viewportHeight: 600
+  });
+  const tools = new ToolController(proxyWorld, camera);
+  tools.undoStack.push({
+    type: 'spawn_creature',
+    creatureId: null,
+    x: 80,
+    y: 90,
+    creatureType: 'herbivore',
+    predator: false,
+    genes: null
+  });
+  const undone = tools.undo();
+  assert.equal(undone, true, 'undo should succeed');
+  assert.equal(killedId, herb.id, 'undo should kill nearest matching herbivore spawn');
+  assert.notEqual(killedId, predator.id, 'undo should not kill nearby predator');
+});
+
+test('tools: eraseCreatures works without queryCreatures via fallback scan', () => {
+  const world = new World(200, 200);
+  const creature = world.spawnCreatureType('herbivore', 70, 80);
+  const snapshotWorld = {
+    creatures: world.creatures,
+    killCreature(id) {
+      const target = world.getAnyCreatureById(id);
+      if (target) target.alive = false;
+    },
+    t: world.t
+  };
+  const camera = new Camera({
+    x: 100,
+    y: 100,
+    zoom: 1,
+    worldWidth: 200,
+    worldHeight: 200,
+    viewportWidth: 800,
+    viewportHeight: 600
+  });
+  const tools = new ToolController(snapshotWorld, camera);
+  tools.eraseCreatures(70, 80);
+  assert.equal(tools.undoStack.length, 1, 'erase should record undo action');
+  assert.equal(creature.alive, false, 'erase should mark creature dead');
+});
+
+test('InputManager: Ctrl+Z routes to ToolController.undo', () => {
+  let undoCalls = 0;
+  const tools = {
+    undo() {
+      undoCalls += 1;
+      return true;
+    },
+    redo() {
+      return true;
+    }
+  };
+  const input = Object.create(InputManager.prototype);
+  input.tools = tools;
+  InputManager.prototype.handleCtrlKey.call(input, {
+    key: 'z',
+    ctrlKey: true,
+    shiftKey: false,
+    preventDefault() {}
+  });
+  assert.equal(undoCalls, 1, 'Ctrl+Z should call tools.undo');
+});
+
+test('GameLoop: undoGodMode and redoGodMode forward to ToolController', () => {
+  const calls = [];
+  const tools = {
+    undo() {
+      calls.push('undo');
+      return true;
+    },
+    redo() {
+      calls.push('redo');
+      return true;
+    }
+  };
+  const loop = Object.create(GameLoop.prototype);
+  loop.tools = tools;
+  assert.equal(GameLoop.prototype.undoGodMode.call(loop), true);
+  assert.equal(GameLoop.prototype.redoGodMode.call(loop), true);
+  assert.deepEqual(calls, ['undo', 'redo']);
+});
+
+test('ecosystem-ghosts: recordDeath classifies diploid predators and hue', () => {
+  const ghosts = new GhostTrailSystem();
+  ghosts.recordDeath(10, 20, {
+    size: 6,
+    genes: {
+      diet: { expressed: 0.8 },
+      hue: { expressed: 120 }
+    }
+  });
+  assert.equal(ghosts.ghosts.length, 1);
+  assert.equal(ghosts.ghosts[0].isPredator, true);
+  assert.equal(ghosts.ghosts[0].hue, 120);
+});
+
+test('challenge-system: speed and sense checks read diploid expressed values', () => {
+  const challengeSystem = new ChallengeSystem();
+  const templates = [];
+  for (let i = 0; i < 40; i++) {
+    templates.push(challengeSystem.generateChallenge(new World(200, 200)));
+  }
+  const speedChallenge = templates.find(item => item.type === 'speed_evolution');
+  const senseChallenge = templates.find(item => item.type === 'mega_sense');
+  assert.ok(speedChallenge, 'should eventually generate speed_evolution challenge');
+  assert.ok(senseChallenge, 'should eventually generate mega_sense challenge');
+
+  const world = new World(200, 200);
+  world.creatures = [
+    { alive: true, ageStage: 'adult', genes: { speed: { expressed: 1.6 }, sense: { expressed: 40 } } },
+    { alive: false, ageStage: 'adult', genes: { speed: { expressed: 2.0 }, sense: { expressed: 200 } } },
+    { alive: true, ageStage: 'adult', genes: { speed: { expressed: 1.0 }, sense: { expressed: 180 } } }
+  ];
+
+  assert.equal(speedChallenge.check(world, 1), true, 'speed challenge should count alive diploid fast creatures');
+  assert.equal(
+    senseChallenge.check(world, 150),
+    true,
+    'sense challenge should count alive diploid high-sense creatures'
+  );
 });
 
 test('snapshot-tools: parseSnapshot returns null for invalid input', () => {
