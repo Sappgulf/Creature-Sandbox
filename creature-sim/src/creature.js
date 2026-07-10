@@ -1765,8 +1765,8 @@ export class Creature {
           mate.goal.bondTimer = 0;
           mate.goal.bondAnnounced = false;
 
-          this.energy *= CreatureAgentTuning.MATING.ENERGY_COST_MULT;
-          mate.energy *= CreatureAgentTuning.MATING.ENERGY_COST_MULT;
+          this.energy = Math.max(0, this.energy - CreatureAgentTuning.MATING.ENERGY_COST_FLAT);
+          mate.energy = Math.max(0, mate.energy - CreatureAgentTuning.MATING.ENERGY_COST_FLAT);
 
           this.needs.socialDrive = clamp(this.needs.socialDrive - 45, 0, 100);
           mate.needs.socialDrive = clamp(mate.needs.socialDrive - 45, 0, 100);

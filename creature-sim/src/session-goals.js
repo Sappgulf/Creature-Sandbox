@@ -2,6 +2,24 @@ import { clamp } from './utils.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { collectGameplayMetrics, getObjectiveProgress } from './gameplay-objectives.js';
 
+// Goal types backed by metrics that accumulate over the whole session (not a
+// point-in-time snapshot like population/predator_count). These must be
+// measured relative to a baseline captured when the goal is generated —
+// otherwise a goal like "collect 80 food" instantly completes if the player
+// already collected that much before the goal existed.
+const CUMULATIVE_METRIC_KEY = {
+  predator_kills: 'predatorKills',
+  food_collected: 'foodCollected',
+  births: 'births',
+  survival_time: 'time',
+  manual_spawns: 'manualSpawns',
+  creature_throws: 'creatureThrows',
+  prop_triggers: 'propTriggers',
+  prop_places: 'propPlacements',
+  god_actions: 'godActions',
+  lineage_generation: 'maxGeneration'
+};
+
 const GOAL_POOL = [
   {
     id: 'population_push',
@@ -123,7 +141,8 @@ export class SessionGoals {
         target,
         description: def.getDescription(target),
         progress: 0,
-        completed: false
+        completed: false,
+        baseline: null
       };
     });
     eventSystem.emit(GameEvents.SESSION_GOAL_UPDATED, this.getGoals());
@@ -141,7 +160,8 @@ export class SessionGoals {
       target: Math.max(1, Number(goal.target) || 1),
       description: goal.description || 'Complete the objective',
       progress: clamp(Number(goal.progress) || 0, 0, 1),
-      completed: !!goal.completed
+      completed: !!goal.completed,
+      baseline: Number.isFinite(goal.baseline) ? goal.baseline : null
     }));
     eventSystem.emit(GameEvents.SESSION_GOAL_UPDATED, this.getGoals());
     if (announce && this.notifications?.show) {
@@ -247,6 +267,15 @@ export class SessionGoals {
   }
 
   _calculateProgress(goal, metrics) {
+    const metricKey = CUMULATIVE_METRIC_KEY[goal.type];
+    if (metricKey) {
+      const current = Number(metrics[metricKey] || 0);
+      if (goal.baseline == null) {
+        goal.baseline = current;
+      }
+      const delta = Math.max(0, current - goal.baseline);
+      return delta / Math.max(1, Number(goal.target) || 1);
+    }
     return getObjectiveProgress(goal.type, goal.target, metrics);
   }
 }

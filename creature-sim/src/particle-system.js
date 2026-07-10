@@ -1243,7 +1243,10 @@ export class ParticleSystem {
   }
 
   _drawParticleSpriteOrCircle(ctx, p, { scale = 1, shadowBlur = 0 } = {}) {
-    const useGlow = shadowBlur > 0 && this.maxParticles > 80;
+    // Skip the expensive shadowBlur glow once particle load is high — this
+    // previously checked the fixed maxParticles ceiling (always > 80), which
+    // meant the guard never actually engaged. Gate on current live count.
+    const useGlow = shadowBlur > 0 && this.particles.length <= 80;
     if (useGlow) {
       ctx.save();
       ctx.shadowColor = p.color;

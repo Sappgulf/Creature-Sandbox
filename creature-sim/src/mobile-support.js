@@ -276,6 +276,7 @@ export class MobileSupport {
     this.noteCameraOverride();
     this.camera.targetX -= (dx * this.panSensitivity) / this.camera.zoom;
     this.camera.targetY -= (dy * this.panSensitivity) / this.camera.zoom;
+    this.camera._clampTargets?.();
 
     this.lastPanCenter = {
       x: touch.clientX,
@@ -319,6 +320,7 @@ export class MobileSupport {
         this.camera.targetY -= (dy * this.panSensitivity) / this.camera.zoom;
       }
     }
+    this.camera._clampTargets?.();
 
     this.lastPinchDistance = distance;
     this.lastPanCenter = { x: centerX, y: centerY };
@@ -342,6 +344,7 @@ export class MobileSupport {
         this.camera.targetX = worldPos.x;
         this.camera.targetY = worldPos.y;
         this.camera.targetZoom = Math.min(this.camera.targetZoom * 1.5, 2.0);
+        this.camera._clampTargets?.();
 
         this.tapCount = 0;
       }

@@ -264,7 +264,9 @@ Creature.prototype._getMemoryAvoidance = function (tag) {
 
 Creature.prototype._updateSocialBehavior = function (world) {
   const socialRadius = this.genes.sense * 1.2;
-  const nearby = world.queryCreatures(this.x, this.y, socialRadius);
+  const nearby = world.creatureManager?.queryCreaturesFast
+    ? world.creatureManager.queryCreaturesFast(this.x, this.y, socialRadius)
+    : world.queryCreatures(this.x, this.y, socialRadius);
 
   // Update herd mates (herbivores only)
   if (!this.genes.predator) {
@@ -497,9 +499,11 @@ Creature.prototype._updateEmotions = function (dt, world) {
 
   // Fear increases near predators (herbivores only)
   if (!this.genes.predator) {
-    const nearbyPredators = world
-      .queryCreatures(this.x, this.y, this.genes.sense * 1.5)
-      .filter(c => c.genes.predator && c.alive);
+    const senseRadius = this.genes.sense * 1.5;
+    const nearbyAll = world.creatureManager?.queryCreaturesFast
+      ? world.creatureManager.queryCreaturesFast(this.x, this.y, senseRadius)
+      : world.queryCreatures(this.x, this.y, senseRadius);
+    const nearbyPredators = nearbyAll.filter(c => c.genes.predator && c.alive);
     em.fear = Math.min(1, em.fear + nearbyPredators.length * 0.1);
   } else {
     // Predators feel fear when wounded
@@ -515,7 +519,11 @@ Creature.prototype._updateEmotions = function (dt, world) {
     1
   );
   if (this.getQuirkMultiplier && world?.queryCreatures) {
-    const nearby = world.queryCreatures(this.x, this.y, 30).length;
+    const nearby = (
+      world.creatureManager?.queryCreaturesFast
+        ? world.creatureManager.queryCreaturesFast(this.x, this.y, 30)
+        : world.queryCreatures(this.x, this.y, 30)
+    ).length;
     if (nearby > 6) {
       const crowdMult = this.getQuirkMultiplier('stress_crowd');
       em.stress = clamp(em.stress + (nearby - 6) * 0.002 * crowdMult * dt * eventStress, 0, 1);

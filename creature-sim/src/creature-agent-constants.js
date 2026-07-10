@@ -132,7 +132,10 @@ export const CreatureAgentTuning = {
     DEPLETION_COOLDOWN: 14,
     DEPLETION_MULT: 0.45,
     POP_PRESSURE_START: 45,
-    POP_PRESSURE_RANGE: 80,
+    // Ramp scarcity all the way out to the mating hard cap (190) instead of
+    // saturating at 125, so food scarcity can actually pressure population
+    // growth as it approaches the cap rather than going flat well below it.
+    POP_PRESSURE_RANGE: 145,
     POP_PRESSURE_MAX: 0.35,
     MIN_WORLD_FOOD_FRACTION: 0.18,
     GOLDEN_FRUIT_SPAWN_CHANCE: 0.005 // Rarely spawns in patches
@@ -177,7 +180,10 @@ export const CreatureAgentTuning = {
     COOLDOWN: 36,
     RANGE: 18,
     BOND_TIME: 1.15,
-    ENERGY_COST_MULT: 0.7,
+    // Flat energy tax per mating, not a multiplier — a multiplier let
+    // well-fed creatures breed for a trivial ~7-10 energy while FOOD.BITE_ENERGY
+    // is 5.0, making reproduction effectively free relative to feeding.
+    ENERGY_COST_FLAT: 30,
     POPULATION_SOFT_CAP: 140,
     POPULATION_HARD_CAP: 190,
     OVERCROWD_COOLDOWN_MULT: 1.8,

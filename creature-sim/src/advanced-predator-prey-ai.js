@@ -89,21 +89,22 @@ export class AdvancedPredatorPreyAI {
   /**
    * Ambush strategy - wait and strike
    */
-  static ambushStrategy(predator, prey, _world) {
+  static ambushStrategy(predator, prey, world) {
+    const now = world?.t ?? Date.now() / 1000;
     if (!predator.ambushState) {
       predator.ambushState = {
         waiting: true,
-        waitStartTime: Date.now(),
+        waitStartTime: now,
         hidePosition: { x: predator.x, y: predator.y }
       };
     }
 
     const state = predator.ambushState;
-    const waitTime = Date.now() - state.waitStartTime;
+    const waitTime = now - state.waitStartTime;
     const preyDistance = Math.sqrt((prey.x - predator.x) ** 2 + (prey.y - predator.y) ** 2);
 
-    // Wait until prey is close
-    if (state.waiting && preyDistance < 60 && waitTime > 2000) {
+    // Wait until prey is close (waitTime in sim seconds)
+    if (state.waiting && preyDistance < 60 && waitTime > 2) {
       state.waiting = false;
       // Strike!
       return {
@@ -228,7 +229,7 @@ export class AdvancedPredatorPreyAI {
 
     switch (strategy) {
       case 'zigzag':
-        return this.zigzagEvasion(prey, closestPredator, dt);
+        return this.zigzagEvasion(prey, closestPredator, dt, world);
       case 'hide':
         return this.hideEvasion(prey, closestPredator, world);
       case 'group':
@@ -281,20 +282,20 @@ export class AdvancedPredatorPreyAI {
   /**
    * Zigzag evasion - erratic movement
    */
-  static zigzagEvasion(prey, predator, _dt) {
+  static zigzagEvasion(prey, predator, _dt, world) {
+    const now = world?.t ?? Date.now() / 1000;
     if (!prey.zigzagState) {
       prey.zigzagState = {
         direction: Math.random() * Math.PI * 2,
-        changeTime: Date.now(),
+        changeTime: now,
         zigzagCount: 0
       };
     }
 
     const state = prey.zigzagState;
-    const now = Date.now();
 
-    // Change direction every 0.5 seconds
-    if (now - state.changeTime > 500) {
+    // Change direction every 0.5 seconds of sim time
+    if (now - state.changeTime > 0.5) {
       state.direction += (Math.random() - 0.5) * Math.PI;
       state.changeTime = now;
       state.zigzagCount++;

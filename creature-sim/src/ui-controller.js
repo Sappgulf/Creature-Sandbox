@@ -5,7 +5,6 @@
 import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
 import { eventSystem, GameEvents } from './event-system.js';
-import { HudMenu } from './hud-menu.js';
 import { SANDBOX_PROP_TYPES } from './sandbox-props.js';
 import { clamp } from './utils.js';
 import { BehaviorConfig, setBehaviorWeights } from './behavior.js';
@@ -214,7 +213,6 @@ export class UIController {
    * Initialize UI event bindings
    */
   initialize() {
-    this.setupHudMenu();
     this.bindCoreControls();
 
     this.bindPropControls();
@@ -287,11 +285,6 @@ export class UIController {
     };
 
     window.addEventListener('creature:mobile-layout-change', sync);
-  }
-
-  setupHudMenu() {
-    this.hudMenu = new HudMenu({ handlers: this.boundHandlers });
-    this.hudMenu.initialize();
   }
 
   /**

@@ -116,7 +116,7 @@ export class CreatureBehaviorSystem {
     const diet = this.creature.genes.diet ?? (this.creature.genes.predator ? 1.0 : 0.0);
     const dietRole = this.creature.traits?.dietRole ?? 'herbivore';
     const energy = this.creature.energy;
-    const maxEnergy = this.creature.maxEnergy;
+    const maxEnergy = this.creature.maxEnergy || 100;
     const energyRatio = energy / maxEnergy;
 
     // Critical energy - prioritize any food source
@@ -256,7 +256,7 @@ export class CreatureBehaviorSystem {
 
       // Remember this hunting location
       if (world.memoryLearning) {
-        world.memoryLearning.rememberFood(this.creature, prey.x, prey.y, 0.5);
+        world.memoryLearning.rememberFood(this.creature, prey.x, prey.y, 0.5, world);
       }
     }
   }
@@ -281,7 +281,7 @@ export class CreatureBehaviorSystem {
    */
   selectOmnivoreTarget(world) {
     const energy = this.creature.energy;
-    const maxEnergy = this.creature.maxEnergy;
+    const maxEnergy = this.creature.maxEnergy || 100;
     const energyRatio = energy / maxEnergy;
 
     // Smart decision-making based on creature state
@@ -419,7 +419,7 @@ export class CreatureBehaviorSystem {
           if (nearbyFood.length > 0) {
             // Remember this food again (reinforcement)
             if (world.memoryLearning) {
-              world.memoryLearning.rememberFood(this.creature, remembered.x, remembered.y, 0.7);
+              world.memoryLearning.rememberFood(this.creature, remembered.x, remembered.y, 0.7, world);
             }
             return nearbyFood[0];
           }
@@ -473,7 +473,7 @@ export class CreatureBehaviorSystem {
 
     // Remember found food location
     if (best && world.memoryLearning) {
-      world.memoryLearning.rememberFood(this.creature, best.x, best.y, 0.6);
+      world.memoryLearning.rememberFood(this.creature, best.x, best.y, 0.6, world);
     }
 
     return best;

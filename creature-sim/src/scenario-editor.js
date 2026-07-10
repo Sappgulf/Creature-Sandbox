@@ -146,7 +146,20 @@ class ScenarioTemplate {
    */
   static fromJSON(data) {
     const scenario = new ScenarioTemplate();
-    Object.assign(scenario, data);
+    if (data && typeof data === 'object') {
+      // Merge one level deep for the known nested config blocks so partial
+      // JSON (e.g. an imported scenario that only overrides a few fields)
+      // doesn't wipe out sibling defaults like world.dayLength or
+      // objectives.failureConditions via a wholesale key replacement.
+      const nestedKeys = ['world', 'creatures', 'resources', 'events', 'objectives', 'rules', 'tutorial'];
+      for (const [key, value] of Object.entries(data)) {
+        if (nestedKeys.includes(key) && value && typeof value === 'object' && !Array.isArray(value)) {
+          scenario[key] = { ...scenario[key], ...value };
+        } else {
+          scenario[key] = value;
+        }
+      }
+    }
     return scenario;
   }
 }

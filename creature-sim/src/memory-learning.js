@@ -64,14 +64,15 @@ export class MemoryLearningSystem {
   /**
    * Remember a food location
    */
-  rememberFood(creature, x, y, quality = 0.5) {
+  rememberFood(creature, x, y, quality = 0.5, world = null) {
     const memory = this.getOrCreateMemory(creature);
+    const now = world?.t ?? Date.now() / 1000;
 
     // Check if location already known
     const existing = memory.foodLocations.find(loc => Math.abs(loc.x - x) < 20 && Math.abs(loc.y - y) < 20);
 
     if (existing) {
-      existing.lastSeen = Date.now();
+      existing.lastSeen = now;
       existing.visits++;
       existing.quality = (existing.quality + quality) / 2;
     } else {
@@ -79,7 +80,7 @@ export class MemoryLearningSystem {
         x,
         y,
         quality,
-        lastSeen: Date.now(),
+        lastSeen: now,
         visits: 1
       });
 
@@ -97,20 +98,21 @@ export class MemoryLearningSystem {
   /**
    * Remember a danger zone
    */
-  rememberDanger(creature, x, y, threat = 0.8) {
+  rememberDanger(creature, x, y, threat = 0.8, world = null) {
     const memory = this.getOrCreateMemory(creature);
+    const now = world?.t ?? Date.now() / 1000;
 
     const existing = memory.dangerZones.find(loc => Math.abs(loc.x - x) < 30 && Math.abs(loc.y - y) < 30);
 
     if (existing) {
-      existing.lastEncounter = Date.now();
+      existing.lastEncounter = now;
       existing.threat = Math.max(existing.threat, threat);
     } else {
       memory.dangerZones.push({
         x,
         y,
         threat,
-        lastEncounter: Date.now()
+        lastEncounter: now
       });
     }
 
@@ -119,7 +121,7 @@ export class MemoryLearningSystem {
       memory.traumaticEvents.push({
         type: 'predator_attack',
         severity: threat,
-        timestamp: Date.now(),
+        timestamp: now,
         recovered: false
       });
     }
@@ -128,20 +130,21 @@ export class MemoryLearningSystem {
   /**
    * Remember a safe zone
    */
-  rememberSafeZone(creature, x, y, safety = 0.7) {
+  rememberSafeZone(creature, x, y, safety = 0.7, world = null) {
     const memory = this.getOrCreateMemory(creature);
+    const now = world?.t ?? Date.now() / 1000;
 
     const existing = memory.safeZones.find(loc => Math.abs(loc.x - x) < 30 && Math.abs(loc.y - y) < 30);
 
     if (existing) {
-      existing.lastVisit = Date.now();
+      existing.lastVisit = now;
       existing.safety = Math.max(existing.safety, safety);
     } else {
       memory.safeZones.push({
         x,
         y,
         safety,
-        lastVisit: Date.now()
+        lastVisit: now
       });
     }
   }
@@ -149,14 +152,15 @@ export class MemoryLearningSystem {
   /**
    * Record predator encounter
    */
-  recordPredatorEncounter(creature, predator, escaped = false) {
+  recordPredatorEncounter(creature, predator, escaped = false, world = null) {
     const memory = this.getOrCreateMemory(creature);
+    const now = world?.t ?? Date.now() / 1000;
 
     memory.predatorEncounters.push({
       predatorId: predator.id,
       predatorType: predator.genes?.hue ?? 0,
       outcome: escaped ? 'escaped' : 'caught',
-      timestamp: Date.now()
+      timestamp: now
     });
 
     if (escaped) {
@@ -168,13 +172,13 @@ export class MemoryLearningSystem {
     }
 
     // Remember danger at current location
-    this.rememberDanger(creature, creature.x, creature.y, 0.9);
+    this.rememberDanger(creature, creature.x, creature.y, 0.9, world);
   }
 
   /**
    * Learn from hunting
    */
-  learnFromHunt(creature, success = false) {
+  learnFromHunt(creature, success = false, world = null) {
     const memory = this.getOrCreateMemory(creature);
 
     if (success) {
@@ -182,11 +186,12 @@ export class MemoryLearningSystem {
       memory.knowledgeLevel = Math.min(100, memory.knowledgeLevel + 1);
 
       // Remember hunting location
-      this.rememberFood(creature, creature.x, creature.y, 0.8);
+      this.rememberFood(creature, creature.x, creature.y, 0.8, world);
 
       // Learn time pattern
       if (!memory.timePatterns.bestFeedingTime) {
-        memory.timePatterns.bestFeedingTime = Date.now() % 86400000; // Time of day
+        const now = world?.t ?? Date.now() / 1000;
+        memory.timePatterns.bestFeedingTime = now % 86400; // Time of day (sim seconds)
       }
     } else {
       memory.failedHunts++;
@@ -196,7 +201,7 @@ export class MemoryLearningSystem {
   /**
    * Observe another creature's behavior
    */
-  observeBehavior(creature, otherCreature, behavior, effectiveness = 0.5) {
+  observeBehavior(creature, otherCreature, behavior, effectiveness = 0.5, world = null) {
     const memory = this.getOrCreateMemory(creature);
 
     // Young creatures and high-intelligence creatures learn better
@@ -210,7 +215,7 @@ export class MemoryLearningSystem {
       behavior,
       source: otherCreature.id,
       effectiveness,
-      observed: Date.now()
+      observed: world?.t ?? Date.now() / 1000
     });
 
     if (!memory.teachers.includes(otherCreature.id)) {
@@ -224,12 +229,13 @@ export class MemoryLearningSystem {
   /**
    * Get best remembered food location
    */
-  getBestFoodLocation(creature, currentX, currentY) {
+  getBestFoodLocation(creature, currentX, currentY, world = null) {
     const memory = this.getMemory(creature.id);
     if (!memory || memory.foodLocations.length === 0) return null;
 
-    // Filter out stale memories (>5 minutes old)
-    const fresh = memory.foodLocations.filter(loc => Date.now() - loc.lastSeen < 300000);
+    // Filter out stale memories (>5 minutes of sim time old)
+    const now = world?.t ?? Date.now() / 1000;
+    const fresh = memory.foodLocations.filter(loc => now - loc.lastSeen < 300);
 
     if (fresh.length === 0) return null;
 
@@ -257,10 +263,11 @@ export class MemoryLearningSystem {
   /**
    * Check if location is dangerous
    */
-  isDangerous(creature, x, y, threshold = 0.5) {
+  isDangerous(creature, x, y, threshold = 0.5, world = null) {
     const memory = this.getMemory(creature.id);
     if (!memory) return false;
 
+    const now = world?.t ?? Date.now() / 1000;
     for (const danger of memory.dangerZones) {
       const dx = danger.x - x;
       const dy = danger.y - y;
@@ -268,9 +275,9 @@ export class MemoryLearningSystem {
 
       if (dist < 50 && danger.threat > threshold) {
         // Recent danger is more concerning
-        const age = Date.now() - danger.lastEncounter;
-        if (age < 60000) {
-          // Within last minute
+        const age = now - danger.lastEncounter;
+        if (age < 60) {
+          // Within last minute of sim time
           return true;
         }
       }
@@ -326,7 +333,7 @@ export class MemoryLearningSystem {
 
     // Seek remembered food when hungry
     if (creature.energy < 25 && Math.random() < 0.1) {
-      const foodLoc = this.getBestFoodLocation(creature, creature.x, creature.y);
+      const foodLoc = this.getBestFoodLocation(creature, creature.x, creature.y, world);
       if (foodLoc) {
         creature.rememberedFoodTarget = foodLoc;
       }
@@ -341,18 +348,18 @@ export class MemoryLearningSystem {
     }
 
     // Decay memories over time
-    this.decayMemories(memory, dt);
+    this.decayMemories(memory, dt, world);
 
     // Recover from trauma
-    this.recoverFromTrauma(memory, dt);
+    this.recoverFromTrauma(memory, dt, world);
   }
 
   /**
    * Decay old memories
    */
-  decayMemories(memory, dt) {
-    const now = Date.now();
-    const decayThreshold = 600000; // 10 minutes
+  decayMemories(memory, dt, world = null) {
+    const now = world?.t ?? Date.now() / 1000;
+    const decayThreshold = 600; // 10 minutes of sim time
 
     // Decay food locations
     memory.foodLocations = memory.foodLocations.filter(loc => now - loc.lastSeen < decayThreshold);
@@ -367,12 +374,13 @@ export class MemoryLearningSystem {
   /**
    * Recover from traumatic events
    */
-  recoverFromTrauma(memory, _dt) {
+  recoverFromTrauma(memory, _dt, world = null) {
+    const now = world?.t ?? Date.now() / 1000;
     for (const trauma of memory.traumaticEvents) {
       if (trauma.recovered) continue;
 
-      const age = Date.now() - trauma.timestamp;
-      const recoveryTime = 120000; // 2 minutes
+      const age = now - trauma.timestamp;
+      const recoveryTime = 120; // 2 minutes of sim time
 
       if (age > recoveryTime) {
         trauma.recovered = true;

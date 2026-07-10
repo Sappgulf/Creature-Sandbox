@@ -459,6 +459,17 @@ export class GameLoop {
       clearInterval(this._watchdogInterval);
     }
     this._watchdogInterval = setInterval(() => {
+      // The loop intentionally parks itself (a single pending rAF, no work)
+      // while the tab is hidden, since rAF is throttled/paused by the browser
+      // anyway. Treat that as healthy instead of "stalled" — otherwise every
+      // 2s tick while backgrounded schedules another redundant rAF chain that
+      // all fire at once when the tab becomes visible again.
+      if (!this._isVisible) {
+        this._lastLoopTime = performance.now();
+        this._watchdogMisses = 0;
+        return;
+      }
+
       const now = performance.now();
       const elapsed = now - this._lastLoopTime;
 

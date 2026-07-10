@@ -21,9 +21,7 @@ const chunkMap = [
       '/src/ui-controller-game-mode.js',
       '/src/ui-controller-achievements.js',
       '/src/ui-controller-exports.js',
-      '/src/control-strip.js',
-      '/src/hud-menu.js',
-      '/src/menu-model.js'
+      '/src/control-strip.js'
     ]
   },
   {

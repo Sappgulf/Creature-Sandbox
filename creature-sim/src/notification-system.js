@@ -121,7 +121,9 @@ export class NotificationSystem {
       const lowest = this.notifications[lowestIndex];
       if (lowest && notification.priority > lowest.priority) {
         const [deferred] = this.notifications.splice(lowestIndex, 1, notification);
-        this.queue.unshift(deferred);
+        if (this.queue.length < 8) {
+          this.queue.unshift(deferred);
+        }
         this._announce(notification);
       } else if (this.queue.length < 8) {
         this.queue.push(notification);

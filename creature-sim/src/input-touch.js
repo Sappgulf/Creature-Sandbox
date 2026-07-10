@@ -21,6 +21,7 @@ export function applyInputTouchMethods(InputManager) {
     let minDist = 48 / this.camera.zoom;
 
     for (const c of this.world.creatures) {
+      if (!c.alive) continue;
       const d = Math.hypot(c.x - x, c.y - y);
       if (d < minDist) {
         minDist = d;

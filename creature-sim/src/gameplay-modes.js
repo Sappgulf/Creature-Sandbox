@@ -13,6 +13,7 @@ export const GAMEPLAY_MODES = [
       if (!world) return;
       world.randomDisasters = false;
       world.disasterCooldown = 9999;
+      world.disasterIntensity = 1;
       world.autoBalanceSettings.enabled = true;
       world.autoBalanceSettings.minPopulation = 40;
       world.autoBalanceSettings.targetPredatorRatio = 0.18;
@@ -34,6 +35,7 @@ export const GAMEPLAY_MODES = [
       if (!world) return;
       world.randomDisasters = true;
       world.disasterCooldown = 40;
+      world.disasterIntensity = 1;
       world.autoBalanceSettings.enabled = true;
       world.autoBalanceSettings.minPopulation = 36;
       world.autoBalanceSettings.targetPredatorRatio = 0.24;

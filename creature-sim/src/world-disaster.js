@@ -301,7 +301,7 @@ export class WorldDisaster {
 
     // Screen shake for intense disasters
     if (disaster.intensity > 1.5) {
-      this.world.screenShake = Math.min(this.world.screenShake || 0 + dt * 5, 10);
+      this.world.screenShake = Math.min((this.world.screenShake || 0) + dt * 5, 10);
     }
   }
 

@@ -301,6 +301,7 @@ export class CampaignSystem {
     this.stablePopulationTimer = 0;
     this.winterSurvived = false;
     this.diseaseSurvived = false;
+    this.maxPredatorKillsSeen = 0;
 
     this.loadProgress();
   }
@@ -392,6 +393,7 @@ export class CampaignSystem {
     this.stablePopulationTimer = 0;
     this.winterSurvived = false;
     this.diseaseSurvived = false;
+    this.maxPredatorKillsSeen = 0;
 
     // Initialize objective state
     this.activeObjectiveState = {
@@ -518,8 +520,15 @@ export class CampaignSystem {
       }
 
       case 'predator_kills': {
-        const predatorWithKills = aliveCreatures.find(c => c.genes?.predator && c.stats?.kills >= objective.target);
-        return !!predatorWithKills;
+        // Track the best kill count ever reached by any predator this level,
+        // including ones that have since died — otherwise the objective
+        // becomes permanently unwinnable once a qualifying predator dies.
+        for (const c of world.creatures) {
+          if (c.genes?.predator && Number(c.stats?.kills || 0) > this.maxPredatorKillsSeen) {
+            this.maxPredatorKillsSeen = c.stats.kills;
+          }
+        }
+        return this.maxPredatorKillsSeen >= objective.target;
       }
 
       case 'survive_disease': {

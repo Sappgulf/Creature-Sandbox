@@ -517,8 +517,10 @@ export class WorldEcosystem {
       actions.push('add_food');
     }
 
-    // Overcrowding
-    if (total > 50) {
+    // Overcrowding — align with the mating system's own soft cap so the
+    // blunt 10%-cull doesn't fight the reproduction cap and cause sawtooth
+    // population swings (mating still allows growth up to POPULATION_SOFT_CAP).
+    if (total > CreatureAgentTuning.MATING.POPULATION_SOFT_CAP) {
       actions.push('reduce_population');
     }
 
@@ -559,7 +561,7 @@ export class WorldEcosystem {
     if (predators.length > 0) {
       const toCull = predators[Math.floor(rand() * predators.length)];
       toCull.alive = false;
-      this.world.creatures.splice(this.world.creatures.indexOf(toCull), 1);
+      toCull.deathCause = toCull.deathCause || 'ecosystem_cull';
     }
   }
 
@@ -580,7 +582,7 @@ export class WorldEcosystem {
       const creature = sorted[i];
       if (creature.alive) {
         creature.alive = false;
-        this.world.creatures.splice(this.world.creatures.indexOf(creature), 1);
+        creature.deathCause = creature.deathCause || 'ecosystem_cull';
       }
     }
   }

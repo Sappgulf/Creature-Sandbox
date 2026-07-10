@@ -258,7 +258,7 @@ export class WorldCombat {
     // Trigger death effects
     if (ctx.attacker) {
       // Predator gets energy boost
-      ctx.attacker.energy = Math.min(ctx.attacker.energy + creature.energy * 0.3, ctx.attacker.maxHealth);
+      ctx.attacker.energy = Math.min(ctx.attacker.energy + creature.energy * 0.3, ctx.attacker.maxEnergy || 100);
     }
 
     // Notify systems
