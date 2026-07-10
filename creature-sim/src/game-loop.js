@@ -1511,7 +1511,7 @@ export class GameLoop {
           phylogenyList.innerHTML = '<span class="muted tiny">No lineage data yet</span>';
         }
       } else {
-        phylogenyList.innerHTML = '<span class="muted tiny">Computing...</span>';
+        phylogenyList.innerHTML = '<span class="muted tiny loading-text">Computing...</span>';
       }
     }
 
@@ -1532,7 +1532,7 @@ export class GameLoop {
         html += '</div>';
         speciesList.innerHTML = html;
       } else {
-        speciesList.innerHTML = '<span class="muted tiny">Analyzing genetic diversity...</span>';
+        speciesList.innerHTML = '<span class="muted tiny loading-text">Analyzing genetic diversity...</span>';
       }
     }
   }

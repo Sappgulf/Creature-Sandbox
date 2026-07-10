@@ -519,6 +519,11 @@ export class TutorialSystem {
       element.addEventListener('mouseleave', hideTooltip);
       element.addEventListener('focus', showTooltip);
       element.addEventListener('blur', hideTooltip);
+      // Clicking a control (e.g. one that opens a drawer/panel) keeps it
+      // focused without a mouseleave/blur ever firing, leaving the
+      // focus-triggered tooltip stuck floating on top of whatever just
+      // opened. Treat a click as an explicit "done hovering" signal.
+      element.addEventListener('click', hideTooltip);
 
       this._hoverListeners.push({ element, showTooltip, hideTooltip });
     }
