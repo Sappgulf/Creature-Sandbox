@@ -17,6 +17,27 @@ import { CampaignSystem } from '../creature-sim/src/campaign-system.js';
 import { GameplayModes } from '../creature-sim/src/gameplay-modes.js';
 import { NotificationSystem } from '../creature-sim/src/notification-system.js';
 import { fillSnapshotPool } from '../creature-sim/src/snapshot-pool.js';
+import { SimulationProxy } from '../creature-sim/src/simulation-proxy.js';
+import { SaveSystem } from '../creature-sim/src/save-system.js';
+
+function makeFakeWorkerProxy() {
+  const priorWindow = globalThis.window;
+  globalThis.window = priorWindow || {};
+  const sentMessages = [];
+  const proxy = new SimulationProxy(
+    class {
+      constructor() {
+        this.onmessage = null;
+        this.onerror = null;
+      }
+      postMessage(msg) {
+        sentMessages.push(msg);
+      }
+    }
+  );
+  globalThis.window = priorWindow;
+  return { proxy, sentMessages };
+}
 
 let passed = 0;
 let failed = 0;
@@ -280,6 +301,103 @@ test('snapshot-pool: growing the source reuses existing entries and adds new one
   assert.deepEqual(
     pool.map(p => p.v),
     [10, 20, 30]
+  );
+});
+
+// ----------------------------------------------------------------------------
+// simulation-proxy.js / worker-simulation.js / save-system.js: worker-mode
+// saves (the shipping default) silently dropped childrenOf, nests,
+// restZones, sandbox props, and disaster state because SimulationProxy
+// never exposed them — and reset _nextId to 1 on load, causing creature ID
+// collisions after any post-load reproduction. Fixed via a request/response
+// round trip (REQUEST_WORLD_EXTRAS / WORLD_EXTRAS) the proxy awaits before
+// save-system.js reads world.* fields.
+// ----------------------------------------------------------------------------
+test('simulation-proxy: getters default to safe empty values before any save-extras fetch', () => {
+  const { proxy } = makeFakeWorkerProxy();
+
+  assert.deepEqual(proxy.childrenOf, new Map());
+  assert.deepEqual(proxy.nests, []);
+  assert.deepEqual(proxy.restZones, []);
+  assert.equal(proxy._nextId, 1);
+  assert.deepEqual(proxy.sandbox.serialize(), []);
+  assert.equal(proxy.disaster.activeDisaster, null);
+});
+
+test('simulation-proxy: requestSaveExtras() sends REQUEST_WORLD_EXTRAS and populates getters from the response', () => {
+  const { proxy, sentMessages } = makeFakeWorkerProxy();
+  proxy.handleMessage({ data: { type: 'READY' } });
+
+  // Note: intentionally not awaiting the returned promise here — the cache
+  // it resolves from is populated synchronously inside handleMessage below,
+  // so reading the getters directly after that call is sufficient and
+  // avoids needing async support in this file's synchronous test runner.
+  proxy.requestSaveExtras();
+
+  assert.ok(
+    sentMessages.some(m => m.type === 'REQUEST_WORLD_EXTRAS'),
+    'should send a REQUEST_WORLD_EXTRAS message to the worker'
+  );
+
+  proxy.handleMessage({
+    data: {
+      type: 'WORLD_EXTRAS',
+      data: {
+        _nextId: 4521,
+        biomeSeed: 0.777,
+        chaosBaseLevel: 0.6,
+        restZones: [{ id: 'r1', x: 10, y: 20, radius: 50 }],
+        nests: [{ id: 'n1', x: 30, y: 40, radius: 60, capacity: 4, comfort: 0.5, createdAt: 12, createdBy: 7 }],
+        sandboxProps: [{ id: 'p1', type: 'bounce', x: 5, y: 5 }],
+        childrenOf: [{ parentId: 1, childIds: [2, 3] }],
+        disasterPending: [{ type: 'storm', delay: 5 }]
+      }
+    }
+  });
+
+  assert.equal(proxy._nextId, 4521, 'a real _nextId should survive the round trip, not reset to 1');
+  assert.equal(proxy.nests.length, 1);
+  assert.equal(proxy.restZones.length, 1);
+  assert.equal(proxy.sandbox.serialize().length, 1);
+  assert.deepEqual(proxy.childrenOf.get(1), new Set([2, 3]), 'childrenOf should reconstruct as a real Map of Sets');
+  assert.equal(proxy.disaster.pendingDisasters.length, 1);
+  assert.equal(proxy.biomeGenerator.seed, 0.777, 'biome seed should update for save reproducibility');
+});
+
+test('save-system: serialize() called after prepareForSave() captures worker-only fields (no more silent data loss)', () => {
+  const { proxy } = makeFakeWorkerProxy();
+  proxy.handleMessage({ data: { type: 'READY' } });
+  proxy.worldSnapshot.creatures = [];
+  proxy.worldSnapshot.food = [];
+  proxy.worldSnapshot.corpses = [];
+
+  proxy.requestSaveExtras();
+  proxy.handleMessage({
+    data: {
+      type: 'WORLD_EXTRAS',
+      data: {
+        _nextId: 999,
+        biomeSeed: 0.42,
+        chaosBaseLevel: 0.5,
+        restZones: [{ id: 'r1', x: 1, y: 1, radius: 10 }],
+        nests: [{ id: 'n1', x: 2, y: 2, radius: 10, capacity: 3, comfort: 0.4, createdAt: 0, createdBy: null }],
+        sandboxProps: [],
+        childrenOf: [{ parentId: 5, childIds: [6] }],
+        disasterPending: []
+      }
+    }
+  });
+
+  const saveSystem = new SaveSystem();
+  const saveData = saveSystem.serialize(proxy, { x: 0, y: 0, zoom: 1 }, null, null, {});
+
+  assert.equal(saveData.world._nextId, 999, 'save should capture the real _nextId, preventing ID collisions on reload');
+  assert.equal(saveData.world.nests.length, 1, 'save should capture nests instead of silently dropping them');
+  assert.equal(saveData.world.restZones.length, 1, 'save should capture rest zones instead of silently dropping them');
+  assert.equal(
+    saveData.world.childrenOf.length,
+    1,
+    'save should capture lineage (childrenOf) instead of silently dropping it'
   );
 });
 

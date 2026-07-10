@@ -147,7 +147,9 @@ class InteractiveChart {
       ctx.beginPath();
 
       series.forEach((value, index) => {
-        const x = (index / (series.length - 1)) * width;
+        // series.length - 1 is 0 for a lone data point, which would divide
+        // by zero (NaN) and silently break the path. Center single points.
+        const x = series.length > 1 ? (index / (series.length - 1)) * width : width / 2;
         const y = height - 30 - ((value - minValue) / valueRange) * (height - 60);
 
         if (index === 0) {

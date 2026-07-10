@@ -243,10 +243,11 @@ export class ProceduralSounds {
       const { attack = 0.01, decay = 0.1, sustain = 0.7, release = 0.3 } = envelope;
       const now = this.audioContext.currentTime;
 
+      const effectiveVolume = volume * this.volume;
       gainNode.gain.setValueAtTime(0, now);
-      gainNode.gain.linearRampToValueAtTime(volume, now + attack);
-      gainNode.gain.linearRampToValueAtTime(volume * sustain, now + attack + decay);
-      gainNode.gain.setValueAtTime(volume * sustain, now + duration - release);
+      gainNode.gain.linearRampToValueAtTime(effectiveVolume, now + attack);
+      gainNode.gain.linearRampToValueAtTime(effectiveVolume * sustain, now + attack + decay);
+      gainNode.gain.setValueAtTime(effectiveVolume * sustain, now + duration - release);
       gainNode.gain.linearRampToValueAtTime(0, now + duration);
     } else {
       gainNode.gain.setValueAtTime(volume * this.volume, this.audioContext.currentTime);

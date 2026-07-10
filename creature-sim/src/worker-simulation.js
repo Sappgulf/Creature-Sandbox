@@ -195,6 +195,44 @@ self.onmessage = function (e) {
         }
         break;
 
+      case 'REQUEST_WORLD_EXTRAS':
+        // Fields save-system.js's serialize() needs that aren't part of the
+        // regular per-tick STATE_UPDATE snapshot — SimulationProxy has no
+        // way to answer world.nests/restZones/sandbox/childrenOf/_nextId
+        // without this round trip, which previously meant every worker-mode
+        // save silently dropped them (and reset creature IDs on load).
+        if (world) {
+          const childrenOfMap = world.childrenOf instanceof Map ? world.childrenOf : new Map();
+          self.postMessage({
+            type: 'WORLD_EXTRAS',
+            data: {
+              _nextId: world.creatureManager?._nextId ?? world._nextId ?? 1,
+              biomeSeed: world.biomeGenerator ? world.biomeGenerator.seed : null,
+              chaosBaseLevel: world.chaosBaseLevel ?? 0.5,
+              restZones: (world.restZones || []).map(z => ({ id: z.id, x: z.x, y: z.y, radius: z.radius })),
+              nests: (world.nests || []).map(n => ({
+                id: n.id,
+                x: n.x,
+                y: n.y,
+                radius: n.radius,
+                capacity: n.capacity,
+                comfort: n.comfort,
+                createdAt: n.createdAt ?? 0,
+                createdBy: n.createdBy ?? null
+              })),
+              sandboxProps: world.sandbox?.serialize?.() ?? [],
+              childrenOf: Array.from(childrenOfMap.entries()).map(([parentId, childIds]) => ({
+                parentId,
+                childIds: Array.from(childIds)
+              })),
+              disasterPending: Array.isArray(world.disaster?.pendingDisasters)
+                ? world.disaster.pendingDisasters.map(item => ({ ...item }))
+                : []
+            }
+          });
+        }
+        break;
+
       case 'SET_PROP':
         if (world) {
           setDeepProp(world, data.path, data.value);

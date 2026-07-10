@@ -927,6 +927,9 @@ export class SaveSystem {
    * @returns {Promise<void>}
    */
   async saveToFile(world, camera, analytics, lineageTracker, filename = null) {
+    if (typeof world.prepareForSave === 'function') {
+      await world.prepareForSave();
+    }
     const saveData = this.serialize(world, camera, analytics, lineageTracker, {
       saveName: filename || `save_${Date.now()}`
     });
@@ -1020,19 +1023,18 @@ export class SaveSystem {
       try {
         this._autoSaveSlotIndex = (this._autoSaveSlotIndex % this._autoSaveSlotCount) + 1;
         const slotKey = `creature-sim-autosave-${this._autoSaveSlotIndex}`;
+        if (typeof world.prepareForSave === 'function') {
+          await world.prepareForSave();
+        }
         const saveData = this.serialize(world, camera, analytics, lineageTracker, {
           isAutoSave: true,
           slotNumber: this._autoSaveSlotIndex
         });
         const json = JSON.stringify(saveData);
-        localStorage.setItem(
-          'creature-sim-autosave-preview',
-          JSON.stringify({
-            timestamp: saveData.timestamp,
-            savedAt: saveData.savedAt,
-            metadata: saveData.metadata
-          })
-        );
+        // Write the actual save data first — if this throws (e.g. quota
+        // exceeded), the preview metadata below must not be touched, or it
+        // would describe a save that was never actually persisted while the
+        // previous (still-valid) save silently remains on disk.
         if (this.compressionEnabled && COMPRESSION_SUPPORTED) {
           const compressed = await compressJson(json);
           localStorage.setItem(slotKey, compressed);
@@ -1041,6 +1043,14 @@ export class SaveSystem {
         }
         // Also keep the legacy single autosave for backwards compatibility
         localStorage.setItem('creature-sim-autosave', json);
+        localStorage.setItem(
+          'creature-sim-autosave-preview',
+          JSON.stringify({
+            timestamp: saveData.timestamp,
+            savedAt: saveData.savedAt,
+            metadata: saveData.metadata
+          })
+        );
       } catch (err) {
         console.warn('Auto-save failed:', err);
       }
@@ -1111,6 +1121,9 @@ export class SaveSystem {
       throw new Error(`Invalid slot number: ${slotNumber}`);
     }
 
+    if (typeof world.prepareForSave === 'function') {
+      await world.prepareForSave();
+    }
     const saveData = this.serialize(world, camera, analytics, lineageTracker, {
       slotNumber,
       saveName: name || `Save ${slotNumber}`,

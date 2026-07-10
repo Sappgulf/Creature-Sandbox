@@ -176,6 +176,12 @@ export class SimulationProxy {
     // Initialize biome generator with a fixed seed if possible, or random
     this.biomeGenerator = new BiomeGenerator(0.123);
 
+    // Cache for fields save-system.js's serialize() needs that aren't part
+    // of the regular per-tick snapshot (nests, restZones, sandbox props,
+    // childrenOf, _nextId). Populated on demand via requestSaveExtras().
+    this._saveExtras = null;
+    this._saveExtrasResolvers = [];
+
     const self = this;
     this._isInternalUpdate = false;
 
@@ -235,6 +241,15 @@ export class SimulationProxy {
 
       case 'STATE_UPDATE':
         this.updateSnapshot(e.data);
+        break;
+
+      case 'WORLD_EXTRAS':
+        this._saveExtras = e.data.data;
+        if (this._saveExtras?.biomeSeed != null && this.biomeGenerator) {
+          this.biomeGenerator.seed = this._saveExtras.biomeSeed;
+        }
+        this._saveExtrasResolvers.forEach(resolve => resolve(this._saveExtras));
+        this._saveExtrasResolvers = [];
         break;
 
       case 'EVENT':
@@ -464,6 +479,54 @@ export class SimulationProxy {
   }
   get regions() {
     return this.worldSnapshot.regions;
+  }
+
+  // Fields backed by requestSaveExtras()/prepareForSave() — see WORLD_EXTRAS
+  // handler above. Safe to read before the first fetch (return empty
+  // defaults matching what a fresh world would have).
+  get childrenOf() {
+    const entries = this._saveExtras?.childrenOf || [];
+    return new Map(entries.map(entry => [entry.parentId, new Set(entry.childIds)]));
+  }
+  get nests() {
+    return this._saveExtras?.nests || [];
+  }
+  get restZones() {
+    return this._saveExtras?.restZones || [];
+  }
+  get _nextId() {
+    return this._saveExtras?._nextId ?? 1;
+  }
+  get chaosBaseLevel() {
+    return this._saveExtras?.chaosBaseLevel ?? 0.5;
+  }
+  get sandbox() {
+    const props = this._saveExtras?.sandboxProps || [];
+    return { props, serialize: () => props };
+  }
+  get disaster() {
+    return {
+      activeDisaster: this.worldSnapshot.activeDisaster ?? null,
+      pendingDisasters: this._saveExtras?.disasterPending || [],
+      disasterCooldown: this.worldSnapshot.disasterCooldown ?? 0
+    };
+  }
+
+  /**
+   * Ask the worker for the save-only fields (nests, restZones, sandbox
+   * props, childrenOf, _nextId, biome seed) not included in the regular
+   * per-tick snapshot, and cache them for the getters above. Must be
+   * awaited before calling save-system.js's serialize() against this proxy.
+   */
+  requestSaveExtras() {
+    return new Promise(resolve => {
+      this._saveExtrasResolvers.push(resolve);
+      this._send('REQUEST_WORLD_EXTRAS', {});
+    });
+  }
+
+  async prepareForSave() {
+    await this.requestSaveExtras();
   }
 
   // Search helper
