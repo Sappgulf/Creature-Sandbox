@@ -16,6 +16,7 @@ import { SessionGoals } from '../creature-sim/src/session-goals.js';
 import { CampaignSystem } from '../creature-sim/src/campaign-system.js';
 import { GameplayModes } from '../creature-sim/src/gameplay-modes.js';
 import { NotificationSystem } from '../creature-sim/src/notification-system.js';
+import { fillSnapshotPool } from '../creature-sim/src/snapshot-pool.js';
 
 let passed = 0;
 let failed = 0;
@@ -222,6 +223,64 @@ test('camera: _clampTargets keeps the pan target within world bounds', () => {
 
   assert.ok(camera.targetX < 1200, `targetX should be clamped near world bounds, got ${camera.targetX}`);
   assert.ok(camera.targetY > -200, `targetY should be clamped near world bounds, got ${camera.targetY}`);
+});
+
+// ----------------------------------------------------------------------------
+// worker-simulation.js: sendSnapshot() allocated a brand-new array and new
+// objects for food/corpses every tick. fillSnapshotPool reuses objects in
+// place instead — this guards that the reuse never leaves stale data behind.
+// ----------------------------------------------------------------------------
+test('snapshot-pool: reused entries are fully overwritten, not merged with stale fields', () => {
+  const pool = [];
+  fillSnapshotPool(pool, [{ x: 1, y: 1, extra: 'stale' }], (entry, src) => {
+    entry.x = src.x;
+    entry.y = src.y;
+    // Note: does not copy `extra` — simulates a real assign fn that only
+    // sets the fields it cares about.
+  });
+  // Reuse the same pool for a new source with different content and shape.
+  fillSnapshotPool(pool, [{ x: 5, y: 5 }], (entry, src) => {
+    entry.x = src.x;
+    entry.y = src.y;
+  });
+
+  assert.equal(pool.length, 1);
+  assert.equal(pool[0].x, 5);
+  assert.equal(pool[0].y, 5);
+});
+
+test('snapshot-pool: shrinking the source drops the extra pooled entries', () => {
+  const pool = [];
+  fillSnapshotPool(pool, [{ v: 1 }, { v: 2 }, { v: 3 }], (entry, src) => {
+    entry.v = src.v;
+  });
+  assert.equal(pool.length, 3);
+
+  fillSnapshotPool(pool, [{ v: 9 }], (entry, src) => {
+    entry.v = src.v;
+  });
+
+  assert.equal(pool.length, 1, `pool should shrink to match the new source length, got ${pool.length}`);
+  assert.equal(pool[0].v, 9);
+});
+
+test('snapshot-pool: growing the source reuses existing entries and adds new ones', () => {
+  const pool = [];
+  fillSnapshotPool(pool, [{ v: 1 }], (entry, src) => {
+    entry.v = src.v;
+  });
+  const firstEntryRef = pool[0];
+
+  fillSnapshotPool(pool, [{ v: 10 }, { v: 20 }, { v: 30 }], (entry, src) => {
+    entry.v = src.v;
+  });
+
+  assert.equal(pool.length, 3);
+  assert.equal(pool[0], firstEntryRef, 'existing entry object should be reused in place, not replaced');
+  assert.deepEqual(
+    pool.map(p => p.v),
+    [10, 20, 30]
+  );
 });
 
 console.log('\n=== SUMMARY ===');

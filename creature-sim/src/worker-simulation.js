@@ -19,6 +19,7 @@ import { BiomeGenerator } from './perlin-noise.js';
 import { SaveSystem } from './save-system.js';
 import { packCreature, createCreatureBuffer, compactCreature } from './simulation-state.js';
 import { eventSystem } from './event-system.js';
+import { fillSnapshotPool } from './snapshot-pool.js';
 
 const saveSystem = new SaveSystem();
 
@@ -26,6 +27,17 @@ let world = null;
 const _lastTime = performance.now();
 let isPaused = false;
 let timeScale = 1.0;
+
+// Reused per-tick snapshot buffers. sendSnapshot() runs every tick, and the
+// naive `.map()` allocated a brand-new array plus one new object per food
+// item and per corpse every single frame. postMessage's structured clone
+// still copies the data at call time either way, but reusing these objects
+// across ticks (rather than allocating fresh ones) removes that GC churn.
+// Safe because postMessage clones synchronously before this function is
+// called again, so mutating the pooled objects on the next tick can never
+// race with an in-flight clone.
+let _foodSnapshotPool = [];
+let _corpseSnapshotPool = [];
 
 // Internal event bridging
 const BRIDGE_EVENTS = [
@@ -224,14 +236,28 @@ function sendSnapshot() {
     packCreature(world.creatures[i], buffer, i);
   }
 
-  // Also send food and corpse data (as regular POJOs for now, fewer items)
+  // Also send food and corpse data (as regular POJOs for now, fewer items).
+  // These reuse pooled objects across ticks — see fillSnapshotPool above.
+  _foodSnapshotPool = fillSnapshotPool(_foodSnapshotPool, world.food, (entry, f) => {
+    entry.id = f.id;
+    entry.x = f.x;
+    entry.y = f.y;
+    entry.type = f.type;
+    entry.r = f.size || 1.5;
+  });
+  _corpseSnapshotPool = fillSnapshotPool(_corpseSnapshotPool, world.corpses, (entry, c) => {
+    entry.x = c.x;
+    entry.y = c.y;
+    entry.age = c.age;
+  });
+
   const snapshot = {
     type: 'STATE_UPDATE',
     t: world.t,
     count: count,
     creatureBuffer: buffer, // This will be "Transferred"
-    food: world.food.map(f => ({ id: f.id, x: f.x, y: f.y, type: f.type, r: f.size || 1.5 })),
-    corpses: world.corpses.map(c => ({ x: c.x, y: c.y, age: c.age })),
+    food: _foodSnapshotPool,
+    corpses: _corpseSnapshotPool,
     environment: {
       dayLight: world.environment.dayLight,
       dayPhase: world.environment.dayPhase,
