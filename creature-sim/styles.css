@@ -818,7 +818,7 @@ input[type="range"]:focus-visible {
   }
 
   .god-mode-tools button {
-    min-height: 38px;
+    min-height: 44px;
     padding: 7px 6px;
     border-radius: 10px;
     font-size: 11px;
@@ -878,7 +878,15 @@ input[type="range"]:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: relative;
   transition: background-color var(--transition-fast), transform var(--transition-fast);
+}
+.interaction-hint-close::after {
+  /* Expand the tappable area to ~44px without growing the visible circle,
+     which would look oversized in this otherwise slim banner. */
+  content: '';
+  position: absolute;
+  inset: -8px;
 }
 .interaction-hint-close:active {
   transform: scale(0.95);
@@ -2949,9 +2957,20 @@ body.mobile-focus-mode #watch-strip {
 }
 @media (max-width: 1100px) {
   #session-meta {
-    position: static;
-    width: auto;
-    margin: 10px;
+    /* Below 1100px this used to fall into normal document flow after the
+       full-viewport canvas, pushing it entirely below the (non-scrolling)
+       viewport — unreachable on virtually every phone and tablet. Keep it
+       fixed and scrollable-within-itself instead. */
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 64px);
+    right: 8px;
+    width: min(240px, calc(100vw - 16px));
+    /* Floored with max() so this never collapses to 0 if --vh hasn't been
+       initialized yet by mobile-support.js's resize handler (it's set to
+       0px until the first resize/init pass runs). */
+    max-height: max(200px, calc((var(--vh, 1vh) * 100) - 180px));
+    overflow-y: auto;
+    margin: 0;
   }
 }
 /* iOS Safe Area */
@@ -3865,8 +3884,8 @@ body.home-active #btn-show-inspector {
   color: var(--text-primary);
 }
 .drawer-close {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
