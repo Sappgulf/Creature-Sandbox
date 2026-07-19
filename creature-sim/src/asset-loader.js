@@ -429,7 +429,11 @@ export class AssetLoader {
     this.isLoaded = true;
     this.isLoading = false;
 
-    console.debug(`✅ Loaded ${this.assets.size} creature assets, ${this.spriteSheets.size} sprite sheets`);
+    // this.assets is a legacy single-SVG fallback map only populated when the
+    // sprite manifest fails to load; report it only when it's actually in use
+    // so a healthy boot doesn't log a confusing, always-zero "0 assets" line.
+    const legacySuffix = this.assets.size > 0 ? `, ${this.assets.size} legacy assets` : '';
+    console.debug(`✅ Loaded ${this.spriteSheets.size} sprite sheets${legacySuffix}`);
     return this.assets;
   }
 

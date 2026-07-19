@@ -5,8 +5,12 @@
  * The SHELL_ASSETS array is injected at build time by the Vite plugin
  * to include the hashed entry chunks (index-*.js, index-*.css).
  */
-const CACHE_SHELL = 'creature-sandbox-shell-v2';
-const CACHE_DYNAMIC = 'creature-sandbox-dynamic-v2';
+// Build-time injected version (populated by vite.config.js closeBundle hook,
+// derived from the deploy's git SHA) so every real deploy gets a fresh cache
+// name instead of reusing 'v2' forever and risking stale precached chunks.
+const CACHE_VERSION = self.__CACHE_VERSION__ || 'dev';
+const CACHE_SHELL = `creature-sandbox-shell-${CACHE_VERSION}`;
+const CACHE_DYNAMIC = `creature-sandbox-dynamic-${CACHE_VERSION}`;
 
 // Build-time injected assets (populated by vite.config.js closeBundle hook)
 const SHELL_ASSETS = self.__SHELL_ASSETS__ || ['/', '/index.html', '/styles.css'];

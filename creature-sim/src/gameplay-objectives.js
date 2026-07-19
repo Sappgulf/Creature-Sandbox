@@ -150,6 +150,9 @@ export function getObjectiveProgress(type, target, metrics = {}) {
       return metrics.variantsAlive / safeTarget;
     case 'lineage_generation':
       return metrics.maxGeneration / safeTarget;
+    case 'stress_cap':
+      // Progress climbs as average stress drops toward (and stays under) the cap.
+      return 1 - Math.max(0, (metrics.averageStress ?? metrics.stress ?? 0) - safeTarget) / 60;
     default:
       return 0;
   }

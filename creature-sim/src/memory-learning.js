@@ -54,7 +54,11 @@ export class MemoryLearningSystem {
 
       // Memory capacity
       maxMemories: 50 + Math.floor(creature.genes?.intelligence ?? 0) * 100,
-      memoryDecayRate: 0.001 // Memories fade over time
+      // Memories fade over time. At 0.001 a threat of 0.9 took ~35+ minutes
+      // to decay below the 0.1 cutoff -- effectively permanent within a
+      // normal play session. 0.02 brings that down to roughly 2 minutes, so
+      // "remembers danger" is something a player can actually observe.
+      memoryDecayRate: 0.02
     };
 
     this.creatureMemories.set(creature.id, memory);

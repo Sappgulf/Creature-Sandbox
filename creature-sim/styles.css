@@ -2110,6 +2110,7 @@ select:focus-visible,
   border-radius: var(--radius-md);
   padding: var(--space-md) var(--space-lg);
   min-width: 320px;
+  max-width: calc(100vw - 24px);
   z-index: 100;
   backdrop-filter: blur(12px);
   box-shadow: var(--shadow-medium);
@@ -4256,6 +4257,12 @@ body.home-active #btn-show-inspector {
     min-width: 40px;
     min-height: 40px;
     padding: 0 8px;
+  }
+  /* min-width would otherwise win over max-width below ~344px and
+     overflow both edges of the viewport since the HUD is centered. */
+  #campaign-progress {
+    min-width: 0;
+    width: calc(100vw - 24px);
   }
 }
 /* === LOADING SPINNER === */

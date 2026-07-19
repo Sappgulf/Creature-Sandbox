@@ -68,7 +68,7 @@ const chunkMap = [
   },
   {
     name: 'vendor-effects',
-    paths: ['/src/particle-system.js', '/src/visual-effects.js', '/src/procedural-sounds.js', '/src/audio-system.js']
+    paths: ['/src/particle-system.js', '/src/visual-effects.js', '/src/audio-system.js']
   },
   {
     name: 'vendor-creature-render',
@@ -105,24 +105,6 @@ function copyRuntimeAssets() {
       });
       fs.copyFileSync(path.join(appRoot, 'manifest.json'), path.join(outDir, 'manifest.json'));
 
-      // Copy and patch service worker with hashed entry assets
-      const swSrc = path.join(appRoot, 'sw.js');
-      const swDest = path.join(outDir, 'sw.js');
-      if (fs.existsSync(swSrc)) {
-        const assetsDir = path.join(outDir, 'assets');
-        const shellAssets = ['/', '/index.html', '/styles.css'];
-        if (fs.existsSync(assetsDir)) {
-          const files = fs.readdirSync(assetsDir);
-          const entryJs = files.find(f => f.startsWith('index-') && f.endsWith('.js'));
-          const entryCss = files.find(f => f.startsWith('index-') && f.endsWith('.css'));
-          if (entryJs) shellAssets.push(`/assets/${entryJs}`);
-          if (entryCss) shellAssets.push(`/assets/${entryCss}`);
-        }
-        let swContent = fs.readFileSync(swSrc, 'utf8');
-        swContent = swContent.replace('self.__SHELL_ASSETS__', JSON.stringify(shellAssets));
-        fs.writeFileSync(swDest, swContent);
-      }
-
       const sha =
         process.env.VERCEL_GIT_COMMIT_SHA ||
         process.env.GITHUB_SHA ||
@@ -135,6 +117,35 @@ function copyRuntimeAssets() {
         path.join(outDir, 'build-info.json'),
         `${JSON.stringify({ sha, generatedAt: new Date().toISOString() }, null, 2)}\n`
       );
+
+      // Copy and patch service worker with hashed shell assets + a
+      // build-specific cache version, so a stale worker never precaches a
+      // mismatched module graph and every real deploy invalidates old caches.
+      const swSrc = path.join(appRoot, 'sw.js');
+      const swDest = path.join(outDir, 'sw.js');
+      if (fs.existsSync(swSrc)) {
+        const assetsDir = path.join(outDir, 'assets');
+        const shellAssets = ['/', '/index.html', '/styles.css'];
+        if (fs.existsSync(assetsDir)) {
+          const files = fs.readdirSync(assetsDir);
+          const entryJs = files.find(f => f.startsWith('index-') && f.endsWith('.js'));
+          const entryCss = files.find(f => f.startsWith('index-') && f.endsWith('.css'));
+          if (entryJs) shellAssets.push(`/assets/${entryJs}`);
+          if (entryCss) shellAssets.push(`/assets/${entryCss}`);
+          // vendor-* chunks (manualChunks above) and the simulation worker
+          // script are part of the initial module graph, not on-demand
+          // feature panels (gene-editor, debug-console, etc.) — precache
+          // those too so a cold offline load doesn't 404 on them.
+          const coreChunks = files.filter(
+            f => (f.startsWith('vendor-') || f.startsWith('worker-simulation-')) && f.endsWith('.js')
+          );
+          for (const chunk of coreChunks) shellAssets.push(`/assets/${chunk}`);
+        }
+        let swContent = fs.readFileSync(swSrc, 'utf8');
+        swContent = swContent.replace('self.__SHELL_ASSETS__', JSON.stringify(shellAssets));
+        swContent = swContent.replace('self.__CACHE_VERSION__', JSON.stringify(sha.slice(0, 12)));
+        fs.writeFileSync(swDest, swContent);
+      }
     }
   };
 }

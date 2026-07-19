@@ -11,7 +11,11 @@ export function applyUiGodModeMethods(UIController) {
       domCache.get('godToolChaos'),
       domCache.get('godToolSpawn'),
       domCache.get('godToolRemove'),
-      domCache.get('godToolProp')
+      domCache.get('godToolProp'),
+      domCache.get('godToolBless'),
+      domCache.get('godToolCurse'),
+      domCache.get('godToolAttract'),
+      domCache.get('godToolRepel')
     ];
 
     if (godExitBtn) godExitBtn.addEventListener('click', this.boundHandlers.onGodModeExit);
@@ -70,7 +74,11 @@ export function applyUiGodModeMethods(UIController) {
       chaos: 'Chaos',
       spawn: 'Spawn',
       prop: 'Prop',
-      remove: 'Remove'
+      remove: 'Remove',
+      bless: 'Bless',
+      curse: 'Curse',
+      attract: 'Attract',
+      repel: 'Repel'
     };
     const via = source === 'hotkey' ? ' (hotkey)' : '';
     this.notifications.show(`✨ ${labels[tool] || tool}${via}`, 'info', changed ? 900 : 700);
@@ -86,7 +94,11 @@ export function applyUiGodModeMethods(UIController) {
       domCache.get('godToolChaos'),
       domCache.get('godToolSpawn'),
       domCache.get('godToolRemove'),
-      domCache.get('godToolProp')
+      domCache.get('godToolProp'),
+      domCache.get('godToolBless'),
+      domCache.get('godToolCurse'),
+      domCache.get('godToolAttract'),
+      domCache.get('godToolRepel')
     ];
 
     if (panel) {
@@ -123,7 +135,11 @@ export function applyUiGodModeMethods(UIController) {
           chaos: '3 Chaos: purple pulse preview. Tap once, then watch recovery.',
           spawn: '4 Spawn: small placement preview. Places the selected creature type.',
           prop: '5 Prop: violet placement preview. Uses the selected sandbox prop.',
-          remove: '6 Remove: red eraser preview. Removes the nearest creature or prop.'
+          remove: '6 Remove: red eraser preview. Removes the nearest creature or prop.',
+          bless: 'Bless: heals and energizes creatures near the tap.',
+          curse: 'Curse: weakens and drains energy from creatures near the tap.',
+          attract: 'Attract: pulls nearby creatures toward the tap.',
+          repel: 'Repel: pushes nearby creatures away from the tap.'
         };
         hint.textContent = hints[gameState.godModeTool] || 'Tap world to use selected tool. Tap Done to return.';
       }

@@ -100,12 +100,26 @@ export class AdvancedPredatorPreyAI {
     }
 
     const state = predator.ambushState;
+
+    // Re-arm after a strike: the predator repositions and hides again instead
+    // of going permanently inert once `waiting` flips false.
+    if (!state.waiting) {
+      const rearmDelay = 4; // sim seconds to reset after a strike
+      if (now - (state.strikeTime ?? now) < rearmDelay) {
+        return null;
+      }
+      state.waiting = true;
+      state.waitStartTime = now;
+      state.hidePosition = { x: predator.x, y: predator.y };
+    }
+
     const waitTime = now - state.waitStartTime;
     const preyDistance = Math.sqrt((prey.x - predator.x) ** 2 + (prey.y - predator.y) ** 2);
 
     // Wait until prey is close (waitTime in sim seconds)
     if (state.waiting && preyDistance < 60 && waitTime > 2) {
       state.waiting = false;
+      state.strikeTime = now;
       // Strike!
       return {
         x: prey.x,
@@ -435,19 +449,26 @@ export class AdvancedPredatorPreyAI {
   }
 
   /**
-   * Apply fatigue from chase
+   * Apply fatigue from a chase: drains energy over time and, once low,
+   * applies a 'fatigue' status (consumed as a speedBoost penalty in
+   * creature.js) so long chases visibly slow the predator down and give
+   * prey a real chance to escape.
    */
   static applyFatigue(creature, intensity, dt) {
     const fatigueRate = intensity * 0.5 * dt;
-    creature.energy -= fatigueRate;
+    creature.energy = Math.max(0, creature.energy - fatigueRate);
 
-    // High fatigue reduces speed
+    let penalty = 0;
     if (creature.energy < 15) {
-      creature.fatigueSpeedPenalty = 0.7;
+      penalty = 0.3;
     } else if (creature.energy < 25) {
-      creature.fatigueSpeedPenalty = 0.85;
+      penalty = 0.15;
+    }
+
+    if (penalty > 0) {
+      creature.applyStatus?.('fatigue', { duration: 1.5, metadata: { penalty } });
     } else {
-      creature.fatigueSpeedPenalty = 1;
+      creature.removeStatus?.('fatigue');
     }
   }
 }

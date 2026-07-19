@@ -594,6 +594,7 @@ export class AchievementSystem {
       align-items: center;
       gap: ${compactToast ? '8px' : '15px'};
       animation: ${avoidPanelLane ? 'panelToastIn' : 'slideInRight'} 0.3s ease-out;
+      animation-fill-mode: both;
       min-width: ${compactToast ? '0' : '300px'};
       max-width: ${compactToast ? 'min(300px, calc(100vw - 24px))' : '420px'};
       min-height: ${compactToast ? '42px' : 'auto'};
@@ -654,6 +655,7 @@ export class AchievementSystem {
     setTimeout(
       () => {
         notification.style.animation = `${avoidPanelLane ? 'panelToastOut' : 'slideOutRight'} 0.3s ease-out`;
+        notification.style.animationFillMode = 'both';
         setTimeout(() => {
           notification.remove();
         }, 300);

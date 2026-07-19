@@ -834,6 +834,11 @@ export class CreatureBehaviorSystem {
       if (strategyResult?.speedBoost) {
         this.creature.speedBoost = strategyResult.speedBoost;
       }
+      // Active pursuit tires the predator; ambush/patience (waiting, not
+      // moving fast) shouldn't drain energy the same way a real chase does.
+      if (strategyResult?.strategy === 'chase' || strategyResult?.strategy === 'intercept') {
+        AdvancedPredatorPreyAI.applyFatigue(this.creature, 1, dt);
+      }
     }
 
     // Pack hunting coordination

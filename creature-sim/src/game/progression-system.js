@@ -1,7 +1,7 @@
 const STORAGE_KEY = 'creature-sandbox-progression-v1';
 
 const DEFAULT_UNLOCKS = Object.freeze({
-  tools: ['inspect', 'food', 'spawn', 'erase', 'prop', 'calm', 'chaos'],
+  tools: ['inspect', 'food', 'spawn', 'erase', 'prop', 'calm', 'chaos', 'grab', 'bless', 'curse', 'attract', 'repel'],
   props: ['bounce', 'spring', 'calm'],
   biomes: ['grassland', 'forest'],
   creatureVariants: ['herbivore', 'omnivore', 'predator'],

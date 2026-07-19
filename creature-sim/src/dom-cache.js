@@ -72,6 +72,10 @@ export class DOMCache {
     this.cacheElement('god-tool-spawn', 'godToolSpawn');
     this.cacheElement('god-tool-prop', 'godToolProp');
     this.cacheElement('god-tool-remove', 'godToolRemove');
+    this.cacheElement('god-tool-bless', 'godToolBless');
+    this.cacheElement('god-tool-curse', 'godToolCurse');
+    this.cacheElement('god-tool-attract', 'godToolAttract');
+    this.cacheElement('god-tool-repel', 'godToolRepel');
 
     // Feature panel
     this.cacheElement('features-panel', 'featuresPanel');

@@ -495,6 +495,7 @@ export class TutorialSystem {
 
       const showTooltip = () => {
         if (this.tooltipsDismissed.has(selector)) return;
+        clearTimeout(tooltip._hideTimer);
         const rect = element.getBoundingClientRect();
         tooltip.style.display = 'block';
         tooltip.style.left = `${rect.left + rect.width / 2 - tooltip.offsetWidth / 2}px`;
@@ -508,7 +509,8 @@ export class TutorialSystem {
       const hideTooltip = () => {
         tooltip.style.opacity = '0';
         tooltip.style.transform = 'translateY(4px)';
-        setTimeout(() => {
+        clearTimeout(tooltip._hideTimer);
+        tooltip._hideTimer = setTimeout(() => {
           if (tooltip.style.opacity === '0') {
             tooltip.style.display = 'none';
           }
@@ -535,7 +537,8 @@ export class TutorialSystem {
     if (tooltip) {
       tooltip.style.opacity = '0';
       tooltip.style.transform = 'translateY(4px)';
-      setTimeout(() => {
+      clearTimeout(tooltip._hideTimer);
+      tooltip._hideTimer = setTimeout(() => {
         tooltip.style.display = 'none';
       }, 150);
     }
@@ -638,29 +641,48 @@ export class TutorialSystem {
       color: rgba(226, 232, 240, 0.9);
     `;
 
+    // "Next" and "Skip Tutorial" are deliberately styled very differently
+    // (size, weight, position) rather than as two same-sized adjacent
+    // buttons — same-sized adjacent buttons made it easy to misclick "Next"
+    // repeatedly while intending to dismiss the tutorial via "Skip".
     const actions = overlay.querySelector('#tutorial-actions');
     actions.style.cssText = `
       display: flex;
-      gap: 8px;
-      justify-content: flex-end;
+      gap: 16px;
+      justify-content: space-between;
+      align-items: center;
       flex-wrap: wrap;
       margin-top: 14px;
     `;
 
-    const buttons = overlay.querySelectorAll('#tutorial-actions button');
-    buttons.forEach((btn, index) => {
-      btn.style.cssText = `
-        margin: 0;
-        padding: 8px 12px;
-        border-radius: 10px;
-        border: 1px solid ${index === 0 ? 'rgba(74, 222, 128, 0.35)' : 'rgba(255,255,255,0.12)'};
-        background: ${index === 0 ? 'linear-gradient(135deg, #4ade80, #22c55e)' : 'rgba(255,255,255,0.05)'};
-        color: #f8fafc;
-        cursor: pointer;
-        font-size: 12px;
-        font-weight: 600;
-      `;
-    });
+    const nextBtn = overlay.querySelector('#tutorial-next');
+    nextBtn.style.cssText = `
+      margin: 0;
+      order: 2;
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(74, 222, 128, 0.35);
+      background: linear-gradient(135deg, #4ade80, #22c55e);
+      color: #f8fafc;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+    `;
+
+    const skipBtn = overlay.querySelector('#tutorial-skip');
+    skipBtn.style.cssText = `
+      margin: 0;
+      order: 1;
+      padding: 4px 2px;
+      border: none;
+      background: none;
+      color: rgba(226, 232, 240, 0.55);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 500;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    `;
 
     const highlight = overlay.querySelector('#tutorial-highlight');
     highlight.style.cssText = `

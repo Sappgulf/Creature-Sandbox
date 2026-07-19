@@ -99,6 +99,8 @@ export class WorldCombat {
       // Predator signals (pheromone communication)
       this.registerPredatorSignal(predator.x, predator.y, appliedDamage * 0.1, 5, predator.id);
 
+      this.world.memoryLearning?.learnFromHunt?.(predator, true, this.world);
+
       return { success: true, damage: appliedDamage, prey };
     } else {
       // Attack fails - possible counterattack
@@ -109,6 +111,12 @@ export class WorldCombat {
       }
 
       this.setAttackCooldown(predator, 0.7);
+      this.world.memoryLearning?.learnFromHunt?.(predator, false, this.world);
+      // A near-miss is the natural moment for prey to remember the danger
+      // and, per recordPredatorEncounter, mark this spot as a danger zone.
+      if (prey.alive) {
+        this.world.memoryLearning?.recordPredatorEncounter?.(prey, predator, true, this.world);
+      }
       return { success: false, prey };
     }
   }

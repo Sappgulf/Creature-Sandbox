@@ -329,6 +329,7 @@ export const GameEvents = {
   WORLD_MIGRATION_SETTLED: 'world:migration_settled',
   WORLD_REGION_DEPLETED: 'world:region_depleted',
   WORLD_REGION_THRIVING: 'world:region_thriving',
+  WORLD_ECOSYSTEM_CULL: 'world:ecosystem_cull',
 
   // UI events
   UI_PANEL_OPEN: 'ui:panel_open',

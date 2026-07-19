@@ -23,7 +23,8 @@ const OBJECTIVE_LABELS = Object.freeze({
   variant_alive: 'Variants',
   lineage_generation: 'Lineage',
   prop_places: 'Props',
-  god_actions: 'Interventions'
+  god_actions: 'Interventions',
+  stress_cap: 'Calm biome'
 });
 
 const OBJECTIVE_ICONS = Object.freeze({
@@ -38,7 +39,8 @@ const OBJECTIVE_ICONS = Object.freeze({
   variant_alive: '🧬',
   lineage_generation: '🌳',
   prop_places: '🧩',
-  god_actions: '✨'
+  god_actions: '✨',
+  stress_cap: '🌤️'
 });
 
 function normalizeType(type) {

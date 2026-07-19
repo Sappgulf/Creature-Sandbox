@@ -1284,6 +1284,10 @@ export class Creature {
     if (bleedStatus) {
       speedBoost -= Math.min(0.3, 0.08 * Math.max(bleedStatus.stacks ?? 1, 0));
     }
+    const fatigueStatus = this.getStatus('fatigue');
+    if (fatigueStatus) {
+      speedBoost -= fatigueStatus.metadata?.penalty ?? 0;
+    }
     if (playBurst) {
       speedBoost += playBurst.intensity ?? 0.25;
     }

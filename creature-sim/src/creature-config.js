@@ -18,8 +18,9 @@ export const CreatureConfig = {
   },
 
   // Energy and health
+  // NOTE: actual starting/max health lives in creature-tuning.js
+  // (DEFAULT_MAX_HEALTH); STARTING_ENERGY below is the live value used at spawn.
   STARTING_ENERGY: { baby: 36, adult: 52 },
-  BASE_HEALTH: { herbivore: 28, predator: 38 },
   ENERGY_DRAIN: {
     BASE: 0.65, // Reduced from 0.8 for better survival
     ADRENALINE_MULTIPLIER: 2.4, // Slightly reduced from 2.6
@@ -34,15 +35,6 @@ export const CreatureConfig = {
     WANDER_STRENGTH: 0.3,
     HERD_SEPARATION: 18,
     HERD_ALIGNMENT: 25
-  },
-
-  // Reproduction
-  REPRODUCTION: {
-    ENERGY_THRESHOLD: 38, // Increased from 36
-    AGE_MIN: 40, // Reduced from 45 for faster reproduction
-    AGE_MAX: 200, // Increased from 180
-    COOLDOWN: 22, // Reduced from 25
-    SUCCESS_CHANCE: 0.18 // Increased from 0.15
   },
 
   // Combat

@@ -405,6 +405,18 @@ export class MomentsSystem {
       });
     });
 
+    eventSystem.on(GameEvents.WORLD_ECOSYSTEM_CULL, data => {
+      if (!data) return;
+      this.logMoment({
+        type: GameEvents.WORLD_ECOSYSTEM_CULL,
+        icon: '⚖️',
+        text: 'The ecosystem thinned an overpopulated predator',
+        x: data.x,
+        y: data.y,
+        worldTime: data?.worldTime
+      });
+    });
+
     eventSystem.on(GameEvents.NEST_ESTABLISHED, data => {
       if (!data) return;
       this.logMoment({
@@ -549,6 +561,8 @@ export class MomentsSystem {
         return 8;
       case GameEvents.WORLD_FOOD_SCARCITY:
         return 12;
+      case GameEvents.WORLD_ECOSYSTEM_CULL:
+        return 15;
       case GameEvents.NEST_ESTABLISHED:
         return 10;
       case GameEvents.NEST_OVERCROWDED:

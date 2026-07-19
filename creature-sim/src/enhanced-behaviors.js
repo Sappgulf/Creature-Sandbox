@@ -122,52 +122,6 @@ export class EnhancedBehaviors {
   }
 
   /**
-   * Ambush behavior - predators with high ambush delay wait in hiding
-   */
-  static applyAmbush(predator, prey, _world) {
-    const ambushDelay = predator.genes.ambushDelay ?? 0.5;
-
-    if (ambushDelay < 0.6) return false; // Not an ambush predator
-
-    // Initialize ambush state if not present
-    if (!predator.ambushState) {
-      predator.ambushState = {
-        isWaiting: false,
-        waitTime: 0,
-        hideSpot: null
-      };
-    }
-
-    const state = predator.ambushState;
-
-    // If no prey nearby, enter wait mode
-    if (!prey) {
-      if (!state.isWaiting) {
-        state.isWaiting = true;
-        state.waitTime = 0;
-        state.hideSpot = { x: predator.x, y: predator.y };
-      }
-      return true; // Stay hidden
-    }
-
-    // If prey is close and we've waited enough, strike!
-    const distToPrey = Math.sqrt(dist2(predator.x, predator.y, prey.x, prey.y));
-    const strikeDistance = predator.genes.sense * 0.4;
-
-    if (state.isWaiting && distToPrey < strikeDistance && state.waitTime > ambushDelay * 3) {
-      state.isWaiting = false;
-      state.waitTime = 0;
-      // Apply speed boost for ambush strike
-      if (predator.hasStatus) {
-        predator.addStatus?.('adrenaline', 2); // Short adrenaline burst
-      }
-      return false; // Strike!
-    }
-
-    return state.isWaiting;
-  }
-
-  /**
    * Herding behavior - creatures guide juveniles and protect them
    */
   static applyHerding(adult, juveniles, dt) {

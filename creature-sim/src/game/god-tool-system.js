@@ -19,7 +19,11 @@ export const GOD_TOOL_REGISTRY = Object.freeze([
   { id: 'prop', icon: '🧩', label: 'Prop', mode: 'prop', undoable: true, mobile: true, desktop: true },
   { id: 'weather', icon: '🌦️', label: 'Weather', mode: 'god', undoable: false, mobile: true, desktop: true },
   { id: 'terrain', icon: '⛰️', label: 'Habitat', mode: 'god', undoable: false, mobile: true, desktop: true },
-  { id: 'grab', icon: '✋', label: 'Grab', mode: 'god', undoable: true, mobile: true, desktop: true }
+  { id: 'grab', icon: '✋', label: 'Grab', mode: 'god', undoable: true, mobile: true, desktop: true },
+  { id: 'bless', icon: '✨', label: 'Bless', mode: 'god', undoable: false, mobile: true, desktop: true },
+  { id: 'curse', icon: '💀', label: 'Curse', mode: 'god', undoable: false, mobile: true, desktop: true },
+  { id: 'attract', icon: '🧲', label: 'Attract', mode: 'god', undoable: false, mobile: true, desktop: true },
+  { id: 'repel', icon: '💨', label: 'Repel', mode: 'god', undoable: false, mobile: true, desktop: true }
 ]);
 
 function normalizeTool(id) {

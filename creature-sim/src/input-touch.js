@@ -4,6 +4,7 @@
 import { gameState } from './game-state.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
+import { godPowers } from './god-powers.js';
 
 export function applyInputTouchMethods(InputManager) {
   /**
@@ -111,6 +112,22 @@ export function applyInputTouchMethods(InputManager) {
         this.world.environment?.triggerWindBurst?.(intensity, duration);
         this.tools?.recordChaosNudge?.(snapshot);
         eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'chaos', x, y });
+        break;
+      }
+      case 'bless':
+      case 'curse':
+      case 'attract':
+      case 'repel': {
+        const used = godPowers.usePower(tool, x, y, this.world);
+        if (used) {
+          eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: tool, x, y });
+        } else {
+          eventSystem.emit(GameEvents.NOTIFICATION, {
+            message: `${tool[0].toUpperCase()}${tool.slice(1)} is on cooldown.`,
+            type: 'warning',
+            duration: 1500
+          });
+        }
         break;
       }
       case 'spawn': {

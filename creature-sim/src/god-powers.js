@@ -245,12 +245,12 @@ export class GodPowersSystem {
       creature.health = creature.maxHealth;
       creature.energy = Math.min(50, creature.energy + 20);
 
-      // Add blessing buff
-      creature.blessed = {
+      // Add blessing buff (ongoing health regen + energy trickle, consumed by
+      // CreatureStatusSystem.applyBlessedEffects each tick)
+      creature.applyStatus?.('blessed', {
         duration: 10,
-        healthRegen: 0.5,
-        energyBonus: 1.2
-      };
+        metadata: { healthRegen: 0.5, energyBonus: 1.2 }
+      });
 
       // Visual effect
       if (world.visualEffects) {
@@ -266,11 +266,11 @@ export class GodPowersSystem {
     const affected = this.getCreaturesInRadius(x, y, world, radius);
 
     for (const creature of affected) {
-      creature.cursed = {
+      // Ongoing energy drain, consumed by CreatureStatusSystem.applyCursedEffects
+      creature.applyStatus?.('cursed', {
         duration: 8,
-        speedPenalty: 0.7,
-        energyDrain: 1.5
-      };
+        metadata: { energyDrain: 1.5 }
+      });
 
       creature.energy *= 0.7;
     }
@@ -283,12 +283,12 @@ export class GodPowersSystem {
     const affected = this.getCreaturesInRadius(x, y, world, radius);
 
     for (const creature of affected) {
-      creature.attracted = {
-        targetX: x,
-        targetY: y,
+      // Ongoing pull toward the cast point, consumed by
+      // CreatureStatusSystem.applyAttractedEffects
+      creature.applyStatus?.('attracted', {
         duration,
-        strength: 5
-      };
+        metadata: { targetX: x, targetY: y, strength: 5 }
+      });
     }
   }
 

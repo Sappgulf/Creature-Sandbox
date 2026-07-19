@@ -124,7 +124,55 @@ export class CreatureStatusSystem {
       case 'bleeding':
         this.applyBleedingEffects(dt, status);
         break;
+      case 'blessed':
+        this.applyBlessedEffects(dt, status);
+        break;
+      case 'cursed':
+        this.applyCursedEffects(dt, status);
+        break;
+      case 'attracted':
+        this.applyAttractedEffects(dt, status);
+        break;
     }
+  }
+
+  /**
+   * Apply god-power "bless" ongoing effects: slow health regen + energy trickle
+   */
+  applyBlessedEffects(dt, status) {
+    const healthRegen = status.metadata?.healthRegen ?? 0;
+    const energyBonus = status.metadata?.energyBonus ?? 0;
+    if (healthRegen > 0) {
+      this.creature.health = Math.min(this.creature.maxHealth, this.creature.health + healthRegen * dt);
+    }
+    if (energyBonus > 0) {
+      this.creature.energy = Math.min(this.creature.maxEnergy ?? 100, this.creature.energy + energyBonus * dt);
+    }
+  }
+
+  /**
+   * Apply god-power "curse" ongoing effects: energy drain
+   */
+  applyCursedEffects(dt, status) {
+    const energyDrain = status.metadata?.energyDrain ?? 0;
+    if (energyDrain > 0) {
+      this.creature.energy = Math.max(0, this.creature.energy - energyDrain * dt);
+    }
+  }
+
+  /**
+   * Apply god-power "attract" ongoing effects: pull toward the cast point
+   */
+  applyAttractedEffects(dt, status) {
+    const targetX = status.metadata?.targetX;
+    const targetY = status.metadata?.targetY;
+    if (targetX === undefined || targetY === undefined) return;
+    const strength = status.metadata?.strength ?? 5;
+    const dx = targetX - this.creature.x;
+    const dy = targetY - this.creature.y;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    this.creature.vx += (dx / dist) * strength * dt * 20;
+    this.creature.vy += (dy / dist) * strength * dt * 20;
   }
 
   /**

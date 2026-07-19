@@ -494,6 +494,12 @@ export class WorldEcosystem {
 
     this.balanceTimer = 0;
 
+    // Respect the per-mode/per-scenario autoBalanceSettings (gameplay-modes.js,
+    // playable-scenarios.js tuning.autoBalance) instead of always running with
+    // hardcoded thresholds — those settings were previously written but never read.
+    const settings = this.world.autoBalanceSettings;
+    if (settings?.enabled === false) return;
+
     const stats = this.lastEcoStats;
     if (!stats) return;
 
@@ -505,10 +511,15 @@ export class WorldEcosystem {
 
     const actions = [];
 
-    // Predator imbalance
+    const targetPredatorRatio = settings?.targetPredatorRatio ?? 0.3;
+    const maxPredators = settings?.maxPredators ?? Infinity;
+
+    // Predator imbalance — only cull once BOTH the ratio and the absolute
+    // ceiling are exceeded, so predator-focused modes/scenarios that raise
+    // maxPredators (e.g. mayhem, Apex Balance) aren't fought by this system.
     if (predators === 0 && total > 10) {
       actions.push('add_predator');
-    } else if (predators > herbivores * 0.3) {
+    } else if (predators > herbivores * targetPredatorRatio && predators > maxPredators) {
       actions.push('reduce_predators');
     }
 
@@ -562,6 +573,15 @@ export class WorldEcosystem {
       const toCull = predators[Math.floor(rand() * predators.length)];
       toCull.alive = false;
       toCull.deathCause = toCull.deathCause || 'ecosystem_cull';
+      try {
+        eventSystem.emit(GameEvents.WORLD_ECOSYSTEM_CULL, {
+          x: toCull.x,
+          y: toCull.y,
+          worldTime: this.world?.t ?? 0
+        });
+      } catch (error) {
+        console.warn('Failed to emit ecosystem cull event:', error);
+      }
     }
   }
 

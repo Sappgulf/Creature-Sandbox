@@ -288,6 +288,89 @@ export const PLAYABLE_SCENARIOS = [
   }
 ];
 
+/**
+ * Shared source of truth for a scenario's win-condition objectives. Used both
+ * for the live session-goal cards (PlayableScenarios._scenarioGoals) and for
+ * ScenarioRegistry.getObjectives so the two never drift apart again. Every
+ * requirement that _evaluateRun ANDs together must produce a card here, or a
+ * run can fail/succeed for a reason the player never saw.
+ */
+export function buildScenarioObjectives(scenario) {
+  const goals = [
+    {
+      id: `${scenario.id}_survive`,
+      type: 'survival_time',
+      icon: '⏳',
+      target: scenario.targetSeconds,
+      description: `Survive ${Math.round((scenario.targetSeconds || 0) / 60)} minutes`
+    },
+    {
+      id: `${scenario.id}_population`,
+      type: 'population',
+      icon: '🐾',
+      target: scenario.minAlive || 20,
+      description: `Keep ${scenario.minAlive || 20}+ creatures alive`
+    }
+  ];
+
+  if (scenario.minPredators) {
+    goals.push({
+      id: `${scenario.id}_predators`,
+      type: 'predator_count',
+      icon: '🦁',
+      target: scenario.minPredators,
+      description: `Keep ${scenario.minPredators}+ predators alive`
+    });
+  }
+  if (scenario.minFood) {
+    goals.push({
+      id: `${scenario.id}_food`,
+      type: 'food_available',
+      icon: '🌿',
+      target: scenario.minFood,
+      description: `Keep ${scenario.minFood}+ food available`
+    });
+  }
+  if (scenario.minVariants) {
+    goals.push({
+      id: `${scenario.id}_variants`,
+      type: 'variant_alive',
+      icon: '🧬',
+      target: scenario.minVariants,
+      description: 'Keep aquatic, flying, and burrowing variants alive'
+    });
+  }
+  if (scenario.minProps) {
+    goals.push({
+      id: `${scenario.id}_props`,
+      type: 'prop_places',
+      icon: '🧩',
+      target: scenario.minProps,
+      description: `Place ${scenario.minProps}+ sandbox props`
+    });
+  }
+  if (scenario.minGeneration) {
+    goals.push({
+      id: `${scenario.id}_generation`,
+      type: 'lineage_generation',
+      icon: '🌳',
+      target: scenario.minGeneration,
+      description: `Reach generation ${scenario.minGeneration}`
+    });
+  }
+  if (scenario.maxStress) {
+    goals.push({
+      id: `${scenario.id}_stress`,
+      type: 'stress_cap',
+      icon: '🌤️',
+      target: scenario.maxStress,
+      description: `Keep average stress under ${scenario.maxStress}`
+    });
+  }
+
+  return goals;
+}
+
 export class PlayableScenarios {
   constructor({
     world,
@@ -538,80 +621,7 @@ export class PlayableScenarios {
   }
 
   _scenarioGoals(scenario) {
-    const goals = [
-      {
-        id: `${scenario.id}_survive`,
-        type: 'survival_time',
-        icon: '⏳',
-        target: scenario.targetSeconds,
-        description: `Survive ${Math.round(scenario.targetSeconds / 60)} minutes`,
-        progress: 0,
-        completed: false
-      },
-      {
-        id: `${scenario.id}_population`,
-        type: 'population',
-        icon: '🐾',
-        target: scenario.minAlive || 20,
-        description: `Keep ${scenario.minAlive || 20}+ creatures alive`,
-        progress: 0,
-        completed: false
-      }
-    ];
-
-    if (scenario.minPredators) {
-      goals.push({
-        id: `${scenario.id}_predators`,
-        type: 'predator_count',
-        icon: '🦁',
-        target: scenario.minPredators,
-        description: `Keep ${scenario.minPredators}+ predators alive`,
-        progress: 0,
-        completed: false
-      });
-    } else if (scenario.minFood) {
-      goals.push({
-        id: `${scenario.id}_food`,
-        type: 'food_available',
-        icon: '🌿',
-        target: scenario.minFood,
-        description: `Keep ${scenario.minFood}+ food available`,
-        progress: 0,
-        completed: false
-      });
-    } else if (scenario.minVariants) {
-      goals.push({
-        id: `${scenario.id}_variants`,
-        type: 'variant_alive',
-        icon: '🧬',
-        target: scenario.minVariants,
-        description: 'Keep aquatic, flying, and burrowing variants alive',
-        progress: 0,
-        completed: false
-      });
-    } else if (scenario.minProps) {
-      goals.push({
-        id: `${scenario.id}_props`,
-        type: 'prop_places',
-        icon: '🧩',
-        target: scenario.minProps,
-        description: `Place ${scenario.minProps}+ sandbox props`,
-        progress: 0,
-        completed: false
-      });
-    } else if (scenario.minGeneration) {
-      goals.push({
-        id: `${scenario.id}_generation`,
-        type: 'lineage_generation',
-        icon: '🧬',
-        target: scenario.minGeneration,
-        description: `Reach generation ${scenario.minGeneration}`,
-        progress: 0,
-        completed: false
-      });
-    }
-
-    return goals.slice(0, 3);
+    return buildScenarioObjectives(scenario).map(goal => ({ ...goal, progress: 0, completed: false }));
   }
 
   _collectMetrics() {
