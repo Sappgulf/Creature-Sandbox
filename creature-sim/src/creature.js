@@ -919,9 +919,6 @@ export class Creature {
       if (this._updateIntelligence) this._updateIntelligence(dt * 10, world);
     }
 
-    // Legacy status processing (for compatibility with complex effects)
-    this._processStatusEffects(dt, world);
-
     if (this.cooldowns.adrenaline > 0) {
       this.cooldowns.adrenaline = Math.max(0, this.cooldowns.adrenaline - dt);
     }
@@ -1287,6 +1284,12 @@ export class Creature {
     const fatigueStatus = this.getStatus('fatigue');
     if (fatigueStatus) {
       speedBoost -= fatigueStatus.metadata?.penalty ?? 0;
+    }
+    const panicStatus = this.getStatus('panic');
+    if (panicStatus) {
+      const calmness = this.temperament?.calmness ?? 0;
+      const intensity = panicStatus.intensity ?? 1;
+      speedBoost -= (0.3 - calmness * 0.2) * intensity;
     }
     if (playBurst) {
       speedBoost += playBurst.intensity ?? 0.25;
@@ -1863,44 +1866,6 @@ export class Creature {
     }
   }
 
-  _processStatusEffects(dt, world) {
-    const disease = this.getStatus('disease');
-    if (disease) {
-      const severity =
-        clamp(disease.intensity ?? 0.6, 0.1, 2.2) *
-        (this.getQuirkMultiplier ? this.getQuirkMultiplier('damage_resist') : 1);
-      // Increase stress and reduce energy
-      this.energy = Math.max(0, this.energy - severity * 0.5 * dt);
-      if (this.emotions) {
-        this.emotions.stress = clamp((this.emotions.stress ?? 0) + severity * 0.02 * dt, 0, 1);
-        this.emotions.confidence = clamp((this.emotions.confidence ?? 0) - severity * 0.015 * dt, 0, 1);
-      }
-      // Slight fever damage over time
-      this.health = Math.max(0, this.health - severity * 0.12 * dt);
-      this.statusTimers.diseaseSpread = (this.statusTimers.diseaseSpread ?? rand(0.8, 1.6)) - dt;
-      if (this.statusTimers.diseaseSpread <= 0) {
-        this._spreadDisease(world, disease);
-        this.statusTimers.diseaseSpread = rand(0.9, 1.8);
-      }
-    }
-
-    const venom = this.getStatus('venom');
-    if (venom) {
-      const potency = clamp(venom.intensity ?? 1, 0.2, 3);
-      this.statusTimers.venomTick = (this.statusTimers.venomTick ?? 1.2) - dt;
-      if (this.statusTimers.venomTick <= 0) {
-        const burst = 0.8 + potency * 0.6;
-        this.health = Math.max(0, this.health - burst);
-        this.stats.damageTaken += burst;
-        this.energy = Math.max(0, this.energy - burst * 0.2);
-        this.statusTimers.venomTick = 1.1;
-        if (typeof this.recordDamage === 'function') {
-          this.recordDamage(burst * 1.8);
-        }
-      }
-    }
-  }
-
   _handleLifecycleBehavior(dt, world) {
     if (!world) return;
     this.lifecycle = this.lifecycle || {
@@ -2056,38 +2021,6 @@ export class Creature {
       }
     }
     return bestScore > 0.4 ? bestDir : null;
-  }
-
-  _spreadDisease(world, disease) {
-    if (!world || !disease) return;
-    const contagion = clamp(disease.metadata?.contagion ?? 0.35, 0.05, 1.0);
-    const severity = clamp(disease.intensity ?? 0.6, 0.1, 2.2);
-    const radius = clamp(this.genes.sense * 0.6, 40, 140);
-    const neighbors = world.queryCreatures(this.x, this.y, radius);
-    if (!neighbors || neighbors.length <= 1) return;
-    for (const other of neighbors) {
-      if (other === this || !other.alive || typeof other.hasStatus !== 'function') continue;
-      if (other.hasStatus('disease')) continue;
-      const immunity = clamp(other.genes.grit ?? 0, 0, 1);
-      const spreadChance = Math.max(0, contagion * 0.3 + severity * 0.05 - immunity * 0.12);
-      if (Math.random() < spreadChance) {
-        const duration = rand(18, 32);
-        const intensity = clamp(severity * rand(0.6, 1.15), 0.25, 2);
-        other.applyStatus('disease', {
-          duration,
-          intensity,
-          metadata: {
-            contagion: contagion * 0.9
-          }
-        });
-        if (typeof other.logEvent === 'function') {
-          other.logEvent('Caught a sickness', world.t);
-        }
-        if (world.particles && typeof world.particles.addDiseasePulse === 'function') {
-          world.particles.addDiseasePulse(other.x, other.y);
-        }
-      }
-    }
   }
 
   /**

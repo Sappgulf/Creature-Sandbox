@@ -88,7 +88,11 @@ export function drawBiomeGround(renderer, ctx, world) {
   // checkerboard look of one-fill-per-cell terrain blocks.
   if (world.getBiomeAt && renderer.camera.zoom > 0.18) {
     const sampleSpacing = Math.max(110, 250 / renderer.camera.zoom);
-    const overlayAlpha = clamp(0.08 + renderer.camera.zoom * 0.08, 0.08, 0.18);
+    // Previously capped at 0.18 -- at the default 0.38 opening zoom, blended
+    // against the near-black #03050a base, biome color variation was
+    // essentially imperceptible. Raised so the world actually reads as a
+    // living, colored biome rather than a flat dark canvas.
+    const overlayAlpha = clamp(0.16 + renderer.camera.zoom * 0.16, 0.16, 0.34);
     const influenceRadius = sampleSpacing * 0.92;
     const startX = Math.floor(bounds.x1 / sampleSpacing) * sampleSpacing;
     const startY = Math.floor(bounds.y1 / sampleSpacing) * sampleSpacing;
@@ -132,10 +136,10 @@ export function drawBiomeGround(renderer, ctx, world) {
         const biome = world.getBiomeAt?.(x, y);
         const tint =
           biome?.type === 'water'
-            ? 'rgba(120, 190, 230, 0.12)'
+            ? 'rgba(120, 190, 230, 0.22)'
             : biome?.type === 'desert'
-              ? 'rgba(244, 190, 120, 0.1)'
-              : 'rgba(170, 210, 170, 0.08)';
+              ? 'rgba(244, 190, 120, 0.18)'
+              : 'rgba(170, 210, 170, 0.16)';
         ctx.fillStyle = tint;
         ctx.beginPath();
         ctx.arc(x, y, dotRadius, 0, Math.PI * 2);

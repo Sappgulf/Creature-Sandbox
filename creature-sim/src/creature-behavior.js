@@ -791,27 +791,6 @@ export class CreatureBehaviorSystem {
   }
 
   /**
-   * Get status-based speed multiplier
-   */
-  getStatusSpeedMultiplier(temp = null) {
-    let multiplier = 1.0;
-
-    // Adrenaline boost
-    if (this.creature.hasStatus('adrenaline')) {
-      const adrenaline = this.creature.getStatus('adrenaline');
-      multiplier *= 1.4 + (adrenaline.intensity || 0);
-    }
-
-    // Panic slowdown
-    if (this.creature.hasStatus('panic')) {
-      const calmness = temp?.calmness ?? 0;
-      multiplier *= 0.7 + calmness * 0.2;
-    }
-
-    return multiplier;
-  }
-
-  /**
    * Update predator-specific behavior
    * Enhanced with pack coordination
    */

@@ -165,6 +165,28 @@ self.onmessage = function (e) {
         }
         break;
 
+      case 'ADD_CALM_ZONE':
+        if (world) {
+          world.addCalmZone(data.x, data.y, data.radius, data.duration, data.strength);
+          sendSnapshot();
+        }
+        break;
+
+      case 'ADD_REST_ZONE':
+        if (world) {
+          world.addRestZone(data.x, data.y, data.radius);
+          sendSnapshot();
+        }
+        break;
+
+      case 'TRIGGER_CHAOS_NUDGE':
+        if (world) {
+          world.triggerChaosNudge(data.intensity, data.duration);
+          world.environment?.triggerWindBurst?.(data.intensity, data.duration);
+          sendSnapshot();
+        }
+        break;
+
       case 'PAUSE':
         isPaused = data.paused;
         break;

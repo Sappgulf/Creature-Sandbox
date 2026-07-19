@@ -29,8 +29,10 @@ const starLayer = Array.from({ length: STAR_LAYER_COUNT }, (_, i) => ({
 const midLayer = Array.from({ length: MID_LAYER_COUNT }, (_, i) => ({
   x: seededRand(i + 600) * 5000 - 2500,
   y: seededRand(i + 700) * 4000 - 2000,
-  r: 1.5 + seededRand(i + 800) * 3,
-  alpha: 0.05 + seededRand(i + 900) * 0.1,
+  r: 2 + seededRand(i + 800) * 4,
+  // Previously 0.05-0.15 -- nearly invisible against the near-black
+  // background. Raised so the orb layer actually reads as ambient depth.
+  alpha: 0.1 + seededRand(i + 900) * 0.16,
   hue: 180 + seededRand(i + 1000) * 80, // cyan to purple range
   drift: 0.2 + seededRand(i + 1100) * 0.3
 }));
@@ -97,7 +99,7 @@ export function drawParallaxBackground(renderer, ctx, world) {
       vx: (seededRand(i + 4000) - 0.5) * 4,
       vy: (seededRand(i + 5000) - 0.5) * 4,
       r: 0.4 + seededRand(i + 6000) * 0.8,
-      alpha: 0.08 + seededRand(i + 7000) * 0.12,
+      alpha: 0.12 + seededRand(i + 7000) * 0.18,
       hue: 160 + seededRand(i + 8000) * 60
     }));
   }

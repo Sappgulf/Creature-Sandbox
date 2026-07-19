@@ -1759,6 +1759,22 @@ export class World {
     return this.environment.addCalmZone(x, y, radius, duration, strength);
   }
 
+  /**
+   * Add a persistent rest zone (distinct from the temporary god-power calm
+   * zone aura -- backed by restZones/restGrid, used for scenario setup and
+   * the designated resting-area gameplay mechanic).
+   * @param {number} x
+   * @param {number} y
+   * @param {number} radius
+   * @returns {{id: string, x: number, y: number, radius: number}}
+   */
+  addRestZone(x, y, radius = 120) {
+    const zone = { id: `rest-${this.restZones.length}-${Math.round(x)}-${Math.round(y)}`, x, y, radius };
+    this.restZones.push(zone);
+    this.restGridDirty = true;
+    return zone;
+  }
+
   // Disaster helpers
   /**
    * Trigger a world disaster (drought, fire, plague, etc.).

@@ -560,9 +560,12 @@ export function applyInputPointerMethods(InputManager) {
   };
 
   /**
-   * Find creature at world coordinates
+   * Find creature at world coordinates.
+   * Default radius matches _updateHover's hoverRadius (34px) -- it was
+   * previously 25px, tighter than hover, so a creature could show the
+   * "grab" hover affordance and still fail to select on click.
    */
-  InputManager.prototype._findCreatureAt = function (x, y, searchRadius = 25 / this.camera.zoom) {
+  InputManager.prototype._findCreatureAt = function (x, y, searchRadius = 34 / this.camera.zoom) {
     let nearest = null;
     let minDist = searchRadius;
 

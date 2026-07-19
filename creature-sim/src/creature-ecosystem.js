@@ -85,6 +85,12 @@ export class CreatureEcosystemSystem {
       } catch (error) {
         console.warn('Failed to emit panic event:', error);
       }
+      // Give the panic moment/event a real, lasting gameplay effect (a brief
+      // movement slowdown), not just a one-off camera/notification trigger.
+      creature.applyStatus?.('panic', {
+        duration: 3,
+        intensity: clamp(eco.stress / 100, 0.3, 1)
+      });
     }
   }
 

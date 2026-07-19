@@ -186,10 +186,14 @@ export class CreatureStatusSystem {
 
     // Get disease modifiers from disease system
     const modifiers = diseaseSystem.getDiseaseModifiers(this.creature);
+    // damage_resist quirk (ported from the now-removed legacy
+    // creature.js#_processStatusEffects path) softens disease health drain.
+    const resistMultiplier =
+      typeof this.creature.getQuirkMultiplier === 'function' ? this.creature.getQuirkMultiplier('damage_resist') : 1;
 
     // Apply health drain
     if (modifiers.healthDrainPerSecond > 0) {
-      this.creature.health -= modifiers.healthDrainPerSecond * dt;
+      this.creature.health -= modifiers.healthDrainPerSecond * resistMultiplier * dt;
       if (this.creature.health <= 0) {
         this.creature.alive = false;
         diseaseSystem.handleDiseaseDeath(this.creature);

@@ -173,6 +173,25 @@ export class SimulationProxy {
       this._send('TRIGGER_DISASTER', { type, options });
     };
 
+    // Previously undefined on the proxy -- the god-mode Calm/Chaos tools
+    // called these directly on `world` with no optional chaining, so every
+    // click threw an uncaught TypeError in worker mode (the shipping
+    // default). Mirrors the addFood/triggerDisaster fire-and-forget pattern.
+    this.addCalmZone = (x, y, radius, duration, strength) => {
+      this._send('ADD_CALM_ZONE', { x, y, radius, duration, strength });
+      return null;
+    };
+
+    this.triggerChaosNudge = (intensity, duration) => {
+      this._send('TRIGGER_CHAOS_NUDGE', { intensity, duration });
+      return null;
+    };
+
+    this.addRestZone = (x, y, radius) => {
+      this._send('ADD_REST_ZONE', { x, y, radius });
+      return null;
+    };
+
     // Initialize biome generator with a fixed seed if possible, or random
     this.biomeGenerator = new BiomeGenerator(0.123);
 

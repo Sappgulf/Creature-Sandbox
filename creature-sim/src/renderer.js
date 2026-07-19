@@ -19,7 +19,13 @@ import {
   getBiomeTint
 } from './renderer-biome.js?v=20260423-assets1';
 import { drawWeatherEffects } from './renderer-weather.js';
-import { drawParallaxBackground, drawVignette, drawAmbientSpores, drawSeasonalParticles } from './renderer-parallax.js';
+import {
+  drawParallaxBackground,
+  drawVignette,
+  drawAmbientSpores,
+  drawSeasonalParticles,
+  drawGrainOverlay
+} from './renderer-parallax.js';
 import { ghostTrails } from './ecosystem-ghosts.js';
 
 // SPLIT: biome and weather rendering extracted to renderer-biome.js / renderer-weather.js
@@ -226,10 +232,20 @@ export class Renderer {
 
     // OPTIMIZATION: Calculate view frustum for culling
     const margin = 100; // Extra margin for smooth culling
-    this._viewBounds.x1 = camera.x - opts.viewportWidth / (2 * camera.zoom) - margin;
-    this._viewBounds.y1 = camera.y - opts.viewportHeight / (2 * camera.zoom) - margin;
-    this._viewBounds.x2 = camera.x + opts.viewportWidth / (2 * camera.zoom) + margin;
-    this._viewBounds.y2 = camera.y + opts.viewportHeight / (2 * camera.zoom) + margin;
+    // Guard against a zero/non-finite zoom or viewport (transient during
+    // startup/resize) producing Infinity/NaN bounds, which would crash
+    // downstream canvas calls like createLinearGradient.
+    const safeZoom = camera.zoom > 0.001 && Number.isFinite(camera.zoom) ? camera.zoom : 0.1;
+    this._viewBounds.x1 = camera.x - opts.viewportWidth / (2 * safeZoom) - margin;
+    this._viewBounds.y1 = camera.y - opts.viewportHeight / (2 * safeZoom) - margin;
+    this._viewBounds.x2 = camera.x + opts.viewportWidth / (2 * safeZoom) + margin;
+    this._viewBounds.y2 = camera.y + opts.viewportHeight / (2 * safeZoom) + margin;
+    if (!Number.isFinite(this._viewBounds.x1) || !Number.isFinite(this._viewBounds.y1)) {
+      this._viewBounds.x1 = -margin;
+      this._viewBounds.y1 = -margin;
+      this._viewBounds.x2 = margin;
+      this._viewBounds.y2 = margin;
+    }
     if (spawnDebug && world._debugSpawn && world._debugSpawn.version !== this._lastDebugSpawnVersion) {
       this._pendingDebugSpawn = world._debugSpawn;
       this._lastDebugSpawnVersion = world._debugSpawn.version;
@@ -401,6 +417,13 @@ export class Renderer {
 
     // Vignette overlay (screen-space, pulls focus to center)
     drawVignette(this, ctx);
+
+    // Subtle film-grain texture (screen-space, cached noise pattern --
+    // effectively free). Skipped on mobile to stay conservative on
+    // lower-power GPUs.
+    if (!this.isMobile) {
+      drawGrainOverlay(this, ctx);
+    }
 
     // Draw god mode effects
     this._drawGodModeEffects();

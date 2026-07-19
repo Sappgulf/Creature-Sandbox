@@ -576,14 +576,11 @@ export class PlayableScenarios {
     const props = scenario.setup.props || [];
     props.forEach((type, index) => {
       if (type === 'calm') {
-        this.world.restZones = this.world.restZones || [];
-        this.world.restZones.push({
-          id: `scenario-calm-${index}`,
-          x: center.x + (index - 0.5) * 160,
-          y: center.y + 180,
-          radius: 145
-        });
-        this.world.restGridDirty = true;
+        // Use the proper mutator instead of assigning restZones directly --
+        // in worker mode `world` is a SimulationProxy where restZones is a
+        // read-only getter (mirrors the worker's snapshot), so a direct
+        // assignment throws and crashes every scenario with a 'calm' prop.
+        this.world.addRestZone?.(center.x + (index - 0.5) * 160, center.y + 180, 145);
         return;
       }
       const pos = randAround(center, radius * 0.55);

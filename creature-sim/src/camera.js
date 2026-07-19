@@ -209,9 +209,14 @@ export class Camera {
   }
 
   _refreshMinZoom() {
+    // viewportWidth/Height can transiently be 0 during startup/resize
+    // (before the canvas has been measured) -- without a floor here,
+    // fitZoom/clampedFit collapse to 0, letting camera.zoom reach exactly 0
+    // and later dividing-by-zero into Infinity/NaN in the renderer's view
+    // bounds, crashing createLinearGradient with a "non-finite" error.
     const fitZoom = Math.min(this.viewportWidth / this.worldWidth, this.viewportHeight / this.worldHeight);
-    const clampedFit = Math.min(fitZoom * 0.75, this.maxZoom);
-    this.minZoom = clampedFit;
+    const clampedFit = Number.isFinite(fitZoom) ? Math.min(fitZoom * 0.75, this.maxZoom) : 0.1;
+    this.minZoom = Math.max(0.05, clampedFit);
     this._clampZoom();
   }
 

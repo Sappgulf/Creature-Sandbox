@@ -52,7 +52,8 @@ const chunkMap = [
       '/src/memory-learning.js',
       '/src/advanced-genetics.js',
       '/src/advanced-predator-prey-ai.js',
-      '/src/enhanced-behaviors.js'
+      '/src/enhanced-behaviors.js',
+      '/src/god-powers.js'
     ]
   },
   {
