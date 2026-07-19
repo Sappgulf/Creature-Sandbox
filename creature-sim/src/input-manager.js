@@ -174,7 +174,11 @@ export class InputManager {
       3: 'chaos',
       4: 'spawn',
       5: 'prop',
-      6: 'remove'
+      6: 'remove',
+      7: 'bless',
+      8: 'curse',
+      9: 'attract',
+      0: 'repel'
     };
     if (gameState.godModeActive) {
       const hotTool = godToolHotkeys[e.key];

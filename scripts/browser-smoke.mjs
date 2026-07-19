@@ -344,13 +344,18 @@ async function readGodPanelMetrics(page) {
     const panel = document.getElementById('god-mode-panel');
     if (!panel) return null;
     const rect = panel.getBoundingClientRect();
-    const buttons = Array.from(panel.querySelectorAll('.god-mode-tools button')).map(button => {
+    const toolContainer = panel.querySelector('.god-mode-tools');
+    const buttons = Array.from(toolContainer?.querySelectorAll('button') || []).map(button => {
       const buttonRect = button.getBoundingClientRect();
       return {
         width: Number(buttonRect.width.toFixed(1)),
-        height: Number(buttonRect.height.toFixed(1))
+        height: Number(buttonRect.height.toFixed(1)),
+        tool: button.dataset.godTool
       };
     });
+    const groupTitles = Array.from(toolContainer?.querySelectorAll('.god-mode-group-title') || []).map(title =>
+      title.textContent.trim()
+    );
     return {
       visible: rect.width > 0 && rect.height > 0 && !panel.classList.contains('hidden'),
       width: Number(rect.width.toFixed(1)),
@@ -358,7 +363,9 @@ async function readGodPanelMetrics(page) {
       top: Number(rect.top.toFixed(1)),
       bottom: Number(rect.bottom.toFixed(1)),
       buttonMinHeight: Number(Math.min(...buttons.map(button => button.height)).toFixed(1)),
-      buttonCount: buttons.length
+      buttonCount: buttons.length,
+      tools: buttons.map(button => button.tool),
+      groupTitles
     };
   });
 }
@@ -1314,7 +1321,17 @@ async function runScenario(browser, scenario) {
   assert.equal(state.ui.objectiveMode, 'god', `${scenario.name}: objective rail should carry god-mode state`);
   const godPanel = await readGodPanelMetrics(page);
   assert.ok(godPanel?.visible, `${scenario.name}: god mode panel should be visible and measurable`);
-  assert.equal(godPanel.buttonCount, 6, `${scenario.name}: god mode panel should expose all six tools`);
+  assert.equal(godPanel.buttonCount, 10, `${scenario.name}: god mode panel should expose all ten tools and powers`);
+  assert.deepEqual(
+    godPanel.groupTitles,
+    ['Tools', 'Powers'],
+    `${scenario.name}: god mode panel should separate tools from powers`
+  );
+  assert.deepEqual(
+    godPanel.tools,
+    ['food', 'calm', 'chaos', 'spawn', 'prop', 'remove', 'bless', 'curse', 'attract', 'repel'],
+    `${scenario.name}: god mode panel should expose the complete ordered tool set`
+  );
   if (scenario.mobile) {
     assert.ok(
       godPanel.width <= scenario.viewport.width - 24,
@@ -1341,7 +1358,7 @@ async function runScenario(browser, scenario) {
     panel?.setAttribute('aria-hidden', 'true');
   });
 
-  const godTools = ['food', 'calm', 'chaos', 'prop', 'remove'];
+  const godTools = ['food', 'calm', 'chaos', 'prop', 'remove', 'bless', 'curse', 'attract', 'repel'];
   const beforeGod = {
     food: state.summary.totalFood,
     props: state.summary.totalProps,

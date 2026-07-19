@@ -32,7 +32,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-  <link rel="stylesheet" href="styles.css?v=20260528-tranche8" />
+  <link rel="stylesheet" href="styles.css?v=20260718-menupolish1" />
   <script>
     (() => {
       const params = new URLSearchParams(window.location.search);
@@ -257,12 +257,14 @@
       <button id="god-mode-exit" class="ghost-btn small" aria-label="Exit god mode">Done</button>
     </div>
     <div class="god-mode-tools" role="group" aria-label="God mode tools">
+      <div class="god-mode-group-title">Tools</div>
       <button id="god-tool-food" data-god-tool="food" aria-label="Place food source">🍃 Food</button>
       <button id="god-tool-calm" data-god-tool="calm" aria-label="Create calm zone">🌊 Calm</button>
       <button id="god-tool-chaos" data-god-tool="chaos" aria-label="Chaos nudge">⚡ Chaos</button>
       <button id="god-tool-spawn" data-god-tool="spawn" aria-label="Spawn creature">🧬 Spawn</button>
       <button id="god-tool-prop" data-god-tool="prop" aria-label="Place sandbox prop">🧱 Prop</button>
       <button id="god-tool-remove" data-god-tool="remove" aria-label="Remove creature">🧹 Remove</button>
+      <div class="god-mode-group-title">Powers</div>
       <button id="god-tool-bless" data-god-tool="bless" aria-label="Bless nearby creatures">✨ Bless</button>
       <button id="god-tool-curse" data-god-tool="curse" aria-label="Curse nearby creatures">💀 Curse</button>
       <button id="god-tool-attract" data-god-tool="attract" aria-label="Attract nearby creatures">🧲 Attract</button>
@@ -1206,7 +1208,7 @@
           <div class="shortcut-row"><kbd>X</kbd><span>Inspect tool</span></div>
           <div class="shortcut-row"><kbd>P</kbd><span>Sandbox prop tool</span></div>
           <div class="shortcut-row"><kbd>Shift+F</kbd><span>Toggle camera follow</span></div>
-          <div class="shortcut-row"><kbd>1-6</kbd><span>God mode tool select</span></div>
+          <div class="shortcut-row"><kbd>1-9</kbd> / <kbd>0</kbd><span>God mode tool select</span></div>
           <div class="shortcut-row"><kbd>[</kbd> / <kbd>]</kbd><span>Adjust brush size</span></div>
         </div>
         <div class="shortcuts-section">
@@ -1251,18 +1253,7 @@
   </div>
 
   </main>
-  <script>
-    const smokeParams = new URLSearchParams(window.location.search);
-    const skipServiceWorker = smokeParams.has('smoke') || smokeParams.has('autosandbox') || smokeParams.has('autostart');
-    if (!skipServiceWorker && 'serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {
-          // Silent fail: offline mode is optional
-        });
-      });
-    }
-  </script>
-  <script type="module" src="./src/main.js?v=20260528-tranche8"></script>
+  <script type="module" src="./src/main.js?v=20260718-menupolish1"></script>
 </body>
 
 </html>
