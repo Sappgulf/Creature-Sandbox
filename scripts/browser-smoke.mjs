@@ -216,6 +216,29 @@ async function readGameState(page) {
   return JSON.parse(text);
 }
 
+async function readPerfBudgetWithRenderedSample(page, scenarioName) {
+  let perf = await page.evaluate(() => window.__creatureSmoke.perfBudget());
+  if (perf.rendered > 0) return perf;
+
+  try {
+    await waitForPageCondition(
+      page,
+      () => Number(window.__creatureSmoke.perfBudget()?.rendered || 0) > 0,
+      `${scenarioName}: live renderer sample`,
+      3000
+    );
+  } catch (error) {
+    const diagnostic = await page.evaluate(() => ({
+      perf: window.__creatureSmoke.perfBudget(),
+      state: JSON.parse(window.render_game_to_text?.() || '{}')
+    }));
+    console.error(`${scenarioName}: renderer sample diagnostics ${JSON.stringify(diagnostic)}`);
+    throw error;
+  }
+  perf = await page.evaluate(() => window.__creatureSmoke.perfBudget());
+  return perf;
+}
+
 async function readObjectiveRailMetrics(page) {
   return page.evaluate(() => {
     const rail = document.getElementById('objective-rail');
@@ -515,6 +538,67 @@ async function clickOverflowAction(page, action, scenarioName) {
       `${scenarioName}: overflow action ${action} should activate after retry (${error.message})`
     );
   }
+}
+
+async function exerciseScenarioLab(page, scenarioName) {
+  const refreshScenarioUi = async () => {
+    // updateScenarioStatus is intentionally throttled to the UI cadence, while
+    // advanceTime calls updateUI once per invocation. Keep this deterministic
+    // instead of relying on wall-clock frame delivery in headless Chromium.
+    for (let index = 0; index < 32; index += 1) {
+      await advance(page, 16);
+    }
+  };
+
+  await page.locator('#ctrl-more').click();
+  await page.locator('#menu-scenario').click();
+  await page.locator('#scenario-panel:not(.hidden)').waitFor({ state: 'visible', timeout: 5000 });
+
+  await page.locator('#btn-scenario-trigger').click();
+  await waitForPageCondition(
+    page,
+    () => JSON.parse(window.render_game_to_text()).systems?.activeDisaster === 'meteorStorm',
+    `${scenarioName}: Scenario Lab disaster start`
+  );
+  await refreshScenarioUi();
+  const activeStatus = (await page.locator('#scenario-status').textContent())?.trim() || '';
+  assert.notEqual(activeStatus, 'No active disaster.', `${scenarioName}: Scenario Lab Run Now should start a disaster`);
+
+  await page.locator('#btn-scenario-end').click();
+  await waitForPageCondition(
+    page,
+    () => JSON.parse(window.render_game_to_text()).systems?.activeDisaster == null,
+    `${scenarioName}: Scenario Lab disaster end`
+  );
+  await refreshScenarioUi();
+  assert.equal(
+    (await page.locator('#scenario-status').textContent())?.trim(),
+    'No active disaster.',
+    `${scenarioName}: Scenario Lab End Active should clear the active disaster`
+  );
+
+  await page.locator('#scenario-delay').evaluate(input => {
+    input.value = '5';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await page.locator('#btn-scenario-queue').click();
+  await refreshScenarioUi();
+  assert.equal(
+    await page.locator('#scenario-queue .scenario-queue-item').count(),
+    1,
+    `${scenarioName}: Scenario Lab Queue should render a pending scenario`
+  );
+
+  await page.locator('#btn-scenario-clear').click();
+  await refreshScenarioUi();
+  assert.equal(
+    await page.locator('#scenario-queue .scenario-queue-item').count(),
+    0,
+    `${scenarioName}: Scenario Lab Clear All should remove pending scenarios`
+  );
+
+  await page.locator('#btn-scenario-close').click();
+  await page.locator('#scenario-panel.hidden').waitFor({ state: 'hidden', timeout: 5000 });
 }
 
 async function captureHomeSnapshot(browser) {
@@ -832,6 +916,7 @@ async function runScenario(browser, scenario) {
     expectedRuntimeMode,
     `${scenario.name}: runtime mode UI toggle should reflect active runtime mode`
   );
+  await exerciseScenarioLab(page, scenario.name);
   if (scenario.mobile) {
     assert.equal(
       state.selectedCreature,
@@ -1048,7 +1133,7 @@ async function runScenario(browser, scenario) {
       `${scenario.name}: worker food sync should survive parity soak`
     );
 
-    const perf = await page.evaluate(() => window.__creatureSmoke.perfBudget());
+    const perf = await readPerfBudgetWithRenderedSample(page, scenario.name);
     assert.equal(
       !!perf.runtime?.workerMode,
       true,
@@ -1230,6 +1315,13 @@ async function runScenario(browser, scenario) {
   assert.ok(
     (director?.objectives?.cards?.length || 0) >= 2,
     `${scenario.name}: director should expose objective cards`
+  );
+  await page.locator('.director-guided-loop').waitFor({ state: 'visible', timeout: 5000 });
+  const guidedLoopText = await page.locator('.director-guided-loop').innerText();
+  assert.match(
+    guidedLoopText,
+    /Observe .*Influence .*Preserve/s,
+    `${scenario.name}: guided loop should render in order`
   );
   await advance(page, 600);
   state = await readGameState(page);
@@ -1506,7 +1598,7 @@ async function runScenario(browser, scenario) {
   assert.ok(historyMetrics.count >= 1, `${scenario.name}: Upgrade Hub should render run history items`);
   assert.match(
     historyMetrics.text.join(' '),
-    /First Ecosystem|Gold|Silver|Bronze|Practice|Best/i,
+    /Herd Rescue|First Ecosystem|Gold|Silver|Bronze|Practice|Best/i,
     `${scenario.name}: run history should include scenario identity, medal, or best-run state`
   );
   const layoutGuardMetrics = await readLayoutGuardMetrics(page);
@@ -1607,7 +1699,7 @@ async function runScenario(browser, scenario) {
   );
 
   await advance(page, 180);
-  const perf = await page.evaluate(() => window.__creatureSmoke.perfBudget());
+  const perf = await readPerfBudgetWithRenderedSample(page, scenario.name);
   assert.equal(
     !!perf.runtime?.workerMode,
     workerMode,

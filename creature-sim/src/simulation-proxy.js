@@ -53,6 +53,7 @@ export class SimulationProxy {
       randomDisasters: true,
       disasterCooldown: 40,
       disasterIntensity: 1.0,
+      pendingDisasters: [],
       seasonSpeed: 0.015,
       dayLength: 120,
       autoBalanceSettings: {
@@ -171,6 +172,18 @@ export class SimulationProxy {
 
     this.triggerDisaster = (type, options = {}) => {
       this._send('TRIGGER_DISASTER', { type, options });
+    };
+
+    this.cancelDisaster = () => {
+      this._send('CANCEL_DISASTER', {});
+    };
+
+    this.cancelPendingDisaster = id => {
+      if (id != null) this._send('CANCEL_PENDING_DISASTER', { id });
+    };
+
+    this.clearPendingDisasters = () => {
+      this._send('CLEAR_PENDING_DISASTERS', {});
     };
 
     // Previously undefined on the proxy -- the god-mode Calm/Chaos tools
@@ -294,7 +307,7 @@ export class SimulationProxy {
   }
 
   updateSnapshot(payload) {
-    const { t, count, creatureBuffer, food, corpses, environment, activeDisaster } = payload;
+    const { t, count, creatureBuffer, food, corpses, environment, activeDisaster, pendingDisasters } = payload;
     this.diagnostics.snapshotCount += 1;
     this.diagnostics.lastSnapshotAt = Date.now();
     this.diagnostics.lastWorldTime = Number(t || 0);
@@ -314,6 +327,7 @@ export class SimulationProxy {
       this.worldSnapshot.food = food;
       this.worldSnapshot.corpses = corpses;
       this.worldSnapshot.activeDisaster = activeDisaster;
+      this.worldSnapshot.pendingDisasters = Array.isArray(pendingDisasters) ? pendingDisasters : [];
 
       if (environment) {
         // Update base properties
@@ -526,9 +540,17 @@ export class SimulationProxy {
   get disaster() {
     return {
       activeDisaster: this.worldSnapshot.activeDisaster ?? null,
-      pendingDisasters: this._saveExtras?.disasterPending || [],
+      pendingDisasters: this._saveExtras?.disasterPending || this.worldSnapshot.pendingDisasters || [],
       disasterCooldown: this.worldSnapshot.disasterCooldown ?? 0
     };
+  }
+
+  getPendingDisasters() {
+    return this.worldSnapshot.pendingDisasters || [];
+  }
+
+  getPendingDisastersVersion() {
+    return this.getPendingDisasters().length;
   }
 
   /**

@@ -310,6 +310,7 @@ export class CampaignSystem {
    * Load saved progress from localStorage
    */
   loadProgress() {
+    if (typeof localStorage === 'undefined') return;
     try {
       const saved = localStorage.getItem('campaign_progress');
       if (saved) {
@@ -335,6 +336,7 @@ export class CampaignSystem {
    * Save progress to localStorage
    */
   saveProgress() {
+    if (typeof localStorage === 'undefined') return;
     try {
       const data = {
         progress: Object.fromEntries(this.levelProgress),

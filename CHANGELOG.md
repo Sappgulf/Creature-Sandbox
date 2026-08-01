@@ -20,6 +20,48 @@
 
 ## [UNRELEASED]
 
+### 2026-08-01 — field-guide-reboot — Planned
+
+- **Issues:** The product shell feels like a dense developer dashboard rather than a living field journal, the objective rail does not name the player’s current phase, and authored assets need a clearer visual hierarchy before larger gameplay expansion.
+- **Root Causes:** The existing UI accumulated many glass surfaces and equal-weight controls; ecosystem story/objective data had no shared Observe/Influence/Discover/Preserve vocabulary; the current asset library and renderer need a deliberate visual bridge before new art is added.
+- **Fixes:** Planned a reversible Field Guide CSS layer, phase metadata on existing story/objective boundaries, stable asset reuse, and pure regression checks before the next worker sprite and scenario-contract slices.
+- **Verification:** Planned: focused reboot checks, lint, formatting, build/bundle guard, in-app browser screenshots, responsive/keyboard checks, and the full local release proof.
+
+### 2026-08-01 — field-guide-reboot — Implemented
+
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned; independent visual, gameplay, and runtime audits also verified that the worker path renders triangle proxies despite loading authored sprite sheets, and that `mutation_showcase` has an impossible five-variant target against a three-variant metric.
+- **Fixes:** Added `creature-sim/reboot.css` with the Field Journal / Bioluminescent Wilderness visual direction, updated home copy and feature hierarchy, added pure phase resolution to ecosystem stories/objective rails, added accessible phase/status text, added a shared worker/main sprite presentation bridge with a readable normal-zoom footprint, corrected the mutation and prop scenario contracts, and added focused reboot, presentation, and scenario-definition tests. Captured the verified triangle/asset, objective-contract, and performance findings in `docs/REBOOT_BLUEPRINT.md` for the next implementation tranche.
+- **Verification:** Focused tests, lint, formatting, build, and bundle guard pass. In-app browser verification confirms the new home shell, authored worker silhouettes, responsive mobile hierarchy, keyboard pause semantics, Scenario Lab run/end flow, and no console errors/warnings in the sampled session. The full local release proof passes: syntax checks, lint, npm test (190 core + 17 regression + reboot/presentation/scenario checks + 1 E2E), build, bundle guard, default worker/main/forced-worker browser smokes, scenario balance, and release evidence. Production browser/Web Vitals proof remains stale/missing at the prior deployment SHA. No simulation rules, worker protocol, save schema, or binary assets were changed by this reboot slice.
+
+### 2026-08-01 — herd-rescue-guided-loop — Planned
+
+- **Issues:** The first reboot shell names the Field Guide phases, but the first playable scenario still presents a generic three-minute survival task rather than a short, legible intervention loop.
+- **Root Causes:** The existing `first_ecosystem` contract had the stable save-compatible ID and the needed food/calm mechanics, but its scenario copy and director snapshot did not expose the Observe → Influence → Preserve sequence as a player-facing expedition.
+- **Fixes:** Planned a contract-preserving Herd Rescue retune, a two-minute stress-aware objective, and guided-loop cards in the Scenario Lab backed by the same scenario definition used for completion checks.
+- **Verification:** Planned: scenario-contract tests, full npm test, lint, formatting, build/bundle guard, browser smoke, scenario balance, release proof, and in-app responsive/keyboard verification.
+
+### 2026-08-01 — herd-rescue-guided-loop — Implemented
+
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Renamed the stable `first_ecosystem` presentation to Herd Rescue, added a 120-second / average-stress-under-60 objective, exposed three guided expedition steps in the director snapshot, and updated smoke expectations for the new player-facing name.
+- **Verification:** Focused tests, lint, formatting, build, and diff checks pass. The complete local release proof passes: 190 core checks, 17 regression checks, reboot/presentation/scenario checks, 1 E2E, build, bundle guard at 149,962 B gzip for the main chunk, default worker/main/forced-worker browser smokes, scenario balance, and release evidence. Production browser/Web Vitals proof remains stale/missing at the prior deployment SHA; no commit or deployment has been made yet.
+
+### 2026-08-01 — audit-save-scenario-lab — Planned
+
+- **Issues:** The audit found a confirmed `RangeError: Maximum call stack size exceeded` when autosave/manual-save compression spread a large byte array into `String.fromCharCode`, making large saves unreliable. Scenario Lab was a visible UI shell with no working Run Now, Queue, End Active, or Clear All integration in the shipping worker path. The browser smoke lane also sampled frame-local renderer counters at a single instant, producing a transient mobile `rendered=0` failure.
+- **Root Causes:** Compression passed the entire gzip byte array as one variadic call; the Scenario Lab had no control binding or worker-facing pending-disaster protocol, and zero-delay queued disasters did not receive a scheduler timestamp; the smoke assertion treated a reset-per-frame metric as stable state.
+- **Fixes:** Planned chunked compression, World/SimulationProxy/worker disaster command wiring, queued-state snapshots, accessible Scenario Lab semantics, focused regressions, browser-smoke coverage, and a bounded live-render sample retry.
+- **Verification:** Planned: diff/syntax checks, lint, unit/E2E tests, build/bundle guard, default/worker/main browser smoke, scenario balance, and release evidence.
+
+### 2026-08-01 — audit-save-scenario-lab — Implemented
+
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned; the stale cache-first service worker also kept the old `ui-controller-panels` module alive until its import version was advanced. A separate mobile watch/save/scenario path could also leave the shared camera with non-finite coordinates, making every object cull even while the worker remained healthy.
+- **Fixes:** Replaced the unsafe argument-spread compression path with 32KiB chunking before base64 encoding, covering manual saves and autosaves. Added `World` cancel/clear facades, `SimulationProxy` commands and pending snapshots, worker handlers, zero-delay scheduling, string-safe pending IDs, and localStorage guards for non-browser campaign tests. Bound all Scenario Lab controls, synchronized range/auto-balance state, added Run Now/Queue/End/Clear notifications, delegated queued-item removal, and gave the panel dialog labeling/hidden state. Bumped the panel module cache-bust so local/prod cache state cannot mask the integration. Added camera finite-state recovery at the shared clamp/update boundary so invalid pan/zoom state falls back to a centered, readable view. Added large-state save/autosave, zero-delay disaster, proxy protocol, camera recovery, and browser-smoke regressions; the smoke lane now covers Scenario Lab start/end/queue/clear across responsive and runtime modes and waits for a strict nonzero renderer sample when counters are transiently reset.
+- **Verification:** `git diff --check`, modified-file syntax checks, `npm run lint`, `npm test` (190 core + 17 regression + 1 E2E pass), `npm run build`, and `npm run check:bundle` (main entry 149,799 B gzip in the final proof) pass. `npm run smoke:browser -- --no-realtime` passes desktop, mobile-compact, and mobile-large in the default worker mode; realtime `npm run proof:release` passes its default worker lane with `shipping-default` readiness, and explicit-main plus forced-worker lanes pass all three viewports. `npm run smoke:scenarios` passes 2× Stress Sanctuary and Scavenger Bridge runs; `npm run evidence:release` writes the release board and summary. The camera fix removes the previously all-culled compact-mobile path. Live in-app browser verification confirms clean startup after cache invalidation, accessible Scenario Lab open/close state, Run Now/Queue/End Active interaction, and no new console errors after launch. No external production service was used.
+
 ### 2026-07-18 — god-mode-menu-polish — Planned
 
 - **Issues:** Development sessions could still be controlled by a previously registered cache-first service worker even after new source stopped registering one, causing local edits to appear stale after reload. The newly exposed Bless, Curse, Attract, and Repel God Powers needed their controls visually separated from world-editing tools and discoverable by keyboard.

@@ -21,14 +21,20 @@ export const PLAYABLE_SCENARIOS = [
     id: 'first_ecosystem',
     artFrame: 0,
     icon: '🌱',
-    name: 'First Ecosystem',
-    fantasy: 'Learn the loop by keeping a small herd fed, calm, and alive.',
-    objective: 'Keep 25 creatures alive for 3 minutes.',
-    targetSeconds: 180,
+    name: 'Herd Rescue',
+    fantasy: 'Read a fragile herd, make one careful nudge, and keep its recovery alive.',
+    objective: 'Keep 25 creatures alive with average stress under 60 for 2 minutes.',
+    targetSeconds: 120,
     minAlive: 25,
+    maxStress: 60,
     setup: { herbivore: 24, omnivore: 4, predator: 2, food: 180, props: ['spring'] },
     tuning: { mode: 'balanced', foodRate: 1.15, disasters: false },
-    steps: ['Spawn or protect grazers', 'Paint food near the herd', 'Use a calm zone if stress rises']
+    guidedLoop: true,
+    steps: [
+      'Observe · Inspect the herd before acting',
+      'Influence · Paint food near the herd',
+      'Preserve · Place a calm zone if stress rises'
+    ]
   },
   {
     id: 'peaceful_garden',
@@ -109,7 +115,7 @@ export const PLAYABLE_SCENARIOS = [
     icon: '🧩',
     name: 'Prop Playground',
     fantasy: 'Turn the sim into a toybox without wiping out the herd.',
-    objective: 'Trigger props while keeping 28 creatures alive for 2 minutes.',
+    objective: 'Place 4 props while keeping 28 creatures alive for 2 minutes.',
     targetSeconds: 120,
     minAlive: 28,
     minProps: 4,
@@ -172,10 +178,10 @@ export const PLAYABLE_SCENARIOS = [
     icon: '✨',
     name: 'Mutation Showcase',
     fantasy: 'Inspect unusual variants in a controlled lab setup.',
-    objective: 'Keep 5+ variants alive for 3 minutes.',
+    objective: 'Keep all 3 variant roles alive for 3 minutes.',
     targetSeconds: 180,
     minAlive: 24,
-    minVariants: 5,
+    minVariants: 3,
     setup: { herbivore: 14, omnivore: 4, predator: 2, aquatic: 6, flying: 6, burrowing: 6, food: 240, props: ['calm'] },
     tuning: { mode: 'chill', foodRate: 1.3, disasters: false },
     steps: [
@@ -288,6 +294,22 @@ export const PLAYABLE_SCENARIOS = [
   }
 ];
 
+const PLAYABLE_VARIANT_ROLE_COUNT = 3;
+
+export function validatePlayableScenarioDefinitions(scenarios = PLAYABLE_SCENARIOS) {
+  return scenarios.flatMap(scenario => {
+    const issues = [];
+    if (!scenario?.id) issues.push('missing scenario id');
+    if (Number(scenario?.minVariants || 0) > PLAYABLE_VARIANT_ROLE_COUNT) {
+      issues.push(
+        `minVariants ${scenario.minVariants} exceeds the ${PLAYABLE_VARIANT_ROLE_COUNT} defined variant roles`
+      );
+    }
+    if (Number(scenario?.targetSeconds || 0) <= 0) issues.push('targetSeconds must be positive');
+    return issues.length ? [{ id: scenario?.id || '(unknown)', issues }] : [];
+  });
+}
+
 /**
  * Shared source of truth for a scenario's win-condition objectives. Used both
  * for the live session-goal cards (PlayableScenarios._scenarioGoals) and for
@@ -337,7 +359,7 @@ export function buildScenarioObjectives(scenario) {
       type: 'variant_alive',
       icon: '🧬',
       target: scenario.minVariants,
-      description: 'Keep aquatic, flying, and burrowing variants alive'
+      description: `Keep ${scenario.minVariants} variant roles alive`
     });
   }
   if (scenario.minProps) {
@@ -696,7 +718,8 @@ export class PlayableScenarios {
             name: scenario.name,
             fantasy: scenario.fantasy,
             objective: scenario.objective,
-            steps: scenario.steps || []
+            steps: scenario.steps || [],
+            guidedLoop: !!scenario.guidedLoop
           }
         : null,
       elapsed,

@@ -165,6 +165,27 @@ self.onmessage = function (e) {
         }
         break;
 
+      case 'CANCEL_DISASTER':
+        if (world) {
+          world.cancelDisaster?.();
+          sendSnapshot();
+        }
+        break;
+
+      case 'CANCEL_PENDING_DISASTER':
+        if (world) {
+          world.cancelPendingDisaster?.(data.id);
+          sendSnapshot();
+        }
+        break;
+
+      case 'CLEAR_PENDING_DISASTERS':
+        if (world) {
+          world.clearPendingDisasters?.();
+          sendSnapshot();
+        }
+        break;
+
       case 'ADD_CALM_ZONE':
         if (world) {
           world.addCalmZone(data.x, data.y, data.radius, data.duration, data.strength);
@@ -328,7 +349,8 @@ function sendSnapshot() {
       moodState: world.environment.moodState,
       timeOfDay: world.environment.timeOfDay
     },
-    activeDisaster: world.getActiveDisaster ? world.getActiveDisaster() : null
+    activeDisaster: world.getActiveDisaster ? world.getActiveDisaster() : null,
+    pendingDisasters: world.getPendingDisasters ? world.getPendingDisasters().map(item => ({ ...item })) : []
   };
 
   // Transfer the buffer to avoid copying memory

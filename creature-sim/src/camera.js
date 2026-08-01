@@ -96,6 +96,7 @@ export class Camera {
 
   /** Apply smooth interpolation toward target pan/zoom each frame. */
   update(dt) {
+    this._ensureFiniteState();
     const lerp = (a, b, t) => a + (b - a) * t;
     const rawT = 1 - Math.pow(1 - this.smooth, Math.min(dt * 60, 1));
     const t = this._ease('easeOutCubic', rawT);
@@ -246,6 +247,7 @@ export class Camera {
 
   _clampTargets() {
     if (!Number.isFinite(this.worldWidth) || !Number.isFinite(this.worldHeight)) return;
+    this._ensureFiniteState();
     const margin = 80;
     const hw = this.viewportWidth / 2 / this.targetZoom;
     const hh = this.viewportHeight / 2 / this.targetZoom;
@@ -259,6 +261,7 @@ export class Camera {
 
   _clampPosition() {
     if (!Number.isFinite(this.worldWidth) || !Number.isFinite(this.worldHeight)) return;
+    this._ensureFiniteState();
     const margin = 80;
     const hw = this.viewportWidth / 2 / this.zoom;
     const hh = this.viewportHeight / 2 / this.zoom;
@@ -280,6 +283,40 @@ export class Camera {
       minY: -margin + hh,
       maxY: this.worldHeight + margin - hh
     };
+  }
+
+  _ensureFiniteState() {
+    const fallbackX = Number.isFinite(this.worldWidth) ? this.worldWidth * 0.5 : 0;
+    const fallbackY = Number.isFinite(this.worldHeight) ? this.worldHeight * 0.5 : 0;
+    const fallbackZoom = Number.isFinite(this.minZoom) && this.minZoom > 0 ? this.minZoom : 0.1;
+
+    if (!Number.isFinite(this.targetZoom) || this.targetZoom <= 0) {
+      this.targetZoom = Number.isFinite(this.zoom) && this.zoom > 0 ? this.zoom : fallbackZoom;
+    }
+    if (!Number.isFinite(this.zoom) || this.zoom <= 0) this.zoom = this.targetZoom;
+
+    if (!Number.isFinite(this.targetX)) {
+      this.targetX = Number.isFinite(this.x) ? this.x : fallbackX;
+    }
+    if (!Number.isFinite(this.targetY)) {
+      this.targetY = Number.isFinite(this.y) ? this.y : fallbackY;
+    }
+    if (!Number.isFinite(this.x)) this.x = this.targetX;
+    if (!Number.isFinite(this.y)) this.y = this.targetY;
+
+    if (
+      this.travel &&
+      ![
+        this.travel.fromX,
+        this.travel.fromY,
+        this.travel.toX,
+        this.travel.toY,
+        this.travel.duration,
+        this.travel.elapsed
+      ].every(Number.isFinite)
+    ) {
+      this.travel = null;
+    }
   }
 
   _clampPoint(x, y, zoom = this.targetZoom) {

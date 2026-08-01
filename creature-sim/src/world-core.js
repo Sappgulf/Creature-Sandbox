@@ -1804,6 +1804,19 @@ export class World {
     return this.disaster.pendingDisasters?.length ?? 0;
   }
 
+  cancelDisaster() {
+    return this.disaster.cancelDisaster();
+  }
+
+  cancelPendingDisaster(id) {
+    return this.disaster.cancelPendingDisaster(id);
+  }
+
+  clearPendingDisasters() {
+    this.disaster.clearPendingDisasters();
+    return true;
+  }
+
   // Family tree helpers
   get childrenOf() {
     return this.creatureManager.childrenOf;

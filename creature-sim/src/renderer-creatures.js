@@ -1,6 +1,7 @@
 import { clamp } from './utils.js';
 import { getCreatureEmotion, getLifeStageDisplay } from './upgrade-data.js';
 import { drawBatchedTrails } from './creature-render.js?v=20260423-assets1';
+import { drawCreatureSprite } from './creature-presentation.js?v=20260801-field-guide1';
 
 export function applyCreatureMethods(Renderer) {
   Renderer.prototype.drawCreatures = function (world, opts) {
@@ -165,7 +166,7 @@ export function applyCreatureMethods(Renderer) {
         ctx.stroke();
       } else if ((zoom < 0.08 || useVectorCreatureLOD) && !forceDetail) {
         // MEDIUM LOD: Simplified directional shape for very distant flock reads.
-        this._drawVectorCreatureLOD(ctx, c, { clusterHue, quality, zoom });
+        this._drawVectorCreatureLOD(ctx, c, { clusterHue, quality, zoom, worldTime });
       } else {
         // HIGH LOD: Full rendering
         if (showShadows && (isSelected || isPinned || zoom > 0.6)) {
@@ -231,8 +232,13 @@ export function applyCreatureMethods(Renderer) {
   Renderer.prototype._drawVectorCreatureLOD = function (
     ctx,
     c,
-    { clusterHue = null, quality = 'high', zoom = 1 } = {}
+    { clusterHue = null, quality = 'high', zoom = 1, worldTime = 0 } = {}
   ) {
+    // Keep the vector mark for truly distant populations, but use the
+    // authored sprite at normal gameplay scale so worker snapshots retain
+    // the same creature identity as the main-thread path.
+    if (zoom >= 0.28 && drawCreatureSprite(ctx, c, { clusterHue, zoom, worldTime })) return;
+
     const hue = clusterHue ?? c.genes?.hue ?? 0;
     const predator = c.genes?.predator || (c.genes?.diet ?? 0) >= 0.7;
     const baseLight = predator ? 50 : 62;
@@ -313,6 +319,8 @@ export function applyCreatureMethods(Renderer) {
     const { isSelected, isPinned, clusterHue, zoom: _zoom } = opts;
     const g = c.genes || {};
     const hue = clusterHue !== null ? clusterHue : g.hue || 0;
+
+    if (drawCreatureSprite(ctx, c, opts)) return;
 
     ctx.save();
     ctx.translate(c.x, c.y);

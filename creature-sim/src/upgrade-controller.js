@@ -607,11 +607,18 @@ export class UpgradeController {
     );
     const modeChip = this.getRailModeChip();
     const rhythmChip = this.getWorldRhythmChip();
+    const phase = objective.phase || story.phase || 'observe';
+    const phaseLabel = objective.phaseLabel || story.phaseLabel || 'Observe';
+    const phaseKicker = objective.phaseKicker || story.phaseKicker || 'READ THE FIELD';
     rail.dataset.level = story.level;
     rail.dataset.mode = modeChip?.id || 'none';
+    rail.dataset.phase = phase;
+    rail.setAttribute('role', 'status');
+    rail.setAttribute('aria-label', `${phaseLabel}: ${objective.title}. ${objective.action}`);
     rail.innerHTML = `
       <span class="objective-icon">${escapeHtml(objective.icon)}</span>
       <span class="objective-copy">
+        <span class="objective-phase">${escapeHtml(phaseKicker)} · ${escapeHtml(phaseLabel)}</span>
         <strong>${escapeHtml(objective.title)}</strong>
         <em>${escapeHtml(objective.action)}</em>
       </span>

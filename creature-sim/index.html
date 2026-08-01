@@ -33,6 +33,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
   <link rel="stylesheet" href="styles.css?v=20260718-menupolish1" />
+  <link rel="stylesheet" href="reboot.css?v=20260801-field-guide1" />
   <script>
     (() => {
       const params = new URLSearchParams(window.location.search);
@@ -399,27 +400,28 @@
     <div class="home-content">
       <!-- Hero Section -->
       <header class="home-hero">
-        <div class="home-logo">🧬</div>
+        <span class="home-eyebrow">FIELD JOURNAL <span aria-hidden="true">/</span> LIVING SYSTEM</span>
+        <div class="home-logo" aria-hidden="true">🧬</div>
         <h1 class="home-title">Creature Sandbox</h1>
-        <p class="home-tagline">Watch creatures evolve, adapt, and settle into a living ecosystem.</p>
+        <p class="home-tagline">Observe a living world, make one meaningful nudge, and discover what adapts.</p>
       </header>
 
       <!-- Feature Highlights -->
       <div class="home-features">
         <div class="home-feature home-feature-creatures">
           <span class="home-feature-art home-feature-art-creatures" aria-hidden="true"></span>
-          <h3>Genetic Evolution</h3>
-          <p>Traits, personalities, and quirks shape each generation</p>
+          <h3>Read the traits</h3>
+          <p>Genes, quirks, and family lines shape every generation.</p>
         </div>
         <div class="home-feature home-feature-ecosystem">
           <span class="home-feature-art home-feature-art-ecosystem" aria-hidden="true"></span>
-          <h3>Living Ecosystems</h3>
-          <p>Biomes, seasons, and pressure keep the world moving</p>
+          <h3>Shape the habitat</h3>
+          <p>Seasons, food, and pressure keep the field in motion.</p>
         </div>
         <div class="home-feature home-feature-goals">
           <span class="home-feature-art home-feature-art-goals" aria-hidden="true"></span>
-          <h3>Campaigns & Goals</h3>
-          <p>Friendly goals and tools that guide new experiments</p>
+          <h3>Keep the story</h3>
+          <p>Follow expeditions, log discoveries, and preserve a seed.</p>
         </div>
       </div>
 
@@ -477,9 +479,10 @@
   </div>
 
   <!-- Scenario Lab Panel -->
-  <div id="scenario-panel" class="panel hidden">
+  <div id="scenario-panel" class="panel hidden" role="dialog" aria-modal="false" aria-labelledby="scenario-panel-title"
+    aria-hidden="true">
     <div class="panel-header" data-panel="scenario">
-      <span class="panel-title">
+      <span id="scenario-panel-title" class="panel-title">
         <span class="panel-collapse-icon">▼</span>
         🧪 Scenario Lab
       </span>

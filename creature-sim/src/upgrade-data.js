@@ -8,6 +8,28 @@ export const READABILITY_MODES = [
   { id: 'minimal', label: 'Minimal', note: 'Quiet world with fewer decorative layers.' }
 ];
 
+export const FIELD_GUIDE_PHASES = Object.freeze({
+  observe: { id: 'observe', label: 'Observe', kicker: 'READ THE FIELD' },
+  influence: { id: 'influence', label: 'Influence', kicker: 'MAKE ONE NUDGE' },
+  discover: { id: 'discover', label: 'Discover', kicker: 'FOLLOW A THREAD' },
+  preserve: { id: 'preserve', label: 'Preserve', kicker: 'KEEP THE SEED' }
+});
+
+export function resolveFieldGuidePhase({
+  level = 'stable',
+  playableSnapshot = null,
+  hasActiveGoal = false,
+  aliveCount = 0
+} = {}) {
+  if (playableSnapshot?.state === 'complete') return FIELD_GUIDE_PHASES.preserve;
+  if (aliveCount <= 0 && !playableSnapshot?.active && !hasActiveGoal) return FIELD_GUIDE_PHASES.observe;
+  if (playableSnapshot?.active || hasActiveGoal || ['critical', 'strained', 'watch'].includes(level)) {
+    return FIELD_GUIDE_PHASES.influence;
+  }
+  if (aliveCount > 0) return FIELD_GUIDE_PHASES.discover;
+  return FIELD_GUIDE_PHASES.observe;
+}
+
 export const FOLLOW_TARGET_MODES = [
   { id: 'youngest', label: 'Youngest', icon: '🌱' },
   { id: 'stressed', label: 'Most Stressed', icon: '⚠️' },
@@ -167,10 +189,19 @@ export function buildEcosystemStory(world = null, playableSnapshot = null) {
     action = 'Save the seed or try a harder preset.';
   }
 
+  const phase = resolveFieldGuidePhase({
+    level,
+    playableSnapshot,
+    aliveCount: alive.length
+  });
+
   return {
     level,
     headline,
     action,
+    phase: phase.id,
+    phaseLabel: phase.label,
+    phaseKicker: phase.kicker,
     metrics: {
       alive: alive.length,
       predators,
@@ -183,6 +214,7 @@ export function buildEcosystemStory(world = null, playableSnapshot = null) {
 
 export function buildObjectiveRail(playableSnapshot = null, goals = []) {
   if (playableSnapshot?.active) {
+    const phase = resolveFieldGuidePhase({ playableSnapshot });
     return {
       icon: playableSnapshot.scenario?.icon || '🎯',
       title: playableSnapshot.scenario?.name || 'Scenario',
@@ -191,7 +223,10 @@ export function buildObjectiveRail(playableSnapshot = null, goals = []) {
         playableSnapshot.director?.nextAction ||
         playableSnapshot.scenario?.steps?.[0] ||
         playableSnapshot.scenario?.objective ||
-        'Keep the ecosystem stable.'
+        'Keep the ecosystem stable.',
+      phase: phase.id,
+      phaseLabel: phase.label,
+      phaseKicker: phase.kicker
     };
   }
 
@@ -210,19 +245,27 @@ export function buildObjectiveRail(playableSnapshot = null, goals = []) {
       god_actions: 'Use God Mode for food, calm, or cleanup.',
       aquatic_alive: 'Keep wetland creatures fed and uncrowded.'
     };
+    const phase = resolveFieldGuidePhase({ hasActiveGoal: true });
     return {
       icon: activeGoal.icon || '🎯',
       title: activeGoal.description || 'Session goal',
       progress: Math.round(clamp(Number(activeGoal.progress ?? 0), 0, 1) * 100),
-      action: actionHints[activeGoal.type] || 'Take the next visible action.'
+      action: actionHints[activeGoal.type] || 'Take the next visible action.',
+      phase: phase.id,
+      phaseLabel: phase.label,
+      phaseKicker: phase.kicker
     };
   }
 
+  const phase = resolveFieldGuidePhase();
   return {
     icon: '👁️',
     title: 'Watch the ecosystem',
     progress: 0,
-    action: 'Select a creature, follow Watch Mode, or start a scenario.'
+    action: 'Select a creature, follow Watch Mode, or start a scenario.',
+    phase: phase.id,
+    phaseLabel: phase.label,
+    phaseKicker: phase.kicker
   };
 }
 

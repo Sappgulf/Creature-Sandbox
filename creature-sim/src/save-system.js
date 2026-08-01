@@ -100,7 +100,13 @@ async function compressJson(jsonString) {
   writer.write(inputData);
   writer.close();
   const outputBuffer = await new Response(cs.readable).arrayBuffer();
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(outputBuffer)));
+  const bytes = new Uint8Array(outputBuffer);
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  const base64 = btoa(binary);
   return COMPRESSED_MARKER + base64;
 }
 

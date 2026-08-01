@@ -76,9 +76,24 @@ export function applyUiPlayableMethods(UIController) {
       ? `${scenario.icon || '🎯'} ${escapeHtml(scenario.name)} · ${formatTime(data.elapsed)} / ${formatTime(data.targetSeconds)}`
       : 'Pick a scenario to start a real run';
 
-    const steps = scenario?.steps?.length
-      ? `<div class="director-steps">${scenario.steps.map(step => `<span>${escapeHtml(step)}</span>`).join('')}</div>`
-      : '';
+    const steps =
+      scenario?.steps?.length && !scenario?.guidedLoop
+        ? `<div class="director-steps">${scenario.steps.map(step => `<span>${escapeHtml(step)}</span>`).join('')}</div>`
+        : '';
+    const guidedLoop =
+      scenario?.guidedLoop && scenario?.steps?.length
+        ? `<section class="director-guided-loop" aria-label="Guided expedition loop">
+          <div class="guided-loop-heading"><span>First expedition</span><em>Three careful moves</em></div>
+          <ol>
+            ${scenario.steps
+              .map(
+                (step, index) => `
+              <li><span class="guided-loop-index">${index + 1}</span><strong>${escapeHtml(step)}</strong></li>`
+              )
+              .join('')}
+          </ol>
+        </section>`
+        : '';
     const objectives = objectiveCards.length
       ? `<div class="director-objectives" aria-label="Current objectives">
           ${objectiveCards
@@ -117,6 +132,7 @@ export function applyUiPlayableMethods(UIController) {
         <span><b>${Math.round(metrics.averageStress ?? 0)}</b> stress</span>
       </div>
       ${objectives}
+      ${guidedLoop}
       ${steps}
     `;
   };

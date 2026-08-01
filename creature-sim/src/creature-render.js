@@ -48,6 +48,7 @@ import { ECOSYSTEM_STATES } from './creature-ecosystem.js';
 import { assetLoader } from './asset-loader.js?v=20260423-assets1';
 import { getDebugFlags } from './debug-flags.js';
 import { colorCache } from './color-cache.js';
+import { getCreatureAssetKey } from './creature-presentation.js?v=20260801-field-guide1';
 
 import { getAgeStageIcon, getElderFadeAlpha } from './creature-age.js';
 
@@ -561,29 +562,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   const showTraitDetails =
     opts.showTraitVisualization !== false && (isSelected || isPinned || (opts.zoom && opts.zoom > 1.0));
 
-  const diet = g.diet ?? (g.predator ? 1.0 : 0.0);
-  const creatureType = creature.traits?.creatureType;
-  let assetType = 'creature_herbivore';
-
-  if (creature.ageStage === 'baby') {
-    assetType = 'creature_baby';
-  } else if (creature.ageStage === 'elder') {
-    assetType = 'creature_elder';
-  } else if (creatureType === 'flying') {
-    assetType = 'creature_flying';
-  } else if (creatureType === 'burrowing') {
-    assetType = 'creature_burrowing';
-  } else if (creature.aquaticAffinity && creature.aquaticAffinity > 0.6) {
-    assetType = 'creature_aquatic';
-  } else if (creature.socialRank && creature.socialRank === 'alpha') {
-    assetType = 'creature_alpha';
-  } else {
-    if (diet > 0.7) {
-      assetType = 'creature_predator';
-    } else if (diet > 0.3) {
-      assetType = 'creature_omnivore';
-    }
-  }
+  const assetType = getCreatureAssetKey(creature);
 
   const spriteHue = quantizeHue(displayHue);
   const spriteLightness = quantizeLightness(lightness);

@@ -88,6 +88,18 @@ export class DOMCache {
     this.cacheElement('btn-gene-editor-close', 'geneEditorCloseBtn');
     this.cacheElement('scenario-panel', 'scenarioPanel');
     this.cacheElement('btn-scenario-close', 'scenarioCloseBtn');
+    this.cacheElement('scenario-type', 'scenarioType');
+    this.cacheElement('scenario-duration', 'scenarioDuration');
+    this.cacheElement('scenario-intensity', 'scenarioIntensity');
+    this.cacheElement('scenario-delay', 'scenarioDelay');
+    this.cacheElement('scenario-cooldown', 'scenarioCooldown');
+    this.cacheElement('scenario-autobalance', 'scenarioAutoBalance');
+    this.cacheElement('btn-scenario-trigger', 'scenarioTriggerBtn');
+    this.cacheElement('btn-scenario-queue', 'scenarioQueueBtn');
+    this.cacheElement('btn-scenario-end', 'scenarioEndBtn');
+    this.cacheElement('btn-scenario-clear', 'scenarioClearBtn');
+    this.cacheElement('scenario-status', 'scenarioStatus');
+    this.cacheElement('scenario-queue', 'scenarioQueue');
     this.cacheElement('eco-health-panel', 'ecoHealthPanel');
     this.cacheElement('btn-eco-health-close', 'ecoHealthCloseBtn');
 

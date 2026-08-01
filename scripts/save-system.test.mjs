@@ -184,6 +184,61 @@ multiWorld.spawnCreatureType('omnivore', 50, 30);
 const multiSave = saveSystem.serialize(multiWorld, camera, null, null);
 assert.equal(multiSave.world.creatures.length, 3, 'should save 3 creatures');
 
+// Compression regression: spreading a large Uint8Array into
+// String.fromCharCode exceeded the JavaScript argument limit and made large
+// slot/autosave writes fail with RangeError. Use deterministic high-entropy
+// metadata so the compressed output is large enough to exercise the chunking
+// path rather than accidentally passing with a tiny, highly-compressible save.
+let entropySeed = 0x12345678;
+let largePayload = '';
+for (let index = 0; index < 400_000; index += 1) {
+  entropySeed ^= entropySeed << 13;
+  entropySeed ^= entropySeed >>> 17;
+  entropySeed ^= entropySeed << 5;
+  largePayload += String.fromCharCode(32 + ((entropySeed >>> 0) % 95));
+}
+
+const storage = new Map();
+const priorLocalStorage = globalThis.localStorage;
+globalThis.localStorage = {
+  getItem: key => storage.get(key) ?? null,
+  setItem: (key, value) => storage.set(key, String(value)),
+  removeItem: key => storage.delete(key)
+};
+
+try {
+  const largeSaveSystem = new SaveSystem();
+  largeSaveSystem.setMetadataProvider(() => ({ largePayload }));
+  await largeSaveSystem.saveToSlot(1, multiWorld, camera, null, null, 'Large payload');
+
+  const storedSlot = storage.get('creature-sim-slot-1');
+  assert.ok(storedSlot?.startsWith('C2:'), 'large manual saves should use compressed storage');
+  assert.ok(storedSlot.length > 131_072, 'fixture should exceed the old argument-spread threshold');
+
+  const restoredLargeSave = await largeSaveSystem.loadFromSlot(1, World, Creature, Camera, makeGenes, BiomeGenerator);
+  assert.equal(
+    restoredLargeSave.metadata.largePayload,
+    largePayload,
+    'large compressed manual saves should round-trip without stack overflow'
+  );
+
+  const autoSaveSystem = new SaveSystem();
+  autoSaveSystem.setMetadataProvider(() => ({ largePayload }));
+  autoSaveSystem.autoSaveInterval = 0;
+  await autoSaveSystem.autoSave(multiWorld, camera, null, null, 1);
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert.ok(
+    storage.get('creature-sim-autosave-1')?.startsWith('C2:'),
+    'large autosaves should use the same safe chunked compression path'
+  );
+} finally {
+  if (priorLocalStorage === undefined) {
+    delete globalThis.localStorage;
+  } else {
+    globalThis.localStorage = priorLocalStorage;
+  }
+}
+
 // Runtime metadata provider should feed every save path without overriding explicit metadata.
 const metadataSaveSystem = new SaveSystem();
 metadataSaveSystem.setMetadataProvider(() => ({

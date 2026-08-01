@@ -89,6 +89,134 @@ export function applyUiPanelMethods(UIController) {
     if (ecoHealthCloseBtn) ecoHealthCloseBtn.addEventListener('click', this.boundHandlers.onEcoHealthToggle);
   };
 
+  UIController.prototype.bindScenarioControls = function () {
+    if (this._scenarioControlsBound) return;
+
+    const panel = domCache.get('scenarioPanel') || document.getElementById('scenario-panel');
+    const typeSelect = domCache.get('scenarioType') || document.getElementById('scenario-type');
+    const durationSlider = domCache.get('scenarioDuration') || document.getElementById('scenario-duration');
+    const intensitySlider = domCache.get('scenarioIntensity') || document.getElementById('scenario-intensity');
+    const delaySlider = domCache.get('scenarioDelay') || document.getElementById('scenario-delay');
+    const cooldownToggle = domCache.get('scenarioCooldown') || document.getElementById('scenario-cooldown');
+    const autoBalanceToggle = domCache.get('scenarioAutoBalance') || document.getElementById('scenario-autobalance');
+    const triggerButton = domCache.get('scenarioTriggerBtn') || document.getElementById('btn-scenario-trigger');
+    const queueButton = domCache.get('scenarioQueueBtn') || document.getElementById('btn-scenario-queue');
+    const endButton = domCache.get('scenarioEndBtn') || document.getElementById('btn-scenario-end');
+    const clearButton = domCache.get('scenarioClearBtn') || document.getElementById('btn-scenario-clear');
+    const queue = domCache.get('scenarioQueue') || document.getElementById('scenario-queue');
+
+    if (
+      !panel ||
+      !typeSelect ||
+      !durationSlider ||
+      !intensitySlider ||
+      !delaySlider ||
+      !triggerButton ||
+      !queueButton
+    ) {
+      return;
+    }
+
+    const durationValue = document.getElementById('scenario-duration-value');
+    const intensityValue = document.getElementById('scenario-intensity-value');
+    const delayValue = document.getElementById('scenario-delay-value');
+
+    const syncLabels = () => {
+      if (durationValue) durationValue.textContent = `${durationSlider.value}s`;
+      if (intensityValue) intensityValue.textContent = `${Number(intensitySlider.value).toFixed(1)}×`;
+      if (delayValue) delayValue.textContent = `${delaySlider.value}s`;
+    };
+
+    const syncAutoBalance = () => {
+      if (autoBalanceToggle && this.world.autoBalanceSettings) {
+        autoBalanceToggle.checked = this.world.autoBalanceSettings.enabled !== false;
+      }
+    };
+
+    const readNumber = (input, fallback) => {
+      const value = Number(input?.value);
+      return Number.isFinite(value) ? value : fallback;
+    };
+
+    const readOptions = queueMode => ({
+      duration: readNumber(durationSlider, 30),
+      intensity: readNumber(intensitySlider, 1),
+      delay: readNumber(delaySlider, 0),
+      manual: true,
+      queue: queueMode,
+      waitForClear: true,
+      applyCooldown: cooldownToggle?.checked !== false
+    });
+
+    const setAutoBalance = () => {
+      if (autoBalanceToggle && this.world.autoBalanceSettings) {
+        this.world.autoBalanceSettings.enabled = autoBalanceToggle.checked;
+      }
+    };
+
+    const announce = (message, type = 'info') => {
+      this.notifications?.show?.(message, type, 2200);
+    };
+
+    const startScenario = queueMode => {
+      try {
+        setAutoBalance();
+        const type = typeSelect.value;
+        const result = this.world.triggerDisaster?.(type, readOptions(queueMode));
+        if (result === false) {
+          throw new Error(`Unable to start disaster: ${type}`);
+        }
+        const label = typeSelect.options[typeSelect.selectedIndex]?.textContent?.trim() || type;
+        announce(queueMode ? `🗓️ ${label} queued` : `🌪️ ${label} started`, 'success');
+      } catch (error) {
+        console.error('Scenario action failed:', error);
+        announce('Scenario action failed. Try again.', 'error');
+      }
+    };
+
+    durationSlider.addEventListener('input', syncLabels);
+    intensitySlider.addEventListener('input', syncLabels);
+    delaySlider.addEventListener('input', syncLabels);
+    triggerButton.addEventListener('click', () => startScenario(false));
+    queueButton.addEventListener('click', () => startScenario(true));
+
+    endButton?.addEventListener('click', () => {
+      const active = this.world.getActiveDisaster?.();
+      if (!active) {
+        announce('No active disaster to end.', 'info');
+        return;
+      }
+      this.world.cancelDisaster?.();
+      announce(`✅ ${active.name || 'Disaster'} ended`, 'success');
+    });
+
+    clearButton?.addEventListener('click', () => {
+      const pending = this.world.getPendingDisasters?.() || [];
+      if (!pending.length) {
+        announce('No queued disasters to clear.', 'info');
+        return;
+      }
+      this.world.clearPendingDisasters?.();
+      announce('🧹 Queued disasters cleared', 'success');
+    });
+
+    queue?.addEventListener('click', event => {
+      const removeButton = event.target.closest?.('.scenario-queue-remove');
+      if (!removeButton) return;
+      const rawId = removeButton.dataset.queueId;
+      const numericId = Number(rawId);
+      this.world.cancelPendingDisaster?.(Number.isFinite(numericId) ? numericId : rawId);
+      announce('🗑️ Queued disaster removed', 'success');
+    });
+
+    this._scenarioControlsBound = true;
+    this.syncScenarioControls = () => {
+      syncLabels();
+      syncAutoBalance();
+    };
+    this.syncScenarioControls();
+  };
+
   UIController.prototype.toggleShortcutsHelp = function (forceVisible = null) {
     const overlay = document.getElementById('shortcuts-overlay');
     if (!overlay) return;
@@ -245,6 +373,7 @@ export function applyUiPanelMethods(UIController) {
       const willShow = scenarioPanel.classList.contains('hidden');
       if (willShow) {
         this.closeMajorPanels('scenario-panel');
+        this.syncScenarioControls?.();
       }
       gameState.scenarioPanelVisible = willShow;
       this.setPanelVisibility(scenarioPanel, gameState.scenarioPanelVisible);

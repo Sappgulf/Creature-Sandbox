@@ -104,18 +104,16 @@ export class WorldDisaster {
 
     if (options.queue) {
       // Add to pending queue
-      if (options.delay) {
-        disaster.startsIn = options.delay;
-        disaster.scheduledFor = this.world.t + options.delay;
-      }
+      const delay = Math.max(0, Number(options.delay) || 0);
+      disaster.startsIn = delay;
+      disaster.scheduledFor = this.world.t + delay;
       this.pendingDisasters.push(disaster);
       this.pendingDisasters.sort((a, b) => (a.scheduledFor || 0) - (b.scheduledFor || 0));
+      return true;
     } else {
       // Start immediately
-      this.beginDisaster(type, disaster);
+      return this.beginDisaster(type, disaster);
     }
-
-    return true;
   }
 
   // Trigger random disaster
@@ -173,7 +171,7 @@ export class WorldDisaster {
     if (this.activeDisaster) return;
 
     const now = this.world.t;
-    const readyDisasters = this.pendingDisasters.filter(d => d.scheduledFor && d.scheduledFor <= now);
+    const readyDisasters = this.pendingDisasters.filter(d => d.scheduledFor != null && d.scheduledFor <= now);
 
     if (readyDisasters.length > 0) {
       const disaster = readyDisasters[0];
@@ -391,7 +389,7 @@ export class WorldDisaster {
 
   // Cancel pending disaster
   cancelPendingDisaster(id) {
-    const index = this.pendingDisasters.findIndex(d => d.id === id);
+    const index = this.pendingDisasters.findIndex(d => String(d.id) === String(id));
     if (index >= 0) {
       this.pendingDisasters.splice(index, 1);
       return true;

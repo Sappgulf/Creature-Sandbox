@@ -135,6 +135,31 @@ test('world-disaster: screen shake accumulates across frames during intense disa
 });
 
 // ----------------------------------------------------------------------------
+// world-disaster.js / Scenario Lab: queued scenarios with a zero-second delay
+// must still receive a scheduled time so the normal simulation tick can start
+// them, and the public World facade must expose the cancel/clear commands used
+// by the UI.
+// ----------------------------------------------------------------------------
+test('world-disaster: zero-delay queued scenarios start on the next scheduler pass and can be cancelled', () => {
+  const world = new World(400, 400);
+
+  assert.equal(
+    world.triggerDisaster('plague', { queue: true, delay: 0, duration: 2, manual: true }),
+    true,
+    'queueing a valid scenario should succeed'
+  );
+  assert.equal(world.getPendingDisasters().length, 1, 'queued scenario should be visible through World');
+  assert.equal(world.getPendingDisasters()[0].scheduledFor, world.t, 'zero-delay scenario should have a schedule');
+
+  world.disaster.processScheduledDisasters();
+
+  assert.equal(world.getPendingDisasters().length, 0, 'scheduled scenario should leave the queue when started');
+  assert.equal(world.getActiveDisaster()?.type, 'plague', 'scheduled scenario should become active');
+  world.cancelDisaster();
+  assert.equal(world.getActiveDisaster(), null, 'active scenario should be cancellable through World');
+});
+
+// ----------------------------------------------------------------------------
 // session-goals.js: goals compared cumulative session totals directly
 // against a freshly-rolled target, so goals could complete instantly from
 // progress made before the goal even existed.
@@ -244,6 +269,24 @@ test('camera: _clampTargets keeps the pan target within world bounds', () => {
 
   assert.ok(camera.targetX < 1200, `targetX should be clamped near world bounds, got ${camera.targetX}`);
   assert.ok(camera.targetY > -200, `targetY should be clamped near world bounds, got ${camera.targetY}`);
+});
+
+test('camera: invalid pan/zoom state recovers to a finite centered view', () => {
+  const camera = new Camera({ worldWidth: 1000, worldHeight: 800, viewportWidth: 400, viewportHeight: 300, zoom: 1 });
+
+  camera.x = Number.NaN;
+  camera.y = Number.POSITIVE_INFINITY;
+  camera.targetX = Number.NaN;
+  camera.targetY = Number.NEGATIVE_INFINITY;
+  camera.zoom = Number.NaN;
+  camera.targetZoom = Number.POSITIVE_INFINITY;
+  camera.update(1 / 60);
+
+  assert.ok(Number.isFinite(camera.x) && Number.isFinite(camera.y), 'camera position should remain finite');
+  assert.ok(Number.isFinite(camera.targetX) && Number.isFinite(camera.targetY), 'camera targets should recover');
+  assert.ok(Number.isFinite(camera.zoom) && camera.zoom > 0, 'camera zoom should remain finite and positive');
+  assert.ok(Math.abs(camera.x - 500) < 1, `camera should recover near world center, got ${camera.x}`);
+  assert.ok(Math.abs(camera.y - 400) < 1, `camera should recover near world center, got ${camera.y}`);
 });
 
 // ----------------------------------------------------------------------------
@@ -362,6 +405,38 @@ test('simulation-proxy: requestSaveExtras() sends REQUEST_WORLD_EXTRAS and popul
   assert.deepEqual(proxy.childrenOf.get(1), new Set([2, 3]), 'childrenOf should reconstruct as a real Map of Sets');
   assert.equal(proxy.disaster.pendingDisasters.length, 1);
   assert.equal(proxy.biomeGenerator.seed, 0.777, 'biome seed should update for save reproducibility');
+});
+
+test('simulation-proxy: Scenario Lab commands and pending state use the worker protocol', () => {
+  const { proxy, sentMessages } = makeFakeWorkerProxy();
+  proxy.handleMessage({ data: { type: 'READY' } });
+
+  proxy.triggerDisaster('plague', { queue: true, delay: 5 });
+  proxy.cancelDisaster();
+  proxy.cancelPendingDisaster(42);
+  proxy.clearPendingDisasters();
+
+  assert.deepEqual(
+    sentMessages.slice(-4).map(message => message.type),
+    ['TRIGGER_DISASTER', 'CANCEL_DISASTER', 'CANCEL_PENDING_DISASTER', 'CLEAR_PENDING_DISASTERS'],
+    'Scenario Lab actions should map to explicit worker commands'
+  );
+
+  proxy.handleMessage({
+    data: {
+      type: 'STATE_UPDATE',
+      t: 12,
+      count: 0,
+      creatureBuffer: new ArrayBuffer(0),
+      food: [],
+      corpses: [],
+      activeDisaster: null,
+      pendingDisasters: [{ id: 42, type: 'plague', scheduledFor: 17 }]
+    }
+  });
+
+  assert.equal(proxy.getPendingDisasters().length, 1, 'pending worker state should reach the proxy');
+  assert.equal(proxy.getPendingDisasters()[0].id, 42);
 });
 
 test('save-system: serialize() called after prepareForSave() captures worker-only fields (no more silent data loss)', () => {
