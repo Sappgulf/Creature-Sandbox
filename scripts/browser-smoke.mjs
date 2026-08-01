@@ -561,7 +561,7 @@ async function exerciseScenarioLab(page, scenarioName) {
     `${scenarioName}: Scenario Lab disaster start`
   );
   await refreshScenarioUi();
-  const activeStatus = (await page.locator('#scenario-status').textContent())?.trim() || '';
+  const activeStatus = (await page.locator('#scenario-panel #scenario-status').textContent())?.trim() || '';
   assert.notEqual(activeStatus, 'No active disaster.', `${scenarioName}: Scenario Lab Run Now should start a disaster`);
 
   await page.locator('#btn-scenario-end').click();
@@ -572,7 +572,7 @@ async function exerciseScenarioLab(page, scenarioName) {
   );
   await refreshScenarioUi();
   assert.equal(
-    (await page.locator('#scenario-status').textContent())?.trim(),
+    (await page.locator('#scenario-panel #scenario-status').textContent())?.trim(),
     'No active disaster.',
     `${scenarioName}: Scenario Lab End Active should clear the active disaster`
   );

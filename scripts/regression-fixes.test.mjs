@@ -2,6 +2,7 @@
 // Each test is named after the defect it guards so a future revert shows up
 // as a named failure instead of a silent behavior change.
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { performance as nodePerformance } from 'node:perf_hooks';
 
 if (!globalThis.performance) {
@@ -474,6 +475,12 @@ test('save-system: serialize() called after prepareForSave() captures worker-onl
     1,
     'save should capture lineage (childrenOf) instead of silently dropping it'
   );
+});
+
+test('scenario-editor: does not duplicate Scenario Lab status id', () => {
+  const source = fs.readFileSync(new URL('../creature-sim/src/scenario-editor.js', import.meta.url), 'utf8');
+  assert.match(source, /id="scenario-editor-status"/);
+  assert.doesNotMatch(source, /id="scenario-status"/);
 });
 
 console.log('\n=== SUMMARY ===');

@@ -236,7 +236,7 @@ export class ScenarioEditor {
         </div>
 
         <!-- Status Bar -->
-        <div id="scenario-status" style="margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; font-size: 12px;">
+        <div id="scenario-editor-status" style="margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; font-size: 12px;">
           <span id="status-text">Ready</span>
           <span style="float: right;">
             <span id="validation-status" style="color: #ffa500;">○ Not validated</span>
