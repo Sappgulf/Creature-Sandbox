@@ -48,6 +48,20 @@
 - **Fixes:** Renamed the stable `first_ecosystem` presentation to Herd Rescue, added a 120-second / average-stress-under-60 objective, exposed three guided expedition steps in the director snapshot, and updated smoke expectations for the new player-facing name.
 - **Verification:** Focused tests, lint, formatting, build, and diff checks pass. The complete local release proof passes: 190 core checks, 17 regression checks, reboot/presentation/scenario checks, 1 E2E, build, bundle guard at 149,962 B gzip for the main chunk, default worker/main/forced-worker browser smokes, scenario balance, and release evidence. Production browser/Web Vitals proof remains stale/missing at the prior deployment SHA; no commit or deployment has been made yet.
 
+### 2026-08-01 — scenario-status-id-fix — Planned
+
+- **Issues:** The production browser smoke discovered duplicate `scenario-status` IDs after the lazy Scenario Editor loaded, making strict status assertions ambiguous and leaving a shared DOM lookup vulnerable to reading the wrong panel.
+- **Root Causes:** Scenario Lab and Scenario Editor independently used the same global ID even though the editor is an optional panel that can coexist with the live Scenario Lab.
+- **Fixes:** Planned a scoped Scenario Lab selector, a dedicated Scenario Editor status ID, and a regression assertion protecting the ID boundary.
+- **Verification:** Planned: local release proof, production browser smoke, production Web Vitals, and final deployment SHA verification.
+
+### 2026-08-01 — scenario-status-id-fix — Implemented
+
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Renamed the editor-only status node to `scenario-editor-status`, scoped smoke checks to `#scenario-panel #scenario-status`, and added a regression test that prevents the duplicate ID from returning.
+- **Verification:** The complete local release proof passes with 18 regression checks, including the new ID-collision guard; build/bundle guard passes at 149,959 B gzip for the main chunk. Production browser smoke and Web Vitals are being rerun against the final connected Vercel deployment.
+
 ### 2026-08-01 — audit-save-scenario-lab — Planned
 
 - **Issues:** The audit found a confirmed `RangeError: Maximum call stack size exceeded` when autosave/manual-save compression spread a large byte array into `String.fromCharCode`, making large saves unreliable. Scenario Lab was a visible UI shell with no working Run Now, Queue, End Active, or Clear All integration in the shipping worker path. The browser smoke lane also sampled frame-local renderer counters at a single instant, producing a transient mobile `rendered=0` failure.
