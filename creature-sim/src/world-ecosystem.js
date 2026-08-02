@@ -513,6 +513,17 @@ export class WorldEcosystem {
 
     const targetPredatorRatio = settings?.targetPredatorRatio ?? 0.3;
     const maxPredators = settings?.maxPredators ?? Infinity;
+    const minPopulation = Math.max(0, Number(settings?.minPopulation) || 0);
+    const targetFoodFraction = clamp(Number(settings?.targetFoodFraction) || 0, 0, 4);
+    const minFoodAbsolute = Math.max(0, Number(settings?.minFoodAbsolute) || 0);
+    const foodTarget = Math.max(minFoodAbsolute, Math.ceil(total * targetFoodFraction));
+
+    // Gameplay modes advertise a population floor so a bad season or a
+    // predator spike can become a recoverable story beat instead of silently
+    // ending the sandbox. Refill in small pulses to preserve player agency.
+    if (total > 0 && total < minPopulation) {
+      actions.push('add_herbivores');
+    }
 
     // Predator imbalance — only cull once BOTH the ratio and the absolute
     // ceiling are exceeded, so predator-focused modes/scenarios that raise
@@ -523,8 +534,9 @@ export class WorldEcosystem {
       actions.push('reduce_predators');
     }
 
-    // Food scarcity
-    if (foodCount < total * 0.5) {
+    // Food scarcity follows the active mode/scenario contract instead of a
+    // hard-coded ratio that ignored Chill/Balanced/Frontier tuning.
+    if (foodCount < foodTarget) {
       actions.push('add_food');
     }
 
@@ -536,10 +548,10 @@ export class WorldEcosystem {
     }
 
     // Execute balancing actions
-    this.executeBalancingActions(actions);
+    this.executeBalancingActions(actions, { total, minPopulation, foodCount, foodTarget });
   }
 
-  executeBalancingActions(actions) {
+  executeBalancingActions(actions, context = {}) {
     for (const action of actions) {
       switch (action) {
         case 'add_predator':
@@ -549,7 +561,10 @@ export class WorldEcosystem {
           this.cullExcessPredators();
           break;
         case 'add_food':
-          this.addEmergencyFood();
+          this.addEmergencyFood(context.foodTarget, context.foodCount);
+          break;
+        case 'add_herbivores':
+          this.spawnBalancingHerbivores(context.total, context.minPopulation);
           break;
         case 'reduce_population':
           this.cullExcessPopulation();
@@ -562,6 +577,18 @@ export class WorldEcosystem {
     const x = rand() * this.world.width;
     const y = rand() * this.world.height;
     return this.world.creatureManager?.spawnManual(x, y, true);
+  }
+
+  spawnBalancingHerbivores(total = 0, minPopulation = 0) {
+    const deficit = Math.max(0, Number(minPopulation) - Number(total));
+    const count = Math.max(1, Math.min(4, Math.ceil(deficit * 0.2)));
+    let spawned = 0;
+    for (let i = 0; i < count; i++) {
+      const x = rand() * this.world.width;
+      const y = rand() * this.world.height;
+      if (this.world.creatureManager?.spawnManual(x, y, false)) spawned += 1;
+    }
+    return spawned;
   }
 
   cullExcessPredators() {
@@ -585,12 +612,15 @@ export class WorldEcosystem {
     }
   }
 
-  addEmergencyFood() {
-    for (let i = 0; i < 10; i++) {
+  addEmergencyFood(targetFood = 0, foodCount = 0) {
+    const deficit = Math.max(0, Number(targetFood) - Number(foodCount));
+    const count = Math.max(10, Math.min(32, Math.ceil(deficit * 0.2)));
+    for (let i = 0; i < count; i++) {
       const x = rand() * this.world.width;
       const y = rand() * this.world.height;
       this.addFood(x, y);
     }
+    return count;
   }
 
   cullExcessPopulation() {

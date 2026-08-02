@@ -77,12 +77,17 @@ const chunkMap = [
       '/src/creature-render.js',
       '/src/creature-behavior.js',
       '/src/creature-physics.js',
-      '/src/creature-reactions.js'
+      '/src/creature-reactions.js',
+      '/src/renderer-creatures.js'
     ]
   },
   {
     name: 'vendor-save',
     paths: ['/src/save-system.js', '/src/save-migration.js', '/src/runtime-save-metadata.js']
+  },
+  {
+    name: 'vendor-runtime',
+    paths: ['/src/game-loop.js']
   }
 ];
 

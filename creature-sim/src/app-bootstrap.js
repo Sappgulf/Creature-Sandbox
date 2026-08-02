@@ -35,7 +35,7 @@ import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
 import { performanceProfiler, initializePerformanceMonitor } from './performance-profiler.js';
 import { diseaseSystem } from './disease-system.js';
-import { assetLoader } from './asset-loader.js?v=20260423-assets1';
+import { assetLoader } from './asset-loader.js?v=20260802-ecosystem-polish1';
 
 // Import newly added systems
 import { seasonalEventsSystem } from './seasonal-events.js';
@@ -1763,6 +1763,10 @@ export async function initializeApp() {
 
       applyReplayKickoff();
       const openingFocus = applyStarterGlade();
+      // Seeded creatures and the starter glade are part of the opener, not
+      // player actions. Reset action counters after the world is prepared so
+      // action-based session goals start from a truthful baseline.
+      sessionGoals?.resetForNewSession?.();
       if (!runtimeProfile.mobile && openingFocus.creatureId != null) {
         gameState.selectCreature(openingFocus.creatureId);
         gameState.lineageRootId = openingFocus.creatureId;

@@ -6,6 +6,7 @@ import {
   getCreatureRenderSize,
   getCreatureSpriteColor
 } from '../creature-sim/src/creature-presentation.js';
+import { getLandscapeLandmarks } from '../creature-sim/src/renderer-biome.js';
 
 assert.equal(getCreatureAssetKey({ ageStage: 'baby', genes: { predator: true, diet: 1 } }), 'creature_baby');
 assert.equal(getCreatureAssetKey({ ageStage: 'adult', genes: { predator: true, diet: 0.9 } }), 'creature_predator');
@@ -26,5 +27,11 @@ const ordinarySize = getCreatureRenderSize({ energy: 20, size: 2 }, { zoom: 1 })
 const focusedSize = getCreatureRenderSize({ energy: 20, size: 2 }, { zoom: 1, isSelected: true });
 assert.ok(ordinarySize >= 24);
 assert.ok(focusedSize >= 30);
+
+const landmarks = getLandscapeLandmarks(4000, 2800);
+assert.equal(landmarks.length, 7);
+assert.ok(landmarks.every(landmark => landmark.x >= 0 && landmark.x <= 4000));
+assert.ok(landmarks.every(landmark => landmark.y >= 0 && landmark.y <= 2800));
+assert.ok(landmarks.every(landmark => Number.isFinite(landmark.radius) && landmark.radius > 0));
 
 console.log('Creature presentation checks passed');

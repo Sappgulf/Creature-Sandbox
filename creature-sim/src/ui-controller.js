@@ -602,6 +602,18 @@ export class UIController {
     this.updateSessionMetaVisibility();
   }
 
+  setSessionMetaVisible(visible = true) {
+    gameState.sessionMetaVisible = !!visible;
+    this.updateSessionMetaVisibility();
+    if (visible) {
+      const sessionMeta = domCache.get('sessionMeta');
+      const firstFocusable = sessionMeta?.querySelector(
+        'button, select, input, [href], [tabindex]:not([tabindex="-1"])'
+      );
+      firstFocusable?.focus?.({ preventScroll: true });
+    }
+  }
+
   onFood() {
     // Spawn diverse vegetation randomly across the map (10-20 pieces)
     const count = Math.floor(Math.random() * 11) + 10; // 10-20

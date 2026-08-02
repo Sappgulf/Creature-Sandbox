@@ -3,6 +3,15 @@ import { getCreatureEmotion, getLifeStageDisplay } from './upgrade-data.js';
 import { drawBatchedTrails } from './creature-render.js?v=20260423-assets1';
 import { drawCreatureSprite } from './creature-presentation.js?v=20260801-field-guide1';
 
+function numericGene(value, fallback = 0) {
+  if (value && typeof value === 'object') {
+    const expressed = Number(value.expressed ?? value.value ?? value.mean);
+    return Number.isFinite(expressed) ? expressed : fallback;
+  }
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+}
+
 export function applyCreatureMethods(Renderer) {
   Renderer.prototype.drawCreatures = function (world, opts) {
     if (!world || !world.creatures) return;
@@ -239,41 +248,85 @@ export function applyCreatureMethods(Renderer) {
     // the same creature identity as the main-thread path.
     if (zoom >= 0.28 && drawCreatureSprite(ctx, c, { clusterHue, zoom, worldTime })) return;
 
-    const hue = clusterHue ?? c.genes?.hue ?? 0;
-    const predator = c.genes?.predator || (c.genes?.diet ?? 0) >= 0.7;
-    const baseLight = predator ? 50 : 62;
+    const hue = numericGene(clusterHue ?? c.genes?.hue, 0);
+    const diet = numericGene(c.genes?.diet, c.genes?.predator ? 1 : 0);
+    const predator = Boolean(c.genes?.predator) || diet >= 0.7;
+    const aquatic = numericGene(c.aquaticAffinity ?? c.genes?.aquatic, 0) > 0.6;
+    const creatureType = c.traits?.creatureType || c.creatureType;
+    const flying = creatureType === 'flying' || numericGene(c.genes?.flying, 0) > 0.6;
+    const burrowing = creatureType === 'burrowing' || numericGene(c.genes?.burrowing, 0) > 0.6;
+    const baseLight = predator ? 50 : aquatic ? 58 : 62;
     const creatureR = ((c.energy || 40) / 40) * (3 + (c.size || 5));
-    const triSize = Math.max(7, creatureR * (quality === 'low' ? 1.28 : 1.45));
+    const bodyLength = Math.max(10, creatureR * (quality === 'low' ? 1.8 : 2.2));
+    const bodyWidth = Math.max(5.5, creatureR * (quality === 'low' ? 0.95 : 1.15));
     const alpha = quality === 'low' && zoom < 0.8 ? 0.86 : 0.96;
-    const dir = c.dir || 0;
-    const cos = Math.cos(dir);
-    const sin = Math.sin(dir);
-    const backX = -triSize * 0.62;
-    const wingY = triSize * 0.58;
-    const x = c.x;
-    const y = c.y;
-    const previousAlpha = ctx.globalAlpha;
-    const previousLineWidth = ctx.lineWidth;
-    const noseX = x + triSize * cos;
-    const noseY = y + triSize * sin;
-    const leftX = x + backX * cos - wingY * sin;
-    const leftY = y + backX * sin + wingY * cos;
-    const rightX = x + backX * cos + wingY * sin;
-    const rightY = y + backX * sin - wingY * cos;
 
-    ctx.globalAlpha = previousAlpha * alpha;
-    ctx.fillStyle = `hsl(${hue}, 88%, ${baseLight}%)`;
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.dir || 0);
+    ctx.globalAlpha *= alpha;
+    ctx.lineJoin = 'round';
+
+    // Compact role cues keep the low-detail/loading path readable without
+    // competing with authored sprite sheets.
+    ctx.fillStyle = `hsla(${hue + (aquatic ? 18 : 0)}, 82%, ${baseLight + 6}%, 0.78)`;
     ctx.beginPath();
-    ctx.moveTo(noseX, noseY);
-    ctx.lineTo(leftX, leftY);
-    ctx.lineTo(rightX, rightY);
+    ctx.moveTo(-bodyLength * 0.42, 0);
+    ctx.lineTo(-bodyLength * 1.22, -bodyWidth * (aquatic ? 0.78 : 0.58));
+    ctx.lineTo(-bodyLength * 0.98, 0);
+    ctx.lineTo(-bodyLength * 1.22, bodyWidth * (aquatic ? 0.78 : 0.58));
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = `hsl(${hue}, 45%, ${predator ? 78 : 82}%)`;
-    ctx.lineWidth = quality === 'low' ? 1.1 : 1.4;
+    if (flying) {
+      ctx.fillStyle = `hsla(${hue + 8}, 78%, ${baseLight + 8}%, 0.7)`;
+      ctx.beginPath();
+      ctx.moveTo(-bodyLength * 0.1, -bodyWidth * 0.45);
+      ctx.lineTo(-bodyLength * 0.62, -bodyWidth * 1.75);
+      ctx.lineTo(bodyLength * 0.16, -bodyWidth * 0.65);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-bodyLength * 0.1, bodyWidth * 0.45);
+      ctx.lineTo(-bodyLength * 0.62, bodyWidth * 1.75);
+      ctx.lineTo(bodyLength * 0.16, bodyWidth * 0.65);
+      ctx.closePath();
+      ctx.fill();
+    } else if (predator) {
+      ctx.fillStyle = `hsla(${hue + 8}, 88%, 72%, 0.74)`;
+      ctx.beginPath();
+      ctx.moveTo(-bodyLength * 0.18, -bodyWidth * 0.5);
+      ctx.lineTo(-bodyLength * 0.02, -bodyWidth * 1.35);
+      ctx.lineTo(bodyLength * 0.22, -bodyWidth * 0.52);
+      ctx.closePath();
+      ctx.fill();
+    } else if (burrowing) {
+      ctx.strokeStyle = `hsla(${hue + 28}, 75%, 78%, 0.7)`;
+      ctx.lineWidth = Math.max(1.2, bodyWidth * 0.18);
+      ctx.beginPath();
+      ctx.moveTo(-bodyLength * 0.5, bodyWidth * 0.5);
+      ctx.lineTo(-bodyLength * 0.88, bodyWidth * 1.05);
+      ctx.moveTo(bodyLength * 0.04, bodyWidth * 0.5);
+      ctx.lineTo(bodyLength * 0.4, bodyWidth * 1.05);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = `hsl(${hue}, 88%, ${baseLight}%)`;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, bodyLength, bodyWidth, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = `hsla(${hue}, 52%, ${predator ? 82 : 88}%, 0.9)`;
+    ctx.lineWidth = quality === 'low' ? 1.1 : 1.35;
     ctx.stroke();
-    ctx.globalAlpha = previousAlpha;
-    ctx.lineWidth = previousLineWidth;
+
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(bodyLength * 0.54, -bodyWidth * 0.3, Math.max(1.7, bodyWidth * 0.26), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = predator ? '#3d0812' : '#13252c';
+    ctx.beginPath();
+    ctx.arc(bodyLength * 0.6, -bodyWidth * 0.3, Math.max(0.8, bodyWidth * 0.12), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   };
 
   Renderer.prototype._drawCreatureStatusCue = function (c, { isSelected = false, isPinned = false } = {}) {

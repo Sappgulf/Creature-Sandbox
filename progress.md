@@ -835,3 +835,60 @@ Original prompt: [$game-studio:web-game-foundations](/Users/austinbeatty/.codex/
   - external web-game client ✅ captured/inspected `output/web-game/vitals-variance-20260528/shot-1.png`; state shows worker mode ready and 0 pending messages.
 - Next verification:
   - commit/push, wait for production `/build-info.json` to match the new SHA, then rerun `npm run smoke:production`, `npm run smoke:production:vitals`, and `npm run evidence:release` against the deployed build.
+
+2026-08-01
+
+- Session goal: audit the playable loop, improve map readability and visual identity, add reproducible assets, and correct a progression edge case without destabilizing worker/main parity.
+- Issues found:
+  - the map had biome tint and food systems but lacked spatial landmarks, so normal-zoom exploration read as a flat field;
+  - the low-zoom vector fallback rendered every creature as the same triangle even though authored sprite sheets were available at higher zoom;
+  - starter-glade creatures were created before session-goal counters reset, allowing opening population setup to count as player actions.
+- Root causes:
+  - no authored landmark strip existed in the generated environment manifest and the existing ground overlays were tuned too subtly;
+  - `_drawVectorCreatureLOD` used one generic proxy shape instead of reading role genes;
+  - `SessionGoals` had cumulative counters but no new-session boundary after deterministic starter setup.
+- Fixes:
+  - generated `environment/env_landmarks.svg` through `scripts/generate-sprite-sheets.mjs` and registered meadow, forest, wetland, water, mountain, and desert frames;
+  - added culling-aware landmark contours/icons, direct untinted atlas-frame rendering, stronger bounded biome/resource contrast, and role-aware predator/aquatic/flying/burrowing fallback silhouettes;
+  - added `resetForNewSession()` and invoked it after the starter glade is applied;
+  - added pure landmark-position regression coverage in `scripts/creature-presentation.test.mjs`;
+  - generated `output/imagegen/map-landmark-direction.png` as the visual direction board for the runtime atlas.
+- Final verification:
+  - `npm run format:check` ✅
+  - modified-file syntax checks and `git diff --check` ✅
+  - `npm run lint` ✅
+  - `npm test` ✅ (190 core checks plus 19 regression checks and reboot/presentation/scenario/E2E suites)
+  - `npm run build` ✅ (main entry 496.15 kB / 147.95 kB gzip; landmark feature chunk 3.67 kB / 1.68 kB gzip)
+  - `npm run check:bundle` ✅
+  - default worker, main fallback, and forced-worker browser lanes ✅; worker desktop proof reached 32.7 ms average / 34 ms p95 and mobile p95 stayed at or below 17.6 ms
+  - `npm run smoke:scenarios` ✅ (Stress Sanctuary and Scavenger Bridge 2x variance pass)
+  - `npm run proof:release` ✅
+  - `npm run evidence:release` ✅ (release evidence board and summary written)
+- Performance note: the worker readiness label remains `needs-more-proof` because the existing promotion gate is stricter than the passing smoke correctness gate (desktop average and non-draw/frame thresholds). A/B testing showed that drawing the full landmark layer and raw SVG decoration sources on the main-thread fallback caused material frame-cost/CPU regressions, so the fallback keeps the stronger biome/resource layers while the worker/default path renders the full landmark atlas.
+
+2026-08-01 — ecosystem guardrails and objective feedback
+
+- Issues found:
+  - mode-specific ecosystem tuning exposed `minPopulation`/food targets, but emergency recovery still used fixed thresholds and could fail to restore the intended mode floor;
+  - fresh-session goals were drawn from the full pool, so the opener could ask for menu-gated or advanced actions before teaching the basic loop;
+  - the objective rail replaced its subtree every refresh and was globally non-interactive, so the new Goals affordance could detach or never receive pointer input;
+  - stale shell/import URLs in the local cache could mask the current controller and newly registered landmark sheet during audits.
+- Root causes:
+  - auto-balance logic predated mode-level population/food contracts;
+  - session-goal generation did not distinguish starter-safe actions from the full progression pool;
+  - objective rendering treated a live HUD as disposable markup and CSS disabled hit testing for the entire rail;
+  - versioned entry edges had not been advanced with the current runtime asset tranche.
+- Fixes:
+  - made ecosystem recovery consume mode thresholds and use bounded herbivore/food additions;
+  - added starter-safe goal filtering after the deterministic opening glade;
+  - stabilized objective rail nodes, added an accessible Goals CTA, and added compact mobile icon styling;
+  - advanced shell, app-bootstrap, and lazy-controller cache-busts for reliable fresh-client audits;
+  - split the eager game loop into `vendor-runtime`, reducing the main entry to 110,656 B gzip while keeping the new runtime chunk at 48,756 B gzip;
+  - added focused regression coverage for both tuning contracts and starter goal selection.
+- Final local verification:
+  - focused regression script passes with 21 checks;
+  - clean Playwright mobile CTA proof passes with pointer events enabled, 24px compact button width, panel open state, and focus transfer;
+  - clean external game harness captures `output/web-game/second-polish-final/shot-0.png` and reports worker-ready, 31 registered sprites, 0 pending messages, and no page errors;
+  - `npm run proof:release` passes all required local lanes, including default worker, main fallback, forced worker, 2x scenario balance, and release evidence;
+  - bundle guard passes with main 110,656 B gzip, `vendor-runtime` 48,756 B gzip, and landmark chunk 1,682 B gzip;
+  - commit/push and Vercel production verification are the remaining release stages for this session.

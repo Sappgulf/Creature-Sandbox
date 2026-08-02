@@ -88,10 +88,17 @@ export class UpgradeController {
     this.lastPostcard = null;
     this.lastBalanceProbe = null;
     this._lastPanelSignature = '';
+    this.objectiveRail = null;
   }
 
   init() {
     this.panel = document.getElementById('upgrade-panel');
+    this.objectiveRail = document.getElementById('objective-rail');
+    this.objectiveRail?.addEventListener('click', event => {
+      if (!event.target.closest?.('[data-objective-action="open-goals"]')) return;
+      event.preventDefault();
+      this.openSessionGoals();
+    });
     if (this.uiController) {
       this.uiController.upgradeController = this;
     }
@@ -598,8 +605,9 @@ export class UpgradeController {
   }
 
   updateObjectiveRail() {
-    const rail = document.getElementById('objective-rail');
+    const rail = this.objectiveRail || document.getElementById('objective-rail');
     if (!rail) return;
+    this.objectiveRail = rail;
     const story = buildEcosystemStory(this.world, this.playableScenarios?.getSnapshot?.());
     const objective = buildObjectiveRail(
       this.playableScenarios?.getSnapshot?.(),
@@ -610,24 +618,70 @@ export class UpgradeController {
     const phase = objective.phase || story.phase || 'observe';
     const phaseLabel = objective.phaseLabel || story.phaseLabel || 'Observe';
     const phaseKicker = objective.phaseKicker || story.phaseKicker || 'READ THE FIELD';
+
+    if (rail.dataset.initialized !== 'true') {
+      rail.innerHTML = `
+        <span class="objective-icon"></span>
+        <span class="objective-copy">
+          <span class="objective-phase"></span>
+          <strong></strong>
+          <em></em>
+        </span>
+        <span class="objective-status">
+          <span class="objective-mode" hidden></span>
+          <span class="objective-progress"></span>
+          <span class="objective-world"></span>
+          <button type="button" class="objective-open-goals" data-objective-action="open-goals" aria-label="Open modes and goals" title="Open modes and goals">Goals</button>
+        </span>
+      `;
+      rail.dataset.initialized = 'true';
+      rail.querySelector('[data-objective-action="open-goals"]')?.addEventListener('click', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.openSessionGoals();
+      });
+    }
+
+    const iconEl = rail.querySelector('.objective-icon');
+    const phaseEl = rail.querySelector('.objective-phase');
+    const titleEl = rail.querySelector('.objective-copy strong');
+    const actionEl = rail.querySelector('.objective-copy em');
+    const modeEl = rail.querySelector('.objective-mode');
+    const progressEl = rail.querySelector('.objective-progress');
+    const worldEl = rail.querySelector('.objective-world');
+
+    if (iconEl) iconEl.textContent = objective.icon || '🎯';
+    if (phaseEl) phaseEl.textContent = `${phaseKicker} · ${phaseLabel}`;
+    if (titleEl) titleEl.textContent = objective.title || 'Watch the ecosystem';
+    if (actionEl) actionEl.textContent = objective.action || 'Take the next visible action.';
+    if (modeEl) {
+      modeEl.hidden = !modeChip;
+      modeEl.textContent = modeChip ? `${modeChip.icon} ${modeChip.label}` : '';
+    }
+    if (progressEl) progressEl.textContent = `${Math.round(objective.progress)}%`;
+    if (worldEl) {
+      worldEl.textContent = rhythmChip.label;
+      worldEl.dataset.short = rhythmChip.shortLabel;
+    }
+
     rail.dataset.level = story.level;
     rail.dataset.mode = modeChip?.id || 'none';
     rail.dataset.phase = phase;
     rail.setAttribute('role', 'status');
     rail.setAttribute('aria-label', `${phaseLabel}: ${objective.title}. ${objective.action}`);
-    rail.innerHTML = `
-      <span class="objective-icon">${escapeHtml(objective.icon)}</span>
-      <span class="objective-copy">
-        <span class="objective-phase">${escapeHtml(phaseKicker)} · ${escapeHtml(phaseLabel)}</span>
-        <strong>${escapeHtml(objective.title)}</strong>
-        <em>${escapeHtml(objective.action)}</em>
-      </span>
-      <span class="objective-status">
-        ${modeChip ? `<span class="objective-mode">${escapeHtml(modeChip.icon)} ${escapeHtml(modeChip.label)}</span>` : ''}
-        <span class="objective-progress">${Math.round(objective.progress)}%</span>
-        <span class="objective-world" data-short="${escapeHtml(rhythmChip.shortLabel)}">${escapeHtml(rhythmChip.label)}</span>
-      </span>
-    `;
+  }
+
+  openSessionGoals() {
+    gameState.sessionMetaVisible = true;
+    this.uiController?.setSessionMetaVisible?.(true);
+    this.uiController?.updateSessionMetaVisibility?.();
+
+    const sessionMeta = document.getElementById('session-meta');
+    if (!sessionMeta) return;
+    sessionMeta.classList.remove('hidden');
+    sessionMeta.setAttribute('aria-hidden', 'false');
+    const firstFocusable = sessionMeta.querySelector('button, select, input, [href], [tabindex]:not([tabindex="-1"])');
+    firstFocusable?.focus?.({ preventScroll: true });
   }
 
   togglePanel() {

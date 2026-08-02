@@ -20,6 +20,34 @@
 
 ## [UNRELEASED]
 
+### 2026-08-01 — ecosystem-guardrails-objective-feedback — Planned
+
+- **Issues:** Mode-specific ecosystem settings were not fully respected by emergency balancing, starter sessions could open with goals that require controls hidden behind menus, and the objective rail did not provide a reliable path into the modes/goals panel on compact layouts.
+- **Root Causes:** Auto-balance used fixed population/food thresholds; the full random goal pool was used for the first session; and the rail refreshed its `innerHTML` while also being globally non-interactive, leaving detached or unreachable goal controls.
+- **Fixes:** Planned settings-aware recovery actions, starter-safe goal generation, stable objective-rail DOM updates, an accessible Goals CTA with mobile treatment, and cache-busted shell/import edges for the new runtime assets.
+- **Verification:** Planned: focused regression checks, clean-browser CTA and sprite verification, required syntax/lint/test/build/bundle gates, worker/main/scenario/release proof, and post-push Vercel production verification.
+
+### 2026-08-01 — ecosystem-guardrails-objective-feedback — Implemented
+
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned; the live audit additionally showed that an old cache-first local shell could mask the current objective controller and landmark manifest during development.
+- **Fixes:** Made auto-balance honor mode population and food thresholds with bounded gentle recovery spawns; constrained fresh-session goals to actions available in the opener; changed objective rail updates to stable in-place nodes; added a keyboard-accessible Goals CTA with responsive mobile icon styling; advanced shell, app-bootstrap, and lazy-controller cache-busts so fresh clients receive the current UI and landmark asset graph; and split the eager game loop into a preloadable runtime chunk to restore the bundle budget.
+- **Verification:** Focused regression checks pass (21 regression checks). A clean Playwright mobile session confirms the CTA has pointer events, remains 24px wide on compact layout, opens `#session-meta`, sets `aria-hidden="false"`, and leaves focus on `Cycle game modes`; the clean external game harness reports worker-ready, 31 registered sprites, 0 pending messages, and no page errors. Full local `npm run proof:release` passes syntax, lint, 190 core tests, 21 regression checks, reboot/presentation/scenario/E2E suites, build, bundle guard, default worker, main fallback, forced-worker, 2x scenario balance, and release evidence. The entry is 110,656 B gzip, `vendor-runtime` is 48,756 B gzip, and the landmark chunk is 1,682 B gzip. Production SHA/runtime/vitals verification follows commit and Vercel deployment.
+
+### 2026-08-01 — map-landmark-gameplay-polish — Planned
+
+- **Issues:** The playable map reads as a mostly flat dark field at normal zoom, the environment asset library has no authored landmark language for biome regions, low-zoom fallback creatures lose role identity, and starter seeding can contaminate player-action session goals.
+- **Root Causes:** The renderer primarily communicates terrain through subtle tint and texture overlays; the deterministic sprite generator has no landmark strip; the vector fallback is a generic triangle; and session counters begin before the starter glade has finished creating its opening population.
+- **Fixes:** Planned a generated six-biome landmark atlas, stronger but bounded biome/resource readability, role-aware vector silhouettes, a starter-session counter reset, and focused presentation regression coverage while preserving worker/main rendering contracts.
+- **Verification:** Planned: focused tests, syntax/diff checks, lint, build/bundle guard, browser visual/functional checks, worker/main/forced-worker smoke lanes, scenario balance, release proof, and evidence-board generation.
+
+### 2026-08-01 — map-landmark-gameplay-polish — Implemented
+
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned; the browser audit also confirmed that authored sprites were present while compact fallback geometry remained generic, so the fallback needed to communicate predator/aquatic/flying/burrowing roles without replacing the authored path.
+- **Fixes:** Added the deterministic `env_landmarks` six-frame atlas and manifest entry, generated a matching art-direction board with the integrated image-generation skill, added culling-aware biome landmark contours/icons and more legible ambient resource patches, lifted biome ground contrast, replaced the generic vector triangle with role-aware silhouettes, reset action-goal counters after starter-glade setup, and added landmark geometry regression assertions.
+- **Verification:** `npm run format:check`, `git diff --check`, required syntax checks, `npm run lint`, `npm test` (190 core checks plus 19 regression checks and reboot/presentation/scenario/E2E suites), `npm run build`, and `npm run check:bundle` pass. Final `npm run proof:release` passes the default worker, main fallback, forced-worker, scenario-balance, and release-evidence lanes. The final main entry is 147.95 kB gzip and the landmark feature chunk is 1.68 kB gzip. Worker desktop proof is 32.7 ms average / 34 ms p95 with mobile p95 at or below 17.6 ms; worker promotion remains held by the existing stricter desktop average/non-draw thresholds (`needs-more-proof`), not by a correctness failure. No production deployment was made.
+
 ### 2026-08-01 — field-guide-reboot — Planned
 
 - **Issues:** The product shell feels like a dense developer dashboard rather than a living field journal, the objective rail does not name the player’s current phase, and authored assets need a clearer visual hierarchy before larger gameplay expansion.

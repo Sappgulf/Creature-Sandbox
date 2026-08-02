@@ -239,6 +239,24 @@
       "notes": "Seasonal decorations: autumn leaves, snowflakes, snow piles, ice crystals, and spring buds."
     },
     {
+      "key": "env_landmarks",
+      "category": "environment",
+      "path": "assets/sprites/environment/env_landmarks.svg",
+      "frameCount": 6,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "fps": 0,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "notes": "Top-down habitat landmark emblems: meadow, forest, wetland, water, mountain, and desert. Used by the low-zoom map layer."
+    },
+    {
       "key": "particle_sparkle",
       "category": "particles",
       "path": "assets/sprites/particles/particle_sprites.svg",

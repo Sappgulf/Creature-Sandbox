@@ -695,6 +695,80 @@ function environmentFrame(type, ctx) {
   `;
 }
 
+function landmarkFrame(ctx) {
+  const { i, frameWidth: w, frameHeight: h } = ctx;
+  const type = ['meadow', 'forest', 'wetland', 'water', 'mountain', 'desert'][i % 6];
+  const contour = (color, opacity = 0.35) => `
+    <path d="M 16 68 C 24 35 58 18 92 30 C 118 40 119 78 96 100 C 69 122 23 110 16 68 Z" fill="none" stroke="${color}" stroke-width="2" opacity="${opacity}"/>
+    <path d="M 23 68 C 31 43 59 29 87 37 C 107 43 108 72 91 91 C 70 108 31 101 23 68 Z" fill="none" stroke="${color}" stroke-width="1.2" opacity="${opacity * 0.72}"/>
+  `;
+
+  if (type === 'meadow') {
+    return `
+      ${frameBackdrop(w, h, 0.86, 34, 6)}
+      <path d="M 16 70 C 20 42 48 22 82 28 C 111 32 121 60 103 90 C 85 119 40 116 20 92 C 14 85 13 77 16 70 Z" fill="#214c3b" stroke="#69d28c" stroke-width="2" opacity="0.96"/>
+      <path d="M 27 69 C 36 48 61 38 86 45 C 101 50 105 69 94 84 C 78 102 45 99 30 87 Z" fill="#4c9d59" opacity="0.56"/>
+      ${contour('#9ce88f', 0.42)}
+      <g fill="#d9f99d" opacity="0.9"><circle cx="42" cy="63" r="3"/><circle cx="68" cy="54" r="2.4"/><circle cx="82" cy="78" r="2.8"/><circle cx="52" cy="87" r="2"/></g>
+      <g fill="#f7a8cf" opacity="0.78"><circle cx="59" cy="69" r="2.3"/><circle cx="91" cy="58" r="2"/></g>
+    `;
+  }
+
+  if (type === 'forest') {
+    return `
+      ${frameBackdrop(w, h, 0.86, 34, 6)}
+      <path d="M 17 74 C 20 42 47 19 81 29 C 111 37 119 68 100 96 C 77 119 35 112 20 93 Z" fill="#102d35" stroke="#3bb4a2" stroke-width="2"/>
+      ${contour('#3caaa0', 0.4)}
+      <g fill="#0a5e5c" stroke="#4dd4bc" stroke-width="1.2">
+        <path d="M 38 86 L 48 49 L 58 86 Z"/><path d="M 57 87 L 68 35 L 80 87 Z"/><path d="M 77 88 L 88 48 L 100 88 Z"/>
+      </g>
+      <g fill="#7be0b6" opacity="0.65"><circle cx="51" cy="55" r="3"/><circle cx="69" cy="43" r="3.2"/><circle cx="89" cy="56" r="2.7"/></g>
+    `;
+  }
+
+  if (type === 'wetland') {
+    return `
+      ${frameBackdrop(w, h, 0.86, 34, 6)}
+      <path d="M 15 69 C 22 35 54 17 88 31 C 116 43 117 74 95 101 C 67 123 29 108 18 89 C 14 82 13 75 15 69 Z" fill="#123f49" stroke="#54e3d5" stroke-width="2"/>
+      <ellipse cx="66" cy="70" rx="27" ry="21" fill="#159b9c" opacity="0.7"/>
+      ${contour('#6cebdc', 0.42)}
+      <g stroke="#9be7a6" stroke-width="2" stroke-linecap="round"><path d="M 38 87 Q 35 65 41 52"/><path d="M 91 88 Q 96 64 90 49"/><path d="M 48 94 Q 53 73 59 57"/></g>
+      <g fill="#d9fff0" opacity="0.78"><ellipse cx="57" cy="67" rx="6" ry="3"/><ellipse cx="78" cy="79" rx="5" ry="2.4"/></g>
+    `;
+  }
+
+  if (type === 'water') {
+    return `
+      ${frameBackdrop(w, h, 0.86, 34, 6)}
+      <path d="M 16 73 C 26 42 47 24 66 37 C 84 50 68 61 84 74 C 97 85 112 76 110 93 C 98 113 64 117 38 103 C 16 92 10 84 16 73 Z" fill="#104d73" stroke="#63d9f6" stroke-width="2"/>
+      <path d="M 30 77 C 47 57 61 58 75 72 C 87 84 93 88 103 84" fill="none" stroke="#9ff2ff" stroke-width="4" opacity="0.7" stroke-linecap="round"/>
+      <path d="M 31 87 C 49 68 60 72 73 85" fill="none" stroke="#46b8e5" stroke-width="2" opacity="0.7"/>
+      ${contour('#4bc8ed', 0.42)}
+      <g fill="#c6f7ff" opacity="0.86"><ellipse cx="43" cy="54" rx="5" ry="2"/><ellipse cx="87" cy="99" rx="5" ry="2"/></g>
+    `;
+  }
+
+  if (type === 'mountain') {
+    return `
+      ${frameBackdrop(w, h, 0.86, 34, 6)}
+      <path d="M 15 87 L 40 45 L 54 63 L 78 25 L 112 89 Z" fill="#283a63" stroke="#91b9ef" stroke-width="2"/>
+      <path d="M 40 45 L 51 61 L 43 62 Z M 78 25 L 66 56 L 79 49 L 91 65 Z" fill="#e7f3ff" opacity="0.9"/>
+      <path d="M 25 94 C 47 110 88 109 108 91" fill="none" stroke="#668bd2" stroke-width="2" opacity="0.8"/>
+      ${contour('#7da7e8', 0.38)}
+      <g fill="#6bd6ed" opacity="0.72"><circle cx="54" cy="78" r="2.6"/><circle cx="86" cy="80" r="2"/></g>
+    `;
+  }
+
+  return `
+    ${frameBackdrop(w, h, 0.86, 34, 6)}
+    <path d="M 16 87 C 24 54 48 29 77 30 C 104 31 119 61 107 92 C 88 115 39 114 20 99 Z" fill="#71442c" stroke="#f3a34b" stroke-width="2"/>
+    <path d="M 47 91 L 50 51 L 64 38 L 73 91 Z M 72 91 L 77 59 L 92 45 L 98 91 Z" fill="#c8753b" stroke="#ffcb67" stroke-width="1.4"/>
+    <path d="M 25 98 C 49 108 85 108 105 96" fill="none" stroke="#ffd27a" stroke-width="2" opacity="0.65"/>
+    ${contour('#f0a64d', 0.4)}
+    <g stroke="#b3e26d" stroke-width="2" stroke-linecap="round"><path d="M 34 91 Q 32 74 38 65"/><path d="M 96 91 Q 99 75 94 63"/></g>
+  `;
+}
+
 function particleFrame(_type, ctx) {
   const { i, phase, frameWidth: w, frameHeight: h } = ctx;
   const cx = w * 0.5;
@@ -1220,6 +1294,21 @@ function generate() {
       })
     );
   }
+
+  manifestEntries.push(
+    renderSheet({
+      key: 'env_landmarks',
+      category: 'environment',
+      frameWidth: 128,
+      frameHeight: 128,
+      frameCount: 6,
+      fps: 0,
+      anchor: { x: 0.5, y: 0.5 },
+      pivot: { x: 0.5, y: 0.5 },
+      notes: 'Top-down habitat landmark emblems: meadow, forest, wetland, water, mountain, and desert. Used by the low-zoom map layer.',
+      drawFrame: landmarkFrame
+    })
+  );
 
   manifestEntries.push(
     renderSheet({

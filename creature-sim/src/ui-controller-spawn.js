@@ -140,9 +140,9 @@ export function applyUiSpawnMethods(UIController) {
       });
     }
     const creature = this.world.spawnCreatureType(safeType, x, y);
-    if (creature) {
-      eventSystem.emit(GameEvents.CREATURE_SPAWN, { creatureId: creature.id, type: safeType, x, y });
-    }
+    // SimulationProxy returns before the worker has created the creature, so
+    // emit the player-intent event even when the result is asynchronous.
+    eventSystem.emit(GameEvents.CREATURE_SPAWN, { creatureId: creature?.id ?? null, type: safeType, x, y });
     this.applySpawnSelection(safeType, { silent: true });
     this.dismissInteractionHint();
     if (creature && this.hasNotifications()) {

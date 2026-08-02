@@ -465,6 +465,12 @@ export class ToolController {
       predator,
       genes: this._hasExplicitGenes(genes) ? { ...genes } : null
     });
+    eventSystem.emit(GameEvents.CREATURE_SPAWN, {
+      creatureId: creature?.id ?? null,
+      type,
+      x,
+      y
+    });
   }
 
   _resolveSpawnedCreatureId(action) {

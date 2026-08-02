@@ -20,6 +20,7 @@ import { NotificationSystem } from '../creature-sim/src/notification-system.js';
 import { fillSnapshotPool } from '../creature-sim/src/snapshot-pool.js';
 import { SimulationProxy } from '../creature-sim/src/simulation-proxy.js';
 import { SaveSystem } from '../creature-sim/src/save-system.js';
+import { eventSystem, GameEvents } from '../creature-sim/src/event-system.js';
 
 function makeFakeWorkerProxy() {
   const priorWindow = globalThis.window;
@@ -180,6 +181,80 @@ test('session-goals: cumulative goal progress is baselined at goal-creation time
   assert.ok(
     Math.abs(secondProgress - 10 / 50) < 1e-9,
     `progress should track only the delta since baseline (10/50), got ${secondProgress}`
+  );
+});
+
+test('session-goals: manual spawn progress follows explicit player spawn events', () => {
+  const sessionGoals = new SessionGoals({});
+  sessionGoals.resetForNewSession({ refreshGoals: false });
+
+  eventSystem.emit(GameEvents.CREATURE_BORN, { parentId: null });
+  assert.equal(sessionGoals.manualSpawns, 0, 'simulation births should not count as manual spawns');
+
+  eventSystem.emit(GameEvents.CREATURE_SPAWN, { type: 'aquatic' });
+  assert.equal(sessionGoals.manualSpawns, 1, 'an explicit player spawn should count once');
+});
+
+test('session-goals: a fresh sandbox favors goals available in the opener', () => {
+  const sessionGoals = new SessionGoals({});
+  sessionGoals.resetForNewSession();
+
+  const openerGoalTypes = new Set([
+    'population',
+    'food_collected',
+    'births',
+    'survival_time',
+    'manual_spawns',
+    'creature_throws'
+  ]);
+  const goals = sessionGoals.getGoals();
+
+  assert.equal(goals.length, 3, 'a new session should still expose three goals');
+  assert.ok(
+    goals.every(goal => openerGoalTypes.has(goal.type)),
+    `starter goals should use visible opener actions, got ${goals.map(goal => goal.type).join(', ')}`
+  );
+});
+
+test('world-ecosystem: auto-balance honors mode population and food thresholds', () => {
+  const world = new World(400, 400);
+  world.t = 120;
+  world.autoBalanceSettings = {
+    enabled: true,
+    minPopulation: 12,
+    targetPredatorRatio: 0.24,
+    maxPredators: 16,
+    targetFoodFraction: 0.8,
+    minFoodAbsolute: 40
+  };
+  world.ecosystem.lastEcoStats = {
+    herbivores: 5,
+    predators: 0,
+    omnivores: 0,
+    foodCount: 0
+  };
+
+  let herbivoreSpawns = 0;
+  let emergencyFoodTarget = null;
+  const originalSpawnManual = world.creatureManager.spawnManual;
+  const originalEmergencyFood = world.ecosystem.addEmergencyFood.bind(world.ecosystem);
+  world.creatureManager.spawnManual = (_x, _y, predator) => {
+    if (!predator) herbivoreSpawns += 1;
+    return {};
+  };
+  world.ecosystem.addEmergencyFood = (target, count) => {
+    emergencyFoodTarget = { target, count };
+    return originalEmergencyFood(target, count);
+  };
+
+  world.ecosystem.autoBalanceEcosystem(60);
+
+  world.creatureManager.spawnManual = originalSpawnManual;
+  assert.ok(herbivoreSpawns > 0, 'a population below the mode floor should receive a gentle herbivore pulse');
+  assert.deepEqual(
+    emergencyFoodTarget,
+    { target: 40, count: 0 },
+    'food recovery should use the configured absolute floor, not the old hard-coded ratio'
   );
 });
 

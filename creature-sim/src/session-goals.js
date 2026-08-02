@@ -100,6 +100,15 @@ const GOAL_POOL = [
   }
 ];
 
+const STARTER_GOAL_TYPES = new Set([
+  'population',
+  'food_collected',
+  'births',
+  'survival_time',
+  'manual_spawns',
+  'creature_throws'
+]);
+
 export class SessionGoals {
   constructor({ notifications = null, audio = null } = {}) {
     this.notifications = notifications;
@@ -111,8 +120,10 @@ export class SessionGoals {
     this.propTriggers = 0;
     this.propPlacements = 0;
     this.godActions = 0;
-    eventSystem.on(GameEvents.CREATURE_BORN, event => {
-      if (!event || event.parentId != null) return;
+    // Count explicit player intent, not every root birth. Seeded founders and
+    // worker-delivered starter births are simulation setup, while this event
+    // is emitted by the toolbar/canvas spawn controls.
+    eventSystem.on(GameEvents.CREATURE_SPAWN, () => {
       this.manualSpawns += 1;
     });
     eventSystem.on(GameEvents.CREATURE_THROWN, () => {
@@ -130,8 +141,9 @@ export class SessionGoals {
     this.generateGoals();
   }
 
-  generateGoals(count = 3) {
-    const shuffled = [...GOAL_POOL].sort(() => Math.random() - 0.5);
+  generateGoals(count = 3, { starter = false } = {}) {
+    const pool = starter ? GOAL_POOL.filter(goal => STARTER_GOAL_TYPES.has(goal.type)) : GOAL_POOL;
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
     this.goals = shuffled.slice(0, count).map(def => {
       const target = def.makeTarget();
       return {
@@ -180,6 +192,21 @@ export class SessionGoals {
         godActions: this.godActions
       }
     };
+  }
+
+  resetForNewSession({ refreshGoals = true } = {}) {
+    this.manualSpawns = 0;
+    this.creatureThrows = 0;
+    this.propTriggers = 0;
+    this.propPlacements = 0;
+    this.godActions = 0;
+    this._lastUpdate = 0;
+
+    if (refreshGoals) {
+      this.generateGoals(3, { starter: true });
+    } else {
+      eventSystem.emit(GameEvents.SESSION_GOAL_UPDATED, this.getGoals());
+    }
   }
 
   restore(data, { announce = false } = {}) {

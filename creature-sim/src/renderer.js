@@ -29,6 +29,12 @@ import {
 import { ghostTrails } from './ecosystem-ghosts.js';
 
 // SPLIT: biome and weather rendering extracted to renderer-biome.js / renderer-weather.js
+let drawLandscapeLandmarks = null;
+import('./renderer-landmarks.js?v=20260801-map-landmarks')
+  .then(module => {
+    drawLandscapeLandmarks = module.drawLandscapeLandmarks;
+  })
+  .catch(error => console.debug('[Renderer] optional landmark layer unavailable:', error));
 
 export class Renderer {
   constructor(ctx, camera) {
@@ -263,8 +269,8 @@ export class Renderer {
     // Calm zones (subtle, ambient)
     this.drawCalmZones(world, opts);
 
-    if (opts.godModeActive) {
-      this.drawFoodPatches(world);
+    if (opts.godModeActive || this.camera.zoom < 0.72) {
+      this.drawFoodPatches(world, { ambient: !opts.godModeActive });
     }
 
     if (this.enableNests) {
@@ -576,6 +582,10 @@ export class Renderer {
 
     drawBiomeGround(this, ctx, world);
 
+    // A low-zoom habitat layer gives the generated world a readable shape
+    // before individual decorations become visible.
+    drawLandscapeLandmarks?.(this, ctx, world);
+
     // Draw decorations with better visibility (less dense)
     if (world.decorations && this.camera.zoom > 0.4) {
       const skipFactor = Math.max(1, Math.floor(5 / this.camera.zoom));
@@ -646,18 +656,25 @@ export class Renderer {
     ctx.restore();
   }
 
-  drawFoodPatches(world) {
+  drawFoodPatches(world, { ambient = false } = {}) {
     const patches = world.ecosystem?.foodPatches;
     if (!patches || patches.length === 0) return;
     const ctx = this.ctx;
     ctx.save();
-    ctx.strokeStyle = 'rgba(140, 255, 180, 0.22)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = ambient ? 'rgba(175, 245, 160, 0.12)' : 'rgba(140, 255, 180, 0.22)';
+    ctx.fillStyle = ambient ? 'rgba(108, 214, 122, 0.035)' : 'rgba(108, 214, 122, 0.06)';
+    ctx.lineWidth = ambient ? 1.1 : 1.5;
+    ctx.setLineDash(ambient ? [12, 16] : []);
     for (const patch of patches) {
+      if (!Number.isFinite(patch.x) || !Number.isFinite(patch.y)) continue;
+      const stockRatio = clamp((patch.stock ?? 0) / Math.max(1, patch.maxStock ?? 1), 0, 1);
+      ctx.globalAlpha = ambient ? 0.45 + stockRatio * 0.55 : 1;
       ctx.beginPath();
       ctx.arc(patch.x, patch.y, patch.radius * 0.85, 0, Math.PI * 2);
+      ctx.fill();
       ctx.stroke();
     }
+    ctx.setLineDash([]);
     ctx.restore();
   }
 

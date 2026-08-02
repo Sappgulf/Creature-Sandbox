@@ -16,6 +16,28 @@ const biomeColors = {
   wetland: [42, 82, 74]
 };
 
+const LANDSCAPE_LANDMARKS = Object.freeze([
+  { u: 0.39, v: 0.39, radius: 170, fallbackFrame: 4 },
+  { u: 0.5, v: 0.26, radius: 180, fallbackFrame: 1 },
+  { u: 0.61, v: 0.39, radius: 170, fallbackFrame: 2 },
+  { u: 0.38, v: 0.61, radius: 170, fallbackFrame: 3 },
+  { u: 0.5, v: 0.5, radius: 200, fallbackFrame: 0 },
+  { u: 0.62, v: 0.61, radius: 170, fallbackFrame: 4 },
+  { u: 0.5, v: 0.74, radius: 180, fallbackFrame: 5 }
+]);
+
+const pendingDecorationRequests = new Set();
+
+export function getLandscapeLandmarks(width, height) {
+  const safeWidth = Number.isFinite(Number(width)) && Number(width) > 0 ? Number(width) : 4000;
+  const safeHeight = Number.isFinite(Number(height)) && Number(height) > 0 ? Number(height) : 2800;
+  return LANDSCAPE_LANDMARKS.map(landmark => ({
+    ...landmark,
+    x: safeWidth * landmark.u,
+    y: safeHeight * landmark.v
+  }));
+}
+
 export function getSeasonalGroundTint(season, phase) {
   const tintFactors = {
     spring: { r: 0.01, g: 0.02, b: -0.01 },
@@ -92,7 +114,7 @@ export function drawBiomeGround(renderer, ctx, world) {
     // against the near-black #03050a base, biome color variation was
     // essentially imperceptible. Raised so the world actually reads as a
     // living, colored biome rather than a flat dark canvas.
-    const overlayAlpha = clamp(0.16 + renderer.camera.zoom * 0.16, 0.16, 0.34);
+    const overlayAlpha = clamp(0.2 + renderer.camera.zoom * 0.2, 0.2, 0.44);
     const influenceRadius = sampleSpacing * 0.92;
     const startX = Math.floor(bounds.x1 / sampleSpacing) * sampleSpacing;
     const startY = Math.floor(bounds.y1 / sampleSpacing) * sampleSpacing;
@@ -136,10 +158,10 @@ export function drawBiomeGround(renderer, ctx, world) {
         const biome = world.getBiomeAt?.(x, y);
         const tint =
           biome?.type === 'water'
-            ? 'rgba(120, 190, 230, 0.22)'
+            ? 'rgba(120, 190, 230, 0.26)'
             : biome?.type === 'desert'
-              ? 'rgba(244, 190, 120, 0.18)'
-              : 'rgba(170, 210, 170, 0.16)';
+              ? 'rgba(244, 190, 120, 0.22)'
+              : 'rgba(170, 210, 170, 0.2)';
         ctx.fillStyle = tint;
         ctx.beginPath();
         ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
@@ -633,6 +655,17 @@ export function drawDecorationFromSprite(renderer, ctx, dec, spriteInfo, assetKe
     const anchorY = Number.isFinite(Number(anchor.y)) ? Number(anchor.y) : 1;
     ctx.drawImage(frame, -frameWidth * anchorX, -frameHeight * anchorY);
   } else {
+    const requestKey = `${assetKey}|${frameWidth}|${Math.round(Number(dec.hue) || 0)}`;
+    if (!pendingDecorationRequests.has(requestKey)) {
+      pendingDecorationRequests.add(requestKey);
+      assetLoader
+        .requestSpriteFrames(assetKey, {
+          size: frameWidth,
+          color: `hsl(${Math.round(Number(dec.hue) || 0)}, 50%, 50%)`
+        })
+        .catch(error => console.debug(`[Renderer] decoration sprite load failed: ${assetKey}`, error))
+        .finally(() => pendingDecorationRequests.delete(requestKey));
+    }
     ctx.restore();
     drawDecorationFallback(renderer, ctx, dec, world);
     return;
