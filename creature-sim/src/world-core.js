@@ -592,7 +592,18 @@ export class World {
     const initialPredators = campaignConfig?.initialPredators ?? nPred;
     const initialFood = campaignConfig?.initialFood ?? nFood;
     const initialAquatic = campaignConfig?.initialAquaticCreatures ?? Math.max(1, Math.floor(initialCreatures * 0.12));
-    const remainingLand = Math.max(0, initialCreatures - initialAquatic);
+    // spawnFlying and spawnBurrowing are fully implemented — dedicated genes,
+    // traits.creatureType, size and metabolism profiles, and matching biome
+    // energy rules in creature.js — but seeding only ever called spawnAquatic,
+    // so neither type appeared in a world unless a player spawned one by hand.
+    // The default flying/burrowing genes sit around 0.08, nowhere near the 0.4
+    // behaviour or 0.6 metric thresholds, so they could not emerge by drift
+    // either.
+    // No max(1, ...) here on purpose: a small campaign level asking for five
+    // creatures should not be forced to spend three of them on variants.
+    const initialFlying = campaignConfig?.initialFlyingCreatures ?? Math.floor(initialCreatures * 0.06);
+    const initialBurrowing = campaignConfig?.initialBurrowingCreatures ?? Math.floor(initialCreatures * 0.06);
+    const remainingLand = Math.max(0, initialCreatures - initialAquatic - initialFlying - initialBurrowing);
     const nOmnivoresFinal = Math.floor(remainingLand * 0.35);
     const nPureHerbivoresFinal = Math.max(0, remainingLand - nOmnivoresFinal);
 
@@ -627,6 +638,23 @@ export class World {
       this.creatureManager.spawnAquatic(x, y);
     }
 
+    // Spawn fliers over open ground where their sight range pays off.
+    for (let i = 0; i < initialFlying; i++) {
+      const spot = this.findBiomeSpot('meadow', 8);
+      const x = clamp(spot.x + rand(-90, 90), 30, this.width - 30);
+      const y = clamp(spot.y + rand(-90, 90), 30, this.height - 30);
+      this.creatureManager.spawnFlying(x, y);
+    }
+
+    // Spawn burrowers on high ground, where creature.js gives them their
+    // underground metabolism bonus.
+    for (let i = 0; i < initialBurrowing; i++) {
+      const spot = this.findBiomeSpot('mountain', 8);
+      const x = clamp(spot.x + rand(-90, 90), 30, this.width - 30);
+      const y = clamp(spot.y + rand(-90, 90), 30, this.height - 30);
+      this.creatureManager.spawnBurrowing(x, y);
+    }
+
     // Spawn predators strategically (not too close to start)
     for (let i = 0; i < initialPredators; i++) {
       const x = Math.random() * this.width;
@@ -651,7 +679,7 @@ export class World {
     }
 
     console.debug(
-      `🌱 Seeded diverse world: ${nPureHerbivoresFinal} herbivores, ${nOmnivoresFinal} omnivores, ${initialAquatic} aquatic, ${initialPredators} predators, ${initialFood} food`
+      `🌱 Seeded diverse world: ${nPureHerbivoresFinal} herbivores, ${nOmnivoresFinal} omnivores, ${initialAquatic} aquatic, ${initialFlying} flying, ${initialBurrowing} burrowing, ${initialPredators} predators, ${initialFood} food`
     );
 
     // Clear campaign config so it doesn't persist across resets

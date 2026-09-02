@@ -891,6 +891,40 @@ test('herd forces reach the steering target instead of being overwritten', () =>
   assert.ok(blend > 0 && blend < 1, `HERD_STEER_BLEND ${blend} must influence steering without overriding foraging`);
 });
 
+test('every vegetation type can actually spawn', () => {
+  const src = fs.readFileSync(new URL('../creature-sim/src/world-ecosystem.js', import.meta.url), 'utf8');
+
+  // spawnChance summed to 1.005 and the roll was rand() in [0, 1), so the
+  // running total already hit 1.0 at 'fruit'. golden_fruit sat in a band that
+  // could never be rolled and had never appeared in any world.
+  assert.match(src, /totalWeight/, 'the food roll must normalise its weights rather than assume they sum to 1');
+
+  const types = /vegetationTypes = \{([\s\S]*?)\n    \};/.exec(src);
+  assert.ok(types, 'vegetation table should be readable');
+  const chances = [...types[1].matchAll(/spawnChance:\s*([0-9.]+)/g)].map(m => Number(m[1]));
+  assert.ok(chances.length >= 4, 'expected the full vegetation table');
+  const total = chances.reduce((a, b) => a + b, 0);
+  assert.ok(Math.abs(total - 1) > 1e-9, 'this guard matters precisely because the weights do not sum to 1');
+});
+
+test('worker snapshot carries the variant genes the metrics count', () => {
+  const state = fs.readFileSync(new URL('../creature-sim/src/simulation-state.js', import.meta.url), 'utf8');
+  const world = fs.readFileSync(new URL('../creature-sim/src/world-core.js', import.meta.url), 'utf8');
+
+  // collectGameplayMetrics counts aquatic/flying/burrowing straight off genes,
+  // and none of them were in the packed layout, so variantsAlive read 0 in the
+  // worker runtime no matter what was in the world.
+  for (const key of ['AQUATIC', 'FLYING', 'BURROWING']) {
+    assert.ok(state.includes(`${key}:`), `${key} must be part of the creature layout`);
+  }
+
+  // spawnFlying and spawnBurrowing were implemented but never seeded, and the
+  // default genes sit near 0.08, far under the 0.4/0.6 thresholds, so neither
+  // type could appear by drift either.
+  assert.match(world, /spawnFlying\(/, 'flying creatures should be seeded into a world');
+  assert.match(world, /spawnBurrowing\(/, 'burrowing creatures should be seeded into a world');
+});
+
 console.log('\n=== SUMMARY ===');
 console.log(`Passed: ${passed}`);
 console.log(`Failed: ${failed}`);

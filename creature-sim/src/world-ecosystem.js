@@ -140,11 +140,19 @@ export class WorldEcosystem {
     }
     // Determine food type if not specified
     if (!type) {
-      const roll = rand();
+      // Weights are normalised rather than assumed to sum to 1. They sum to
+      // 1.005, so the running total hit 1.0 at 'fruit' while rand() is [0, 1):
+      // golden_fruit sat in a band that could never be rolled and had never
+      // appeared in a world.
+      let totalWeight = 0;
+      for (const config of Object.values(this.vegetationTypes)) {
+        totalWeight += Math.max(0, Number(config.spawnChance) || 0);
+      }
+      const roll = rand() * (totalWeight > 0 ? totalWeight : 1);
       let cumulative = 0;
       for (const [foodType, config] of Object.entries(this.vegetationTypes)) {
-        cumulative += config.spawnChance;
-        if (roll <= cumulative) {
+        cumulative += Math.max(0, Number(config.spawnChance) || 0);
+        if (roll < cumulative) {
           type = foodType;
           break;
         }
