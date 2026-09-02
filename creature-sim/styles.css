@@ -2584,6 +2584,15 @@ select:focus-visible,
   body.panel-open .panel-overlay {
     display: block;
   }
+  /* The inspector counts as an open surface for panel-open (see
+     ui-controller.js), so opening it raises this scrim — and at z-index 150 it
+     sat *underneath* its own backdrop, which is pointer-events:auto. Every tap
+     landed on the scrim instead, so on a phone the inspector could not be
+     used or even closed once opened. Sits above the scrim, still below the
+     .panel layer at 200. */
+  #inspector {
+    z-index: 195;
+  }
   .campaign-levels-grid {
     grid-template-columns: 1fr;
   }
@@ -6738,6 +6747,29 @@ body {
   }
 
   .ctrl-btn {
+    min-height: 44px;
+  }
+
+  /* The inspector's own controls were missed by this block: on a phone its
+     header buttons measured 23px tall and the close button 30x23 — the
+     primary way to dismiss the panel. The header is a slim row, so the icon
+     buttons keep their look and gain height, while the row is allowed to wrap
+     rather than overflow when they no longer fit beside the title. */
+  .title-actions {
+    flex-wrap: wrap;
+  }
+
+  #btn-pin,
+  #btn-root,
+  #btn-minimize-inspector,
+  #btn-close-inspector {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  #btn-export,
+  #btn-export-csv,
+  #btn-export-genes {
     min-height: 44px;
   }
 }

@@ -455,10 +455,13 @@ export class ControlStripController {
 
   cycleSpeed() {
     this.syncSpeedIndexFromState();
-    this.speedIndex = (this.speedIndex + 1) % SPEED_OPTIONS.length;
-    if (this.mobilePrefs.batterySaver) {
-      this.speedIndex = Math.min(this.speedIndex, 1);
-    }
+    // Battery saver caps the top speed, but clamping *after* incrementing
+    // pinned the index: from 1x the next index is 2, which clamped straight
+    // back to 1 every time. The control could never move at all — not even to
+    // the 0.5x the cap allows — so on any device that defaults to battery
+    // saver both speed buttons were inert. Cycle within the permitted range.
+    const maxIndex = this.mobilePrefs.batterySaver ? 1 : SPEED_OPTIONS.length - 1;
+    this.speedIndex = this.speedIndex >= maxIndex ? 0 : this.speedIndex + 1;
     gameState.fastForward = SPEED_OPTIONS[this.speedIndex];
     this.updateSpeedButton();
     this.buzz(8);

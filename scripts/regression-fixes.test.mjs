@@ -24,6 +24,7 @@ import { eventSystem, GameEvents } from '../creature-sim/src/event-system.js';
 import { TutorialSystem } from '../creature-sim/src/tutorial-system.js';
 import { packCreature, unpackCreature, createCreatureBuffer } from '../creature-sim/src/simulation-state.js';
 import { collectGameplayMetrics } from '../creature-sim/src/gameplay-objectives.js';
+import { ControlStripController } from '../creature-sim/src/control-strip.js';
 
 function makeFakeWorkerProxy() {
   const priorWindow = globalThis.window;
@@ -639,6 +640,62 @@ test('simulation-state: worker snapshot carries stress and hunger, so objective 
   const metrics = collectGameplayMetrics({ creatures: [unpacked], food: [], t: 0 });
   assert.ok(metrics.averageStress > 0, 'averageStress should reflect snapshot creatures, not default to 0');
   assert.ok(metrics.averageHunger > 0, 'averageHunger should reflect snapshot creatures, not default to 0');
+});
+
+test('control-strip: battery saver caps speed instead of freezing it at 1x', () => {
+  const cycleSpeed = ControlStripController.prototype.cycleSpeed;
+  const run = (batterySaver, presses) => {
+    const seen = [];
+    const ctx = {
+      speedIndex: 1, // 1x, the startup speed
+      mobilePrefs: { batterySaver },
+      syncSpeedIndexFromState() {},
+      updateSpeedButton() {
+        seen.push(this.speedIndex);
+      },
+      buzz() {}
+    };
+    for (let i = 0; i < presses; i++) cycleSpeed.call(ctx);
+    return seen;
+  };
+
+  // Clamping after the increment meant 1 -> 2 -> back to 1 on every press, so
+  // the control never moved and 0.5x was unreachable even though the cap
+  // allows it.
+  const capped = run(true, 4);
+  assert.ok(new Set(capped).size > 1, 'battery saver must not freeze the speed control');
+  assert.ok(
+    capped.every(i => i <= 1),
+    'battery saver must still cap speed at 1x'
+  );
+  assert.ok(capped.includes(0), 'battery saver should still allow 0.5x');
+
+  const full = run(false, 4);
+  assert.deepEqual(new Set(full), new Set([2, 3, 0, 1]), 'without battery saver every speed should be reachable');
+});
+
+test('styles: inspector sits above its own modal scrim, and its controls meet the touch floor', () => {
+  const css = fs.readFileSync(new URL('../creature-sim/styles.css', import.meta.url), 'utf8');
+
+  // Opening the inspector sets body.panel-open (ui-controller.js), which shows
+  // .panel-overlay. The overlay is pointer-events:auto, so while the inspector
+  // was below it every tap landed on the scrim and the panel could not be used
+  // or even closed on a phone.
+  const overlayZ = /\.panel-overlay\s*\{[^}]*z-index:\s*(\d+)/s.exec(css);
+  const inspectorZ = /#inspector\s*\{\s*z-index:\s*(\d+)/s.exec(css);
+  assert.ok(overlayZ, 'panel-overlay should declare a z-index');
+  assert.ok(inspectorZ, 'inspector should declare a z-index above the scrim');
+  assert.ok(
+    Number(inspectorZ[1]) > Number(overlayZ[1]),
+    `inspector z-index (${inspectorZ?.[1]}) must exceed the scrim (${overlayZ?.[1]})`
+  );
+
+  // The pointer:coarse block raises controls to the 44px floor; the
+  // inspector's own buttons were left out of it.
+  const coarse = css.slice(css.indexOf('@media (pointer: coarse)'));
+  for (const id of ['#btn-close-inspector', '#btn-minimize-inspector', '#btn-pin', '#btn-export']) {
+    assert.ok(coarse.includes(id), `${id} should be raised to the touch-target floor on coarse pointers`);
+  }
 });
 
 console.log('\n=== SUMMARY ===');
