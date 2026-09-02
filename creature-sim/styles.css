@@ -6772,6 +6772,29 @@ body {
   #btn-export-genes {
     min-height: 44px;
   }
+
+  /* Every range input is a 6px-tall drag band — 17 of them across the gene
+     editor, the inspector's behaviour sliders and Scenario Lab. That is a
+     six-pixel target for a fingertip. Grow the control's hit area to the 44px
+     floor while the track stays visually 6px: the input's own background is
+     dropped so the taller box is invisible, and the thumb is re-centred
+     against the track inside it. */
+  input[type='range'] {
+    height: 44px;
+    background: transparent;
+    border-radius: 0;
+    /* Let vertical scrolling still work while the slider owns horizontal drags. */
+    touch-action: pan-y;
+  }
+
+  input[type='range']::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 3px;
+  }
+
+  input[type='range']::-webkit-slider-thumb {
+    margin-top: -5px;
+  }
 }
 
 /* ============================================================================

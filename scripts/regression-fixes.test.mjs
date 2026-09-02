@@ -736,6 +736,32 @@ test('help panel documents the digit keys that actually exist', () => {
   assert.match(inputManager, /cameraBookmarks\.load/, 'camera bookmarks should still be bound');
 });
 
+test('campaign level cards are operable by keyboard, not mouse only', () => {
+  const bootstrap = fs.readFileSync(new URL('../creature-sim/src/app-bootstrap.js', import.meta.url), 'utf8');
+
+  // The cards were plain divs carrying only a click handler: never in the tab
+  // order, and announced as text rather than as controls.
+  assert.match(bootstrap, /role="button" tabindex="0"/, 'unlocked cards need button semantics');
+  assert.match(bootstrap, /aria-disabled="true"/, 'locked cards should say they are unavailable');
+  assert.match(bootstrap, /aria-label="\$\{label/, 'cards need an accessible name');
+  assert.match(
+    bootstrap,
+    /card\.addEventListener\('keydown'/,
+    'a div claiming role=button must handle Enter and Space itself'
+  );
+});
+
+test('range sliders meet the touch-target floor on coarse pointers', () => {
+  const css = fs.readFileSync(new URL('../creature-sim/styles.css', import.meta.url), 'utf8');
+  const coarse = css.slice(css.indexOf('@media (pointer: coarse)'));
+
+  // The base rule is a 6px-tall control, which is the whole drag target: 17 of
+  // them across the gene editor, inspector and Scenario Lab.
+  assert.match(css, /input\[type='range'\]\s*\{[^}]*height:\s*6px/s, 'the base slider is still a 6px track');
+  assert.match(coarse, /input\[type='range'\]/, 'sliders must be enlarged on coarse pointers');
+  assert.match(coarse, /height:\s*44px/, 'the coarse hit area should reach the 44px floor');
+});
+
 console.log('\n=== SUMMARY ===');
 console.log(`Passed: ${passed}`);
 console.log(`Failed: ${failed}`);

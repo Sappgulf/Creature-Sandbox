@@ -1139,8 +1139,20 @@ export async function initializeApp() {
           const isCompleted = progress?.completed;
           const stars = progress?.stars || 0;
 
+          // The cards were plain divs with a click handler: mouse-only, absent
+          // from the tab order, and announced as text rather than as controls.
+          // Unlocked cards become real buttons; locked ones stay inert but say
+          // so.
+          const locked = !level.unlocked;
+          const label =
+            `${level.name}, ${level.subtitle}. ${level.description} ` +
+            `Difficulty ${level.difficulty}. ${stars} of 3 stars.` +
+            (locked ? ' Locked.' : '');
+
           return `
-          <div class="campaign-level-card ${level.unlocked ? '' : 'locked'} ${isCompleted ? 'completed' : ''}" 
+          <div class="campaign-level-card ${level.unlocked ? '' : 'locked'} ${isCompleted ? 'completed' : ''}"
+               ${locked ? 'aria-disabled="true"' : 'role="button" tabindex="0"'}
+               aria-label="${label.replace(/"/g, '&quot;')}"
                data-level-id="${level.id}">
             <div class="campaign-level-header">
               <span class="campaign-level-icon">${level.icon}</span>
@@ -1163,9 +1175,17 @@ export async function initializeApp() {
 
       // Add click handlers for unlocked levels
       campaignLevelsContainer.querySelectorAll('.campaign-level-card:not(.locked)').forEach(card => {
-        card.addEventListener('click', () => {
+        const activate = () => {
           const levelId = parseInt(card.dataset.levelId);
           void startCampaignLevel(levelId);
+        };
+        card.addEventListener('click', activate);
+        card.addEventListener('keydown', event => {
+          // Match native button behaviour for the role we just claimed.
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            activate();
+          }
         });
       });
     }
