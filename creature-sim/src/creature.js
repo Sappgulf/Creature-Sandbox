@@ -13,7 +13,9 @@ import {
   updateRestHome,
   updateMatingBond,
   applyHungerRelief,
-  getHomeBias
+  getHomeBias,
+  getAffinity,
+  adjustAffinity
 } from './creature-agent-needs.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { generateTemperament } from './creature-traits.js';
@@ -1769,7 +1771,15 @@ export class Creature {
             ? CreatureAgentTuning.MATING.OVERCROWD_BOND_MULT *
               (1 + overload / CreatureAgentTuning.MATING.POPULATION_SOFT_CAP)
             : 1;
-        const bondDuration = CreatureAgentTuning.MATING.BOND_TIME * bondMultiplier;
+        // Strangers court slowly; a pair that already knows each other settles
+        // quickly. This is what lets a committed pair actually finish a bond.
+        const affinity = getAffinity(this, mate.id);
+        const familiarity = clamp(
+          1 - affinity * CreatureAgentTuning.MATING.AFFINITY_BOND_SPEED,
+          CreatureAgentTuning.MATING.AFFINITY_BOND_MIN,
+          1.8
+        );
+        const bondDuration = CreatureAgentTuning.MATING.BOND_TIME * bondMultiplier * familiarity;
         const bonded = updateMatingBond(this, world, mate, dt, bondDuration);
 
         if (bonded && this.id < mate.id) {
@@ -1802,6 +1812,8 @@ export class Creature {
 
           this.needs.socialDrive = clamp(this.needs.socialDrive - 45, 0, 100);
           mate.needs.socialDrive = clamp(mate.needs.socialDrive - 45, 0, 100);
+          adjustAffinity(this, mate.id, CreatureAgentTuning.MATING.AFFINITY_ON_BIRTH);
+          adjustAffinity(mate, this.id, CreatureAgentTuning.MATING.AFFINITY_ON_BIRTH);
           this.setMood('💖', 0.9);
           mate.setMood?.('💖', 0.9);
         }
@@ -1815,6 +1827,9 @@ export class Creature {
       this.goal.bondTimer = Math.max(0, (this.goal.bondTimer ?? 0) - dt * CreatureAgentTuning.MATING.BOND_DECAY);
       const partnerLost = mate && mate.id !== this.goal.bondingWith;
       if (this.goal.bondTimer <= 0 || partnerLost) {
+        // A courtship that fell apart leaves both a little cooler on each
+        // other, so repeated failures push a pair apart rather than looping.
+        adjustAffinity(this, this.goal.bondingWith, -CreatureAgentTuning.MATING.AFFINITY_ON_INTERRUPT);
         this.goal.bondingWith = null;
         this.goal.bondTimer = 0;
         this.goal.bondAnnounced = false;

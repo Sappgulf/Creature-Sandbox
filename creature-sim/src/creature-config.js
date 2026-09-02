@@ -62,7 +62,12 @@ export const CreatureConfig = {
     // How far the herd heading pulls the steering target, scaled by the
     // creature's herdInstinct. Kept well below 1 so foraging still wins: a
     // hungry creature should drift with its herd, not orbit it.
-    HERD_STEER_BLEND: 0.35
+    HERD_STEER_BLEND: 0.35,
+    // Cohesion answers to the herd's need for food. A fed herd draws together;
+    // a hungry one spreads out to cover more ground. At full hunger cohesion
+    // falls to a fifth of its resting strength, so herds visibly loosen as a
+    // season turns lean and close back up once they have eaten.
+    HERD_HUNGER_SPREAD: 0.8
   },
 
   // Combat

@@ -29,6 +29,7 @@ import { SPEED_OPTIONS, SPEED_LABELS } from '../creature-sim/src/game-state.js';
 import { CreatureAgentTuning } from '../creature-sim/src/creature-agent-constants.js';
 import { resolveDietRole } from '../creature-sim/src/creature-genetics-helpers.js';
 import { angleDelta } from '../creature-sim/src/utils.js';
+import { getAffinity, adjustAffinity } from '../creature-sim/src/creature-agent-needs.js';
 import { CreatureConfig } from '../creature-sim/src/creature-config.js';
 
 function makeFakeWorkerProxy() {
@@ -946,6 +947,57 @@ test('mating range does not sit on the herd separation distance', () => {
     CreatureAgentTuning.MATING.RANGE > CreatureConfig.MOVEMENT.HERD_SEPARATION,
     `mating range ${CreatureAgentTuning.MATING.RANGE} must clear herd separation ${CreatureConfig.MOVEMENT.HERD_SEPARATION}`
   );
+});
+
+test('creatures remember who they like and who they do not', () => {
+  const a = { id: 1 };
+
+  assert.equal(getAffinity(a, 2), 0, 'a stranger starts neutral');
+
+  adjustAffinity(a, 2, 0.4);
+  adjustAffinity(a, 2, 0.4);
+  assert.ok(getAffinity(a, 2) > 0.7, 'shared time should build warmth');
+
+  adjustAffinity(a, 3, -0.5);
+  assert.ok(getAffinity(a, 3) < 0, 'bad company should sour the relationship');
+
+  adjustAffinity(a, 2, 5);
+  adjustAffinity(a, 3, -5);
+  assert.ok(getAffinity(a, 2) <= 1 && getAffinity(a, 3) >= -1, 'affinity stays within -1..1');
+
+  // Memory is bounded, and the weakest-held relationship is the one forgotten.
+  const cap = CreatureAgentTuning.MATING.AFFINITY_MEMORY;
+  for (let id = 10; id < 10 + cap * 2; id++) adjustAffinity(a, id, 0.01);
+  assert.ok(a.bonds.size <= cap, `bond memory should stay within ${cap}, got ${a.bonds.size}`);
+  assert.ok(a.bonds.has(2), 'a strongly held relationship should survive the cull');
+});
+
+test('mate choice is swayed by affinity, not distance alone', () => {
+  const src = fs.readFileSync(new URL('../creature-sim/src/creature-agent-needs.js', import.meta.url), 'utf8');
+
+  // Picking whoever was nearest each frame made senses.mate flip constantly,
+  // which reset the bond timer before it could ever reach BOND_TIME.
+  assert.match(src, /AFFINITY_MATE_PULL/, 'mate scoring should weigh affinity against distance');
+  assert.match(src, /AFFINITY_PROXIMITY_GAIN/, 'affinity must be able to grow outside courtship');
+
+  // Without a proximity path, affinity could only grow during a bond — but a
+  // bond needs affinity to complete, so nothing could ever start.
+  assert.ok(CreatureAgentTuning.MATING.AFFINITY_PROXIMITY_GAIN > 0, 'familiarity must build from sharing space');
+  assert.ok(CreatureAgentTuning.MATING.AFFINITY_PROXIMITY_SPITE > 0, 'hard times must be able to sour a pair');
+});
+
+test("herd cohesion answers to the herd's need for food", () => {
+  const src = fs.readFileSync(new URL('../creature-sim/src/creature-behavior.js', import.meta.url), 'utf8');
+
+  assert.match(src, /cohesionNeed/, 'cohesion should scale with hunger');
+  assert.match(src, /HERD_HUNGER_SPREAD/, 'the hunger response should be tunable');
+  const spread = CreatureConfig.MOVEMENT.HERD_HUNGER_SPREAD;
+  assert.ok(spread > 0 && spread <= 1, `HERD_HUNGER_SPREAD ${spread} should loosen but not invert cohesion`);
+
+  // Separation and alignment keep the group orderly; only the pull toward the
+  // centre gives way to foraging.
+  assert.match(src, /separationForce\.x \* W\.HERD_SEPARATION_WEIGHT/, 'separation should stay unscaled');
+  assert.match(src, /cohesionForce\.x \* cohesionWeight/, 'cohesion should use the hunger-scaled weight');
 });
 
 console.log('\n=== SUMMARY ===');

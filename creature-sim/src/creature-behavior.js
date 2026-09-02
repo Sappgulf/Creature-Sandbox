@@ -1045,15 +1045,21 @@ export class CreatureBehaviorSystem {
     const herdStrength = this.creature.genes.herdInstinct;
     const quirkCohesion = this.creature.getQuirkMultiplier?.('cohesion') ?? 1;
     const W = CreatureConfig.MOVEMENT;
+    // Hunger loosens the herd. Cohesion is the only one of the three forces
+    // that gets scaled: separation and alignment still keep the group orderly,
+    // but the pull toward its centre gives way to the search for food.
+    const hunger = clamp((this.creature.needs?.hunger ?? 0) / 100, 0, 1);
+    const cohesionNeed = clamp(1 - hunger * W.HERD_HUNGER_SPREAD, 0, 1);
+    const cohesionWeight = W.HERD_COHESION_WEIGHT * cohesionNeed;
     const totalForce = {
       x:
         separationForce.x * W.HERD_SEPARATION_WEIGHT +
         alignmentForce.x * W.HERD_ALIGNMENT_WEIGHT * quirkCohesion +
-        cohesionForce.x * W.HERD_COHESION_WEIGHT * socialPull * quirkCohesion,
+        cohesionForce.x * cohesionWeight * socialPull * quirkCohesion,
       y:
         separationForce.y * W.HERD_SEPARATION_WEIGHT +
         alignmentForce.y * W.HERD_ALIGNMENT_WEIGHT * quirkCohesion +
-        cohesionForce.y * W.HERD_COHESION_WEIGHT * socialPull * quirkCohesion
+        cohesionForce.y * cohesionWeight * socialPull * quirkCohesion
     };
 
     // Publish a heading for updateMovement to blend into its steering target

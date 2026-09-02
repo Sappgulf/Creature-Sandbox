@@ -16,7 +16,7 @@ export function updateAgentState(creature, dt, world) {
   if (creature._needsTimer >= CreatureAgentTuning.NEEDS.UPDATE_INTERVAL) {
     const step = creature._needsTimer;
     creature._needsTimer = 0;
-    updateAgentSenses(creature, world);
+    updateAgentSenses(creature, world, step);
     updateNeeds(creature, step, world);
   }
 
@@ -34,7 +34,7 @@ export function updateAgentState(creature, dt, world) {
   }
 }
 
-export function updateAgentSenses(creature, world) {
+export function updateAgentSenses(creature, world, dt = 0) {
   const senses = creature.senses;
   if (!senses) return;
   const dietRole = creature.traits?.dietRole ?? 'herbivore';
@@ -102,8 +102,14 @@ export function updateAgentSenses(creature, world) {
     const dx = other.x - creature.x;
     const dy = other.y - creature.y;
     const d2 = dx * dx + dy * dy;
-    if (d2 < bestMateD2) {
-      bestMateD2 = d2;
+    // Picking whoever is nearest each frame made `senses.mate` flip constantly,
+    // which reset the bond timer before it could ever complete. Weight the
+    // choice by how the creature feels about them: a familiar partner is worth
+    // crossing extra ground for, a soured one is passed over.
+    const affinity = getAffinity(creature, other.id);
+    const score = d2 * (1 - affinity * CreatureAgentTuning.MATING.AFFINITY_MATE_PULL);
+    if (score < bestMateD2) {
+      bestMateD2 = score;
       bestMate = other;
     }
   }
@@ -122,6 +128,26 @@ export function updateAgentSenses(creature, world) {
     ? world.creatureManager.queryCreaturesFast(creature.x, creature.y, crowdRadius)
     : world?.queryCreatures?.(creature.x, creature.y, crowdRadius) || [];
   senses.overcrowded = crowd.length > CreatureAgentTuning.SENSES.OVERCROWD_COUNT;
+
+  // Relationships form from sharing space, not only from courtship. A creature
+  // that is fed and calm warms to the neighbours it keeps running into; one
+  // that is hungry, stressed or hemmed in sours on them instead. This is what
+  // gives mate choice something to be sticky about.
+  if (crowd.length > 1 && Number.isFinite(dt) && dt > 0) {
+    const content =
+      (creature.needs?.hunger ?? 0) < 70 &&
+      (creature.needs?.stress ?? 0) < CreatureAgentTuning.MATING.STRESS_MAX &&
+      !senses.overcrowded;
+    const rate = content
+      ? CreatureAgentTuning.MATING.AFFINITY_PROXIMITY_GAIN
+      : -CreatureAgentTuning.MATING.AFFINITY_PROXIMITY_SPITE;
+    const limit = Math.min(crowd.length, CreatureAgentTuning.MATING.AFFINITY_NEIGHBOURS + 1);
+    for (let i = 0; i < limit; i++) {
+      const other = crowd[i];
+      if (!other || other === creature || other.alive === false) continue;
+      adjustAffinity(creature, other.id, rate * dt);
+    }
+  }
   if (senses.overcrowded && !creature._wasOvercrowded) {
     creature._wasOvercrowded = true;
     try {
@@ -491,6 +517,46 @@ export function updateRestHome(creature, dt, world, nest = null) {
   creature._restNestTimer = 0;
 }
 
+/**
+ * Pair affinity in [-1, 1]. Creatures remember a handful of others and either
+ * warm to them or sour on them; the weakest-held memory is forgotten first.
+ * @param {any} creature
+ * @param {number} otherId
+ * @returns {number}
+ */
+export function getAffinity(creature, otherId) {
+  const v = creature?.bonds?.get(otherId);
+  return Number.isFinite(v) ? v : 0;
+}
+
+/**
+ * @param {any} creature
+ * @param {number} otherId
+ * @param {number} delta
+ * @returns {number} the new affinity
+ */
+export function adjustAffinity(creature, otherId, delta) {
+  if (!creature || otherId === undefined || otherId === null) return 0;
+  if (!creature.bonds) creature.bonds = new Map();
+  const next = clamp(getAffinity(creature, otherId) + delta, -1, 1);
+  creature.bonds.set(otherId, next);
+
+  if (creature.bonds.size > CreatureAgentTuning.MATING.AFFINITY_MEMORY) {
+    let weakestId = null;
+    let weakest = Infinity;
+    for (const [id, value] of creature.bonds) {
+      if (id === otherId) continue;
+      const strength = Math.abs(value);
+      if (strength < weakest) {
+        weakest = strength;
+        weakestId = id;
+      }
+    }
+    if (weakestId !== null) creature.bonds.delete(weakestId);
+  }
+  return next;
+}
+
 export function updateMatingBond(creature, world, mate, dt, bondDuration) {
   if (!creature.goal || !mate?.goal) return false;
   if (creature.goal.bondingWith !== mate.id) {
@@ -511,6 +577,10 @@ export function updateMatingBond(creature, world, mate, dt, bondDuration) {
     }
   }
   creature.goal.bondTimer += dt;
+  // Time spent beside a partner is what builds the relationship.
+  const warmth = CreatureAgentTuning.MATING.AFFINITY_GAIN * dt;
+  adjustAffinity(creature, mate.id, warmth);
+  adjustAffinity(mate, creature.id, warmth);
   if (mate.goal.bondingWith !== creature.id) {
     mate.goal.bondingWith = creature.id;
     mate.goal.bondTimer = Math.max(mate.goal.bondTimer ?? 0, creature.goal.bondTimer * 0.5);

@@ -213,6 +213,28 @@ export const CreatureAgentTuning = {
     // consecutively, no bond could ever complete. Measured: a seeded world of
     // 64 produced zero births in 300s.
     BOND_DECAY: 0.5,
+    // Pair affinity, -1 to 1. Creatures remember who they have spent time
+    // beside and either warm to them or sour on them, which makes mate choice
+    // sticky instead of "whoever is nearest this frame". That stickiness is
+    // what lets a bond accumulate the consecutive frames it needs.
+    AFFINITY_GAIN: 0.55,
+    // Familiarity from simply sharing space. Without this, affinity could only
+    // grow during a bond — but a bond needs affinity to complete, so nothing
+    // could ever start. Company is pleasant when a creature is fed and calm and
+    // grating when it is hungry, crowded or stressed, so the same proximity
+    // grows warmth in a good season and resentment in a bad one.
+    AFFINITY_PROXIMITY_GAIN: 0.09,
+    AFFINITY_PROXIMITY_SPITE: 0.06,
+    AFFINITY_NEIGHBOURS: 3,
+    AFFINITY_DECAY: 0.04,
+    AFFINITY_ON_BIRTH: 0.35,
+    AFFINITY_ON_INTERRUPT: 0.12,
+    AFFINITY_MEMORY: 8,
+    // A familiar partner bonds faster; a soured one takes longer or is skipped.
+    AFFINITY_BOND_SPEED: 0.55,
+    AFFINITY_BOND_MIN: 0.35,
+    // How strongly affinity outweighs distance when picking a mate.
+    AFFINITY_MATE_PULL: 0.55,
     // Flat energy tax per mating, not a multiplier — a multiplier let
     // well-fed creatures breed for a trivial ~7-10 energy while FOOD.BITE_ENERGY
     // is 5.0, making reproduction effectively free relative to feeding.
