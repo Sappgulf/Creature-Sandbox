@@ -871,7 +871,8 @@ export class GameLoop {
 
     this.renderer.drawWorld(this.world, opts);
 
-    const objectiveRail = typeof document !== 'undefined' ? document.getElementById('objective-rail') : null;
+    // Cached: this runs on every rendered frame.
+    const objectiveRail = typeof document !== 'undefined' ? domCache.get('objectiveRail') : null;
     const objectiveRailVisible =
       !!objectiveRail &&
       objectiveRail.textContent.trim().length > 0 &&
@@ -1025,7 +1026,8 @@ export class GameLoop {
 
     // Render notifications
     if (this.hasNotifications()) {
-      const objectiveRail = typeof document !== 'undefined' ? document.getElementById('objective-rail') : null;
+      // Cached: this runs on every frame that has a toast on screen.
+      const objectiveRail = typeof document !== 'undefined' ? domCache.get('objectiveRail') : null;
       const objectiveRailVisible =
         !!objectiveRail &&
         objectiveRail.textContent.trim().length > 0 &&

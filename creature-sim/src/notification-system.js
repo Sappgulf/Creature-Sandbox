@@ -353,10 +353,15 @@ export class NotificationSystem {
       const x = cssX * pixelRatio;
       const y = useEdgeLane ? cssY * pixelRatio : startY + i * spacing;
 
+      // Room the pill can occupy without crossing either viewport edge. It is
+      // centred on cssX, so the usable width is symmetric about that point.
+      const maxPillWidth = 2 * Math.max(60, Math.min(cssX - 16, layoutWidth - cssX - 16));
+
       this._drawNotification(ctx, notif, x, y, viewportWidth, {
         layoutWidth,
         pixelRatio,
-        edgeLane: useEdgeLane
+        edgeLane: useEdgeLane,
+        maxPillWidth
       });
     }
 
@@ -399,13 +404,43 @@ export class NotificationSystem {
     const slideOffset = (1 - (notif.slideIn || 1)) * -20 * pixelRatio;
     y += slideOffset;
 
-    // Compact pill design
+    // Compact pill design. The pill grows with its label rather than holding a
+    // fixed width: at 260px the ellipsis fell exactly on the part that carries
+    // the information ("Goal complete: Keep 36+ creat\u2026"). Short labels keep
+    // the original width, so the common case looks unchanged.
     const compactViewport = layoutWidth <= 520;
-    const width = compactViewport
-      ? Math.min(210 * pixelRatio, viewportWidth - 56 * pixelRatio)
-      : (options.edgeLane ? 230 : 260) * pixelRatio;
     const height = (compactViewport ? 30 : 38) * pixelRatio;
     const radius = height / 2;
+
+    const displayText = notif.title ? `${notif.title} ${notif.message}`.trim() : notif.message;
+    ctx.font = `600 ${(compactViewport ? 12 : 13) * pixelRatio}px system-ui, -apple-system, sans-serif`;
+
+    const sidePadding = 30 * pixelRatio;
+    const roomFromCaller = Number(options.maxPillWidth) * pixelRatio;
+    const room = Math.max(
+      120 * pixelRatio,
+      Number.isFinite(roomFromCaller) && roomFromCaller > 0 ? roomFromCaller : viewportWidth - 56 * pixelRatio
+    );
+    const baseWidth = compactViewport ? 210 * pixelRatio : (options.edgeLane ? 230 : 260) * pixelRatio;
+    const minWidth = Math.min(baseWidth, room);
+
+    // Measuring is the expensive part here: sizing the pill costs one
+    // measureText and _fitText binary-searches with several more, and this runs
+    // for every visible toast on every frame. None of the inputs change while a
+    // toast sits on screen, so the result is memoised against them.
+    const layoutKey = `${displayText}|${ctx.font}|${room}|${minWidth}|${sidePadding}`;
+    let layout = notif._pillLayout;
+    if (!layout || layout.key !== layoutKey) {
+      const naturalWidth = ctx.measureText(String(displayText || '').trim()).width + sidePadding;
+      const measuredWidth = Math.max(minWidth, Math.min(naturalWidth, room));
+      layout = {
+        key: layoutKey,
+        width: measuredWidth,
+        text: this._fitText(ctx, displayText, measuredWidth - sidePadding)
+      };
+      notif._pillLayout = layout;
+    }
+    const width = layout.width;
 
     // Enhanced colors with better contrast
     const colors = {
@@ -441,13 +476,10 @@ export class NotificationSystem {
 
     // Combined title + message on single line
     ctx.fillStyle = color.text;
-    ctx.font = `600 ${(compactViewport ? 12 : 13) * pixelRatio}px system-ui, -apple-system, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    const displayText = notif.title ? `${notif.title} ${notif.message}`.trim() : notif.message;
-    const fittedText = this._fitText(ctx, displayText, width - 30 * pixelRatio);
-    ctx.fillText(fittedText, x, y);
+    ctx.fillText(layout.text, x, y);
 
     ctx.restore();
   }

@@ -27,6 +27,7 @@ export class DOMCache {
     this.cacheElement('watch-moments', 'watchMomentsBtn');
     this.cacheElement('watch-god-mode', 'watchGodModeBtn');
     this.cacheElement('watch-recenter', 'watchRecenterBtn');
+    this.cacheElement('objective-rail', 'objectiveRail');
 
     this.cacheElement('moments-close', 'momentsClose');
     this.cacheElement('moments-panel', 'momentsPanel');
