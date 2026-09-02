@@ -54,7 +54,15 @@ export function determineSenseType(genes) {
 export function resolveDietRole(genes) {
   const diet = geneValue(genes, 'diet', genes?.predator ? 1.0 : 0.0);
   if (diet > 0.7) {
-    return 'predator-lite';
+    // creature.js has two carnivore paths: full predation through
+    // world.tryPredation, and the lighter _applyPredatorLiteChase for anything
+    // tagged 'predator-lite'. Every diet > 0.7 creature used to get that tag,
+    // so the hunting path was unreachable — no creature in the world could
+    // ever attack prey, world-combat.js never ran, and the inspector labelled
+    // flagged predators "Predator-lite". Split the band so both paths exist:
+    // a flagged predator, or a very high diet, is a full hunter; merely
+    // carnivorous genes stay lite.
+    return genes?.predator || diet > 0.85 ? 'predator' : 'predator-lite';
   }
   if (diet >= 0.3) {
     return Math.random() < 0.55 ? 'scavenger' : 'herbivore';

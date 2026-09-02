@@ -1417,12 +1417,17 @@ test('creature-genetics-helpers: determineSenseType returns correct type based o
 
 test('creature-genetics-helpers: resolveDietRole returns herbivore/predator-lite/scavenger based on diet', () => {
   assert.equal(resolveDietRole({ diet: 0.1 }), 'herbivore', 'low diet should be herbivore');
-  assert.equal(resolveDietRole({ diet: 0.9 }), 'predator-lite', 'high diet should be predator-lite');
-  assert.equal(resolveDietRole({ predator: true }), 'predator-lite', 'predator flag should return predator-lite');
+  // These previously asserted 'predator-lite' for both, which is what made the
+  // full hunting branch in creature.js unreachable: it runs for diet > 0.7 and
+  // skips predator-lite, so no creature could ever attack prey. The band is now
+  // split so both carnivore paths are reachable.
+  assert.equal(resolveDietRole({ diet: 0.75 }), 'predator-lite', 'moderately carnivorous genes stay lite');
+  assert.equal(resolveDietRole({ diet: 0.9 }), 'predator', 'very high diet should be a full predator');
+  assert.equal(resolveDietRole({ predator: true }), 'predator', 'the predator flag should return a full predator');
   assert.equal(
     resolveDietRole({ diet: { allele1: 0.9, allele2: 0.9, expressed: 0.9 } }),
-    'predator-lite',
-    'diploid high diet should be predator-lite'
+    'predator',
+    'diploid genes should resolve through the same carnivore band as scalars'
   );
 });
 

@@ -27,6 +27,7 @@ import { collectGameplayMetrics } from '../creature-sim/src/gameplay-objectives.
 import { ControlStripController } from '../creature-sim/src/control-strip.js';
 import { SPEED_OPTIONS, SPEED_LABELS } from '../creature-sim/src/game-state.js';
 import { CreatureAgentTuning } from '../creature-sim/src/creature-agent-constants.js';
+import { resolveDietRole } from '../creature-sim/src/creature-genetics-helpers.js';
 
 function makeFakeWorkerProxy() {
   const priorWindow = globalThis.window;
@@ -819,6 +820,30 @@ test('auto-balance can out-pace a die-off instead of only nominally holding its 
   const pulse = /Math\.min\((\d+), Math\.ceil\(deficit \* ([0-9.]+)\)\)/.exec(src);
   assert.ok(pulse, 'refill pulse should scale with the deficit');
   assert.ok(Number(pulse[1]) >= 5, 'refill pulse cap was too small to recover a population');
+});
+
+test('full predators can actually reach the hunting branch', () => {
+  const src = fs.readFileSync(new URL('../creature-sim/src/creature.js', import.meta.url), 'utf8');
+
+  // creature.js hunts when `diet > 0.7 && dietRole !== 'predator-lite'`, but
+  // resolveDietRole returned 'predator-lite' for every diet > 0.7 creature, so
+  // the two conditions were mutually exclusive: world.tryPredation was dead
+  // code, no creature ever attacked prey, and the inspector labelled flagged
+  // predators "Predator-lite". Measured before the fix: 0 of 64 creatures could
+  // reach the branch, and a 240s run logged zero predation attempts.
+  assert.match(src, /dietRole !== 'predator-lite'/, 'the hunting guard is the behaviour under test');
+
+  assert.equal(resolveDietRole({ predator: true }), 'predator', 'a flagged predator must be a full hunter');
+  assert.equal(resolveDietRole({ diet: 0.95 }), 'predator', 'very carnivorous genes must be a full hunter');
+  assert.notEqual(
+    resolveDietRole({ predator: true }),
+    'predator-lite',
+    'flagged predators must not be excluded from their own hunting branch'
+  );
+
+  // The lighter chase path must stay reachable too, or _applyPredatorLiteChase
+  // becomes the dead branch instead.
+  assert.equal(resolveDietRole({ diet: 0.75 }), 'predator-lite', 'the lite carnivore band must still exist');
 });
 
 console.log('\n=== SUMMARY ===');
