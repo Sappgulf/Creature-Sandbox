@@ -4288,6 +4288,12 @@ body.home-active #btn-show-inspector {
     right: 12px;
     transform: none;
     justify-content: center;
+    /* Seven controls do not fit 296px of usable width on a 320px phone; at
+       320px the pause and exit buttons were rendering past both edges. Wrap
+       to a second row rather than overflowing or hiding controls behind a
+       scroll the player cannot see. */
+    flex-wrap: wrap;
+    row-gap: 6px;
   }
   .watch-btn {
     min-width: 44px;
@@ -6425,5 +6431,42 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .home-logo {
     transform: none;
+  }
+}
+
+
+/* ============================================================================
+   TOUCH TARGETS
+   ============================================================================
+   Keyed to the pointer rather than the viewport, because a tablet is a touch
+   device that never matches the phone width breakpoints — these controls were
+   sitting at 24-32px there. */
+@media (pointer: coarse) {
+  .objective-open-goals {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 6px;
+  }
+
+  .goals-glyph {
+    display: block;
+    width: 18px;
+    height: 18px;
+  }
+
+  .goals-label {
+    display: none;
+  }
+
+  #btn-show-inspector {
+    min-height: 44px;
+    padding: 0 var(--space-md);
+  }
+
+  .ctrl-btn {
+    min-height: 44px;
   }
 }
