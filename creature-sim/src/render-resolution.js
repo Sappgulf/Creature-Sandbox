@@ -35,6 +35,10 @@ const FPS_RESTORE_ABOVE = 57;
 const DEGRADE_HOLD_MS = 3000;
 const RESTORE_HOLD_MS = 12000;
 
+// The very first climb, off the warm-up rung, happens sooner: by then the
+// expensive boot work is done and the device has shown it can keep up.
+const FIRST_RESTORE_HOLD_MS = 4000;
+
 function ladderIndexFor(scale) {
   let best = 0;
   for (let i = 0; i < LADDER.length; i++) {
@@ -49,6 +53,7 @@ class RenderResolution {
     this.index = LADDER.length - 1;
     this.scale = LADDER[this.index];
     this.onChange = null;
+    this._hasStarted = false;
     this._belowSince = 0;
     this._aboveSince = 0;
     this._lastChange = 0;
@@ -67,6 +72,19 @@ class RenderResolution {
 
     this.maxScale = Math.max(MIN_SCALE, Math.min(dpr, ceiling));
     this.maxIndex = ladderIndexFor(this.maxScale);
+
+    // Start one rung below the ceiling and let the FPS watcher climb. Boot is
+    // the most expensive stretch of the session — sprite caches, the biome
+    // ground, the decoration index and the first full frame all land at once
+    // — and paying for the top rung through all of it lengthens the very
+    // tasks that block first interaction. One rung down is 1.75x vs 2x on a
+    // retina display, which is not a difference anyone sees, and it is back
+    // at the ceiling within the restore window once the device proves it can
+    // hold the frame budget.
+    if (!this._hasStarted) {
+      this._hasStarted = true;
+      this.index = Math.max(0, this.maxIndex - 1);
+    }
     if (this.index > this.maxIndex) this.index = this.maxIndex;
     this.scale = LADDER[this.index];
     return this.scale;
@@ -100,7 +118,9 @@ class RenderResolution {
     if (fps > FPS_RESTORE_ABOVE) {
       this._belowSince = 0;
       if (!this._aboveSince) this._aboveSince = now;
-      if (now - this._aboveSince >= RESTORE_HOLD_MS && this.index < this.maxIndex) {
+      const hold = this._hasRestoredOnce ? RESTORE_HOLD_MS : FIRST_RESTORE_HOLD_MS;
+      if (now - this._aboveSince >= hold && this.index < this.maxIndex) {
+        this._hasRestoredOnce = true;
         this.index += 1;
         return this._commit(now);
       }
