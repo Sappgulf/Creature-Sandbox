@@ -925,6 +925,29 @@ test('worker snapshot carries the variant genes the metrics count', () => {
   assert.match(world, /spawnBurrowing\(/, 'burrowing creatures should be seeded into a world');
 });
 
+test('satiety does not outrun fuel', () => {
+  // Base burn averages ~0.88/s and HUNGER_RATE is 1.0/s. At a relief of 1.85 a
+  // 5-energy bite bought 9.25s of satiety against 5s of energy, so creatures
+  // stopped foraging while still energy-poor and ran a quiet deficit — food
+  // accumulated uneaten beside starving animals. Keeping relief at or below
+  // the hunger rate makes hunger and energy deplete in step.
+  const { HUNGER_RELIEF_PER_ENERGY, HUNGER_RATE } = CreatureAgentTuning.NEEDS;
+  assert.ok(
+    HUNGER_RELIEF_PER_ENERGY <= HUNGER_RATE + 1e-9,
+    `relief ${HUNGER_RELIEF_PER_ENERGY} must not exceed the hunger rate ${HUNGER_RATE}`
+  );
+  assert.ok(HUNGER_RELIEF_PER_ENERGY > 0, 'eating must still relieve hunger');
+});
+
+test('mating range does not sit on the herd separation distance', () => {
+  // Both were 18: herd repulsion pushed pairs apart at exactly the distance
+  // mating required them to close to.
+  assert.ok(
+    CreatureAgentTuning.MATING.RANGE > CreatureConfig.MOVEMENT.HERD_SEPARATION,
+    `mating range ${CreatureAgentTuning.MATING.RANGE} must clear herd separation ${CreatureConfig.MOVEMENT.HERD_SEPARATION}`
+  );
+});
+
 console.log('\n=== SUMMARY ===');
 console.log(`Passed: ${passed}`);
 console.log(`Failed: ${failed}`);

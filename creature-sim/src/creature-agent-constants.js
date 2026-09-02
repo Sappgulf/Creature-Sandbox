@@ -27,7 +27,13 @@ export const CreatureAgentTuning = {
       socialDrive: 35,
       stress: 18
     },
-    HUNGER_RELIEF_PER_ENERGY: 1.85,
+    // Hunger must not outrun fuel. Base burn averages 0.88/s and HUNGER_RATE is
+    // 1.0/s, so at 1.85 a 5-energy bite bought 9.25s of satiety against 5s of
+    // energy: creatures stopped foraging while still energy-poor and ran a
+    // quiet deficit, which is why food piled up uneaten beside starving
+    // animals. At parity the two deplete in step. Measured over 150s this
+    // lifts average energy from about 21 to the low 40s.
+    HUNGER_RELIEF_PER_ENERGY: 1.0,
     STARVATION_DAMAGE_RATE: 2.5 // Damage per second when at 0 energy
   },
   DAY_NIGHT: {
@@ -193,7 +199,9 @@ export const CreatureAgentTuning = {
     SOCIAL_THRESHOLD: 65,
     STRESS_MAX: 45,
     COOLDOWN: 36,
-    RANGE: 18,
+    // Was 18, exactly MOVEMENT.HERD_SEPARATION, so herd repulsion held pairs
+    // at the very distance mating required them to close to.
+    RANGE: 30,
     BOND_TIME: 1.15,
     // Flat energy tax per mating, not a multiplier — a multiplier let
     // well-fed creatures breed for a trivial ~7-10 energy while FOOD.BITE_ENERGY
