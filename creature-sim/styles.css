@@ -3427,6 +3427,10 @@ body.home-active #btn-show-inspector {
   flex-wrap: wrap;
   justify-content: center;
 }
+.home-btn-text {
+  white-space: nowrap;
+}
+
 .home-btn {
   display: flex;
   flex-direction: column;
@@ -3458,7 +3462,16 @@ body.home-active #btn-show-inspector {
   display: none;
 }
 .home-btn-icon {
-  font-size: 28px;
+  /* A fixed slot, so glyphs of very different visual weight — a seedling and a
+     full-colour compass — line up instead of shoving their labels around. */
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  line-height: 1;
 }
 .home-btn-text {
   font-size: 14px;
@@ -3468,6 +3481,7 @@ body.home-active #btn-show-inspector {
 .home-btn-hint {
   font-size: 10px;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 /* Primary Button (Continue) */
 .home-btn-primary {
@@ -3545,9 +3559,14 @@ body.home-active #btn-show-inspector {
     border-radius: var(--radius-md);
   }
   .home-feature::before {
-    height: 48px;
+    /* Each sprite frame is 320x180 and carries its own rounded panel, and the
+       sheet is mapped with background-size: 700% 100%, so the box has to stay
+       16:9 or every frame is stretched and its baked-in corners stop lining up
+       with the CSS radius — which is the seam and the off-centre art. This
+       used to force height:48px with aspect-ratio:auto, giving a 2.05:1 box
+       for 1.78:1 art. */
     min-height: 48px;
-    aspect-ratio: auto;
+    aspect-ratio: 16 / 9;
     border-radius: 8px;
     margin-bottom: 6px;
   }
@@ -3571,7 +3590,10 @@ body.home-active #btn-show-inspector {
   }
   .home-actions {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
+    /* 136px let two actions share a phone row, which broke "Guided Run" over
+       two lines and wrapped its "Herd Rescue · 2 min" hint onto three. At 200px
+       a second column only forms when there is genuinely room for one. */
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     width: 100%;
     gap: 10px;
   }
@@ -4379,6 +4401,32 @@ body.home-active #btn-show-inspector {
     transform var(--transition-fast);
   margin-bottom: 4px;
 }
+/* Every icon gets the same box regardless of the glyph's natural width, so the
+   labels form a straight column instead of stepping in and out with each
+   emoji. The control strip solved this with drawn glyphs; the menu keeps its
+   emoji but stops letting them set the layout. */
+.menu-item-icon {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  /* Emoji ignore colour, so keep them off the text's opacity ramp and let the
+     label alone carry the active/hover state. */
+  filter: saturate(0.92);
+}
+
+.menu-item-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .menu-item:last-child {
   margin-bottom: 0;
 }

@@ -27,6 +27,26 @@ function setControlGlyph(button, symbolId) {
 // Speed multipliers for cycling
 const DRAWER_FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+/**
+ * Rewrite a menu item without collapsing it back into a single text node.
+ * These three toggles swap their icon as state changes, and assigning
+ * textContent would drop the icon/label spans the row's layout depends on.
+ * @param {?HTMLElement} button
+ * @param {string} icon
+ * @param {string} label
+ */
+function setMenuItemLabel(button, icon, label) {
+  if (!button) return;
+  const iconEl = button.querySelector('.menu-item-icon');
+  const labelEl = button.querySelector('.menu-item-label');
+  if (iconEl && labelEl) {
+    iconEl.textContent = icon;
+    labelEl.textContent = label;
+    return;
+  }
+  button.textContent = `${icon} ${label}`;
+}
+
 function getDrawerFocusableElements(container) {
   if (!container) return [];
   return Array.from(container.querySelectorAll(DRAWER_FOCUSABLE_SELECTOR)).filter(
@@ -331,15 +351,15 @@ export class ControlStripController {
     const batteryBtn = this.menuMobileBattery || document.getElementById('menu-mobile-battery');
     const hapticsBtn = this.menuMobileHaptics || document.getElementById('menu-mobile-haptics');
     if (focusBtn) {
-      focusBtn.textContent = `${this.mobilePrefs.focusMode ? '✅' : '🧭'} Focus Mode`;
+      setMenuItemLabel(focusBtn, this.mobilePrefs.focusMode ? '✅' : '🧭', 'Focus Mode');
       focusBtn.setAttribute('aria-pressed', this.mobilePrefs.focusMode ? 'true' : 'false');
     }
     if (batteryBtn) {
-      batteryBtn.textContent = `${this.mobilePrefs.batterySaver ? '✅' : '🔋'} Battery Saver`;
+      setMenuItemLabel(batteryBtn, this.mobilePrefs.batterySaver ? '✅' : '🔋', 'Battery Saver');
       batteryBtn.setAttribute('aria-pressed', this.mobilePrefs.batterySaver ? 'true' : 'false');
     }
     if (hapticsBtn) {
-      hapticsBtn.textContent = `${this.mobilePrefs.haptics ? '✅' : '📳'} Haptics`;
+      setMenuItemLabel(hapticsBtn, this.mobilePrefs.haptics ? '✅' : '📳', 'Haptics');
       hapticsBtn.setAttribute('aria-pressed', this.mobilePrefs.haptics ? 'true' : 'false');
     }
   }

@@ -1000,6 +1000,61 @@ test("herd cohesion answers to the herd's need for food", () => {
   assert.match(src, /cohesionForce\.x \* cohesionWeight/, 'cohesion should use the hunger-scaled weight');
 });
 
+test('home card art keeps the sprite sheet aspect ratio', () => {
+  const css = fs.readFileSync(new URL('../creature-sim/styles.css', import.meta.url), 'utf8');
+  const svg = fs.readFileSync(
+    new URL('../creature-sim/assets/sprites/ui/ui_scenario_cards.svg', import.meta.url),
+    'utf8'
+  );
+
+  // The sheet is a horizontal strip mapped with background-size: 700% 100% and
+  // positioned by percentage, so the box has to hold the frame's own ratio.
+  // A mobile rule set height:48px with aspect-ratio:auto, giving a 2.05:1 box
+  // for 1.78:1 art: every frame stretched and the rounded panel baked into
+  // each frame stopped lining up with the CSS radius, which is the seam and
+  // the off-centre art.
+  const dims = /<svg[^>]*width="(\d+)"[^>]*height="(\d+)"/.exec(svg);
+  assert.ok(dims, 'sprite sheet should declare its size');
+  const frames = [...svg.matchAll(/translate\((\d+) 0\)/g)].map(m => Number(m[1]));
+  const frameCount = new Set(frames).size;
+  assert.ok(frameCount >= 2, 'sheet should contain multiple frames');
+
+  const frameWidth = Number(dims[1]) / frameCount;
+  const frameRatio = frameWidth / Number(dims[2]);
+  assert.ok(Math.abs(frameRatio - 16 / 9) < 0.02, `frames are ${frameRatio.toFixed(3)}:1, expected 16:9`);
+
+  // background-size must match the frame count, or the strip lands off-register.
+  const bgSize = /background-size:\s*(\d+)%\s+100%/.exec(css);
+  assert.ok(bgSize, 'card art should scale the sheet by frame count');
+  assert.equal(Number(bgSize[1]), frameCount * 100, 'background-size must equal 100% per frame');
+
+  assert.doesNotMatch(
+    css,
+    /aspect-ratio:\s*auto;[\s\S]{0,120}?ui_scenario_cards/,
+    'card art must keep an explicit ratio'
+  );
+});
+
+test('menu rows put their icon in a fixed slot', () => {
+  const html = fs.readFileSync(new URL('../creature-sim/index.html', import.meta.url), 'utf8');
+  const css = fs.readFileSync(new URL('../creature-sim/styles.css', import.meta.url), 'utf8');
+  const strip = fs.readFileSync(new URL('../creature-sim/src/control-strip.js', import.meta.url), 'utf8');
+
+  // Emoji sat inline in the label text, so each row's label started wherever
+  // that particular glyph happened to end.
+  const items = [...html.matchAll(/<button class="menu-item"[^>]*>([\s\S]*?)<\/button>/g)];
+  assert.ok(items.length > 10, 'expected the full menu');
+  for (const [, body] of items) {
+    assert.match(body, /class="menu-item-icon"/, 'every menu row needs its icon slot');
+    assert.match(body, /class="menu-item-label"/, 'every menu row needs its label span');
+  }
+  assert.match(css, /\.menu-item-icon\s*\{[^}]*flex:\s*0 0 22px/s, 'the icon slot must be a fixed width');
+
+  // The three toggles rewrite themselves as state changes; textContent would
+  // collapse the row back into one text node and undo the alignment.
+  assert.match(strip, /setMenuItemLabel\(/, 'toggle labels must preserve the icon/label structure');
+});
+
 console.log('\n=== SUMMARY ===');
 console.log(`Passed: ${passed}`);
 console.log(`Failed: ${failed}`);
