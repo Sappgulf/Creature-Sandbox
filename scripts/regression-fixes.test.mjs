@@ -1106,6 +1106,45 @@ test('the master volume slider is bound to master volume, not a phantom category
   assert.match(boot, /audio\.toggleMusic\(/, 'the music toggle must go through toggleMusic so it persists');
 });
 
+test('pinch zoom stays anchored to the point between the fingers', () => {
+  const src = fs.readFileSync(new URL('../creature-sim/src/mobile-support.js', import.meta.url), 'utf8');
+
+  // targetZoom was scaled on its own, which zooms about the top-left of the
+  // view, so whatever the player pinched slid out from under them.
+  assert.match(src, /worldX = anchorX \/ zoomBefore/, 'zoom must be anchored to the pinch centre');
+  assert.match(src, /targetX = worldX - anchorX \/ zoomAfter/, 'the camera must compensate for the zoom');
+
+  // The maths itself: the world point under the anchor must not move.
+  const cam = { targetX: 400, targetY: 300, targetZoom: 1 };
+  const anchorX = 250;
+  const anchorY = 180;
+  const worldBefore = { x: anchorX / cam.targetZoom + cam.targetX, y: anchorY / cam.targetZoom + cam.targetY };
+  for (const factor of [1.25, 0.8, 2, 0.5]) {
+    const zoomBefore = cam.targetZoom;
+    const zoomAfter = zoomBefore * factor;
+    const worldX = anchorX / zoomBefore + cam.targetX;
+    const worldY = anchorY / zoomBefore + cam.targetY;
+    cam.targetZoom = zoomAfter;
+    cam.targetX = worldX - anchorX / zoomAfter;
+    cam.targetY = worldY - anchorY / zoomAfter;
+    const after = { x: anchorX / cam.targetZoom + cam.targetX, y: anchorY / cam.targetZoom + cam.targetY };
+    assert.ok(Math.abs(after.x - worldBefore.x) < 1e-9, `x drifted at factor ${factor}`);
+    assert.ok(Math.abs(after.y - worldBefore.y) < 1e-9, `y drifted at factor ${factor}`);
+  }
+});
+
+test('accents follow the theme token instead of hardcoded cyan and purple', () => {
+  const css = fs.readFileSync(new URL('../creature-sim/styles.css', import.meta.url), 'utf8');
+
+  // --accent-primary is redefined to green further down the sheet, but dozens
+  // of glows and gradients hardcoded the old cyan and never followed — most
+  // visibly the blue-to-purple primary button on the touch onboarding card.
+  assert.match(css, /--accent-primary-rgb:/, 'the accent needs a channel form for rgba() glows');
+  assert.doesNotMatch(css, /rgba\(0, 212, 255,/, 'cyan glows should follow the accent token');
+  assert.doesNotMatch(css, /linear-gradient\(135deg, #60a5fa, #a78bfa\)/, 'the primary button should be on-theme');
+  assert.doesNotMatch(css, /#0099cc/, 'the old blue gradient stop should be gone');
+});
+
 console.log('\n=== SUMMARY ===');
 console.log(`Passed: ${passed}`);
 console.log(`Failed: ${failed}`);

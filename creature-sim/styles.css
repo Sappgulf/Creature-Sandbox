@@ -24,6 +24,9 @@
   --glass-inner-glow-strong: inset 0 1px 0 rgba(255, 255, 255, 0.14);
   /* Accent Colors — expanded palette for semantic meaning */
   --accent-primary: #39d5ff;
+  /* Same colour in channel form so glows can follow the accent instead of
+     hardcoding it. */
+  --accent-primary-rgb: 57, 213, 255;
   --accent-primary-dim: rgba(57, 213, 255, 0.16);
   --accent-primary-glow: rgba(57, 213, 255, 0.4);
   --accent-secondary: #b56cff;
@@ -46,7 +49,7 @@
   --text-muted: #7d859c;
   --text-inverse: #0c0f18;
   /* Effects */
-  --glow-primary: 0 0 20px rgba(0, 212, 255, 0.25);
+  --glow-primary: 0 0 20px rgba(var(--accent-primary-rgb), 0.25);
   --glow-success: 0 0 15px rgba(34, 197, 94, 0.3);
   --shadow-soft: 0 8px 28px rgba(0, 0, 0, 0.42);
   --shadow-medium: 0 14px 38px rgba(0, 0, 0, 0.52);
@@ -435,8 +438,8 @@ input[type='range']:focus-visible {
   font-weight: 600;
 }
 #stats .stat-tool {
-  background: rgba(0, 212, 255, 0.12);
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  background: rgba(var(--accent-primary-rgb), 0.12);
+  border: 1px solid rgba(var(--accent-primary-rgb), 0.3);
   border-radius: var(--radius-pill);
   padding: 2px 10px;
   color: var(--accent-primary);
@@ -1317,7 +1320,7 @@ button:not(:disabled):active .ctrl-icon,
 .achievement-progress-fill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, var(--accent-primary), #8b5cf6);
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
   transition: width 0.2s ease;
 }
 .achievement-progress-text {
@@ -1405,7 +1408,7 @@ button:not(:disabled):active .ctrl-icon,
 .feature-toggle input[type='checkbox']:checked::after {
   left: 18px;
   background: var(--accent-primary);
-  box-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
+  box-shadow: 0 0 8px rgba(var(--accent-primary-rgb), 0.5);
 }
 .feature-toggle input[type='radio'] {
   appearance: none;
@@ -1555,12 +1558,12 @@ input[type='range']::-webkit-slider-thumb {
   transition:
     transform var(--transition-fast),
     box-shadow var(--transition-fast);
-  box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+  box-shadow: 0 0 8px rgba(var(--accent-primary-rgb), 0.4);
   margin-top: -5px;
 }
 input[type='range']::-webkit-slider-thumb:hover {
   transform: scale(1.15);
-  box-shadow: 0 0 12px rgba(0, 212, 255, 0.6);
+  box-shadow: 0 0 12px rgba(var(--accent-primary-rgb), 0.6);
 }
 input[type='range']::-webkit-slider-thumb:active {
   transform: scale(1.1);
@@ -1582,7 +1585,7 @@ input[type='range']::-moz-range-thumb {
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+  box-shadow: 0 0 8px rgba(var(--accent-primary-rgb), 0.4);
 }
 /* Buttons */
 .btn,
@@ -1622,7 +1625,7 @@ input[type='range']::-moz-range-thumb {
 .gene-btn.primary,
 .scenario-btn.primary,
 .achievements-btn.primary {
-  background: linear-gradient(135deg, var(--accent-primary) 0%, #0099cc 100%);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   color: var(--text-inverse);
   border: none;
   font-weight: 600;
@@ -1715,7 +1718,7 @@ input[type='range']::-moz-range-thumb {
 .chip.active {
   background: var(--accent-primary-dim);
   color: var(--accent-primary);
-  border-color: rgba(0, 212, 255, 0.3);
+  border-color: rgba(var(--accent-primary-rgb), 0.3);
 }
 .chip.ghost {
   background: transparent;
@@ -1748,7 +1751,7 @@ select:focus-visible,
 }
 .meta-select:focus-visible {
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.12);
+  box-shadow: 0 0 0 4px rgba(var(--accent-primary-rgb), 0.12);
 }
 /* ============================================================================
    INSPECTOR PANEL - Right Sidebar
@@ -2043,7 +2046,7 @@ select:focus-visible,
   padding: var(--space-xl);
   box-shadow:
     var(--shadow-hard),
-    0 0 80px rgba(0, 212, 255, 0.08);
+    0 0 80px rgba(var(--accent-primary-rgb), 0.08);
 }
 .campaign-header {
   display: flex;
@@ -2104,7 +2107,7 @@ select:focus-visible,
 .campaign-level-card:hover:not(.locked) {
   transform: translateY(-4px);
   border-color: var(--accent-primary);
-  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.15);
+  box-shadow: 0 8px 24px rgba(var(--accent-primary-rgb), 0.15);
 }
 .campaign-level-card:active:not(.locked) {
   transform: translateY(-2px);
@@ -2189,7 +2192,7 @@ select:focus-visible,
   color: var(--accent-success);
 }
 .campaign-difficulty.normal {
-  background: rgba(0, 212, 255, 0.15);
+  background: rgba(var(--accent-primary-rgb), 0.15);
   color: var(--accent-primary);
 }
 .campaign-difficulty.hard {
@@ -2718,7 +2721,7 @@ select:focus-visible,
 #mobile-quick-actions button.active {
   background: var(--accent-primary-dim);
   color: var(--accent-primary);
-  border-color: rgba(0, 212, 255, 0.35);
+  border-color: rgba(var(--accent-primary-rgb), 0.35);
   box-shadow: var(--glow-primary);
   transition: all 0.2s ease-out;
 }
@@ -2728,10 +2731,10 @@ select:focus-visible,
 /* Action feedback ripple */
 @keyframes action-ripple {
   0% {
-    box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.4);
+    box-shadow: 0 0 0 0 rgba(var(--accent-primary-rgb), 0.4);
   }
   100% {
-    box-shadow: 0 0 0 12px rgba(0, 212, 255, 0);
+    box-shadow: 0 0 0 12px rgba(var(--accent-primary-rgb), 0);
   }
 }
 #mobile-quick-actions button.ripple,
@@ -2913,8 +2916,11 @@ body.mobile-focus-mode #watch-strip {
     border-color var(--transition-fast);
 }
 .primary-btn {
-  background: linear-gradient(135deg, #60a5fa, #a78bfa);
-  border-color: rgba(99, 102, 241, 0.7);
+  /* Was a blue-to-purple gradient left over from the old cyan art direction,
+     which read as a foreign element on the green theme — most visibly as the
+     "Next" button on the touch onboarding card. */
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  border-color: rgba(var(--accent-primary-rgb), 0.7);
   color: #0a0f1e;
   font-weight: 700;
 }
@@ -3302,7 +3308,7 @@ body.home-active #btn-show-inspector {
 .home-logo {
   font-size: 72px;
   animation: logoFloat 3s ease-in-out infinite;
-  filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.4));
+  filter: drop-shadow(0 0 20px rgba(var(--accent-primary-rgb), 0.4));
 }
 @keyframes logoFloat {
   0%,
@@ -3386,7 +3392,7 @@ body.home-active #btn-show-inspector {
 .home-feature:hover {
   border-color: var(--accent-primary);
   transform: translateY(-4px);
-  box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15);
+  box-shadow: 0 8px 32px rgba(var(--accent-primary-rgb), 0.15);
 }
 .home-feature-art {
   display: none;
@@ -3485,9 +3491,9 @@ body.home-active #btn-show-inspector {
 }
 /* Primary Button (Continue) */
 .home-btn-primary {
-  background: linear-gradient(135deg, var(--accent-primary) 0%, #0099cc 100%);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   border-color: transparent;
-  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 4px 20px rgba(var(--accent-primary-rgb), 0.3);
 }
 .home-btn-primary .home-btn-text {
   color: var(--text-inverse);
@@ -3497,7 +3503,7 @@ body.home-active #btn-show-inspector {
 }
 .home-btn-primary:hover {
   filter: brightness(1.1);
-  box-shadow: 0 6px 28px rgba(0, 212, 255, 0.4);
+  box-shadow: 0 6px 28px rgba(var(--accent-primary-rgb), 0.4);
 }
 /* Secondary Button (New Game) */
 .home-btn-secondary {
@@ -3823,7 +3829,7 @@ body.home-active #btn-show-inspector {
 }
 .watch-btn.active {
   background: var(--accent-primary-dim);
-  border-color: rgba(0, 212, 255, 0.35);
+  border-color: rgba(var(--accent-primary-rgb), 0.35);
   color: var(--accent-primary);
 }
 .watch-btn:active {
@@ -4578,10 +4584,10 @@ body.home-active #btn-show-inspector {
 @keyframes pulse-glow {
   0%,
   100% {
-    box-shadow: 0 0 8px rgba(0, 212, 255, 0.15);
+    box-shadow: 0 0 8px rgba(var(--accent-primary-rgb), 0.15);
   }
   50% {
-    box-shadow: 0 0 16px rgba(0, 212, 255, 0.4);
+    box-shadow: 0 0 16px rgba(var(--accent-primary-rgb), 0.4);
   }
 }
 .ctrl-btn:focus-visible {
@@ -6076,6 +6082,7 @@ body.mobile-compact-ui .touch-onboarding-text {
   --glass-border: rgba(183, 226, 187, 0.2);
   --glass-border-hover: rgba(197, 242, 126, 0.5);
   --accent-primary: #c5f27e;
+  --accent-primary-rgb: 197, 242, 126;
   --accent-primary-dim: rgba(197, 242, 126, 0.14);
   --accent-primary-glow: rgba(197, 242, 126, 0.32);
   --accent-secondary: #80d8c4;

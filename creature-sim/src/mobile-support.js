@@ -302,19 +302,35 @@ export class MobileSupport {
     this.noteCameraOverride();
     const distance = Math.hypot(touches[1].clientX - touches[0].clientX, touches[1].clientY - touches[0].clientY);
 
+    // Pan (two-finger drag)
+    const centerX = (touches[0].clientX + touches[1].clientX) / 2;
+    const centerY = (touches[0].clientY + touches[1].clientY) / 2;
+
     if (this.lastPinchDistance) {
       // Zoom
       const scale = distance / this.lastPinchDistance;
       const zoomFactor = 1 + (scale - 1) * this.pinchSensitivity;
-      this.camera.targetZoom *= zoomFactor;
+      const zoomBefore = this.camera.targetZoom;
       const minZoom = this.camera.minZoom ?? 0.1;
       const maxZoom = this.camera.maxZoom ?? 3.0;
-      this.camera.targetZoom = Math.max(minZoom, Math.min(maxZoom, this.camera.targetZoom));
-    }
+      const zoomAfter = Math.max(minZoom, Math.min(maxZoom, zoomBefore * zoomFactor));
+      this.camera.targetZoom = zoomAfter;
 
-    // Pan (two-finger drag)
-    const centerX = (touches[0].clientX + touches[1].clientX) / 2;
-    const centerY = (touches[0].clientY + touches[1].clientY) / 2;
+      // Anchor the zoom to the point between the fingers. Scaling targetZoom
+      // on its own zooms about the top-left of the view, so whatever the
+      // player had pinched slid away from under them — the usual "zoom feels
+      // wrong" complaint. Worked in target space so it survives the camera's
+      // own smoothing toward those targets.
+      if (zoomAfter !== zoomBefore && zoomBefore > 0 && zoomAfter > 0) {
+        const rect = this.canvas?.getBoundingClientRect?.();
+        const anchorX = centerX - (rect?.left ?? 0);
+        const anchorY = centerY - (rect?.top ?? 0);
+        const worldX = anchorX / zoomBefore + this.camera.targetX;
+        const worldY = anchorY / zoomBefore + this.camera.targetY;
+        this.camera.targetX = worldX - anchorX / zoomAfter;
+        this.camera.targetY = worldY - anchorY / zoomAfter;
+      }
+    }
 
     if (this.lastPanCenter) {
       const dx = centerX - this.lastPanCenter.x;
