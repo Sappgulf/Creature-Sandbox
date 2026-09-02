@@ -28,6 +28,7 @@ import { ControlStripController } from '../creature-sim/src/control-strip.js';
 import { SPEED_OPTIONS, SPEED_LABELS } from '../creature-sim/src/game-state.js';
 import { CreatureAgentTuning } from '../creature-sim/src/creature-agent-constants.js';
 import { resolveDietRole } from '../creature-sim/src/creature-genetics-helpers.js';
+import { angleDelta } from '../creature-sim/src/utils.js';
 
 function makeFakeWorkerProxy() {
   const priorWindow = globalThis.window;
@@ -844,6 +845,29 @@ test('full predators can actually reach the hunting branch', () => {
   // The lighter chase path must stay reachable too, or _applyPredatorLiteChase
   // becomes the dead branch instead.
   assert.equal(resolveDietRole({ diet: 0.75 }), 'predator-lite', 'the lite carnivore band must still exist');
+});
+
+test('steering turns the short way round', () => {
+  // Herd and homebody steering did `dir += (target - dir) * k` with no
+  // wrapping. `dir` accumulates unbounded while atan2 returns (-PI, PI], so the
+  // raw difference could exceed a full rotation and the creature turned the
+  // long way — or spun — instead of easing toward the target heading.
+  const near = Math.PI - 0.1;
+  const across = -Math.PI + 0.1;
+  assert.ok(Math.abs(angleDelta(near, across)) < 0.3, 'crossing the PI boundary should be a short turn');
+  assert.ok(Math.abs(across - near) > 6, 'the unwrapped difference is the bug being guarded against');
+
+  assert.ok(Math.abs(angleDelta(0, Math.PI * 4 + 0.2) - 0.2) < 1e-9, 'multiple turns should reduce to the remainder');
+  for (const [a, b] of [
+    [0, 1],
+    [1, 0],
+    [-3, 3],
+    [3, -3],
+    [0, Math.PI]
+  ]) {
+    const d = angleDelta(a, b);
+    assert.ok(d > -Math.PI - 1e-9 && d <= Math.PI + 1e-9, `angleDelta(${a}, ${b}) = ${d} must stay within a half turn`);
+  }
 });
 
 console.log('\n=== SUMMARY ===');

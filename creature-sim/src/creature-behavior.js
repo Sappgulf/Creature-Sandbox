@@ -1,7 +1,7 @@
 /**
  * Creature Behavior System - AI, decision making, and behavioral logic
  */
-import { rand, clamp } from './utils.js';
+import { rand, clamp, angleDelta } from './utils.js';
 import { CreatureConfig } from './creature-config.js';
 import { TempObjectPool } from './object-pool.js';
 import { AdvancedPredatorPreyAI } from './advanced-predator-prey-ai.js';
@@ -568,7 +568,7 @@ export class CreatureBehaviorSystem {
         const dy = anchor.y - this.creature.y;
         const desired = Math.atan2(dy, dx);
         const pull = 0.15 * dt * this.creature.getQuirkMultiplier('home_pull');
-        this.creature.dir += (desired - this.creature.dir) * pull;
+        this.creature.dir += angleDelta(this.creature.dir, desired) * pull;
       }
     }
   }
@@ -965,7 +965,12 @@ export class CreatureBehaviorSystem {
    */
   updateHerdBehavior(world, dt) {
     const herdMembers =
-      world.creatureManager?.queryCreaturesFast(this.creature.x, this.creature.y, 50, this._herdMembers) || [];
+      world.creatureManager?.queryCreaturesFast(
+        this.creature.x,
+        this.creature.y,
+        CreatureConfig.MOVEMENT.HERD_RADIUS,
+        this._herdMembers
+      ) || [];
     let herdCount = 0;
     for (let i = 0; i < herdMembers.length; i++) {
       const candidate = herdMembers[i];
@@ -1023,20 +1028,21 @@ export class CreatureBehaviorSystem {
     // Apply forces to direction
     const herdStrength = this.creature.genes.herdInstinct;
     const quirkCohesion = this.creature.getQuirkMultiplier?.('cohesion') ?? 1;
+    const W = CreatureConfig.MOVEMENT;
     const totalForce = {
       x:
-        separationForce.x * 0.5 +
-        alignmentForce.x * 0.3 * quirkCohesion +
-        cohesionForce.x * 0.2 * socialPull * quirkCohesion,
+        separationForce.x * W.HERD_SEPARATION_WEIGHT +
+        alignmentForce.x * W.HERD_ALIGNMENT_WEIGHT * quirkCohesion +
+        cohesionForce.x * W.HERD_COHESION_WEIGHT * socialPull * quirkCohesion,
       y:
-        separationForce.y * 0.5 +
-        alignmentForce.y * 0.3 * quirkCohesion +
-        cohesionForce.y * 0.2 * socialPull * quirkCohesion
+        separationForce.y * W.HERD_SEPARATION_WEIGHT +
+        alignmentForce.y * W.HERD_ALIGNMENT_WEIGHT * quirkCohesion +
+        cohesionForce.y * W.HERD_COHESION_WEIGHT * socialPull * quirkCohesion
     };
 
     if (totalForce.x !== 0 || totalForce.y !== 0) {
       const forceAngle = Math.atan2(totalForce.y, totalForce.x);
-      this.creature.dir += (forceAngle - this.creature.dir) * herdStrength * dt;
+      this.creature.dir += angleDelta(this.creature.dir, forceAngle) * herdStrength * dt;
     }
   }
 

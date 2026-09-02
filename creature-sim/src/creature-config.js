@@ -34,7 +34,23 @@ export const CreatureConfig = {
     TURN_RATE: 3.0,
     WANDER_STRENGTH: 0.3,
     HERD_SEPARATION: 18,
-    HERD_ALIGNMENT: 25
+    HERD_ALIGNMENT: 25,
+    // Radius the boids query uses to find herdmates, previously an inline 50.
+    HERD_RADIUS: 50,
+    // Boids weights, previously inline literals.
+    //
+    // Measured caveat, so the next person does not repeat the experiment:
+    // herds do not visibly form. At 240s roughly 85% of creatures have no
+    // neighbour within 80px despite an average herdInstinct of 0.6. Sweeping
+    // the radius (50 to 220) and the weights (cohesion 0.2 to 1.2 against
+    // separation 0.5 to 0.35) moved that number by less than run-to-run noise.
+    // The cause is structural rather than numeric: these forces are applied as
+    // a small nudge to `dir`, which goal seeking then overwrites in the same
+    // frame. Making herds real needs the herd force folded into the steering
+    // priority system, not different constants.
+    HERD_SEPARATION_WEIGHT: 0.5,
+    HERD_ALIGNMENT_WEIGHT: 0.3,
+    HERD_COHESION_WEIGHT: 0.2
   },
 
   // Combat

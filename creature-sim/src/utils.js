@@ -23,6 +23,23 @@ export function randn(mean = 0, std = 1) {
   return mean + z * std;
 }
 
+/**
+ * Shortest signed rotation from `from` to `to`, in (-PI, PI].
+ * Steering code that does `dir += (target - dir) * k` without this turns the
+ * long way round whenever the two are more than half a turn apart, and `dir`
+ * accumulates unbounded, so the raw difference can exceed a full rotation.
+ * @param {number} from
+ * @param {number} to
+ * @returns {number}
+ */
+export function angleDelta(from, to) {
+  const TAU = Math.PI * 2;
+  let d = (to - from) % TAU;
+  if (d > Math.PI) d -= TAU;
+  if (d < -Math.PI) d += TAU;
+  return d;
+}
+
 export function wrap(x, max) {
   if (x < 0) return x + max;
   if (x >= max) return x - max;
