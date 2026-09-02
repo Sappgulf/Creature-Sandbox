@@ -202,7 +202,17 @@ export const CreatureAgentTuning = {
     // Was 18, exactly MOVEMENT.HERD_SEPARATION, so herd repulsion held pairs
     // at the very distance mating required them to close to.
     RANGE: 30,
+    // Minimum energy either partner needs to breed, previously an inline 24 in
+    // creature.js.
+    MIN_ENERGY: 24,
     BOND_TIME: 1.15,
+    // Courtship decays rather than resetting the moment a creature glances at
+    // food. The bond needs BOND_TIME of qualifying frames, roughly 69 at 60fps,
+    // and the reset branch used to zero the timer on any interruption — with
+    // qualifying frames occurring under 0.2% of the time and never
+    // consecutively, no bond could ever complete. Measured: a seeded world of
+    // 64 produced zero births in 300s.
+    BOND_DECAY: 0.5,
     // Flat energy tax per mating, not a multiplier — a multiplier let
     // well-fed creatures breed for a trivial ~7-10 energy while FOOD.BITE_ENERGY
     // is 5.0, making reproduction effectively free relative to feeding.
