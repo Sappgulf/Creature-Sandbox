@@ -7,7 +7,7 @@ import { ScalarField } from './world-scalar-field.js';
 import { WorldEnvironment } from './world-environment.js';
 import { WorldEcosystem } from './world-ecosystem.js';
 import { WorldCreatureManager } from './world-creature-manager.js';
-import { WorldCombat } from './world-combat.js?v=20260528-vitals1';
+import { WorldCombat } from './world-combat.js';
 import { WorldDisaster } from './world-disaster.js';
 import { CreatureEcosystemSystem } from './creature-ecosystem.js';
 import { WorldEvents } from './world-events.js';

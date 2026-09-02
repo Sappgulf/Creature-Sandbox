@@ -18,7 +18,7 @@ import { getEnhancedAnalyticsModule } from './enhanced-analytics-loader.js';
 import { VisualEffects } from './render/index.js';
 import { ghostTrails } from './ecosystem-ghosts.js';
 import { lifetimeStats } from './lifetime-stats.js';
-import { RendererConfig } from './renderer-config.js?v=20260527-tranche4';
+import { RendererConfig } from './renderer-config.js';
 import { geneValue } from './creature-genetics-helpers.js';
 // STATIC UI IMPORTS - avoids dynamic import() latency in hot path
 import {
@@ -27,7 +27,7 @@ import {
   renderInspector,
   renderAnalyticsCharts,
   renderInteractionHint
-} from './ui.js?v=20260526-tranche1';
+} from './ui.js';
 
 // Local helper to validate notification subsystem shape without depending on cross-module export availability
 function isNotificationSystem(candidate) {

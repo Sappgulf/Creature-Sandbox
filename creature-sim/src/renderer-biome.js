@@ -1,5 +1,5 @@
 import { clamp } from './utils.js';
-import { assetLoader } from './asset-loader.js?v=20260423-assets1';
+import { assetLoader } from './asset-loader.js';
 
 const biomeColors = {
   forest: [36, 68, 58],

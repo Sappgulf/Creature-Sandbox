@@ -39,7 +39,7 @@ import {
   updateCachedCanvas as _updateCachedCanvas,
   drawBehaviorState as _drawBehaviorState,
   drawTraits as _drawTraits
-} from './creature-render.js?v=20260423-assets1';
+} from './creature-render.js';
 import {
   reactToPoke,
   reactToGrab,

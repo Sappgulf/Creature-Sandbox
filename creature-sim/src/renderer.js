@@ -1,12 +1,12 @@
 import { clamp } from './utils.js';
-import { RendererConfig } from './renderer-config.js?v=20260527-tranche4';
-import { RendererFeatureManager } from './renderer-features.js?v=20260527-tranche4';
-import { RendererPerformanceMonitor } from './renderer-performance.js?v=20260527-tranche4';
+import { RendererConfig } from './renderer-config.js';
+import { RendererFeatureManager } from './renderer-features.js';
+import { RendererPerformanceMonitor } from './renderer-performance.js';
 import { getDebugFlags } from './debug-flags.js';
-import { assetLoader } from './asset-loader.js?v=20260423-assets1';
+import { assetLoader } from './asset-loader.js';
 import { applyFeatureVizMethods } from './renderer-features-viz.js';
-import { applyMinimapMethods } from './renderer-minimap.js?v=20260527-perf1';
-import { applyCreatureMethods } from './renderer-creatures.js?v=20260527-tranche4';
+import { applyMinimapMethods } from './renderer-minimap.js';
+import { applyCreatureMethods } from './renderer-creatures.js';
 import {
   drawBiomeGround,
   drawWaterBiomes,
@@ -17,7 +17,7 @@ import {
   drawWindStreaks,
   drawDecoration,
   getBiomeTint
-} from './renderer-biome.js?v=20260423-assets1';
+} from './renderer-biome.js';
 import { drawWeatherEffects } from './renderer-weather.js';
 import {
   drawParallaxBackground,
@@ -30,7 +30,7 @@ import { ghostTrails } from './ecosystem-ghosts.js';
 
 // SPLIT: biome and weather rendering extracted to renderer-biome.js / renderer-weather.js
 let drawLandscapeLandmarks = null;
-import('./renderer-landmarks.js?v=20260801-map-landmarks')
+import('./renderer-landmarks.js')
   .then(module => {
     drawLandscapeLandmarks = module.drawLandscapeLandmarks;
   })
@@ -580,6 +580,51 @@ export class Renderer {
     ctx.restore();
   }
 
+  /**
+   * Coarse spatial index over the decoration array, rebuilt only when the
+   * array identity changes — decorations are fixed for the life of a seeded
+   * world, so this is once per world rather than once per frame.
+   */
+  _decorationsInView(world, bounds) {
+    const decorations = world.decorations;
+    const cache = this._decorationIndex;
+    if (!cache || cache.source !== decorations) {
+      const cellSize = 512;
+      const buckets = new Map();
+      for (let i = 0; i < decorations.length; i++) {
+        const dec = decorations[i];
+        const key = `${Math.floor(dec.x / cellSize)}:${Math.floor(dec.y / cellSize)}`;
+        let bucket = buckets.get(key);
+        if (!bucket) {
+          bucket = [];
+          buckets.set(key, bucket);
+        }
+        bucket.push(dec);
+      }
+      this._decorationIndex = { source: decorations, cellSize, buckets };
+    }
+
+    const { cellSize, buckets } = this._decorationIndex;
+    const out = this._decorationScratch || (this._decorationScratch = []);
+    out.length = 0;
+    const cx1 = Math.floor(bounds.x1 / cellSize);
+    const cx2 = Math.floor(bounds.x2 / cellSize);
+    const cy1 = Math.floor(bounds.y1 / cellSize);
+    const cy2 = Math.floor(bounds.y2 / cellSize);
+    for (let cx = cx1; cx <= cx2; cx++) {
+      for (let cy = cy1; cy <= cy2; cy++) {
+        const bucket = buckets.get(`${cx}:${cy}`);
+        if (!bucket) continue;
+        for (let i = 0; i < bucket.length; i++) {
+          const dec = bucket[i];
+          if (dec.x < bounds.x1 || dec.x > bounds.x2 || dec.y < bounds.y1 || dec.y > bounds.y2) continue;
+          out.push(dec);
+        }
+      }
+    }
+    return out;
+  }
+
   drawBiomes(world) {
     // REDESIGNED: Subtle atmospheric biome rendering (player-focused!)
     const ctx = this.ctx;
@@ -598,12 +643,12 @@ export class Renderer {
     // enough back that the layer would read as noise anyway.
     if (world.decorations && this.camera.zoom > 0.4) {
       const skipFactor = this.camera.zoom >= 0.75 ? 1 : this.camera.zoom >= 0.55 ? 2 : 3;
-      for (let i = 0; i < world.decorations.length; i += skipFactor) {
-        const dec = world.decorations[i];
-        if (dec.x < bounds.x1 || dec.x > bounds.x2 || dec.y < bounds.y1 || dec.y > bounds.y2) {
-          continue;
-        }
-        drawDecoration(this, ctx, dec, world);
+      // Iterate only the buckets the view touches. Scanning all ~3,400
+      // decorations every frame to reject 85% of them was pure overhead once
+      // the layer was actually being drawn.
+      const visible = this._decorationsInView(world, bounds);
+      for (let i = 0; i < visible.length; i += skipFactor) {
+        drawDecoration(this, ctx, visible[i], world);
       }
     }
 

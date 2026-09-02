@@ -47,7 +47,6 @@ const chunkMap = [
   {
     name: 'vendor-creature-advanced',
     paths: [
-      '/src/personality-system.js',
       '/src/family-bonds.js',
       '/src/memory-learning.js',
       '/src/advanced-genetics.js',
@@ -62,7 +61,6 @@ const chunkMap = [
       '/src/world-disaster.js',
       '/src/world-ecosystem.js',
       '/src/world-events.js',
-      '/src/world-enhancements.js',
       '/src/seasonal-events.js',
       '/src/ecosystem-health.js'
     ]
@@ -76,7 +74,6 @@ const chunkMap = [
     paths: [
       '/src/creature-render.js',
       '/src/creature-behavior.js',
-      '/src/creature-physics.js',
       '/src/creature-reactions.js',
       '/src/renderer-creatures.js'
     ]
@@ -131,7 +128,10 @@ function copyRuntimeAssets() {
       const swDest = path.join(outDir, 'sw.js');
       if (fs.existsSync(swSrc)) {
         const assetsDir = path.join(outDir, 'assets');
-        const shellAssets = ['/', '/index.html', '/styles.css'];
+        // No '/styles.css' here: Vite bundles the stylesheet into the
+        // hashed /assets/index-*.css appended below, so listing the source
+        // path precached a URL that does not exist in the build.
+        const shellAssets = ['/', '/index.html'];
         if (fs.existsSync(assetsDir)) {
           const files = fs.readdirSync(assetsDir);
           const entryJs = files.find(f => f.startsWith('index-') && f.endsWith('.js'));

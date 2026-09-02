@@ -3,7 +3,7 @@
 // OPTIMIZED: Uses object pooling to reduce GC pressure
 
 import { poolManager } from './object-pool.js';
-import { assetLoader } from './asset-loader.js?v=20260423-assets1';
+import { assetLoader } from './asset-loader.js';
 
 export class ParticleSystem {
   constructor() {

@@ -32,8 +32,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-  <link rel="stylesheet" href="styles.css?v=20260802-ecosystem-polish1" />
-  <link rel="stylesheet" href="reboot.css?v=20260801-field-guide1" />
+  <link rel="stylesheet" href="styles.css" />
   <script>
     (() => {
       const params = new URLSearchParams(window.location.search);
@@ -89,6 +88,25 @@
     </symbol>
     <symbol id="i-more" viewBox="0 0 24 24">
       <g class="fj-solid"><circle cx="5.6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18.4" cy="12" r="1.5"/></g>
+    </symbol>
+    <symbol id="i-goals" viewBox="0 0 24 24">
+      <g class="fj-icon"><circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="4.2"/></g>
+      <circle cx="12" cy="12" r="1.5" class="fj-solid"/>
+    </symbol>
+    <symbol id="i-population" viewBox="0 0 24 24">
+      <g class="fj-icon"><path d="M3.6 15.4c0-2.5 2.2-4.3 5.2-4.3s5.3 1.8 5.3 4.3-2.4 4.2-5.3 4.2-5.2-1.7-5.2-4.2z"/><path d="M14.1 12.1c2.6.3 4.4 1.9 4.4 4.1M12.6 11.3l.9-2.7M6.2 11.7 5.4 9.2"/><circle cx="11.6" cy="14.2" r=".9" class="fj-solid"/></g>
+    </symbol>
+    <symbol id="i-erase" viewBox="0 0 24 24">
+      <g class="fj-icon"><path d="M4 19.4h16"/><path d="m8.4 16.2 8.4-8.4a2 2 0 0 0 0-2.8l-1.6-1.6a2 2 0 0 0-2.8 0L4 11.8a2 2 0 0 0 0 2.8l1.6 1.6z"/><path d="m10.6 5.8 5 5"/></g>
+    </symbol>
+    <symbol id="i-prop" viewBox="0 0 24 24">
+      <g class="fj-icon"><path d="M3.6 9.8h7.2v7.2H3.6zM13.2 4.4h7.2v7.2h-7.2zM13.2 13.6h7.2v6h-7.2z"/></g>
+    </symbol>
+    <symbol id="i-tool" viewBox="0 0 24 24">
+      <g class="fj-icon"><path d="m14.6 4.6 4.8 4.8-8.6 8.6-4.8-4.8z"/><path d="m5.6 13.6-1.8 5.4 5.4-1.8M16.4 2.8l4.8 4.8"/></g>
+    </symbol>
+    <symbol id="i-god" viewBox="0 0 24 24">
+      <g class="fj-icon"><path d="M12 3.4 13.8 9l5.6 1.8-5.6 1.8L12 18.2 10.2 12.6 4.6 10.8 10.2 9z"/><path d="M18.6 16.4l.7 2.1 2.1.7-2.1.7-.7 2.1-.7-2.1-2.1-.7 2.1-.7z"/></g>
     </symbol>
     <!-- Creature silhouettes: the same body language as the sprites in the
          world, so the spawn control shows what it will actually place. -->
@@ -437,7 +455,15 @@
   <!-- Stats + Selected Creature HUD (Bottom Left) -->
   <div id="hud-bottom-left">
     <div id="selected-info" class="hidden"></div>
-    <div id="stats"></div>
+    <!-- The Show Panel button lives inside the grid column that holds the
+         stats rail. Both used to be independently `position: fixed` in the
+         same corner with no reserved space between them, so the button sat
+         on top of the last stat and clipped the FPS readout mid-glyph. -->
+    <div id="hud-bottom-right">
+      <button id="btn-show-inspector" class="chip floating hidden" title="Show inspector"
+        aria-label="Show inspector">Show Panel</button>
+      <div id="stats"></div>
+    </div>
     <div id="battery-indicator" class="battery-indicator" hidden aria-live="polite">
       <span class="battery-icon" aria-hidden="true">🔋</span>
       <span class="battery-percent">100%</span>
@@ -1029,7 +1055,7 @@
         </div>
         <div class="feature-slider">
           <div class="feature-slider-row">
-            <span>🐾 Creatures</span>
+            <span><svg class="stat-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-population"/></svg> Creatures</span>
             <span class="muted tiny" id="sound-creatures-value">25%</span>
           </div>
           <input type="range" id="sound-creatures" min="0" max="100" step="1" value="25" aria-label="Creature volume" />
@@ -1240,9 +1266,6 @@
     </div>
   </div>
 
-  <button id="btn-show-inspector" class="chip floating hidden" title="Show inspector" aria-label="Show inspector">Show
-    Panel</button>
-
   <!-- Keyboard Shortcuts Help Overlay -->
   <div id="shortcuts-overlay" class="shortcuts-overlay hidden">
     <div class="shortcuts-modal">
@@ -1311,7 +1334,7 @@
   </div>
 
   </main>
-  <script type="module" src="./src/main.js?v=20260802-ecosystem-polish1"></script>
+  <script type="module" src="./src/main.js"></script>
 </body>
 
 </html>

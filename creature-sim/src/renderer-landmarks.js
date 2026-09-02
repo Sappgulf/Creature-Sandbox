@@ -1,5 +1,5 @@
 import { clamp } from './utils.js';
-import { getLandscapeLandmarks } from './renderer-biome.js?v=20260423-assets1';
+import { getLandscapeLandmarks } from './renderer-biome.js';
 
 /**
  * Landmarks are the map's legend — the shapes a player navigates by when the

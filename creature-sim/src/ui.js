@@ -33,12 +33,14 @@ export function renderStats(el, world, fps, extra = {}) {
 
   const n = world.creatures.length;
   const isMobile = typeof window !== 'undefined' && (window.matchMedia?.('(max-width: 768px)').matches ?? false);
+  // Drawn glyphs rather than emoji: the stats rail is chrome the player reads
+  // at a glance, and emoji render as a different typeface on every platform.
   const toolMeta = {
-    food: { icon: '🌿', label: 'Food' },
-    spawn: { icon: '🧬', label: 'Spawn' },
-    erase: { icon: '🧹', label: 'Erase' },
-    inspect: { icon: '🔍', label: 'Inspect' },
-    prop: { icon: '🧱', label: 'Props' }
+    food: { icon: glyph('i-food'), label: 'Food' },
+    spawn: { icon: glyph('i-herbivore'), label: 'Spawn' },
+    erase: { icon: glyph('i-erase'), label: 'Erase' },
+    inspect: { icon: glyph('i-inspect'), label: 'Inspect' },
+    prop: { icon: glyph('i-prop'), label: 'Props' }
   };
 
   // Count creature types efficiently
@@ -55,13 +57,13 @@ export function renderStats(el, world, fps, extra = {}) {
   const animPop = animateNumber('pop', n);
   const animPreds = animateNumber('preds', preds);
   const animFood = animateNumber('food', world.food.length);
-  statParts.push(`<span>🐾 <span class="value">${animPop}</span></span>`);
-  statParts.push(`<span>🦁 <span class="value">${animPreds}</span></span>`);
-  statParts.push(`<span>🌿 <span class="value">${animFood}</span></span>`);
+  statParts.push(`<span>${glyph('i-population')} <span class="value">${animPop}</span></span>`);
+  statParts.push(`<span>${glyph('i-predator')} <span class="value">${animPreds}</span></span>`);
+  statParts.push(`<span>${glyph('i-food')} <span class="value">${animFood}</span></span>`);
 
   // Tool indicator
   if (extra.tool) {
-    const meta = toolMeta[extra.tool] || { icon: '🛠️', label: extra.tool };
+    const meta = toolMeta[extra.tool] || { icon: glyph('i-tool'), label: extra.tool };
     const brushSize = Number.isFinite(extra.brushSize) ? Math.round(extra.brushSize) : null;
     const toolLabel = brushSize && extra.tool !== 'inspect' ? `${meta.label} ${brushSize}px` : meta.label;
     statParts.push(`<span class="stat-tool">${meta.icon} <span class="value">${toolLabel}</span></span>`);
@@ -92,7 +94,7 @@ export function renderStats(el, world, fps, extra = {}) {
     };
     const toolLabel = extra.godModeTool ? godLabels[extra.godModeTool] || extra.godModeTool : 'Mode';
     const label = `God ${toolLabel}`;
-    statParts.push(`<span class="stat-tool">✨ <span class="value">${label}</span></span>`);
+    statParts.push(`<span class="stat-tool">${glyph('i-god')} <span class="value">${label}</span></span>`);
   }
 
   // Season info - compact
@@ -216,6 +218,11 @@ export function renderInteractionHint(
 
   el.classList.toggle('hidden', shouldHide);
   el.setAttribute('aria-hidden', shouldHide ? 'true' : 'false');
+}
+
+/** Inline reference to a symbol in the field-guide icon sprite. */
+function glyph(id) {
+  return `<svg class="stat-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#${id}"/></svg>`;
 }
 
 const INSPECTED_KEY = 'creature-sim-has-inspected';

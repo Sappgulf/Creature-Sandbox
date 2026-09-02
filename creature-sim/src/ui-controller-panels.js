@@ -1,7 +1,7 @@
 import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
 import { loadEnhancedAnalyticsModule } from './enhanced-analytics-loader.js';
-import { touchOnboarding } from './touch-onboarding.js?v=20260607-onboarding1';
+import { touchOnboarding } from './touch-onboarding.js';
 
 export function applyUiPanelMethods(UIController) {
   UIController.prototype.setPanelVisibility = function (panel, visible) {

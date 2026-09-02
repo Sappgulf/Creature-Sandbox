@@ -7,24 +7,24 @@ import { Renderer, ParticleSystem, HeatmapSystem, MiniGraphs } from './render/in
 import { SimulationProxy } from './simulation-proxy.js';
 import SimulationWorker from './worker-simulation.js?worker';
 import './creature-features.js'; // Load feature extensions
-import { Camera } from './camera.js?v=20260524-opening1';
+import { Camera } from './camera.js';
 import { AnalyticsTracker } from './analytics.js';
 import { LineageTracker } from './lineage-tracker.js';
 import { SaveSystem } from './save-system.js';
-import { NotificationSystem } from './notification-system.js?v=20260526-tranche1';
+import { NotificationSystem } from './notification-system.js';
 import { EcosystemHealth } from './ecosystem-health.js';
 import { AudioSystem } from './audio-system.js';
 import { TutorialSystem } from './tutorial-system.js';
-import { AchievementSystem } from './achievement-system.js?v=20260527-audit2';
+import { AchievementSystem } from './achievement-system.js';
 import { GameplayModes } from './gameplay-modes.js';
 import { SessionGoals } from './session-goals.js';
-import { PlayableScenarios } from './playable-scenarios.js?v=20260528-vitals1';
+import { PlayableScenarios } from './playable-scenarios.js';
 import { MobileSupport } from './mobile-support.js';
 import { AutoDirector } from './auto-director.js';
 import { MomentsSystem } from './moments-system.js';
-import { ControlStripController } from './control-strip.js?v=20260524-opening1';
+import { ControlStripController } from './control-strip.js';
 import { encodeSeed, getSeedFromUrl, setSeedInUrl } from './seed-utils.js';
-import { touchOnboarding } from './touch-onboarding.js?v=20260607-onboarding1';
+import { touchOnboarding } from './touch-onboarding.js';
 
 // Import new modular systems (via barrels where available)
 import { domCache, InputManager, UIController, GameLoop, ToolController } from './ui/index.js';
@@ -34,7 +34,7 @@ import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
 import { performanceProfiler, initializePerformanceMonitor } from './performance-profiler.js';
 import { diseaseSystem } from './disease-system.js';
-import { assetLoader } from './asset-loader.js?v=20260802-ecosystem-polish1';
+import { assetLoader } from './asset-loader.js';
 
 // Import newly added systems
 import { seasonalEventsSystem } from './seasonal-events.js';
@@ -43,7 +43,7 @@ import { godPowers } from './god-powers.js';
 import { UnlockableAchievements } from './unlockable-achievements.js';
 import { FamilyBondsSystem } from './family-bonds.js';
 import { MemoryLearningSystem } from './memory-learning.js';
-import { ChallengeSystem } from './challenge-system.js?v=20260524-opening2';
+import { ChallengeSystem } from './challenge-system.js';
 import { setupDevExports } from './dev-exports.js';
 import {
   getDevToolsConfig,

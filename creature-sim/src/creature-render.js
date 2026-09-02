@@ -45,11 +45,11 @@
 import { clamp } from './utils.js';
 import { CreatureConfig } from './creature-config.js';
 import { ECOSYSTEM_STATES } from './creature-ecosystem.js';
-import { assetLoader } from './asset-loader.js?v=20260423-assets1';
+import { assetLoader } from './asset-loader.js';
 import { getDebugFlags } from './debug-flags.js';
 import { renderResolution } from './render-resolution.js';
 import { colorCache } from './color-cache.js';
-import { getCreatureAssetKey } from './creature-presentation.js?v=20260801-field-guide1';
+import { getCreatureAssetKey } from './creature-presentation.js';
 
 import { getAgeStageIcon, getElderFadeAlpha } from './creature-age.js';
 
