@@ -106,7 +106,9 @@ body.reduced-motion * {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -138,7 +140,7 @@ body.high-contrast canvas {
 body.high-contrast .creature-nameplate,
 body.high-contrast .stats-line,
 body.high-contrast .panel {
-  text-shadow: 0 0 2px rgba(0,0,0,0.9);
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.9);
   border-width: 2px;
 }
 
@@ -156,8 +158,8 @@ body.colorblind-tritanopia canvas {
   filter: hue-rotate(180deg) saturate(1.1);
 }
 /* Common: boost shapes/borders for all color-blind modes */
-body[class*="colorblind-"] .creature-nameplate,
-body[class*="colorblind-"] .stats-line {
+body[class*='colorblind-'] .creature-nameplate,
+body[class*='colorblind-'] .stats-line {
   border-width: 1.5px;
 }
 
@@ -190,7 +192,8 @@ body[class*="colorblind-"] .stats-line {
   animation: loadingTextPulse 1.6s ease-in-out infinite;
 }
 @keyframes loadingTextPulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.55;
   }
   50% {
@@ -216,13 +219,13 @@ button:focus-visible,
   box-shadow: 0 0 0 4px var(--accent-primary-dim);
 }
 /* Checkbox/radio focus states */
-input[type="checkbox"]:focus-visible,
-input[type="radio"]:focus-visible {
+input[type='checkbox']:focus-visible,
+input[type='radio']:focus-visible {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
 /* Range slider focus */
-input[type="range"]:focus-visible {
+input[type='range']:focus-visible {
   outline: 2px solid var(--accent-primary);
   outline-offset: 4px;
   box-shadow: 0 0 0 4px var(--accent-primary-dim);
@@ -342,7 +345,9 @@ input[type="range"]:focus-visible {
 .dropdown-item {
   padding: 10px var(--space-md);
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
   font-size: 13px;
   color: var(--text-secondary);
   display: flex;
@@ -461,7 +466,9 @@ input[type="range"]:focus-visible {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  transition: opacity var(--transition-slow), transform var(--transition-slow);
+  transition:
+    opacity var(--transition-slow),
+    transform var(--transition-slow);
   pointer-events: none;
   animation: slideUp var(--transition-slow);
 }
@@ -828,7 +835,12 @@ input[type="range"]:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
 .god-mode-tools button.active {
   border-color: rgba(168, 85, 247, 0.55);
@@ -926,7 +938,9 @@ input[type="range"]:focus-visible {
   align-items: center;
   justify-content: center;
   position: relative;
-  transition: background-color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    transform var(--transition-fast);
 }
 .interaction-hint-close::after {
   /* Expand the tappable area to ~44px without growing the visible circle,
@@ -949,27 +963,32 @@ input[type="range"]:focus-visible {
    ============================================================================ */
 .panel {
   position: fixed;
-  background:
-    linear-gradient(180deg, rgba(20, 30, 45, 0.94), rgba(7, 11, 19, 0.92)),
-    var(--glass-bg);
+  background: linear-gradient(180deg, rgba(20, 30, 45, 0.94), rgba(7, 11, 19, 0.92)), var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
   z-index: 200;
-  box-shadow: var(--shadow-hard), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  box-shadow:
+    var(--shadow-hard),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
   backdrop-filter: blur(16px);
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
   animation: panelSlideIn var(--transition-slow);
-  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
 }
 .panel.hidden {
   opacity: 0;
   transform: translateY(10px) scale(0.98);
   pointer-events: none;
   visibility: hidden;
-  transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0s linear var(--transition-fast);
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast),
+    visibility 0s linear var(--transition-fast);
 }
 @keyframes panelSlideIn {
   from {
@@ -1026,30 +1045,56 @@ input[type="range"]:focus-visible {
    semantic function. Use with .glass-hero or .glass-panel. */
 .accent-border-cyan {
   border-color: rgba(57, 213, 255, 0.32) !important;
-  box-shadow: var(--shadow-soft), var(--glass-inner-glow), 0 0 0 1px rgba(57, 213, 255, 0.12), 0 0 24px rgba(57, 213, 255, 0.08) !important;
+  box-shadow:
+    var(--shadow-soft),
+    var(--glass-inner-glow),
+    0 0 0 1px rgba(57, 213, 255, 0.12),
+    0 0 24px rgba(57, 213, 255, 0.08) !important;
 }
 .accent-border-purple {
   border-color: rgba(181, 108, 255, 0.32) !important;
-  box-shadow: var(--shadow-soft), var(--glass-inner-glow), 0 0 0 1px rgba(181, 108, 255, 0.12), 0 0 24px rgba(181, 108, 255, 0.08) !important;
+  box-shadow:
+    var(--shadow-soft),
+    var(--glass-inner-glow),
+    0 0 0 1px rgba(181, 108, 255, 0.12),
+    0 0 24px rgba(181, 108, 255, 0.08) !important;
 }
 .accent-border-green {
   border-color: rgba(74, 222, 128, 0.32) !important;
-  box-shadow: var(--shadow-soft), var(--glass-inner-glow), 0 0 0 1px rgba(74, 222, 128, 0.12), 0 0 24px rgba(74, 222, 128, 0.08) !important;
+  box-shadow:
+    var(--shadow-soft),
+    var(--glass-inner-glow),
+    0 0 0 1px rgba(74, 222, 128, 0.12),
+    0 0 24px rgba(74, 222, 128, 0.08) !important;
 }
 .accent-border-amber {
   border-color: rgba(251, 191, 36, 0.32) !important;
-  box-shadow: var(--shadow-soft), var(--glass-inner-glow), 0 0 0 1px rgba(251, 191, 36, 0.12), 0 0 24px rgba(251, 191, 36, 0.08) !important;
+  box-shadow:
+    var(--shadow-soft),
+    var(--glass-inner-glow),
+    0 0 0 1px rgba(251, 191, 36, 0.12),
+    0 0 24px rgba(251, 191, 36, 0.08) !important;
 }
 .accent-border-red {
   border-color: rgba(248, 113, 113, 0.32) !important;
-  box-shadow: var(--shadow-soft), var(--glass-inner-glow), 0 0 0 1px rgba(248, 113, 113, 0.12), 0 0 24px rgba(248, 113, 113, 0.08) !important;
+  box-shadow:
+    var(--shadow-soft),
+    var(--glass-inner-glow),
+    0 0 0 1px rgba(248, 113, 113, 0.12),
+    0 0 24px rgba(248, 113, 113, 0.08) !important;
 }
 
 /* === BUTTON PRESS MICRO-ANIMATION === */
 @keyframes pressPulse {
-  0% { transform: scale(1); }
-  40% { transform: scale(0.93); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(0.93);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 button:not(:disabled):active,
 .btn:not(:disabled):active,
@@ -1096,7 +1141,11 @@ button:not(:disabled):active .ctrl-icon,
   cursor: pointer;
   padding: var(--space-xs);
   border-radius: var(--radius-sm);
-  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
   line-height: 1;
   min-width: 36px;
   min-height: 36px;
@@ -1305,7 +1354,9 @@ button:not(:disabled):active .ctrl-icon,
   cursor: pointer;
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-sm);
-  transition: background-color var(--transition-fast), color var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
   position: relative;
 }
 .feature-toggle.feature-hidden {
@@ -1318,7 +1369,7 @@ button:not(:disabled):active .ctrl-icon,
 .feature-toggle:has(input:checked) {
   color: var(--text-primary);
 }
-.feature-toggle input[type="checkbox"] {
+.feature-toggle input[type='checkbox'] {
   appearance: none;
   width: 36px;
   height: 20px;
@@ -1327,10 +1378,13 @@ button:not(:disabled):active .ctrl-icon,
   border-radius: 10px;
   cursor: pointer;
   position: relative;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
   flex-shrink: 0;
 }
-.feature-toggle input[type="checkbox"]::after {
+.feature-toggle input[type='checkbox']::after {
   content: '';
   position: absolute;
   top: 2px;
@@ -1339,18 +1393,21 @@ button:not(:disabled):active .ctrl-icon,
   height: 14px;
   background: var(--text-muted);
   border-radius: 50%;
-  transition: left var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    left var(--transition-fast),
+    background-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
-.feature-toggle input[type="checkbox"]:checked {
+.feature-toggle input[type='checkbox']:checked {
   background: var(--accent-primary-dim);
   border-color: var(--accent-primary);
 }
-.feature-toggle input[type="checkbox"]:checked::after {
+.feature-toggle input[type='checkbox']:checked::after {
   left: 18px;
   background: var(--accent-primary);
   box-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
 }
-.feature-toggle input[type="radio"] {
+.feature-toggle input[type='radio'] {
   appearance: none;
   width: 18px;
   height: 18px;
@@ -1359,14 +1416,17 @@ button:not(:disabled):active .ctrl-icon,
   border-radius: 50%;
   cursor: pointer;
   position: relative;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
   flex-shrink: 0;
 }
-.feature-toggle input[type="radio"]:checked {
+.feature-toggle input[type='radio']:checked {
   border-color: var(--accent-primary);
   background: var(--accent-primary-dim);
 }
-.feature-toggle input[type="radio"]:checked::after {
+.feature-toggle input[type='radio']:checked::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -1464,7 +1524,7 @@ button:not(:disabled):active .ctrl-icon,
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
-input[type="range"] {
+input[type='range'] {
   appearance: none;
   width: 100%;
   height: 6px;
@@ -1474,44 +1534,48 @@ input[type="range"] {
   cursor: pointer;
   position: relative;
 }
-input[type="range"]::-webkit-slider-runnable-track {
+input[type='range']::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 3px;
-  background: linear-gradient(to right,
-  var(--accent-primary) 0%,
-  var(--accent-primary) var(--value, 50%),
-  var(--bg-deep) var(--value, 50%),
-  var(--bg-deep) 100%);
+  background: linear-gradient(
+    to right,
+    var(--accent-primary) 0%,
+    var(--accent-primary) var(--value, 50%),
+    var(--bg-deep) var(--value, 50%),
+    var(--bg-deep) 100%
+  );
 }
-input[type="range"]::-webkit-slider-thumb {
+input[type='range']::-webkit-slider-thumb {
   appearance: none;
   width: 16px;
   height: 16px;
   background: var(--accent-primary);
   border-radius: 50%;
   cursor: pointer;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
   box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
   margin-top: -5px;
 }
-input[type="range"]::-webkit-slider-thumb:hover {
+input[type='range']::-webkit-slider-thumb:hover {
   transform: scale(1.15);
   box-shadow: 0 0 12px rgba(0, 212, 255, 0.6);
 }
-input[type="range"]::-webkit-slider-thumb:active {
+input[type='range']::-webkit-slider-thumb:active {
   transform: scale(1.1);
 }
-input[type="range"]::-moz-range-track {
+input[type='range']::-moz-range-track {
   height: 6px;
   border-radius: 3px;
   background: var(--bg-deep);
 }
-input[type="range"]::-moz-range-progress {
+input[type='range']::-moz-range-progress {
   height: 6px;
   border-radius: 3px;
   background: var(--accent-primary);
 }
-input[type="range"]::-moz-range-thumb {
+input[type='range']::-moz-range-thumb {
   width: 16px;
   height: 16px;
   background: var(--accent-primary);
@@ -1531,7 +1595,12 @@ input[type="range"]::-moz-range-thumb {
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
   font-size: 12px;
   font-weight: 500;
 }
@@ -1633,7 +1702,10 @@ input[type="range"]::-moz-range-thumb {
   padding: 4px 10px;
   font-size: 11px;
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 .chip:hover {
   background: var(--bg-hover);
@@ -1969,7 +2041,9 @@ select:focus-visible,
   max-height: 85vh;
   overflow-y: auto;
   padding: var(--space-xl);
-  box-shadow: var(--shadow-hard), 0 0 80px rgba(0, 212, 255, 0.08);
+  box-shadow:
+    var(--shadow-hard),
+    0 0 80px rgba(0, 212, 255, 0.08);
 }
 .campaign-header {
   display: flex;
@@ -1992,7 +2066,11 @@ select:focus-visible,
   height: 40px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
 }
 .campaign-close-btn:hover {
   background: var(--bg-hover);
@@ -2014,7 +2092,12 @@ select:focus-visible,
   border-radius: var(--radius-md);
   padding: var(--space-lg);
   cursor: pointer;
-  transition: background-color var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal), opacity var(--transition-normal), transform var(--transition-normal);
+  transition:
+    background-color var(--transition-normal),
+    border-color var(--transition-normal),
+    box-shadow var(--transition-normal),
+    opacity var(--transition-normal),
+    transform var(--transition-normal);
   position: relative;
   overflow: hidden;
 }
@@ -2183,7 +2266,12 @@ select:focus-visible,
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 11px;
-  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
 .campaign-exit-btn:hover {
   background: rgba(239, 68, 68, 0.2);
@@ -2279,7 +2367,7 @@ select:focus-visible,
   font-size: 11px;
   color: var(--text-secondary);
 }
-.health-recommendations-list>div {
+.health-recommendations-list > div {
   padding: var(--space-xs) var(--space-sm);
   background: var(--bg-elevated);
   border-radius: var(--radius-sm);
@@ -2407,7 +2495,12 @@ select:focus-visible,
   backdrop-filter: blur(12px);
   box-shadow: var(--shadow-soft);
   z-index: 50;
-  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
 #btn-show-inspector:hover {
   background: var(--bg-hover);
@@ -2574,7 +2667,12 @@ select:focus-visible,
   color: var(--text-secondary);
   font-size: 26px;
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
   box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
@@ -2604,7 +2702,9 @@ select:focus-visible,
 #mobile-quick-actions button:active {
   transform: scale(0.97);
   background: var(--bg-hover);
-  transition: transform 0.1s ease-out, background 0.1s ease-out;
+  transition:
+    transform 0.1s ease-out,
+    background 0.1s ease-out;
 }
 #mobile-quick-actions button.active {
   background: var(--accent-primary-dim);
@@ -2693,7 +2793,9 @@ body.mobile-focus-mode #tool-indicator {
   opacity: 0;
   pointer-events: none;
   transform: translateY(8px);
-  transition: opacity 180ms ease, transform 180ms ease;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
 }
 body.mobile-focus-mode #control-strip,
 body.mobile-focus-mode #watch-strip {
@@ -2713,13 +2815,13 @@ body.mobile-focus-mode #watch-strip {
   z-index: 6;
 }
 .meta-card {
-  background:
-    linear-gradient(180deg, rgba(17, 26, 39, 0.9), rgba(6, 10, 17, 0.86)),
-    rgba(10, 14, 24, 0.84);
+  background: linear-gradient(180deg, rgba(17, 26, 39, 0.9), rgba(6, 10, 17, 0.86)), rgba(10, 14, 24, 0.84);
   border: 1px solid rgba(151, 183, 212, 0.14);
   border-radius: 12px;
   padding: 10px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(8px);
 }
 .meta-card-header {
@@ -2785,7 +2887,9 @@ body.mobile-focus-mode #watch-strip {
   padding: 5px 8px;
   border-radius: 10px;
   cursor: pointer;
-  transition: transform var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast);
 }
 .primary-btn {
   background: linear-gradient(135deg, #60a5fa, #a78bfa);
@@ -2877,11 +2981,14 @@ body.mobile-focus-mode #watch-strip {
   aspect-ratio: 16 / 9;
   border: 1px solid rgba(151, 218, 255, 0.26);
   border-radius: 10px;
-  background-image: url("./assets/sprites/ui/ui_scenario_cards.svg");
+  background-image: url('./assets/sprites/ui/ui_scenario_cards.svg');
   background-repeat: no-repeat;
   background-size: 700% 100%;
   background-position: calc(var(--scenario-frame, 0) * 16.6666667%) 50%;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 16px 36px rgba(0, 0, 0, 0.28), 0 0 22px rgba(57, 213, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 16px 36px rgba(0, 0, 0, 0.28),
+    0 0 22px rgba(57, 213, 255, 0.08);
 }
 .director-status {
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -2968,7 +3075,7 @@ body.mobile-focus-mode #watch-strip {
 }
 .director-objective-card.complete {
   border-color: rgba(74, 222, 128, 0.38);
-  background: rgba(34, 197, 94, 0.10);
+  background: rgba(34, 197, 94, 0.1);
 }
 .director-objective-card.watch {
   border-color: rgba(250, 204, 21, 0.34);
@@ -3001,7 +3108,7 @@ body.mobile-focus-mode #watch-strip {
   width: 28px;
   height: 5px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(56, 189, 248, 0.88) var(--objective-progress), rgba(255, 255, 255, 0.10) 0);
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.88) var(--objective-progress), rgba(255, 255, 255, 0.1) 0);
 }
 .director-steps {
   display: flex;
@@ -3074,7 +3181,9 @@ body.mobile-focus-mode #watch-strip {
     box-shadow: 0 0 5px var(--accent-primary);
   }
   50% {
-    box-shadow: 0 0 20px var(--accent-primary), 0 0 30px var(--accent-primary);
+    box-shadow:
+      0 0 20px var(--accent-primary),
+      0 0 30px var(--accent-primary);
   }
 }
 .pulse {
@@ -3100,11 +3209,7 @@ body.mobile-focus-mode #watch-strip {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-gutter: stable;
-  padding:
-  clamp(24px, 6vh, 64px)
-  24px
-  max(24px, env(safe-area-inset-bottom, 0))
-  24px;
+  padding: clamp(24px, 6vh, 64px) 24px max(24px, env(safe-area-inset-bottom, 0)) 24px;
   background: linear-gradient(135deg, #060810 0%, #0a1020 50%, #0d1528 100%);
   animation: homePageFadeIn 0.6s ease-out;
 }
@@ -3230,7 +3335,11 @@ body.home-active #btn-show-inspector {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  transition: background-color var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal), transform var(--transition-normal);
+  transition:
+    background-color var(--transition-normal),
+    border-color var(--transition-normal),
+    box-shadow var(--transition-normal),
+    transform var(--transition-normal);
 }
 .home-feature::before {
   content: '';
@@ -3242,11 +3351,16 @@ body.home-active #btn-show-inspector {
   margin-bottom: var(--space-sm);
   border-radius: 10px;
   border: 1px solid rgba(151, 218, 255, 0.18);
-  background-image: url("./assets/sprites/ui/ui_scenario_cards.svg");
+  background-image: url('./assets/sprites/ui/ui_scenario_cards.svg');
   background-repeat: no-repeat;
   background-size: 700% 100%;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 10px 24px rgba(0, 0, 0, 0.25);
-  transition: transform var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 10px 24px rgba(0, 0, 0, 0.25);
+  transition:
+    transform var(--transition-normal),
+    border-color var(--transition-normal),
+    box-shadow var(--transition-normal);
 }
 .home-feature:hover {
   border-color: var(--accent-primary);
@@ -3268,7 +3382,10 @@ body.home-active #btn-show-inspector {
 .home-feature:hover::before {
   transform: translateY(-2px);
   border-color: rgba(57, 213, 255, 0.36);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 14px 32px rgba(0, 0, 0, 0.32), 0 0 22px rgba(57, 213, 255, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 14px 32px rgba(0, 0, 0, 0.32),
+    0 0 22px rgba(57, 213, 255, 0.12);
 }
 .home-feature h3 {
   font-size: 15px;
@@ -3299,7 +3416,11 @@ body.home-active #btn-show-inspector {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: background-color var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal), transform var(--transition-normal);
+  transition:
+    background-color var(--transition-normal),
+    border-color var(--transition-normal),
+    box-shadow var(--transition-normal),
+    transform var(--transition-normal);
   font-family: inherit;
   background: var(--glass-bg);
   backdrop-filter: blur(12px);
@@ -3503,7 +3624,10 @@ body.home-active #btn-show-inspector {
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 6px;
-  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
 }
 .shortcuts-close:hover {
   background: var(--bg-hover);
@@ -3543,12 +3667,17 @@ body.home-active #btn-show-inspector {
   min-width: 28px;
   text-align: center;
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 .shortcut-row:hover kbd {
   background: linear-gradient(180deg, var(--bg-hover) 0%, var(--bg-elevated) 100%);
   border-color: var(--accent-gold);
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2), 0 0 8px rgba(250, 204, 21, 0.2);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.2),
+    0 0 8px rgba(250, 204, 21, 0.2);
 }
 .shortcut-row span {
   color: var(--text-secondary);
@@ -3604,7 +3733,10 @@ body.home-active #btn-show-inspector {
   opacity: 0;
   transform: translateX(-50%) translateY(20px);
   pointer-events: none;
-  transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0s linear var(--transition-fast);
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast),
+    visibility 0s linear var(--transition-fast);
 }
 @keyframes watchStripSlideUp {
   from {
@@ -3630,7 +3762,11 @@ body.home-active #btn-show-inspector {
   justify-content: center;
   gap: 6px;
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
 }
 .watch-btn:hover {
   background: var(--bg-hover);
@@ -3674,7 +3810,10 @@ body.home-active #btn-show-inspector {
   opacity: 0;
   transform: translateX(20px);
   pointer-events: none;
-  transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0s linear var(--transition-fast);
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast),
+    visibility 0s linear var(--transition-fast);
 }
 @keyframes momentsSlideIn {
   from {
@@ -3776,14 +3915,18 @@ body.home-active #btn-show-inspector {
   z-index: 100;
   display: flex;
   align-items: center;
-  background:
-    linear-gradient(180deg, rgba(18, 28, 42, 0.94), rgba(5, 8, 14, 0.94));
+  background: linear-gradient(180deg, rgba(18, 28, 42, 0.94), rgba(5, 8, 14, 0.94));
   border: 1px solid rgba(151, 218, 255, 0.22);
   border-radius: 24px;
   padding: 5px;
   backdrop-filter: blur(14px);
-  box-shadow: var(--shadow-soft), 0 0 28px rgba(57, 213, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  transition: opacity var(--transition-normal), transform var(--transition-normal);
+  box-shadow:
+    var(--shadow-soft),
+    0 0 28px rgba(57, 213, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition:
+    opacity var(--transition-normal),
+    transform var(--transition-normal);
 }
 .control-strip.hidden {
   display: none;
@@ -3805,7 +3948,11 @@ body.home-active #btn-show-inspector {
   border-radius: var(--radius-pill);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
   font-size: 17px;
   gap: 4px;
 }
@@ -3843,7 +3990,9 @@ body.home-active #btn-show-inspector {
   background: linear-gradient(180deg, rgba(57, 213, 255, 0.22), rgba(57, 213, 255, 0.08));
   color: var(--accent-primary);
   border-color: rgba(57, 213, 255, 0.42);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 18px rgba(57, 213, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 18px rgba(57, 213, 255, 0.14);
   transition: all 0.2s ease-out;
 }
 .ctrl-icon {
@@ -3862,7 +4011,7 @@ body.home-active #btn-show-inspector {
   margin: 0 3px;
 }
 /* Paused state indicator */
-.ctrl-btn[data-paused="true"] .ctrl-icon::after {
+.ctrl-btn[data-paused='true'] .ctrl-icon::after {
   content: '';
   position: absolute;
   top: 4px;
@@ -3888,7 +4037,9 @@ body.home-active #btn-show-inspector {
 .bottom-drawer.hidden {
   visibility: hidden;
   opacity: 0;
-  transition: opacity var(--transition-fast), visibility 0s linear var(--transition-fast);
+  transition:
+    opacity var(--transition-fast),
+    visibility 0s linear var(--transition-fast);
 }
 .bottom-drawer.hidden .drawer-content {
   transform: translateY(20px);
@@ -3911,8 +4062,7 @@ body.home-active #btn-show-inspector {
 }
 .bottom-drawer .drawer-content {
   position: relative;
-  background:
-    linear-gradient(180deg, rgba(18, 27, 40, 0.98), rgba(6, 10, 18, 0.98));
+  background: linear-gradient(180deg, rgba(18, 27, 40, 0.98), rgba(6, 10, 18, 0.98));
   border: 1px solid rgba(151, 218, 255, 0.18);
   border-bottom: none;
   border-radius: 20px 20px 0 0;
@@ -3971,7 +4121,11 @@ body.home-active #btn-show-inspector {
   color: var(--text-secondary);
   font-size: 18px;
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
 }
 .drawer-close:hover {
   background: var(--bg-hover);
@@ -3996,7 +4150,10 @@ body.home-active #btn-show-inspector {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
 }
 .drawer-action-btn:hover {
   background: #00b8e0;
@@ -4019,7 +4176,11 @@ body.home-active #btn-show-inspector {
   border-radius: var(--radius-md);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
   margin-bottom: 8px;
   text-align: left;
 }
@@ -4053,9 +4214,7 @@ body.home-active #btn-show-inspector {
   flex: 0 0 52px;
   width: 52px;
   height: 46px;
-  background:
-    radial-gradient(circle at 50% 78%, rgba(0, 0, 0, 0.24) 0 38%, transparent 39%),
-    rgba(255, 255, 255, 0.06);
+  background: radial-gradient(circle at 50% 78%, rgba(0, 0, 0, 0.24) 0 38%, transparent 39%), rgba(255, 255, 255, 0.06);
 }
 .spawn-card-preview::before {
   content: '';
@@ -4065,7 +4224,12 @@ body.home-active #btn-show-inspector {
   width: 27px;
   height: 17px;
   border-radius: var(--spawn-body-radius, 60% 42% 48% 58%);
-  background: linear-gradient(145deg, var(--spawn-preview-light, #c7ff87), var(--spawn-preview-color, #8ee66f) 58%, var(--spawn-preview-dark, #4b9a3f));
+  background: linear-gradient(
+    145deg,
+    var(--spawn-preview-light, #c7ff87),
+    var(--spawn-preview-color, #8ee66f) 58%,
+    var(--spawn-preview-dark, #4b9a3f)
+  );
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.35),
     inset 0 -3px 4px rgba(0, 0, 0, 0.24),
@@ -4187,7 +4351,11 @@ body.home-active #btn-show-inspector {
   font-size: 14px;
   text-align: left;
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
   margin-bottom: 4px;
 }
 .menu-item:last-child {
@@ -4199,14 +4367,14 @@ body.home-active #btn-show-inspector {
   color: var(--text-primary);
 }
 .menu-item.active,
-.menu-item[aria-pressed="true"] {
+.menu-item[aria-pressed='true'] {
   background: linear-gradient(180deg, rgba(57, 213, 255, 0.18), rgba(57, 213, 255, 0.07));
   border-color: rgba(57, 213, 255, 0.38);
   color: var(--text-primary);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 .menu-item.active::after,
-.menu-item[aria-pressed="true"]::after {
+.menu-item[aria-pressed='true']::after {
   content: 'On';
   margin-left: auto;
   padding: 2px 8px;
@@ -4339,7 +4507,8 @@ body.home-active #btn-show-inspector {
   }
 }
 @keyframes pulse-glow {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 8px rgba(0, 212, 255, 0.15);
   }
   50% {
@@ -4417,12 +4586,12 @@ body.home-active #btn-show-inspector {
   transform: scale(0.96);
 }
 
-.objective-rail[data-level="strained"],
-.objective-rail[data-level="watch"] {
+.objective-rail[data-level='strained'],
+.objective-rail[data-level='watch'] {
   border-color: rgba(255, 214, 102, 0.35);
 }
 
-.objective-rail[data-level="critical"] {
+.objective-rail[data-level='critical'] {
   border-color: rgba(255, 120, 120, 0.46);
 }
 
@@ -4597,12 +4766,16 @@ body.home-active #btn-show-inspector {
 
 .upgrade-result-section {
   scroll-margin-top: 14px;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .upgrade-result-section.result-focused {
   border-color: rgba(52, 211, 153, 0.44);
-  box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.18), 0 12px 34px rgba(0, 0, 0, 0.18);
+  box-shadow:
+    0 0 0 1px rgba(52, 211, 153, 0.18),
+    0 12px 34px rgba(0, 0, 0, 0.18);
 }
 
 .upgrade-metrics span,
@@ -4692,7 +4865,7 @@ body.home-active #btn-show-inspector {
   background: linear-gradient(180deg, rgba(57, 213, 255, 0.09), rgba(8, 13, 24, 0.72));
 }
 
-.scenario-result-card[data-state="complete"] {
+.scenario-result-card[data-state='complete'] {
   border-color: rgba(52, 211, 153, 0.28);
   background: linear-gradient(180deg, rgba(52, 211, 153, 0.1), rgba(8, 13, 24, 0.72));
 }
@@ -4731,7 +4904,7 @@ body.home-active #btn-show-inspector {
   border: 1px solid rgba(148, 163, 184, 0.12);
 }
 
-.scenario-result-stats span[data-tone="stable"] {
+.scenario-result-stats span[data-tone='stable'] {
   border-color: rgba(52, 211, 153, 0.2);
 }
 
@@ -4789,20 +4962,20 @@ body.home-active #btn-show-inspector {
   margin-top: 12px;
 }
 
-body[data-readability-mode="cozy"] #view {
+body[data-readability-mode='cozy'] #view {
   filter: saturate(0.92) sepia(0.08) brightness(1.05);
 }
 
-body[data-readability-mode="contrast"] #view,
+body[data-readability-mode='contrast'] #view,
 body.high-contrast #view {
   filter: contrast(1.18) saturate(1.18) brightness(1.04);
 }
 
-body[data-readability-mode="analytics"] #view {
+body[data-readability-mode='analytics'] #view {
   filter: saturate(0.72) contrast(1.08);
 }
 
-body[data-readability-mode="minimal"] #view {
+body[data-readability-mode='minimal'] #view {
   filter: saturate(0.62) brightness(0.95);
 }
 
@@ -4982,7 +5155,9 @@ body[data-readability-mode="minimal"] #view {
   border-radius: var(--radius-pill);
   font-size: 12px;
   cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
 }
 .replay-btn:hover {
   background: var(--glass-bg-light);
@@ -5088,7 +5263,9 @@ body[data-readability-mode="minimal"] #view {
   font-size: 11px;
   font-family: var(--font-mono);
   color: var(--text-secondary);
-  transition: border-color var(--transition-fast), background var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast);
 }
 .replay-snapshot-row.active {
   border-color: var(--accent-secondary);
@@ -5183,7 +5360,9 @@ body[data-readability-mode="minimal"] #view {
   border-radius: var(--radius-md);
   background: var(--glass-bg-panel);
   border: 1px solid var(--glass-border);
-  transition: transform var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast);
   position: relative;
   overflow: hidden;
 }
@@ -5394,8 +5573,13 @@ body[data-readability-mode="minimal"] #view {
   animation: legendaryPulse 2.5s ease-in-out infinite;
 }
 @keyframes legendaryPulse {
-  0%, 100% { box-shadow: 0 0 12px rgba(255, 211, 90, 0.2); }
-  50% { box-shadow: 0 0 26px rgba(255, 211, 90, 0.55); }
+  0%,
+  100% {
+    box-shadow: 0 0 12px rgba(255, 211, 90, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 26px rgba(255, 211, 90, 0.55);
+  }
 }
 .achievement-rarity-badge {
   display: inline-block;
@@ -5435,16 +5619,26 @@ body[data-readability-mode="minimal"] #view {
   gap: 10px;
 }
 .achievement-item {
-  transition: border-color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
 }
 .achievement-item.unlock-celebration {
   animation: unlockCelebration 0.9s ease-out;
 }
 @keyframes unlockCelebration {
-  0% { transform: scale(1); }
-  30% { transform: scale(1.06); }
-  60% { transform: scale(0.98); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.06);
+  }
+  60% {
+    transform: scale(0.98);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* ============================================================================
@@ -5645,6 +5839,9 @@ body[data-readability-mode="minimal"] #view {
 .touch-onboarding-actions .ghost-btn,
 .touch-onboarding-actions .primary-btn {
   min-width: 110px;
+  /* This card only ever renders on a touch device, so the 44px floor
+     applies unconditionally. At 10px padding these came out 38px. */
+  min-height: 44px;
   padding: 10px 18px;
   font-weight: 600;
   font-size: 14px;
@@ -5742,7 +5939,6 @@ body.mobile-compact-ui .touch-onboarding-text {
   background: rgba(251, 191, 36, 0.08);
 }
 
-
 /* ============================================================================
    FIELD GUIDE LAYER
    ============================================================================
@@ -5804,8 +6000,7 @@ body {
   align-items: center;
   background:
     radial-gradient(circle at 12% 18%, rgba(128, 216, 196, 0.1), transparent 30%),
-    radial-gradient(circle at 88% 78%, rgba(197, 242, 126, 0.08), transparent 28%),
-    #07130f;
+    radial-gradient(circle at 88% 78%, rgba(197, 242, 126, 0.08), transparent 28%), #07130f;
 }
 
 .home-page::before {
@@ -5865,7 +6060,9 @@ body {
   background:
     radial-gradient(circle at 68% 28%, rgba(241, 200, 108, 0.95) 0 5%, transparent 6%),
     linear-gradient(145deg, rgba(128, 216, 196, 0.26), rgba(197, 242, 126, 0.06));
-  box-shadow: 0 0 0 7px rgba(197, 242, 126, 0.035), 0 16px 34px rgba(0, 0, 0, 0.28);
+  box-shadow:
+    0 0 0 7px rgba(197, 242, 126, 0.035),
+    0 16px 34px rgba(0, 0, 0, 0.28);
   transform: rotate(-4deg);
 }
 
@@ -5929,7 +6126,9 @@ body {
   border: 1px solid rgba(183, 226, 187, 0.17);
   border-radius: 16px;
   background: rgba(10, 29, 22, 0.76);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 12px 30px rgba(0, 0, 0, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 12px 30px rgba(0, 0, 0, 0.16);
   text-align: left;
   backdrop-filter: blur(10px);
 }
@@ -5940,7 +6139,9 @@ body {
   border-color: rgba(197, 242, 126, 0.2);
   border-radius: 11px;
   filter: saturate(0.72) sepia(0.12);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 10px 22px rgba(0, 0, 0, 0.24);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 10px 22px rgba(0, 0, 0, 0.24);
 }
 
 .home-feature:hover {
@@ -5952,7 +6153,9 @@ body {
 
 .home-feature:hover::before {
   border-color: rgba(128, 216, 196, 0.44);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 12px 26px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 12px 26px rgba(0, 0, 0, 0.3);
 }
 
 .home-feature h3 {
@@ -6115,7 +6318,9 @@ body {
   border: 1px solid rgba(197, 242, 126, 0.32);
   border-radius: 14px;
   background: rgba(7, 25, 18, 0.94);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(16px);
 }
 
@@ -6244,7 +6449,10 @@ body {
   border-color: rgba(183, 226, 187, 0.24);
   border-radius: 16px;
   background: rgba(8, 28, 21, 0.96);
-  box-shadow: var(--shadow-soft), 0 0 24px rgba(128, 216, 196, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow:
+    var(--shadow-soft),
+    0 0 24px rgba(128, 216, 196, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .ctrl-btn {
@@ -6263,7 +6471,9 @@ body {
   border-color: rgba(197, 242, 126, 0.52);
   background: rgba(197, 242, 126, 0.14);
   color: var(--accent-primary);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 16px rgba(197, 242, 126, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 16px rgba(197, 242, 126, 0.1);
 }
 
 .bottom-drawer .drawer-content {
@@ -6368,6 +6578,11 @@ body {
   }
 
   .objective-rail {
+    /* The base rule sizes this as min(760px, 100vw - 32px), i.e. a 16px
+       gutter, but the mobile layout above switches to 10px left/right
+       insets. With left, right and width all set, width wins and the rail
+       sits 12px off-centre. Let the insets govern instead. */
+    width: auto;
     gap: 8px;
     padding: 8px 9px;
     border-radius: 13px;
@@ -6434,7 +6649,6 @@ body {
   }
 }
 
-
 /* ============================================================================
    TOUCH TARGETS
    ============================================================================
@@ -6468,5 +6682,34 @@ body {
 
   .ctrl-btn {
     min-height: 44px;
+  }
+}
+
+/* ============================================================================
+   VERY NARROW PHONES (<=360px)
+   ============================================================================
+   At 320px the primary control strip overflowed its own pill and the viewport:
+   seven 40px buttons plus eight 2px gaps and two dividers need 304px, but the
+   strip's inner box is only 284px, and min-width stops the buttons shrinking.
+   The last control ("more") ran 14px past the pill and 2px off-screen.
+
+   The watch strip was fixed for this at 320px in an earlier pass; the primary
+   strip has the same geometry and was missed. Reclaiming margin, padding and
+   gap gets the row under the limit while keeping every target at 40x44 — the
+   alternative, wrapping to a second row, costs vertical space on the smallest
+   screens, which is where it is most expensive. */
+@media (max-width: 360px) {
+  .control-strip {
+    left: 6px;
+    right: 6px;
+    padding: 4px;
+  }
+
+  .control-strip-primary {
+    gap: 1px;
+  }
+
+  .ctrl-divider {
+    margin: 0 1px;
   }
 }
