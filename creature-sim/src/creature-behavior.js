@@ -543,6 +543,7 @@ export class CreatureBehaviorSystem {
     }
 
     if (desiredAngle !== null) {
+      desiredAngle = this.applyHerdSteering(desiredAngle);
       this.steerToward(desiredAngle, dt);
     }
 
@@ -719,6 +720,20 @@ export class CreatureBehaviorSystem {
   /**
    * Steer toward desired angle
    */
+  /**
+   * Blend the herd heading published by updateHerdBehavior into a steering
+   * target. Returns `desiredAngle` unchanged when the creature has no
+   * herdmates.
+   * @param {number} desiredAngle
+   * @returns {number}
+   */
+  applyHerdSteering(desiredAngle) {
+    if (this._herdHeading === null || this._herdHeading === undefined) return desiredAngle;
+    const blend = CreatureConfig.MOVEMENT.HERD_STEER_BLEND * (this._herdStrength ?? 0);
+    if (blend <= 0) return desiredAngle;
+    return desiredAngle + angleDelta(desiredAngle, this._herdHeading) * clamp(blend, 0, 1);
+  }
+
   steerToward(desiredAngle, dt) {
     let delta = desiredAngle - this.creature.dir;
 
@@ -972,6 +987,7 @@ export class CreatureBehaviorSystem {
         this._herdMembers
       ) || [];
     let herdCount = 0;
+    this._herdHeading = null;
     for (let i = 0; i < herdMembers.length; i++) {
       const candidate = herdMembers[i];
       if (
@@ -993,7 +1009,7 @@ export class CreatureBehaviorSystem {
   /**
    * Apply herding forces (separation, alignment, cohesion)
    */
-  applyHerdForces(herdMembers, dt) {
+  applyHerdForces(herdMembers, _dt) {
     const temp = this.creature.temperament || {};
     const socialPull = 0.8 + (temp.sociability ?? 0) * 0.5;
     const separationScale = 1 - Math.min(0.3, (temp.sociability ?? 0) * 0.25);
@@ -1040,9 +1056,16 @@ export class CreatureBehaviorSystem {
         cohesionForce.y * W.HERD_COHESION_WEIGHT * socialPull * quirkCohesion
     };
 
+    // Publish a heading for updateMovement to blend into its steering target
+    // rather than nudging `dir` here. This runs after updateMovement has
+    // already steered and called applyMovement, so a nudge applied at this
+    // point was undone by steerToward on the very next frame — which is why
+    // herds never formed no matter how the weights were tuned.
     if (totalForce.x !== 0 || totalForce.y !== 0) {
-      const forceAngle = Math.atan2(totalForce.y, totalForce.x);
-      this.creature.dir += angleDelta(this.creature.dir, forceAngle) * herdStrength * dt;
+      this._herdHeading = Math.atan2(totalForce.y, totalForce.x);
+      this._herdStrength = clamp(herdStrength, 0, 1);
+    } else {
+      this._herdHeading = null;
     }
   }
 

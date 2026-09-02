@@ -29,6 +29,7 @@ import { SPEED_OPTIONS, SPEED_LABELS } from '../creature-sim/src/game-state.js';
 import { CreatureAgentTuning } from '../creature-sim/src/creature-agent-constants.js';
 import { resolveDietRole } from '../creature-sim/src/creature-genetics-helpers.js';
 import { angleDelta } from '../creature-sim/src/utils.js';
+import { CreatureConfig } from '../creature-sim/src/creature-config.js';
 
 function makeFakeWorkerProxy() {
   const priorWindow = globalThis.window;
@@ -868,6 +869,26 @@ test('steering turns the short way round', () => {
     const d = angleDelta(a, b);
     assert.ok(d > -Math.PI - 1e-9 && d <= Math.PI + 1e-9, `angleDelta(${a}, ${b}) = ${d} must stay within a half turn`);
   }
+});
+
+test('herd forces reach the steering target instead of being overwritten', () => {
+  const src = fs.readFileSync(new URL('../creature-sim/src/creature-behavior.js', import.meta.url), 'utf8');
+
+  // updateHerdBehavior runs after updateMovement has already steered and called
+  // applyMovement, so mutating `dir` there was undone by steerToward on the
+  // next frame. The whole herd system was a no-op: sweeping radius and weights
+  // changed clustering by less than run-to-run noise. It now publishes a
+  // heading that updateMovement blends into its steering target.
+  assert.doesNotMatch(
+    src,
+    /dir \+= angleDelta\(this\.creature\.dir, forceAngle\)/,
+    'herd force must not be applied to dir after movement has run'
+  );
+  assert.match(src, /_herdHeading = Math\.atan2/, 'herd behaviour should publish a heading');
+  assert.match(src, /applyHerdSteering\(desiredAngle\)/, 'movement should blend that heading into its target');
+
+  const blend = CreatureConfig.MOVEMENT.HERD_STEER_BLEND;
+  assert.ok(blend > 0 && blend < 1, `HERD_STEER_BLEND ${blend} must influence steering without overriding foraging`);
 });
 
 console.log('\n=== SUMMARY ===');

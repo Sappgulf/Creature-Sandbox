@@ -39,18 +39,30 @@ export const CreatureConfig = {
     HERD_RADIUS: 50,
     // Boids weights, previously inline literals.
     //
-    // Measured caveat, so the next person does not repeat the experiment:
-    // herds do not visibly form. At 240s roughly 85% of creatures have no
-    // neighbour within 80px despite an average herdInstinct of 0.6. Sweeping
-    // the radius (50 to 220) and the weights (cohesion 0.2 to 1.2 against
-    // separation 0.5 to 0.35) moved that number by less than run-to-run noise.
-    // The cause is structural rather than numeric: these forces are applied as
-    // a small nudge to `dir`, which goal seeking then overwrites in the same
-    // frame. Making herds real needs the herd force folded into the steering
-    // priority system, not different constants.
+    // Measured notes, so the next person does not repeat the experiments.
+    // These forces used to be applied as a nudge to `dir` inside
+    // updateHerdBehavior, which runs *after* updateMovement has already
+    // steered and moved the creature, so steerToward undid them on the next
+    // frame. That made the whole herd system a no-op regardless of weights —
+    // sweeping radius 50 to 220 and cohesion 0.2 to 1.2 changed clustering by
+    // less than run-to-run noise. The heading is now published for
+    // updateMovement to blend into its steering target instead, so the system
+    // is live.
+    //
+    // Herds still do not read as flocks on screen, and that part is density,
+    // not tuning: the ecosystem settles near 30 creatures across 1600x1200,
+    // where mean spacing is about 250px. Expected nearest-neighbour distance
+    // for a purely random scatter at the seeded density is roughly 87px and
+    // the measured value is 79px, so the distribution is only marginally
+    // clustered. Visible herding wants a denser world or a much stronger
+    // blend, and a stronger blend trades away foraging.
     HERD_SEPARATION_WEIGHT: 0.5,
     HERD_ALIGNMENT_WEIGHT: 0.3,
-    HERD_COHESION_WEIGHT: 0.2
+    HERD_COHESION_WEIGHT: 0.2,
+    // How far the herd heading pulls the steering target, scaled by the
+    // creature's herdInstinct. Kept well below 1 so foraging still wins: a
+    // hungry creature should drift with its herd, not orbit it.
+    HERD_STEER_BLEND: 0.35
   },
 
   // Combat
