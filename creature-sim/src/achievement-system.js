@@ -11,6 +11,12 @@ export class AchievementSystem {
   constructor() {
     this.achievements = new Map();
     this.unlocked = new Set();
+    // Set by whichever UI layer subscribes to ACHIEVEMENT_UNLOCKED. The
+    // built-in DOM toast below is only a fallback for when nothing else is
+    // listening; it used to detect that by checking `window.notifications`,
+    // which is assigned only under ?devtools=1 — so in normal play the check
+    // failed and every unlock produced two toasts at once, in two styles.
+    this.externalNotifier = false;
     this.progress = new Map(); // id -> progress state
     this.xp = 0;
     this.level = 1;
@@ -365,7 +371,7 @@ export class AchievementSystem {
     return Math.floor(base * Math.pow(level - 1, 1.35));
   }
 
-  awardXP(amount, { save = true, world = null, event = null, origin = 'direct' } = {}) {
+  awardXP(amount, { save = true, world = null, event = null, origin = 'direct', silent = false } = {}) {
     if (!this.enabled) return;
     const value = Number(amount);
     if (!Number.isFinite(value) || value <= 0) return;
@@ -392,6 +398,7 @@ export class AchievementSystem {
         world,
         event,
         origin,
+        silent,
         source: 'achievement-system'
       });
     } catch (e) {
@@ -493,7 +500,10 @@ export class AchievementSystem {
     }
 
     const xpGained = Number(achievement.xp) || 0;
-    this.awardXP(xpGained, { save: false, world, event: context.event });
+    // `silent` keeps the XP grant from raising its own toast: the unlock
+    // notification right below already reports the award, and firing both put
+    // "+15 XP" and "New Species" on screen simultaneously for one event.
+    this.awardXP(xpGained, { save: false, world, event: context.event, silent: true });
 
     try {
       eventSystem.emit(GameEvents.ACHIEVEMENT_UNLOCKED, {
@@ -526,9 +536,18 @@ export class AchievementSystem {
     console.debug(`🏆 Achievement Unlocked: ${achievement.name} (+${achievement.xp} XP)`);
   }
 
+  /**
+   * Declare that a UI layer is presenting achievement unlocks itself, so the
+   * fallback DOM toast stays out of the way.
+   */
+  useExternalNotifications(enabled = true) {
+    this.externalNotifier = !!enabled;
+  }
+
   // Show achievement notification
   showNotification(achievement, { forceFallback = false } = {}) {
     if (!this.notificationsEnabled) return;
+    if (!forceFallback && this.externalNotifier) return;
     // If the central NotificationSystem exists, let it handle display via events
     if (
       !forceFallback &&
@@ -584,8 +603,9 @@ export class AchievementSystem {
       right: ${compactViewport ? '12px' : inspectorOpen ? '372px' : '20px'};
       bottom: ${avoidPanelLane ? 'calc(env(safe-area-inset-bottom, 0px) + 92px)' : 'auto'};
       left: auto;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+      background: linear-gradient(160deg, rgba(18, 46, 34, 0.97) 0%, rgba(11, 30, 23, 0.97) 100%);
+      border: 1px solid rgba(183, 226, 187, 0.28);
+      color: #e8f2e6;
       padding: ${compactToast ? '7px 10px' : '15px 20px'};
       border-radius: 10px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);

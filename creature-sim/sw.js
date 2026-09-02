@@ -13,12 +13,28 @@ const CACHE_SHELL = `creature-sandbox-shell-${CACHE_VERSION}`;
 const CACHE_DYNAMIC = `creature-sandbox-dynamic-${CACHE_VERSION}`;
 
 // Build-time injected assets (populated by vite.config.js closeBundle hook)
-const SHELL_ASSETS = self.__SHELL_ASSETS__ || ['/', '/index.html', '/styles.css'];
+const SHELL_ASSETS = self.__SHELL_ASSETS__ || ['/', '/index.html'];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_SHELL).then(cache => cache.addAll(SHELL_ASSETS)));
+  event.waitUntil(precacheShell());
   self.skipWaiting();
 });
+
+/**
+ * `cache.addAll()` is atomic: a single 404 rejects the whole call and the
+ * install leaves *nothing* cached, so offline support fails silently and
+ * completely. (It did — the injected list carried '/styles.css', a source
+ * path Vite bundles away, so every deploy's precache aborted.) Cache each
+ * entry on its own so one bad path costs one asset instead of all of them.
+ */
+async function precacheShell() {
+  const cache = await caches.open(CACHE_SHELL);
+  const results = await Promise.allSettled(SHELL_ASSETS.map(asset => cache.add(asset)));
+  const failed = SHELL_ASSETS.filter((_, i) => results[i].status === 'rejected');
+  if (failed.length) {
+    console.warn('[sw] shell assets failed to precache:', failed);
+  }
+}
 
 self.addEventListener('activate', event => {
   event.waitUntil(

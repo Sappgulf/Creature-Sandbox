@@ -1,5 +1,5 @@
 import { clamp } from './utils.js';
-import { assetLoader } from './asset-loader.js?v=20260423-assets1';
+import { assetLoader } from './asset-loader.js';
 
 const biomeColors = {
   forest: [36, 68, 58],
@@ -639,7 +639,19 @@ export function drawDecorationFromSprite(renderer, ctx, dec, spriteInfo, assetKe
   const scale = (dec.size || 40) / frameHeight;
   ctx.scale(scale, scale);
 
-  ctx.globalAlpha = 0.85 * mod.alphaMult;
+  // Ground cover is scenery, not subject. At a flat 0.85 the grass and flowers
+  // carried more visual weight than the creatures standing on them, so a
+  // player scanning the field found texture before they found life. Trees and
+  // rocks stay heavier — they are the landmarks you navigate by.
+  const isGroundCover = dec.type === 'grass' || dec.type === 'flower' || dec.type === 'rock';
+  ctx.globalAlpha = (isGroundCover ? 0.46 : 0.78) * mod.alphaMult;
+
+  // Rocks now take the per-decoration hue (browns) from the sheet's
+  // `currentColor` fills, but they are still scenery: pull the value down so
+  // they read as stone sitting in the ground rather than sitting on top of it.
+  if (dec.type === 'rock') {
+    mod.lightnessMult *= 0.78;
+  }
 
   if (mod.hueShift !== 0 || mod.saturationMult !== 1 || mod.lightnessMult !== 1) {
     ctx.filter = `saturate(${mod.saturationMult * 100}%) brightness(${mod.lightnessMult * 100}%)`;
@@ -679,7 +691,7 @@ export function drawDecorationFallback(renderer, ctx, dec, world) {
 
   ctx.save();
   ctx.translate(dec.x, dec.y);
-  ctx.globalAlpha = 0.6 * mod.alphaMult;
+  ctx.globalAlpha = (dec.type === 'grass' || dec.type === 'flower' ? 0.38 : 0.6) * mod.alphaMult;
 
   const size = dec.size || 30;
 

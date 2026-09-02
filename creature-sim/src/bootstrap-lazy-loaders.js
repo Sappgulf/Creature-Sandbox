@@ -103,7 +103,7 @@ export function createDebugConsoleProxy(world, camera) {
 export async function ensureUpgradeController(deps) {
   if (upgradeControllerInstance) return upgradeControllerInstance;
   if (!upgradeControllerPromise) {
-    upgradeControllerPromise = import('./upgrade-controller.js?v=20260802-ecosystem-polish1')
+    upgradeControllerPromise = import('./upgrade-controller.js')
       .then(({ UpgradeController }) => {
         const controller = new UpgradeController(deps);
         controller.init();

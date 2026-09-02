@@ -12,11 +12,11 @@ import { BehaviorConfig, setBehaviorWeights } from './behavior.js';
 import { applyUiExportMethods } from './ui-controller-exports.js';
 import { applyUiGameModeMethods } from './ui-controller-game-mode.js';
 import { applyUiPlayableMethods } from './ui-controller-playable.js';
-import { applyUiWatchMethods } from './ui-controller-watch.js?v=20260526-tranche1';
-import { applyUiGodModeMethods } from './ui-controller-god-mode.js?v=20260526-tranche1';
+import { applyUiWatchMethods } from './ui-controller-watch.js';
+import { applyUiGodModeMethods } from './ui-controller-god-mode.js';
 import { DEFAULT_SPAWN_TYPE, applyUiSpawnMethods } from './ui-controller-spawn.js';
 import { applyUiAchievementsMethods } from './ui-controller-achievements.js';
-import { applyUiPanelMethods } from './ui-controller-panels.js?v=20260801-scenario-lab1';
+import { applyUiPanelMethods } from './ui-controller-panels.js';
 
 // Local helper to validate notification subsystem shape without relying on external export
 export function isNotificationSystem(candidate) {
@@ -129,6 +129,10 @@ export class UIController {
       });
     });
 
+    // This controller presents unlocks itself, so the achievement system's own
+    // fallback DOM toast must stand down or the player sees both.
+    this.achievements?.useExternalNotifications?.(true);
+
     // Listen for achievement unlocks
     eventSystem.on(GameEvents.ACHIEVEMENT_UNLOCKED, data => {
       const notificationsEnabled = this.achievements?.notificationsEnabled !== false;
@@ -146,7 +150,10 @@ export class UIController {
       const amount = Number(data?.amount) || 0;
       const levelUp = !!data?.levelUp;
       const notificationsEnabled = this.achievements?.notificationsEnabled !== false;
-      if (this.hasNotifications() && notificationsEnabled && (amount > 0 || levelUp)) {
+      // A silent grant is one bundled into an achievement unlock, which raises
+      // its own toast naming the award — a second "+N XP" pill is noise.
+      const silent = !!data?.silent && !levelUp;
+      if (this.hasNotifications() && notificationsEnabled && !silent && (amount > 0 || levelUp)) {
         const message = levelUp
           ? `Level ${Number(data?.level) || this.achievements?.level || 1} reached`
           : `+${amount} XP`;

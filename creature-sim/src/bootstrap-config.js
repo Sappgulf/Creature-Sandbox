@@ -45,7 +45,6 @@ export function getRuntimeProfile() {
       mobile: false,
       compact: false,
       lowMemory: false,
-      renderScale: 1,
       defaultZoom: 0.38,
       openingZoom: 0.9,
       startupSeed: DESKTOP_STARTUP_SEED
@@ -58,13 +57,11 @@ export function getRuntimeProfile() {
   const compactViewport = mobileViewport && shortEdge > 0 && shortEdge <= 430;
   const deviceMemory = Number(navigator.deviceMemory || 0);
   const lowMemory = mobileViewport && deviceMemory > 0 && deviceMemory <= 4;
-  const renderScale = mobileViewport ? (compactViewport || lowMemory ? 0.82 : 0.9) : 0.82;
 
   return {
     mobile: mobileViewport,
     compact: compactViewport,
     lowMemory,
-    renderScale,
     defaultZoom: mobileViewport ? 0.4 : 0.38,
     openingZoom: mobileViewport ? (compactViewport ? 0.68 : 0.74) : 0.9,
     startupSeed:

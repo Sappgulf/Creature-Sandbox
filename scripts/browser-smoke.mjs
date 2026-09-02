@@ -61,10 +61,15 @@ function requestOk(url) {
     }
 
     const req = client.get(url, res => {
+      // Read the whole document, not a 4KB prefix. The entry-script marker
+      // sits at the bottom of a 66KB index.html, so the old cap made
+      // readiness depend on whether the response happened to arrive in one
+      // chunk — adding markup anywhere above the script silently broke it.
+      const MAX_BODY = 512 * 1024;
       let body = '';
       res.setEncoding('utf8');
       res.on('data', chunk => {
-        if (body.length < 4096) body += chunk;
+        if (body.length < MAX_BODY) body += chunk;
       });
       res.on('end', () => {
         const statusOk = res.statusCode >= 200 && res.statusCode < 500;

@@ -97,6 +97,7 @@ self.onmessage = function (e) {
       case 'SEED':
         if (world) {
           world.seed(data.nHerb, data.nPred, data.nFood);
+          sendDecorations();
           sendSnapshot();
         }
         break;
@@ -227,6 +228,9 @@ self.onmessage = function (e) {
             BiomeGenerator,
             world
           );
+          // A loaded save rebuilds the world's biome layout, so its decorations
+          // are new too.
+          sendDecorations();
           sendSnapshot();
         }
         break;
@@ -234,6 +238,7 @@ self.onmessage = function (e) {
       case 'RESET':
         if (world) {
           world.reset();
+          sendDecorations();
           sendSnapshot();
         }
         break;
@@ -304,6 +309,25 @@ function step(dt) {
   }
 
   sendSnapshot();
+}
+
+// Decorations are static for the life of a seeded world (generateDecorations()
+// runs once per seed/reset and never mutates), but they live only in the worker.
+// SimulationProxy has no `decorations` getter, so in worker mode — the product
+// default — the renderer's `if (world.decorations)` guard silently skipped the
+// entire environmental layer and the field rendered as an empty void. Ship the
+// array across once per world instead of per tick.
+function sendDecorations() {
+  if (!world) return;
+  const decorations = (world.decorations || []).map(d => ({
+    x: d.x,
+    y: d.y,
+    type: d.type,
+    sprite: d.sprite,
+    size: d.size,
+    hue: d.hue
+  }));
+  self.postMessage({ type: 'DECORATIONS', data: { decorations } });
 }
 
 function sendSnapshot() {

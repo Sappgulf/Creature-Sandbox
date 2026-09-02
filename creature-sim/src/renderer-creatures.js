@@ -1,7 +1,7 @@
 import { clamp } from './utils.js';
 import { getCreatureEmotion, getLifeStageDisplay } from './upgrade-data.js';
-import { drawBatchedTrails } from './creature-render.js?v=20260423-assets1';
-import { drawCreatureSprite } from './creature-presentation.js?v=20260801-field-guide1';
+import { drawBatchedTrails } from './creature-render.js';
+import { drawCreatureSprite } from './creature-presentation.js';
 
 function numericGene(value, fallback = 0) {
   if (value && typeof value === 'object') {

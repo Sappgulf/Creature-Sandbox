@@ -7,25 +7,24 @@ import { Renderer, ParticleSystem, HeatmapSystem, MiniGraphs } from './render/in
 import { SimulationProxy } from './simulation-proxy.js';
 import SimulationWorker from './worker-simulation.js?worker';
 import './creature-features.js'; // Load feature extensions
-import { Camera } from './camera.js?v=20260524-opening1';
+import { Camera } from './camera.js';
 import { AnalyticsTracker } from './analytics.js';
 import { LineageTracker } from './lineage-tracker.js';
 import { SaveSystem } from './save-system.js';
-import { NotificationSystem } from './notification-system.js?v=20260526-tranche1';
+import { NotificationSystem } from './notification-system.js';
 import { EcosystemHealth } from './ecosystem-health.js';
 import { AudioSystem } from './audio-system.js';
 import { TutorialSystem } from './tutorial-system.js';
-import { AchievementSystem } from './achievement-system.js?v=20260527-audit2';
+import { AchievementSystem } from './achievement-system.js';
 import { GameplayModes } from './gameplay-modes.js';
 import { SessionGoals } from './session-goals.js';
-import { PlayableScenarios } from './playable-scenarios.js?v=20260528-vitals1';
+import { PlayableScenarios } from './playable-scenarios.js';
 import { MobileSupport } from './mobile-support.js';
 import { AutoDirector } from './auto-director.js';
 import { MomentsSystem } from './moments-system.js';
-import { ControlStripController } from './control-strip.js?v=20260524-opening1';
+import { ControlStripController } from './control-strip.js';
 import { encodeSeed, getSeedFromUrl, setSeedInUrl } from './seed-utils.js';
-import { mobileGestureTutorial } from './mobile-gesture-tutorial.js?v=20260504-menu1';
-import { touchOnboarding } from './touch-onboarding.js?v=20260607-onboarding1';
+import { touchOnboarding } from './touch-onboarding.js';
 
 // Import new modular systems (via barrels where available)
 import { domCache, InputManager, UIController, GameLoop, ToolController } from './ui/index.js';
@@ -35,7 +34,7 @@ import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
 import { performanceProfiler, initializePerformanceMonitor } from './performance-profiler.js';
 import { diseaseSystem } from './disease-system.js';
-import { assetLoader } from './asset-loader.js?v=20260802-ecosystem-polish1';
+import { assetLoader } from './asset-loader.js';
 
 // Import newly added systems
 import { seasonalEventsSystem } from './seasonal-events.js';
@@ -44,7 +43,7 @@ import { godPowers } from './god-powers.js';
 import { UnlockableAchievements } from './unlockable-achievements.js';
 import { FamilyBondsSystem } from './family-bonds.js';
 import { MemoryLearningSystem } from './memory-learning.js';
-import { ChallengeSystem } from './challenge-system.js?v=20260524-opening2';
+import { ChallengeSystem } from './challenge-system.js';
 import { setupDevExports } from './dev-exports.js';
 import {
   getDevToolsConfig,
@@ -52,6 +51,8 @@ import {
   getRuntimeProfile,
   getStartupSeedForRuntime
 } from './bootstrap-config.js';
+import { renderResolution } from './render-resolution.js';
+import { openingHold } from './opening-hold.js';
 import {
   ensureScenarioEditor,
   ensureCampaignSystem,
@@ -181,7 +182,10 @@ export async function initializeApp() {
     errorHandler.safeExecute(() => {
       let rect = canvas.getBoundingClientRect();
       const runtimeProfile = getRuntimeProfile();
-      const dpr = runtimeProfile.renderScale; // Resolution scale biased toward smooth mobile frame pacing
+      // Re-read the ceiling every resize: moving a window between a laptop
+      // panel and an external display changes devicePixelRatio underneath us.
+      renderResolution.configure(runtimeProfile);
+      const dpr = renderResolution.getScale();
 
       // Fallback if clientRect is zero or suspicious (e.g. before layout)
       if (rect.width < 100 || rect.height < 100) {
@@ -211,6 +215,9 @@ export async function initializeApp() {
 
   errorHandler.safeExecute(() => {
     setCanvasSize();
+    // The adaptive controller sheds resolution when a device cannot hold the
+    // frame budget; rebuild the backing store whenever it moves a rung.
+    renderResolution.onChange = () => requestAnimationFrame(setCanvasSize);
     // Handle window resize
     window.addEventListener('resize', () => {
       requestAnimationFrame(setCanvasSize);
@@ -1704,14 +1711,29 @@ export async function initializeApp() {
 
     const x = world.width * 0.5;
     const y = world.height * 0.5;
+    // The opening frame is the whole pitch, and seven creatures spread across a
+    // desktop viewport read as an empty field — a phone viewport at the opening
+    // zoom held three. This is a deliberately staged tableau: enough life to
+    // show a working ecosystem, arranged as two loose herds with a predator
+    // circling, rather than a uniform scatter.
     const starterCreatures = [
-      ['herbivore', -92, -42],
-      ['herbivore', -42, 46],
-      ['omnivore', 52, -18],
-      ['herbivore', 104, 58],
-      ['aquatic', -118, 94],
-      ['flying', 132, -96],
-      ['burrowing', 4, 118]
+      // Near herd
+      ['herbivore', -96, -44],
+      ['herbivore', -46, 44],
+      ['herbivore', -138, 20],
+      ['herbivore', -70, -104],
+      ['omnivore', 54, -18],
+      // Far herd
+      ['herbivore', 106, 58],
+      ['herbivore', 168, 24],
+      ['herbivore', 132, 118],
+      ['omnivore', 196, -60],
+      // Edges of the clearing
+      ['aquatic', -120, 96],
+      ['flying', 134, -98],
+      ['burrowing', 4, 120],
+      ['burrowing', -180, -70],
+      ['predator', 232, 140]
     ];
 
     let spotlightCreature = null;
@@ -1724,10 +1746,10 @@ export async function initializeApp() {
       }
     }
 
-    const foodTypes = ['berries', 'grass', 'fruit', 'grass', 'berries'];
+    const foodTypes = ['berries', 'grass', 'fruit', 'grass', 'berries', 'grass', 'fruit', 'berries', 'grass', 'grass'];
     for (let i = 0; i < foodTypes.length; i++) {
       const angle = (Math.PI * 2 * i) / foodTypes.length - Math.PI / 5;
-      const radius = 70 + (i % 2) * 46;
+      const radius = 74 + (i % 3) * 62;
       world.addFood?.(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, 1.8, foodTypes[i]);
     }
 
@@ -1763,6 +1785,10 @@ export async function initializeApp() {
 
       applyReplayKickoff();
       const openingFocus = applyStarterGlade();
+      // Freeze the simulation clock so the tableau above survives module load,
+      // the worker handshake and the onboarding card long enough to be seen.
+      // Releases on the player's first input, or after its own cap.
+      openingHold.begin();
       // Seeded creatures and the starter glade are part of the opener, not
       // player actions. Reset action counters after the world is prepared so
       // action-based session goals start from a truthful baseline.
@@ -1802,20 +1828,19 @@ export async function initializeApp() {
 
       console.debug('✅ New game started successfully!');
 
-      // Start tutorial for new players
-      startTutorialIfNeeded();
-
-      // Show mobile gesture tutorial on first mobile launch
-      setTimeout(() => {
-        // Prefer the new touch-first multi-step onboarding; the legacy
-        // single-card fallback remains in place for any code path that
-        // explicitly invokes it.
-        if (touchOnboarding.shouldShow()) {
-          touchOnboarding.show();
-        } else {
-          mobileGestureTutorial.show();
-        }
-      }, 800);
+      // Exactly one onboarding flow per session. These two used to run
+      // unconditionally 800ms apart, so a phone player dismissed the eight-step
+      // tutorial only to find a second three-step modal blurring the whole
+      // screen behind it — two tutorials before seeing the game.
+      //
+      // On touch, gestures are the thing that has to be taught, so the
+      // touch-first flow wins and the step tutorial stands down. Everywhere
+      // else the step tutorial runs and no gesture card appears.
+      if (touchOnboarding.shouldShow()) {
+        setTimeout(() => touchOnboarding.show(), 800);
+      } else {
+        startTutorialIfNeeded();
+      }
     }, 'New game initialization');
   }
 

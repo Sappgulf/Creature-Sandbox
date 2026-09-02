@@ -8,6 +8,8 @@
 import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
 import { performanceProfiler, updatePerformanceMonitor, profile } from './performance-profiler.js';
+import { renderResolution } from './render-resolution.js';
+import { openingHold } from './opening-hold.js';
 import { escapeHtml } from './safe-html.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
@@ -16,7 +18,7 @@ import { getEnhancedAnalyticsModule } from './enhanced-analytics-loader.js';
 import { VisualEffects } from './render/index.js';
 import { ghostTrails } from './ecosystem-ghosts.js';
 import { lifetimeStats } from './lifetime-stats.js';
-import { RendererConfig } from './renderer-config.js?v=20260527-tranche4';
+import { RendererConfig } from './renderer-config.js';
 import { geneValue } from './creature-genetics-helpers.js';
 // STATIC UI IMPORTS - avoids dynamic import() latency in hot path
 import {
@@ -25,7 +27,7 @@ import {
   renderInspector,
   renderAnalyticsCharts,
   renderInteractionHint
-} from './ui.js?v=20260526-tranche1';
+} from './ui.js';
 
 // Local helper to validate notification subsystem shape without depending on cross-module export availability
 function isNotificationSystem(candidate) {
@@ -546,7 +548,10 @@ export class GameLoop {
       const targetGodScale = gameState.godModeActive ? gameState.godModeTimeScale : 1;
       const blend = Math.min(1, dt * 3);
       this.godModeTimeScale += (targetGodScale - this.godModeTimeScale) * blend;
-      gameState.timeScale = gameState.paused ? 0 : gameState.fastForward * this.godModeTimeScale;
+      // The opening hold keeps the staged first frame intact until the player
+      // engages. Rendering carries on; only the simulation clock stops.
+      gameState.timeScale =
+        gameState.paused || openingHold.isHolding() ? 0 : gameState.fastForward * this.godModeTimeScale;
       gameState.accumulator += dt * gameState.timeScale;
 
       // Run physics steps
@@ -614,6 +619,9 @@ export class GameLoop {
 
       // Adaptive simulation fidelity: throttle non-critical systems when FPS drops
       const avgFps = performanceProfiler.getStats().averages.fps || 60;
+      // Resolution is the first thing we trade away under load, before we
+      // start skipping simulation work the player can actually see.
+      renderResolution.notifyFps(avgFps);
       if (performance.now() - this._lastFidelityUpdate > 2000) {
         this._lastFidelityUpdate = performance.now();
         if (avgFps < 25) this.simulationFidelity = 0.25;
@@ -842,8 +850,15 @@ export class GameLoop {
     opts.travelPreview = gameState.travelPreview;
     opts.cameraTravel = cameraTravelState;
     opts.cameraMoving = this.camera.isMoving;
-    opts.viewportWidth = canvas.width;
-    opts.viewportHeight = canvas.height;
+    // CSS pixels, not the backing store. The 2D context already carries a
+    // `scale(pixelRatio)` transform, so everything the renderer draws is in
+    // CSS space — and it centres the world on `viewportWidth / 2`. Passing
+    // `canvas.width` (device pixels) offsets the entire world by half the
+    // pixel ratio and inflates the frustum-culling rect by the same factor.
+    // This was masked while the backing store was a *sub-1* fraction of the
+    // CSS box, where canvas.width happened to land near the CSS width.
+    opts.viewportWidth = this.camera.viewportWidth || canvas.width;
+    opts.viewportHeight = this.camera.viewportHeight || canvas.height;
     opts.useBatchRendering = false;
     opts.particleSystem = this.particles;
     opts.heatmaps = this.heatmaps;
@@ -874,6 +889,8 @@ export class GameLoop {
       const bottomChrome = gameState.hudBottomHeight || (compactLayout ? 118 : 84);
       const challengeY = compactLayout ? Math.max(118, layoutHeight - bottomChrome - 104) : 112;
       this.challengeSystem.draw(ctx, 12, challengeY, {
+        // Same convention as the notification overlay: device pixels for the
+        // viewport, CSS pixels for layout.
         viewportWidth: canvas.width,
         viewportHeight: canvas.height,
         layoutWidth,
@@ -964,8 +981,13 @@ export class GameLoop {
    */
   renderHeatmaps() {
     const ctx = this.renderer.ctx;
+    const canvas = ctx.canvas;
+    // Same unit mismatch as the main world transform: the context is already
+    // scaled by the pixel ratio, so centring must use CSS dimensions.
+    const viewWidth = this.camera.viewportWidth || canvas.width;
+    const viewHeight = this.camera.viewportHeight || canvas.height;
     ctx.save();
-    ctx.translate(this.renderer.ctx.canvas.width / 2, this.renderer.ctx.canvas.height / 2);
+    ctx.translate(viewWidth / 2, viewHeight / 2);
     ctx.scale(this.camera.zoom, this.camera.zoom);
     ctx.translate(-this.camera.x, -this.camera.y);
     this.world.heatmaps.draw(ctx, this.camera);
@@ -1008,7 +1030,10 @@ export class GameLoop {
         !!objectiveRail &&
         objectiveRail.textContent.trim().length > 0 &&
         !document.body.classList.contains('home-active');
-      this.notifications.draw(ctx, this.renderer.ctx.canvas.width, this.renderer.ctx.canvas.height, {
+      // Device pixels here on purpose: NotificationSystem.draw resets to the
+      // identity transform and derives its own pixelRatio from
+      // viewportWidth / layoutWidth to size text in device space.
+      this.notifications.draw(ctx, ctx.canvas.width, ctx.canvas.height, {
         layoutWidth: this.camera.viewportWidth,
         layoutHeight: this.camera.viewportHeight,
         objectiveRailVisible,

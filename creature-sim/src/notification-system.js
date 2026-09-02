@@ -227,7 +227,7 @@ export class NotificationSystem {
     const colors = {
       warning: { bg: 'rgba(245,158,11,0.92)', text: '#1a1a1a' },
       milestone: { bg: 'rgba(34,197,94,0.92)', text: '#ffffff' },
-      achievement: { bg: 'rgba(139,92,246,0.92)', text: '#ffffff' },
+      achievement: { bg: 'rgba(197,242,126,0.94)', text: '#0b1e17' },
       success: { bg: 'rgba(34,197,94,0.92)', text: '#ffffff' },
       error: { bg: 'rgba(239,68,68,0.92)', text: '#ffffff' },
       info: { bg: 'rgba(15,23,42,0.94)', text: '#e2e8f0' },
@@ -411,7 +411,7 @@ export class NotificationSystem {
     const colors = {
       warning: { bg: 'rgba(245, 158, 11, 0.92)', text: '#1a1a1a', glow: 'rgba(245, 158, 11, 0.3)' },
       milestone: { bg: 'rgba(34, 197, 94, 0.92)', text: '#ffffff', glow: 'rgba(34, 197, 94, 0.3)' },
-      achievement: { bg: 'rgba(139, 92, 246, 0.92)', text: '#ffffff', glow: 'rgba(139, 92, 246, 0.3)' },
+      achievement: { bg: 'rgba(197, 242, 126, 0.94)', text: '#0b1e17', glow: 'rgba(197, 242, 126, 0.32)' },
       success: { bg: 'rgba(34, 197, 94, 0.92)', text: '#ffffff', glow: 'rgba(34, 197, 94, 0.3)' },
       error: { bg: 'rgba(239, 68, 68, 0.92)', text: '#ffffff', glow: 'rgba(239, 68, 68, 0.3)' },
       info: { bg: 'rgba(15, 23, 42, 0.94)', text: '#e2e8f0', glow: 'rgba(0, 212, 255, 0.15)' },

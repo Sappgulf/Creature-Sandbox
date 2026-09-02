@@ -5,56 +5,56 @@
 
 
     <path d="
-      M 16.58 34.82
-      Q 11.45 29.78
-        5.18 34.28
-      Q 11.79 39.86
-        16.58 34.82
+      M 18.49 34.82
+      Q 14.44 30.18
+        9.49 34.28
+      Q 14.71 39.46
+        18.49 34.82
       Z
     " fill="currentColor" opacity="0.9"/>
     <path d="
-      M 29.13 22.45
-      L 25.63 14.98
-      L 36.13 20.85
+      M 29.51 21.35
+      L 27.01 10.39
+      L 34.51 19.05
       Z
     " fill="currentColor" opacity="0.78"/>
     <path d="
-      M 28.13 46.48
-      L 34.53 51.95
-      L 30.21 46.48
+      M 28.51 47.58
+      L 34.91 51.25
+      L 30.59 47.58
       Z
     " fill="currentColor" opacity="0.65"/>
 
-    <ellipse cx="24.74" cy="44.96" rx="3.51" ry="2.6" fill="rgba(0,0,0,0.22)"/>
-    <ellipse cx="38.26" cy="45.23" rx="3.86" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+    <ellipse cx="25.6" cy="45.81" rx="3.13" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.65" cy="46.11" rx="3.44" ry="2.7" fill="rgba(0,0,0,0.2)"/>
 
-    <ellipse cx="32.64" cy="34.22" rx="17.56" ry="13.77" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
-    <ellipse cx="35.8" cy="30.36" rx="8.43" ry="4.68" fill="rgba(255,255,255,0.18)"/>
-    <ellipse cx="32.64" cy="34.22" rx="17.81" ry="14.02" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+    <ellipse cx="32.64" cy="34.22" rx="15.65" ry="14.86" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
+    <ellipse cx="35.46" cy="30.06" rx="7.51" ry="5.05" fill="rgba(255,255,255,0.18)"/>
+    <ellipse cx="32.64" cy="34.22" rx="15.9" ry="15.11" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
 
 
-      <circle cx="28.08" cy="32.02" r="1.7" fill="rgba(255,255,255,0.24)"/>
-      <circle cx="33.69" cy="36.7" r="1.45" fill="rgba(0,0,0,0.13)"/>
-      <circle cx="31.24" cy="40.28" r="1.2" fill="rgba(255,255,255,0.18)"/>
+      <circle cx="28.57" cy="31.84" r="1.7" fill="rgba(255,255,255,0.24)"/>
+      <circle cx="33.58" cy="36.89" r="1.45" fill="rgba(0,0,0,0.13)"/>
+      <circle cx="31.39" cy="40.76" r="1.2" fill="rgba(255,255,255,0.18)"/>
 
 
 
 
 
     <path d="
-      M 37.2 37.8
-      Q 40.19 39.72
-        43.17 36.97
+      M 36.71 38.08
+      Q 39.37 40.16
+        42.03 37.19
     " stroke="rgba(0,0,0,0.35)" stroke-width="0.8" fill="none" />
 
 
-      <ellipse cx="38.79" cy="39.45" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.26"/>
-      <ellipse cx="28.43" cy="39.72" rx="2.8" ry="2" fill="#ff9faa" opacity="0.23"/>
+      <ellipse cx="38.12" cy="39.87" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.26"/>
+      <ellipse cx="28.88" cy="40.16" rx="2.8" ry="2" fill="#ff9faa" opacity="0.23"/>
 
 
-    <ellipse cx="40.19" cy="29.95" rx="4.9" ry="4.3" fill="white" />
-    <ellipse cx="41.21" cy="29.95" rx="2.2" ry="2.1" fill="#111" />
-    <circle cx="40.41" cy="29.05" r="0.85" fill="white" opacity="0.9" />
+    <ellipse cx="39.37" cy="29.61" rx="4.9" ry="4.3" fill="white" />
+    <ellipse cx="40.39" cy="29.61" rx="2.2" ry="2.1" fill="#111" />
+    <circle cx="39.59" cy="28.71" r="0.85" fill="white" opacity="0.9" />
 
 
 
@@ -66,56 +66,56 @@
 
 
     <path d="
-      M 16.28 35.63
-      Q 11.15 29
-        4.88 32.97
-      Q 11.49 42.25
-        16.28 35.63
+      M 18.22 35.63
+      Q 14.17 29.4
+        9.22 32.97
+      Q 14.44 41.85
+        18.22 35.63
       Z
     " fill="currentColor" opacity="0.9"/>
     <path d="
-      M 29.07 23.43
-      L 25.57 17.2
-      L 36.07 21.83
+      M 29.46 22.35
+      L 26.96 12.62
+      L 34.46 20.05
       Z
     " fill="currentColor" opacity="0.78"/>
     <path d="
-      M 28.07 47.12
-      L 34.47 53.21
-      L 30.15 47.12
+      M 28.46 48.2
+      L 34.86 52.49
+      L 30.54 48.2
       Z
     " fill="currentColor" opacity="0.65"/>
 
-    <ellipse cx="24.6" cy="45.63" rx="3.57" ry="2.6" fill="rgba(0,0,0,0.22)"/>
-    <ellipse cx="38.35" cy="45.9" rx="3.93" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+    <ellipse cx="25.48" cy="46.47" rx="3.18" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.73" cy="46.77" rx="3.5" ry="2.7" fill="rgba(0,0,0,0.2)"/>
 
-    <ellipse cx="32.64" cy="35.03" rx="17.86" ry="13.59" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
-    <ellipse cx="35.85" cy="31.22" rx="8.57" ry="4.62" fill="rgba(255,255,255,0.18)"/>
-    <ellipse cx="32.64" cy="35.03" rx="18.11" ry="13.84" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+    <ellipse cx="32.64" cy="35.03" rx="15.92" ry="14.68" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
+    <ellipse cx="35.51" cy="30.92" rx="7.64" ry="4.99" fill="rgba(255,255,255,0.18)"/>
+    <ellipse cx="32.64" cy="35.03" rx="16.17" ry="14.93" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
 
 
-      <circle cx="28" cy="32.85" r="1.7" fill="rgba(255,255,255,0.24)"/>
-      <circle cx="33.71" cy="37.47" r="1.45" fill="rgba(0,0,0,0.13)"/>
-      <circle cx="31.21" cy="41.01" r="1.2" fill="rgba(255,255,255,0.18)"/>
+      <circle cx="28.5" cy="32.68" r="1.7" fill="rgba(255,255,255,0.24)"/>
+      <circle cx="33.6" cy="37.67" r="1.45" fill="rgba(0,0,0,0.13)"/>
+      <circle cx="31.37" cy="41.48" r="1.2" fill="rgba(255,255,255,0.18)"/>
 
 
 
 
 
     <path d="
-      M 37.28 38.56
-      Q 40.32 40.46
-        43.36 37.74
+      M 36.78 38.84
+      Q 39.49 40.9
+        42.19 37.96
     " stroke="rgba(0,0,0,0.35)" stroke-width="0.8" fill="none" />
 
 
-      <ellipse cx="38.89" cy="40.19" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.32"/>
-      <ellipse cx="28.35" cy="40.46" rx="2.8" ry="2" fill="#ff9faa" opacity="0.29"/>
+      <ellipse cx="38.21" cy="40.6" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.32"/>
+      <ellipse cx="28.82" cy="40.9" rx="2.8" ry="2" fill="#ff9faa" opacity="0.29"/>
 
 
-    <ellipse cx="40.32" cy="30.81" rx="4.9" ry="3.17" fill="white" />
-    <ellipse cx="41.55" cy="30.98" rx="2.2" ry="1.61" fill="#111" />
-    <circle cx="40.75" cy="30.08" r="0.85" fill="white" opacity="0.9" />
+    <ellipse cx="39.49" cy="30.48" rx="4.9" ry="3.17" fill="white" />
+    <ellipse cx="40.72" cy="30.64" rx="2.2" ry="1.61" fill="#111" />
+    <circle cx="39.92" cy="29.74" r="0.85" fill="white" opacity="0.9" />
 
 
 
@@ -127,56 +127,56 @@
 
 
     <path d="
-      M 16.16 36.01
-      Q 11.03 30.03
-        4.76 34.59
-      Q 11.37 41.99
-        16.16 36.01
+      M 18.11 36.01
+      Q 14.06 30.43
+        9.11 34.59
+      Q 14.33 41.59
+        18.11 36.01
       Z
     " fill="currentColor" opacity="0.9"/>
     <path d="
-      M 29.04 23.89
-      L 25.54 15.8
-      L 36.04 22.29
+      M 29.43 22.81
+      L 26.93 11.22
+      L 34.43 20.51
       Z
     " fill="currentColor" opacity="0.78"/>
     <path d="
-      M 28.04 47.43
-      L 34.44 52.59
-      L 30.12 47.43
+      M 28.43 48.51
+      L 34.83 51.87
+      L 30.51 48.51
       Z
     " fill="currentColor" opacity="0.65"/>
 
-    <ellipse cx="24.55" cy="45.96" rx="3.6" ry="2.6" fill="rgba(0,0,0,0.22)"/>
-    <ellipse cx="38.39" cy="46.23" rx="3.96" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+    <ellipse cx="25.43" cy="46.8" rx="3.21" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.77" cy="47.09" rx="3.53" ry="2.7" fill="rgba(0,0,0,0.2)"/>
 
-    <ellipse cx="32.64" cy="35.41" rx="17.98" ry="13.52" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
-    <ellipse cx="35.88" cy="31.62" rx="8.63" ry="4.6" fill="rgba(255,255,255,0.18)"/>
-    <ellipse cx="32.64" cy="35.41" rx="18.23" ry="13.77" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+    <ellipse cx="32.64" cy="35.41" rx="16.03" ry="14.6" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
+    <ellipse cx="35.53" cy="31.32" rx="7.69" ry="4.96" fill="rgba(255,255,255,0.18)"/>
+    <ellipse cx="32.64" cy="35.41" rx="16.28" ry="14.85" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
 
 
-      <circle cx="27.96" cy="33.25" r="1.7" fill="rgba(255,255,255,0.24)"/>
-      <circle cx="33.72" cy="37.84" r="1.45" fill="rgba(0,0,0,0.13)"/>
-      <circle cx="31.2" cy="41.36" r="1.2" fill="rgba(255,255,255,0.18)"/>
+      <circle cx="28.47" cy="33.07" r="1.7" fill="rgba(255,255,255,0.24)"/>
+      <circle cx="33.6" cy="38.04" r="1.45" fill="rgba(0,0,0,0.13)"/>
+      <circle cx="31.36" cy="41.84" r="1.2" fill="rgba(255,255,255,0.18)"/>
 
 
 
 
 
     <path d="
-      M 37.32 38.93
-      Q 40.37 40.82
-        43.43 38.12
+      M 36.81 39.21
+      Q 39.53 41.25
+        42.26 38.33
     " stroke="rgba(0,0,0,0.35)" stroke-width="0.8" fill="none" />
 
 
-      <ellipse cx="38.93" cy="40.55" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.3"/>
-      <ellipse cx="28.32" cy="40.82" rx="2.8" ry="2" fill="#ff9faa" opacity="0.27"/>
+      <ellipse cx="38.25" cy="40.96" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.3"/>
+      <ellipse cx="28.79" cy="41.25" rx="2.8" ry="2" fill="#ff9faa" opacity="0.27"/>
 
 
-    <ellipse cx="40.37" cy="31.22" rx="4.9" ry="4.3" fill="white" />
-    <ellipse cx="41.67" cy="31.4" rx="2.2" ry="2.1" fill="#111" />
-    <circle cx="40.87" cy="30.5" r="0.85" fill="white" opacity="0.9" />
+    <ellipse cx="39.53" cy="30.88" rx="4.9" ry="4.3" fill="white" />
+    <ellipse cx="40.83" cy="31.06" rx="2.2" ry="2.1" fill="#111" />
+    <circle cx="40.03" cy="30.16" r="0.85" fill="white" opacity="0.9" />
 
 
 
@@ -188,56 +188,56 @@
 
 
     <path d="
-      M 16.28 35.83
-      Q 11.15 31.93
-        4.88 37.44
-      Q 11.49 39.73
-        16.28 35.83
+      M 18.22 35.83
+      Q 14.17 32.33
+        9.22 37.44
+      Q 14.44 39.33
+        18.22 35.83
       Z
     " fill="currentColor" opacity="0.9"/>
     <path d="
-      M 29.07 23.63
-      L 25.57 13.84
-      L 36.07 22.03
+      M 29.46 22.55
+      L 26.96 9.26
+      L 34.46 20.25
       Z
     " fill="currentColor" opacity="0.78"/>
     <path d="
-      M 28.07 47.32
-      L 34.47 51.62
-      L 30.15 47.32
+      M 28.46 48.4
+      L 34.86 50.9
+      L 30.54 48.4
       Z
     " fill="currentColor" opacity="0.65"/>
 
-    <ellipse cx="24.6" cy="45.83" rx="3.57" ry="2.6" fill="rgba(0,0,0,0.22)"/>
-    <ellipse cx="38.36" cy="46.1" rx="3.93" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+    <ellipse cx="25.47" cy="46.67" rx="3.18" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.74" cy="46.97" rx="3.5" ry="2.7" fill="rgba(0,0,0,0.2)"/>
 
-    <ellipse cx="32.64" cy="35.23" rx="17.86" ry="13.59" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
-    <ellipse cx="35.86" cy="31.42" rx="8.57" ry="4.62" fill="rgba(255,255,255,0.18)"/>
-    <ellipse cx="32.64" cy="35.23" rx="18.11" ry="13.84" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+    <ellipse cx="32.64" cy="35.23" rx="15.92" ry="14.68" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
+    <ellipse cx="35.51" cy="31.12" rx="7.64" ry="4.99" fill="rgba(255,255,255,0.18)"/>
+    <ellipse cx="32.64" cy="35.23" rx="16.17" ry="14.93" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
 
 
-      <circle cx="28" cy="33.05" r="1.7" fill="rgba(255,255,255,0.24)"/>
-      <circle cx="33.71" cy="37.67" r="1.45" fill="rgba(0,0,0,0.13)"/>
-      <circle cx="31.21" cy="41.21" r="1.2" fill="rgba(255,255,255,0.18)"/>
+      <circle cx="28.5" cy="32.88" r="1.7" fill="rgba(255,255,255,0.24)"/>
+      <circle cx="33.6" cy="37.87" r="1.45" fill="rgba(0,0,0,0.13)"/>
+      <circle cx="31.37" cy="41.68" r="1.2" fill="rgba(255,255,255,0.18)"/>
 
 
 
 
 
     <path d="
-      M 37.28 38.76
-      Q 40.32 40.66
-        43.36 37.94
+      M 36.78 39.04
+      Q 39.49 41.1
+        42.19 38.16
     " stroke="rgba(0,0,0,0.35)" stroke-width="0.8" fill="none" />
 
 
-      <ellipse cx="38.89" cy="40.39" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.23"/>
-      <ellipse cx="28.35" cy="40.66" rx="2.8" ry="2" fill="#ff9faa" opacity="0.21"/>
+      <ellipse cx="38.21" cy="40.8" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.23"/>
+      <ellipse cx="28.82" cy="41.1" rx="2.8" ry="2" fill="#ff9faa" opacity="0.21"/>
 
 
-    <ellipse cx="40.32" cy="31.01" rx="4.9" ry="4.3" fill="white" />
-    <ellipse cx="41.49" cy="31.04" rx="2.2" ry="2.1" fill="#111" />
-    <circle cx="40.69" cy="30.14" r="0.85" fill="white" opacity="0.9" />
+    <ellipse cx="39.49" cy="30.68" rx="4.9" ry="4.3" fill="white" />
+    <ellipse cx="40.66" cy="30.7" rx="2.2" ry="2.1" fill="#111" />
+    <circle cx="39.86" cy="29.8" r="0.85" fill="white" opacity="0.9" />
 
 
 
@@ -249,56 +249,56 @@
 
 
     <path d="
-      M 16.58 35.14
-      Q 11.45 32.2
-        5.18 37.75
-      Q 11.79 38.08
-        16.58 35.14
+      M 18.48 35.14
+      Q 14.43 32.6
+        9.48 37.75
+      Q 14.7 37.68
+        18.48 35.14
       Z
     " fill="currentColor" opacity="0.9"/>
     <path d="
-      M 29.13 22.78
-      L 25.63 14.42
-      L 36.13 21.18
+      M 29.51 21.68
+      L 27.01 9.82
+      L 34.51 19.38
       Z
     " fill="currentColor" opacity="0.78"/>
     <path d="
-      M 28.13 46.81
-      L 34.53 51.83
-      L 30.21 46.81
+      M 28.51 47.9
+      L 34.91 51.12
+      L 30.59 47.9
       Z
     " fill="currentColor" opacity="0.65"/>
 
-    <ellipse cx="24.74" cy="45.28" rx="3.51" ry="2.6" fill="rgba(0,0,0,0.22)"/>
-    <ellipse cx="38.26" cy="45.55" rx="3.86" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+    <ellipse cx="25.59" cy="46.13" rx="3.13" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.65" cy="46.43" rx="3.44" ry="2.7" fill="rgba(0,0,0,0.2)"/>
 
-    <ellipse cx="32.64" cy="34.54" rx="17.56" ry="13.76" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
-    <ellipse cx="35.8" cy="30.69" rx="8.43" ry="4.68" fill="rgba(255,255,255,0.18)"/>
-    <ellipse cx="32.64" cy="34.54" rx="17.81" ry="14.01" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+    <ellipse cx="32.64" cy="34.54" rx="15.66" ry="14.86" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
+    <ellipse cx="35.46" cy="30.38" rx="7.51" ry="5.05" fill="rgba(255,255,255,0.18)"/>
+    <ellipse cx="32.64" cy="34.54" rx="15.91" ry="15.11" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
 
 
-      <circle cx="28.07" cy="32.34" r="1.7" fill="rgba(255,255,255,0.24)"/>
-      <circle cx="33.69" cy="37.02" r="1.45" fill="rgba(0,0,0,0.13)"/>
-      <circle cx="31.23" cy="40.6" r="1.2" fill="rgba(255,255,255,0.18)"/>
+      <circle cx="28.57" cy="32.17" r="1.7" fill="rgba(255,255,255,0.24)"/>
+      <circle cx="33.58" cy="37.22" r="1.45" fill="rgba(0,0,0,0.13)"/>
+      <circle cx="31.39" cy="41.08" r="1.2" fill="rgba(255,255,255,0.18)"/>
 
 
 
 
 
     <path d="
-      M 37.21 38.12
-      Q 40.19 40.05
-        43.18 37.3
+      M 36.71 38.41
+      Q 39.37 40.49
+        42.03 37.52
     " stroke="rgba(0,0,0,0.35)" stroke-width="0.8" fill="none" />
 
 
-      <ellipse cx="38.79" cy="39.77" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.2"/>
-      <ellipse cx="28.42" cy="40.05" rx="2.8" ry="2" fill="#ff9faa" opacity="0.18"/>
+      <ellipse cx="38.12" cy="40.19" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.2"/>
+      <ellipse cx="28.88" cy="40.49" rx="2.8" ry="2" fill="#ff9faa" opacity="0.18"/>
 
 
-    <ellipse cx="40.19" cy="30.28" rx="4.9" ry="4.3" fill="white" />
-    <ellipse cx="41.12" cy="30.12" rx="2.2" ry="2.1" fill="#111" />
-    <circle cx="40.32" cy="29.22" r="0.85" fill="white" opacity="0.9" />
+    <ellipse cx="39.37" cy="29.94" rx="4.9" ry="4.3" fill="white" />
+    <ellipse cx="40.3" cy="29.78" rx="2.2" ry="2.1" fill="#111" />
+    <circle cx="39.5" cy="28.88" r="0.85" fill="white" opacity="0.9" />
 
 
 
@@ -310,56 +310,56 @@
 
 
     <path d="
-      M 16.91 34.22
-      Q 11.78 29.97
-        5.51 34.53
-      Q 12.12 38.47
-        16.91 34.22
+      M 18.78 34.22
+      Q 14.73 30.37
+        9.78 34.53
+      Q 15 38.07
+        18.78 34.22
       Z
     " fill="currentColor" opacity="0.9"/>
     <path d="
-      M 29.19 21.67
-      L 25.69 15.37
-      L 36.19 20.07
+      M 29.57 20.56
+      L 27.07 10.76
+      L 34.57 18.26
       Z
     " fill="currentColor" opacity="0.78"/>
     <path d="
-      M 28.19 46.08
-      L 34.59 52.13
-      L 30.27 46.08
+      M 28.57 47.19
+      L 34.97 51.44
+      L 30.65 47.19
       Z
     " fill="currentColor" opacity="0.65"/>
 
-    <ellipse cx="24.89" cy="44.51" rx="3.45" ry="2.6" fill="rgba(0,0,0,0.22)"/>
-    <ellipse cx="38.15" cy="44.79" rx="3.79" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+    <ellipse cx="25.73" cy="45.37" rx="3.07" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.56" cy="45.67" rx="3.38" ry="2.7" fill="rgba(0,0,0,0.2)"/>
 
-    <ellipse cx="32.64" cy="33.62" rx="17.23" ry="13.95" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
-    <ellipse cx="35.74" cy="29.71" rx="8.27" ry="4.74" fill="rgba(255,255,255,0.18)"/>
-    <ellipse cx="32.64" cy="33.62" rx="17.48" ry="14.2" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+    <ellipse cx="32.64" cy="33.62" rx="15.36" ry="15.07" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
+    <ellipse cx="35.4" cy="29.4" rx="7.37" ry="5.12" fill="rgba(255,255,255,0.18)"/>
+    <ellipse cx="32.64" cy="33.62" rx="15.61" ry="15.32" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
 
 
-      <circle cx="28.16" cy="31.39" r="1.7" fill="rgba(255,255,255,0.24)"/>
-      <circle cx="33.67" cy="36.13" r="1.45" fill="rgba(0,0,0,0.13)"/>
-      <circle cx="31.26" cy="39.76" r="1.2" fill="rgba(255,255,255,0.18)"/>
+      <circle cx="28.65" cy="31.21" r="1.7" fill="rgba(255,255,255,0.24)"/>
+      <circle cx="33.56" cy="36.33" r="1.45" fill="rgba(0,0,0,0.13)"/>
+      <circle cx="31.41" cy="40.25" r="1.2" fill="rgba(255,255,255,0.18)"/>
 
 
 
 
 
     <path d="
-      M 37.12 37.25
-      Q 40.05 39.2
-        42.98 36.41
+      M 36.63 37.54
+      Q 39.25 39.65
+        41.86 36.64
     " stroke="rgba(0,0,0,0.35)" stroke-width="0.8" fill="none" />
 
 
-      <ellipse cx="38.67" cy="38.92" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.24"/>
-      <ellipse cx="28.5" cy="39.2" rx="2.8" ry="2" fill="#ff9faa" opacity="0.22"/>
+      <ellipse cx="38.02" cy="39.35" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.24"/>
+      <ellipse cx="28.95" cy="39.65" rx="2.8" ry="2" fill="#ff9faa" opacity="0.22"/>
 
 
-    <ellipse cx="40.05" cy="29.3" rx="4.9" ry="3.83" fill="white" />
-    <ellipse cx="40.74" cy="29.11" rx="2.2" ry="1.9" fill="#111" />
-    <circle cx="39.94" cy="28.21" r="0.85" fill="white" opacity="0.9" />
+    <ellipse cx="39.25" cy="28.95" rx="4.9" ry="3.83" fill="white" />
+    <ellipse cx="39.94" cy="28.76" rx="2.2" ry="1.9" fill="#111" />
+    <circle cx="39.14" cy="27.86" r="0.85" fill="white" opacity="0.9" />
 
 
 
@@ -371,56 +371,56 @@
 
 
     <path d="
-      M 17.11 33.41
-      Q 11.98 27.21
-        5.71 31.03
-      Q 12.32 39.62
-        17.11 33.41
+      M 18.95 33.41
+      Q 14.9 27.61
+        9.95 31.03
+      Q 15.17 39.22
+        18.95 33.41
       Z
     " fill="currentColor" opacity="0.9"/>
     <path d="
-      M 29.23 20.75
-      L 25.73 13.54
-      L 36.23 19.15
+      M 29.6 19.63
+      L 27.1 8.92
+      L 34.6 17.33
       Z
     " fill="currentColor" opacity="0.78"/>
     <path d="
-      M 28.23 45.38
-      L 34.63 50.98
-      L 30.31 45.38
+      M 28.6 46.5
+      L 35 50.3
+      L 30.68 46.5
       Z
     " fill="currentColor" opacity="0.65"/>
 
-    <ellipse cx="24.97" cy="43.79" rx="3.41" ry="2.6" fill="rgba(0,0,0,0.22)"/>
-    <ellipse cx="38.09" cy="44.07" rx="3.75" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+    <ellipse cx="25.81" cy="44.66" rx="3.04" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.5" cy="44.97" rx="3.34" ry="2.7" fill="rgba(0,0,0,0.2)"/>
 
-    <ellipse cx="32.64" cy="32.81" rx="17.03" ry="14.07" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
-    <ellipse cx="35.71" cy="28.88" rx="8.18" ry="4.78" fill="rgba(255,255,255,0.18)"/>
-    <ellipse cx="32.64" cy="32.81" rx="17.28" ry="14.32" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+    <ellipse cx="32.64" cy="32.81" rx="15.19" ry="15.19" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
+    <ellipse cx="35.37" cy="28.56" rx="7.29" ry="5.16" fill="rgba(255,255,255,0.18)"/>
+    <ellipse cx="32.64" cy="32.81" rx="15.44" ry="15.44" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
 
 
-      <circle cx="28.21" cy="30.56" r="1.7" fill="rgba(255,255,255,0.24)"/>
-      <circle cx="33.66" cy="35.35" r="1.45" fill="rgba(0,0,0,0.13)"/>
-      <circle cx="31.28" cy="39" r="1.2" fill="rgba(255,255,255,0.18)"/>
+      <circle cx="28.69" cy="30.38" r="1.7" fill="rgba(255,255,255,0.24)"/>
+      <circle cx="33.55" cy="35.55" r="1.45" fill="rgba(0,0,0,0.13)"/>
+      <circle cx="31.43" cy="39.5" r="1.2" fill="rgba(255,255,255,0.18)"/>
 
 
 
 
 
     <path d="
-      M 37.07 36.47
-      Q 39.96 38.44
-        42.86 35.63
+      M 36.59 36.76
+      Q 39.17 38.89
+        41.75 35.85
     " stroke="rgba(0,0,0,0.35)" stroke-width="0.8" fill="none" />
 
 
-      <ellipse cx="38.6" cy="38.16" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.31"/>
-      <ellipse cx="28.55" cy="38.44" rx="2.8" ry="2" fill="#ff9faa" opacity="0.28"/>
+      <ellipse cx="37.95" cy="38.59" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.31"/>
+      <ellipse cx="29" cy="38.89" rx="2.8" ry="2" fill="#ff9faa" opacity="0.28"/>
 
 
-    <ellipse cx="39.96" cy="28.45" rx="4.9" ry="4.3" fill="white" />
-    <ellipse cx="40.56" cy="28.4" rx="2.2" ry="2.1" fill="#111" />
-    <circle cx="39.76" cy="27.5" r="0.85" fill="white" opacity="0.9" />
+    <ellipse cx="39.17" cy="28.11" rx="4.9" ry="4.3" fill="white" />
+    <ellipse cx="39.77" cy="28.06" rx="2.2" ry="2.1" fill="#111" />
+    <circle cx="38.97" cy="27.16" r="0.85" fill="white" opacity="0.9" />
 
 
 
@@ -432,56 +432,56 @@
 
 
     <path d="
-      M 17.07 33.03
-      Q 11.94 26.6
-        5.67 30.97
-      Q 12.28 39.46
-        17.07 33.03
+      M 18.92 33.03
+      Q 14.87 27
+        9.92 30.97
+      Q 15.14 39.06
+        18.92 33.03
       Z
     " fill="currentColor" opacity="0.9"/>
     <path d="
-      M 29.23 20.38
-      L 25.73 10.88
-      L 36.23 18.78
+      M 29.6 19.26
+      L 27.1 6.26
+      L 34.6 16.96
       Z
     " fill="currentColor" opacity="0.78"/>
     <path d="
-      M 28.23 44.98
-      L 34.63 49.42
-      L 30.31 44.98
+      M 28.6 46.1
+      L 35 48.74
+      L 30.68 46.1
       Z
     " fill="currentColor" opacity="0.65"/>
 
-    <ellipse cx="24.96" cy="43.39" rx="3.41" ry="2.6" fill="rgba(0,0,0,0.22)"/>
-    <ellipse cx="38.1" cy="43.67" rx="3.76" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+    <ellipse cx="25.79" cy="44.26" rx="3.04" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.51" cy="44.56" rx="3.35" ry="2.7" fill="rgba(0,0,0,0.2)"/>
 
-    <ellipse cx="32.64" cy="32.43" rx="17.07" ry="14.05" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
-    <ellipse cx="35.71" cy="28.5" rx="8.19" ry="4.78" fill="rgba(255,255,255,0.18)"/>
-    <ellipse cx="32.64" cy="32.43" rx="17.32" ry="14.3" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+    <ellipse cx="32.64" cy="32.43" rx="15.22" ry="15.17" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
+    <ellipse cx="35.38" cy="28.18" rx="7.3" ry="5.16" fill="rgba(255,255,255,0.18)"/>
+    <ellipse cx="32.64" cy="32.43" rx="15.47" ry="15.42" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
 
 
-      <circle cx="28.2" cy="30.18" r="1.7" fill="rgba(255,255,255,0.24)"/>
-      <circle cx="33.66" cy="34.96" r="1.45" fill="rgba(0,0,0,0.13)"/>
-      <circle cx="31.27" cy="38.61" r="1.2" fill="rgba(255,255,255,0.18)"/>
+      <circle cx="28.68" cy="30" r="1.7" fill="rgba(255,255,255,0.24)"/>
+      <circle cx="33.55" cy="35.16" r="1.45" fill="rgba(0,0,0,0.13)"/>
+      <circle cx="31.42" cy="39.1" r="1.2" fill="rgba(255,255,255,0.18)"/>
 
 
 
 
 
     <path d="
-      M 37.08 36.08
-      Q 39.98 38.05
-        42.88 35.24
+      M 36.6 36.37
+      Q 39.18 38.5
+        41.77 35.46
     " stroke="rgba(0,0,0,0.35)" stroke-width="0.8" fill="none" />
 
 
-      <ellipse cx="38.61" cy="37.77" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.31"/>
-      <ellipse cx="28.54" cy="38.05" rx="2.8" ry="2" fill="#ff9faa" opacity="0.28"/>
+      <ellipse cx="37.97" cy="38.19" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.31"/>
+      <ellipse cx="28.99" cy="38.5" rx="2.8" ry="2" fill="#ff9faa" opacity="0.28"/>
 
 
-    <ellipse cx="39.98" cy="28.08" rx="4.9" ry="4.3" fill="white" />
-    <ellipse cx="40.68" cy="28.21" rx="2.2" ry="2.1" fill="#111" />
-    <circle cx="39.88" cy="27.31" r="0.85" fill="white" opacity="0.9" />
+    <ellipse cx="39.18" cy="27.73" rx="4.9" ry="4.3" fill="white" />
+    <ellipse cx="39.88" cy="27.87" rx="2.2" ry="2.1" fill="#111" />
+    <circle cx="39.08" cy="26.97" r="0.85" fill="white" opacity="0.9" />
 
 
 
@@ -493,56 +493,56 @@
 
 
     <path d="
-      M 16.82 33.21
-      Q 11.69 28.54
-        5.42 34.08
-      Q 12.03 37.88
-        16.82 33.21
+      M 18.7 33.21
+      Q 14.65 28.94
+        9.7 34.08
+      Q 14.92 37.48
+        18.7 33.21
       Z
     " fill="currentColor" opacity="0.9"/>
     <path d="
-      M 29.18 20.71
-      L 25.68 11.54
-      L 36.18 19.11
+      M 29.55 19.6
+      L 27.05 6.94
+      L 34.55 17.3
       Z
     " fill="currentColor" opacity="0.78"/>
     <path d="
-      M 28.18 45.02
-      L 34.58 49.63
-      L 30.26 45.02
+      M 28.55 46.13
+      L 34.95 48.94
+      L 30.63 46.13
       Z
     " fill="currentColor" opacity="0.65"/>
 
-    <ellipse cx="24.85" cy="43.46" rx="3.46" ry="2.6" fill="rgba(0,0,0,0.22)"/>
-    <ellipse cx="38.18" cy="43.74" rx="3.81" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+    <ellipse cx="25.69" cy="44.32" rx="3.09" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.58" cy="44.62" rx="3.4" ry="2.7" fill="rgba(0,0,0,0.2)"/>
 
-    <ellipse cx="32.64" cy="32.61" rx="17.32" ry="13.9" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
-    <ellipse cx="35.76" cy="28.72" rx="8.31" ry="4.73" fill="rgba(255,255,255,0.18)"/>
-    <ellipse cx="32.64" cy="32.61" rx="17.57" ry="14.15" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+    <ellipse cx="32.64" cy="32.61" rx="15.44" ry="15.01" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
+    <ellipse cx="35.42" cy="28.41" rx="7.41" ry="5.1" fill="rgba(255,255,255,0.18)"/>
+    <ellipse cx="32.64" cy="32.61" rx="15.69" ry="15.26" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
 
 
-      <circle cx="28.14" cy="30.39" r="1.7" fill="rgba(255,255,255,0.24)"/>
-      <circle cx="33.68" cy="35.12" r="1.45" fill="rgba(0,0,0,0.13)"/>
-      <circle cx="31.25" cy="38.73" r="1.2" fill="rgba(255,255,255,0.18)"/>
+      <circle cx="28.63" cy="30.21" r="1.7" fill="rgba(255,255,255,0.24)"/>
+      <circle cx="33.57" cy="35.32" r="1.45" fill="rgba(0,0,0,0.13)"/>
+      <circle cx="31.4" cy="39.22" r="1.2" fill="rgba(255,255,255,0.18)"/>
 
 
 
 
 
     <path d="
-      M 37.14 36.23
-      Q 40.09 38.18
-        43.03 35.39
+      M 36.65 36.52
+      Q 39.28 38.62
+        41.9 35.62
     " stroke="rgba(0,0,0,0.35)" stroke-width="0.8" fill="none" />
 
 
-      <ellipse cx="38.7" cy="37.9" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.25"/>
-      <ellipse cx="28.48" cy="38.18" rx="2.8" ry="2" fill="#ff9faa" opacity="0.23"/>
+      <ellipse cx="38.04" cy="38.32" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.25"/>
+      <ellipse cx="28.93" cy="38.62" rx="2.8" ry="2" fill="#ff9faa" opacity="0.23"/>
 
 
-    <ellipse cx="40.09" cy="28.3" rx="4.9" ry="3.69" fill="white" />
-    <ellipse cx="41.02" cy="28.5" rx="2.2" ry="1.84" fill="#111" />
-    <circle cx="40.22" cy="27.6" r="0.85" fill="white" opacity="0.9" />
+    <ellipse cx="39.28" cy="27.96" rx="4.9" ry="3.69" fill="white" />
+    <ellipse cx="40.21" cy="28.16" rx="2.2" ry="1.84" fill="#111" />
+    <circle cx="39.41" cy="27.26" r="0.85" fill="white" opacity="0.9" />
 
 
 
@@ -554,56 +554,56 @@
 
 
     <path d="
-      M 16.48 33.9
-      Q 11.35 30.79
-        5.08 36.59
-      Q 11.69 37
-        16.48 33.9
+      M 18.4 33.9
+      Q 14.35 31.19
+        9.4 36.59
+      Q 14.62 36.6
+        18.4 33.9
       Z
     " fill="currentColor" opacity="0.9"/>
     <path d="
-      M 29.11 21.59
-      L 25.61 14.8
-      L 36.11 19.99
+      M 29.49 20.5
+      L 26.99 10.21
+      L 34.49 18.2
       Z
     " fill="currentColor" opacity="0.78"/>
     <path d="
-      M 28.11 45.5
-      L 34.51 51.31
-      L 30.19 45.5
+      M 28.49 46.6
+      L 34.89 50.6
+      L 30.57 46.6
       Z
     " fill="currentColor" opacity="0.65"/>
 
-    <ellipse cx="24.69" cy="43.99" rx="3.53" ry="2.6" fill="rgba(0,0,0,0.22)"/>
-    <ellipse cx="38.29" cy="44.26" rx="3.89" ry="2.7" fill="rgba(0,0,0,0.2)"/>
+    <ellipse cx="25.56" cy="44.84" rx="3.15" ry="2.6" fill="rgba(0,0,0,0.22)"/>
+    <ellipse cx="37.68" cy="45.14" rx="3.46" ry="2.7" fill="rgba(0,0,0,0.2)"/>
 
-    <ellipse cx="32.64" cy="33.3" rx="17.66" ry="13.71" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
-    <ellipse cx="35.82" cy="29.46" rx="8.48" ry="4.66" fill="rgba(255,255,255,0.18)"/>
-    <ellipse cx="32.64" cy="33.3" rx="17.91" ry="13.96" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
+    <ellipse cx="32.64" cy="33.3" rx="15.74" ry="14.8" fill="currentColor" filter="url(#creature_herbivore-soft-shadow)"/>
+    <ellipse cx="35.47" cy="29.15" rx="7.56" ry="5.03" fill="rgba(255,255,255,0.18)"/>
+    <ellipse cx="32.64" cy="33.3" rx="15.99" ry="15.05" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1.1"/>
 
 
-      <circle cx="28.05" cy="31.1" r="1.7" fill="rgba(255,255,255,0.24)"/>
-      <circle cx="33.7" cy="35.76" r="1.45" fill="rgba(0,0,0,0.13)"/>
-      <circle cx="31.23" cy="39.33" r="1.2" fill="rgba(255,255,255,0.18)"/>
+      <circle cx="28.55" cy="30.93" r="1.7" fill="rgba(255,255,255,0.24)"/>
+      <circle cx="33.58" cy="35.96" r="1.45" fill="rgba(0,0,0,0.13)"/>
+      <circle cx="31.38" cy="39.81" r="1.2" fill="rgba(255,255,255,0.18)"/>
 
 
 
 
 
     <path d="
-      M 37.23 36.86
-      Q 40.23 38.78
-        43.24 36.04
+      M 36.73 37.15
+      Q 39.41 39.22
+        42.09 36.26
     " stroke="rgba(0,0,0,0.35)" stroke-width="0.8" fill="none" />
 
 
-      <ellipse cx="38.82" cy="38.51" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.2"/>
-      <ellipse cx="28.4" cy="38.78" rx="2.8" ry="2" fill="#ff9faa" opacity="0.18"/>
+      <ellipse cx="38.15" cy="38.92" rx="3.2" ry="2.2" fill="#ff9faa" opacity="0.2"/>
+      <ellipse cx="28.86" cy="39.22" rx="2.8" ry="2" fill="#ff9faa" opacity="0.18"/>
 
 
-    <ellipse cx="40.23" cy="29.05" rx="4.9" ry="4.3" fill="white" />
-    <ellipse cx="41.41" cy="29.12" rx="2.2" ry="2.1" fill="#111" />
-    <circle cx="40.61" cy="28.22" r="0.85" fill="white" opacity="0.9" />
+    <ellipse cx="39.41" cy="28.71" rx="4.9" ry="4.3" fill="white" />
+    <ellipse cx="40.59" cy="28.78" rx="2.2" ry="2.1" fill="#111" />
+    <circle cx="39.79" cy="27.88" r="0.85" fill="white" opacity="0.9" />
 
 
 

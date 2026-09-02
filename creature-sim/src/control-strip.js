@@ -6,6 +6,24 @@ import { gameState } from './game-state.js';
 import { eventSystem } from './event-system.js';
 import { batteryManager } from './battery-manager.js';
 
+const SPAWN_GLYPHS = {
+  herbivore: 'i-herbivore',
+  omnivore: 'i-omnivore',
+  predator: 'i-predator',
+  aquatic: 'i-aquatic',
+  flying: 'i-flying',
+  burrowing: 'i-burrowing'
+};
+
+/**
+ * Point a control's drawn glyph at a different symbol in the icon sprite.
+ * Replaces the old `textContent = 'emoji'` swaps.
+ */
+function setControlGlyph(button, symbolId) {
+  const use = button?.querySelector('.ctrl-glyph use');
+  if (use) use.setAttribute('href', `#${symbolId}`);
+}
+
 // Speed multipliers for cycling
 const SPEED_OPTIONS = [0.5, 1, 2, 4];
 const SPEED_LABELS = ['0.5×', '1×', '2×', '4×'];
@@ -414,16 +432,15 @@ export class ControlStripController {
 
   updatePauseButton() {
     const isPaused = gameState.paused;
-    const icon = isPaused ? '▶️' : '⏸️';
 
     if (this.ctrlPause) {
-      this.ctrlPause.querySelector('.ctrl-icon').textContent = icon;
+      setControlGlyph(this.ctrlPause, isPaused ? 'i-play' : 'i-pause');
       this.ctrlPause.classList.toggle('active', isPaused);
       this.ctrlPause.setAttribute('aria-pressed', isPaused ? 'true' : 'false');
       this.ctrlPause.setAttribute('aria-label', isPaused ? 'Resume simulation' : 'Pause simulation');
     }
     if (this.watchPause) {
-      this.watchPause.textContent = icon;
+      setControlGlyph(this.watchPause, isPaused ? 'i-play' : 'i-pause');
       this.watchPause.classList.toggle('active', isPaused);
       this.watchPause.setAttribute('aria-pressed', isPaused ? 'true' : 'false');
       this.watchPause.setAttribute('aria-label', isPaused ? 'Resume simulation' : 'Pause simulation');
@@ -541,16 +558,8 @@ export class ControlStripController {
     });
 
     // Update spawn button icon
-    const icons = {
-      herbivore: '🦌',
-      omnivore: '🦡',
-      predator: '🦁',
-      aquatic: '🐠',
-      flying: '🦅',
-      burrowing: '🦔'
-    };
     if (this.ctrlSpawn) {
-      this.ctrlSpawn.querySelector('.ctrl-icon').textContent = icons[this.currentSpawnType] || '🦌';
+      setControlGlyph(this.ctrlSpawn, SPAWN_GLYPHS[this.currentSpawnType] || SPAWN_GLYPHS.herbivore);
     }
   }
 

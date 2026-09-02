@@ -1,4 +1,4 @@
-import { assetLoader } from './asset-loader.js?v=20260423-assets1';
+import { assetLoader } from './asset-loader.js';
 import { colorCache } from './color-cache.js';
 import { clamp } from './utils.js';
 

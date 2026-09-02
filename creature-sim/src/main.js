@@ -1,4 +1,4 @@
-import { initializeApp } from './app-bootstrap.js?v=20260802-ecosystem-polish1';
+import { initializeApp } from './app-bootstrap.js';
 
 // Only register the service worker for real production builds. Vite's dev
 // server already serves fresh files with its own HMR; a cache-first SW on
