@@ -59,7 +59,16 @@ export class RendererPerformanceMonitor {
     }
 
     this.renderer.enableTrails = preset.trailsEnabled;
-    this.renderer.enableClustering = preset.clusteringEnabled;
+    // Genetic clustering is a *visualization* mode, not a quality level: it
+    // replaces every creature's own hue with one of six k-means cluster
+    // colours. Three of the four presets enabled it, so it was on by default
+    // — and at session start, when a freshly seeded population has nearly
+    // identical genes, k-means collapses them into one cluster and the entire
+    // world renders hue 0. That is why every creature was red.
+    //
+    // The k-means pass does cost CPU, so a preset may still switch it off for
+    // performance; it may never switch it on. Only the player does that.
+    this.renderer.enableClustering = this.renderer.enableClustering && preset.clusteringEnabled;
     this.renderer.enableMiniMap = preset.miniMapEnabled;
     this.renderer.enableNameLabels = preset.nameLabelsEnabled;
     this.renderer.enableTraitVisualization = preset.traitVisualizationEnabled;

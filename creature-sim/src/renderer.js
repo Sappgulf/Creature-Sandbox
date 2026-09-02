@@ -82,6 +82,11 @@ export class Renderer {
     this.enableNameLabels = true;
     this.enableTraitVisualization = true;
     this.enableCreatureZones = false; // Advanced overlay; keep gameplay assets readable by default.
+    // Off by default so creatures wear their own genetic hue. Per-creature
+    // colour is the population's richest visual signal — it is how a player
+    // tracks a lineage across generations — and the cluster overlay discards
+    // it. Players opt in via the Clustering toggle or the keyboard shortcut.
+    this.enableClustering = RendererConfig.FEATURES.CLUSTERING;
     this.hoveredCreatureId = null;
     this.enableNests = false;
 

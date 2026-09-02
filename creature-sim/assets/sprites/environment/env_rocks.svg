@@ -9,8 +9,8 @@
                L 74 55.88
                L 79 70.88
                Q 55 80.88 21 69.88 Z"
-            fill="#68737a"/>
-      <path d="M 34 53.88 L 52 43.88 L 63 56.88 L 44 60.88 Z" fill="rgba(255,255,255,0.22)"/>
+            fill="currentColor" opacity="0.92"/>
+      <path d="M 34 53.88 L 52 43.88 L 63 56.88 L 44 60.88 Z" fill="rgba(255,255,255,0.12)"/>
       <path d="M 24 70.88 Q 52 76.88 76 68.88" stroke="rgba(0,0,0,0.18)" stroke-width="2" fill="none"/>
     </g><g transform="translate(96 0)">
 
@@ -23,8 +23,8 @@
                L 74 55.88
                L 79 70.88
                Q 55 80.88 21 69.88 Z"
-            fill="#7e8588"/>
-      <path d="M 34 53.88 L 52 43.88 L 63 56.88 L 44 60.88 Z" fill="rgba(255,255,255,0.22)"/>
+            fill="currentColor" opacity="0.86"/>
+      <path d="M 34 53.88 L 52 43.88 L 63 56.88 L 44 60.88 Z" fill="rgba(255,255,255,0.12)"/>
       <path d="M 24 70.88 Q 52 76.88 76 68.88" stroke="rgba(0,0,0,0.18)" stroke-width="2" fill="none"/>
     </g><g transform="translate(192 0)">
 
@@ -37,8 +37,8 @@
                L 74 55.88
                L 79 70.88
                Q 55 80.88 21 69.88 Z"
-            fill="#59666d"/>
-      <path d="M 34 53.88 L 52 43.88 L 63 56.88 L 44 60.88 Z" fill="rgba(255,255,255,0.22)"/>
+            fill="currentColor" opacity="0.95"/>
+      <path d="M 34 53.88 L 52 43.88 L 63 56.88 L 44 60.88 Z" fill="rgba(255,255,255,0.12)"/>
       <path d="M 24 70.88 Q 52 76.88 76 68.88" stroke="rgba(0,0,0,0.18)" stroke-width="2" fill="none"/>
     </g><g transform="translate(288 0)">
 
@@ -51,8 +51,8 @@
                L 74 55.88
                L 79 70.88
                Q 55 80.88 21 69.88 Z"
-            fill="#8b8277"/>
-      <path d="M 34 53.88 L 52 43.88 L 63 56.88 L 44 60.88 Z" fill="rgba(255,255,255,0.22)"/>
+            fill="currentColor" opacity="0.8"/>
+      <path d="M 34 53.88 L 52 43.88 L 63 56.88 L 44 60.88 Z" fill="rgba(255,255,255,0.12)"/>
       <path d="M 24 70.88 Q 52 76.88 76 68.88" stroke="rgba(0,0,0,0.18)" stroke-width="2" fill="none"/>
     </g><g transform="translate(384 0)">
 
@@ -65,8 +65,8 @@
                L 74 55.88
                L 79 70.88
                Q 55 80.88 21 69.88 Z"
-            fill="#596d57"/>
-      <path d="M 34 53.88 L 52 43.88 L 63 56.88 L 44 60.88 Z" fill="rgba(255,255,255,0.22)"/>
+            fill="currentColor" opacity="0.88"/>
+      <path d="M 34 53.88 L 52 43.88 L 63 56.88 L 44 60.88 Z" fill="rgba(255,255,255,0.12)"/>
       <path d="M 24 70.88 Q 52 76.88 76 68.88" stroke="rgba(0,0,0,0.18)" stroke-width="2" fill="none"/>
     </g><g transform="translate(480 0)">
 
@@ -79,8 +79,8 @@
                L 74 55.88
                L 79 70.88
                Q 55 80.88 21 69.88 Z"
-            fill="#7b7ee5"/>
-      <path d="M 34 53.88 L 52 43.88 L 63 56.88 L 44 60.88 Z" fill="rgba(180,230,255,0.55)"/>
+            fill="currentColor" opacity="0.9"/>
+      <path d="M 34 53.88 L 52 43.88 L 63 56.88 L 44 60.88 Z" fill="rgba(214,240,255,0.3)"/>
       <path d="M 24 70.88 Q 52 76.88 76 68.88" stroke="rgba(0,0,0,0.18)" stroke-width="2" fill="none"/>
     </g><g transform="translate(576 0)">
 
@@ -93,8 +93,8 @@
                L 74 55.88
                L 79 70.88
                Q 55 80.88 21 69.88 Z"
-            fill="#775a43"/>
-      <path d="M 34 53.88 L 52 43.88 L 63 56.88 L 44 60.88 Z" fill="rgba(255,255,255,0.22)"/>
+            fill="currentColor" opacity="0.83"/>
+      <path d="M 34 53.88 L 52 43.88 L 63 56.88 L 44 60.88 Z" fill="rgba(255,255,255,0.12)"/>
       <path d="M 24 70.88 Q 52 76.88 76 68.88" stroke="rgba(0,0,0,0.18)" stroke-width="2" fill="none"/>
     </g><g transform="translate(672 0)">
 
@@ -107,7 +107,7 @@
                L 74 55.88
                L 79 70.88
                Q 55 80.88 21 69.88 Z"
-            fill="#6c6d7b"/>
-      <path d="M 34 53.88 L 52 43.88 L 63 56.88 L 44 60.88 Z" fill="rgba(255,255,255,0.22)"/>
+            fill="currentColor" opacity="0.94"/>
+      <path d="M 34 53.88 L 52 43.88 L 63 56.88 L 44 60.88 Z" fill="rgba(255,255,255,0.12)"/>
       <path d="M 24 70.88 Q 52 76.88 76 68.88" stroke="rgba(0,0,0,0.18)" stroke-width="2" fill="none"/>
     </g></svg>

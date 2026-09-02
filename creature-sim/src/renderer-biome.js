@@ -646,13 +646,11 @@ export function drawDecorationFromSprite(renderer, ctx, dec, spriteInfo, assetKe
   const isGroundCover = dec.type === 'grass' || dec.type === 'flower' || dec.type === 'rock';
   ctx.globalAlpha = (isGroundCover ? 0.46 : 0.78) * mod.alphaMult;
 
-  // The rock sheet is authored with fixed light-grey fills rather than
-  // `currentColor`, so the per-decoration hue never reaches it and every rock
-  // rendered as a pale triangle scattered across a dark meadow like litter.
-  // Sink them into the ground plane until the sheet itself is redrawn.
+  // Rocks now take the per-decoration hue (browns) from the sheet's
+  // `currentColor` fills, but they are still scenery: pull the value down so
+  // they read as stone sitting in the ground rather than sitting on top of it.
   if (dec.type === 'rock') {
-    mod.lightnessMult *= 0.62;
-    mod.saturationMult *= 0.7;
+    mod.lightnessMult *= 0.78;
   }
 
   if (mod.hueShift !== 0 || mod.saturationMult !== 1 || mod.lightnessMult !== 1) {

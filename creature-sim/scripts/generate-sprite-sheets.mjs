@@ -10,7 +10,7 @@ const spritesRoot = path.join(repoRoot, 'creature-sim', 'assets', 'sprites');
 
 const TAU = Math.PI * 2;
 
-const toFixed2 = (value) => Number(value.toFixed(2));
+const toFixed2 = value => Number(value.toFixed(2));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
 function ensureDir(dirPath) {
@@ -64,9 +64,10 @@ function renderSheet({
     '</defs>',
     frames,
     '</svg>'
-  ].join('')
+  ]
+    .join('')
     .split('\n')
-    .map((line) => line.trimEnd())
+    .map(line => line.trimEnd())
     .join('\n');
 
   const fileStem = outputName || key;
@@ -128,7 +129,10 @@ function creatureFrame(profile, ctx) {
   const pupilY = eyeY + Math.sin(phase * 1.6) * 0.2;
 
   const cheekOpacity = profile.cheeks ? toFixed2(0.26 + Math.sin(phase * 1.9) * 0.06) : 0;
-  const feet = profile.feet === false ? '' : `
+  const feet =
+    profile.feet === false
+      ? ''
+      : `
     <ellipse cx="${toFixed2(cx - rx * 0.45)}" cy="${toFixed2(cy + ry * 0.78)}" rx="${toFixed2(rx * 0.2)}" ry="2.6" fill="rgba(0,0,0,0.22)"/>
     <ellipse cx="${toFixed2(cx + rx * 0.32)}" cy="${toFixed2(cy + ry * 0.8)}" rx="${toFixed2(rx * 0.22)}" ry="2.7" fill="rgba(0,0,0,0.2)"/>
   `;
@@ -260,9 +264,10 @@ function creatureFrame(profile, ctx) {
     ? `<path d="M ${toFixed2(cx + rx * 0.2)} ${toFixed2(cy + 1)} Q ${toFixed2(cx + rx * 0.62)} ${toFixed2(cy + 2 + Math.sin(phase * 1.9) * 0.6)} ${toFixed2(cx + rx * 0.94)} ${toFixed2(cy + 1.2)}" stroke="rgba(255,255,255,0.28)" stroke-width="0.8" fill="none"/>`
     : '';
 
-  const sparkle = profile.sparkle && i % 4 === 0
-    ? `<path d="M ${toFixed2(cx + rx * 0.65)} ${toFixed2(cy - ry * 0.8)} l 0 -2.4 M ${toFixed2(cx + rx * 0.65)} ${toFixed2(cy - ry * 0.8)} l 0 2.4 M ${toFixed2(cx + rx * 0.65)} ${toFixed2(cy - ry * 0.8)} l -2 0 M ${toFixed2(cx + rx * 0.65)} ${toFixed2(cy - ry * 0.8)} l 2 0" stroke="rgba(255,255,255,0.8)" stroke-width="0.9" stroke-linecap="round"/>`
-    : '';
+  const sparkle =
+    profile.sparkle && i % 4 === 0
+      ? `<path d="M ${toFixed2(cx + rx * 0.65)} ${toFixed2(cy - ry * 0.8)} l 0 -2.4 M ${toFixed2(cx + rx * 0.65)} ${toFixed2(cy - ry * 0.8)} l 0 2.4 M ${toFixed2(cx + rx * 0.65)} ${toFixed2(cy - ry * 0.8)} l -2 0 M ${toFixed2(cx + rx * 0.65)} ${toFixed2(cy - ry * 0.8)} l 2 0" stroke="rgba(255,255,255,0.8)" stroke-width="0.9" stroke-linecap="round"/>`
+      : '';
 
   return `
     ${frameBackdrop(w, h, 0.76, profile.shadowRx ?? 18, profile.shadowRy ?? 4.1)}
@@ -649,8 +654,13 @@ function environmentFrame(type, ctx) {
   }
 
   if (type === 'rocks') {
-    const hue = ['#68737a', '#7e8588', '#59666d', '#8b8277', '#596d57', '#7b7ee5', '#775a43', '#6c6d7b'][i % 8];
-    const shine = i === 5 ? 'rgba(180,230,255,0.55)' : 'rgba(255,255,255,0.22)';
+    // `currentColor` so the per-decoration hue actually reaches the sheet. The
+    // old fixed palette — pale greys plus a blue-purple — ignored the hue the
+    // world assigns each rock and scattered light triangles across a dark
+    // meadow like litter. Opacity carries the variation between frames
+    // instead, so a rock reads as stone in whatever biome tint it lands in.
+    const bodyOpacity = [0.92, 0.86, 0.95, 0.8, 0.88, 0.9, 0.83, 0.94][i % 8];
+    const shine = i === 5 ? 'rgba(214,240,255,0.3)' : 'rgba(255,255,255,0.12)';
     return `
       ${frameBackdrop(w, h, 0.82, 22, 5)}
       <path d="M ${toFixed2(cx - 27)} ${toFixed2(ground - 5)}
@@ -659,7 +669,7 @@ function environmentFrame(type, ctx) {
                L ${toFixed2(cx + 26)} ${toFixed2(ground - 19)}
                L ${toFixed2(cx + 31)} ${toFixed2(ground - 4)}
                Q ${toFixed2(cx + 7)} ${toFixed2(ground + 6)} ${toFixed2(cx - 27)} ${toFixed2(ground - 5)} Z"
-            fill="${hue}"/>
+            fill="currentColor" opacity="${bodyOpacity}"/>
       <path d="M ${toFixed2(cx - 14)} ${toFixed2(ground - 21)} L ${toFixed2(cx + 4)} ${toFixed2(ground - 31)} L ${toFixed2(cx + 15)} ${toFixed2(ground - 18)} L ${toFixed2(cx - 4)} ${toFixed2(ground - 14)} Z" fill="${shine}"/>
       <path d="M ${toFixed2(cx - 24)} ${toFixed2(ground - 4)} Q ${toFixed2(cx + 4)} ${toFixed2(ground + 2)} ${toFixed2(cx + 28)} ${toFixed2(ground - 6)}" stroke="rgba(0,0,0,0.18)" stroke-width="2" fill="none"/>
     `;
@@ -688,9 +698,11 @@ function environmentFrame(type, ctx) {
   return `
     ${frameBackdrop(w, h, 0.82, 15, 3.2)}
     <g transform="translate(${toFixed2(cx)} ${toFixed2(ground - 24)}) rotate(${i * 18})">
-      ${snow
-        ? `<path d="M 0 -22 L 0 22 M -19 -11 L 19 11 M -19 11 L 19 -11" stroke="${seasonal}" stroke-width="4" stroke-linecap="round"/><circle cx="0" cy="0" r="5" fill="white"/>`
-        : `<path d="M 0 -26 C 14 -16 19 -4 6 9 C 0 16 -6 18 -12 18 C -8 8 -14 -2 0 -26 Z" fill="${seasonal}"/><path d="M -1 -18 Q 3 -2 -8 14" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" fill="none"/>`}
+      ${
+        snow
+          ? `<path d="M 0 -22 L 0 22 M -19 -11 L 19 11 M -19 11 L 19 -11" stroke="${seasonal}" stroke-width="4" stroke-linecap="round"/><circle cx="0" cy="0" r="5" fill="white"/>`
+          : `<path d="M 0 -26 C 14 -16 19 -4 6 9 C 0 16 -6 18 -12 18 C -8 8 -14 -2 0 -26 Z" fill="${seasonal}"/><path d="M -1 -18 Q 3 -2 -8 14" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" fill="none"/>`
+      }
     </g>
   `;
 }
@@ -797,17 +809,21 @@ function particleFrame(_type, ctx) {
     const leaf = i % 2 === 1;
     return `
       <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-      ${leaf
-        ? `<path d="M ${cx - 11} ${cy + 4} C ${cx - 4} ${cy - 10} ${cx + 8} ${cy - 11} ${cx + 12} ${cy + 2} C ${cx + 2} ${cy + 4} ${cx - 2} ${cy + 10} ${cx - 11} ${cy + 4} Z" fill="#86ef70" opacity="0.78"/><path d="M ${cx - 8} ${cy + 3} Q ${cx + 2} ${cy + 1} ${cx + 10} ${cy - 1}" stroke="rgba(255,255,255,0.45)" stroke-width="1" fill="none"/>`
-        : `<ellipse cx="${cx}" cy="${cy + 3}" rx="${toFixed2(10 * pulse)}" ry="${toFixed2(6 * pulse)}" fill="#9b7650" opacity="0.42"/><circle cx="${cx - 6}" cy="${cy}" r="4.5" fill="#b89166" opacity="0.55"/><circle cx="${cx + 4}" cy="${cy - 2}" r="5.3" fill="#c8a376" opacity="0.45"/>`}
+      ${
+        leaf
+          ? `<path d="M ${cx - 11} ${cy + 4} C ${cx - 4} ${cy - 10} ${cx + 8} ${cy - 11} ${cx + 12} ${cy + 2} C ${cx + 2} ${cy + 4} ${cx - 2} ${cy + 10} ${cx - 11} ${cy + 4} Z" fill="#86ef70" opacity="0.78"/><path d="M ${cx - 8} ${cy + 3} Q ${cx + 2} ${cy + 1} ${cx + 10} ${cy - 1}" stroke="rgba(255,255,255,0.45)" stroke-width="1" fill="none"/>`
+          : `<ellipse cx="${cx}" cy="${cy + 3}" rx="${toFixed2(10 * pulse)}" ry="${toFixed2(6 * pulse)}" fill="#9b7650" opacity="0.42"/><circle cx="${cx - 6}" cy="${cy}" r="4.5" fill="#b89166" opacity="0.55"/><circle cx="${cx + 4}" cy="${cy - 2}" r="5.3" fill="#c8a376" opacity="0.45"/>`
+      }
     `;
   }
   const ember = i % 2 === 1;
   return `
     <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-    ${ember
-      ? `<path d="M ${cx} ${cy + 12} C ${cx - 8} ${cy + 3} ${cx - 2} ${cy - 7} ${cx + 1} ${cy - 13} C ${cx + 10} ${cy - 3} ${cx + 8} ${cy + 7} ${cx} ${cy + 12} Z" fill="#fb923c" opacity="0.88"/><path d="M ${cx} ${cy + 6} C ${cx - 3} ${cy + 1} ${cx + 1} ${cy - 5} ${cx + 3} ${cy - 8} C ${cx + 6} ${cy - 1} ${cx + 5} ${cy + 4} ${cx} ${cy + 6} Z" fill="#fde68a" opacity="0.82"/>`
-      : `<circle cx="${cx}" cy="${cy}" r="${toFixed2(10 * pulse)}" fill="none" stroke="#9fe8ff" stroke-width="2.2" opacity="0.8"/><path d="M ${cx - 9} ${cy - 1} Q ${cx} ${cy - 11} ${cx + 9} ${cy - 1}" stroke="white" stroke-width="1.3" fill="none" opacity="0.65"/>`}
+    ${
+      ember
+        ? `<path d="M ${cx} ${cy + 12} C ${cx - 8} ${cy + 3} ${cx - 2} ${cy - 7} ${cx + 1} ${cy - 13} C ${cx + 10} ${cy - 3} ${cx + 8} ${cy + 7} ${cx} ${cy + 12} Z" fill="#fb923c" opacity="0.88"/><path d="M ${cx} ${cy + 6} C ${cx - 3} ${cy + 1} ${cx + 1} ${cy - 5} ${cx + 3} ${cy - 8} C ${cx + 6} ${cy - 1} ${cx + 5} ${cy + 4} ${cx} ${cy + 6} Z" fill="#fde68a" opacity="0.82"/>`
+        : `<circle cx="${cx}" cy="${cy}" r="${toFixed2(10 * pulse)}" fill="none" stroke="#9fe8ff" stroke-width="2.2" opacity="0.8"/><path d="M ${cx - 9} ${cy - 1} Q ${cx} ${cy - 11} ${cx + 9} ${cy - 1}" stroke="white" stroke-width="1.3" fill="none" opacity="0.65"/>`
+    }
   `;
 }
 
@@ -816,13 +832,78 @@ function scenarioCardFrame(ctx) {
   const cx = w * 0.5;
   const cy = h * 0.5;
   const scenario = [
-    { sky: '#103021', glow: '#62e6a6', accent: '#d5ff7d', creatures: 4, predators: 0, food: 11, props: ['spring'], water: false },
-    { sky: '#173a2b', glow: '#86efac', accent: '#f6d365', creatures: 6, predators: 1, food: 13, props: ['bounce'], water: true },
-    { sky: '#3a1720', glow: '#fb7185', accent: '#fbbf24', creatures: 4, predators: 3, food: 7, props: ['fan'], water: false, ember: true },
-    { sky: '#15233a', glow: '#bae6fd', accent: '#e0f2fe', creatures: 5, predators: 1, food: 5, props: ['calm'], water: false, snow: true },
-    { sky: '#12394b', glow: '#67e8f9', accent: '#fde68a', creatures: 4, predators: 1, food: 7, props: ['conveyor', 'spring'], water: true },
-    { sky: '#24123f', glow: '#c084fc', accent: '#5eead4', creatures: 6, predators: 1, food: 10, props: ['dna'], water: true },
-    { sky: '#372416', glow: '#fbbf24', accent: '#38bdf8', creatures: 5, predators: 1, food: 8, props: ['bounce', 'fan', 'launch'], water: false }
+    {
+      sky: '#103021',
+      glow: '#62e6a6',
+      accent: '#d5ff7d',
+      creatures: 4,
+      predators: 0,
+      food: 11,
+      props: ['spring'],
+      water: false
+    },
+    {
+      sky: '#173a2b',
+      glow: '#86efac',
+      accent: '#f6d365',
+      creatures: 6,
+      predators: 1,
+      food: 13,
+      props: ['bounce'],
+      water: true
+    },
+    {
+      sky: '#3a1720',
+      glow: '#fb7185',
+      accent: '#fbbf24',
+      creatures: 4,
+      predators: 3,
+      food: 7,
+      props: ['fan'],
+      water: false,
+      ember: true
+    },
+    {
+      sky: '#15233a',
+      glow: '#bae6fd',
+      accent: '#e0f2fe',
+      creatures: 5,
+      predators: 1,
+      food: 5,
+      props: ['calm'],
+      water: false,
+      snow: true
+    },
+    {
+      sky: '#12394b',
+      glow: '#67e8f9',
+      accent: '#fde68a',
+      creatures: 4,
+      predators: 1,
+      food: 7,
+      props: ['conveyor', 'spring'],
+      water: true
+    },
+    {
+      sky: '#24123f',
+      glow: '#c084fc',
+      accent: '#5eead4',
+      creatures: 6,
+      predators: 1,
+      food: 10,
+      props: ['dna'],
+      water: true
+    },
+    {
+      sky: '#372416',
+      glow: '#fbbf24',
+      accent: '#38bdf8',
+      creatures: 5,
+      predators: 1,
+      food: 8,
+      props: ['bounce', 'fan', 'launch'],
+      water: false
+    }
   ][i % 7];
 
   const foodDots = Array.from({ length: scenario.food }, (_, index) => {
@@ -862,20 +943,22 @@ function scenarioCardFrame(ctx) {
     `;
   }).join('');
 
-  const propGlyphs = scenario.props.map((prop, index) => {
-    const x = 40 + index * 36;
-    const y = h - 36;
-    if (prop === 'fan') {
-      return `<g transform="translate(${x} ${y}) rotate(${toFixed2((phase / TAU) * 360)})"><path d="M 0 -12 C 9 -9 13 -3 7 0 C 13 3 9 9 0 12 C -9 9 -13 3 -7 0 C -13 -3 -9 -9 0 -12 Z" fill="${scenario.accent}"/></g>`;
-    }
-    if (prop === 'launch') {
-      return `<path d="M ${x - 7} ${y + 12} L ${x + 7} ${y + 12} L ${x + 5} ${y - 12} L ${x} ${y - 20} L ${x - 5} ${y - 12} Z" fill="${scenario.accent}"/>`;
-    }
-    if (prop === 'dna') {
-      return `<path d="M ${x - 8} ${y - 14} C ${x + 12} ${y - 7} ${x - 12} ${y + 7} ${x + 8} ${y + 14} M ${x + 8} ${y - 14} C ${x - 12} ${y - 7} ${x + 12} ${y + 7} ${x - 8} ${y + 14}" stroke="${scenario.accent}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
-    }
-    return `<ellipse cx="${x}" cy="${y}" rx="13" ry="7" fill="${scenario.accent}" opacity="0.88"/><circle cx="${x}" cy="${y - 2}" r="4" fill="rgba(255,255,255,0.7)"/>`;
-  }).join('');
+  const propGlyphs = scenario.props
+    .map((prop, index) => {
+      const x = 40 + index * 36;
+      const y = h - 36;
+      if (prop === 'fan') {
+        return `<g transform="translate(${x} ${y}) rotate(${toFixed2((phase / TAU) * 360)})"><path d="M 0 -12 C 9 -9 13 -3 7 0 C 13 3 9 9 0 12 C -9 9 -13 3 -7 0 C -13 -3 -9 -9 0 -12 Z" fill="${scenario.accent}"/></g>`;
+      }
+      if (prop === 'launch') {
+        return `<path d="M ${x - 7} ${y + 12} L ${x + 7} ${y + 12} L ${x + 5} ${y - 12} L ${x} ${y - 20} L ${x - 5} ${y - 12} Z" fill="${scenario.accent}"/>`;
+      }
+      if (prop === 'dna') {
+        return `<path d="M ${x - 8} ${y - 14} C ${x + 12} ${y - 7} ${x - 12} ${y + 7} ${x + 8} ${y + 14} M ${x + 8} ${y - 14} C ${x - 12} ${y - 7} ${x + 12} ${y + 7} ${x - 8} ${y + 14}" stroke="${scenario.accent}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+      }
+      return `<ellipse cx="${x}" cy="${y}" rx="13" ry="7" fill="${scenario.accent}" opacity="0.88"/><circle cx="${x}" cy="${y - 2}" r="4" fill="rgba(255,255,255,0.7)"/>`;
+    })
+    .join('');
 
   const water = scenario.water
     ? `<path d="M 0 ${toFixed2(h * 0.68)} C 52 ${toFixed2(h * 0.58)} 98 ${toFixed2(h * 0.78)} 150 ${toFixed2(h * 0.66)} C 205 ${toFixed2(h * 0.54)} 248 ${toFixed2(h * 0.7)} ${w} ${toFixed2(h * 0.6)} L ${w} ${h} L 0 ${h} Z" fill="rgba(56,189,248,0.2)"/>`
@@ -910,19 +993,19 @@ function scenarioCardFrame(ctx) {
 const creatureProfiles = [
   {
     key: 'creature_herbivore',
-    bodyRx: 17.5,
-    bodyRy: 13.8,
+    bodyRx: 15.6,
+    bodyRy: 14.9,
     centerX: 0.51,
     centerY: 0.53,
-    tailLength: 11.4,
-    tailWidth: 4.8,
+    tailLength: 9.0,
+    tailWidth: 4.4,
     tailYOffset: 0.6,
     dorsalFin: true,
-    dorsalWidth: 7,
-    dorsalHeight: 8,
+    dorsalWidth: 5.0,
+    dorsalHeight: 11.5,
     ventralFin: true,
     ventralWidth: 6,
-    ventralHeight: 5.2,
+    ventralHeight: 3.4,
     eyeXBias: 0.43,
     eyeYBias: 0.31,
     eyeW: 4.9,
@@ -953,16 +1036,16 @@ const creatureProfiles = [
   },
   {
     key: 'creature_omnivore',
-    bodyRx: 18.7,
-    bodyRy: 13,
+    bodyRx: 18.2,
+    bodyRy: 13.4,
     centerX: 0.5,
     centerY: 0.53,
-    tailLength: 10.8,
-    tailWidth: 4.2,
+    tailLength: 11.0,
+    tailWidth: 4.6,
     tailYOffset: -0.2,
     dorsalFin: true,
-    dorsalWidth: 6.2,
-    dorsalHeight: 6.6,
+    dorsalWidth: 6.4,
+    dorsalHeight: 7.2,
     ventralFin: true,
     ventralWidth: 5.6,
     ventralHeight: 4.6,
@@ -996,19 +1079,19 @@ const creatureProfiles = [
   },
   {
     key: 'creature_predator',
-    bodyRx: 19.8,
-    bodyRy: 13.5,
+    bodyRx: 24.2,
+    bodyRy: 10.6,
     centerX: 0.51,
     centerY: 0.53,
-    tailLength: 13.6,
-    tailWidth: 4.6,
+    tailLength: 17.5,
+    tailWidth: 3.6,
     tailYOffset: -0.6,
     dorsalFin: true,
-    dorsalWidth: 8.2,
-    dorsalHeight: 10.8,
+    dorsalWidth: 4.4,
+    dorsalHeight: 13.5,
     ventralFin: true,
     ventralWidth: 6,
-    ventralHeight: 5.8,
+    ventralHeight: 3.0,
     eyeXBias: 0.53,
     eyeYBias: 0.35,
     eyeW: 5.2,
@@ -1039,19 +1122,19 @@ const creatureProfiles = [
   },
   {
     key: 'creature_baby',
-    bodyRx: 14.8,
-    bodyRy: 12.4,
+    bodyRx: 12.4,
+    bodyRy: 12.0,
     centerX: 0.53,
     centerY: 0.56,
-    tailLength: 8.3,
-    tailWidth: 3.3,
+    tailLength: 6.4,
+    tailWidth: 3.6,
     tailYOffset: 0.9,
     dorsalFin: true,
-    dorsalWidth: 4.6,
-    dorsalHeight: 4.4,
+    dorsalWidth: 4.0,
+    dorsalHeight: 4.0,
     ventralFin: false,
     ventralWidth: 0,
-    ventralHeight: 0,
+    ventralHeight: 2.8,
     eyeXBias: 0.38,
     eyeYBias: 0.28,
     eyeW: 5.5,
@@ -1082,19 +1165,19 @@ const creatureProfiles = [
   },
   {
     key: 'creature_elder',
-    bodyRx: 20.3,
-    bodyRy: 15.3,
+    bodyRx: 21.4,
+    bodyRy: 16.6,
     centerX: 0.48,
     centerY: 0.54,
-    tailLength: 10.2,
-    tailWidth: 3.9,
+    tailLength: 8.6,
+    tailWidth: 5.4,
     tailYOffset: 0.6,
     dorsalFin: true,
-    dorsalWidth: 5.8,
-    dorsalHeight: 4.9,
+    dorsalWidth: 7.4,
+    dorsalHeight: 3.4,
     ventralFin: false,
     ventralWidth: 0,
-    ventralHeight: 0,
+    ventralHeight: 5.6,
     eyeXBias: 0.43,
     eyeYBias: 0.34,
     eyeW: 4.1,
@@ -1125,19 +1208,19 @@ const creatureProfiles = [
   },
   {
     key: 'creature_alpha',
-    bodyRx: 21,
-    bodyRy: 15.6,
+    bodyRx: 22.4,
+    bodyRy: 15.8,
     centerX: 0.5,
     centerY: 0.53,
-    tailLength: 12.2,
-    tailWidth: 4.9,
+    tailLength: 13.4,
+    tailWidth: 5.6,
     tailYOffset: -0.1,
     dorsalFin: true,
-    dorsalWidth: 7.3,
-    dorsalHeight: 8.6,
+    dorsalWidth: 6.6,
+    dorsalHeight: 12.2,
     ventralFin: true,
     ventralWidth: 6.8,
-    ventralHeight: 5.4,
+    ventralHeight: 5.0,
     eyeXBias: 0.49,
     eyeYBias: 0.35,
     eyeW: 5,
@@ -1168,19 +1251,19 @@ const creatureProfiles = [
   },
   {
     key: 'creature_aquatic',
-    bodyRx: 22.6,
-    bodyRy: 12.1,
+    bodyRx: 21.2,
+    bodyRy: 11.4,
     centerX: 0.49,
     centerY: 0.54,
-    tailLength: 14.8,
-    tailWidth: 5.4,
+    tailLength: 16.0,
+    tailWidth: 3.4,
     tailYOffset: 0.2,
     dorsalFin: true,
-    dorsalWidth: 8.2,
-    dorsalHeight: 9.2,
+    dorsalWidth: 4.8,
+    dorsalHeight: 14.0,
     ventralFin: true,
     ventralWidth: 8.4,
-    ventralHeight: 7.2,
+    ventralHeight: 6.4,
     eyeXBias: 0.52,
     eyeYBias: 0.29,
     eyeW: 4.8,
@@ -1212,7 +1295,19 @@ const creatureProfiles = [
 ];
 
 const foodTypes = ['grass', 'berries', 'fruit', 'golden_fruit'];
-const propTypes = ['bounce', 'spring', 'spinner', 'seesaw', 'conveyor', 'slope', 'fan', 'sticky', 'gravity', 'button', 'launch'];
+const propTypes = [
+  'bounce',
+  'spring',
+  'spinner',
+  'seesaw',
+  'conveyor',
+  'slope',
+  'fan',
+  'sticky',
+  'gravity',
+  'button',
+  'launch'
+];
 const environmentTypes = ['trees', 'rocks', 'flowers', 'seasonal'];
 
 function generate() {
@@ -1237,7 +1332,7 @@ function generate() {
         anchor: { x: 0.5, y: 0.58 },
         pivot: { x: 0.48, y: 0.53 },
         notes: 'Tintable creature idle loop. Body and fins use currentColor; eye and highlight layers remain neutral.',
-        drawFrame: (ctx) => creatureFrame(profile, ctx)
+        drawFrame: ctx => creatureFrame(profile, ctx)
       })
     );
   }
@@ -1285,12 +1380,15 @@ function generate() {
         anchor: { x: 0.5, y: type === 'rocks' ? 0.9 : 0.95 },
         pivot: { x: 0.5, y: 0.5 },
         notes: {
-          trees: 'Environmental tree sprites: forest oak, pine, autumn tree, bush, winter pine, blossom, deadwood, wetland tree.',
-          rocks: 'Environmental rock sprites: boulder, stone, rock cluster, flat rock, mossy rock, crystal, stump-like stone, standing stone.',
-          flowers: 'Environmental flower and grass sprites: tulip, sunflower, blue flower, daisy, lavender, wildflower, tall grass, grass patch.',
+          trees:
+            'Environmental tree sprites: forest oak, pine, autumn tree, bush, winter pine, blossom, deadwood, wetland tree.',
+          rocks:
+            'Environmental rock sprites: boulder, stone, rock cluster, flat rock, mossy rock, crystal, stump-like stone, standing stone.',
+          flowers:
+            'Environmental flower and grass sprites: tulip, sunflower, blue flower, daisy, lavender, wildflower, tall grass, grass patch.',
           seasonal: 'Seasonal decorations: autumn leaves, snowflakes, snow piles, ice crystals, and spring buds.'
         }[type],
-        drawFrame: (ctx) => environmentFrame(type, ctx)
+        drawFrame: ctx => environmentFrame(type, ctx)
       })
     );
   }
@@ -1305,7 +1403,8 @@ function generate() {
       fps: 0,
       anchor: { x: 0.5, y: 0.5 },
       pivot: { x: 0.5, y: 0.5 },
-      notes: 'Top-down habitat landmark emblems: meadow, forest, wetland, water, mountain, and desert. Used by the low-zoom map layer.',
+      notes:
+        'Top-down habitat landmark emblems: meadow, forest, wetland, water, mountain, and desert. Used by the low-zoom map layer.',
       drawFrame: landmarkFrame
     })
   );
@@ -1322,7 +1421,7 @@ function generate() {
       anchor: { x: 0.5, y: 0.5 },
       pivot: { x: 0.5, y: 0.5 },
       notes: 'Particle sprites: sparkles, hearts, dust puffs, and energy rings.',
-      drawFrame: (ctx) => particleFrame('sparkle', ctx)
+      drawFrame: ctx => particleFrame('sparkle', ctx)
     })
   );
 
@@ -1338,7 +1437,7 @@ function generate() {
         anchor: { x: 0.5, y: 0.72 },
         pivot: { x: 0.5, y: 0.52 },
         notes: 'Tint-first food idle loop. Core silhouette uses currentColor for ecosystem-driven coloring.',
-        drawFrame: (ctx) => foodFrame(type, ctx)
+        drawFrame: ctx => foodFrame(type, ctx)
       })
     );
   }
@@ -1355,7 +1454,7 @@ function generate() {
         anchor: { x: 0.5, y: 0.5 },
         pivot: { x: 0.5, y: 0.5 },
         notes: 'Sandbox prop loop. Primary shape is currentColor-driven so runtime can preserve prop-color semantics.',
-        drawFrame: (ctx) => propFrame(type, ctx)
+        drawFrame: ctx => propFrame(type, ctx)
       })
     );
   }

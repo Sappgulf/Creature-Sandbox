@@ -184,7 +184,10 @@ export function renderInteractionHint(
     }
     case 'inspect':
     default:
-      message = hasSelection ? 'Drag to move · tap to inspect' : 'Tap a creature to inspect';
+      // With nothing selected the selection panel already carries this exact
+      // prompt; showing it twice at once, in two places, reads as a bug. The
+      // hint speaks only when it has something the panel does not.
+      message = hasSelection ? 'Drag to move · tap to inspect' : '';
       break;
   }
 

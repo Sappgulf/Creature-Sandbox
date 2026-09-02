@@ -52,6 +52,7 @@ import {
   getStartupSeedForRuntime
 } from './bootstrap-config.js';
 import { renderResolution } from './render-resolution.js';
+import { openingHold } from './opening-hold.js';
 import {
   ensureScenarioEditor,
   ensureCampaignSystem,
@@ -1784,6 +1785,10 @@ export async function initializeApp() {
 
       applyReplayKickoff();
       const openingFocus = applyStarterGlade();
+      // Freeze the simulation clock so the tableau above survives module load,
+      // the worker handshake and the onboarding card long enough to be seen.
+      // Releases on the player's first input, or after its own cap.
+      openingHold.begin();
       // Seeded creatures and the starter glade are part of the opener, not
       // player actions. Reset action counters after the world is prepared so
       // action-based session goals start from a truthful baseline.
