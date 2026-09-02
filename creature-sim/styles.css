@@ -2813,6 +2813,18 @@ body.mobile-focus-mode #watch-strip {
   flex-direction: column;
   gap: 8px;
   z-index: 6;
+  /* The three cards run ~998px tall. The narrow-screen rule below 1100px
+     already caps and scrolls them, but the wide path had no bound, so on any
+     viewport shorter than the stack — 1280x720 being an ordinary laptop —
+     "Session Goals" sat entirely under the fold with the page itself
+     non-scrolling (html/body are overflow:hidden), i.e. unreachable. Same
+     treatment here: cap against the viewport and scroll within.
+     Deliberately 100vh rather than --vh: that custom property is only
+     maintained by mobile-support.js, so on a desktop pointer it can sit at
+     its initial 0px and collapse this to the floor. 148px reserves the 56px
+     top offset plus clearance for the control strip. */
+  max-height: max(200px, calc(100vh - 148px));
+  overflow-y: auto;
 }
 .meta-card {
   background: linear-gradient(180deg, rgba(17, 26, 39, 0.9), rgba(6, 10, 17, 0.86)), rgba(10, 14, 24, 0.84);

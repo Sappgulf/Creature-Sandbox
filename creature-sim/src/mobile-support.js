@@ -64,6 +64,11 @@ export class MobileSupport {
     // Stabilize viewport height to account for dynamic browser chrome
     const setViewportHeight = () => {
       const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      // A zero height is real — a backgrounded or not-yet-laid-out tab reports
+      // it — but publishing it pins --vh at 0px, and every rule sized against
+      // it silently collapses to its floor until the next resize corrects it.
+      // Keep the last good value instead.
+      if (!(viewportHeight > 0)) return;
       const vh = viewportHeight * 0.01;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
     };
