@@ -2,7 +2,7 @@
  * Input Manager - Centralized input handling system
  * Handles keyboard, mouse, touch, and pointer events
  */
-import { gameState } from './game-state.js';
+import { gameState, SPEED_OPTIONS } from './game-state.js';
 import { domCache } from './dom-cache.js';
 import { eventSystem } from './event-system.js';
 
@@ -165,6 +165,18 @@ export class InputManager {
   /**
    * Handle regular key presses
    */
+  /**
+   * Move one rung along the shared speed ladder and let the HUD re-sync.
+   * @param {number} direction  +1 faster, -1 slower
+   */
+  _stepSpeed(direction) {
+    const current = SPEED_OPTIONS.indexOf(gameState.fastForward);
+    const from = current >= 0 ? current : SPEED_OPTIONS.indexOf(1);
+    const next = Math.max(0, Math.min(SPEED_OPTIONS.length - 1, from + direction));
+    gameState.fastForward = SPEED_OPTIONS[next];
+    eventSystem.emit('game:speed', { value: gameState.fastForward, reason: 'keyboard' });
+  }
+
   handleRegularKey(e) {
     const renderer = this.world?.renderer;
     const miniGraphs = this.world?.miniGraphs;
@@ -254,11 +266,18 @@ export class InputManager {
         this.uiController?.updateToolIndicator?.(this.tools?.mode);
         break;
 
+      // These used integer arithmetic clamped to 1..5, a different model from
+      // the HUD's [0.5, 1, 2, 4] ladder. They produced speeds the UI cannot
+      // represent (3 and 5) and never refreshed the speed button, so the sim
+      // could run at 5x while the HUD still read 1x. Step the shared ladder
+      // and announce it instead.
       case '+':
-        gameState.fastForward = Math.min(5, gameState.fastForward + 1);
+        this._stepSpeed(1);
+        e.preventDefault();
         break;
       case '-':
-        gameState.fastForward = Math.max(1, gameState.fastForward - 1);
+        this._stepSpeed(-1);
+        e.preventDefault();
         break;
 
       case 'v':
@@ -304,26 +323,11 @@ export class InputManager {
         }
         break;
 
-      case '1':
-        if (renderer) {
-          renderer.enableEmotions = !renderer.enableEmotions;
-        }
-        break;
-      case '2':
-        if (renderer) {
-          renderer.enableSensoryViz = !renderer.enableSensoryViz;
-        }
-        break;
-      case '3':
-        if (renderer) {
-          renderer.enableIntelligence = !renderer.enableIntelligence;
-        }
-        break;
-      case '4':
-        if (renderer) {
-          renderer.enableMating = !renderer.enableMating;
-        }
-        break;
+      // 1-4 were emotion/sensory/intelligence/mating toggles here, but the
+      // digits never reach this switch: god mode claims them for tool select
+      // and, outside it, the camera-bookmark branch above returns first. The
+      // four features stay available through the Features panel
+      // (renderer-features.js).
 
       case 'd':
         gameState.showDebugOverlay = !gameState.showDebugOverlay;

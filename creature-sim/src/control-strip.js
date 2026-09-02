@@ -2,7 +2,7 @@
  * Control Strip Controller - Unified bottom control bar for mobile-first UI
  * Replaces the legacy top HUD with a thumb-friendly bottom control strip
  */
-import { gameState } from './game-state.js';
+import { gameState, SPEED_OPTIONS, SPEED_LABELS } from './game-state.js';
 import { eventSystem } from './event-system.js';
 import { batteryManager } from './battery-manager.js';
 
@@ -25,8 +25,6 @@ function setControlGlyph(button, symbolId) {
 }
 
 // Speed multipliers for cycling
-const SPEED_OPTIONS = [0.5, 1, 2, 4];
-const SPEED_LABELS = ['0.5×', '1×', '2×', '4×'];
 const DRAWER_FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 function getDrawerFocusableElements(container) {
@@ -192,6 +190,11 @@ export class ControlStripController {
     // Keep control strip state synced with global events
     eventSystem.on('game:paused', () => this.updatePauseButton());
     eventSystem.on('game:resumed', () => this.updatePauseButton());
+    // The +/- shortcuts change the speed without going through this control.
+    eventSystem.on('game:speed', () => {
+      this.syncSpeedIndexFromState();
+      this.updateSpeedButton();
+    });
     this.applyMobilePrefs({ syncMenu: true });
     eventSystem.on('tool:changed', () => this.updateToolButtons());
 

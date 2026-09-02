@@ -16,6 +16,11 @@
  * gameState.selectCreature(42);
  * if (gameState.paused) { ... }
  */
+// The speed ladder, shared so the HUD control and the +/- shortcuts cannot
+// drift apart. Anything outside this list is not a speed the UI can display.
+export const SPEED_OPTIONS = [0.5, 1, 2, 4];
+export const SPEED_LABELS = ['0.5\u00d7', '1\u00d7', '2\u00d7', '4\u00d7'];
+
 export class GameState {
   constructor() {
     this.reset();

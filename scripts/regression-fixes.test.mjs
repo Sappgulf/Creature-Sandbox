@@ -25,6 +25,7 @@ import { TutorialSystem } from '../creature-sim/src/tutorial-system.js';
 import { packCreature, unpackCreature, createCreatureBuffer } from '../creature-sim/src/simulation-state.js';
 import { collectGameplayMetrics } from '../creature-sim/src/gameplay-objectives.js';
 import { ControlStripController } from '../creature-sim/src/control-strip.js';
+import { SPEED_OPTIONS, SPEED_LABELS } from '../creature-sim/src/game-state.js';
 
 function makeFakeWorkerProxy() {
   const priorWindow = globalThis.window;
@@ -696,6 +697,43 @@ test('styles: inspector sits above its own modal scrim, and its controls meet th
   for (const id of ['#btn-close-inspector', '#btn-minimize-inspector', '#btn-pin', '#btn-export']) {
     assert.ok(coarse.includes(id), `${id} should be raised to the touch-target floor on coarse pointers`);
   }
+});
+
+test('speed ladder is shared, so the +/- shortcuts cannot desync from the HUD', () => {
+  // input-manager used integer arithmetic clamped to 1..5 against the HUD's
+  // discrete ladder, producing 3 and 5 — speeds the control cannot display —
+  // and never refreshing the button, so the sim ran at 5x while it read 1x.
+  const inputManager = fs.readFileSync(new URL('../creature-sim/src/input-manager.js', import.meta.url), 'utf8');
+  const controlStrip = fs.readFileSync(new URL('../creature-sim/src/control-strip.js', import.meta.url), 'utf8');
+
+  assert.equal(SPEED_OPTIONS.length, SPEED_LABELS.length, 'every speed needs a label');
+  assert.doesNotMatch(
+    inputManager,
+    /fastForward\s*=\s*Math\.(min|max)\(\s*\d+\s*,\s*gameState\.fastForward/,
+    'speed shortcuts must step the shared ladder, not do free arithmetic on fastForward'
+  );
+  assert.match(inputManager, /SPEED_OPTIONS/, 'input-manager should use the shared ladder');
+  assert.match(inputManager, /eventSystem\.emit\('game:speed'/, 'speed changes must be announced so the HUD re-syncs');
+  assert.match(
+    controlStrip,
+    /eventSystem\.on\('game:speed'/,
+    'the control strip must listen for keyboard speed changes'
+  );
+  // Neither module should define its own copy of the ladder any more.
+  assert.doesNotMatch(controlStrip, /const SPEED_OPTIONS\s*=/, 'the ladder should live in one place');
+});
+
+test('help panel documents the digit keys that actually exist', () => {
+  const html = fs.readFileSync(new URL('../creature-sim/index.html', import.meta.url), 'utf8');
+  const inputManager = fs.readFileSync(new URL('../creature-sim/src/input-manager.js', import.meta.url), 'utf8');
+
+  // 1-5 are god-mode tool select, or camera bookmarks outside god mode; the
+  // bookmark branch returns before the switch, so the emotion/sensory/
+  // intelligence/mating rows described keys that could never fire, and the
+  // advertised 5-8 heatmap keys were never bound at all.
+  assert.doesNotMatch(html, /<kbd>5-8<\/kbd>/, 'heatmap keys 5-8 are not bound anywhere');
+  assert.match(html, /Recall camera bookmark/, 'camera bookmarks should be documented');
+  assert.match(inputManager, /cameraBookmarks\.load/, 'camera bookmarks should still be bound');
 });
 
 console.log('\n=== SUMMARY ===');
