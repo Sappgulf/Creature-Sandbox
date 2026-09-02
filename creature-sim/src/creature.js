@@ -1414,6 +1414,16 @@ export class Creature {
       this.isSleeping = false;
     }
 
+    // A creature picks REST on low energy, which stops it foraging, but
+    // recovery below is gated on being inside a rest zone or nest — and the
+    // world seeds only a handful. Measured on a default world, 41 of 64
+    // creatures were resting while just 5 were in a zone, so the rest idled at
+    // full metabolic burn until they starved with food going uneaten. Being
+    // settled is now worth something on its own; zones and nests keep their
+    // stronger recovery.
+    this._restingUnsheltered =
+      (goal === 'REST' || (this.needs?.energy ?? 100) < 30) && !(inRestZone || inNest) && spd < 12;
+
     if ((goal === 'REST' || (this.needs?.energy ?? 100) < 30) && (inRestZone || inNest) && spd < 12) {
       applyRestRecovery(this, dt, world, { inRestZone, nest: inNest ? nest : null });
       updateRestHome(this, dt, world, inNest ? nest : null);
@@ -1627,6 +1637,11 @@ export class Creature {
 
     const tempPenalty = world.tempPenaltyAt(this.x, this.y);
     let energyDrain = this.baseBurn() + tempPenalty;
+
+    // Settled but unsheltered: conserve fuel rather than burning as if active.
+    if (this._restingUnsheltered) {
+      energyDrain *= CreatureAgentTuning.NEEDS.REST_BURN_MULT;
+    }
 
     // NEW: Age stage metabolism modifiers (smooth transitions)
     energyDrain *= getAgeMetabolismMultiplier(this.age);

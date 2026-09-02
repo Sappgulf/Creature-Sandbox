@@ -61,7 +61,10 @@ export class WorldEcosystem {
 
     // Auto-balancing system
     this.balanceTimer = 0;
-    this.balanceCheckInterval = 60; // Check every minute
+    // Checked every 20s rather than every minute: at a one-minute cadence the
+    // refill pulse was an order of magnitude slower than a bad stretch of
+    // starvation, so the advertised minPopulation floor never actually held.
+    this.balanceCheckInterval = 20;
     this.lastEcoStats = null;
 
     this.seedRestZones();
@@ -507,7 +510,10 @@ export class WorldEcosystem {
     const total = herbivores + predators + omnivores;
 
     // Skip balancing if ecosystem is too young or empty
-    if (total < 5 || this.world.t < 60) return;
+    // Only an empty world is left alone. Bailing at fewer than five gave up
+    // exactly when the floor mattered most and guaranteed the die-off ran to
+    // extinction.
+    if (total < 1 || this.world.t < 60) return;
 
     const actions = [];
 
@@ -580,8 +586,11 @@ export class WorldEcosystem {
   }
 
   spawnBalancingHerbivores(total = 0, minPopulation = 0) {
+    // Pulses stay small so the player still sees a recovery rather than a
+    // population blinking back, but they have to out-pace an ordinary
+    // die-off — the previous cap of four per minute never could.
     const deficit = Math.max(0, Number(minPopulation) - Number(total));
-    const count = Math.max(1, Math.min(4, Math.ceil(deficit * 0.2)));
+    const count = Math.max(1, Math.min(6, Math.ceil(deficit * 0.3)));
     let spawned = 0;
     for (let i = 0; i < count; i++) {
       const x = rand() * this.world.width;

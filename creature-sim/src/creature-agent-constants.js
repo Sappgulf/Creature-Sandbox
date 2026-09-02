@@ -12,6 +12,11 @@ export const CreatureAgentTuning = {
     // How fast needs.stress is pulled toward the ecosystem layer's own stress
     // reading, per second. This used to be an outright assignment, which threw
     // away everything accumulated below it on every tick.
+    // Metabolic burn while a creature is settled in the REST goal but not
+    // inside a rest zone or nest. Full recovery still requires that
+    // infrastructure; this only stops a resting creature burning fuel at the
+    // same rate as one that is out foraging.
+    REST_BURN_MULT: 0.45,
     STRESS_ECO_COUPLING: 0.6,
     STRESS_REST_DECAY: 7,
     STRESS_CALM_DECAY: 3.2,

@@ -794,6 +794,33 @@ test('needs.stress is coupled to the ecosystem layer, not overwritten by it', ()
   );
 });
 
+test('resting conserves energy even outside a rest zone', () => {
+  const src = fs.readFileSync(new URL('../creature-sim/src/creature.js', import.meta.url), 'utf8');
+
+  // Recovery is gated on being inside a rest zone or nest, and a default world
+  // seeds only a handful: 41 of 64 creatures were in the REST goal while just 5
+  // were sheltered, so the rest stopped foraging and idled at full metabolic
+  // burn until they starved with food going uneaten.
+  assert.match(src, /_restingUnsheltered/, 'settled-but-unsheltered rest must be tracked');
+  assert.match(src, /REST_BURN_MULT/, 'unsheltered rest must reduce metabolic burn');
+  const mult = CreatureAgentTuning.NEEDS.REST_BURN_MULT;
+  assert.ok(mult > 0 && mult < 1, `REST_BURN_MULT ${mult} should conserve fuel without being free`);
+});
+
+test('auto-balance can out-pace a die-off instead of only nominally holding its floor', () => {
+  const src = fs.readFileSync(new URL('../creature-sim/src/world-ecosystem.js', import.meta.url), 'utf8');
+
+  // It ran once a minute and added at most four herbivores, against die-offs an
+  // order of magnitude larger, and gave up entirely below five creatures —
+  // exactly when the advertised minPopulation floor mattered most.
+  const interval = /balanceCheckInterval\s*=\s*(\d+)/.exec(src);
+  assert.ok(interval && Number(interval[1]) <= 30, 'balance checks must run often enough to matter');
+  assert.doesNotMatch(src, /if \(total < 5 \|\|/, 'the floor should not be abandoned during a crash');
+  const pulse = /Math\.min\((\d+), Math\.ceil\(deficit \* ([0-9.]+)\)\)/.exec(src);
+  assert.ok(pulse, 'refill pulse should scale with the deficit');
+  assert.ok(Number(pulse[1]) >= 5, 'refill pulse cap was too small to recover a population');
+});
+
 console.log('\n=== SUMMARY ===');
 console.log(`Passed: ${passed}`);
 console.log(`Failed: ${failed}`);
