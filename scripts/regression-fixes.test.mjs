@@ -26,6 +26,7 @@ import { packCreature, unpackCreature, createCreatureBuffer } from '../creature-
 import { collectGameplayMetrics } from '../creature-sim/src/gameplay-objectives.js';
 import { ControlStripController } from '../creature-sim/src/control-strip.js';
 import { SPEED_OPTIONS, SPEED_LABELS } from '../creature-sim/src/game-state.js';
+import { CreatureAgentTuning } from '../creature-sim/src/creature-agent-constants.js';
 
 function makeFakeWorkerProxy() {
   const priorWindow = globalThis.window;
@@ -760,6 +761,37 @@ test('range sliders meet the touch-target floor on coarse pointers', () => {
   assert.match(css, /input\[type='range'\]\s*\{[^}]*height:\s*6px/s, 'the base slider is still a 6px track');
   assert.match(coarse, /input\[type='range'\]/, 'sliders must be enlarged on coarse pointers');
   assert.match(coarse, /height:\s*44px/, 'the coarse hit area should reach the 44px floor');
+});
+
+test('foragers can actually reach food: consume range is not smaller than their approach distance', () => {
+  // Creatures slow to MIN_ARRIVE_SPEED inside ARRIVE_RADIUS and are pushed
+  // apart by herd separation, so they settle tens of pixels from their target.
+  // At an 8px bite range only 4.5% of attempts landed: intake ran far under
+  // drain, food accumulated uneaten and the population starved amid plenty.
+  const { CONSUME_RANGE } = CreatureAgentTuning.FOOD;
+  assert.ok(CONSUME_RANGE >= 20, `consume range ${CONSUME_RANGE} is too tight for foragers to ever reach food`);
+  assert.ok(
+    CONSUME_RANGE < CreatureAgentTuning.SENSES.OVERCROWD_RADIUS,
+    'consume range should stay well inside sensing ranges rather than vacuuming the map'
+  );
+});
+
+test('needs.stress is coupled to the ecosystem layer, not overwritten by it', () => {
+  const src = fs.readFileSync(new URL('../creature-sim/src/creature-agent-needs.js', import.meta.url), 'utf8');
+
+  // needs.stress = clamp(ecoStress, 0, 100) threw away overcrowding, territory
+  // pressure, calm zones and rest decay on every tick, leaving the agent-level
+  // stress model — and the flee/rest goal scores that read it — inert.
+  assert.doesNotMatch(
+    src,
+    /needs\.stress\s*=\s*clamp\(\s*ecoStress/,
+    'the ecosystem reading must not overwrite accumulated stress'
+  );
+  assert.match(src, /STRESS_ECO_COUPLING/, 'the two stress models should be coupled at a bounded rate');
+  assert.ok(
+    CreatureAgentTuning.NEEDS.STRESS_ECO_COUPLING > 0,
+    'coupling rate must be positive so ecosystem stress still influences the agent'
+  );
 });
 
 console.log('\n=== SUMMARY ===');

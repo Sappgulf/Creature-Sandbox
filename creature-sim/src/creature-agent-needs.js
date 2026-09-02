@@ -158,9 +158,17 @@ export function updateNeeds(creature, dt, world) {
   needs.socialDrive = clamp(needs.socialDrive + socialRate * dt, 0, 100);
   needs.energy = clamp(creature.energy ?? needs.energy, CreatureAgentTuning.NEEDS.MIN, CreatureAgentTuning.NEEDS.MAX);
 
+  // Two stress models run side by side: this one (overcrowding, territory
+  // pressure, calm zones, rest decay, and the flee/rest goal scores that read
+  // it) and creature-ecosystem.js's, which models herd contagion and disaster
+  // reactions. This line used to assign the ecosystem value straight over the
+  // top, so everything accumulated below was discarded on the next tick and
+  // needs.stress only ever tracked the ecosystem figure. Couple the two
+  // instead: the ecosystem reading pulls this one, it does not replace it.
   const ecoStress = creature.ecosystem?.stress;
   if (Number.isFinite(ecoStress)) {
-    needs.stress = clamp(ecoStress, 0, 100);
+    const pull = Math.min(1, CreatureAgentTuning.NEEDS.STRESS_ECO_COUPLING * dt);
+    needs.stress = clamp(needs.stress + (ecoStress - needs.stress) * pull, 0, 100);
   }
 
   const overcrowdMult =

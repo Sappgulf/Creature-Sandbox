@@ -9,6 +9,10 @@ export const CreatureAgentTuning = {
     UPDATE_INTERVAL: 0.25,
     HUNGER_RATE: 1.0,
     SOCIAL_RATE: 0.55,
+    // How fast needs.stress is pulled toward the ecosystem layer's own stress
+    // reading, per second. This used to be an outright assignment, which threw
+    // away everything accumulated below it on every tick.
+    STRESS_ECO_COUPLING: 0.6,
     STRESS_REST_DECAY: 7,
     STRESS_CALM_DECAY: 3.2,
     STRESS_OVERCROWD_GAIN: 3.8,
@@ -113,7 +117,13 @@ export const CreatureAgentTuning = {
     BITE_INTERVAL: 0.6,
     BITE_ENERGY: 5.0,
     SCENT_RADIUS: 180,
-    CONSUME_RANGE: 8
+    // Foragers slow to MIN_ARRIVE_SPEED inside ARRIVE_RADIUS (60) and are pushed
+    // apart by herd separation, so they settle around 45px from their target and
+    // essentially never closed the last 8px: measured over a 60s run, only 4.5%
+    // of bite attempts landed, energy intake ran ~20x under drain, and food piled
+    // up uneaten while the population starved. This is roughly a creature's body
+    // radius plus a short reach, which brings the hit rate to a workable level.
+    CONSUME_RANGE: 28
   },
   FOOD_PATCHES: {
     COUNT: 18,
