@@ -188,15 +188,16 @@ Every creature has an **energy bar** that constantly drains:
 The simulator uses a **diploid gene system** (like real organisms!) with Mendelian inheritance:
 
 **Core Genes (Diploid - Two Alleles Per Trait):**
-| Gene | Range | Effect |
-|------|-------|--------|
-| **Speed** | 0.2-2.0 | Movement velocity (expressed from dominant allele) |
-| **FOV** | 20°-160° | Visual field angle |
-| **Sense** | 20-200px | Detection radius |
-| **Metabolism** | 0.4-2.0 | Energy consumption rate |
-| **Diet** | 0.0-1.0 | Herbivore (0.0-0.3) → Omnivore (0.3-0.7) → Carnivore (0.7-1.0) |
-| **Hue** | 0-360° | Body color (also affects sense type) |
-| **Predator** | 0 or 1 | Legacy flag (mostly replaced by Diet gene) |
+
+| Gene           | Range    | Effect                                                         |
+| -------------- | -------- | -------------------------------------------------------------- |
+| **Speed**      | 0.2-2.0  | Movement velocity (expressed from dominant allele)             |
+| **FOV**        | 20°-160° | Visual field angle                                             |
+| **Sense**      | 20-200px | Detection radius                                               |
+| **Metabolism** | 0.4-2.0  | Energy consumption rate                                        |
+| **Diet**       | 0.0-1.0  | Herbivore (0.0-0.3) → Omnivore (0.3-0.7) → Carnivore (0.7-1.0) |
+| **Hue**        | 0-360°   | Body color (also affects sense type)                           |
+| **Predator**   | 0 or 1   | Legacy flag (mostly replaced by Diet gene)                     |
 
 **Sexual Dimorphism:**
 
@@ -206,16 +207,17 @@ The simulator uses a **diploid gene system** (like real organisms!) with Mendeli
 - **Visual indicator**: Inspector shows ♂️ or ♀️ symbol
 
 **Behavioral Genes:**
-| Gene | Range | Effect |
-|------|-------|--------|
-| **Pack Instinct** | 0-1 | Predators: pack hunting coordination |
-| **Herd Instinct** | 0-1 | Herbivores: group safety bonus |
-| **Aggression** | 0.4-2.2 | Chase intensity, attack frequency |
-| **Ambush Delay** | 0-5s | Seconds to wait before sprint attack |
-| **Spines** | 0-1 | Defensive retaliation damage |
-| **Panic Pheromone** | 0-1 | Danger signal strength to others |
-| **Grit** | 0-1 | Bleed resistance, toughness |
-| **Nocturnal** | 0-1 | 0=diurnal (day), 1=nocturnal (night) |
+
+| Gene                | Range   | Effect                               |
+| ------------------- | ------- | ------------------------------------ |
+| **Pack Instinct**   | 0-1     | Predators: pack hunting coordination |
+| **Herd Instinct**   | 0-1     | Herbivores: group safety bonus       |
+| **Aggression**      | 0.4-2.2 | Chase intensity, attack frequency    |
+| **Ambush Delay**    | 0-5s    | Seconds to wait before sprint attack |
+| **Spines**          | 0-1     | Defensive retaliation damage         |
+| **Panic Pheromone** | 0-1     | Danger signal strength to others     |
+| **Grit**            | 0-1     | Bleed resistance, toughness          |
+| **Nocturnal**       | 0-1     | 0=diurnal (day), 1=nocturnal (night) |
 
 ### 🧪 Mutation System
 
