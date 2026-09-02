@@ -1055,6 +1055,57 @@ test('menu rows put their icon in a fixed slot', () => {
   assert.match(strip, /setMenuItemLabel\(/, 'toggle labels must preserve the icon/label structure');
 });
 
+test('audio settings persist and muting actually silences everything', async () => {
+  const store = new Map();
+  const priorStorage = globalThis.localStorage;
+  const priorWindow = globalThis.window;
+  globalThis.localStorage = {
+    getItem: k => (store.has(k) ? store.get(k) : null),
+    setItem: (k, v) => store.set(k, String(v)),
+    removeItem: k => store.delete(k)
+  };
+  globalThis.window = globalThis.window || {};
+
+  try {
+    const mod = await import('../creature-sim/src/audio-system.js');
+    const AudioSystem = mod.AudioSystem || mod.default || Object.values(mod).find(v => typeof v === 'function');
+    assert.ok(AudioSystem, 'audio system should be constructible');
+
+    const audio = new AudioSystem();
+    let stopped = 0;
+    audio.stopMusic = () => {
+      stopped += 1;
+    };
+
+    // Music is a continuous oscillator; toggleSounds only set a flag, so the
+    // drone kept playing and the toggle looked broken.
+    audio.toggleSounds(false);
+    assert.equal(audio.soundsEnabled, false, 'muting should disable sound');
+    assert.ok(stopped > 0, 'muting must stop continuous music, not just gate new sounds');
+
+    audio.setMasterVolume(0);
+
+    // Nothing was persisted at all, so any mute lasted until the next reload.
+    const reloaded = new AudioSystem();
+    assert.equal(reloaded.soundsEnabled, false, 'mute must survive a reload');
+    assert.equal(reloaded.masterVolume, 0, 'volume must survive a reload');
+  } finally {
+    globalThis.localStorage = priorStorage;
+    globalThis.window = priorWindow;
+  }
+});
+
+test('the master volume slider is bound to master volume, not a phantom category', () => {
+  const boot = fs.readFileSync(new URL('../creature-sim/src/app-bootstrap.js', import.meta.url), 'utf8');
+
+  // volumes has no 'master' key, so binding it like the other categories read
+  // undefined, displayed 0% however loud the game was, and wrote a dead key.
+  assert.doesNotMatch(boot, /bindVolumeSlider\('sound-master'/, 'master is not one of the volume categories');
+  assert.match(boot, /bindMasterSlider/, 'master needs its own binding');
+  assert.match(boot, /audio\.toggleSounds\(/, 'the sound toggle must go through toggleSounds so it persists');
+  assert.match(boot, /audio\.toggleMusic\(/, 'the music toggle must go through toggleMusic so it persists');
+});
+
 console.log('\n=== SUMMARY ===');
 console.log(`Passed: ${passed}`);
 console.log(`Failed: ${failed}`);

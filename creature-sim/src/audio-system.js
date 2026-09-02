@@ -3,6 +3,8 @@
 
 import { geneValue, isPredatorFromGenes } from './creature-genetics-helpers.js';
 
+const AUDIO_PREFS_KEY = 'creature-audio-prefs';
+
 export class AudioSystem {
   constructor() {
     // Initialize AudioContext (requires user interaction first)
@@ -22,6 +24,7 @@ export class AudioSystem {
 
     // Sound queues (limit simultaneous sounds)
     this.playingSounds = new Set();
+    this.loadPreferences();
     this.maxConcurrent = 15; // Reduced from 20 to prevent audio chaos
 
     // Music state
@@ -622,22 +625,74 @@ export class AudioSystem {
   // Settings
   setMasterVolume(volume) {
     this.masterVolume = Math.max(0, Math.min(1, volume));
+    this.savePreferences();
   }
 
   setCategoryVolume(category, volume) {
     if (this.volumes[category] !== undefined) {
       this.volumes[category] = Math.max(0, Math.min(1, volume));
+      this.savePreferences();
     }
   }
 
   toggleSounds(enabled) {
-    this.soundsEnabled = enabled;
+    this.soundsEnabled = !!enabled;
+    // Music is a continuous oscillator, so turning sound off has to stop it as
+    // well — otherwise the drone keeps playing and the toggle appears not to
+    // work at all.
+    if (!this.soundsEnabled) {
+      this.stopMusic();
+    }
+    this.savePreferences();
   }
 
   toggleMusic(enabled) {
-    this.musicEnabled = enabled;
+    this.musicEnabled = !!enabled;
     if (!enabled) {
       this.stopMusic();
+    }
+    this.savePreferences();
+  }
+
+  /**
+   * Audio settings are per-player and were not stored anywhere, so muting only
+   * lasted until the next reload.
+   */
+  savePreferences() {
+    try {
+      localStorage.setItem(
+        AUDIO_PREFS_KEY,
+        JSON.stringify({
+          masterVolume: this.masterVolume,
+          volumes: this.volumes,
+          soundsEnabled: this.soundsEnabled,
+          musicEnabled: this.musicEnabled
+        })
+      );
+    } catch {
+      // Storage can be unavailable (private windows, blocked site data); the
+      // session still works, it just will not be remembered.
+    }
+  }
+
+  loadPreferences() {
+    try {
+      const raw = localStorage.getItem(AUDIO_PREFS_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (Number.isFinite(saved?.masterVolume)) {
+        this.masterVolume = Math.max(0, Math.min(1, saved.masterVolume));
+      }
+      if (saved?.volumes && typeof saved.volumes === 'object') {
+        for (const key of Object.keys(this.volumes)) {
+          const value = saved.volumes[key];
+          if (Number.isFinite(value)) this.volumes[key] = Math.max(0, Math.min(1, value));
+        }
+      }
+      if (typeof saved?.soundsEnabled === 'boolean') this.soundsEnabled = saved.soundsEnabled;
+      if (typeof saved?.musicEnabled === 'boolean') this.musicEnabled = saved.musicEnabled;
+    } catch {
+      // Ignore unreadable or corrupt preferences and keep the defaults.
     }
   }
 

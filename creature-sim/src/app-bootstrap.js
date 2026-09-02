@@ -609,37 +609,44 @@ export async function initializeApp() {
       if (display) display.textContent = `${initial}%`;
       slider.addEventListener('input', () => {
         const val = Number(slider.value) / 100;
-        audio.volumes[category] = val;
+        audio.setCategoryVolume?.(category, val) ?? (audio.volumes[category] = val);
         if (display) display.textContent = `${slider.value}%`;
       });
     };
-    bindVolumeSlider('sound-master', 'master', 'sound-master-value');
+    // Master is not one of the `volumes` categories — it is its own property —
+    // so binding it like the others read undefined, showed 0% however loud the
+    // game actually was, and wrote to a category that does not exist.
+    const bindMasterSlider = () => {
+      const slider = document.getElementById('sound-master');
+      const display = document.getElementById('sound-master-value');
+      if (!slider) return;
+      const initial = Math.round((audio.masterVolume ?? 0) * 100);
+      slider.value = initial;
+      if (display) display.textContent = `${initial}%`;
+      slider.addEventListener('input', () => {
+        audio.setMasterVolume?.(Number(slider.value) / 100);
+        if (display) display.textContent = `${slider.value}%`;
+      });
+    };
+    bindMasterSlider();
     bindVolumeSlider('sound-music', 'music', 'sound-music-value');
     bindVolumeSlider('sound-creatures', 'creatures', 'sound-creatures-value');
     bindVolumeSlider('sound-ambient', 'ambient', 'sound-ambient-value');
     bindVolumeSlider('sound-ui', 'ui', 'sound-ui-value');
     bindVolumeSlider('sound-effects', 'effects', 'sound-effects-value');
 
-    const masterSlider = document.getElementById('sound-master');
-    if (masterSlider) {
-      masterSlider.addEventListener('input', () => {
-        audio.masterVolume = Number(masterSlider.value) / 100;
-      });
-    }
-
     const soundToggle = document.getElementById('toggle-sound-enabled');
     if (soundToggle) {
       soundToggle.checked = audio.soundsEnabled;
       soundToggle.addEventListener('change', () => {
-        audio.soundsEnabled = soundToggle.checked;
+        audio.toggleSounds(soundToggle.checked);
       });
     }
     const musicToggle = document.getElementById('toggle-music-enabled');
     if (musicToggle) {
       musicToggle.checked = audio.musicEnabled;
       musicToggle.addEventListener('change', () => {
-        audio.musicEnabled = musicToggle.checked;
-        if (!audio.musicEnabled) audio.stopMusic?.();
+        audio.toggleMusic(musicToggle.checked);
       });
     }
   }, 'Sound panel controls');
