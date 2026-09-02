@@ -164,6 +164,25 @@ export class TutorialSystem {
     this._notifyCompletion('skipped');
   }
 
+  /**
+   * Clear saved progress and run the tutorial again from the first step.
+   * start() resumes at the first step not in `completed`, and every step is
+   * marked complete as it is passed — including by auto-advance — so a replay
+   * has to clear that set or it resumes at the end and immediately completes.
+   */
+  restart() {
+    this.clearPendingAdvance();
+    this.hideCurrentStep();
+    this.completed.clear();
+    this.saveProgress();
+    this.active = false;
+    this.currentStep = null;
+    this.stepIndex = 0;
+    this.skipRequested = false;
+    this.start();
+    return this.active;
+  }
+
   // Show a tutorial step
   showStep(step) {
     if (!step) {

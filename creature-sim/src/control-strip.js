@@ -618,6 +618,11 @@ export class ControlStripController {
       return;
     }
 
+    if (action === 'replay-tutorial') {
+      this.uiController?.onReplayTutorial?.();
+      return;
+    }
+
     if (action === 'food') {
       this.activateFoodTool();
       return;

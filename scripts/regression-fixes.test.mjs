@@ -21,6 +21,7 @@ import { fillSnapshotPool } from '../creature-sim/src/snapshot-pool.js';
 import { SimulationProxy } from '../creature-sim/src/simulation-proxy.js';
 import { SaveSystem } from '../creature-sim/src/save-system.js';
 import { eventSystem, GameEvents } from '../creature-sim/src/event-system.js';
+import { TutorialSystem } from '../creature-sim/src/tutorial-system.js';
 
 function makeFakeWorkerProxy() {
   const priorWindow = globalThis.window;
@@ -556,6 +557,65 @@ test('scenario-editor: does not duplicate Scenario Lab status id', () => {
   const source = fs.readFileSync(new URL('../creature-sim/src/scenario-editor.js', import.meta.url), 'utf8');
   assert.match(source, /id="scenario-editor-status"/);
   assert.doesNotMatch(source, /id="scenario-status"/);
+});
+
+test('tutorial-system: replay clears saved progress and restarts at the first step', () => {
+  const store = new Map();
+  const priorLocalStorage = globalThis.localStorage;
+  const priorWindow = globalThis.window;
+  globalThis.localStorage = {
+    getItem: k => (store.has(k) ? store.get(k) : null),
+    setItem: (k, v) => store.set(k, String(v)),
+    removeItem: k => store.delete(k)
+  };
+  globalThis.window = globalThis.window || {};
+  globalThis.window.setTimeout = () => 0;
+
+  try {
+    const tutorial = new TutorialSystem();
+    const shown = [];
+    tutorial.showStep = step => {
+      tutorial.currentStep = step;
+      shown.push(step?.id);
+    };
+    tutorial.hideCurrentStep = () => {};
+    tutorial.setupListeners = () => {};
+    tutorial.initTooltips = () => {};
+
+    // Every step auto-advances on a timer and is marked complete as it passes,
+    // so an idle first session ends here even if the player did nothing.
+    store.set('tutorial_completed', JSON.stringify([...tutorial.steps.map(s => s.id), 'all']));
+
+    tutorial.start();
+    assert.equal(shown.length, 0, 'a finished tutorial should not re-enter through start()');
+
+    tutorial.restart();
+    assert.equal(shown[0], tutorial.steps[0].id, 'replay should re-enter at the first step, not resume at the end');
+    assert.equal(tutorial.stepIndex, 0, 'replay should reset the step index');
+    assert.equal(tutorial.active, true, 'replay should leave the tutorial active');
+    assert.deepEqual(
+      JSON.parse(store.get('tutorial_completed')),
+      [],
+      'replay should clear persisted progress so steps are not skipped again'
+    );
+  } finally {
+    globalThis.localStorage = priorLocalStorage;
+    globalThis.window = priorWindow;
+  }
+});
+
+test('tutorial replay is reachable from the overflow menu', () => {
+  const html = fs.readFileSync(new URL('../creature-sim/index.html', import.meta.url), 'utf8');
+  const strip = fs.readFileSync(new URL('../creature-sim/src/control-strip.js', import.meta.url), 'utf8');
+  const panels = fs.readFileSync(new URL('../creature-sim/src/ui-controller-panels.js', import.meta.url), 'utf8');
+
+  // The only prior affordance lived in #hud-action-bank, which is hidden
+  // legacy markup with no listener, so the tutorial could never be replayed.
+  assert.match(html, /data-action="replay-tutorial"/);
+  assert.match(strip, /action === 'replay-tutorial'/);
+  assert.match(strip, /onReplayTutorial/);
+  // The handler must drive the step tutorial, not only the touch-gesture card.
+  assert.match(panels, /this\.tutorial\?\.restart/);
 });
 
 console.log('\n=== SUMMARY ===');

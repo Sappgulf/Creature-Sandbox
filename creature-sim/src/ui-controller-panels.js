@@ -448,9 +448,26 @@ export function applyUiPanelMethods(UIController) {
   };
 
   UIController.prototype.onReplayTutorial = function () {
-    if (!touchOnboarding) return;
-    touchOnboarding.reset();
-    touchOnboarding.show({ force: true });
-    this.notifications?.show?.('🎓 Replaying tutorial…', 'info', 1600);
+    // Two separate onboarding surfaces exist: the eight-step tutorial that
+    // every player sees, and the touch gesture card that only appears on a
+    // touch device. This replayed the touch card alone and returned early when
+    // there was none, so on a mouse the button did nothing at all — and the
+    // step tutorial, whose steps auto-advance and persist as completed, could
+    // never be replayed once it had run.
+    let replayed = false;
+
+    if (this.tutorial?.restart) {
+      replayed = this.tutorial.restart() !== false;
+    }
+
+    if (touchOnboarding) {
+      touchOnboarding.reset();
+      touchOnboarding.show({ force: true });
+      replayed = true;
+    }
+
+    if (replayed) {
+      this.notifications?.show?.('🎓 Replaying tutorial…', 'info', 1600);
+    }
   };
 }
