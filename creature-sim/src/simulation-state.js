@@ -5,9 +5,9 @@ import { geneValue } from './creature-genetics-helpers.js';
  * This allows super-fast data transfer between the worker and main thread.
  */
 
-// Each creature takes 16 floats in the buffer
+// Each creature takes 18 floats in the buffer
 // (Packed as Float32Array)
-export const CREATURE_STRIDE = 16;
+export const CREATURE_STRIDE = 18;
 
 export const LAYOUT = {
   ID: 0,
@@ -25,7 +25,13 @@ export const LAYOUT = {
   HUE: 12,
   ALIVE: 13,
   AGE_STAGE: 14, // Packed int: 0: baby, 1: juvenile, 2: adult, 3: elder
-  LUCKY: 15 // Flags (mutation, etc)
+  LUCKY: 15, // Flags (mutation, etc)
+  // Needs travel with the creature because objective metrics are computed on
+  // the main thread from this snapshot. Without them every stress- and
+  // hunger-based objective reads a constant 0 in worker mode, which is the
+  // shipping default. Both are 0-100, matching Creature.needs.
+  STRESS: 16,
+  HUNGER: 17
 };
 
 /**
@@ -63,6 +69,8 @@ export function packCreature(creature, buffer, index) {
   buffer[o + LAYOUT.AGE_STAGE] = stage;
 
   buffer[o + LAYOUT.LUCKY] = creature.genes?._luckyMutation ? 1 : 0;
+  buffer[o + LAYOUT.STRESS] = Number(creature.needs?.stress ?? creature.ecosystem?.stress ?? 0);
+  buffer[o + LAYOUT.HUNGER] = Number(creature.needs?.hunger ?? 0);
 }
 
 /**
@@ -112,6 +120,12 @@ export function unpackCreature(buffer, index) {
     size: buffer[o + LAYOUT.SIZE],
     alive: buffer[o + LAYOUT.ALIVE] > 0.5,
     ageStage: STAGES[stageInt] || 'adult',
+    // Shaped as `needs` so main-thread metric code reads worker creatures and
+    // real Creature instances through the same path.
+    needs: {
+      stress: buffer[o + LAYOUT.STRESS],
+      hunger: buffer[o + LAYOUT.HUNGER]
+    },
     genes: {
       predator: buffer[o + LAYOUT.PREDATOR] > 0.5,
       diet: buffer[o + LAYOUT.DIET],

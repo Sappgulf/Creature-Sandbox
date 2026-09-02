@@ -22,6 +22,8 @@ import { SimulationProxy } from '../creature-sim/src/simulation-proxy.js';
 import { SaveSystem } from '../creature-sim/src/save-system.js';
 import { eventSystem, GameEvents } from '../creature-sim/src/event-system.js';
 import { TutorialSystem } from '../creature-sim/src/tutorial-system.js';
+import { packCreature, unpackCreature, createCreatureBuffer } from '../creature-sim/src/simulation-state.js';
+import { collectGameplayMetrics } from '../creature-sim/src/gameplay-objectives.js';
 
 function makeFakeWorkerProxy() {
   const priorWindow = globalThis.window;
@@ -616,6 +618,27 @@ test('tutorial replay is reachable from the overflow menu', () => {
   assert.match(strip, /onReplayTutorial/);
   // The handler must drive the step tutorial, not only the touch-gesture card.
   assert.match(panels, /this\.tutorial\?\.restart/);
+});
+
+test('simulation-state: worker snapshot carries stress and hunger, so objective metrics are not stuck at 0', () => {
+  const genes = makeGenes({ predator: false, diet: 0 });
+  const creature = new Creature(50, 50, genes);
+  creature.needs = { ...(creature.needs || {}), stress: 37.5, hunger: 82.25 };
+
+  const buffer = createCreatureBuffer(1);
+  packCreature(creature, buffer, 0);
+  const unpacked = unpackCreature(buffer, 0);
+
+  // The packed layout had no slot for either, so unpacked creatures reached
+  // computeMetrics() with no `needs` at all and every stress/hunger-gated
+  // objective, advisory and health score read a constant 0.
+  assert.ok(unpacked.needs, 'unpacked creature should expose needs');
+  assert.ok(Math.abs(unpacked.needs.stress - 37.5) < 0.01, 'stress should survive the buffer round trip');
+  assert.ok(Math.abs(unpacked.needs.hunger - 82.25) < 0.01, 'hunger should survive the buffer round trip');
+
+  const metrics = collectGameplayMetrics({ creatures: [unpacked], food: [], t: 0 });
+  assert.ok(metrics.averageStress > 0, 'averageStress should reflect snapshot creatures, not default to 0');
+  assert.ok(metrics.averageHunger > 0, 'averageHunger should reflect snapshot creatures, not default to 0');
 });
 
 console.log('\n=== SUMMARY ===');

@@ -127,6 +127,7 @@ export class DOMCache {
     this.cacheElement('home-bg', 'homeBg');
     this.cacheElement('btn-continue', 'continueBtn');
     this.cacheElement('btn-new-game', 'newGameBtn');
+    this.cacheElement('btn-guided-run', 'guidedRunBtn');
     this.cacheElement('btn-campaign', 'campaignBtn');
     this.cacheElement('continue-hint', 'continueHint');
 

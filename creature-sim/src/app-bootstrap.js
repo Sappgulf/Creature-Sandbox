@@ -1369,6 +1369,7 @@ export async function initializeApp() {
     const continueBtn = domCache.get('continueBtn') || document.getElementById('btn-continue');
     const continueHint = domCache.get('continueHint') || document.getElementById('continue-hint');
     const newGameBtn = domCache.get('newGameBtn') || document.getElementById('btn-new-game');
+    const guidedRunBtn = domCache.get('guidedRunBtn') || document.getElementById('btn-guided-run');
     const campaignBtn = domCache.get('campaignBtn') || document.getElementById('btn-campaign');
 
     // Show home page
@@ -1378,6 +1379,12 @@ export async function initializeApp() {
       // Show continue button if save exists
       if (saveSystem && saveSystem.hasAutoSave()) {
         setElementHidden(continueBtn, false);
+        // Continue owns the primary slot for a returning player; the guided
+        // run stays available but stops competing with it.
+        if (guidedRunBtn) {
+          guidedRunBtn.classList.remove('home-btn-primary');
+          guidedRunBtn.classList.add('home-btn-secondary');
+        }
         // Show save timestamp
         if (continueHint) {
           try {
@@ -1466,6 +1473,36 @@ export async function initializeApp() {
         });
       }
     }, 'New game button setup');
+
+    // Handle guided run button. Herd Rescue is the expedition the product is
+    // designed around — a two-minute, stress-aware run with three ordered
+    // moves — but it was reachable only through the overflow menu, Modes &
+    // Goals, the Playable Run card and a Start button. A first-time player
+    // never met it and instead opened on a random session goal.
+    errorHandler.safeExecute(() => {
+      if (guidedRunBtn) {
+        guidedRunBtn.addEventListener('click', () => {
+          errorHandler.safeExecute(() => {
+            initAudioOnInteraction();
+            if (audio) audio.playUISound('click');
+            if (saveSystem) saveSystem.clearAutoSave();
+
+            setElementHidden(homePage, true);
+            setHomePageActive(false);
+            startNewGame();
+
+            // startScenario reseeds the world from the scenario's own setup,
+            // so it has to run after the new game exists.
+            const snapshot =
+              gameDirector?.startScenario?.('first_ecosystem', { announce: true }) ||
+              playableScenarios?.startScenario?.('first_ecosystem', { announce: true }) ||
+              null;
+            uiController?.updateSessionMetaVisibility?.();
+            uiController?.renderPlayableDirector?.(snapshot?.playable || snapshot);
+          }, 'Guided run setup');
+        });
+      }
+    }, 'Guided run button setup');
 
     // Handle campaign button (opens campaign panel from home)
     errorHandler.safeExecute(() => {
