@@ -698,6 +698,10 @@ export class ControlStripController {
         this.uiController?.onEcoHealthToggle();
         this.syncMenuState();
         break;
+      case 'sound':
+        this.uiController?.onSoundToggle();
+        this.syncMenuState();
+        break;
       case 'analytics':
         this.uiController?.onAnalyticsToggle();
         break;

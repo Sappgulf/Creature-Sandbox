@@ -420,7 +420,11 @@ export class InputManager {
       'gene-editor-panel',
       'eco-health-panel',
       'moments-panel',
-      'campaign-panel'
+      'campaign-panel',
+      // Both open from the same menu as the panels above and were the only
+      // ones Escape did not close.
+      'upgrade-panel',
+      'sound-panel'
     ];
     for (const panelId of closeablePanels) {
       const panel = document.getElementById(panelId);

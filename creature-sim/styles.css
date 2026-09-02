@@ -4683,6 +4683,51 @@ body.home-active #btn-show-inspector {
   color: #f4e8ff;
 }
 
+/* The Upgrade Hub carried no placement or height rule of its own. As a bare
+   .panel (position: fixed with auto offsets) it landed in the viewport's
+   top-left corner and grew to its content — 1275px against an 800px
+   viewport — while html/body stay overflow:hidden. The bottom 475px,
+   including the whole last section, was unreachable. Anchor it under the
+   objective rail like its sibling panels and let the body scroll. */
+/* Scrolls on the panel itself, matching the achievements, gene-editor and
+   features panels, rather than on an inner body — #upgrade-panel-body is
+   nested inside .panel-body, so scrolling that leaves the intermediate
+   wrapper unbounded and the content still clipped. Unscoped on purpose: the
+   narrow .panel rule caps this at 60vh with no overflow of its own, so the
+   tail was unreachable on a phone too. */
+#upgrade-panel {
+  overflow-y: auto;
+}
+
+/* The Sound panel had no rule of its own either, so like the Upgrade Hub it
+   landed in the viewport's top-left corner. Nobody had reported it because
+   its menu item never dispatched, so the panel was unreachable. */
+#sound-panel {
+  overflow-y: auto;
+}
+
+@media (min-width: 769px) {
+  #sound-panel {
+    top: 80px;
+    right: 16px;
+    left: auto;
+    max-height: calc(100vh - 96px);
+  }
+}
+
+/* Placement only for the wide path. Below 769px the shared .panel rule
+   bottom-anchors panels and caps them at 60vh; an id selector outranks its
+   max-height, which stretched this to 716px against that anchor and pushed
+   the panel's top 36px above the viewport. */
+@media (min-width: 769px) {
+  #upgrade-panel {
+    top: 80px;
+    left: 16px;
+    max-height: calc(100vh - 96px);
+    max-width: min(626px, calc(100vw - 32px));
+  }
+}
+
 .upgrade-panel-body {
   display: grid;
   gap: 14px;
