@@ -140,6 +140,11 @@ import { getDebugFlags } from './debug-flags.js';
  * @property {Object} disaster
  */
 
+// Field-journal flower palette: cream, pale yellow, soft coral, faded lilac.
+// Four species-like bands instead of the full hue wheel, so ground cover reads
+// as a meadow rather than confetti.
+const FLOWER_HUE_BANDS = [48, 62, 12, 288];
+
 export class World {
   /**
    * Creates a new World of the given dimensions. The constructor wires up
@@ -729,16 +734,71 @@ export class World {
       { type: 'rock', sprite: 1, sizeRange: [15, 25] }
     ];
 
+    // Ground cover used to be scattered by uniform random over the whole map,
+    // which reads as evenly-tiled wallpaper rather than terrain — no thickets,
+    // no clearings, nowhere for the eye to rest. Draw most of it around a set
+    // of drift centres with falloff and leave the rest scattered, so the field
+    // grows dense stands and open ground the player can actually navigate by.
+    const patchCount = Math.max(6, Math.round((this.width * this.height) / 260000));
+    const patches = [];
+    for (let i = 0; i < patchCount; i++) {
+      patches.push({
+        x: Math.random() * this.width,
+        y: Math.random() * this.height,
+        radius: 260 + Math.random() * 420
+      });
+    }
+    const CLUSTERED_SHARE = 0.78;
+
+    // Trees are the only decoration big enough to occlude one another. Left
+    // unchecked inside a patch they stack into an unreadable mass of
+    // overlapping canopies, so keep them a canopy-width apart and demote the
+    // rejects to ground cover — a stand of distinct trees, not a green blob.
+    const TREE_CELL = 90;
+    const treeCells = new Set();
+    const treeCellKey = (x, y) => `${(x / TREE_CELL) | 0}:${(y / TREE_CELL) | 0}`;
+    const treeCrowded = (x, y) => {
+      const cx = (x / TREE_CELL) | 0;
+      const cy = (y / TREE_CELL) | 0;
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          if (treeCells.has(`${cx + dx}:${cy + dy}`)) return true;
+        }
+      }
+      return false;
+    };
+
     for (let i = 0; i < decorCount; i++) {
-      const x = Math.random() * this.width;
-      const y = Math.random() * this.height;
+      let x;
+      let y;
+      if (patches.length && Math.random() < CLUSTERED_SHARE) {
+        const patch = patches[(Math.random() * patches.length) | 0];
+        // sqrt keeps the draw area-uniform inside the disc instead of
+        // bunching everything at the exact centre.
+        const dist = Math.sqrt(Math.random()) * patch.radius;
+        const angle = Math.random() * Math.PI * 2;
+        x = clamp(patch.x + Math.cos(angle) * dist, 0, this.width);
+        y = clamp(patch.y + Math.sin(angle) * dist, 0, this.height);
+      } else {
+        x = Math.random() * this.width;
+        y = Math.random() * this.height;
+      }
       const biome = this.getBiomeAt(x, y);
       const biomeType = biome?.type || 'grassland';
 
       const possibleDecors = decorTypes[biomeType] || defaultTypes;
       if (possibleDecors.length === 0) continue;
 
-      const decorTemplate = possibleDecors[Math.floor(Math.random() * possibleDecors.length)];
+      let decorTemplate = possibleDecors[Math.floor(Math.random() * possibleDecors.length)];
+      if (decorTemplate.type === 'tree') {
+        if (treeCrowded(x, y)) {
+          const ground = possibleDecors.filter(d => d.type !== 'tree');
+          if (!ground.length) continue;
+          decorTemplate = ground[Math.floor(Math.random() * ground.length)];
+        } else {
+          treeCells.add(treeCellKey(x, y));
+        }
+      }
       const size =
         decorTemplate.sizeRange[0] + Math.random() * (decorTemplate.sizeRange[1] - decorTemplate.sizeRange[0]);
       let hue;
@@ -747,7 +807,11 @@ export class World {
           hue = 20 + Math.random() * 30; // browns and grays
           break;
         case 'flower':
-          hue = Math.random() * 360; // full spectrum for flowers
+          // A meadow holds a handful of species, not 360 of them. Full-spectrum
+          // random hues scattered rainbow confetti across the field and fought
+          // the palette; these are four muted bands a naturalist would actually
+          // log — cream, pale yellow, soft coral, faded lilac.
+          hue = FLOWER_HUE_BANDS[(Math.random() * FLOWER_HUE_BANDS.length) | 0] + Math.random() * 14 - 7;
           break;
         case 'tree':
           hue = 80 + Math.random() * 50; // greens

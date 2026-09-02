@@ -15,6 +15,7 @@ export class SimulationProxy {
       eventSystem.emit(GameEvents.ERROR_CRITICAL, { message: 'Simulation Worker Crashed: ' + e.message });
     };
     this.isReady = false;
+    this._decorations = [];
     this.diagnostics = {
       errorCount: 0,
       snapshotCount: 0,
@@ -275,6 +276,10 @@ export class SimulationProxy {
         this.updateSnapshot(e.data);
         break;
 
+      case 'DECORATIONS':
+        this._decorations = e.data.data?.decorations || [];
+        break;
+
       case 'WORLD_EXTRAS':
         this._saveExtras = e.data.data;
         if (this._saveExtras?.biomeSeed != null && this.biomeGenerator) {
@@ -433,6 +438,14 @@ export class SimulationProxy {
   }
   get particles() {
     return this.worldSnapshot.particles;
+  }
+  /**
+   * Environmental decorations (trees, rocks, flowers, grass). Pushed from the
+   * worker once per seed/reset rather than riding along in every snapshot,
+   * since they are fixed for the life of a world.
+   */
+  get decorations() {
+    return this._decorations;
   }
   get heatmaps() {
     return this.worldSnapshot.heatmaps;

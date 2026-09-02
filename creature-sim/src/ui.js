@@ -215,31 +215,54 @@ export function renderInteractionHint(
   el.setAttribute('aria-hidden', shouldHide ? 'true' : 'false');
 }
 
+const INSPECTED_KEY = 'creature-sim-has-inspected';
+let inspectedCache = null;
+
+function hasInspectedBefore() {
+  if (inspectedCache !== null) return inspectedCache;
+  try {
+    inspectedCache = localStorage.getItem(INSPECTED_KEY) === 'true';
+  } catch {
+    inspectedCache = false;
+  }
+  return inspectedCache;
+}
+
+function markInspected() {
+  if (inspectedCache) return;
+  inspectedCache = true;
+  try {
+    localStorage.setItem(INSPECTED_KEY, 'true');
+  } catch {
+    // Private browsing: the prompt simply keeps showing, which is harmless.
+  }
+}
+
 export function renderSelectedInfo(el, creature, { world = null, lineageTracker = null, inspectorOpen = false } = {}) {
   if (!el) return;
   const isMobile = typeof window !== 'undefined' && (window.matchMedia?.('(max-width: 768px)').matches ?? false);
   const useInspectorChip = !isMobile && !!inspectorOpen;
   if (!creature) {
-    el.classList.remove('hidden');
     el.classList.remove('selected-dossier');
     el.classList.remove('selected-inspector-chip');
     el.classList.add('selected-empty');
+    // Once the player has inspected anything, the prompt has done its job.
+    // It used to hold a full card in the bottom-left corner for the whole
+    // session to say that nothing was selected — prime real estate spent on
+    // the absence of information.
+    if (hasInspectedBefore()) {
+      el.classList.add('hidden');
+      el.innerHTML = '';
+      return;
+    }
+    el.classList.remove('hidden');
     el.innerHTML = isMobile
-      ? `
-        <div class="empty-title">No creature selected</div>
-        <div class="muted">Tap a creature to inspect or use Spawn.</div>
-      `
-      : `
-        <div class="empty-title">No creature selected</div>
-        <div class="muted">Tap a creature to inspect. Use Spawn to add one.</div>
-        <ul class="empty-list">
-          <li>Use <strong>S</strong> or Spawn to place creatures.</li>
-          <li>Shift+click sets a lineage root.</li>
-        </ul>
-      `;
+      ? '<div class="empty-title">Tap a creature to inspect</div>'
+      : '<div class="empty-title">Click a creature to inspect</div><div class="muted">Shift-click sets a lineage root</div>';
     return;
   }
 
+  markInspected();
   el.classList.remove('hidden');
   el.classList.remove('selected-empty');
   el.classList.add('selected-dossier');

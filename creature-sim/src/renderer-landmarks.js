@@ -1,18 +1,47 @@
 import { clamp } from './utils.js';
-import { assetLoader } from './asset-loader.js?v=20260423-assets1';
 import { getLandscapeLandmarks } from './renderer-biome.js?v=20260423-assets1';
 
-const frameByBiome = {
-  forest: 1,
-  jungle: 1,
-  wetland: 2,
-  water: 3,
-  mountain: 4,
-  tundra: 4,
-  desert: 5
-};
-const pendingLandmarkRequests = new Set();
+/**
+ * Landmarks are the map's legend — the shapes a player navigates by when the
+ * field is otherwise a wash of ground cover.
+ *
+ * The previous layer drew each one as a hard stroked ellipse with a flat
+ * illustrated icon (a snow-capped mountain, a lily pond) dropped in the
+ * middle. Neither belonged: the ring was the only hard geometric edge in a
+ * world made of organic shapes and read as a leftover debug overlay, and the
+ * icons came from a different art vocabulary than everything around them.
+ *
+ * These are drawn instead as a soft tonal wash with a monoline symbol on top —
+ * the way a field notebook marks terrain, in the world's own palette.
+ */
+
 const worldLandmarkCache = new WeakMap();
+
+// Biome ink: the colour the symbol is drawn in, lifted off the ground tone so
+// it reads as annotation rather than another piece of scenery.
+const BIOME_INK = {
+  forest: [126, 186, 148],
+  jungle: [126, 186, 148],
+  wetland: [118, 198, 190],
+  water: [122, 190, 226],
+  mountain: [166, 178, 198],
+  tundra: [176, 194, 212],
+  desert: [214, 178, 122],
+  meadow: [178, 198, 128],
+  grassland: [166, 190, 130]
+};
+
+const BIOME_WASH = {
+  forest: [36, 68, 58],
+  jungle: [34, 74, 58],
+  wetland: [42, 82, 74],
+  water: [34, 74, 116],
+  mountain: [74, 66, 62],
+  tundra: [70, 86, 108],
+  desert: [98, 76, 46],
+  meadow: [72, 94, 60],
+  grassland: [62, 82, 52]
+};
 
 function getCachedLandmarks(world) {
   const cacheKey = `${world.width}:${world.height}`;
@@ -38,105 +67,91 @@ function getCachedBiomes(world, landmarks) {
   return biomes;
 }
 
-function landmarkFrame(biome, fallback) {
-  return frameByBiome[biome?.type] ?? fallback ?? 0;
-}
+/**
+ * Monoline terrain symbols, drawn in a unit box roughly -1..1 on both axes so
+ * the caller can scale them to any landmark radius.
+ */
+function drawSymbol(ctx, type, unit) {
+  const u = unit;
+  ctx.beginPath();
+  switch (type) {
+    case 'water':
+      // Three drifting wave strokes.
+      for (let i = -1; i <= 1; i++) {
+        const y = i * 0.42 * u;
+        ctx.moveTo(-0.95 * u, y);
+        ctx.bezierCurveTo(-0.4 * u, y - 0.3 * u, 0.2 * u, y + 0.3 * u, 0.95 * u, y);
+      }
+      break;
 
-function drawAtlasFrame(ctx, sheet, frame, x, y, size) {
-  if (!sheet?.image) return false;
-  ctx.drawImage(sheet.image, Math.max(0, frame) * 128, 0, 128, 128, x - size / 2, y - size / 2, size, size);
-  return true;
-}
+    case 'wetland':
+      // Reeds standing out of a single water line.
+      ctx.moveTo(-0.95 * u, 0.55 * u);
+      ctx.bezierCurveTo(-0.3 * u, 0.35 * u, 0.3 * u, 0.75 * u, 0.95 * u, 0.55 * u);
+      for (const [x, lean] of [
+        [-0.5, -0.18],
+        [-0.1, 0.12],
+        [0.36, -0.1],
+        [0.72, 0.16]
+      ]) {
+        ctx.moveTo(x * u, 0.5 * u);
+        ctx.quadraticCurveTo((x + lean * 0.5) * u, -0.15 * u, (x + lean) * u, -0.78 * u);
+      }
+      break;
 
-function drawFallback(ctx, x, y, size, frame) {
-  const half = size * 0.28;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.globalAlpha *= 0.82;
-  ctx.lineJoin = 'round';
-  if (frame === 3) {
-    ctx.strokeStyle = 'rgba(132, 232, 255, 0.82)';
-    ctx.lineWidth = Math.max(2, size * 0.035);
-    for (const offset of [0, half * 0.42]) {
-      ctx.beginPath();
-      ctx.moveTo(-half * (offset ? 1.5 : 1.8), offset);
-      ctx.bezierCurveTo(-half, -half * (offset ? 0.2 : 1), half * 0.4, half, half * (offset ? 1.5 : 1.8), offset);
-      ctx.stroke();
+    case 'mountain':
+    case 'tundra': {
+      // A ridge line: two peaks and a shoulder.
+      ctx.moveTo(-1 * u, 0.6 * u);
+      ctx.lineTo(-0.34 * u, -0.5 * u);
+      ctx.lineTo(-0.02 * u, -0.02 * u);
+      ctx.lineTo(0.36 * u, -0.82 * u);
+      ctx.lineTo(1 * u, 0.6 * u);
+      break;
     }
-  } else if (frame === 4) {
-    ctx.fillStyle = 'rgba(126, 166, 226, 0.82)';
-    ctx.beginPath();
-    ctx.moveTo(-half * 1.8, size * 0.2);
-    ctx.lineTo(-half * 0.45, -half * 1.25);
-    ctx.lineTo(0, -half * 0.38);
-    ctx.lineTo(half * 0.58, -half * 1.7);
-    ctx.lineTo(half * 1.8, size * 0.2);
-    ctx.closePath();
-    ctx.fill();
-  } else if (frame === 5) {
-    ctx.fillStyle = 'rgba(222, 142, 65, 0.84)';
-    for (const [offset, height] of [
-      [-1.45, 1.45],
-      [-0.55, 2.15],
-      [0.45, 1.75]
-    ]) {
-      ctx.fillRect(offset * half, -height * half * 0.5, half * 0.62, height * half);
-    }
-  } else if (frame === 1) {
-    ctx.fillStyle = 'rgba(49, 151, 125, 0.82)';
-    for (const [offset, height] of [
-      [-0.9, 1.2],
-      [0, 1.8],
-      [0.9, 1.25]
-    ]) {
-      ctx.beginPath();
-      ctx.moveTo(offset * half, size * 0.2);
-      ctx.lineTo(offset * half - half * 0.62, size * 0.2 - half * height);
-      ctx.lineTo(offset * half, size * 0.2 - half * (height + 0.42));
-      ctx.lineTo(offset * half + half * 0.62, size * 0.2 - half * height);
-      ctx.closePath();
-      ctx.fill();
-    }
-  } else if (frame === 2) {
-    ctx.fillStyle = 'rgba(44, 203, 187, 0.76)';
-    ctx.beginPath();
-    ctx.ellipse(0, half * 0.12, half * 1.65, half * 0.9, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(164, 255, 221, 0.76)';
-    ctx.lineWidth = Math.max(1.5, size * 0.025);
-    for (const offset of [-0.85, 0.2, 1]) {
-      ctx.beginPath();
-      ctx.moveTo(offset * half, half * 1.05);
-      ctx.quadraticCurveTo((offset - 0.2) * half, -half * 0.3, (offset + 0.12) * half, -half * 1.1);
-      ctx.stroke();
-    }
-  } else {
-    ctx.fillStyle = 'rgba(102, 183, 104, 0.78)';
-    ctx.beginPath();
-    ctx.ellipse(0, half * 0.12, half * 1.8, half * 1.1, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(224, 255, 153, 0.86)';
-    for (const [offsetX, offsetY] of [
-      [-0.85, -0.2],
-      [0.05, -0.55],
-      [0.85, 0.1],
-      [-0.15, 0.55]
-    ]) {
-      ctx.beginPath();
-      ctx.arc(offsetX * half, offsetY * half, Math.max(2, size * 0.035), 0, Math.PI * 2);
-      ctx.fill();
-    }
+
+    case 'desert':
+      // Stacked dune curves.
+      for (const [y, w] of [
+        [0.5, 1],
+        [0.02, 0.72],
+        [-0.46, 0.44]
+      ]) {
+        ctx.moveTo(-w * u, y * u);
+        ctx.quadraticCurveTo(0, (y - 0.6) * u, w * u, y * u);
+      }
+      break;
+
+    case 'forest':
+    case 'jungle':
+      // Three conifers on a shared ground line.
+      for (const [x, h] of [
+        [-0.6, 0.9],
+        [0.05, 1.25],
+        [0.66, 0.95]
+      ]) {
+        ctx.moveTo(x * u, 0.65 * u);
+        ctx.lineTo(x * u, (0.65 - h * 0.35) * u);
+        ctx.moveTo((x - 0.3) * u, (0.65 - h * 0.3) * u);
+        ctx.lineTo(x * u, (0.65 - h) * u);
+        ctx.lineTo((x + 0.3) * u, (0.65 - h * 0.3) * u);
+      }
+      break;
+
+    default:
+      // Meadow / grassland: seed heads on stems.
+      for (const [x, lean, h] of [
+        [-0.62, -0.16, 1.1],
+        [-0.12, 0.1, 1.35],
+        [0.38, -0.08, 1.05],
+        [0.78, 0.14, 0.85]
+      ]) {
+        ctx.moveTo(x * u, 0.7 * u);
+        ctx.quadraticCurveTo((x + lean * 0.4) * u, 0, (x + lean) * u, (0.7 - h) * u);
+      }
+      break;
   }
-  ctx.restore();
-}
-
-function requestLandmarks() {
-  if (pendingLandmarkRequests.has('env_landmarks')) return;
-  pendingLandmarkRequests.add('env_landmarks');
-  assetLoader
-    .requestSpriteFrames('env_landmarks', { size: 128 })
-    .catch(error => console.debug('[Renderer] landmark sprite load failed:', error))
-    .finally(() => pendingLandmarkRequests.delete('env_landmarks'));
+  ctx.stroke();
 }
 
 export function drawLandscapeLandmarks(renderer, ctx, world) {
@@ -145,11 +160,10 @@ export function drawLandscapeLandmarks(renderer, ctx, world) {
   const bounds = renderer._viewBounds;
   const landmarks = getCachedLandmarks(world);
   // The main-thread fallback preserves its established frame budget and
-  // relies on the stronger ground/resource layers; the full atlas layer is a
-  // progressive enhancement for the shipping worker renderer.
+  // relies on the stronger ground/resource layers; the full landmark layer is
+  // a progressive enhancement for the shipping worker renderer.
   if (!world.worldSnapshot) return;
   const biomes = getCachedBiomes(world, landmarks);
-  const iconScale = clamp(0.62 + zoom * 0.1, 0.62, 0.88);
 
   for (let index = 0; index < landmarks.length; index++) {
     const landmark = landmarks[index];
@@ -161,42 +175,38 @@ export function drawLandscapeLandmarks(renderer, ctx, world) {
     ) {
       continue;
     }
-    const biome = biomes[index];
-    const [r, g, b] = {
-      forest: [36, 68, 58],
-      desert: [98, 76, 46],
-      tundra: [70, 86, 108],
-      mountain: [74, 66, 62],
-      wetland: [42, 82, 74],
-      water: [34, 74, 116],
-      meadow: [72, 94, 60],
-      grassland: [62, 82, 52]
-    }[biome?.type] || [62, 82, 52];
+
+    const biomeType = biomes[index]?.type || 'grassland';
+    const [wr, wg, wb] = BIOME_WASH[biomeType] || BIOME_WASH.grassland;
+    const [ir, ig, ib] = BIOME_INK[biomeType] || BIOME_INK.grassland;
     const radiusX = landmark.radius * 0.96;
     const radiusY = landmark.radius * 0.5;
+
     ctx.save();
-    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${clamp(0.05 + zoom * 0.025, 0.05, 0.08)})`;
+
+    // Tonal wash with no edge. A radial gradient fading fully to transparent
+    // marks the region without drawing a boundary the world does not have.
+    const wash = ctx.createRadialGradient(landmark.x, landmark.y, 0, landmark.x, landmark.y, radiusX);
+    const washAlpha = clamp(0.1 + zoom * 0.05, 0.1, 0.17);
+    wash.addColorStop(0, `rgba(${wr}, ${wg}, ${wb}, ${washAlpha})`);
+    wash.addColorStop(0.62, `rgba(${wr}, ${wg}, ${wb}, ${washAlpha * 0.5})`);
+    wash.addColorStop(1, `rgba(${wr}, ${wg}, ${wb}, 0)`);
+    ctx.fillStyle = wash;
     ctx.beginPath();
     ctx.ellipse(landmark.x, landmark.y, radiusX, radiusY, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = `rgba(${Math.min(255, r + 54)}, ${Math.min(255, g + 54)}, ${Math.min(255, b + 54)}, ${clamp(0.18 + zoom * 0.04, 0.18, 0.26)})`;
-    ctx.lineWidth = Math.max(1.1, 1.8 / zoom);
-    ctx.beginPath();
-    ctx.ellipse(landmark.x, landmark.y, radiusX * 0.9, radiusY * 0.86, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
 
-    const frame = landmarkFrame(biome, landmark.fallbackFrame);
-    const size = landmark.radius * iconScale;
-    const imageFrame = assetLoader.getSpriteFrameSync('env_landmarks', frame, 128);
-    if (imageFrame) {
-      ctx.save();
-      ctx.globalAlpha = clamp(0.64 + zoom * 0.12, 0.64, 0.86);
-      ctx.drawImage(imageFrame, landmark.x - size / 2, landmark.y - size / 2, size, size);
-      ctx.restore();
-    } else if (!drawAtlasFrame(ctx, assetLoader.getSpriteSheet('env_landmarks'), frame, landmark.x, landmark.y, size)) {
-      requestLandmarks();
-      drawFallback(ctx, landmark.x, landmark.y, size, frame);
-    }
+    // Monoline symbol. Kept quiet so it labels the terrain rather than
+    // competing with the creatures living on it.
+    const unit = landmark.radius * 0.3;
+    ctx.translate(landmark.x, landmark.y);
+    ctx.globalAlpha = clamp(0.2 + zoom * 0.12, 0.2, 0.38);
+    ctx.strokeStyle = `rgb(${ir}, ${ig}, ${ib})`;
+    ctx.lineWidth = Math.max(1.2, unit * 0.075);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    drawSymbol(ctx, biomeType, unit);
+
+    ctx.restore();
   }
 }

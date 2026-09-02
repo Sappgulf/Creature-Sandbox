@@ -587,8 +587,12 @@ export class Renderer {
     drawLandscapeLandmarks?.(this, ctx, world);
 
     // Draw decorations with better visibility (less dense)
+    // The old skip factor was `floor(5 / zoom)`, which is 5 at every zoom the
+    // game is actually played at — four of every five trees, rocks and flowers
+    // were discarded, leaving the field bare. Thin out only when zoomed far
+    // enough back that the layer would read as noise anyway.
     if (world.decorations && this.camera.zoom > 0.4) {
-      const skipFactor = Math.max(1, Math.floor(5 / this.camera.zoom));
+      const skipFactor = this.camera.zoom >= 0.75 ? 1 : this.camera.zoom >= 0.55 ? 2 : 3;
       for (let i = 0; i < world.decorations.length; i += skipFactor) {
         const dec = world.decorations[i];
         if (dec.x < bounds.x1 || dec.x > bounds.x2 || dec.y < bounds.y1 || dec.y > bounds.y2) {

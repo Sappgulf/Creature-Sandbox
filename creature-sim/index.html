@@ -57,6 +57,61 @@
 <body>
   <a class="skip-link" href="#main-content">Skip to main content</a>
   <div id="sim-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+  <!-- Field-journal icon set. Monoline symbols in the same drawing vocabulary
+       as the map's terrain marks, replacing the emoji the control strip used
+       to carry — emoji render as a different typeface on every platform, so
+       the toolbar was literally a different product on Android than on iOS. -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true" focusable="false">
+    <defs>
+      <style>
+        .fj-icon { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+        .fj-solid { fill: currentColor; stroke: none; }
+      </style>
+    </defs>
+    <symbol id="i-pause" viewBox="0 0 24 24">
+      <g class="fj-icon"><path d="M9.5 5.5v13M14.5 5.5v13"/></g>
+    </symbol>
+    <symbol id="i-play" viewBox="0 0 24 24">
+      <g class="fj-icon"><path d="M8 5.4 18.4 12 8 18.6z"/></g>
+    </symbol>
+    <symbol id="i-food" viewBox="0 0 24 24">
+      <g class="fj-icon">
+        <path d="M12 20.5V9"/>
+        <path d="M12 13.4c-3.2 0-5.4-1.9-5.6-5 2.9-.5 5.4 1.3 5.6 5z"/>
+        <path d="M12 10.6c2.9 0 5-1.8 5.2-4.7-2.7-.4-5 1.2-5.2 4.7z"/>
+      </g>
+    </symbol>
+    <symbol id="i-inspect" viewBox="0 0 24 24">
+      <g class="fj-icon"><circle cx="10.8" cy="10.8" r="5.6"/><path d="M15 15 20 20"/></g>
+    </symbol>
+    <symbol id="i-watch" viewBox="0 0 24 24">
+      <g class="fj-icon"><path d="M2.6 12S6.3 6.2 12 6.2 21.4 12 21.4 12 17.7 17.8 12 17.8 2.6 12 2.6 12z"/><circle cx="12" cy="12" r="2.6"/></g>
+    </symbol>
+    <symbol id="i-more" viewBox="0 0 24 24">
+      <g class="fj-solid"><circle cx="5.6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18.4" cy="12" r="1.5"/></g>
+    </symbol>
+    <!-- Creature silhouettes: the same body language as the sprites in the
+         world, so the spawn control shows what it will actually place. -->
+    <symbol id="i-herbivore" viewBox="0 0 24 24">
+      <g class="fj-icon"><path d="M4.6 14.2c0-3 2.7-5.2 6.2-5.2s6.4 2.2 6.4 5.2-2.9 5-6.4 5-6.2-2-6.2-5z"/><path d="M17 12.6 21 9.4M14.6 9.3l1-3.4"/><circle cx="14.4" cy="12.9" r=".95" class="fj-solid"/></g>
+    </symbol>
+    <symbol id="i-omnivore" viewBox="0 0 24 24">
+      <g class="fj-icon"><path d="M4.4 13.9c0-3.1 2.8-5.4 6.4-5.4s6.6 2.3 6.6 5.4-3 5.2-6.6 5.2-6.4-2.1-6.4-5.2z"/><path d="M7.8 8.9 6.4 5.4M13.6 8.7l1.6-3.3M17.4 12.4l3.4-1.5"/><circle cx="14.6" cy="12.7" r=".95" class="fj-solid"/></g>
+    </symbol>
+    <symbol id="i-predator" viewBox="0 0 24 24">
+      <g class="fj-icon"><path d="M4.2 13.8c0-3.2 2.9-5.5 6.6-5.5s6.8 2.3 6.8 5.5-3.1 5.3-6.8 5.3-6.6-2.1-6.6-5.3z"/><path d="m6.6 8.8 1.5-3.6 2.2 2.9M15.4 8.2l2.6-3 .5 3.6M17.6 12.2l3.4-.8"/><circle cx="14.8" cy="12.6" r=".95" class="fj-solid"/></g>
+    </symbol>
+    <symbol id="i-aquatic" viewBox="0 0 24 24">
+      <g class="fj-icon"><path d="M3.4 13c2-3.2 5.2-4.8 8.6-4.8 3 0 5.4 1.3 7 3.6-1.6 2.7-4.2 4.2-7.4 4.2-3.3 0-6.2-1.2-8.2-3z"/><path d="m19 11.8 2.2-2.4v5.2L19 12.3M4.8 18.4c1.6-1.1 3.4-1.2 5 0"/><circle cx="8.4" cy="12" r=".95" class="fj-solid"/></g>
+    </symbol>
+    <symbol id="i-flying" viewBox="0 0 24 24">
+      <g class="fj-icon"><path d="M8.6 13.6c0-2.4 2.1-4.1 4.8-4.1s4.9 1.7 4.9 4.1-2.2 3.9-4.9 3.9-4.8-1.6-4.8-3.9z"/><path d="M9.4 11.6C7.2 8.9 4.9 7.7 2.4 8.2c.6 2.7 2.4 4.4 5.4 5M18.3 12.4l3-1.4"/><circle cx="16" cy="12.6" r=".95" class="fj-solid"/></g>
+    </symbol>
+    <symbol id="i-burrowing" viewBox="0 0 24 24">
+      <g class="fj-icon"><path d="M2.6 18.4h18.8"/><path d="M6.2 18.4c0-3.4 2.6-5.9 6-5.9s6 2.5 6 5.9"/><path d="m8.6 12.9 1-2.9M12 12.5V9.2M15.4 12.9l1-2.7"/><circle cx="14.4" cy="16.4" r=".95" class="fj-solid"/></g>
+    </symbol>
+  </svg>
+
   <div class="panel-overlay" aria-hidden="true"></div>
   <main id="main-content" tabindex="-1">
   <!-- MAIN GAME CANVAS -->
@@ -66,31 +121,31 @@
     <!-- Primary Controls (Always Visible) -->
     <div class="control-strip-primary">
       <button id="ctrl-pause" class="ctrl-btn" title="Pause/Resume (Space)" aria-label="Pause or resume">
-        <span class="ctrl-icon">⏸️</span>
+        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-pause"/></svg></span>
       </button>
       <button id="ctrl-speed" class="ctrl-btn" title="Simulation speed" aria-label="Change speed">
         <span class="ctrl-icon">1×</span>
       </button>
       <div class="ctrl-divider"></div>
       <button id="ctrl-food" class="ctrl-btn" title="Paint Food" aria-label="Paint food">
-        <span class="ctrl-icon">🌿</span>
+        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-food"/></svg></span>
       </button>
       <button id="ctrl-spawn" class="ctrl-btn ctrl-spawn-btn" title="Spawn Creature" aria-label="Spawn creature"
         aria-haspopup="true">
-        <span class="ctrl-icon">🦌</span>
+        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-herbivore"/></svg></span>
         <span class="ctrl-caret">▾</span>
       </button>
       <div class="ctrl-divider"></div>
       <button id="ctrl-inspect" class="ctrl-btn active" title="Inspect Creature" aria-label="Inspect creature"
         aria-pressed="true">
-        <span class="ctrl-icon">🔍</span>
+        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-inspect"/></svg></span>
       </button>
       <button id="ctrl-watch" class="ctrl-btn" title="Watch Mode" aria-label="Toggle watch mode">
-        <span class="ctrl-icon">👁️</span>
+        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-watch"/></svg></span>
       </button>
       <button id="ctrl-more" class="ctrl-btn" title="More options" aria-label="Open menu" aria-haspopup="menu"
         aria-expanded="false">
-        <span class="ctrl-icon">⋯</span>
+        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-more"/></svg></span>
       </button>
     </div>
   </div>
@@ -228,7 +283,7 @@
 
   <!-- Watch Mode Strip (replaces control strip when in watch mode) -->
   <div id="watch-strip" class="watch-strip hidden" role="toolbar" aria-label="Watch mode controls" aria-hidden="true">
-    <button id="watch-pause" class="watch-btn" aria-label="Pause or resume">⏸️</button>
+    <button id="watch-pause" class="watch-btn" aria-label="Pause or resume"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-pause"/></svg></button>
     <button id="watch-speed" class="watch-btn" aria-label="Watch speed">1×</button>
     <button id="watch-follow" class="watch-btn" aria-label="Toggle follow">🎯</button>
     <button id="watch-recenter" class="watch-btn" aria-label="Recenter camera"

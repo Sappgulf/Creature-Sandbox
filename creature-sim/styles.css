@@ -564,10 +564,14 @@ input[type="range"]:focus-visible {
   border-top: 1px solid var(--glass-border);
 }
 #selected-info.selected-empty {
+  /* A one-line prompt, not a panel: it is a hint that something can be
+     clicked, and it disappears for good once the player has clicked one. */
   color: var(--text-muted);
-  gap: var(--space-sm);
-  text-align: center;
-  padding: 12px 14px;
+  gap: 2px;
+  text-align: left;
+  padding: 8px 14px;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 32px));
 }
 #selected-info.selected-empty .empty-title {
   font-size: 14px;
@@ -2380,7 +2384,10 @@ select:focus-visible,
 #btn-show-inspector {
   position: fixed;
   right: var(--space-lg);
-  bottom: var(--space-lg);
+  /* Sits above the stats rail rather than beside it. Both are anchored to the
+     bottom-right corner, and side-by-side the button covered the last stat
+     (the FPS readout was clipped mid-glyph on a 1440px viewport). */
+  bottom: calc(var(--space-lg) + 52px);
   padding: var(--space-sm) var(--space-md);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
@@ -3793,6 +3800,15 @@ body.home-active #btn-show-inspector {
   font-size: 17px;
   gap: 4px;
 }
+.ctrl-glyph {
+  /* Drawn icons inherit the button's colour, so active/hover/disabled states
+     read on the glyph itself the way the emoji never could. */
+  width: 21px;
+  height: 21px;
+  display: block;
+  color: inherit;
+}
+
 .ctrl-btn:hover,
 .ctrl-btn:focus-visible {
   background: rgba(57, 213, 255, 0.1);
@@ -4266,8 +4282,11 @@ body.home-active #btn-show-inspector {
     gap: 2px;
   }
   .ctrl-btn {
+    /* Width can shrink to share a 390px strip between seven controls, but
+       height stays at the 44px minimum touch target — the row has the
+       vertical room, so there is nothing to gain by shaving it. */
     min-width: 40px;
-    min-height: 40px;
+    min-height: 44px;
     padding: 0 8px;
   }
   /* min-width would otherwise win over max-width below ~344px and
@@ -4418,6 +4437,14 @@ body.home-active #btn-show-inspector {
   justify-content: flex-end;
   gap: 6px;
   min-width: 0;
+}
+
+.objective-world-full {
+  display: inline;
+}
+
+.objective-world-short {
+  display: none;
 }
 
 .objective-mode,
@@ -4826,19 +4853,12 @@ body[data-readability-mode="minimal"] #view {
     font-size: 11px;
   }
 
-  .objective-world {
-    color: transparent;
-    position: relative;
+  .objective-world-full {
+    display: none;
   }
 
-  .objective-world::after {
-    content: attr(data-short);
-    color: var(--text-secondary);
-    position: absolute;
-    inset: 2px 6px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .objective-world-short {
+    display: inline;
   }
 
   .mobile-device .god-mode-indicator {

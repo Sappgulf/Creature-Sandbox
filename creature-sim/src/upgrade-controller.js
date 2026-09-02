@@ -630,7 +630,10 @@ export class UpgradeController {
         <span class="objective-status">
           <span class="objective-mode" hidden></span>
           <span class="objective-progress"></span>
-          <span class="objective-world"></span>
+          <span class="objective-world">
+            <span class="objective-world-full"></span>
+            <span class="objective-world-short"></span>
+          </span>
           <button type="button" class="objective-open-goals" data-objective-action="open-goals" aria-label="Open modes and goals" title="Open modes and goals">Goals</button>
         </span>
       `;
@@ -660,8 +663,14 @@ export class UpgradeController {
     }
     if (progressEl) progressEl.textContent = `${Math.round(objective.progress)}%`;
     if (worldEl) {
-      worldEl.textContent = rhythmChip.label;
-      worldEl.dataset.short = rhythmChip.shortLabel;
+      // Two sibling spans rather than a `color: transparent` + `::after`
+      // swap: emoji render as colour glyphs and ignore `color`, so the old
+      // trick left the long label's season icon painted on top of the short
+      // one. CSS shows exactly one of these per breakpoint.
+      const fullEl = worldEl.querySelector('.objective-world-full');
+      const shortEl = worldEl.querySelector('.objective-world-short');
+      if (fullEl) fullEl.textContent = rhythmChip.label;
+      if (shortEl) shortEl.textContent = rhythmChip.shortLabel;
     }
 
     rail.dataset.level = story.level;

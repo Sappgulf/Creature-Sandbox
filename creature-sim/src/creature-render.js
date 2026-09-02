@@ -47,6 +47,7 @@ import { CreatureConfig } from './creature-config.js';
 import { ECOSYSTEM_STATES } from './creature-ecosystem.js';
 import { assetLoader } from './asset-loader.js?v=20260423-assets1';
 import { getDebugFlags } from './debug-flags.js';
+import { renderResolution } from './render-resolution.js';
 import { colorCache } from './color-cache.js';
 import { getCreatureAssetKey } from './creature-presentation.js?v=20260801-field-guide1';
 
@@ -1231,11 +1232,43 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   const zoom = Math.max(0.01, opts.zoom || 1);
-  const minimumSpriteScreenSize = isSelected || isPinned ? 22 : 14;
-  const renderSize = Math.max(r * 5 * eatScale, minimumSpriteScreenSize / zoom);
-  const spriteFrame = getCachedSpriteFrame(creature, worldTime, renderSize);
+  // `r` runs about 1.2 (a starving juvenile) to 2.6 (a well-fed adult). At the
+  // old x5 that is 6-13 world units, which at normal play zoom is 5-12 screen
+  // pixels — entirely below the 14px floor, so every creature in the world
+  // drew at exactly 14px and body size communicated nothing. x14 puts the
+  // range at roughly 15-33 screen pixels, where the sprite's silhouette,
+  // diet markings and facing eye are actually legible and growth reads.
+  const minimumSpriteScreenSize = isSelected || isPinned ? 26 : 16;
+  const renderSize = Math.max(r * 14 * eatScale, minimumSpriteScreenSize / zoom);
+  // The cache bucket has to be chosen in *device* pixels. Passing world units
+  // picked a 32px sprite for a creature covering 60 device pixels, so the
+  // sheet was upscaled even when a sharp 64px frame was available.
+  const spriteFrame = getCachedSpriteFrame(creature, worldTime, renderSize * zoom * renderResolution.getScale());
   if (spriteFrame) {
+    // Contact shadow. The sprite sheets carry their own soft drop shadow, but
+    // it is far too light to separate a creature from dark ground cover — a
+    // green herbivore standing in grass simply disappeared. A hard elliptical
+    // shadow under the body reads at every zoom and against every biome, and
+    // grounds the creature instead of leaving it floating.
+    ctx.save();
+    ctx.globalAlpha = 0.34;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(0, renderSize * 0.34, renderSize * 0.3, renderSize * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    // A dark outer glow separates the silhouette from ground of a similar
+    // value — without it a green herbivore standing on green cover reads as
+    // texture, while a red predator on the same ground reads instantly. The
+    // blur is only worth its cost once the creature is big enough to have a
+    // silhouette at all.
+    if (renderSize * zoom >= 12) {
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+      ctx.shadowBlur = Math.min(10, renderSize * zoom * 0.22);
+    }
     ctx.drawImage(spriteFrame, -renderSize / 2, -renderSize / 2, renderSize, renderSize);
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
   } else if (creature._cachedCanvas) {
     ctx.drawImage(creature._cachedCanvas, -renderSize / 2, -renderSize / 2, renderSize, renderSize);
   } else {

@@ -8,6 +8,7 @@
 import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
 import { performanceProfiler, updatePerformanceMonitor, profile } from './performance-profiler.js';
+import { renderResolution } from './render-resolution.js';
 import { escapeHtml } from './safe-html.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
@@ -614,6 +615,9 @@ export class GameLoop {
 
       // Adaptive simulation fidelity: throttle non-critical systems when FPS drops
       const avgFps = performanceProfiler.getStats().averages.fps || 60;
+      // Resolution is the first thing we trade away under load, before we
+      // start skipping simulation work the player can actually see.
+      renderResolution.notifyFps(avgFps);
       if (performance.now() - this._lastFidelityUpdate > 2000) {
         this._lastFidelityUpdate = performance.now();
         if (avgFps < 25) this.simulationFidelity = 0.25;

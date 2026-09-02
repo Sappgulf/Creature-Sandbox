@@ -24,7 +24,6 @@ import { AutoDirector } from './auto-director.js';
 import { MomentsSystem } from './moments-system.js';
 import { ControlStripController } from './control-strip.js?v=20260524-opening1';
 import { encodeSeed, getSeedFromUrl, setSeedInUrl } from './seed-utils.js';
-import { mobileGestureTutorial } from './mobile-gesture-tutorial.js?v=20260504-menu1';
 import { touchOnboarding } from './touch-onboarding.js?v=20260607-onboarding1';
 
 // Import new modular systems (via barrels where available)
@@ -52,6 +51,7 @@ import {
   getRuntimeProfile,
   getStartupSeedForRuntime
 } from './bootstrap-config.js';
+import { renderResolution } from './render-resolution.js';
 import {
   ensureScenarioEditor,
   ensureCampaignSystem,
@@ -181,7 +181,10 @@ export async function initializeApp() {
     errorHandler.safeExecute(() => {
       let rect = canvas.getBoundingClientRect();
       const runtimeProfile = getRuntimeProfile();
-      const dpr = runtimeProfile.renderScale; // Resolution scale biased toward smooth mobile frame pacing
+      // Re-read the ceiling every resize: moving a window between a laptop
+      // panel and an external display changes devicePixelRatio underneath us.
+      renderResolution.configure(runtimeProfile);
+      const dpr = renderResolution.getScale();
 
       // Fallback if clientRect is zero or suspicious (e.g. before layout)
       if (rect.width < 100 || rect.height < 100) {
@@ -211,6 +214,9 @@ export async function initializeApp() {
 
   errorHandler.safeExecute(() => {
     setCanvasSize();
+    // The adaptive controller sheds resolution when a device cannot hold the
+    // frame budget; rebuild the backing store whenever it moves a rung.
+    renderResolution.onChange = () => requestAnimationFrame(setCanvasSize);
     // Handle window resize
     window.addEventListener('resize', () => {
       requestAnimationFrame(setCanvasSize);
@@ -1704,14 +1710,29 @@ export async function initializeApp() {
 
     const x = world.width * 0.5;
     const y = world.height * 0.5;
+    // The opening frame is the whole pitch, and seven creatures spread across a
+    // desktop viewport read as an empty field — a phone viewport at the opening
+    // zoom held three. This is a deliberately staged tableau: enough life to
+    // show a working ecosystem, arranged as two loose herds with a predator
+    // circling, rather than a uniform scatter.
     const starterCreatures = [
-      ['herbivore', -92, -42],
-      ['herbivore', -42, 46],
-      ['omnivore', 52, -18],
-      ['herbivore', 104, 58],
-      ['aquatic', -118, 94],
-      ['flying', 132, -96],
-      ['burrowing', 4, 118]
+      // Near herd
+      ['herbivore', -96, -44],
+      ['herbivore', -46, 44],
+      ['herbivore', -138, 20],
+      ['herbivore', -70, -104],
+      ['omnivore', 54, -18],
+      // Far herd
+      ['herbivore', 106, 58],
+      ['herbivore', 168, 24],
+      ['herbivore', 132, 118],
+      ['omnivore', 196, -60],
+      // Edges of the clearing
+      ['aquatic', -120, 96],
+      ['flying', 134, -98],
+      ['burrowing', 4, 120],
+      ['burrowing', -180, -70],
+      ['predator', 232, 140]
     ];
 
     let spotlightCreature = null;
@@ -1724,10 +1745,10 @@ export async function initializeApp() {
       }
     }
 
-    const foodTypes = ['berries', 'grass', 'fruit', 'grass', 'berries'];
+    const foodTypes = ['berries', 'grass', 'fruit', 'grass', 'berries', 'grass', 'fruit', 'berries', 'grass', 'grass'];
     for (let i = 0; i < foodTypes.length; i++) {
       const angle = (Math.PI * 2 * i) / foodTypes.length - Math.PI / 5;
-      const radius = 70 + (i % 2) * 46;
+      const radius = 74 + (i % 3) * 62;
       world.addFood?.(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, 1.8, foodTypes[i]);
     }
 
@@ -1802,20 +1823,19 @@ export async function initializeApp() {
 
       console.debug('✅ New game started successfully!');
 
-      // Start tutorial for new players
-      startTutorialIfNeeded();
-
-      // Show mobile gesture tutorial on first mobile launch
-      setTimeout(() => {
-        // Prefer the new touch-first multi-step onboarding; the legacy
-        // single-card fallback remains in place for any code path that
-        // explicitly invokes it.
-        if (touchOnboarding.shouldShow()) {
-          touchOnboarding.show();
-        } else {
-          mobileGestureTutorial.show();
-        }
-      }, 800);
+      // Exactly one onboarding flow per session. These two used to run
+      // unconditionally 800ms apart, so a phone player dismissed the eight-step
+      // tutorial only to find a second three-step modal blurring the whole
+      // screen behind it — two tutorials before seeing the game.
+      //
+      // On touch, gestures are the thing that has to be taught, so the
+      // touch-first flow wins and the step tutorial stands down. Everywhere
+      // else the step tutorial runs and no gesture card appears.
+      if (touchOnboarding.shouldShow()) {
+        setTimeout(() => touchOnboarding.show(), 800);
+      } else {
+        startTutorialIfNeeded();
+      }
     }, 'New game initialization');
   }
 
