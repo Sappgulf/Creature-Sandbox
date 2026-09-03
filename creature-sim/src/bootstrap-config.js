@@ -45,7 +45,7 @@ export function getRuntimeProfile() {
       mobile: false,
       compact: false,
       lowMemory: false,
-      defaultZoom: 0.38,
+      defaultZoom: 0.5,
       openingZoom: 0.9,
       startupSeed: DESKTOP_STARTUP_SEED
     };
@@ -62,7 +62,7 @@ export function getRuntimeProfile() {
     mobile: mobileViewport,
     compact: compactViewport,
     lowMemory,
-    defaultZoom: mobileViewport ? 0.4 : 0.38,
+    defaultZoom: mobileViewport ? 0.48 : 0.5,
     openingZoom: mobileViewport ? (compactViewport ? 0.68 : 0.74) : 0.9,
     startupSeed:
       compactViewport || lowMemory

@@ -22,6 +22,7 @@ import { packCreature, createCreatureBuffer, compactCreature } from './simulatio
 import { eventSystem } from './event-system.js';
 import { fillSnapshotPool } from './snapshot-pool.js';
 import { godPowers } from './god-powers.js';
+import { setWorldSeed } from './utils.js';
 
 const saveSystem = new SaveSystem();
 
@@ -86,7 +87,8 @@ self.onmessage = function (e) {
 
     switch (type) {
       case 'INIT':
-        world = new World(data.width, data.height);
+        if (data?.seed != null) setWorldSeed(data.seed);
+        world = new World(data.width, data.height, { seed: data?.seed });
         // Bridge events back to main thread
         BRIDGE_EVENTS.forEach(evType => {
           eventSystem.on(evType, payload => {
@@ -225,6 +227,82 @@ self.onmessage = function (e) {
           }
           if (!world.godPowers) world.godPowers = godPowers;
           world.godPowers.usePower(tool, x, y, world);
+          sendSnapshot();
+        }
+        break;
+      }
+
+      case 'ADD_PROP': {
+        // Mirror GOD_POWER: validate at the boundary so a malformed payload
+        // warns instead of throwing inside the handler or corrupting state.
+        // Type list comes from the live sandbox (owns SANDBOX_PROP_TYPES),
+        // keeping this file free of new imports for the bundle budget.
+        if (world?.sandbox) {
+          const { type, x, y, options } = data || {};
+          const knownTypes = world.sandbox.getTypes ? world.sandbox.getTypes() : null;
+          const known = typeof type === 'string' && (knownTypes ? knownTypes.some(t => t && t.id === type) : true);
+          const radius = options?.radius;
+          if (
+            !known ||
+            !Number.isFinite(x) ||
+            !Number.isFinite(y) ||
+            (radius !== undefined && !Number.isFinite(radius))
+          ) {
+            console.warn('👷 Worker: dropping invalid ADD_PROP', { type, x, y, radius });
+            break;
+          }
+          world.sandbox.addProp(type, x, y, options || {});
+          sendSnapshot();
+        }
+        break;
+      }
+
+      case 'REMOVE_PROP': {
+        if (world?.sandbox) {
+          const { id, x, y, radius } = data || {};
+          if (id != null) {
+            world.sandbox.removePropById(id);
+            sendSnapshot();
+          } else if (Number.isFinite(x) && Number.isFinite(y)) {
+            world.sandbox.removeNearestProp(x, y, Number.isFinite(radius) ? radius : 48);
+            sendSnapshot();
+          } else {
+            console.warn('👷 Worker: dropping invalid REMOVE_PROP', data);
+          }
+        }
+        break;
+      }
+
+      case 'CLEAR_PROPS':
+        world?.sandbox?.clear?.();
+        sendSnapshot();
+        break;
+
+      case 'RESTORE_PROPS':
+        world?.sandbox?.restore?.(data?.props || []);
+        sendSnapshot();
+        break;
+
+      case 'GRAB_CREATURE':
+      case 'MOVE_GRAB': {
+        const creature = world?.getCreatureById?.(data?.id);
+        if (creature) {
+          creature.isGrabbed = true;
+          creature.grabTarget = { x: data.x, y: data.y };
+          if (Number.isFinite(data.x)) creature.x = data.x;
+          if (Number.isFinite(data.y)) creature.y = data.y;
+          creature.vx = 0;
+          creature.vy = 0;
+        }
+        break;
+      }
+
+      case 'THROW_CREATURE': {
+        const creature = world?.getCreatureById?.(data?.id);
+        if (creature) {
+          creature.isGrabbed = false;
+          creature.grabTarget = { x: creature.x, y: creature.y };
+          creature.applyImpulse?.(Number(data.vx) || 0, Number(data.vy) || 0, { decay: 5.4, cap: 320 });
           sendSnapshot();
         }
         break;
@@ -471,6 +549,48 @@ function step(dt) {
 // default — the renderer's `if (world.decorations)` guard silently skipped the
 // entire environmental layer and the field rendered as an empty void. Ship the
 // array across once per world instead of per tick.
+function compactFoodPatches(world) {
+  const patches = world?.ecosystem?.foodPatches;
+  if (!Array.isArray(patches) || !patches.length) return [];
+  const out = [];
+  const max = Math.min(patches.length, 24);
+  for (let i = 0; i < max; i++) {
+    const p = patches[i];
+    if (!p) continue;
+    out.push({
+      x: p.x,
+      y: p.y,
+      radius: p.radius,
+      stock: p.stock,
+      maxStock: p.maxStock,
+      pressure: p.pressure,
+      fertility: p.fertility
+    });
+  }
+  return out;
+}
+
+function compactRegions(world) {
+  const regions = world?.regions;
+  if (!Array.isArray(regions) || !regions.length) return [];
+  const out = [];
+  for (let i = 0; i < regions.length; i++) {
+    const r = regions[i];
+    if (!r) continue;
+    out.push({
+      id: r.id,
+      x: r.x,
+      y: r.y,
+      size: r.size,
+      pressure: r.pressure,
+      stressAvg: r.stressAvg,
+      foodRatio: r.foodRatio,
+      population: r.population
+    });
+  }
+  return out;
+}
+
 function sendDecorations() {
   if (!world) return;
   const decorations = (world.decorations || []).map(d => ({
@@ -517,6 +637,9 @@ function sendSnapshot() {
     creatureBuffer: buffer, // This will be "Transferred"
     food: _foodSnapshotPool,
     corpses: _corpseSnapshotPool,
+    sandboxProps: world.sandbox?.serialize?.() ?? [],
+    foodPatches: compactFoodPatches(world),
+    regions: compactRegions(world),
     environment: {
       dayLight: world.environment.dayLight,
       dayPhase: world.environment.dayPhase,

@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-03 — field-guide-worker-verbs — Planned
+
+- **Date:** 2026-09-03
+- **Scope:** simulation | render | ui | docs
+- **Type:** Planned
+- **Issues:** Worker props/setup still stubbed for scenarios; grab/throw snapshot-only; habitat patches/regions invisible; flying/burrowing silhouettes unused; first session drowned in random goals; overlapping progress menus; god-power wall clock; share seeds not seeding RNG.
+- **Root Causes:** Proxy sandbox had no mutators; 21-float snapshot omitted habitat; presentation keyed only traits.creatureType; session goals generated on every New Sandbox; god cooldowns used performance.now().
+- **Fixes:** Finish worker ADD_PROP/CLEAR/RESTORE + sandbox mutators; GRAB/THROW; compact foodPatches/regions; gene-aware sprites + prewarm; inspect field notes; Guided first-session lock; preserve card; setWorldSeed on INIT; founder lineage; food-frame-from-stock; Field Journal menu label.
+- **Verification:** Planned: lint, full tests, build, bundle, then proof:release before push.
+
+### 2026-09-03 — field-guide-worker-verbs — Implemented
+
+- **Date:** 2026-09-03
+- **Scope:** simulation | render | ui | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Worker prop/grab/habitat contract; presentation keys packed genes; default zoom 0.5; inspect nudge copy; skip random goals until first expedition; scenario complete opens Field Journal result; RNG seed on worker INIT; founder-rooted lineage metric; food sprite frame from remaining bites; GOD_TOOL_REGISTRY drives HUD labels.
+- **Verification:** lint clean; tests green (regression 58/0, scenario contract, e2e, save+migration); build + bundle pass (worker 298,880B/300k). `npm run proof:release` PASSES: smoke:browser/worker/main + scenario 2x. Worker desktop drawImages 1.04/frame (was 0). Worker gate still held by pre-existing frame budgets (avg ~35ms vs 26ms).
+
 ### 2026-09-03 — menus-popups-props-godmode-functional-pass — Planned
 
 - **Date:** 2026-09-03

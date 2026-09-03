@@ -151,10 +151,11 @@ export class SimulationProxy {
       this._send('RESET', {});
     };
 
-    this.init = (width, height) => {
+    this.init = (width, height, options = {}) => {
       this.worldSnapshot.width = width;
       this.worldSnapshot.height = height;
-      this._send('INIT', { width, height });
+      const seed = options?.seed ?? options?.sessionSeed ?? null;
+      this._send('INIT', seed == null ? { width, height } : { width, height, seed });
     };
 
     this.seed = (nHerb, nPred, nFood) => {
@@ -246,6 +247,73 @@ export class SimulationProxy {
     this.applyGodPower = (tool, x, y) => {
       this._send('GOD_POWER', { tool, x, y });
       return null;
+    };
+
+    // Worker parity for sandbox props: without this, placeProp/eraseAt only
+    // mutated the local snapshot stub in worker mode (the shipping default)
+    // and props silently never appeared. Mirrors the applyGodPower
+    // fire-and-forget pattern above; malformed payloads warn instead of
+    // sending (no silent failure per AGENT.md).
+    this.addProp = (type, x, y, options = {}) => {
+      if (type && typeof type === 'object') {
+        const prop = type;
+        options = x && typeof x === 'object' ? x : {};
+        type = prop.type;
+        x = prop.x;
+        y = prop.y;
+      }
+      const opts = options && typeof options === 'object' ? options : {};
+      if (typeof type !== 'string' || !Number.isFinite(x) || !Number.isFinite(y)) {
+        console.warn('📡 SimProxy: dropping invalid ADD_PROP', { type, x, y });
+        return null;
+      }
+      if (opts.radius !== undefined && !Number.isFinite(opts.radius)) {
+        console.warn('📡 SimProxy: dropping invalid ADD_PROP', { type, x, y, radius: opts.radius });
+        return null;
+      }
+      this._send('ADD_PROP', { type, x, y, options: opts });
+      return null;
+    };
+
+    this.removePropById = id => {
+      if (id == null) {
+        console.warn('📡 SimProxy: dropping invalid REMOVE_PROP', { id });
+        return;
+      }
+      this._send('REMOVE_PROP', { id });
+    };
+
+    this.removeNearestProp = (x, y, radius) => {
+      if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        console.warn('📡 SimProxy: dropping invalid REMOVE_PROP', { x, y });
+        return null;
+      }
+      if (radius !== undefined && !Number.isFinite(radius)) {
+        console.warn('📡 SimProxy: dropping invalid REMOVE_PROP', { x, y, radius });
+        return null;
+      }
+      this._send('REMOVE_PROP', radius === undefined ? { x, y } : { x, y, radius });
+      return null;
+    };
+
+    this.clearProps = () => this._send('CLEAR_PROPS', {});
+    this.restoreProps = props => this._send('RESTORE_PROPS', { props: Array.isArray(props) ? props : [] });
+
+    this.grabCreature = (id, x, y) => {
+      if (id == null || !Number.isFinite(x) || !Number.isFinite(y)) return;
+      this._send('GRAB_CREATURE', { id, x, y });
+    };
+    this.moveGrab = (id, x, y) => {
+      if (id == null || !Number.isFinite(x) || !Number.isFinite(y)) return;
+      this._send('MOVE_GRAB', { id, x, y });
+    };
+    this.throwCreature = (id, vx, vy) => {
+      if (id == null) return;
+      this._send('THROW_CREATURE', {
+        id,
+        vx: Number.isFinite(vx) ? vx : 0,
+        vy: Number.isFinite(vy) ? vy : 0
+      });
     };
 
     this.addRestZone = (x, y, radius) => {
@@ -380,7 +448,19 @@ export class SimulationProxy {
   }
 
   updateSnapshot(payload) {
-    const { t, count, creatureBuffer, food, corpses, environment, activeDisaster, pendingDisasters } = payload || {};
+    const {
+      t,
+      count,
+      creatureBuffer,
+      food,
+      corpses,
+      environment,
+      activeDisaster,
+      pendingDisasters,
+      sandboxProps,
+      foodPatches,
+      regions
+    } = payload || {};
     // Validate without changing the wire protocol: a malformed STATE_UPDATE
     // (NaN time, bad count, short/missing buffer) is dropped with an explicit
     // warn + counter instead of throwing inside the message handler or
@@ -432,6 +512,19 @@ export class SimulationProxy {
       this.worldSnapshot.corpses = Array.isArray(corpses) ? corpses : [];
       this.worldSnapshot.activeDisaster = activeDisaster;
       this.worldSnapshot.pendingDisasters = Array.isArray(pendingDisasters) ? pendingDisasters : [];
+      // Per-tick prop visibility: the save-extras round trip already feeds
+      // get sandbox(), so stashing the snapshot copy there (instead of a new
+      // getter path) is the smallest change that keeps the renderer and
+      // save-system.js reading live worker-side props.
+      if (Array.isArray(sandboxProps)) {
+        this._saveExtras = { ...(this._saveExtras || {}), sandboxProps };
+      }
+      if (Array.isArray(foodPatches) && this.worldSnapshot.ecosystem) {
+        this.worldSnapshot.ecosystem.foodPatches = foodPatches;
+      }
+      if (Array.isArray(regions)) {
+        this.worldSnapshot.regions = regions;
+      }
 
       if (environment) {
         // Update base properties
@@ -677,8 +770,19 @@ export class SimulationProxy {
     return this._saveExtras?.chaosBaseLevel ?? 0.5;
   }
   get sandbox() {
+    const self = this;
     const props = this._saveExtras?.sandboxProps || [];
-    return { props, serialize: () => props };
+    return {
+      props,
+      serialize: () => props,
+      addProp: (type, x, y, options) => self.addProp(type, x, y, options),
+      removePropById: id => self.removePropById(id),
+      removeNearestProp: (x, y, radius) => self.removeNearestProp(x, y, radius),
+      clear: () => self.clearProps(),
+      restore: list => self.restoreProps(list),
+      update: () => {},
+      getTypes: () => []
+    };
   }
   get disaster() {
     return {

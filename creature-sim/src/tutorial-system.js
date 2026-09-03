@@ -3,6 +3,7 @@
 
 import { eventSystem, GameEvents } from './event-system.js';
 import { escapeHtml } from './safe-html.js';
+import { GOD_TOOL_REGISTRY } from './game/god-tool-system.js';
 
 const DEFAULT_STEPS = [
   {
@@ -78,6 +79,12 @@ const DEFAULT_STEPS = [
   }
 ];
 
+// Single source: god-tool tooltip copy lives on GOD_TOOL_REGISTRY (tooltip +
+// shortcut fields). Same rendered text/shortcuts as the previous inline map.
+const GOD_TOOL_TOOLTIPS = Object.fromEntries(
+  GOD_TOOL_REGISTRY.map(entry => [`#god-tool-${entry.id}`, { text: entry.tooltip, shortcut: entry.shortcut }])
+);
+
 const TOOLTIP_CONFIG = {
   '#ctrl-pause': { text: 'Pause or resume simulation', shortcut: 'Space' },
   '#ctrl-speed': { text: 'Adjust simulation speed', shortcut: '1-4' },
@@ -91,16 +98,7 @@ const TOOLTIP_CONFIG = {
   '#watch-follow': { text: 'Toggle creature follow', shortcut: 'Shift+F' },
   '#watch-moments': { text: 'View notable events', shortcut: 'M' },
   '#watch-god-mode': { text: 'Toggle god mode', shortcut: 'G' },
-  '#god-tool-food': { text: 'Place food sources', shortcut: null },
-  '#god-tool-calm': { text: 'Create calm zones', shortcut: null },
-  '#god-tool-chaos': { text: 'Add chaos events', shortcut: null },
-  '#god-tool-spawn': { text: 'Spawn creatures', shortcut: null },
-  '#god-tool-prop': { text: 'Place sandbox props', shortcut: null },
-  '#god-tool-remove': { text: 'Remove creatures', shortcut: null },
-  '#god-tool-bless': { text: 'Heal and energize creatures', shortcut: '7' },
-  '#god-tool-curse': { text: 'Weaken and drain creatures', shortcut: '8' },
-  '#god-tool-attract': { text: 'Pull creatures toward a point', shortcut: '9' },
-  '#god-tool-repel': { text: 'Push creatures away from a point', shortcut: '0' }
+  ...GOD_TOOL_TOOLTIPS
 };
 
 export class TutorialSystem {

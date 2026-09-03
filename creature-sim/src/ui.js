@@ -1,6 +1,7 @@
 import { gameState } from './game-state.js';
 import { buildBondsSummary, getCreatureEmotion, getLifeStageDisplay } from './upgrade-data.js';
 import { escapeHtml } from './safe-html.js';
+import { GOD_TOOL_REGISTRY } from './game/god-tool-system.js';
 
 // Animated number counter helper
 const _counterState = new Map();
@@ -176,18 +177,9 @@ export function renderStats(el, world, fps, extra = {}) {
   }
 
   if (extra.godModeActive) {
-    const godLabels = {
-      food: 'Food',
-      calm: 'Calm',
-      chaos: 'Chaos',
-      spawn: 'Spawn',
-      prop: 'Prop',
-      remove: 'Remove',
-      bless: 'Bless',
-      curse: 'Curse',
-      attract: 'Attract',
-      repel: 'Repel'
-    };
+    // Single source: labels live on GOD_TOOL_REGISTRY. Same rendered text as
+    // the previous inline map; unknown ids still fall back to the raw id.
+    const godLabels = Object.fromEntries(GOD_TOOL_REGISTRY.map(entry => [entry.id, entry.label]));
     const toolLabel = extra.godModeTool ? godLabels[extra.godModeTool] || extra.godModeTool : 'Mode';
     const label = `God ${toolLabel}`;
     statParts.push(`<span class="stat-tool">${glyph('i-god')} <span class="value">${label}</span></span>`);
@@ -367,7 +359,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
       el,
       isMobile
         ? '<div class="empty-title">Tap a creature to inspect</div>'
-        : '<div class="empty-title">Click a creature to inspect</div><div class="muted">Shift-click sets a lineage root</div>'
+        : '<div class="empty-title">Click a creature to inspect</div><div class="muted">One field note: drive, family, next nudge. Shift-click pins the line.</div>'
     );
     return;
   }
@@ -527,6 +519,14 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     if (goal === 'eat') return 'Searching for food using scent and memory.';
     return `Current drive: ${readableState.toLowerCase()}.`;
   })();
+  const fieldNudge =
+    hunger > 55
+      ? 'Nudge · paint food nearby (F)'
+      : stress > 50
+        ? 'Nudge · place a calm zone'
+        : familyRootId
+          ? 'Remember · this family line is pinned on Shift-click'
+          : 'Observe · follow in Watch Mode';
   const memoryRowsMarkup = memoryLocations
     .map(memory => {
       const strength = Math.round((memory.strength ?? 0) * 100);
@@ -544,6 +544,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
         <strong>${focusMemory?.tag ? 'Recall' : readableState}</strong>
       </div>
       <div class="memory-reason">${whyLine}</div>
+      <div class="field-nudge">${fieldNudge}</div>
       ${
         memoryLocations.length
           ? `
@@ -562,6 +563,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
         <strong>${focusMemory?.tag ? 'Recall' : readableState}</strong>
       </div>
       <div class="memory-reason">${whyLine}</div>
+      <div class="field-nudge">${fieldNudge}</div>
     </div>
   `;
 

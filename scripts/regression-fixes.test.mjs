@@ -31,6 +31,7 @@ import { resolveDietRole } from '../creature-sim/src/creature-genetics-helpers.j
 import { angleDelta } from '../creature-sim/src/utils.js';
 import { getAffinity, adjustAffinity } from '../creature-sim/src/creature-agent-needs.js';
 import { CreatureConfig } from '../creature-sim/src/creature-config.js';
+import { ToolController } from '../creature-sim/src/tools.js';
 
 function makeFakeWorkerProxy() {
   const priorWindow = globalThis.window;
@@ -1143,6 +1144,183 @@ test('accents follow the theme token instead of hardcoded cyan and purple', () =
   assert.doesNotMatch(css, /rgba\(0, 212, 255,/, 'cyan glows should follow the accent token');
   assert.doesNotMatch(css, /linear-gradient\(135deg, #60a5fa, #a78bfa\)/, 'the primary button should be on-theme');
   assert.doesNotMatch(css, /#0099cc/, 'the old blue gradient stop should be gone');
+});
+
+test('worker-mode prop transport: proxy sends ADD_PROP/REMOVE_PROP shapes and drops malformed payloads', () => {
+  const { proxy, sentMessages } = makeFakeWorkerProxy();
+  proxy.handleMessage({ data: { type: 'READY' } });
+
+  proxy.addProp('bounce', 10, 20, { radius: 50 });
+  let last = sentMessages[sentMessages.length - 1];
+  assert.equal(last.type, 'ADD_PROP');
+  assert.deepEqual(last.data, { type: 'bounce', x: 10, y: 20, options: { radius: 50 } });
+
+  proxy.removePropById('p1');
+  last = sentMessages[sentMessages.length - 1];
+  assert.equal(last.type, 'REMOVE_PROP');
+  assert.deepEqual(last.data, { id: 'p1' });
+
+  proxy.removeNearestProp(5, 6, 30);
+  last = sentMessages[sentMessages.length - 1];
+  assert.equal(last.type, 'REMOVE_PROP');
+  assert.deepEqual(last.data, { x: 5, y: 6, radius: 30 });
+
+  // Malformed payloads must warn-and-drop, never reach the worker.
+  const before = sentMessages.length;
+  proxy.addProp('bounce', Number.NaN, 20);
+  proxy.addProp(null, 1, 2);
+  proxy.addProp('bounce', 1, 2, { radius: Number.NaN });
+  proxy.removeNearestProp(Number.NaN, 1);
+  proxy.removePropById(null);
+  assert.equal(sentMessages.length, before, 'malformed prop payloads must be dropped instead of sent to the worker');
+});
+
+test('worker-mode prop transport: per-tick STATE_UPDATE carries sandboxProps to the renderer/save stub', () => {
+  const { proxy } = makeFakeWorkerProxy();
+  proxy.handleMessage({
+    data: {
+      type: 'STATE_UPDATE',
+      t: 3,
+      count: 0,
+      creatureBuffer: new ArrayBuffer(0),
+      food: [],
+      corpses: [],
+      sandboxProps: [{ id: 7, type: 'bounce', x: 1, y: 2 }]
+    }
+  });
+
+  assert.equal(proxy.sandbox.props.length, 1, 'snapshot props should reach world.sandbox.props for the renderer');
+  assert.equal(proxy.sandbox.serialize()[0].id, 7, 'snapshot props should reach serialize() for saves');
+});
+
+test('worker-simulation: prop cases validate at the boundary and publish props in snapshots', () => {
+  const src = fs.readFileSync(new URL('../creature-sim/src/worker-simulation.js', import.meta.url), 'utf8');
+
+  // Without these cases every prop click in worker mode (the default) only
+  // touched the snapshot stub and silently did nothing.
+  assert.match(src, /case 'ADD_PROP'/, 'worker must handle ADD_PROP');
+  assert.match(src, /case 'REMOVE_PROP'/, 'worker must handle REMOVE_PROP');
+  assert.match(src, /dropping invalid ADD_PROP/, 'malformed ADD_PROP must warn instead of failing silently');
+  assert.match(src, /dropping invalid REMOVE_PROP/, 'malformed REMOVE_PROP must warn instead of failing silently');
+  assert.match(src, /world\.sandbox\.addProp\(type, x, y/, 'ADD_PROP must reach the live sandbox');
+  assert.match(src, /removePropById\(id\)/, 'REMOVE_PROP with {id} must remove by id');
+  assert.match(src, /removeNearestProp\(x, y/, 'REMOVE_PROP with {x,y} must remove nearest');
+  assert.match(src, /sendSnapshot\(\)/, 'prop mutations must publish a fresh snapshot');
+  assert.match(src, /sandboxProps: world\.sandbox/, 'STATE_UPDATE must carry props to the renderer/save stub');
+});
+
+test('worker-mode grab/throw and habitat snapshot messages exist', () => {
+  const src = fs.readFileSync(new URL('../creature-sim/src/worker-simulation.js', import.meta.url), 'utf8');
+  assert.match(src, /case 'GRAB_CREATURE'/, 'worker must handle grabs');
+  assert.match(src, /case 'THROW_CREATURE'/, 'worker must handle throws');
+  assert.match(src, /foodPatches: compactFoodPatches/, 'habitat patches must ride the snapshot');
+  assert.match(src, /regions: compactRegions/, 'region pressure must ride the snapshot');
+});
+
+test('proxy sandbox.addProp forwards to ADD_PROP so scenario setup works in worker mode', () => {
+  const { proxy, sentMessages } = makeFakeWorkerProxy();
+  proxy.handleMessage({ data: { type: 'READY' } });
+  proxy.sandbox.addProp('spring', 40, 50);
+  const last = sentMessages[sentMessages.length - 1];
+  assert.equal(last.type, 'ADD_PROP');
+  proxy.grabCreature(3, 10, 12);
+  assert.equal(sentMessages[sentMessages.length - 1].type, 'GRAB_CREATURE');
+  proxy.throwCreature(3, 80, -20);
+  assert.equal(sentMessages[sentMessages.length - 1].type, 'THROW_CREATURE');
+});
+
+test('creature presentation uses packed flying/burrowing/aquatic genes', async () => {
+  const { getCreatureAssetKey } = await import('../creature-sim/src/creature-presentation.js');
+  assert.equal(getCreatureAssetKey({ genes: { flying: 0.9, diet: 0 } }), 'creature_flying');
+  assert.equal(getCreatureAssetKey({ genes: { burrowing: 0.8, diet: 0 } }), 'creature_burrowing');
+  assert.equal(getCreatureAssetKey({ genes: { aquatic: 0.7, diet: 0 } }), 'creature_aquatic');
+});
+
+test('lineage objectives prefer the pinned founder line', () => {
+  const metrics = collectGameplayMetrics(
+    {
+      creatures: [
+        { id: 1, alive: true, genes: { diet: 0 }, generation: 1 },
+        { id: 2, alive: true, genes: { diet: 0 }, parentId: 1, generation: 4 },
+        { id: 9, alive: true, genes: { diet: 0 }, generation: 12 }
+      ],
+      lineageTracker: {
+        generation: (_world, id) => (id === 2 ? 4 : id === 1 ? 1 : 12),
+        getRoot: (_world, id) => (id === 2 || id === 1 ? 1 : 9)
+      }
+    },
+    { founderId: 1 }
+  );
+  assert.equal(metrics.founderGeneration, 4);
+  assert.ok(metrics.maxGeneration >= 4);
+});
+
+test('tools: placeProp/eraseAt prefer the worker proxy when present, sandbox otherwise', () => {
+  const camera = { screenToWorld: (x, y) => ({ x, y }) };
+
+  const proxyCalls = [];
+  const sandboxCalls = [];
+  const proxyWorld = {
+    addProp: (type, x, y, options) => {
+      proxyCalls.push(['add', type, x, y, options]);
+      return null;
+    },
+    removeNearestProp: (x, y, radius) => {
+      proxyCalls.push(['remove', x, y, radius]);
+      return null;
+    },
+    sandbox: {
+      props: [{ id: 1, type: 'bounce', x: 50, y: 50, radius: 52 }],
+      addProp: (...args) => {
+        sandboxCalls.push(args);
+        return { id: 9 };
+      },
+      removeNearestProp: (...args) => {
+        sandboxCalls.push(args);
+        return { id: 1 };
+      }
+    },
+    creatures: [],
+    queryCreatures: () => []
+  };
+  const proxyTools = new ToolController(proxyWorld, camera);
+  proxyTools.placeProp(50, 50, { type: 'bounce' });
+  assert.equal(proxyCalls.length, 1, 'placeProp should forward once through the proxy');
+  assert.equal(proxyCalls[0][0], 'add');
+  assert.equal(sandboxCalls.length, 0, 'proxy present: must not touch the local snapshot stub');
+
+  proxyTools.eraseAt(50, 50);
+  assert.ok(
+    proxyCalls.some(call => call[0] === 'remove'),
+    'erase over a snapshot prop should forward REMOVE_PROP'
+  );
+  assert.equal(sandboxCalls.length, 0, 'proxy present: erase must not touch the local snapshot stub');
+
+  // Erase over empty space falls through to creatures, not props.
+  const callsBefore = proxyCalls.length;
+  proxyTools.eraseAt(5000, 5000);
+  assert.equal(proxyCalls.length, callsBefore, 'erase over empty space must not send REMOVE_PROP');
+
+  // Main-thread fallback still uses the sandbox directly and returns the prop.
+  const directCalls = [];
+  const directWorld = {
+    sandbox: {
+      addProp: (type, x, y) => {
+        directCalls.push(['add', type, x, y]);
+        return { id: 2, type, x, y, radius: 52 };
+      },
+      removeNearestProp: (x, y) => {
+        directCalls.push(['remove', x, y]);
+        return null;
+      }
+    },
+    creatures: [],
+    queryCreatures: () => []
+  };
+  const directTools = new ToolController(directWorld, camera);
+  const prop = directTools.placeProp(10, 10, { type: 'spring' });
+  assert.ok(prop && prop.id === 2, 'main-thread placeProp should return the created prop');
+  assert.equal(directCalls[0][0], 'add');
 });
 
 console.log('\n=== SUMMARY ===');

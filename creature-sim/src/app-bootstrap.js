@@ -35,6 +35,8 @@ import { configManager } from './config-manager.js';
 import { performanceProfiler, initializePerformanceMonitor } from './performance-profiler.js';
 import { diseaseSystem } from './disease-system.js';
 import { assetLoader } from './asset-loader.js';
+import { prewarmCreatureSprites } from './creature-presentation.js';
+import { setWorldSeed } from './utils.js';
 
 // Import newly added systems
 import { seasonalEventsSystem } from './seasonal-events.js';
@@ -244,15 +246,18 @@ export async function initializeApp() {
     () => {
       if (USE_SIM_WORKER) {
         console.debug('🚀 Initializing Simulation Worker...');
+        const sessionSeed = encodeSeed(startupSeed);
         const w = new SimulationProxy(SimulationWorker);
-        w.init(4000, 2800);
+        w.init(4000, 2800, { seed: sessionSeed });
         w.seed(startupSeed.herbivores, startupSeed.predators, startupSeed.food);
         return w;
       } else {
         // Main-thread fallback path: more aggressive scalar field throttling
         // (recent smokes show ~3.4-3.5ms non-draw work even with interval=3).
         // Raising to 4 gives headroom while keeping pheromone/temperature responsive.
-        const w = new World(4000, 2800);
+        const sessionSeed = encodeSeed(startupSeed);
+        setWorldSeed(sessionSeed);
+        const w = new World(4000, 2800, { seed: sessionSeed });
         w.scalarFieldStepInterval = 4;
         w.seed(startupSeed.herbivores, startupSeed.predators, startupSeed.food);
         return w;
@@ -951,6 +956,9 @@ export async function initializeApp() {
   } catch (error) {
     errorHandler.handleError(error, 'Upgrade controller initialization', 'error');
     upgradeController = null;
+  }
+  if (playableScenarios && upgradeController) {
+    playableScenarios.upgradeController = upgradeController;
   }
 
   gameDirector = errorHandler.safeExecute(
@@ -1856,7 +1864,19 @@ export async function initializeApp() {
       // Seeded creatures and the starter glade are part of the opener, not
       // player actions. Reset action counters after the world is prepared so
       // action-based session goals start from a truthful baseline.
-      sessionGoals?.resetForNewSession?.();
+      const firstExpeditionDone = (() => {
+        try {
+          return localStorage.getItem('creature-sim-first-expedition-done') === '1';
+        } catch {
+          return true;
+        }
+      })();
+      sessionGoals?.resetForNewSession?.({ refreshGoals: firstExpeditionDone });
+      try {
+        prewarmCreatureSprites();
+      } catch {
+        /* asset loader may not be ready in tests */
+      }
       if (!runtimeProfile.mobile && openingFocus.creatureId != null) {
         gameState.selectCreature(openingFocus.creatureId);
         gameState.lineageRootId = openingFocus.creatureId;

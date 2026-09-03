@@ -144,6 +144,7 @@ export function unpackCreature(buffer, index) {
       flying: buffer[o + LAYOUT.FLYING],
       burrowing: buffer[o + LAYOUT.BURROWING],
       _luckyMutation: buffer[o + LAYOUT.LUCKY] > 0.5
-    }
+    },
+    aquaticAffinity: buffer[o + LAYOUT.AQUATIC]
   };
 }

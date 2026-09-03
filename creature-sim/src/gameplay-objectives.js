@@ -41,6 +41,7 @@ export function collectGameplayMetrics(world, counters = {}) {
     births: 0,
     time: Number(world?.t ?? 0),
     maxGeneration: 0,
+    founderGeneration: 0,
     manualSpawns: Number(counters.manualSpawns || 0),
     creatureThrows: Number(counters.creatureThrows || 0),
     propTriggers: Number(counters.propTriggers || 0),
@@ -63,10 +64,24 @@ export function collectGameplayMetrics(world, counters = {}) {
     metrics.foodCollected += Number(stats.food || 0);
     metrics.births += Number(stats.births || 0);
 
-    if (world?.lineageTracker?.generation && creature.id != null) {
-      metrics.maxGeneration = Math.max(metrics.maxGeneration, world.lineageTracker.generation(world, creature.id));
-    } else if (Number.isFinite(creature.generation)) {
-      metrics.maxGeneration = Math.max(metrics.maxGeneration, creature.generation);
+    const generation =
+      world?.lineageTracker?.generation && creature.id != null
+        ? world.lineageTracker.generation(world, creature.id)
+        : Number.isFinite(creature.generation)
+          ? creature.generation
+          : 0;
+    metrics.maxGeneration = Math.max(metrics.maxGeneration, generation);
+    const founderId = counters.founderId;
+    if (founderId != null) {
+      const root =
+        world?.lineageTracker?.getRoot && creature.id != null
+          ? world.lineageTracker.getRoot(world, creature.id)
+          : creature.parentId == null
+            ? creature.id
+            : null;
+      if (root === founderId || creature.id === founderId) {
+        metrics.founderGeneration = Math.max(metrics.founderGeneration, generation);
+      }
     }
 
     if (creature.alive === false) continue;
@@ -149,7 +164,7 @@ export function getObjectiveProgress(type, target, metrics = {}) {
     case 'variant_alive':
       return metrics.variantsAlive / safeTarget;
     case 'lineage_generation':
-      return metrics.maxGeneration / safeTarget;
+      return (metrics.founderGeneration || metrics.maxGeneration) / safeTarget;
     case 'stress_cap':
       // Progress climbs as average stress drops toward (and stays under) the cap.
       return 1 - Math.max(0, (metrics.averageStress ?? metrics.stress ?? 0) - safeTarget) / 60;

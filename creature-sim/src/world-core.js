@@ -13,7 +13,7 @@ import { CreatureEcosystemSystem } from './creature-ecosystem.js';
 import { WorldEvents } from './world-events.js';
 import { BiomeGenerator } from './perlin-noise.js';
 import { SandboxProps } from './sandbox-props.js';
-import { clamp, dist2, rand, mulberry32 } from './utils.js';
+import { clamp, dist2, rand, mulberry32, setWorldSeed } from './utils.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
 import { getDebugFlags } from './debug-flags.js';
@@ -167,6 +167,7 @@ export class World {
     const worldSeed = options?.seed ?? options?.sessionSeed ?? options?.meta?.sessionSeed ?? null;
     this.worldSeed = worldSeed;
     this.rng = worldSeed !== null && worldSeed !== undefined ? mulberry32(worldSeed) : null;
+    if (worldSeed !== null && worldSeed !== undefined) setWorldSeed(worldSeed);
     // Deterministic ID counter reserved for future use. Creature IDs are still
     // owned by creatureManager._nextId and Date.now()-based IDs / memory
     // timestamps are OUT OF SCOPE for this slice — do not wire this up yet.
@@ -1285,7 +1286,22 @@ export class World {
    * @returns {WorldFood}
    */
   addFood(x, y, r = 1.5, type = null) {
-    return this.ecosystem.addFood(x, y, r, type);
+    const food = this.ecosystem.addFood(x, y, r, type);
+    const patches = this.ecosystem?.foodPatches;
+    if (food && Array.isArray(patches)) {
+      for (let i = 0; i < patches.length; i++) {
+        const patch = patches[i];
+        if (!patch) continue;
+        const dx = (patch.x ?? 0) - x;
+        const dy = (patch.y ?? 0) - y;
+        const radius = patch.radius || 120;
+        if (dx * dx + dy * dy <= radius * radius) {
+          patch.pressure = Math.min(1, (patch.pressure || 0) + 0.08);
+          patch.stock = Math.min(patch.maxStock || patch.stock || 0, (patch.stock || 0) + 4);
+        }
+      }
+    }
+    return food;
   }
 
   /**

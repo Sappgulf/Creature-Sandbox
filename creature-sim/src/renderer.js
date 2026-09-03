@@ -893,7 +893,11 @@ export class Renderer {
         sprite = goldenSprite;
         speedScale = 1.25;
       }
-      const frameIndex = assetLoader.getAnimationFrameIndex(sprite, 'idle', time, speedScale);
+      const stock = Math.max(0, Math.min(1, (f.bites ?? f.energy ?? 3) / 6));
+      const frameCount = sprite.frames?.length || 1;
+      const stockFrame = Math.min(frameCount - 1, Math.floor((1 - stock) * Math.max(1, frameCount - 1)));
+      const frameIndex =
+        type === 'golden_fruit' ? assetLoader.getAnimationFrameIndex(sprite, 'idle', time, speedScale) : stockFrame;
       const frame = sprite.frames[frameIndex] || sprite.frames[0];
       const drawSize = Math.max(4, (f.r || 2) * 3);
       const pulse = Math.sin(time * pulseSpeeds[type] + i * 0.1) * 0.5 + 0.5;

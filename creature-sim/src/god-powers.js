@@ -170,8 +170,9 @@ export class GodPowersSystem {
     }
 
     // Check cooldown
-    const lastUse = this.powerCooldowns.get(powerName) || 0;
-    if (Date.now() - lastUse < power.cooldown) {
+    const now = Number.isFinite(world?.t) ? world.t : performance.now() / 1000;
+    const lastUse = this.powerCooldowns.get(powerName);
+    if (lastUse != null && now - lastUse < power.cooldown / 1000) {
       console.warn(`Power ${powerName} on cooldown`);
       return false;
     }
@@ -186,7 +187,7 @@ export class GodPowersSystem {
     this.applyPowerEffect(powerName, power, x, y, world, actualRadius);
 
     // Set cooldown
-    this.powerCooldowns.set(powerName, Date.now());
+    this.powerCooldowns.set(powerName, now);
 
     console.debug(`${power.icon} Used power: ${power.name}`);
     return true;
@@ -565,7 +566,7 @@ export class GodPowersSystem {
     if (power.level > this.powerLevel) return false;
 
     const lastUse = this.powerCooldowns.get(powerName) || 0;
-    return Date.now() - lastUse >= power.cooldown;
+    return performance.now() - lastUse >= power.cooldown;
   }
 
   /**
@@ -578,7 +579,7 @@ export class GodPowersSystem {
     if (!power) return 0;
 
     const lastUse = this.powerCooldowns.get(powerName) || 0;
-    const remaining = power.cooldown - (Date.now() - lastUse);
+    const remaining = power.cooldown - (performance.now() - lastUse);
 
     return Math.max(0, remaining);
   }

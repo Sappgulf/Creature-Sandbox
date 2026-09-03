@@ -1,6 +1,7 @@
 import { clamp } from './utils.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { collectGameplayMetrics, getObjectiveProgress } from './gameplay-objectives.js';
+import { gameState } from './game-state.js';
 
 // Goal types backed by metrics that accumulate over the whole session (not a
 // point-in-time snapshot like population/predator_count). These must be
@@ -17,7 +18,7 @@ const CUMULATIVE_METRIC_KEY = {
   prop_triggers: 'propTriggers',
   prop_places: 'propPlacements',
   god_actions: 'godActions',
-  lineage_generation: 'maxGeneration'
+  lineage_generation: 'founderGeneration'
 };
 
 const GOAL_POOL = [
@@ -289,7 +290,8 @@ export class SessionGoals {
       creatureThrows: this.creatureThrows,
       propTriggers: this.propTriggers,
       propPlacements: this.propPlacements,
-      godActions: this.godActions
+      godActions: this.godActions,
+      founderId: gameState.lineageRootId
     });
   }
 

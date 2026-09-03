@@ -17,6 +17,7 @@ import { applyUiGodModeMethods } from './ui-controller-god-mode.js';
 import { DEFAULT_SPAWN_TYPE, applyUiSpawnMethods } from './ui-controller-spawn.js';
 import { applyUiAchievementsMethods } from './ui-controller-achievements.js';
 import { applyUiPanelMethods } from './ui-controller-panels.js';
+import { GOD_TOOL_REGISTRY } from './game/god-tool-system.js';
 
 // Local helper to validate notification subsystem shape without relying on external export
 export function isNotificationSystem(candidate) {
@@ -716,12 +717,18 @@ export class UIController {
    * Update tool indicator and quick action button states
    */
   updateToolIndicator(mode) {
+    const fromRegistry = Object.fromEntries(
+      GOD_TOOL_REGISTRY.map(entry => [
+        entry.mode || entry.id,
+        { icon: entry.icon, label: entry.label, hint: entry.hint }
+      ])
+    );
     const toolMeta = {
-      food: { icon: '🌿', label: 'Food', hint: '[/] brush' },
-      spawn: { icon: '🧬', label: 'Spawn', hint: '' },
-      erase: { icon: '🧹', label: 'Erase', hint: '[/] brush' },
-      inspect: { icon: '🔍', label: 'Inspect', hint: '' },
-      prop: { icon: '🧱', label: 'Props', hint: '' }
+      inspect: { icon: '🔍', label: 'Observe', hint: '' },
+      food: fromRegistry.food || { icon: '🌿', label: 'Nudge food', hint: '[/] brush' },
+      spawn: fromRegistry.spawn || { icon: '🧬', label: 'Spawn', hint: '' },
+      erase: fromRegistry.erase || { icon: '🧹', label: 'Erase', hint: '[/] brush' },
+      prop: fromRegistry.prop || { icon: '🧱', label: 'Props', hint: '' }
     };
 
     // Update quick action button active states

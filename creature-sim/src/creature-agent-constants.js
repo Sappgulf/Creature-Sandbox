@@ -253,13 +253,19 @@ export const CreatureAgentTuning = {
     CALM_STRENGTH: 0.65,
     CHAOS_INTENSITY: 0.35,
     CHAOS_DURATION: 6,
+    // Brush/input rate, not god-power cooldown. Power cooldowns live on
+    // GodPowersSystem and are measured in simulation time (world.t).
     ACTION_INTERVAL_MS: {
       food: 95,
       calm: 230,
       chaos: 520,
       spawn: 240,
       prop: 130,
-      remove: 85
+      remove: 85,
+      bless: 400,
+      curse: 600,
+      attract: 250,
+      repel: 250
     },
     DRAG_DISTANCE_BASE: 14
   },

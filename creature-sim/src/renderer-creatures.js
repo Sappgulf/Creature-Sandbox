@@ -249,7 +249,7 @@ export function applyCreatureMethods(Renderer) {
     // Keep the vector mark for truly distant populations, but use the
     // authored sprite at normal gameplay scale so worker snapshots retain
     // the same creature identity as the main-thread path.
-    if (zoom >= 0.28 && drawCreatureSprite(ctx, c, { clusterHue, zoom, worldTime })) return;
+    if (zoom >= 0.12 && drawCreatureSprite(ctx, c, { clusterHue, zoom, worldTime })) return;
 
     const hue = numericGene(clusterHue ?? c.genes?.hue, 0);
     const diet = numericGene(c.genes?.diet, c.genes?.predator ? 1 : 0);

@@ -18,7 +18,8 @@ assert.equal(herdRescue?.maxStress, 60);
 assert.equal(herdRescue?.guidedLoop, true);
 assert.match(herdRescue?.steps?.[0] || '', /^Observe ·/);
 assert.match(herdRescue?.steps?.[1] || '', /^Influence ·/);
-assert.match(herdRescue?.steps?.[2] || '', /^Preserve ·/);
+assert.match(herdRescue?.steps?.[2] || '', /^Discover ·/);
+assert.match(herdRescue?.steps?.[herdRescue.steps.length - 1] || '', /^Preserve ·/);
 assert.equal(buildScenarioObjectives(herdRescue).find(goal => goal.type === 'stress_cap')?.target, 60);
 
 const propPlayground = PLAYABLE_SCENARIOS.find(scenario => scenario.id === 'prop_playground');

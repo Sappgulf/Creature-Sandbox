@@ -22,18 +22,50 @@ function quantizeHue(value) {
 export function getCreatureAssetKey(creature = {}) {
   const genes = creature.genes || {};
   const creatureType = creature.traits?.creatureType || creature.creatureType || null;
-  const aquaticAffinity = numericGene(creature.aquaticAffinity, 0);
+  const aquaticAffinity = numericGene(creature.aquaticAffinity, numericGene(genes.aquatic, 0));
+  const flying = numericGene(genes.flying, creatureType === 'flying' ? 1 : 0);
+  const burrowing = numericGene(genes.burrowing, creatureType === 'burrowing' ? 1 : 0);
   const diet = numericGene(genes.diet, genes.predator ? 1 : 0);
 
   if (creature.ageStage === 'baby') return 'creature_baby';
   if (creature.ageStage === 'elder') return 'creature_elder';
-  if (creatureType === 'flying') return 'creature_flying';
-  if (creatureType === 'burrowing') return 'creature_burrowing';
+  if (creatureType === 'flying' || flying > 0.6) return 'creature_flying';
+  if (creatureType === 'burrowing' || burrowing > 0.6) return 'creature_burrowing';
   if (aquaticAffinity > 0.6) return 'creature_aquatic';
   if (creature.socialRank === 'alpha') return 'creature_alpha';
   if (diet > 0.7 || genes.predator) return 'creature_predator';
   if (diet > 0.3) return 'creature_omnivore';
   return 'creature_herbivore';
+}
+
+const CREATURE_CLIPS = {
+  idle: { start: 0, count: 4, fps: 8, pingPong: true },
+  walking: { start: 2, count: 6, fps: 12 },
+  running: { start: 4, count: 6, fps: 16 },
+  eating: { start: 7, count: 3, fps: 10 },
+  sleeping: { start: 0, count: 3, fps: 4, pingPong: true }
+};
+
+export function prewarmCreatureSprites() {
+  const keys = [
+    'creature_herbivore',
+    'creature_omnivore',
+    'creature_predator',
+    'creature_baby',
+    'creature_elder',
+    'creature_alpha',
+    'creature_aquatic',
+    'creature_flying',
+    'creature_burrowing'
+  ];
+  const hues = [96, 48, 168];
+  for (const key of keys) {
+    for (const hue of hues) {
+      const color = colorCache.cssHsl(hue, 85, 58);
+      requestSpriteFrames(key, 32, color);
+      requestSpriteFrames(key, 48, color);
+    }
+  }
 }
 
 export function getCreatureHue(creature = {}, clusterHue = null) {
@@ -91,7 +123,10 @@ export function getCreatureSpriteFrame(creature = {}, { worldTime = 0, renderSiz
   }
 
   const { state, speedScale } = getCreatureAnimationDetails(creature);
-  const frameIndex = assetLoader.getAnimationFrameIndex(sprite, state, worldTime, speedScale);
+  const clipped = sprite.animations
+    ? sprite
+    : { ...sprite, animations: CREATURE_CLIPS, defaultAnimation: 'idle', frameCount: sprite.frames?.length || 10 };
+  const frameIndex = assetLoader.getAnimationFrameIndex(clipped, state, worldTime, speedScale);
   return {
     assetKey,
     frame: sprite.frames[frameIndex] || sprite.frames[0] || null,

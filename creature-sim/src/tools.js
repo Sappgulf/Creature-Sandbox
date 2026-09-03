@@ -519,6 +519,18 @@ export class ToolController {
 
   placeProp(x, y, options = {}) {
     const type = options.type || this.propType || 'bounce';
+    // Worker mode (the shipping default): the proxy forwards to the live
+    // simulation; touching world.sandbox directly would only mutate the
+    // snapshot stub and silently drop the prop. Mirrors how input-touch.js
+    // routes GOD_POWER via `typeof world.applyGodPower === 'function'`.
+    if (typeof this.world.addProp === 'function') {
+      this.world.addProp(type, x, y, options);
+      this.pushAction({
+        type: 'add-prop',
+        prop: { type, x, y, ...options }
+      });
+      return null;
+    }
     const prop = this.world.sandbox?.addProp?.(type, x, y, options);
     if (!prop) return null;
 
@@ -540,6 +552,33 @@ export class ToolController {
   }
 
   eraseAt(x, y) {
+    // Worker mode: the proxy round-trip is async, so prop-vs-creature
+    // priority is decided from the live snapshot props (STATE_UPDATE now
+    // carries them) before forwarding. Falls through to creature erase
+    // when nothing is under the cursor.
+    if (typeof this.world.removeNearestProp === 'function') {
+      const radius = this.brushSize * 0.65;
+      const props = this.world.sandbox?.props;
+      let hit = false;
+      if (Array.isArray(props)) {
+        const radiusSq = radius * radius;
+        for (const prop of props) {
+          if (!prop) continue;
+          const dx = (prop.x ?? 0) - x;
+          const dy = (prop.y ?? 0) - y;
+          if (dx * dx + dy * dy < radiusSq) {
+            hit = true;
+            break;
+          }
+        }
+      }
+      if (hit) {
+        this.world.removeNearestProp(x, y, radius);
+        return;
+      }
+      this.eraseCreatures(x, y);
+      return;
+    }
     const removedProp = this.world.sandbox?.removeNearestProp?.(x, y, this.brushSize * 0.65);
     if (removedProp) {
       this.pushAction({
@@ -563,7 +602,8 @@ export class ToolController {
 
   undoPlaceProp(action) {
     if (!action.prop) return;
-    this.world.sandbox?.removePropById?.(action.prop.id);
+    if (action.prop.id != null) this.world.sandbox?.removePropById?.(action.prop.id);
+    else this.world.sandbox?.removeNearestProp?.(action.prop.x, action.prop.y, action.prop.radius || 48);
   }
 
   redoPlaceProp(action) {
@@ -578,7 +618,8 @@ export class ToolController {
 
   redoRemoveProp(action) {
     if (!action.prop) return;
-    this.world.sandbox?.removePropById?.(action.prop.id);
+    if (action.prop.id != null) this.world.sandbox?.removePropById?.(action.prop.id);
+    else this.world.sandbox?.removeNearestProp?.(action.prop.x, action.prop.y, action.prop.radius || 48);
   }
 
   _reactToFoodDrop(x, y) {

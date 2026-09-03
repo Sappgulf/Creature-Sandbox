@@ -33,6 +33,7 @@ export const PLAYABLE_SCENARIOS = [
     steps: [
       'Observe · Inspect the herd before acting',
       'Influence · Paint food near the herd',
+      'Discover · Pin one family line',
       'Preserve · Place a calm zone if stress rises'
     ]
   },
@@ -402,7 +403,8 @@ export class PlayableScenarios {
     notifications = null,
     audio = null,
     moments = null,
-    autoDirector = null
+    autoDirector = null,
+    upgradeController = null
   } = {}) {
     this.world = world;
     this.camera = camera;
@@ -412,6 +414,7 @@ export class PlayableScenarios {
     this.audio = audio;
     this.moments = moments;
     this.autoDirector = autoDirector;
+    this.upgradeController = upgradeController;
     this.activeRun = null;
     this.lastSnapshot = this._emptySnapshot();
     this._updateTimer = 0;
@@ -644,7 +647,7 @@ export class PlayableScenarios {
   }
 
   _collectMetrics() {
-    return collectGameplayMetrics(this.world);
+    return collectGameplayMetrics(this.world, { founderId: gameState.lineageRootId });
   }
 
   _evaluateRun() {
@@ -805,8 +808,19 @@ export class PlayableScenarios {
       history: [result, ...history].slice(0, 5)
     };
     this._saveProgress();
-    this.notifications?.show?.(`🏆 Scenario complete: ${this.activeRun.scenario.name}`, 'achievement', 4200);
+    this.notifications?.show?.(
+      `🏆 ${this.activeRun.scenario.name} preserved. Save the seed or keep watching.`,
+      'achievement',
+      4200
+    );
     this.audio?.playUISound?.('success');
+    try {
+      localStorage.setItem('creature-sim-first-expedition-done', '1');
+    } catch {
+      /* ignore */
+    }
+    this.upgradeController?.setPanelVisible?.(true, { focusResult: true });
+    this.upgradeController?.renderPanel?.();
     this._emitUpdate();
   }
 

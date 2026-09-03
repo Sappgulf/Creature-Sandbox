@@ -354,7 +354,7 @@ export function applyInputPointerMethods(InputManager) {
         if (!isDrag) {
           const creature = this._findCreatureAt(x, y);
           if (creature) {
-            this._selectCreatureWithCamera(creature, { preferZoom: 0.92 });
+            this._selectCreatureWithCamera(creature, { preferZoom: 1.12 });
 
             const selectedInfo = document.getElementById('selected-info');
             if (selectedInfo) selectedInfo.classList.remove('hidden');
@@ -427,6 +427,7 @@ export function applyInputPointerMethods(InputManager) {
     this.dragState.active = true;
     this.dragState.pending = false;
     creature.isGrabbed = true;
+    this.world?.grabCreature?.(creature.id, creature.x, creature.y);
     this.canvas.style.cursor = 'grabbing';
     if (typeof navigator.vibrate === 'function') {
       navigator.vibrate(12);
@@ -437,6 +438,7 @@ export function applyInputPointerMethods(InputManager) {
     creature.grabTarget = creature.grabTarget || { x: worldX, y: worldY };
     creature.grabTarget.x = worldX + this.dragState.grabOffsetX;
     creature.grabTarget.y = worldY + this.dragState.grabOffsetY;
+    this.world?.moveGrab?.(creature.id, creature.grabTarget.x, creature.grabTarget.y);
   };
 
   /**
@@ -483,6 +485,7 @@ export function applyInputPointerMethods(InputManager) {
 
     creature.grabTarget.x = worldX + this.dragState.grabOffsetX;
     creature.grabTarget.y = worldY + this.dragState.grabOffsetY;
+    this.world?.moveGrab?.(creature.id, creature.grabTarget.x, creature.grabTarget.y);
   };
 
   /**
@@ -506,6 +509,7 @@ export function applyInputPointerMethods(InputManager) {
           decay: 5.4,
           cap: this.throwImpulseCap
         });
+        this.world?.throwCreature?.(creature.id, scaledVX * this.throwImpulseScale, scaledVY * this.throwImpulseScale);
         creature.dir = Math.atan2(scaledVY, scaledVX);
         eventSystem.emit(GameEvents.CREATURE_THROWN, { creatureId: creature.id, speed: clampedSpeed });
         if (typeof navigator.vibrate === 'function') {

@@ -1,5 +1,6 @@
 import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
+import { GOD_TOOL_REGISTRY } from './game/god-tool-system.js';
 
 export function applyUiGodModeMethods(UIController) {
   UIController.prototype.bindGodModeControls = function () {
@@ -67,18 +68,9 @@ export function applyUiGodModeMethods(UIController) {
     this.updateGodModeUI();
     this.upgradeController?.updateObjectiveRail?.();
     if (!announce || !this.hasNotifications()) return;
-    const labels = {
-      food: 'Food',
-      calm: 'Calm',
-      chaos: 'Chaos',
-      spawn: 'Spawn',
-      prop: 'Prop',
-      remove: 'Remove',
-      bless: 'Bless',
-      curse: 'Curse',
-      attract: 'Attract',
-      repel: 'Repel'
-    };
+    // Single source: labels live on GOD_TOOL_REGISTRY. Same rendered text as
+    // the previous inline map; unknown ids still fall back to the raw id.
+    const labels = Object.fromEntries(GOD_TOOL_REGISTRY.map(entry => [entry.id, entry.label]));
     const via = source === 'hotkey' ? ' (hotkey)' : '';
     this.notifications.show(`✨ ${labels[tool] || tool}${via}`, 'info', changed ? 900 : 700);
   };
@@ -128,18 +120,9 @@ export function applyUiGodModeMethods(UIController) {
     if (panel) {
       const hint = panel.querySelector('.god-mode-hint');
       if (hint) {
-        const hints = {
-          food: '1 Food: green brush preview. Tap for a patch, drag for scattered bites.',
-          calm: '2 Calm: blue radius preview. Paint rest zones around stressed groups.',
-          chaos: '3 Chaos: purple pulse preview. Tap once, then watch recovery.',
-          spawn: '4 Spawn: small placement preview. Places the selected creature type.',
-          prop: '5 Prop: violet placement preview. Uses the selected sandbox prop.',
-          remove: '6 Remove: red eraser preview. Removes the nearest creature or prop.',
-          bless: '7 Bless: heals and energizes creatures near the tap.',
-          curse: '8 Curse: weakens and drains energy from creatures near the tap.',
-          attract: '9 Attract: pulls nearby creatures toward the tap.',
-          repel: '0 Repel: pushes nearby creatures away from the tap.'
-        };
+        // Single source: hint copy lives on GOD_TOOL_REGISTRY. Same rendered
+        // text as the previous inline map.
+        const hints = Object.fromEntries(GOD_TOOL_REGISTRY.map(entry => [entry.id, entry.hint]));
         hint.textContent = hints[gameState.godModeTool] || 'Tap world to use selected tool. Tap Done to return.';
       }
     }

@@ -73,6 +73,7 @@ export function applyInputTouchMethods(InputManager) {
    */
   InputManager.prototype.handleGodModeAction = function (x, y, isDrag) {
     const tool = gameState.godModeTool || 'food';
+    // bless/curse/attract/repel are tap-only (drag disabled).
     const dragEnabled = tool === 'food' || tool === 'calm' || tool === 'prop' || tool === 'remove';
     if (isDrag && !dragEnabled) return;
     if (!this._allowGodAction(tool, x, y, isDrag)) return;
