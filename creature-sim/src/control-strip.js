@@ -95,16 +95,19 @@ export class ControlStripController {
     this.ctrlSpawn = document.getElementById('ctrl-spawn');
     this.ctrlInspect = document.getElementById('ctrl-inspect');
     this.ctrlWatch = document.getElementById('ctrl-watch');
-    this.ctrlGod = document.getElementById('ctrl-god');
     this.ctrlMore = document.getElementById('ctrl-more');
     this.menuFood = document.getElementById('menu-food');
     this.menuGodMode = document.getElementById('menu-god-mode');
     this.menuMode = document.getElementById('menu-mode');
     this.menuUpgrades = document.getElementById('menu-upgrades');
+    this.menuCampaign = document.getElementById('menu-campaign');
+    this.menuAchievements = document.getElementById('menu-achievements');
     this.menuScenario = document.getElementById('menu-scenario');
     this.menuFeatures = document.getElementById('menu-features');
     this.menuSound = document.getElementById('menu-sound');
     this.menuEcoHealth = document.getElementById('menu-eco-health');
+    this.menuAnalytics = document.getElementById('menu-analytics');
+    this.menuGeneEditor = document.getElementById('menu-gene-editor');
     this.menuMobileFocus = document.getElementById('menu-mobile-focus');
     this.menuMobileBattery = document.getElementById('menu-mobile-battery');
     this.menuMobileHaptics = document.getElementById('menu-mobile-haptics');
@@ -144,7 +147,6 @@ export class ControlStripController {
     this.ctrlSpawn?.addEventListener('click', () => this.openSpawnDrawer());
     this.ctrlInspect?.addEventListener('click', () => this.activateInspectTool());
     this.ctrlWatch?.addEventListener('click', () => this.toggleWatchMode());
-    this.ctrlGod?.addEventListener('click', () => this.toggleGodMode());
     this.ctrlMore?.addEventListener('click', () => this.openOverflowDrawer());
 
     // Spawn drawer
@@ -216,7 +218,15 @@ export class ControlStripController {
       this.updateSpeedButton();
     });
     this.applyMobilePrefs({ syncMenu: true });
-    eventSystem.on('tool:changed', () => this.updateToolButtons());
+    eventSystem.on('tool:changed', data => {
+      this.updateToolButtons();
+      // The `S` shortcut (owned by input-manager) only sets the tool mode, so
+      // backfill the spawn type here — otherwise keyboard spawn places the
+      // default instead of the drawer's remembered type.
+      if (data?.mode === 'spawn' && !gameState.spawnMode) {
+        this.syncSpawnModeFromTool();
+      }
+    });
 
     this._initBatteryManager();
   }
@@ -406,9 +416,13 @@ export class ControlStripController {
     this.setMenuActive(this.menuGodMode, gameState.godModeActive);
     this.setMenuActive(this.menuMode, gameState.sessionMetaVisible !== false);
     this.setMenuActive(this.menuUpgrades, isPanelVisible('upgrade-panel'));
+    this.setMenuActive(this.menuCampaign, isPanelVisible('campaign-panel'));
+    this.setMenuActive(this.menuAchievements, isPanelVisible('achievements-panel'));
     this.setMenuActive(this.menuScenario, !!gameState.scenarioPanelVisible);
+    this.setMenuActive(this.menuGeneEditor, isPanelVisible('gene-editor-panel'));
     this.setMenuActive(this.menuFeatures, !!gameState.featuresPanelVisible);
     this.setMenuActive(this.menuSound, isPanelVisible('sound-panel'));
+    this.setMenuActive(this.menuAnalytics, isPanelVisible('analytics-dashboard'));
     this.setMenuActive(this.menuEcoHealth, isPanelVisible('eco-health-panel'));
     this.setMenuActive(this.menuMobileFocus, this.mobilePrefs.focusMode);
     this.setMenuActive(this.menuMobileBattery, this.mobilePrefs.batterySaver);
@@ -607,6 +621,41 @@ export class ControlStripController {
     this.syncMenuState();
   }
 
+  /**
+   * Backfill the spawn type when the spawn tool is armed outside the drawer
+   * (e.g. the `S` shortcut owned by input-manager only sets the tool mode).
+   * Keeps keyboard spawn on the remembered type, matching confirmSpawn().
+   */
+  syncSpawnModeFromTool() {
+    const type = gameState.selectedCreatureType || this.currentSpawnType || 'herbivore';
+    gameState.setSpawnMode(type);
+    this.currentSpawnType = gameState.selectedCreatureType || type;
+    this.updateSpawnSelection();
+    this.syncMenuState();
+  }
+
+  /**
+   * Arm the spawn tool for an explicit type (drawer-equivalent path exposed
+   * for keyboard and menu entry points).
+   */
+  activateSpawnMode(type = null) {
+    const spawnType = type || gameState.selectedCreatureType || this.currentSpawnType || 'herbivore';
+    this.currentSpawnType = spawnType;
+    if (this.tools) {
+      this.tools.setMode('spawn');
+    }
+    gameState.setSpawnMode(spawnType);
+    try {
+      localStorage.setItem('creature-last-spawn-type', spawnType);
+    } catch {
+      // Storage may be unavailable in private browsing contexts.
+    }
+    eventSystem.emit('tool:changed', { mode: 'spawn' });
+    this.updateToolButtons();
+    this.updateSpawnSelection();
+    this.syncMenuState();
+  }
+
   // === OVERFLOW DRAWER ===
   openOverflowDrawer() {
     if (!this.overflowDrawer) return;
@@ -660,14 +709,12 @@ export class ControlStripController {
     }
 
     if (action === 'save') {
-      // Simulate save shortcut
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true }));
+      this.requestSaveGame();
       return;
     }
 
     if (action === 'load') {
-      // Simulate load shortcut
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'o', ctrlKey: true }));
+      this.requestLoadGame();
       return;
     }
 
@@ -683,6 +730,7 @@ export class ControlStripController {
         break;
       case 'props':
         this.uiController?.onPropTool();
+        this.tools?.openPropPicker?.();
         this.updateToolButtons();
         this.syncMenuState();
         break;
@@ -695,16 +743,25 @@ export class ControlStripController {
         window.dispatchEvent(new CustomEvent('creature:toggle-upgrades-panel'));
         this.syncMenuState();
         break;
-      case 'campaign':
-        // Campaign toggle is handled by ID in main currently, but we can try generic event or check controller
-        // If ui-controller doesn't implement onCampaignToggle fully, we might need to rely on event system
-        // But looking at UI controller, onCampaignToggle is empty/commented "handled in main".
-        // Let's trigger the event system or keep the button click for JUST campaign if needed,
-        // OR better, emit the event directly.
-        // However, the legacy button click works because main.js binds it.
-        // Let's perform a check for specific complex ones.
-        const btnCampaign = document.getElementById('btn-campaign');
-        if (btnCampaign) btnCampaign.click();
+      case 'campaign': {
+        const toggle = this.uiController?.onCampaignToggle;
+        if (typeof toggle === 'function') {
+          toggle.call(this.uiController);
+        } else {
+          console.warn('Campaign toggle unavailable: no UI controller');
+          this.uiController?.notifications?.show?.('Campaign unavailable', 'error', 2200);
+        }
+        this.syncMenuState();
+        break;
+      }
+      case 'replay':
+        this.openLazyPanel('Replay', 'ensureReplayPanel', panel => panel?.show?.());
+        break;
+      case 'insights':
+        this.openLazyPanel('Insights', 'ensureInsightsPanel', panel => panel?.show?.());
+        break;
+      case 'lineage-album':
+        this.openLazyPanel('Lineage album', 'ensureLineageAlbum', panel => panel?.show?.());
         break;
       case 'achievements':
         this.uiController?.onAchievementsToggle();
@@ -759,6 +816,43 @@ export class ControlStripController {
         this.buzz(14);
         break;
     }
+  }
+
+  requestSaveGame() {
+    if (typeof this.uiController?.onSaveGame === 'function') {
+      this.uiController.onSaveGame();
+      return;
+    }
+    console.warn('Save unavailable: no UI controller save handler');
+    this.uiController?.notifications?.show?.('Save unavailable', 'error', 2200);
+  }
+
+  requestLoadGame() {
+    if (typeof this.uiController?.onLoadGame === 'function') {
+      this.uiController.onLoadGame();
+      return;
+    }
+    console.warn('Load unavailable: no UI controller load handler');
+    this.uiController?.notifications?.show?.('Load unavailable', 'error', 2200);
+  }
+
+  openLazyPanel(label, loaderName, show) {
+    import('./bootstrap-lazy-loaders.js')
+      .then(loaders => {
+        const ensure = loaders?.[loaderName];
+        if (typeof ensure !== 'function') {
+          throw new Error(`Unknown lazy loader: ${loaderName}`);
+        }
+        return ensure({ getWorld: () => this.world });
+      })
+      .then(panel => {
+        show(panel);
+        this.syncMenuState();
+      })
+      .catch(error => {
+        console.error(`${label} panel failed to open:`, error);
+        this.uiController?.notifications?.show?.(`${label} panel failed to open`, 'error', 2600);
+      });
   }
 
   async copyShareSeed() {
@@ -889,7 +983,7 @@ export class ControlStripController {
     }
     this.isGodMode = !!gameState.godModeActive;
 
-    const godTarget = this.ctrlGod || this.menuGodMode || document.getElementById('menu-god-mode');
+    const godTarget = this.menuGodMode || document.getElementById('menu-god-mode');
     godTarget?.classList.toggle('active', this.isGodMode);
     this.watchGodMode?.classList.toggle('active', this.isGodMode);
     godTarget?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
@@ -953,10 +1047,8 @@ export class ControlStripController {
     this.updateSpawnSelection();
     this.updateToolButtons();
     this.watchFollow?.classList.toggle('active', this.camera?.followMode !== 'free');
-    this.ctrlGod?.classList.toggle('active', this.isGodMode);
     this.menuGodMode?.classList.toggle('active', this.isGodMode);
     this.watchGodMode?.classList.toggle('active', this.isGodMode);
-    this.ctrlGod?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
     this.menuGodMode?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
     this.watchGodMode?.setAttribute('aria-pressed', this.isGodMode ? 'true' : 'false');
     this.syncMenuState();

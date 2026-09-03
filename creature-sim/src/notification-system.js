@@ -180,7 +180,7 @@ export class NotificationSystem {
     if (!announcer) return;
     const text = notif.title ? `${notif.title} ${notif.message}`.trim() : notif.message;
     // Narrative events for screen readers: milestones, warnings, achievements, and key ecosystem events
-    const narrativeTypes = new Set(['warning', 'milestone', 'achievement', 'info', 'event']);
+    const narrativeTypes = new Set(['warning', 'milestone', 'achievement', 'info', 'event', 'success', 'error']);
     if (narrativeTypes.has(notif.type)) {
       announcer.textContent = text;
       // Auto-clear after a short delay so repeated events are announced

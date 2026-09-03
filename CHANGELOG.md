@@ -26,6 +26,27 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-03 — menus-popups-props-godmode-functional-pass — Planned
+
+- **Date:** 2026-09-03
+- **Scope:** ui | simulation | render
+- **Type:** Planned
+- **Issues:** Menu/popup/props/god-mode audit found 30+ defects: dead ctrl-god refs, campaign no-op stub via hidden-button proxy, legacy spawn/prop dropdowns pointing at missing ids, replay/insights/lineage panels unreachable, save/load via synthetic KeyboardEvent, shortcuts overlay mismatches, missing dialog semantics/focus/Esc matrix, toasts never announcing success/error, worker-mode prop placement dead, prop palette unreachable (10/11 types), prop undo dropping dir, 4 prop types silent to goals/moments, ghost types immortal, no prop drag/erase, worker-mode bless/curse/attract/repel no-ops, bless cap bug (80→50 energy), god brush preview falling back to food-green, god label/keymap drift.
+- **Root Causes:** UI grew by accretion: drawer system superseded dropdowns without removing them, worker proxy never gained prop/god-power messages, EXTRAS-era save path bypassed props, quality/discussion of god tools spread across 4 label maps with no single TOOL_META.
+- **Fixes:** Planned four parallel fix agents (menu wiring, overlays/a11y, props, god powers) + central handoffs + in-app Playwright interaction proof.
+- **Verification:** Planned: lint, full tests, 34-step in-app proof (drawers, picker, placement, 10 god tools, hotkeys, 13 panels, keys, zero page errors).
+
+### 2026-09-03 — menus-popups-props-godmode-functional-pass — Implemented
+
+- **Date:** 2026-09-03
+- **Scope:** ui | simulation | render
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned; live proof additionally exposed a test-harness bug (waitForSelector waits VISIBLE by default, can never match `.hidden`) — not an app bug; and confirmed the Done button, hit-testing, and handlers all correct.
+- **Fixes:** Menus: dead ctrl-god refs removed, onCampaignToggle implemented for real, save/load call systems directly, menu active states completed, S-key spawn sync, replay/insights/lineage wired + overflow items added. Overlays: dialog roles on 8 panels + shortcuts, listbox role for spawn cards, panel self-focus/return, scenario-result focus, success/error announced, Esc matrix completed, shortcuts rows fixed (W/Q/F12/god-mode-off notes), dead replay-tutorial button removed (bank kept: app-bootstrap binds campaign open on it). Props: dynamic 11-type prop picker drawer + overflow wiring + Shift+P cycle, dir-preserving undo, type coercion, TRIGGERED emits with x/y on all 11 (2s throttle), moments/director label fixes, prop drag/erase/inspect, renderer cull + gradient cache + fallback glyph + minimap dots. God: GOD_POWER proxy→worker message with validation, bless cap fix, finite/affected guards, 7-0 hints/labels/tooltips, orphan performGodAction deleted, brush previews for 4 powers.
+- **Verification:** lint clean; tests green (core 190/0, regression 50/0, e2e 1/0, save + migration); in-app proof 34/34 PASS with zero page errors (main-thread mode; worker prop/god transport covered by protocol unit tests). Known remaining gaps (by design, documented): worker-mode prop ADD_PROP transport, ACTION_INTERVAL_MS tuning for powers, Date.now/Performance clock split, single TOOL_META consolidation.
+- **Files:** control-strip.js, ui-controller-{game-mode,god-mode,panels,spawn}.js, ui-controller.js, ui.js, input-{manager,pointer,touch}.js, tutorial-system.js, notification-system.js, upgrade-controller.js, tools.js, sandbox-props.js, renderer.js, renderer-minimap.js, game-loop.js, moments-system.js, auto-director.js, god-powers.js, simulation-proxy.js, worker-simulation.js, index.html.
+
 ### 2026-09-03 — full-audit-phase-4-sourcemap-proof-push — Planned
 
 - **Date:** 2026-09-03

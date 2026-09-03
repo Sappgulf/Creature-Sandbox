@@ -768,6 +768,22 @@ export class Renderer {
       radius = 28;
       color = 'rgba(255, 120, 120, 0.12)';
       stroke = 'rgba(255, 120, 120, 0.44)';
+    } else if (tool === 'bless') {
+      radius = 64;
+      color = 'rgba(255, 220, 120, 0.12)';
+      stroke = 'rgba(255, 220, 120, 0.44)';
+    } else if (tool === 'curse') {
+      radius = 64;
+      color = 'rgba(255, 90, 90, 0.12)';
+      stroke = 'rgba(255, 90, 90, 0.44)';
+    } else if (tool === 'attract') {
+      radius = 72;
+      color = 'rgba(120, 170, 255, 0.12)';
+      stroke = 'rgba(120, 170, 255, 0.44)';
+    } else if (tool === 'repel') {
+      radius = 72;
+      color = 'rgba(170, 170, 180, 0.12)';
+      stroke = 'rgba(170, 170, 180, 0.44)';
     }
 
     ctx.save();
@@ -956,15 +972,27 @@ export class Renderer {
     const useSpriteProps = this._shouldUsePropSprites(props.length);
 
     const ctx = this.ctx;
+    const bounds = this._viewBounds;
+    if (!this._gravityGradientCache) this._gravityGradientCache = new Map();
+    const gravityGradients = this._gravityGradientCache;
     ctx.save();
 
     for (const prop of props) {
       if (!prop) continue;
+      const radius = prop.radius || 40;
+      if (
+        bounds &&
+        (prop.x + radius < bounds.x1 ||
+          prop.x - radius > bounds.x2 ||
+          prop.y + radius < bounds.y1 ||
+          prop.y - radius > bounds.y2)
+      ) {
+        continue;
+      }
       if (useSpriteProps && this._drawSandboxPropSprite(prop, world)) {
         ctx.globalAlpha = 1;
         continue;
       }
-      const radius = prop.radius || 40;
       const color = prop.color || '#94a3b8';
 
       switch (prop.type) {
@@ -1124,19 +1152,30 @@ export class Renderer {
           break;
         }
         case 'gravity': {
-          const gradient = ctx.createRadialGradient(prop.x, prop.y, radius * 0.2, prop.x, prop.y, radius);
-          gradient.addColorStop(0, 'rgba(255,255,255,0.3)');
-          gradient.addColorStop(1, 'rgba(30,41,59,0.05)');
+          const gradientKey = `${Math.round(radius)}|${color}`;
+          let gradient = gravityGradients.get(gradientKey);
+          if (!gradient) {
+            gradient = ctx.createRadialGradient(0, 0, radius * 0.2, 0, 0, radius);
+            gradient.addColorStop(0, 'rgba(255,255,255,0.3)');
+            gradient.addColorStop(1, 'rgba(30,41,59,0.05)');
+            gravityGradients.set(gradientKey, gradient);
+            if (gravityGradients.size > 24) {
+              gravityGradients.delete(gravityGradients.keys().next().value);
+            }
+          }
+          ctx.save();
+          ctx.translate(prop.x, prop.y);
           ctx.globalAlpha = 0.6;
           ctx.fillStyle = gradient;
           ctx.beginPath();
-          ctx.arc(prop.x, prop.y, radius, 0, Math.PI * 2);
+          ctx.arc(0, 0, radius, 0, Math.PI * 2);
           ctx.fill();
           ctx.strokeStyle = color;
           ctx.lineWidth = 1.6;
           ctx.beginPath();
-          ctx.arc(prop.x, prop.y, radius * 0.65, 0, Math.PI * 2);
+          ctx.arc(0, 0, radius * 0.65, 0, Math.PI * 2);
           ctx.stroke();
+          ctx.restore();
           break;
         }
         case 'button': {
@@ -1171,8 +1210,27 @@ export class Renderer {
           ctx.stroke();
           break;
         }
-        default:
+        default: {
+          // Unknown prop type (e.g. from a newer save): draw a visible
+          // placeholder instead of silently skipping the prop.
+          ctx.save();
+          ctx.globalAlpha = 0.55;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 4]);
+          ctx.beginPath();
+          ctx.arc(prop.x, prop.y, radius, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.globalAlpha = 0.9;
+          ctx.fillStyle = '#f8fafc';
+          ctx.font = `bold ${Math.max(12, Math.round(radius * 0.6))}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('?', prop.x, prop.y);
+          ctx.restore();
           break;
+        }
       }
       ctx.globalAlpha = 1;
     }

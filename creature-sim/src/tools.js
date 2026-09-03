@@ -1,5 +1,7 @@
 import { isPredatorFromGenes } from './creature-genetics-helpers.js';
 import { eventSystem, GameEvents } from './event-system.js';
+import { gameState } from './game-state.js';
+import { SANDBOX_PROP_TYPES } from './sandbox-props.js';
 
 export const ToolModes = Object.freeze({
   INSPECT: 'inspect',
@@ -40,6 +42,10 @@ export class ToolController {
 
     // Sandbox prop defaults
     this.propType = 'bounce';
+    this.propTypeOrder = Object.keys(SANDBOX_PROP_TYPES);
+    this._propPickerEl = null;
+    this._propPickerCards = new Map();
+    this._propPickerKeyHandler = null;
   }
 
   setMode(mode) {
@@ -54,8 +60,151 @@ export class ToolController {
 
   setPropType(type) {
     if (!type) return this.propType;
-    this.propType = type;
+    const safeType = SANDBOX_PROP_TYPES[type] ? type : 'bounce';
+    this.propType = safeType;
+    if (gameState) gameState.selectedPropType = safeType;
+    this._syncPropPickerSelection();
     return this.propType;
+  }
+
+  cyclePropType(direction = 1) {
+    const order = this.propTypeOrder?.length ? this.propTypeOrder : Object.keys(SANDBOX_PROP_TYPES);
+    const step = Number.isFinite(direction) ? direction : 1;
+    const idx = order.indexOf(this.propType);
+    const next = order[(idx + step + order.length) % order.length] || 'bounce';
+    return this.setPropType(next);
+  }
+
+  openPropPicker() {
+    if (typeof document === 'undefined') return null;
+    let drawer = document.getElementById('prop-picker-drawer');
+    if (!drawer) {
+      drawer = this._buildPropPickerDrawer();
+      if (!drawer) return null;
+      document.body.appendChild(drawer);
+    }
+    this._propPickerEl = drawer;
+    this._syncPropPickerSelection();
+    drawer.classList.remove('hidden');
+    drawer.setAttribute('aria-hidden', 'false');
+    return drawer;
+  }
+
+  closePropPicker() {
+    const drawer =
+      this._propPickerEl || (typeof document !== 'undefined' ? document.getElementById('prop-picker-drawer') : null);
+    if (!drawer) return;
+    drawer.classList.add('hidden');
+    drawer.setAttribute('aria-hidden', 'true');
+  }
+
+  _syncPropPickerSelection() {
+    if (!this._propPickerCards || this._propPickerCards.size === 0) return;
+    for (const [type, card] of this._propPickerCards) {
+      const selected = type === this.propType;
+      card.classList.toggle('selected', selected);
+      if (selected) card.setAttribute('aria-pressed', 'true');
+      else card.removeAttribute('aria-pressed');
+    }
+  }
+
+  _buildPropPickerDrawer() {
+    if (typeof document === 'undefined') return null;
+    const drawer = document.createElement('div');
+    drawer.id = 'prop-picker-drawer';
+    drawer.className = 'bottom-drawer hidden';
+    drawer.setAttribute('role', 'dialog');
+    drawer.setAttribute('aria-modal', 'true');
+    drawer.setAttribute('aria-label', 'Choose sandbox prop');
+    drawer.setAttribute('aria-hidden', 'true');
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'drawer-backdrop';
+    backdrop.addEventListener('click', () => this.closePropPicker());
+
+    const content = document.createElement('div');
+    content.className = 'drawer-content';
+
+    const handle = document.createElement('div');
+    handle.className = 'drawer-handle';
+
+    const header = document.createElement('div');
+    header.className = 'drawer-header';
+    const title = document.createElement('span');
+    title.className = 'drawer-title';
+    title.textContent = 'Sandbox Props';
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'drawer-close';
+    closeBtn.setAttribute('aria-label', 'Close');
+    closeBtn.textContent = '×';
+    closeBtn.addEventListener('click', () => this.closePropPicker());
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+
+    const body = document.createElement('div');
+    body.className = 'drawer-body';
+    this._propPickerCards = new Map();
+    for (const meta of Object.values(SANDBOX_PROP_TYPES)) {
+      if (!meta) continue;
+      const card = document.createElement('button');
+      card.className = 'spawn-card';
+      card.dataset.prop = meta.id;
+      card.setAttribute('role', 'option');
+      card.setAttribute('aria-label', meta.label);
+      const icon = document.createElement('span');
+      icon.className = 'spawn-card-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = meta.icon;
+      const info = document.createElement('span');
+      info.className = 'spawn-card-info';
+      const name = document.createElement('span');
+      name.className = 'spawn-card-name';
+      name.textContent = meta.label;
+      const desc = document.createElement('span');
+      desc.className = 'spawn-card-desc';
+      desc.textContent = meta.id;
+      info.appendChild(name);
+      info.appendChild(desc);
+      const check = document.createElement('span');
+      check.className = 'spawn-card-check';
+      check.textContent = '✓';
+      card.appendChild(icon);
+      card.appendChild(info);
+      card.appendChild(check);
+      card.addEventListener('click', () => {
+        this.setPropType(meta.id);
+        this.setMode('prop');
+        eventSystem.emit('tool:changed', { mode: 'prop' });
+        this.closePropPicker();
+      });
+      body.appendChild(card);
+      this._propPickerCards.set(meta.id, card);
+    }
+
+    const footer = document.createElement('div');
+    footer.className = 'drawer-footer';
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'drawer-action-btn';
+    confirmBtn.textContent = 'Tap World to Place';
+    confirmBtn.addEventListener('click', () => this.closePropPicker());
+    footer.appendChild(confirmBtn);
+
+    content.appendChild(handle);
+    content.appendChild(header);
+    content.appendChild(body);
+    content.appendChild(footer);
+    drawer.appendChild(backdrop);
+    drawer.appendChild(content);
+
+    if (!this._propPickerKeyHandler) {
+      this._propPickerKeyHandler = event => {
+        if (event.key === 'Escape' && this._propPickerEl && !this._propPickerEl.classList.contains('hidden')) {
+          this.closePropPicker();
+        }
+      };
+      document.addEventListener('keydown', this._propPickerKeyHandler);
+    }
+    return drawer;
   }
 
   adjustBrushSize(delta) {
@@ -380,6 +529,7 @@ export class ToolController {
         type: prop.type,
         x: prop.x,
         y: prop.y,
+        dir: prop.dir ?? options.dir ?? 0,
         radius: prop.radius,
         strength: prop.strength,
         color: prop.color
@@ -399,6 +549,7 @@ export class ToolController {
           type: removedProp.type,
           x: removedProp.x,
           y: removedProp.y,
+          dir: removedProp.dir ?? 0,
           radius: removedProp.radius,
           strength: removedProp.strength,
           color: removedProp.color

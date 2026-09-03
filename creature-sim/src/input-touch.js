@@ -118,6 +118,15 @@ export function applyInputTouchMethods(InputManager) {
       case 'curse':
       case 'attract':
       case 'repel': {
+        // Worker mode (the shipping default): the proxy forwards to the live
+        // simulation; calling the local singleton here would only mutate the
+        // snapshot copy and silently do nothing. Mirrors the calm/chaos path
+        // above, which likewise calls straight through `this.world`.
+        if (typeof this.world.applyGodPower === 'function') {
+          this.world.applyGodPower(tool, x, y);
+          eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: tool, x, y });
+          break;
+        }
         const used = godPowers.usePower(tool, x, y, this.world);
         if (used) {
           eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: tool, x, y });
@@ -191,8 +200,15 @@ export function applyInputTouchMethods(InputManager) {
         }
         break;
       }
-      default:
+      default: {
+        console.warn(`Unknown god mode tool: ${tool}`);
+        eventSystem.emit(GameEvents.NOTIFICATION, {
+          message: `Unknown god tool: ${tool}`,
+          type: 'warning',
+          duration: 1500
+        });
         break;
+      }
     }
   };
 

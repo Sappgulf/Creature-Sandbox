@@ -257,6 +257,10 @@ export class InputManager {
         this.tools.setMode('prop');
         eventSystem.emit('tool:changed', { mode: 'prop' });
         break;
+      case 'P':
+        // Shift+P cycles the prop type without leaving prop mode.
+        this.tools?.cyclePropType?.(1);
+        break;
       case '[':
         this.tools?.adjustBrushSize?.(-4);
         this.uiController?.updateToolIndicator?.(this.tools?.mode);
@@ -428,11 +432,25 @@ export class InputManager {
       // Both open from the same menu as the panels above and were the only
       // ones Escape did not close.
       'upgrade-panel',
-      'sound-panel'
+      'sound-panel',
+      'god-mode-panel',
+      'replay-panel',
+      'insights-panel',
+      'lineage-album-panel',
+      'session-meta',
+      'shortcuts-overlay'
     ];
     for (const panelId of closeablePanels) {
       const panel = document.getElementById(panelId);
       if (!panel || panel.classList.contains('hidden')) continue;
+      if (panelId === 'god-mode-panel') {
+        this.uiController?.setGodModeActive?.(false, { source: 'escape' });
+        gameState.godModeActive = false;
+      }
+      if (panelId === 'session-meta') {
+        this.uiController?.setSessionMetaVisible?.(false);
+        gameState.sessionMetaVisible = false;
+      }
       panel.classList.add('hidden');
       panel.setAttribute('aria-hidden', 'true');
       if (panelId === 'features-panel') gameState.featuresPanelVisible = false;

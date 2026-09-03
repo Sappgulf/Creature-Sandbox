@@ -162,6 +162,21 @@ export function applyMinimapMethods(Renderer) {
       ctx.restore();
     }
 
+    const sandboxProps = world.sandbox?.props;
+    if (Array.isArray(sandboxProps) && sandboxProps.length > 0) {
+      ctx.save();
+      for (const prop of sandboxProps) {
+        if (!prop) continue;
+        const px = mapX + prop.x * scaleX * dpr;
+        const py = mapY + prop.y * scaleY * dpr;
+        ctx.fillStyle = prop.color || 'rgba(196, 181, 253, 0.9)';
+        ctx.beginPath();
+        ctx.arc(px, py, Math.max(1.5, 1.6 * dpr), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
     // Draw camera view rectangle (YOUR LOCATION)
     const viewW = opts.viewportWidth / camera.zoom;
     const viewH = opts.viewportHeight / camera.zoom;

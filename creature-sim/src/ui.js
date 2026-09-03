@@ -182,7 +182,11 @@ export function renderStats(el, world, fps, extra = {}) {
       chaos: 'Chaos',
       spawn: 'Spawn',
       prop: 'Prop',
-      remove: 'Remove'
+      remove: 'Remove',
+      bless: 'Bless',
+      curse: 'Curse',
+      attract: 'Attract',
+      repel: 'Repel'
     };
     const toolLabel = extra.godModeTool ? godLabels[extra.godModeTool] || extra.godModeTool : 'Mode';
     const label = `God ${toolLabel}`;

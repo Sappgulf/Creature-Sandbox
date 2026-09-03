@@ -55,6 +55,8 @@ export class UIController {
       onPause: this.onPause.bind(this),
       onStep: this.onStep.bind(this),
       onFood: this.onFood.bind(this),
+      onSaveGame: this.onSaveGame.bind(this),
+      onLoadGame: this.onLoadGame.bind(this),
       onBehaviorChange: this.onBehaviorChange.bind(this),
 
       onPropTool: this.onPropTool.bind(this),
@@ -633,6 +635,80 @@ export class UIController {
       this.world.addFood(x, y);
       const added = this.world.food[this.world.food.length - 1];
       stats[added.type]++;
+    }
+  }
+
+  /**
+   * Save the current simulation straight through SaveSystem instead of
+   * dispatching a synthetic Ctrl+S keypress. Failures surface via
+   * notification rather than failing silently.
+   */
+  async onSaveGame() {
+    if (!this.world || !this.camera) {
+      console.warn('Save unavailable: world or camera missing');
+      this.notifications?.show?.('Save unavailable', 'error', 2200);
+      return;
+    }
+    try {
+      const { SaveSystem } = await import('./save-system.js');
+      const saver = new SaveSystem();
+      await saver.saveToFile(this.world, this.camera, this.subsystems?.analytics ?? null, null);
+      this.notifications?.show?.('💾 Save file downloaded', 'success', 2000);
+    } catch (error) {
+      console.error('Save failed:', error);
+      this.notifications?.show?.('Save failed. Check console for details.', 'error', 3000);
+    }
+  }
+
+  /**
+   * Load a simulation file straight through SaveSystem. Mirrors the
+   * file-load path: hydrate in place when the live world is compatible,
+   * otherwise import the snapshot into it.
+   */
+  async onLoadGame() {
+    if (!this.world || !this.camera) {
+      console.warn('Load unavailable: world or camera missing');
+      this.notifications?.show?.('Load unavailable', 'error', 2200);
+      return;
+    }
+    const picker = document.createElement('input');
+    picker.type = 'file';
+    picker.accept = '.crsim,.json,application/json';
+    picker.className = 'hidden';
+    const chosen = new Promise(resolve => {
+      picker.addEventListener('change', () => resolve(picker.files?.[0] || null), { once: true });
+    });
+    document.body.appendChild(picker);
+    picker.click();
+    const file = await chosen;
+    picker.remove();
+    if (!file) return;
+    try {
+      const [{ SaveSystem }, { World, Creature, makeGenes, BiomeGenerator }, { Camera }] = await Promise.all([
+        import('./save-system.js'),
+        import('./core/index.js'),
+        import('./camera.js')
+      ]);
+      const saver = new SaveSystem();
+      const existingWorld = typeof this.world.importState === 'function' ? this.world : null;
+      const loaded = await saver.loadFromFile(file, World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld);
+      if (!loaded) {
+        throw new Error('Invalid save file');
+      }
+      if (loaded.world && loaded.world !== this.world) {
+        const snapshot = typeof loaded.world.exportState === 'function' ? loaded.world.exportState() : loaded.world;
+        if (typeof this.world.importState !== 'function') {
+          throw new Error('Loaded world is incompatible with the active simulation mode');
+        }
+        this.world.importState(snapshot);
+      }
+      if (loaded.camera) {
+        Object.assign(this.camera, loaded.camera);
+      }
+      this.notifications?.show?.('📂 Save loaded', 'success', 2000);
+    } catch (error) {
+      console.error('Load failed:', error);
+      this.notifications?.show?.('Load failed. Verify the save file.', 'error', 3200);
     }
   }
 

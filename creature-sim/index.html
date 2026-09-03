@@ -178,7 +178,7 @@
         <span class="drawer-title">Spawn Creature</span>
         <button id="spawn-drawer-close" class="drawer-close" aria-label="Close">×</button>
       </div>
-      <div class="drawer-body">
+      <div class="drawer-body" role="listbox" aria-label="Choose creature to spawn">
         <button class="spawn-card" data-creature="herbivore" role="option">
           <span class="spawn-card-icon spawn-card-preview spawn-card-herbivore" aria-hidden="true"></span>
           <span class="spawn-card-info">
@@ -270,6 +270,9 @@
           <div class="menu-section-title">Insights</div>
           <button class="menu-item" id="menu-eco-health" data-action="eco-health"><span class="menu-item-icon" aria-hidden="true">🌍</span><span class="menu-item-label">Ecosystem Health</span></button>
           <button class="menu-item" id="menu-analytics" data-action="analytics"><span class="menu-item-icon" aria-hidden="true">📊</span><span class="menu-item-label">Analytics</span></button>
+          <button class="menu-item" id="menu-replay" data-action="replay"><span class="menu-item-icon" aria-hidden="true">▶️</span><span class="menu-item-label">Session Replay</span></button>
+          <button class="menu-item" id="menu-insights" data-action="insights"><span class="menu-item-icon" aria-hidden="true">💡</span><span class="menu-item-label">Insights</span></button>
+          <button class="menu-item" id="menu-lineage-album" data-action="lineage-album"><span class="menu-item-icon" aria-hidden="true">📖</span><span class="menu-item-label">Lineage Album</span></button>
         </div>
         <div class="menu-section">
           <div class="menu-section-title">System</div>
@@ -290,7 +293,6 @@
   <!-- Legacy HUD action bank (hidden, kept for campaign compatibility) -->
   <div id="hud-action-bank" class="hidden" aria-hidden="true">
     <button id="btn-campaign" title="Campaign Mode" aria-label="Open campaign mode">🏆 Campaign</button>
-    <button id="btn-replay-tutorial" title="Replay Tutorial" aria-label="Replay onboarding tutorial">🎓 Replay Tutorial</button>
   </div>
 
   <!-- Tool indicator label -->
@@ -433,9 +435,9 @@
     </div>
   </div>
 
-  <div id="upgrade-panel" class="panel hidden" aria-hidden="true">
+  <div id="upgrade-panel" class="panel hidden" role="dialog" aria-modal="false" aria-labelledby="upgrade-panel-title" aria-hidden="true">
     <div class="panel-header" data-panel="upgrade">
-      <span class="panel-title">
+      <span id="upgrade-panel-title" class="panel-title">
         <span class="panel-collapse-icon">▼</span>
         ✨ Upgrade Hub
       </span>
@@ -535,10 +537,10 @@
   </div>
 
   <!-- Campaign Mode Panel -->
-  <div id="campaign-panel" class="modal hidden">
+  <div id="campaign-panel" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="campaign-panel-title" aria-hidden="true">
     <div class="campaign-modal-content">
       <div class="campaign-header">
-        <h2>🏆 Campaign Mode</h2>
+        <h2 id="campaign-panel-title">🏆 Campaign Mode</h2>
         <button id="btn-campaign-close" class="campaign-close-btn" aria-label="Close campaign panel">×</button>
       </div>
 
@@ -633,9 +635,9 @@
   </div>
 
   <!-- Gene Editor Panel -->
-  <div id="gene-editor-panel" class="panel hidden">
+  <div id="gene-editor-panel" class="panel hidden" role="dialog" aria-modal="false" aria-labelledby="gene-editor-panel-title" aria-hidden="true">
     <div class="panel-header" data-panel="gene-editor">
-      <span class="panel-title">
+      <span id="gene-editor-panel-title" class="panel-title">
         <span class="panel-collapse-icon">▼</span>
         🧬 Gene Editor
       </span>
@@ -770,9 +772,9 @@
   </div>
 
   <!-- Ecosystem Health Panel -->
-  <div id="eco-health-panel" class="panel hidden">
+  <div id="eco-health-panel" class="panel hidden" role="dialog" aria-modal="false" aria-labelledby="eco-health-panel-title" aria-hidden="true">
     <div class="panel-header" data-panel="eco-health">
-      <span class="panel-title">
+      <span id="eco-health-panel-title" class="panel-title">
         <span class="panel-collapse-icon">▼</span>
         🌍 Ecosystem Health
       </span>
@@ -837,9 +839,9 @@
   </div>
 
   <!-- Achievements Panel -->
-  <div id="achievements-panel" class="panel hidden">
+  <div id="achievements-panel" class="panel hidden" role="dialog" aria-modal="false" aria-labelledby="achievements-panel-title" aria-hidden="true">
     <div class="panel-header" data-panel="achievements">
-      <span class="panel-title">
+      <span id="achievements-panel-title" class="panel-title">
         <span class="panel-collapse-icon">▼</span>
         🏅 Achievements
       </span>
@@ -875,9 +877,9 @@
   </div>
 
   <!-- Features Panel -->
-  <div id="features-panel" class="panel hidden">
+  <div id="features-panel" class="panel hidden" role="dialog" aria-modal="false" aria-labelledby="features-panel-title" aria-hidden="true">
     <div class="panel-header" data-panel="features">
-      <span class="panel-title">
+      <span id="features-panel-title" class="panel-title">
         <span class="panel-collapse-icon">▼</span>
         🎨 Features
       </span>
@@ -1022,9 +1024,9 @@
   </div>
 
   <!-- Sound Panel -->
-  <div id="sound-panel" class="panel hidden">
+  <div id="sound-panel" class="panel hidden" role="dialog" aria-modal="false" aria-labelledby="sound-panel-title" aria-hidden="true">
     <div class="panel-header" data-panel="sound">
-      <span class="panel-title">
+      <span id="sound-panel-title" class="panel-title">
         <span class="panel-collapse-icon">▼</span>
         🔊 Sound
       </span>
@@ -1273,10 +1275,10 @@
   </div>
 
   <!-- Keyboard Shortcuts Help Overlay -->
-  <div id="shortcuts-overlay" class="shortcuts-overlay hidden">
+  <div id="shortcuts-overlay" class="shortcuts-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="shortcuts-overlay-title" aria-hidden="true">
     <div class="shortcuts-modal">
       <div class="shortcuts-header">
-        <h2>⌨️ Keyboard Shortcuts</h2>
+        <h2 id="shortcuts-overlay-title">⌨️ Keyboard Shortcuts</h2>
         <button id="btn-shortcuts-close" class="shortcuts-close" aria-label="Close keyboard shortcuts">×</button>
       </div>
       <div class="shortcuts-body">
@@ -1313,16 +1315,18 @@
         </div>
         <div class="shortcuts-section">
           <h3>Advanced Features</h3>
-          <div class="shortcut-row"><kbd>1-5</kbd><span>Recall camera bookmark</span></div>
-          <div class="shortcut-row"><kbd>Shift+1-5</kbd><span>Save camera bookmark</span></div>
+          <div class="shortcut-row"><kbd>1-5</kbd><span>Recall camera bookmark (god mode off)</span></div>
+          <div class="shortcut-row"><kbd>Shift+1-5</kbd><span>Save camera bookmark (god mode off)</span></div>
         </div>
         <div class="shortcuts-section">
           <h3>UI Toggles</h3>
           <div class="shortcut-row"><kbd>H</kbd><span>Stats panel</span></div>
+          <div class="shortcut-row"><kbd>W</kbd><span>Watch mode</span></div>
+          <div class="shortcut-row"><kbd>Q</kbd><span>Toggle quirks</span></div>
           <div class="shortcut-row"><kbd>L</kbd><span>Mini-graphs</span></div>
           <div class="shortcut-row"><kbd>N</kbd><span>Mini-map</span></div>
           <div class="shortcut-row"><kbd>A</kbd><span>Auto-hide UI</span></div>
-          <div class="shortcut-row"><kbd>`</kbd><span>Debug console</span></div>
+          <div class="shortcut-row"><kbd>F12</kbd><span>Debug console</span></div>
         </div>
         <div class="shortcuts-section">
           <h3>Save / Load</h3>

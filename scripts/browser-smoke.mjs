@@ -1402,6 +1402,17 @@ async function runScenario(browser, scenario) {
   await advance(page, 180);
   state = await readGameState(page);
   assert.equal(state.ui.tool, 'prop', `${scenario.name}: props menu action should activate prop tool`);
+  // The props menu action opens the 11-type prop picker drawer (intended UX).
+  // Confirm the picker appeared, then dismiss it so later steps can reach
+  // the control strip again.
+  await page.locator('#prop-picker-drawer:not(.hidden)').waitFor({ state: 'visible', timeout: 5000 });
+  assert.equal(
+    await page.locator('#prop-picker-drawer [data-prop]').count(),
+    11,
+    `${scenario.name}: prop picker should list all 11 prop types`
+  );
+  await page.locator('#prop-picker-drawer .drawer-action-btn').click();
+  await page.locator('#prop-picker-drawer').waitFor({ state: 'hidden', timeout: 5000 });
 
   console.log(`  ${scenario.name}: watch and god`);
   await page.locator('#ctrl-watch').click();

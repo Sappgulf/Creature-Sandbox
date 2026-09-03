@@ -323,23 +323,25 @@ export function applyInputPointerMethods(InputManager) {
       }
 
       case 'erase': {
-        if (!isDrag) {
-          if (this.tools?.eraseAt) {
-            this.tools.eraseAt(x, y);
-          } else if (this.tools?.eraseCreatures) {
-            this.tools.eraseCreatures(x, y);
-          } else {
-            const creature = this._findCreatureAt(x, y);
-            if (creature) {
-              creature.alive = false;
-              creature.deathTime = this.world.t;
-            }
+        if (this.tools?.eraseAt) {
+          this.tools.eraseAt(x, y);
+        } else if (this.tools?.eraseCreatures) {
+          this.tools.eraseCreatures(x, y);
+        } else {
+          const creature = this._findCreatureAt(x, y);
+          if (creature) {
+            creature.alive = false;
+            creature.deathTime = this.world.t;
           }
         }
         break;
       }
       case 'prop': {
-        if (isDrag) break;
+        // Drag paints props; rate-limit so a single stroke places a trail
+        // instead of a prop per pointermove event.
+        const now = performance.now();
+        if (isDrag && now - (this._lastPropPlaceAt || 0) < 160) break;
+        this._lastPropPlaceAt = now;
         const selectedType = gameState.selectedPropType || this.tools?.propType || 'bounce';
         if (this.tools?.placeProp) {
           this.tools.placeProp(x, y, { type: selectedType });
@@ -368,9 +370,19 @@ export function applyInputPointerMethods(InputManager) {
               size: 6
             });
           } else {
-            gameState.selectedId = null;
-            this.camera.followMode = 'free';
-            this.camera.followTarget = null;
+            const prop = this._findPropAt ? this._findPropAt(x, y) : null;
+            if (prop) {
+              this.camera.focusOn(prop.x, prop.y);
+              gameState.selectionPulseUntil = performance.now() + 400;
+              this.world?.particles?.addImpactRing?.(prop.x, prop.y, {
+                color: prop.color || 'rgba(196, 181, 253, 1)',
+                size: 6
+              });
+            } else {
+              gameState.selectedId = null;
+              this.camera.followMode = 'free';
+              this.camera.followTarget = null;
+            }
           }
         }
         break;
@@ -575,6 +587,31 @@ export function applyInputPointerMethods(InputManager) {
       if (d < minDist) {
         minDist = d;
         nearest = c;
+      }
+    }
+
+    return nearest;
+  };
+
+  /**
+   * Find sandbox prop at world coordinates.
+   * Mirrors _findCreatureAt, but the hit area also covers the prop's own
+   * radius so large props (gravity well, fan) inspect reliably.
+   */
+  InputManager.prototype._findPropAt = function (x, y, searchRadius = 34 / this.camera.zoom) {
+    const props = this.world.sandbox?.props;
+    if (!Array.isArray(props) || props.length === 0) return null;
+
+    let nearest = null;
+    let minDist = Infinity;
+
+    for (const p of props) {
+      if (!p) continue;
+      const d = Math.hypot((p.x ?? 0) - x, (p.y ?? 0) - y);
+      const limit = Math.max(searchRadius, p.radius || 0);
+      if (d < limit && d < minDist) {
+        minDist = d;
+        nearest = p;
       }
     }
 

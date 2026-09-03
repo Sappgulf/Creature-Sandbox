@@ -124,8 +124,17 @@ export class SandboxProps {
     return SANDBOX_PROP_TYPES[type] || SANDBOX_PROP_TYPES.bounce;
   }
 
+  _resolvePropType(type) {
+    if (type && Object.prototype.hasOwnProperty.call(SANDBOX_PROP_TYPES, type)) {
+      return type;
+    }
+    console.warn(`[SandboxProps] Unknown prop type "${type}" — falling back to "bounce".`);
+    return 'bounce';
+  }
+
   addProp(type, x, y, options = {}) {
-    const config = this.getTypeConfig(type);
+    const safeType = this._resolvePropType(type);
+    const config = this.getTypeConfig(safeType);
     const clampedX = clamp(x, 0, this.world.width);
     const clampedY = clamp(y, 0, this.world.height);
     const id = options.id ?? this._nextId++;
@@ -349,6 +358,7 @@ export class SandboxProps {
     const vx = Math.cos(dir) * strength;
     const vy = Math.sin(dir) * strength;
     creature.applyImpulse?.(vx, vy, { decay: 12, cap: 200 });
+    this._emitSustainedTrigger(prop, creature);
   }
 
   _applySlope(prop, creature, dx, dy) {
@@ -375,6 +385,7 @@ export class SandboxProps {
     const strength = prop.strength * falloff * dt * 60;
     creature.applyImpulse?.(Math.cos(dir) * strength, Math.sin(dir) * strength, { decay: 10, cap: 220 });
     creature.reactToCollision?.(0.15);
+    this._emitSustainedTrigger(prop, creature);
   }
 
   _applySticky(prop, creature, dx, dy, dt) {
@@ -387,6 +398,24 @@ export class SandboxProps {
       impulse.vy *= clamp(1 - drag, 0.4, 0.98);
     }
     creature.reactToCollision?.(0.2);
+    this._emitSustainedTrigger(prop, creature);
+  }
+
+  _emitSustainedTrigger(prop, creature) {
+    // Conveyor/fan/sticky/gravity apply every frame while a creature is
+    // inside; throttle the event so counters and toasts see one trigger per
+    // contact instead of ~60 per second.
+    const now = this.world?.t ?? 0;
+    const last = prop._lastTriggerEmit ?? -Infinity;
+    if (now - last < 2) return;
+    prop._lastTriggerEmit = now;
+    eventSystem.emit(GameEvents.SANDBOX_PROP_TRIGGERED, {
+      type: prop.type,
+      propId: prop.id,
+      creatureId: creature.id,
+      x: creature.x,
+      y: creature.y
+    });
   }
 
   _applyGravity(prop, creature, dx, dy, distSq, dt) {
@@ -397,6 +426,7 @@ export class SandboxProps {
 
     creature.applyImpulse?.(nx * pull * dt * 60, ny * pull * dt * 60, { decay: 11, cap: 220 });
     creature.reactToCollision?.(0.2);
+    this._emitSustainedTrigger(prop, creature);
   }
 
   _applyButton(prop, creature) {
@@ -463,11 +493,12 @@ export class SandboxProps {
     this._nextId = 1;
 
     for (const item of items) {
-      if (!item || !item.type) continue;
-      const config = this.getTypeConfig(item.type);
+      if (!item) continue;
+      const safeType = this._resolvePropType(item.type);
+      const config = this.getTypeConfig(safeType);
       const prop = {
         id: item.id ?? this._nextId++,
-        type: item.type,
+        type: config.id,
         x: clamp(item.x ?? 0, 0, this.world.width),
         y: clamp(item.y ?? 0, 0, this.world.height),
         dir: item.dir ?? (config.randomDirection ? Math.random() * Math.PI * 2 : (config.dir ?? 0)),

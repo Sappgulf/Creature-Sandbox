@@ -239,6 +239,15 @@ export class SimulationProxy {
       return null;
     };
 
+    // Worker parity for the bless/curse/attract/repel tools: without this the
+    // god-power path in input-touch.js only mutated the local snapshot copy
+    // in worker mode (the shipping default). Mirrors the addCalmZone
+    // fire-and-forget pattern above.
+    this.applyGodPower = (tool, x, y) => {
+      this._send('GOD_POWER', { tool, x, y });
+      return null;
+    };
+
     this.addRestZone = (x, y, radius) => {
       this._send('ADD_REST_ZONE', { x, y, radius });
       return null;

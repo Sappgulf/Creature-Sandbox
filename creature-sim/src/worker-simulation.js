@@ -21,6 +21,7 @@ import { getCurrentSaveVersion } from './save-migration.js';
 import { packCreature, createCreatureBuffer, compactCreature } from './simulation-state.js';
 import { eventSystem } from './event-system.js';
 import { fillSnapshotPool } from './snapshot-pool.js';
+import { godPowers } from './god-powers.js';
 
 const saveSystem = new SaveSystem();
 
@@ -209,6 +210,25 @@ self.onmessage = function (e) {
           sendSnapshot();
         }
         break;
+
+      case 'GOD_POWER': {
+        // Worker parity for the bless/curse/attract/repel tools: the proxy
+        // forwards via SimulationProxy.applyGodPower. World carries no
+        // godPowers field of its own, so lazily attach the singleton (same
+        // instance the main-thread path uses) rather than failing silently.
+        if (world) {
+          const { tool, x, y } = data || {};
+          const validTools = ['bless', 'curse', 'attract', 'repel'];
+          if (!validTools.includes(tool) || !Number.isFinite(x) || !Number.isFinite(y)) {
+            console.warn('👷 Worker: dropping invalid GOD_POWER', { tool, x, y });
+            break;
+          }
+          if (!world.godPowers) world.godPowers = godPowers;
+          world.godPowers.usePower(tool, x, y, world);
+          sendSnapshot();
+        }
+        break;
+      }
 
       case 'PAUSE':
         isPaused = data.paused;

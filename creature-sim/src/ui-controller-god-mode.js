@@ -1,6 +1,5 @@
 import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
-import { eventSystem, GameEvents } from './event-system.js';
 
 export function applyUiGodModeMethods(UIController) {
   UIController.prototype.bindGodModeControls = function () {
@@ -136,76 +135,13 @@ export function applyUiGodModeMethods(UIController) {
           spawn: '4 Spawn: small placement preview. Places the selected creature type.',
           prop: '5 Prop: violet placement preview. Uses the selected sandbox prop.',
           remove: '6 Remove: red eraser preview. Removes the nearest creature or prop.',
-          bless: 'Bless: heals and energizes creatures near the tap.',
-          curse: 'Curse: weakens and drains energy from creatures near the tap.',
-          attract: 'Attract: pulls nearby creatures toward the tap.',
-          repel: 'Repel: pushes nearby creatures away from the tap.'
+          bless: '7 Bless: heals and energizes creatures near the tap.',
+          curse: '8 Curse: weakens and drains energy from creatures near the tap.',
+          attract: '9 Attract: pulls nearby creatures toward the tap.',
+          repel: '0 Repel: pushes nearby creatures away from the tap.'
         };
         hint.textContent = hints[gameState.godModeTool] || 'Tap world to use selected tool. Tap Done to return.';
       }
-    }
-  };
-
-  UIController.prototype.performGodAction = function (action) {
-    // Prefer selected creature; fall back to nearest to camera center
-    let creature = gameState.selectedId ? this.world.getAnyCreatureById(gameState.selectedId) : null;
-    if (!creature || !creature.alive) {
-      const cx = this.camera.x;
-      const cy = this.camera.y;
-      creature = this.world?.creatureManager?.nearestCreature(cx, cy, 120) || null;
-    }
-
-    if (!creature || !creature.alive) {
-      this.notifications?.show?.('Select a creature first', 'warning', 1200);
-      return;
-    }
-
-    try {
-      switch (action) {
-        case 'heal':
-          creature.health = creature.maxHealth;
-          creature.logEvent('Healed by divine intervention', this.world.t);
-          break;
-
-        case 'boost':
-          creature.energy = Math.min((creature.energy ?? 0) + 30, creature.maxEnergy ?? 100);
-          creature.logEvent('Received energy boost', this.world.t);
-          break;
-
-        case 'kill':
-          creature.alive = false;
-          creature.health = 0;
-          creature.deathCause = 'god';
-          creature.killedBy = 'god';
-          creature.logEvent('Struck down by god', this.world.t);
-          gameState.selectedId = null;
-          break;
-
-        case 'clone':
-          if (this.world.cloneCreature) {
-            const clone = this.world.cloneCreature(creature);
-            if (clone && this.notifications) {
-              this.notifications.show(`Cloned #${creature.id}`, 'info', 1200);
-            }
-          } else if (this.notifications) {
-            this.notifications.show('Clone action unavailable', 'warning', 1200);
-          }
-          break;
-      }
-
-      window.godModeActionCount = (window.godModeActionCount || 0) + 1;
-
-      try {
-        eventSystem.emit(GameEvents.GOD_MODE_ACTION, {
-          action,
-          creatureId: creature.id,
-          worldTime: this.world.t
-        });
-      } catch (e) {
-        console.warn('Failed to emit god mode action event:', e);
-      }
-    } catch (error) {
-      console.error(`God action '${action}' failed:`, error);
     }
   };
 }

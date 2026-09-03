@@ -96,7 +96,11 @@ const TOOLTIP_CONFIG = {
   '#god-tool-chaos': { text: 'Add chaos events', shortcut: null },
   '#god-tool-spawn': { text: 'Spawn creatures', shortcut: null },
   '#god-tool-prop': { text: 'Place sandbox props', shortcut: null },
-  '#god-tool-remove': { text: 'Remove creatures', shortcut: null }
+  '#god-tool-remove': { text: 'Remove creatures', shortcut: null },
+  '#god-tool-bless': { text: 'Heal and energize creatures', shortcut: '7' },
+  '#god-tool-curse': { text: 'Weaken and drain creatures', shortcut: '8' },
+  '#god-tool-attract': { text: 'Pull creatures toward a point', shortcut: '9' },
+  '#god-tool-repel': { text: 'Push creatures away from a point', shortcut: '0' }
 };
 
 export class TutorialSystem {

@@ -85,35 +85,11 @@ export function applyUiSpawnMethods(UIController) {
   };
 
   UIController.prototype.bindSpawnCreatureControls = function () {
-    const spawnCreatureBtn = domCache.get('spawnCreatureBtn');
-    const creatureDropdown = domCache.get('creatureDropdown');
-
-    if (spawnCreatureBtn && creatureDropdown) {
-      // Toggle dropdown on button click
-      spawnCreatureBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        const isOpen = !creatureDropdown.classList.contains('hidden');
-        // Close other dropdowns first
-        this.closeAllDropdowns();
-        if (!isOpen) {
-          creatureDropdown.classList.remove('hidden');
-        }
-      });
-
-      // Handle dropdown item clicks
-      const dropdownItems = creatureDropdown.querySelectorAll('.dropdown-item');
-      dropdownItems.forEach(item => {
-        item.addEventListener('click', e => {
-          e.stopPropagation();
-          const creatureType = item.dataset.creature;
-          this.applySpawnSelection(creatureType);
-          this.onSpawnCreature(creatureType);
-          creatureDropdown.classList.add('hidden');
-        });
-      });
-    }
-
-    // Global click handler to close dropdowns
+    // Spawn type selection lives in the control-strip spawn drawer (the
+    // canonical path). The legacy spawnCreatureBtn/creatureDropdown controls
+    // no longer exist in the DOM, so there is nothing to bind here.
+    // Keep the global closer so the remaining prop dropdown still dismisses
+    // on outside taps.
     document.addEventListener('click', e => {
       // Don't close if clicking inside a dropdown
       if (e.target.closest('.dropdown-menu') || e.target.closest('.spawn-dropdown')) {

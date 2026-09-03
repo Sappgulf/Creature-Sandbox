@@ -436,6 +436,7 @@ export class GameLoop {
         slope: 'Speed slope!',
         fan: 'Wind ride!',
         sticky: 'Sticky giggle!',
+        gravity: 'Gravity pull!',
         launch: 'Lift off!',
         button: 'Snack time!'
       };

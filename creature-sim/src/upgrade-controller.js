@@ -722,6 +722,7 @@ export class UpgradeController {
         block: 'start',
         behavior: smooth && !prefersReducedMotion ? 'smooth' : 'auto'
       });
+      target.focus({ preventScroll: true });
       target.classList.add('result-focused');
       window.setTimeout(() => target.classList.remove('result-focused'), 900);
     });

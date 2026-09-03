@@ -221,8 +221,19 @@ export function applyUiPanelMethods(UIController) {
     const overlay = document.getElementById('shortcuts-overlay');
     if (!overlay) return;
     const shouldShow = forceVisible === null ? overlay.classList.contains('hidden') : !!forceVisible;
+    if (!shouldShow) {
+      this.blurFocusedDescendant(overlay);
+    }
     overlay.classList.toggle('hidden', !shouldShow);
     overlay.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+    if (shouldShow) {
+      requestAnimationFrame(() => {
+        const firstFocusable = overlay.querySelector(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (firstFocusable) firstFocusable.focus();
+      });
+    }
   };
 
   UIController.prototype.bindFeaturesEnhancements = function () {

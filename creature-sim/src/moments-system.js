@@ -504,7 +504,7 @@ export class MomentsSystem {
 
     eventSystem.on(GameEvents.SANDBOX_PROP_TRIGGERED, data => {
       if (!data) return;
-      const propLabel = data.propType ? `${data.propType} prop` : 'Sandbox prop';
+      const propLabel = data.type ? `${data.type} prop` : 'Sandbox prop';
       this.logMoment({
         type: GameEvents.SANDBOX_PROP_TRIGGERED,
         icon: '🎢',

@@ -116,7 +116,111 @@ export function applyUiGameModeMethods(UIController) {
     }
   };
 
-  UIController.prototype.onCampaignToggle = function () {
-    // Campaign panel toggle handled in main.js (kept for unified menu model)
+  UIController.prototype.onCampaignToggle = async function () {
+    const panel = document.getElementById('campaign-panel');
+    if (!panel) {
+      console.warn('Campaign panel not found in DOM');
+      this.notifications?.show?.('Campaign panel unavailable', 'error', 2200);
+      return;
+    }
+    if (!panel.classList.contains('hidden')) {
+      panel.classList.add('hidden');
+      panel.setAttribute('aria-hidden', 'true');
+      return;
+    }
+    try {
+      const { ensureCampaignSystem } = await import('./bootstrap-lazy-loaders.js');
+      const campaignSystem = await ensureCampaignSystem();
+      this.renderCampaignLevels(campaignSystem);
+      panel.classList.remove('hidden');
+      panel.setAttribute('aria-hidden', 'false');
+    } catch (error) {
+      console.error('Campaign panel failed to open:', error);
+      this.notifications?.show?.('Campaign panel failed to open', 'error', 2600);
+    }
+  };
+
+  UIController.prototype.renderCampaignLevels = function (campaignSystem) {
+    const container = document.getElementById('campaign-levels');
+    if (!container) return;
+    const levels = campaignSystem?.getAllLevels?.() || [];
+    container.innerHTML = levels
+      .map(level => {
+        const stars = level.progress?.stars || 0;
+        const locked = !level.unlocked;
+        const label =
+          `${level.name}, ${level.subtitle}. ${level.description} ` +
+          `Difficulty ${level.difficulty}. ${stars} of 3 stars.` +
+          (locked ? ' Locked.' : '');
+        return `
+          <div class="campaign-level-card ${level.unlocked ? '' : 'locked'} ${level.progress?.completed ? 'completed' : ''}"
+               ${locked ? 'aria-disabled="true"' : 'role="button" tabindex="0"'}
+               aria-label="${String(label).replace(/"/g, '&quot;')}"
+               data-level-id="${level.id}">
+            <div class="campaign-level-header">
+              <span class="campaign-level-icon">${level.icon}</span>
+              <div class="campaign-level-title">
+                <h3 class="campaign-level-name">${level.name}</h3>
+                <p class="campaign-level-subtitle">${level.subtitle}</p>
+              </div>
+            </div>
+            <p class="campaign-level-desc">${level.description}</p>
+            <div class="campaign-level-footer">
+              <span class="campaign-difficulty ${level.difficulty}">${level.difficulty}</span>
+              <span class="campaign-stars">
+                ${[1, 2, 3].map(i => `<span class="${i <= stars ? 'earned' : ''}">⭐</span>`).join('')}
+              </span>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+
+    container.querySelectorAll('.campaign-level-card:not(.locked)').forEach(card => {
+      const activate = () => {
+        this.startCampaignLevel(Number(card.dataset.levelId));
+      };
+      card.addEventListener('click', activate);
+      card.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          activate();
+        }
+      });
+    });
+  };
+
+  UIController.prototype.startCampaignLevel = async function (levelId) {
+    try {
+      const { ensureCampaignSystem } = await import('./bootstrap-lazy-loaders.js');
+      const campaignSystem = await ensureCampaignSystem();
+      const level = campaignSystem?.getLevel?.(levelId);
+      if (!level) {
+        this.notifications?.show?.('Campaign level not found', 'error', 2200);
+        return;
+      }
+      // Mirror the bootstrap opener: stage the world config, reseed, then
+      // start tracking without re-applying the config.
+      const config = level.worldConfig;
+      if (this.world) {
+        this.world.pendingCampaignConfig = config;
+        this.world.seed?.(config.initialCreatures ?? 10, config.initialPredators ?? 0, config.initialFood ?? 100);
+      }
+      const started = campaignSystem.startLevel(levelId, this.world, { applyWorldConfig: false });
+      if (!started) {
+        this.notifications?.show?.('Campaign level is locked', 'warning', 2200);
+        return;
+      }
+      const panel = document.getElementById('campaign-panel');
+      panel?.classList.add('hidden');
+      panel?.setAttribute('aria-hidden', 'true');
+      const progress = document.getElementById('campaign-progress');
+      progress?.classList.remove('hidden');
+      progress?.setAttribute('aria-hidden', 'false');
+      this.notifications?.show?.(`${level.icon || '🏆'} ${level.name} started`, 'success', 2200);
+    } catch (error) {
+      console.error('Campaign level failed to start:', error);
+      this.notifications?.show?.('Campaign level failed to start', 'error', 2600);
+    }
   };
 }

@@ -150,6 +150,11 @@ export class GodPowersSystem {
    * Use a god power
    */
   usePower(powerName, x, y, world, radius = null) {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      console.warn(`Invalid coords for power ${powerName}: (${x}, ${y})`);
+      return false;
+    }
+
     const powers = this.getPowers();
     const power = powers[powerName];
 
@@ -173,6 +178,11 @@ export class GodPowersSystem {
 
     // Apply power effect
     const actualRadius = radius || this.brushSize;
+    // A cast that touches nothing must not burn the cooldown or report
+    // success — callers only emit on a true return, so returning false here
+    // keeps the UI honest instead of cheering an empty tap.
+    const affected = this.getCreaturesInRadius(x, y, world, actualRadius);
+    if (affected.length === 0) return false;
     this.applyPowerEffect(powerName, power, x, y, world, actualRadius);
 
     // Set cooldown
@@ -243,7 +253,7 @@ export class GodPowersSystem {
 
     for (const creature of affected) {
       creature.health = creature.maxHealth;
-      creature.energy = Math.min(50, creature.energy + 20);
+      creature.energy = Math.min(creature.maxEnergy ?? 100, creature.energy + 20);
 
       // Add blessing buff (ongoing health regen + energy trickle, consumed by
       // CreatureStatusSystem.applyBlessedEffects each tick)
