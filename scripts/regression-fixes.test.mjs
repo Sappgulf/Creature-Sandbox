@@ -1209,6 +1209,18 @@ test('worker-simulation: prop cases validate at the boundary and publish props i
   assert.match(src, /sandboxProps: world\.sandbox/, 'STATE_UPDATE must carry props to the renderer/save stub');
 });
 
+test('worker sprites fall back to an untinted sheet instead of skipping drawImage', () => {
+  const src = fs.readFileSync(new URL('../creature-sim/src/creature-presentation.js', import.meta.url), 'utf8');
+  assert.match(src, /color: null/, 'tinted miss must try the untinted cache');
+  assert.match(src, /requestSpriteFrames\(key, 32, null\)/, 'prewarm must include untinted frames');
+});
+
+test('playfield draws habitat pressure from worker snapshot fields', () => {
+  const src = fs.readFileSync(new URL('../creature-sim/src/renderer.js', import.meta.url), 'utf8');
+  assert.match(src, /drawRegionPressure\(world\)/, 'regions must paint pressure');
+  assert.match(src, /patch\.pressure/, 'food meadows must read pressure');
+});
+
 test('worker-mode grab/throw and habitat snapshot messages exist', () => {
   const src = fs.readFileSync(new URL('../creature-sim/src/worker-simulation.js', import.meta.url), 'utf8');
   assert.match(src, /case 'GRAB_CREATURE'/, 'worker must handle grabs');

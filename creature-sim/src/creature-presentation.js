@@ -60,6 +60,8 @@ export function prewarmCreatureSprites() {
   ];
   const hues = [96, 48, 168];
   for (const key of keys) {
+    requestSpriteFrames(key, 32, null);
+    requestSpriteFrames(key, 48, null);
     for (const hue of hues) {
       const color = colorCache.cssHsl(hue, 85, 58);
       requestSpriteFrames(key, 32, color);
@@ -116,10 +118,14 @@ export function getCreatureSpriteFrame(creature = {}, { worldTime = 0, renderSiz
     )
   );
   const color = getCreatureSpriteColor(creature, clusterHue);
-  const sprite = assetLoader.getSpriteFramesSync(assetKey, { size, color });
+  let sprite = assetLoader.getSpriteFramesSync(assetKey, { size, color });
   if (!sprite) {
     requestSpriteFrames(assetKey, size, color);
-    return null;
+    sprite = assetLoader.getSpriteFramesSync(assetKey, { size, color: null });
+    if (!sprite) {
+      requestSpriteFrames(assetKey, size, null);
+      return null;
+    }
   }
 
   const { state, speedScale } = getCreatureAnimationDetails(creature);

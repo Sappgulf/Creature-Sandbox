@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-03 — field-guide-sprites-habitat — Planned
+
+- **Date:** 2026-09-03
+- **Scope:** render | ui
+- **Type:** Planned
+- **Issues:** Worker smoke still ~0–1 drawImage/frame because tinted sprite cache misses fall through to vector silhouettes; habitat pressure was in the snapshot but barely visible; strip/overflow still said Inspect/More/Campaign instead of Observe/Nudge/Remember.
+- **Root Causes:** getCreatureSpriteFrame returned null on tint miss; prewarm only tinted 3 hues; food patches used a near-invisible green wash; overflow kept three progress products.
+- **Fixes:** Untinted sprite fallback + prewarm after manifest load; pressure-colored meadows and region washes; strip Observe/Nudge/Remember; Campaign/Achievements route to Field Journal.
+- **Verification:** Planned: lint, tests, build, bundle, proof:release, then push + production smoke.
+
+### 2026-09-03 — field-guide-sprites-habitat — Implemented
+
+- **Date:** 2026-09-03
+- **Scope:** render | ui
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** lint clean; tests 60/0; build + bundle pass (worker chunk unchanged 298,880B). smoke:browser/worker/main (main CLS 0.18 flake on first run, green on retry) + scenario 2x + evidence board. Worker drawImages still ~1/frame in the smoke window (untinted fallback is wired; prewarm is racing the sample). Production pending push.
+
 ### 2026-09-03 — field-guide-worker-verbs — Planned
 
 - **Date:** 2026-09-03

@@ -267,6 +267,7 @@ export class Renderer {
 
     // Draw biomes
     this.drawBiomes(world);
+    this.drawRegionPressure(world);
 
     // Sandbox props
     this.drawSandboxProps(world);
@@ -723,20 +724,44 @@ export class Renderer {
     if (!patches || patches.length === 0) return;
     const ctx = this.ctx;
     ctx.save();
-    ctx.strokeStyle = ambient ? 'rgba(175, 245, 160, 0.12)' : 'rgba(140, 255, 180, 0.22)';
-    ctx.fillStyle = ambient ? 'rgba(108, 214, 122, 0.035)' : 'rgba(108, 214, 122, 0.06)';
-    ctx.lineWidth = ambient ? 1.1 : 1.5;
-    ctx.setLineDash(ambient ? [12, 16] : []);
+    ctx.lineWidth = ambient ? 1.2 : 1.7;
+    ctx.setLineDash(ambient ? [10, 14] : []);
     for (const patch of patches) {
       if (!Number.isFinite(patch.x) || !Number.isFinite(patch.y)) continue;
       const stockRatio = clamp((patch.stock ?? 0) / Math.max(1, patch.maxStock ?? 1), 0, 1);
-      ctx.globalAlpha = ambient ? 0.45 + stockRatio * 0.55 : 1;
+      const pressure = clamp(Number(patch.pressure ?? 0), 0, 1);
+      const stressed = pressure > 0.45;
+      ctx.globalAlpha = ambient ? 0.5 + Math.max(stockRatio, pressure) * 0.5 : 1;
+      ctx.fillStyle = stressed
+        ? `rgba(220, 90, 70, ${0.05 + pressure * 0.1})`
+        : `rgba(108, 214, 122, ${0.05 + stockRatio * 0.1})`;
+      ctx.strokeStyle = stressed
+        ? 'rgba(255, 150, 120, 0.32)'
+        : ambient
+          ? 'rgba(175, 245, 160, 0.2)'
+          : 'rgba(140, 255, 180, 0.32)';
       ctx.beginPath();
-      ctx.arc(patch.x, patch.y, patch.radius * 0.85, 0, Math.PI * 2);
+      ctx.arc(patch.x, patch.y, (patch.radius || 80) * 0.85, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
     }
     ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  drawRegionPressure(world) {
+    const regions = world.regions;
+    if (!Array.isArray(regions) || regions.length === 0) return;
+    const ctx = this.ctx;
+    ctx.save();
+    for (const region of regions) {
+      const pressure = Number(region?.pressure ?? 0);
+      if (!Number.isFinite(region?.x) || !Number.isFinite(region?.y) || pressure < 0.22) continue;
+      ctx.fillStyle = `rgba(220, 80, 70, ${0.035 + pressure * 0.09})`;
+      ctx.beginPath();
+      ctx.arc(region.x, region.y, (region.size || 220) * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 

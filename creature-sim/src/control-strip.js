@@ -415,9 +415,10 @@ export class ControlStripController {
     this.setMenuActive(this.menuFood, toolMode === 'food');
     this.setMenuActive(this.menuGodMode, gameState.godModeActive);
     this.setMenuActive(this.menuMode, gameState.sessionMetaVisible !== false);
-    this.setMenuActive(this.menuUpgrades, isPanelVisible('upgrade-panel'));
-    this.setMenuActive(this.menuCampaign, isPanelVisible('campaign-panel'));
-    this.setMenuActive(this.menuAchievements, isPanelVisible('achievements-panel'));
+    const journalOpen = isPanelVisible('upgrade-panel');
+    this.setMenuActive(this.menuUpgrades, journalOpen);
+    this.setMenuActive(this.menuCampaign, journalOpen);
+    this.setMenuActive(this.menuAchievements, journalOpen);
     this.setMenuActive(this.menuScenario, !!gameState.scenarioPanelVisible);
     this.setMenuActive(this.menuGeneEditor, isPanelVisible('gene-editor-panel'));
     this.setMenuActive(this.menuFeatures, !!gameState.featuresPanelVisible);

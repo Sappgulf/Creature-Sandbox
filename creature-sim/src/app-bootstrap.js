@@ -105,6 +105,7 @@ assetLoader
   })
   .then(() => {
     console.debug('✅ Sprite assets loaded successfully');
+    prewarmCreatureSprites();
   })
   .catch(error => {
     console.warn('⚠️ Some sprite assets failed to load, falling back to shapes:', error);

@@ -88,9 +88,11 @@ const GOD_TOOL_TOOLTIPS = Object.fromEntries(
 const TOOLTIP_CONFIG = {
   '#ctrl-pause': { text: 'Pause or resume simulation', shortcut: 'Space' },
   '#ctrl-speed': { text: 'Adjust simulation speed', shortcut: '1-4' },
+  '#ctrl-inspect': { text: 'Observe: inspect a creature', shortcut: 'X' },
+  '#ctrl-food': { text: 'Nudge: paint food', shortcut: 'F' },
   '#ctrl-spawn': { text: 'Spawn creatures', shortcut: 'S' },
   '#ctrl-watch': { text: 'Follow creatures automatically', shortcut: 'W' },
-  '#ctrl-more': { text: 'More options menu', shortcut: 'M' },
+  '#ctrl-more': { text: 'Remember: Field Journal and more', shortcut: 'M' },
   '#menu-food': { text: 'Paint food on the world', shortcut: 'F' },
   '#menu-god-mode': { text: 'God mode tools', shortcut: 'G' },
   '#watch-pause': { text: 'Pause or resume', shortcut: 'Space' },
