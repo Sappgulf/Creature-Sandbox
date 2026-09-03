@@ -46,6 +46,16 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 - **Fixes:** `vite.config.js` `sourcemap: 'hidden'` → `false` with rationale comment; `npm run analyze` unaffected (visualizer needs no maps); bundle advisory now reports 0 maps.
 - **Verification:** lint clean; tests green (190/0, 50/0, e2e 1/0, save + migration); build emits 0 .map files with JS bytes identical (index 361,710B, worker 288,820B); bundle passes. `npm run proof:release` PASSES on the exact committed tree (all lanes incl. smoke:main + scenario 2x, evidence board written). Note: two earlier proof attempts tripped smoke:main desktop startup CLS at exactly 0.1511 vs the 0.15 budget; standalone smoke:main passes repeatedly on both this tree (startup CLS 0.0123 in artifacts) and baseline 0c0701c, baseline full proof passes, and this diff contains zero DOM/CSS/HTML changes — diagnosed as a timing-sensitive shift entry racing the startup measurement window at a razor threshold, not a regression. Worker promotion still held by pre-existing frame budgets; production lanes below.
 
+### 2026-09-03 — full-audit-phase-4-deploy-production-proof — Implemented
+
+- **Date:** 2026-09-03
+- **Scope:** devops
+- **Type:** Implemented
+- **Issues:** Production lanes were stale (Aug-2 SHA); needed push + Vercel alias proof for the audit work.
+- **Root Causes:** N/A (deploy step).
+- **Fixes:** Pushed 6a98b95 to origin/main; Vercel auto-deployed to Production (Ready, 6s build); alias verified serving the new asset hash index-46y78tQQ.js.
+- **Verification:** `npm run smoke:production` passes (worker lane, desktop + mobile-compact + mobile-large; worker gate held = pre-existing posture). `npm run smoke:production:vitals` passes: FCP 284–328ms (3s), LCP 284–328ms (5s), CLS 0.0011/0 (0.1), long tasks 50–63ms (350ms), ready ~600ms (8s).
+
 ### 2026-09-03 — full-audit-phase-3-fidelity-tooling-docs — Planned
 
 - **Date:** 2026-09-03
