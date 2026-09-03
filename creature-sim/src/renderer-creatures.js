@@ -17,6 +17,9 @@ export function applyCreatureMethods(Renderer) {
     if (!world || !world.creatures) return;
     const ctx = this.ctx;
     const { worldTime = 0 } = opts;
+    // Wall-clock sample hoisted in drawWorld and forwarded via opts; fall back
+    // to a single local sample so outline pulses still animate if absent.
+    const nowMs = opts.nowMs ?? performance.now();
     const creatures = world.creatures;
 
     // Support either spatial grid query or direct array access (fallback)
@@ -197,11 +200,11 @@ export function applyCreatureMethods(Renderer) {
 
       if (showOutlines && (isSelected || isPinned || isHovered || isGrabbed)) {
         if (isSelected || isPinned) {
-          this._drawCreatureOutline(c, isSelected, opts.selectionPulseUntil);
+          this._drawCreatureOutline(c, isSelected, opts.selectionPulseUntil, nowMs);
         } else if (isGrabbed) {
-          this._drawCreatureGrabbedOutline(c);
+          this._drawCreatureGrabbedOutline(c, nowMs);
         } else if (isHovered) {
-          this._drawCreatureHoverOutline(c);
+          this._drawCreatureHoverOutline(c, nowMs);
         }
       }
 
@@ -482,11 +485,11 @@ export function applyCreatureMethods(Renderer) {
     ctx.restore();
   };
 
-  Renderer.prototype._drawCreatureOutline = function (creature, isSelected, selectionPulseUntil = null) {
+  Renderer.prototype._drawCreatureOutline = function (creature, isSelected, selectionPulseUntil = null, nowMs = null) {
     // Subtle outline for contrast (not too thick!)
     const ctx = this.ctx;
     const r = creature.size || creature.genes?.size || 5;
-    const now = performance.now();
+    const now = nowMs ?? performance.now();
     const pulseActive = isSelected && typeof selectionPulseUntil === 'number' && now < selectionPulseUntil;
     const pulseProgress = pulseActive ? 1 - (selectionPulseUntil - now) / 400 : 0;
     const pulseScale = pulseActive ? 1 + Math.sin(pulseProgress * Math.PI) * 0.25 : 1;
@@ -504,10 +507,10 @@ export function applyCreatureMethods(Renderer) {
     ctx.restore();
   };
 
-  Renderer.prototype._drawCreatureHoverOutline = function (creature) {
+  Renderer.prototype._drawCreatureHoverOutline = function (creature, nowMs = null) {
     const ctx = this.ctx;
     const r = creature.size || creature.genes?.size || 5;
-    const now = performance.now();
+    const now = nowMs ?? performance.now();
     const pulse = 0.6 + Math.sin(now * 0.006) * 0.15;
 
     ctx.save();
@@ -521,10 +524,10 @@ export function applyCreatureMethods(Renderer) {
     ctx.restore();
   };
 
-  Renderer.prototype._drawCreatureGrabbedOutline = function (creature) {
+  Renderer.prototype._drawCreatureGrabbedOutline = function (creature, nowMs = null) {
     const ctx = this.ctx;
     const r = creature.size || creature.genes?.size || 5;
-    const now = performance.now();
+    const now = nowMs ?? performance.now();
     const pulse = 0.7 + Math.sin(now * 0.01) * 0.2;
 
     ctx.save();

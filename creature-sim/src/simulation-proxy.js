@@ -1,6 +1,41 @@
 import { eventSystem, GameEvents } from './event-system.js';
-import { unpackCreature } from './simulation-state.js';
+import { unpackCreature, CREATURE_STRIDE } from './simulation-state.js';
 import { BiomeGenerator } from './perlin-noise.js';
+import { getCurrentSaveVersion } from './save-migration.js';
+
+// Upper bound for commands queued before the worker signals READY. The
+// pre-READY window is short (INIT -> READY), so anything beyond this is a
+// runaway producer (e.g. per-frame STEP_AND_SYNC while the worker stalls).
+const MAX_PRE_READY_QUEUE = 60;
+
+// Merge on-demand EXTRAS entries into snapshot items by static position.
+// Food pellets and corpses never move, so coordinate matching stays correct
+// even when the snapshot and the extras round-trip straddle a tick that
+// eats/spawns entries (a naive index merge would misalign after any shift).
+// Entries without a positional match keep their snapshot values.
+function mergeExtrasByPosition(targets, sources, keys) {
+  if (!Array.isArray(targets) || !Array.isArray(sources)) return;
+  const byPos = new Map();
+  for (const entry of sources) {
+    if (!entry || entry.x === undefined || entry.y === undefined) continue;
+    const key = entry.x + ',' + entry.y;
+    let bucket = byPos.get(key);
+    if (!bucket) {
+      bucket = [];
+      byPos.set(key, bucket);
+    }
+    bucket.push(entry);
+  }
+  for (const item of targets) {
+    if (!item) continue;
+    const bucket = byPos.get(item.x + ',' + item.y);
+    if (!bucket || bucket.length === 0) continue;
+    const extra = bucket.shift();
+    for (const key of keys) {
+      if (extra[key] !== undefined) item[key] = extra[key];
+    }
+  }
+}
 
 export class SimulationProxy {
   constructor(workerPath) {
@@ -19,6 +54,9 @@ export class SimulationProxy {
     this.diagnostics = {
       errorCount: 0,
       snapshotCount: 0,
+      snapshotDropped: 0,
+      queueDropped: 0,
+      queueCoalesced: 0,
       lastReadyAt: null,
       lastSnapshotAt: null,
       lastWorldTime: 0,
@@ -285,6 +323,15 @@ export class SimulationProxy {
         if (this._saveExtras?.biomeSeed != null && this.biomeGenerator) {
           this.biomeGenerator.seed = this._saveExtras.biomeSeed;
         }
+        // The merge target below includes the proxied environment object,
+        // so hold the internal-update flag (as updateSnapshot does) to keep
+        // the merge from echoing SET_PROP traffic back to the worker.
+        this._isInternalUpdate = true;
+        try {
+          this._applySaveExtras();
+        } finally {
+          this._isInternalUpdate = false;
+        }
         this._saveExtrasResolvers.forEach(resolve => resolve(this._saveExtras));
         this._saveExtrasResolvers = [];
         break;
@@ -293,10 +340,22 @@ export class SimulationProxy {
         eventSystem.emit(e.data.eventType, e.data.data);
         break;
 
-      case 'ERROR':
-        this._recordWorkerError(e.data.data || e.data);
-        console.error('🚨 SimulationProxy: Worker reported error', e.data.data || e.data);
+      case 'ERROR': {
+        const errData = e.data.data || e.data;
+        this._recordWorkerError(errData);
+        console.error('🚨 SimulationProxy: Worker reported error', errData);
+        // Never leave save callers hanging on a dead worker: release
+        // pending requestSaveExtras() resolvers with the stale cache.
+        if (this._saveExtrasResolvers.length) {
+          const pending = this._saveExtrasResolvers.splice(0);
+          const fallback = { ...(this._saveExtras || {}), stale: true };
+          pending.forEach(resolve => resolve(fallback));
+        }
+        eventSystem.emit(GameEvents.ERROR_CRITICAL, {
+          message: 'Simulation Worker Error: ' + (errData?.message || String(errData || 'Unknown worker error'))
+        });
         break;
+      }
     }
   }
 
@@ -312,25 +371,56 @@ export class SimulationProxy {
   }
 
   updateSnapshot(payload) {
-    const { t, count, creatureBuffer, food, corpses, environment, activeDisaster, pendingDisasters } = payload;
+    const { t, count, creatureBuffer, food, corpses, environment, activeDisaster, pendingDisasters } = payload || {};
+    // Validate without changing the wire protocol: a malformed STATE_UPDATE
+    // (NaN time, bad count, short/missing buffer) is dropped with an explicit
+    // warn + counter instead of throwing inside the message handler or
+    // clobbering the last good snapshot (previously `t.toFixed` below threw
+    // a TypeError on any non-numeric t, killing that message dispatch).
+    const tNum = Number(t);
+    const countNum = Number(count);
+    // The worker transfers a Float32Array (.length in floats); tests and some
+    // callers pass a raw ArrayBuffer (.byteLength in bytes). Accept both.
+    const floatLength = Number.isInteger(creatureBuffer?.length)
+      ? creatureBuffer.length
+      : Number.isInteger(creatureBuffer?.byteLength)
+        ? creatureBuffer.byteLength / Float32Array.BYTES_PER_ELEMENT
+        : NaN;
+    const bufferOk =
+      Number.isInteger(floatLength) &&
+      Number.isInteger(countNum) &&
+      countNum >= 0 &&
+      floatLength === countNum * CREATURE_STRIDE;
+    if (!Number.isFinite(tNum) || !bufferOk) {
+      this.diagnostics.snapshotDropped = (this.diagnostics.snapshotDropped || 0) + 1;
+      console.warn('📡 SimProxy: dropping malformed STATE_UPDATE', {
+        t,
+        count,
+        bufferLength: Number.isInteger(floatLength) ? floatLength : null,
+        expectedLength: Number.isInteger(countNum) && countNum >= 0 ? countNum * CREATURE_STRIDE : null
+      });
+      return;
+    }
     this.diagnostics.snapshotCount += 1;
     this.diagnostics.lastSnapshotAt = Date.now();
-    this.diagnostics.lastWorldTime = Number(t || 0);
-    this.diagnostics.lastCreatureCount = Number(count || 0);
+    this.diagnostics.lastWorldTime = tNum;
+    this.diagnostics.lastCreatureCount = countNum;
     this.diagnostics.lastFoodCount = Array.isArray(food) ? food.length : 0;
 
     // Debug first few updates or if count changes
-    if (Math.random() < 0.01 || count !== this.worldSnapshot.creatures.length) {
-      console.debug(`📡 SimProxy: Snapshot t=${t.toFixed(2)} count=${count} buffer=${creatureBuffer.byteLength}`);
+    if (Math.random() < 0.01 || countNum !== this.worldSnapshot.creatures.length) {
+      console.debug(
+        `📡 SimProxy: Snapshot t=${tNum.toFixed(2)} count=${countNum} buffer=${creatureBuffer?.byteLength ?? creatureBuffer?.length ?? floatLength}`
+      );
     }
 
     // Flag this as an internal update to prevent Proxies from echoing back to worker
     this._isInternalUpdate = true;
 
     try {
-      this.worldSnapshot.t = t;
-      this.worldSnapshot.food = food;
-      this.worldSnapshot.corpses = corpses;
+      this.worldSnapshot.t = tNum;
+      this.worldSnapshot.food = Array.isArray(food) ? food : [];
+      this.worldSnapshot.corpses = Array.isArray(corpses) ? corpses : [];
       this.worldSnapshot.activeDisaster = activeDisaster;
       this.worldSnapshot.pendingDisasters = Array.isArray(pendingDisasters) ? pendingDisasters : [];
 
@@ -370,12 +460,18 @@ export class SimulationProxy {
         }
       }
 
-      // Unpack binary buffer into renderable objects
-      const creatures = new Array(count);
-      for (let i = 0; i < count; i++) {
-        creatures[i] = unpackCreature(creatureBuffer, i);
+      // Unpack binary buffer into renderable objects. A raw ArrayBuffer is
+      // not indexable, so view it as Float32Array first (count 0 never reads).
+      const creatureView = creatureBuffer instanceof ArrayBuffer ? new Float32Array(creatureBuffer) : creatureBuffer;
+      const creatures = new Array(countNum);
+      for (let i = 0; i < countNum; i++) {
+        creatures[i] = unpackCreature(creatureView, i);
       }
       this.worldSnapshot.creatures = creatures;
+      // Re-apply cached save fidelity fields: snapshots arriving after a
+      // WORLD_EXTRAS round-trip would otherwise present bare unpacked
+      // creatures (no parentId/maxHealth/full genes) to serialize().
+      this._applySaveExtras();
     } finally {
       this._isInternalUpdate = false;
     }
@@ -386,6 +482,21 @@ export class SimulationProxy {
     if (this.isReady || type === 'INIT') {
       this.worker.postMessage({ type, data });
     } else {
+      // Coalescible per-tick step: only the latest dt matters once the worker
+      // drains the queue, so compact earlier STEP_AND_SYNC entries instead of
+      // letting them pile up unbounded while the worker is stalled.
+      if (type === 'STEP_AND_SYNC') {
+        const existing = this.queue.findIndex(q => q.type === 'STEP_AND_SYNC');
+        if (existing !== -1) {
+          this.queue[existing] = { type, data };
+          this.diagnostics.queueCoalesced = (this.diagnostics.queueCoalesced || 0) + 1;
+          return;
+        }
+      }
+      if (this.queue.length >= MAX_PRE_READY_QUEUE) {
+        this.queue.shift();
+        this.diagnostics.queueDropped = (this.diagnostics.queueDropped || 0) + 1;
+      }
       this.queue.push({ type, data });
     }
   }
@@ -508,6 +619,16 @@ export class SimulationProxy {
     this._send('SET_PROP', { path: 'dayLength', value: val });
   }
 
+  // Top-level time fields serialize() reads directly off the world object.
+  // They live in the environment on a real World; expose them here so worker
+  // saves preserve them instead of falling back to serialize() defaults.
+  get timeOfDay() {
+    return this.worldSnapshot.environment?.timeOfDay ?? 12;
+  }
+  get seasonPhase() {
+    return this.worldSnapshot.environment?.seasonPhase ?? 0;
+  }
+
   get dayPhase() {
     return this.worldSnapshot.dayPhase || 'day';
   }
@@ -567,14 +688,124 @@ export class SimulationProxy {
   }
 
   /**
+   * Merge the on-demand WORLD_EXTRAS fidelity fields back into the latest
+   * per-tick snapshot so save-system.js's serialize() reads full values.
+   * unpackCreature (simulation-state.js) is intentionally untouched: the
+   * binary layout stays fixed and this merge is the single adaptation point.
+   * No-op when no extras (or no snapshot) exist yet. Callers must hold
+   * _isInternalUpdate (updateSnapshot sets it; the WORLD_EXTRAS handler sets
+   * it around the call) so the proxied environment merge never echoes
+   * SET_PROP traffic back to the worker.
+   */
+  _applySaveExtras() {
+    const extras = this._saveExtras;
+    const snap = this.worldSnapshot;
+    if (!extras || !snap) return;
+
+    if (Array.isArray(extras.creatureExtras) && Array.isArray(snap.creatures)) {
+      const byId = new Map();
+      for (const entry of extras.creatureExtras) {
+        if (entry && entry.id != null) byId.set(entry.id, entry);
+      }
+      for (const creature of snap.creatures) {
+        if (!creature) continue;
+        const extra = byId.get(creature.id);
+        if (!extra) continue;
+        if (extra.parentId !== undefined) creature.parentId = extra.parentId ?? null;
+        if (extra.maxHealth !== undefined && extra.maxHealth != null) creature.maxHealth = extra.maxHealth;
+        if (extra.genes && typeof extra.genes === 'object') {
+          creature.genes = { ...(creature.genes || {}), ...extra.genes };
+        }
+        if (extra.personality && typeof extra.personality === 'object') {
+          creature.personality = { ...(creature.personality || {}), ...extra.personality };
+        }
+        if (extra.temperament && typeof extra.temperament === 'object') {
+          creature.temperament = { ...(creature.temperament || {}), ...extra.temperament };
+        }
+        if (Array.isArray(extra.quirks)) creature.quirks = [...extra.quirks];
+        if (extra.stats && typeof extra.stats === 'object') {
+          creature.stats = { ...(creature.stats || {}), ...extra.stats };
+        }
+        if (extra.traits && typeof extra.traits === 'object') {
+          creature.traits = { ...(creature.traits || {}), ...extra.traits };
+        }
+        if (extra.needs && typeof extra.needs === 'object') {
+          const base = creature.needs && typeof creature.needs === 'object' ? creature.needs : {};
+          creature.needs = { ...base };
+          for (const key of ['energy', 'socialDrive', 'lastEatAt']) {
+            if (extra.needs[key] !== undefined && extra.needs[key] !== null) creature.needs[key] = extra.needs[key];
+          }
+          for (const key of ['hunger', 'stress']) {
+            if (base[key] === undefined && extra.needs[key] !== undefined) creature.needs[key] = extra.needs[key];
+          }
+        }
+        if (extra.goal && typeof extra.goal === 'object') {
+          creature.goal = { ...(creature.goal || {}), ...extra.goal };
+        }
+        if (extra.ecosystem && typeof extra.ecosystem === 'object') {
+          creature.ecosystem = { ...(creature.ecosystem || {}), ...extra.ecosystem };
+        }
+        if (extra.emotions && typeof extra.emotions === 'object') {
+          creature.emotions = { ...(creature.emotions || {}), ...extra.emotions };
+        }
+        if (extra.memory && typeof extra.memory === 'object') {
+          creature.memory = {
+            capacity: extra.memory.capacity ?? creature.memory?.capacity ?? null,
+            locations: Array.isArray(extra.memory.locations) ? extra.memory.locations.map(mem => ({ ...mem })) : []
+          };
+        }
+        if (extra.deathTime !== undefined) creature.deathTime = extra.deathTime ?? null;
+        if (extra.deathCause !== undefined) creature.deathCause = extra.deathCause ?? null;
+        if (extra.killedBy !== undefined) creature.killedBy = extra.killedBy ?? null;
+      }
+    }
+
+    mergeExtrasByPosition(snap.food, extras.foodFull, [
+      'energy',
+      'bites',
+      'biteEnergy',
+      'scentRadius',
+      'sourceId',
+      'sourceTag',
+      'origin'
+    ]);
+    // Note: snapshot-fresh fields (food `type`, corpse `age`) are deliberately
+    // excluded so stale extras can never overwrite newer per-tick values.
+    mergeExtrasByPosition(snap.corpses, extras.corpsesFull, ['energy', 'isPredator']);
+
+    if (extras.environmentFull && typeof extras.environmentFull === 'object' && snap.environment) {
+      const target = snap.environment;
+      for (const [key, value] of Object.entries(extras.environmentFull)) {
+        if (value !== undefined && typeof value !== 'function') target[key] = value;
+      }
+      if (extras.environmentFull.dayLength !== undefined) snap.dayLength = extras.environmentFull.dayLength;
+      if (extras.environmentFull.seasonSpeed !== undefined) snap.seasonSpeed = extras.environmentFull.seasonSpeed;
+    }
+
+    if (extras._nextId != null && snap.creatureManager) {
+      snap.creatureManager._nextId = extras._nextId;
+    }
+  }
+
+  /**
    * Ask the worker for the save-only fields (nests, restZones, sandbox
    * props, childrenOf, _nextId, biome seed) not included in the regular
    * per-tick snapshot, and cache them for the getters above. Must be
    * awaited before calling save-system.js's serialize() against this proxy.
    */
-  requestSaveExtras() {
+  requestSaveExtras(timeoutMs = 3000) {
     return new Promise(resolve => {
-      this._saveExtrasResolvers.push(resolve);
+      let timer = null;
+      const wrapped = value => {
+        if (timer) clearTimeout(timer);
+        resolve(value);
+      };
+      timer = setTimeout(() => {
+        const idx = this._saveExtrasResolvers.indexOf(wrapped);
+        if (idx !== -1) this._saveExtrasResolvers.splice(idx, 1);
+        resolve({ ...(this._saveExtras || {}), stale: true });
+      }, timeoutMs);
+      this._saveExtrasResolvers.push(wrapped);
       this._send('REQUEST_WORLD_EXTRAS', {});
     });
   }
@@ -592,7 +823,7 @@ export class SimulationProxy {
     return this.getAnyCreatureById(id);
   }
 
-  importState(saveWorld, version = '2.0') {
+  importState(saveWorld, version = getCurrentSaveVersion()) {
     if (!saveWorld || typeof saveWorld !== 'object') return;
     this._send('IMPORT_STATE', { saveWorld, version });
   }
@@ -621,6 +852,9 @@ export class SimulationProxy {
     return {
       ready: !!this.isReady,
       queuedCommands: this.queue?.length || 0,
+      queuedDropped: this.diagnostics.queueDropped || 0,
+      queuedCoalesced: this.diagnostics.queueCoalesced || 0,
+      snapshotDropped: this.diagnostics.snapshotDropped || 0,
       errorCount: this.diagnostics.errorCount,
       lastError: this.diagnostics.lastError,
       snapshotCount: this.diagnostics.snapshotCount,

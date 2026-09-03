@@ -56,14 +56,14 @@ Before tagging, inspect at least one desktop and one mobile screenshot from the 
 Open a local smoke URL after the automated gates:
 
 ```bash
-npm run dev -- --host 127.0.0.1 --port 5173
+npm run dev -- --host 127.0.0.1 --port 8000
 ```
 
 Then check:
 
-- `http://127.0.0.1:5173/?smoke=1`
-- `http://127.0.0.1:5173/?smoke=1&worker=0`
-- `http://127.0.0.1:5173/?smoke=1&worker=1`
+- `http://127.0.0.1:8000/?smoke=1`
+- `http://127.0.0.1:8000/?smoke=1&worker=0`
+- `http://127.0.0.1:8000/?smoke=1&worker=1`
 
 Verify the Features panel exposes the Worker Runtime toggle, normal play defaults to worker mode, the main fallback URL reports main-thread mode as active, and the forced worker URL reports worker mode as active.
 

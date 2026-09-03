@@ -5,6 +5,98 @@ import { escapeHtml } from './safe-html.js';
 // Animated number counter helper
 const _counterState = new Map();
 let inspectorActiveTab = 'stats';
+
+// Phase 2 frame-pacing caches: skip innerHTML rebuilds when the rendered
+// output is unchanged. DOM structure is identical; only redundant
+// parse/layout work is skipped.
+const _statsHtmlByEl = new WeakMap();
+const _selectedHtmlByEl = new WeakMap();
+function _setInnerHtmlIfChanged(cache, el, html) {
+  if (cache.get(el) === html) return false;
+  cache.set(el, html);
+  el.innerHTML = html;
+  return true;
+}
+
+// Inspector throttle: at most ~4Hz unless the selection changes. The key
+// below is quantized so rapidly-changing floats (age/energy) settle into
+// 4Hz buckets instead of forcing a rebuild every frame.
+const INSPECTOR_MIN_INTERVAL_MS = 250;
+let _lastInspectorAt = 0;
+let _lastInspectorCreatureId;
+let _lastInspectorKey = '';
+function _inspectorModelKey(model = {}) {
+  const c = model.creature ?? null;
+  if (!c) {
+    return [
+      'none',
+      model.lineageRootId ?? '',
+      model.lineageLeaders?.length ?? 0,
+      model.lineageStories?.length ?? 0,
+      model.ancestors?.length ?? 0,
+      (model.activity ?? []).length
+    ].join('|');
+  }
+  const q4 = v => Math.round(Number(v) * 4) / 4;
+  const stats = model.stats ?? c.stats;
+  const memLocs = Array.isArray(c.memory?.locations) ? c.memory.locations : [];
+  const topMem = [...memLocs].sort((a, b) => (b.strength ?? 0) - (a.strength ?? 0)).slice(0, 2);
+  const activity = Array.isArray(model.activity) ? model.activity : [];
+  const leaders = Array.isArray(model.lineageLeaders) ? model.lineageLeaders : [];
+  const stories = Array.isArray(model.lineageStories) ? model.lineageStories : [];
+  const ancestors = Array.isArray(model.ancestors) ? model.ancestors : [];
+  const lineage = model.lineage ?? null;
+  const g = c.genes ?? {};
+  return [
+    c.id,
+    c.alive ? 1 : 0,
+    c.sex ?? '',
+    q4(c.age ?? 0),
+    q4(c.energy ?? 0),
+    q4(c.health ?? 0),
+    c.maxHealth ?? '',
+    stats?.births ?? '',
+    stats?.food ?? '',
+    stats?.kills ?? '',
+    q4(stats?.damageDealt ?? 0),
+    q4(stats?.damageTaken ?? 0),
+    q4(g.speed ?? 0),
+    Math.round(g.fov ?? 0),
+    Math.round(g.sense ?? 0),
+    q4(g.metabolism ?? 0),
+    g.hue ?? '',
+    q4(g.spines ?? 0),
+    q4(g.herdInstinct ?? 0),
+    q4(g.panicPheromone ?? 0),
+    q4(g.grit ?? 0),
+    g.predator ? `${q4(g.packInstinct ?? 0)}|${q4(g.ambushDelay ?? 0)}|${q4(g.aggression ?? 0)}` : '',
+    c.parentId ?? '',
+    Array.isArray(c.children) ? c.children.slice(0, 6).join(',') : '',
+    (c.disorders || []).join(','),
+    (c.mutations || c.rareMutations || []).length,
+    (model.badges ?? []).join(','),
+    c.memory?.focus?.tag ?? '',
+    memLocs.length,
+    topMem.map(m => `${m.type || m.tag || ''}:${q4(m.strength ?? 0)}`).join(','),
+    activity.length,
+    activity
+      .slice(0, 4)
+      .map(a => `${Number(a.time ?? 0).toFixed(1)}:${a.message ?? ''}`)
+      .join(','),
+    model.lineageRootId ?? '',
+    lineage ? `${lineage.totalDesc}|${lineage.aliveDesc}|${lineage.levels?.length ?? 0}` : 'nolineage',
+    (lineage?.levels ?? []).map(l => `${l.depth}:${l.alive}/${l.total}:${(l.sample || []).join(',')}`).join(';'),
+    ancestors.map(a => a?.id ?? '').join(','),
+    leaders.map(l => `${l.rootId}:${l.alive}:${l.delta}:${l.peak}`).join(';'),
+    stories.length,
+    stories
+      .slice(0, 4)
+      .map(s => `${s.rootId}:${s.title}:${Number(s.time ?? 0).toFixed(1)}`)
+      .join(';'),
+    model.pinned ? 1 : 0,
+    model.isRoot ? 1 : 0
+  ].join('|');
+}
 function animateNumber(key, target, duration = 400) {
   const now = performance.now();
   const state = _counterState.get(key);
@@ -79,7 +171,7 @@ export function renderStats(el, world, fps, extra = {}) {
     if (fps < 40) {
       statParts.push(`<span style="color: var(--accent-warning);">${fps.toFixed(0)} FPS</span>`);
     }
-    el.innerHTML = statParts.join('');
+    _setInnerHtmlIfChanged(_statsHtmlByEl, el, statParts.join(''));
     return;
   }
 
@@ -139,7 +231,7 @@ export function renderStats(el, world, fps, extra = {}) {
     );
   }
 
-  el.innerHTML = statParts.join('');
+  _setInnerHtmlIfChanged(_statsHtmlByEl, el, statParts.join(''));
 }
 
 export function renderInteractionHint(
@@ -262,13 +354,17 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     // the absence of information.
     if (hasInspectedBefore()) {
       el.classList.add('hidden');
-      el.innerHTML = '';
+      _setInnerHtmlIfChanged(_selectedHtmlByEl, el, '');
       return;
     }
     el.classList.remove('hidden');
-    el.innerHTML = isMobile
-      ? '<div class="empty-title">Tap a creature to inspect</div>'
-      : '<div class="empty-title">Click a creature to inspect</div><div class="muted">Shift-click sets a lineage root</div>';
+    _setInnerHtmlIfChanged(
+      _selectedHtmlByEl,
+      el,
+      isMobile
+        ? '<div class="empty-title">Tap a creature to inspect</div>'
+        : '<div class="empty-title">Click a creature to inspect</div><div class="muted">Shift-click sets a lineage root</div>'
+    );
     return;
   }
 
@@ -329,8 +425,8 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     .join('');
 
   const headline = lineageName
-    ? `${lineageName} · #${creature.id}${sexEmoji}${disorderEmojis}`
-    : `Creature #${creature.id}${sexEmoji}${disorderEmojis}`;
+    ? `${escapeHtml(lineageName)} · #${escapeHtml(creature.id)}${sexEmoji}${disorderEmojis}`
+    : `Creature #${escapeHtml(creature.id)}${sexEmoji}${disorderEmojis}`;
   const lifeStage = getLifeStageDisplay(creature);
   const emotion = getCreatureEmotion(creature);
   const bonds = buildBondsSummary(creature, world);
@@ -466,7 +562,10 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
   `;
 
   if (useInspectorChip) {
-    el.innerHTML = `
+    _setInnerHtmlIfChanged(
+      _selectedHtmlByEl,
+      el,
+      `
       <div class="headline">
         <span>${headline}</span>
         <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>
@@ -477,12 +576,16 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
         <span>Hunger ${Math.round(hunger)}</span>
         <span>Stress ${Math.round(stress)}</span>
       </div>
-    `;
+    `
+    );
     return;
   }
 
   if (isMobile) {
-    el.innerHTML = `
+    _setInnerHtmlIfChanged(
+      _selectedHtmlByEl,
+      el,
+      `
       <div class="headline">
         <span>${headline}</span>
         <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>
@@ -502,11 +605,15 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
       <div class="subline compact-meta">${bonds.label}</div>
       <div class="subline compact-meta">${biome} biome · ${dietLabel} · Family ${familyRootId ?? '—'}</div>
       ${memoryTrailMarkup}
-    `;
+    `
+    );
     return;
   }
 
-  el.innerHTML = `
+  _setInnerHtmlIfChanged(
+    _selectedHtmlByEl,
+    el,
+    `
     <div class="headline">
       <span>${headline}</span>
       <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>
@@ -530,7 +637,8 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     </div>
     <div class="subline compact-meta">${bonds.label}</div>
     ${desktopMemoryMarkup}
-  `;
+  `
+  );
 }
 
 export function renderInspector(model = {}, handlers = {}) {
@@ -552,6 +660,20 @@ export function renderInspector(model = {}, handlers = {}) {
   const minimizeBtn = document.getElementById('btn-minimize-inspector');
 
   if (!body || !lineageSummaryEl || !activityFeedEl) return;
+
+  // Phase 2: dirty-check + ~4Hz throttle (selection changes always render).
+  // DOM structure below is unchanged; this only skips redundant rebuilds.
+  {
+    const now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+    const creatureId = model.creature?.id ?? null;
+    const modelKey = _inspectorModelKey(model);
+    const selectionChanged = creatureId !== _lastInspectorCreatureId;
+    if (!selectionChanged && modelKey === _lastInspectorKey) return;
+    if (!selectionChanged && now - _lastInspectorAt < INSPECTOR_MIN_INTERVAL_MS) return;
+    _lastInspectorAt = now;
+    _lastInspectorCreatureId = creatureId;
+    _lastInspectorKey = modelKey;
+  }
 
   const creature = model.creature ?? null;
   const stats = creature ? (model.stats ?? creature.stats) : null;

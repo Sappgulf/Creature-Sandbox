@@ -32,6 +32,14 @@ export class RendererPerformanceMonitor {
     this.qualityLockTimer = 0; // Prevent rapid quality changes
     this.qualityLockDuration = 120; // ~2 seconds at 60fps
 
+    // Phase 2: per-renderer-instance thresholds. These are seeded from the
+    // global defaults but never written back, so one renderer's adaptive
+    // scaling cannot shift culling for every other renderer/worker.
+    this.cullDistance = RendererConfig.THRESHOLDS.CULL_DISTANCE;
+    this.lodDistance = RendererConfig.THRESHOLDS.LOD_DISTANCE;
+    this.maxRenderedObjects = RendererConfig.THRESHOLDS.MAX_RENDERED_OBJECTS;
+    this.frameSkipThreshold = RendererConfig.THRESHOLDS.FRAME_SKIP_THRESHOLD;
+
     // Detect mobile for default quality
     const isMobile =
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
@@ -45,7 +53,11 @@ export class RendererPerformanceMonitor {
   }
 
   /**
-   * Apply a quality preset to the renderer
+   * Apply a quality preset to the renderer.
+   * Phase 2 split: only PERF knobs (particle caps, shadow/heatmap cost,
+   * render budgets, cache intervals) are applied. Visibility overlays
+   * (miniMap, nameLabels, traitViz, trails, clustering) are player-controlled
+   * and are NEVER toggled here.
    */
   applyQualityPreset(presetName) {
     const preset = RendererConfig.QUALITY_PRESETS[presetName];
@@ -53,28 +65,27 @@ export class RendererPerformanceMonitor {
 
     this.currentQuality = presetName;
 
-    // Apply preset settings to renderer
+    // Apply preset settings to renderer (perf only)
     if (this.renderer.particles) {
-      this.renderer.particles.maxParticles = preset.maxParticles;
+      if (this.reducedParticleMode) {
+        // Keep reduced mode relative to the new preset cap.
+        this._savedMaxParticles = preset.maxParticles;
+        this.renderer.particles.maxParticles = Math.max(4, Math.floor(preset.maxParticles * 0.5));
+      } else {
+        this.renderer.particles.maxParticles = preset.maxParticles;
+      }
     }
 
-    this.renderer.enableTrails = preset.trailsEnabled;
-    // Genetic clustering is a *visualization* mode, not a quality level: it
-    // replaces every creature's own hue with one of six k-means cluster
-    // colours. Three of the four presets enabled it, so it was on by default
-    // — and at session start, when a freshly seeded population has nearly
-    // identical genes, k-means collapses them into one cluster and the entire
-    // world renders hue 0. That is why every creature was red.
-    //
-    // The k-means pass does cost CPU, so a preset may still switch it off for
-    // performance; it may never switch it on. Only the player does that.
-    this.renderer.enableClustering = this.renderer.enableClustering && preset.clusteringEnabled;
-    this.renderer.enableMiniMap = preset.miniMapEnabled;
-    this.renderer.enableNameLabels = preset.nameLabelsEnabled;
-    this.renderer.enableTraitVisualization = preset.traitVisualizationEnabled;
+    // NOTE: preset.trailsEnabled / clusteringEnabled / miniMapEnabled /
+    // nameLabelsEnabled / traitVisualizationEnabled are intentionally NOT
+    // applied. Genetic clustering is a *visualization* mode, not a quality
+    // level: it replaces every creature's own hue with one of six k-means
+    // cluster colours. Only the player toggles these (see renderer-features.js
+    // and RendererConfig.QUALITY_VISIBILITY_KEYS).
     this.renderer.enableShadows = preset.shadowsEnabled;
     this.renderer.enableHeatmap = preset.heatmapEnabled;
-    RendererConfig.THRESHOLDS.MAX_RENDERED_OBJECTS = preset.maxRenderedCreatures;
+    // Per-instance budget (never mutates the shared RendererConfig).
+    this.maxRenderedObjects = preset.maxRenderedCreatures;
 
     // Update heatmap cache interval
     if (this.renderer._heatmapCache) {
@@ -118,7 +129,7 @@ export class RendererPerformanceMonitor {
     const viewport = camera.getViewportBounds();
     const distance = this.getDistanceFromViewport(x, y, viewport);
 
-    return distance > RendererConfig.THRESHOLDS.CULL_DISTANCE;
+    return distance > this.cullDistance;
   }
 
   // Level of detail based on distance
@@ -126,8 +137,8 @@ export class RendererPerformanceMonitor {
     const viewport = camera.getViewportBounds();
     const distance = this.getDistanceFromViewport(x, y, viewport);
 
-    if (distance < RendererConfig.THRESHOLDS.LOD_DISTANCE * 0.5) return 'high';
-    if (distance < RendererConfig.THRESHOLDS.LOD_DISTANCE) return 'medium';
+    if (distance < this.lodDistance * 0.5) return 'high';
+    if (distance < this.lodDistance) return 'medium';
     return 'low';
   }
 
@@ -153,7 +164,7 @@ export class RendererPerformanceMonitor {
     }
 
     // Performance-based culling
-    if (this.stats.frameTime > RendererConfig.THRESHOLDS.FRAME_SKIP_THRESHOLD) {
+    if (this.stats.frameTime > this.frameSkipThreshold) {
       // Skip rendering distant objects when frame rate is low
       if (this.shouldCull(object.x, object.y, camera)) {
         this.stats.culled++;
@@ -168,7 +179,7 @@ export class RendererPerformanceMonitor {
     }
 
     // Limit total rendered objects
-    if (this.stats.rendered >= RendererConfig.THRESHOLDS.MAX_RENDERED_OBJECTS) {
+    if (this.stats.rendered >= this.maxRenderedObjects) {
       this.stats.culled++;
       return false;
     }
@@ -187,6 +198,8 @@ export class RendererPerformanceMonitor {
       fpsSampleCount: this._fpsSampleCount,
       qualityRecoveryStreak: this._qualityRecoveryStreak,
       qualityLockTimer: this.qualityLockTimer,
+      cullDistance: this.cullDistance,
+      maxRenderedObjects: this.maxRenderedObjects,
       cullRatio: this.stats.totalObjects > 0 ? this.stats.culled / this.stats.totalObjects : 0,
       renderEfficiency: this.stats.totalObjects > 0 ? this.stats.rendered / this.stats.totalObjects : 0
     };
@@ -239,8 +252,9 @@ export class RendererPerformanceMonitor {
       this.qualityLockTimer = this.qualityLockDuration;
     }
 
-    // Legacy threshold adjustments (fine-tuning) - use local copies instead of mutating global config
-    let cullDistance = RendererConfig.THRESHOLDS.CULL_DISTANCE;
+    // Legacy threshold adjustments (fine-tuning) - per-instance copies so the
+    // shared RendererConfig is never mutated per frame.
+    let cullDistance = this.cullDistance;
     if (stats.cullRatio > 0.7) {
       cullDistance *= 0.95;
     }
@@ -253,11 +267,8 @@ export class RendererPerformanceMonitor {
 
     // Clamp values to reasonable ranges
     cullDistance = Math.max(500, Math.min(2000, cullDistance));
-    RendererConfig.THRESHOLDS.CULL_DISTANCE = cullDistance;
-    RendererConfig.THRESHOLDS.MAX_RENDERED_OBJECTS = Math.max(
-      500,
-      Math.min(2000, RendererConfig.THRESHOLDS.MAX_RENDERED_OBJECTS)
-    );
+    this.cullDistance = cullDistance;
+    this.maxRenderedObjects = Math.max(500, Math.min(2000, this.maxRenderedObjects));
   }
 
   /**

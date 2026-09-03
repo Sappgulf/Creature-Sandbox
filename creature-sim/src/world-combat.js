@@ -74,8 +74,8 @@ export class WorldCombat {
     if (!predator.alive || !prey.alive) return null;
 
     // Calculate attack success
-    const predatorStrength = (predator.size * predator.energy) / predator.maxHealth;
-    const preyStrength = (prey.size * prey.energy) / prey.maxHealth;
+    const predatorStrength = (predator.size * predator.energy) / (predator.maxHealth || 1);
+    const preyStrength = (prey.size * prey.energy) / (prey.maxHealth || 1);
 
     // Nocturnal predator bonus at night
     const dayNight = this.world?.dayNightState;
@@ -86,6 +86,7 @@ export class WorldCombat {
     }
 
     const attackRoll = rand();
+    if (!Number.isFinite(predatorStrength) || !Number.isFinite(preyStrength)) return null;
     const successChance = clamp(predatorStrength / (predatorStrength + preyStrength) + nocturnalBonus, 0.1, 0.95);
 
     if (attackRoll < successChance) {

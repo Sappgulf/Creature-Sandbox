@@ -165,14 +165,17 @@ export default defineConfig(({ mode }) => ({
     outDir: '../dist',
     emptyOutDir: true,
     chunkSizeWarningLimit: 700,
-    sourcemap: 'hidden',
+    // No sourcemaps in dist: 'hidden' emitted ~2.5MB of .map files with no
+    // consumer (no error-tracking upload, CSP connect-src 'self'), shipped
+    // to Vercel as dead weight. `npm run analyze` does not need them.
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks
       },
       plugins: [
         copyRuntimeAssets(),
-        ...(mode === 'analyze' ? [visualizer({ open: true, gzipSize: true, filename: '../dist/stats.html' })] : [])
+        ...(mode === 'analyze' ? [visualizer({ open: false, gzipSize: true, filename: '../dist/stats.html' })] : [])
       ]
     }
   }

@@ -73,6 +73,25 @@ export const RendererConfig = {
     }
   },
 
+  // Phase 2 perf/visibility split: quality scaling may ONLY apply PERF keys
+  // (thresholds, cull budgets, particle caps, shadow/heatmap cost, cache
+  // intervals). VISIBILITY keys are player-controlled overlays and must never
+  // be toggled by applyQualityPreset (see renderer-performance.js).
+  QUALITY_PERF_KEYS: [
+    'maxParticles',
+    'shadowsEnabled',
+    'heatmapEnabled',
+    'maxRenderedCreatures',
+    'miniMapUpdateInterval'
+  ],
+  QUALITY_VISIBILITY_KEYS: [
+    'miniMapEnabled',
+    'nameLabelsEnabled',
+    'traitVisualizationEnabled',
+    'trailsEnabled',
+    'clusteringEnabled'
+  ],
+
   // Visual feature toggles (default states)
   FEATURES: {
     TRAILS: false,

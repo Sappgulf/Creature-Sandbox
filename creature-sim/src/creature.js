@@ -1756,8 +1756,7 @@ export class Creature {
         mate.needs?.stress <= CreatureAgentTuning.MATING.STRESS_MAX &&
         (mate.goal?.mateCooldown ?? 0) <= 0 &&
         mate.energy > CreatureAgentTuning.MATING.MIN_ENERGY &&
-        Math.random() < elderChance &&
-        Math.random() < mateElderChance;
+        rand() < elderChance * mateElderChance;
       const distance = Math.hypot(mate.x - this.x, mate.y - this.y);
       const population = world.creatures.length;
       if (

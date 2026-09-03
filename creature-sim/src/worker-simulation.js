@@ -17,6 +17,7 @@ import { Creature } from './creature.js';
 import { makeGenes } from './genetics.js';
 import { BiomeGenerator } from './perlin-noise.js';
 import { SaveSystem } from './save-system.js';
+import { getCurrentSaveVersion } from './save-migration.js';
 import { packCreature, createCreatureBuffer, compactCreature } from './simulation-state.js';
 import { eventSystem } from './event-system.js';
 import { fillSnapshotPool } from './snapshot-pool.js';
@@ -220,7 +221,7 @@ self.onmessage = function (e) {
       case 'IMPORT_STATE':
         if (world && data?.saveWorld) {
           saveSystem.deserialize(
-            { version: data.version || '2.0', world: data.saveWorld },
+            { version: data.version || getCurrentSaveVersion(), world: data.saveWorld },
             World,
             Creature,
             null,
@@ -273,6 +274,139 @@ self.onmessage = function (e) {
                 parentId,
                 childIds: Array.from(childIds)
               })),
+              // Save-fidelity fields that serialize() needs but the per-tick
+              // binary snapshot drops (sendSnapshot packs a fixed 21-float
+              // layout: no parentId/maxHealth, partial genes, minimal food and
+              // environment). Sent on demand (save only) so the hot per-tick
+              // path keeps its layout; SimulationProxy merges these back into
+              // the snapshot before serialize reads it.
+              creatureExtras: (world.creatures || []).map(c => ({
+                id: c.id,
+                parentId: c.parentId ?? null,
+                maxHealth: c.maxHealth ?? null,
+                genes: { ...(c.genes || {}) },
+                personality: c.personality
+                  ? {
+                      packInstinct: c.personality.packInstinct ?? null,
+                      ambushDelay: c.personality.ambushDelay ?? null,
+                      aggression: c.personality.aggression ?? null,
+                      ambushTimer: c.personality.ambushTimer ?? null,
+                      huntCooldown: c.personality.huntCooldown ?? null,
+                      lastSignalAt: c.personality.lastSignalAt ?? null,
+                      currentTargetId: c.personality.currentTargetId ?? null,
+                      attackCooldown: c.personality.attackCooldown ?? null,
+                      idleTempo: c.personality.idleTempo ?? null,
+                      idleSway: c.personality.idleSway ?? null,
+                      reactivity: c.personality.reactivity ?? null,
+                      playfulness: c.personality.playfulness ?? null
+                    }
+                  : null,
+                temperament: c.temperament
+                  ? {
+                      boldness: c.temperament.boldness ?? null,
+                      sociability: c.temperament.sociability ?? null,
+                      calmness: c.temperament.calmness ?? null,
+                      curiosity: c.temperament.curiosity ?? null
+                    }
+                  : null,
+                quirks: Array.isArray(c.quirks) ? c.quirks.filter(q => typeof q === 'string').slice(0, 4) : [],
+                stats: c.stats ? { ...c.stats } : null,
+                traits: c.traits
+                  ? {
+                      bounce: c.traits.bounce ?? null,
+                      temperament: c.traits.temperament ?? null,
+                      dietRole: c.traits.dietRole ?? null
+                    }
+                  : null,
+                needs: c.needs
+                  ? {
+                      hunger: c.needs.hunger ?? null,
+                      energy: c.needs.energy ?? null,
+                      socialDrive: c.needs.socialDrive ?? null,
+                      stress: c.needs.stress ?? null,
+                      lastEatAt: c.needs.lastEatAt ?? null
+                    }
+                  : null,
+                goal: c.goal
+                  ? {
+                      current: c.goal.current ?? null,
+                      lastChange: c.goal.lastChange ?? null,
+                      cooldown: c.goal.cooldown ?? null,
+                      mateCooldown: c.goal.mateCooldown ?? null
+                    }
+                  : null,
+                ecosystem: c.ecosystem
+                  ? {
+                      stress: c.ecosystem.stress ?? null,
+                      energy: c.ecosystem.energy ?? null,
+                      curiosity: c.ecosystem.curiosity ?? null,
+                      stability: c.ecosystem.stability ?? null,
+                      state: typeof c.ecosystem.state === 'string' ? c.ecosystem.state : null
+                    }
+                  : null,
+                emotions: c.emotions ? { ...c.emotions } : null,
+                memory: c.memory
+                  ? {
+                      capacity: c.memory.capacity ?? null,
+                      locations: Array.isArray(c.memory.locations)
+                        ? c.memory.locations.slice(0, 8).map(mem => ({
+                            id: mem.id ?? null,
+                            x: mem.x ?? null,
+                            y: mem.y ?? null,
+                            tag: typeof mem.tag === 'string' ? mem.tag : (mem.type ?? null),
+                            type: typeof mem.type === 'string' ? mem.type : (mem.tag ?? null),
+                            strength: mem.strength ?? null,
+                            timestamp: mem.timestamp ?? null
+                          }))
+                        : []
+                    }
+                  : null,
+                deathTime: c.deathTime ?? null,
+                deathCause: typeof c.deathCause === 'string' ? c.deathCause : (c.deathCause ?? null),
+                killedBy: c.killedBy ?? null
+              })),
+              foodFull: (world.food || []).map(f => ({
+                x: f.x,
+                y: f.y,
+                energy: f.energy ?? null,
+                bites: f.bites ?? null,
+                biteEnergy: f.biteEnergy ?? null,
+                type: f.type ?? null,
+                scentRadius: f.scentRadius ?? null,
+                sourceId: f.sourceId ?? null,
+                sourceTag: f.sourceTag ?? null,
+                origin: f.origin ?? null
+              })),
+              corpsesFull: (world.corpses || []).map(c => ({
+                x: c.x,
+                y: c.y,
+                energy: c.energy ?? null,
+                age: c.age ?? null,
+                isPredator: c.isPredator ?? false
+              })),
+              environmentFull: world.environment
+                ? {
+                    timeOfDay: world.environment.timeOfDay,
+                    dayLength: world.environment.dayLength,
+                    dayNightEnabled: world.environment.dayNightEnabled,
+                    seasonTime: world.environment.seasonTime,
+                    seasonDuration: world.environment.seasonDuration,
+                    currentSeason: world.environment.currentSeason,
+                    seasonIndex: world.environment.seasonIndex,
+                    seasonPhase: world.environment.seasonPhase,
+                    seasonSpeed: world.environment.seasonSpeed,
+                    weatherIntensity: world.environment.weatherIntensity,
+                    weatherType: world.environment.weatherType,
+                    weatherTransitionTime: world.environment.weatherTransitionTime,
+                    weatherTargetIntensity: world.environment.weatherTargetIntensity,
+                    diseaseTimer: world.environment.diseaseTimer,
+                    moodType: world.environment.moodType,
+                    moodIntensity: world.environment.moodIntensity,
+                    moodTimer: world.environment.moodTimer,
+                    moodDuration: world.environment.moodDuration,
+                    windAngle: world.environment.windAngle
+                  }
+                : null,
               disasterPending: Array.isArray(world.disaster?.pendingDisasters)
                 ? world.disaster.pendingDisasters.map(item => ({ ...item }))
                 : []

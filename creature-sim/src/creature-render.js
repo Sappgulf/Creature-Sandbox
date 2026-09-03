@@ -76,6 +76,22 @@ function quantizeLightness(value, step = 5) {
   return Math.round(clamp(lightness, 20, 90) / step) * step;
 }
 
+// Phase 2: deterministic 0..1 hash for render FX. Replaces Math.random() in
+// per-frame particle jitter so fire/electric FX are stable per (id, frame)
+// instead of flickering nondeterministically every draw.
+function seededRand(seed) {
+  let h = (Number(seed) || 0) | 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+
+// Zoom floor for rare (multi-stop gradient / shadowBlur) FX. Below this the
+// creature is a few pixels and gradients are invisible; selected/pinned
+// creatures bypass via forceDetail. Matches the status-cue visibility floor.
+const RARE_FX_MIN_ZOOM = 0.55;
+
 export function isAlphaCreature(creature, world) {
   if (!creature || !world?.lineageTracker) return false;
   if (creature.parentId === null || creature.parentId === undefined) return true;
@@ -349,6 +365,17 @@ export function drawCreature(creature, ctx, opts = {}) {
   const mutationSet = creature._mutationSet || (creature._mutationSet = new Set(rareMutations.map(m => m.name)));
   const worldTime = opts.worldTime ?? creature._lastWorld?.t ?? 0;
 
+  // Phase 2 gate for rare FX (multi-stop gradients / shadowBlur): render only
+  // when zoomed in enough and quality is not 'low', unless forceDetail
+  // (selected/pinned/hovered/grabbed). Defaults preserve current visuals for
+  // callers that do not pass quality/forceDetail yet.
+  const fxZoom = opts.zoom ?? 1;
+  const fxQuality = opts.quality ?? 'high';
+  const fxForceDetail = opts.forceDetail ?? (isSelected || isPinned);
+  const allowRareFx = fxForceDetail || (fxQuality !== 'low' && fxZoom >= RARE_FX_MIN_ZOOM);
+  const fxFrame = Math.floor(worldTime * 30);
+  const fxSeedBase = Number(creature.id) | 0 || 0;
+
   const dayLight = opts.dayLight ?? 1;
   const isNight = dayLight < 0.4;
   const isDawnDusk = dayLight >= 0.4 && dayLight < 0.7;
@@ -584,7 +611,7 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   // Enhanced Bioluminescence glow effect with pulsing animation
   const bioGlow = mutationSet.has('Bioluminescence');
-  if (bioGlow) {
+  if (bioGlow && allowRareFx) {
     const pulsePhase = worldTime * 3 + (creature.id % 100) * 0.1;
     const pulseIntensity = 0.5 + Math.sin(pulsePhase) * 0.3;
     const nightBoost = opts.dayLight !== undefined ? (1 - opts.dayLight) * 0.5 : 0;
@@ -719,7 +746,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   // Elemental affinity auras
-  if (g.elementalAffinity) {
+  if (g.elementalAffinity && allowRareFx) {
     const elemPhase = worldTime * 2;
     switch (g.elementalAffinity) {
       case 'fire':
@@ -743,9 +770,11 @@ export function drawCreature(creature, ctx, opts = {}) {
             const fDist = r * 1.5 + Math.sin(elemPhase * 5 + i) * r * 0.5;
             const fx = Math.cos(fAngle) * fDist;
             const fy = Math.sin(fAngle) * fDist;
+            // Deterministic per (creature id, frame, particle) — no Math.random in render.
+            const fSeed = (fxSeedBase * 31 + fxFrame * 101 + i * 17) | 0;
             ctx.beginPath();
-            ctx.arc(fx, fy, 2 + Math.random() * 0.5, 0, TAU);
-            ctx.fillStyle = `rgba(255, ${150 + Math.random() * 100}, 0, 0.7)`;
+            ctx.arc(fx, fy, 2 + seededRand(fSeed) * 0.5, 0, TAU);
+            ctx.fillStyle = `rgba(255, ${150 + seededRand(fSeed ^ 0x9e37) * 100}, 0, 0.7)`;
             ctx.fill();
           }
           ctx.restore();
@@ -794,8 +823,10 @@ export function drawCreature(creature, ctx, opts = {}) {
             let ex = 0,
               ey = 0;
             for (let j = 0; j < 4; j++) {
-              ex += Math.cos(eAngle + (Math.random() - 0.5) * 0.5) * r * 0.5;
-              ey += Math.sin(eAngle + (Math.random() - 0.5) * 0.5) * r * 0.5;
+              // Deterministic per (creature id, frame, bolt, segment) — no Math.random in render.
+              const eSeed = (fxSeedBase * 31 + fxFrame * 101 + i * 17 + j * 7) | 0;
+              ex += Math.cos(eAngle + (seededRand(eSeed) - 0.5) * 0.5) * r * 0.5;
+              ey += Math.sin(eAngle + (seededRand(eSeed ^ 0x51f3) - 0.5) * 0.5) * r * 0.5;
               ctx.lineTo(ex, ey);
             }
             ctx.stroke();
@@ -858,7 +889,7 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   // Venomous poison drip effect
   const venomMut = mutationSet.has('Venomous');
-  if (venomMut) {
+  if (venomMut && allowRareFx) {
     const venomPhase = worldTime * 2;
     // Dripping poison drops
     for (let i = 0; i < 2; i++) {
@@ -882,7 +913,7 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   // Gigantism power aura with massive ripple rings
   const gigantismMut = mutationSet.has('Gigantism');
-  if (gigantismMut) {
+  if (gigantismMut && allowRareFx) {
     const gigPhase = worldTime * 2;
     const gigStrength = g.size ? Math.min(2, g.size / 6) : 1.5;
     // Power ripples expanding outward
@@ -918,7 +949,7 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   // Dwarfism cute sparkle effect with heart particles
   const dwarfismMut = mutationSet.has('Dwarfism');
-  if (dwarfismMut) {
+  if (dwarfismMut && allowRareFx) {
     const dwarfPhase = worldTime * 4;
     // Soft pink/purple cute aura
     const dwarfGlow = ctx.createRadialGradient(0, 0, r * 0.5, 0, 0, r * 2);
@@ -958,7 +989,7 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   // Albinism UV damage sparks and pale glow
   const albinismMut = mutationSet.has('Albinism');
-  if (albinismMut) {
+  if (albinismMut && allowRareFx) {
     const albinoPhase = worldTime * 3;
     // Pale UV-sensitive glow
     const albinoGlow = ctx.createRadialGradient(0, 0, r * 0.5, 0, 0, r * 2);
@@ -995,7 +1026,7 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   // Melanism night vision eye glow
   const melanismMut = mutationSet.has('Melanism');
-  if (melanismMut) {
+  if (melanismMut && allowRareFx) {
     const melanoPhase = worldTime * 2;
     // Dark aura with subtle purple/blue night vision tint
     const melanoGlow = ctx.createRadialGradient(0, 0, r * 0.5, 0, 0, r * 2);
@@ -1029,7 +1060,7 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   // Longevity golden age rings
   const longevityMut = mutationSet.has('Longevity');
-  if (longevityMut) {
+  if (longevityMut && allowRareFx) {
     const longevPhase = worldTime;
     // Golden aura
     const longevGlow = ctx.createRadialGradient(0, 0, r * 0.5, 0, 0, r * 2.5);
@@ -1064,7 +1095,7 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   // Accelerated Aging rapid decay effect
   const accelAgingMut = mutationSet.has('Accelerated Aging');
-  if (accelAgingMut) {
+  if (accelAgingMut && allowRareFx) {
     const accelPhase = worldTime * 8;
     // Rapid ticking rings
     for (let i = 0; i < 4; i++) {
@@ -1133,7 +1164,7 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   // Photosynthesis sun energy absorption
   const photosynMut = mutationSet.has('Photosynthesis');
-  if (photosynMut && !g.predator) {
+  if (photosynMut && !g.predator && allowRareFx) {
     const photoPhase = worldTime * 2;
     const photoIntensity = opts.dayLight !== undefined ? opts.dayLight : 0.5;
     if (photoIntensity > 0.4) {
@@ -1172,7 +1203,7 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   // Chimera hybrid trait markers
   const chimeraMut = mutationSet.has('Chimera');
-  if (chimeraMut) {
+  if (chimeraMut && allowRareFx) {
     const chimPhase = worldTime * 2;
     const hybridTraits = g.hybridTraits || {};
     // Multi-colored chaotic aura
@@ -1444,14 +1475,18 @@ export function drawCreature(creature, ctx, opts = {}) {
 
     ctx.restore();
 
-    const alphaAura = ctx.createRadialGradient(0, 0, r * 0.8, 0, 0, r * 2);
-    alphaAura.addColorStop(0, 'rgba(255, 215, 50, 0.12)');
-    alphaAura.addColorStop(0.5, 'rgba(255, 200, 50, 0.06)');
-    alphaAura.addColorStop(1, 'rgba(255, 180, 0, 0)');
-    ctx.fillStyle = alphaAura;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 2, 0, TAU);
-    ctx.fill();
+    // Phase 2: the alpha crown above is a cheap gameplay signal and always
+    // draws; only the multi-stop aura gradient is gated like other rare FX.
+    if (allowRareFx) {
+      const alphaAura = ctx.createRadialGradient(0, 0, r * 0.8, 0, 0, r * 2);
+      alphaAura.addColorStop(0, 'rgba(255, 215, 50, 0.12)');
+      alphaAura.addColorStop(0.5, 'rgba(255, 200, 50, 0.06)');
+      alphaAura.addColorStop(1, 'rgba(255, 180, 0, 0)');
+      ctx.fillStyle = alphaAura;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 2, 0, TAU);
+      ctx.fill();
+    }
   }
 
   if (isPinned) {

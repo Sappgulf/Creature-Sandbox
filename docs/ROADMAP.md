@@ -1,11 +1,14 @@
 # Creature Sandbox Roadmap
 
+> **Status note (2026-09-03):** This roadmap is frozen at the 2026-04-13 cleanup pass and is stale below this line. Current reality: the Web Worker simulation is the shipping default (main-thread is an explicit fallback via `?worker=0`); the 2026-08-01 Field Guide reboot shipped (`creature-sim/reboot.css`, Field Journal visual direction, Observe/Influence/Discover/Preserve phase metadata — see `docs/REBOOT_BLUEPRINT.md` and CHANGELOG `2026-08-01 — field-guide-reboot`); landmarks since the freeze include worker-default promotion + `smoke:main` fallback lane (2026-05-27), dead HUD menu removal (`hud-menu.js`/`menu-model.js` superseded by `control-strip.js`, 2026-07-10), Scenario Lab worker wiring + Herd Rescue guided loop (2026-08-01), and the September audit depth fixes. See CHANGELOG.md for the current record.
+
 ## Known Quirks (2026-04-13)
 
 1. **Camera world bounds are generous**
    - **Description:** Camera clamping re-enabled with 200px margin. Aggressive panning near edges may still show slight overscroll.
    - **Impact:** Minor — use focus/re-center to snap back quickly.
    - **Status:** Fixed (was: camera had no bounds at all).
+   - **Correction (2026-09-03):** The 200px value above is stale — the current margin is 80px per docs/KNOWN_ISSUES.md, which is authoritative.
 
 ## Shipped (2026-04-13)
 
@@ -90,7 +93,7 @@
 
 1. **Help section + UX guidance**
    - **Description:** Added an in-menu help section for controls, shortcuts, and menu mapping; added empty-state guidance in the selected creature card.
-   - **Likely files:** `creature-sim/src/hud-menu.js`, `creature-sim/src/ui.js`, `creature-sim/styles.css`
+   - **Likely files:** `creature-sim/src/control-strip.js`, `creature-sim/src/ui-controller-panels.js`, `creature-sim/src/ui.js`, `creature-sim/styles.css`
    - **Risk level:** Low
    - **Verification:** Open ⋯ menu, verify Help section appears, and confirm selected info shows guidance when nothing is selected.
 

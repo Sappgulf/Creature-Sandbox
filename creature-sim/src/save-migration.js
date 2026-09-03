@@ -6,6 +6,33 @@
 
 const CURRENT_SAVE_VERSION = '3.0';
 
+/**
+ * Deterministically derive a session seed from existing save fields.
+ * Uses FNV-1a over a stable snapshot of already-present data so the
+ * 2.5 -> 3.0 migration never introduces Math.random() nondeterminism.
+ * @param {any} data
+ * @returns {string}
+ */
+function deriveSessionSeed(data) {
+  const snapshot = JSON.stringify({
+    version: data?.version ?? null,
+    timestamp: data?.timestamp ?? null,
+    savedAt: data?.savedAt ?? null,
+    slotIndex: data?.meta?.slotIndex ?? null,
+    width: data?.world?.width ?? null,
+    height: data?.world?.height ?? null,
+    t: data?.world?.t ?? null,
+    creatureCount: Array.isArray(data?.world?.creatures) ? data.world.creatures.length : null,
+    firstIds: Array.isArray(data?.world?.creatures) ? data.world.creatures.slice(0, 8).map(c => c?.id ?? null) : null
+  });
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < snapshot.length; i++) {
+    hash ^= snapshot.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(36);
+}
+
 export const SaveMigrations = [
   {
     from: '1.0',
@@ -78,14 +105,18 @@ export const SaveMigrations = [
     to: '3.0',
     migrate(data) {
       data.version = '3.0';
-      // v3 adds save slot metadata and session seed
+      // v3 adds save slot metadata and session seed. The seed must be
+      // deterministic: only fill when absent, derived from a hash of
+      // existing fields so repeated migrations of the same save agree.
       if (!data.meta) {
         data.meta = {
           slotIndex: 0,
-          sessionSeed: Math.floor(Math.random() * 1e9).toString(36),
+          sessionSeed: deriveSessionSeed(data),
           playTime: 0,
           saveCount: 1
         };
+      } else if (data.meta.sessionSeed == null) {
+        data.meta.sessionSeed = deriveSessionSeed(data);
       }
       if (!data.settings) {
         data.settings = {

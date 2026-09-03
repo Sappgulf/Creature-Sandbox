@@ -1,2 +1,3 @@
 # GOD BOOT
-Read GOD/START.md
+
+Read GOD/GOD/START.md

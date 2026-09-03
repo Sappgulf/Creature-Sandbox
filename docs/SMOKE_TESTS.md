@@ -100,7 +100,7 @@
 
 11. **God mode (optional)**
     - Open **⋯ More Actions** and toggle **✨ God Mode** (or long-press the world).
-    - Press **1-6** to switch god tools and confirm the active tool updates in the panel/hud.
+    - Press **1-9/0** to switch god tools (Bless/Curse/Attract/Repel on keys 7-0) and confirm the active tool updates in the panel/hud.
     - Confirm each tool shows a matching hint and brush preview: green food, blue calm, purple chaos, violet prop, red remove.
     - Place a food source, a calm zone, and a chaos nudge; confirm clear visual previews.
     - Drag with **Food**, **Calm**, **Prop**, and **Remove** tools to confirm paint-style application works smoothly.

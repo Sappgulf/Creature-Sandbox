@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # GOD Shadow / CI Simulation
 # Usage: ./god-shadow.sh
-# Locally simulates the main parts of the GitHub release-smoke workflow.
+# Local shadow lane: covers lint/test/build/bundle ONLY (not the full smoke matrix).
+# Canonical release gate is `npm run proof:release` (see docs/RELEASE_CHECKLIST.md).
 
 set -euo pipefail
 

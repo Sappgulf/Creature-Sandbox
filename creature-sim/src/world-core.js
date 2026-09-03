@@ -13,7 +13,7 @@ import { CreatureEcosystemSystem } from './creature-ecosystem.js';
 import { WorldEvents } from './world-events.js';
 import { BiomeGenerator } from './perlin-noise.js';
 import { SandboxProps } from './sandbox-props.js';
-import { clamp, dist2, rand } from './utils.js';
+import { clamp, dist2, rand, mulberry32 } from './utils.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
 import { getDebugFlags } from './debug-flags.js';
@@ -154,10 +154,23 @@ export class World {
    * @param {number} width - World width in pixels
    * @param {number} height - World height in pixels
    */
-  constructor(width, height) {
+  constructor(width, height, options = {}) {
     this.width = width;
     this.height = height;
     this.t = 0; // Simulation time
+
+    // Additive seeded RNG: no behavior change unless a seed is provided.
+    // Reads options.seed / options.sessionSeed / options.meta.sessionSeed so
+    // save metadata can drive determinism in a future slice; otherwise the
+    // fields stay unset and every draw falls back to Math.random() as before.
+    // Named `worldSeed` (not `seed`) to avoid shadowing the seed() method below.
+    const worldSeed = options?.seed ?? options?.sessionSeed ?? options?.meta?.sessionSeed ?? null;
+    this.worldSeed = worldSeed;
+    this.rng = worldSeed !== null && worldSeed !== undefined ? mulberry32(worldSeed) : null;
+    // Deterministic ID counter reserved for future use. Creature IDs are still
+    // owned by creatureManager._nextId and Date.now()-based IDs / memory
+    // timestamps are OUT OF SCOPE for this slice — do not wire this up yet.
+    this._nextId = 1;
 
     // Core spatial systems
     this.pheromone = new ScalarField(width, height, 20, 0.992, 0.18);
@@ -203,8 +216,8 @@ export class World {
     this.maxFood = Math.floor((width * height) / 180);
     this.gridDirty = false;
 
-    // Biome system
-    this.biomeGenerator = new BiomeGenerator(Math.random());
+    // Biome system (rng-backed; identical to Math.random() when no seed is set)
+    this.biomeGenerator = new BiomeGenerator(this.rng ? this.rng() : Math.random());
     this.biomeMap = this.biomeGenerator.generateBiomeMap(width, height, 50);
     this.biomeCache = new Map();
 

@@ -127,10 +127,6 @@ export class Renderer {
     this.particles = [];
     this.maxParticles = this.isMobile ? 50 : 200;
 
-    // LEGENDARY OPTIMIZATION: Pre-create reusable Path2D objects
-    this._circlePath = new Path2D();
-    this._circlePath.arc(0, 0, 1, 0, Math.PI * 2);
-
     this._foodSpriteAssetByType = {
       grass: 'food_grass',
       berries: 'food_berries',
@@ -214,6 +210,10 @@ export class Renderer {
   drawWorld(world, opts = {}) {
     // Performance monitoring
     this.performance.beginFrame();
+
+    // Single wall-clock sample per frame; forwarded via opts so per-creature
+    // outline pulses share it instead of calling performance.now() each.
+    const nowMs = performance.now();
 
     const {
       selectedId = null,
@@ -336,6 +336,7 @@ export class Renderer {
       hoveredId,
       lineageSet,
       worldTime,
+      nowMs,
       selectionPulseUntil: opts.selectionPulseUntil
     });
     if (spawnDebug && this._pendingDebugSpawn) {
@@ -668,8 +669,13 @@ export class Renderer {
     // NEW: Season visual overlay
     drawSeasonOverlay(this, ctx, world);
 
-    // Seasonal ambient particles (pollen, leaves, snow)
-    drawSeasonalParticles(this, ctx, world);
+    // Seasonal ambient particles (pollen, leaves, snow). Skipped entirely
+    // under prefers-reduced-motion; static background layers still draw.
+    const prefersReducedMotion =
+      typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    if (!prefersReducedMotion) {
+      drawSeasonalParticles(this, ctx, world);
+    }
 
     const mood = world.moodState || world.environment?.getMoodState?.();
     if (mood?.type && mood.type !== 'neutral') {
@@ -681,8 +687,10 @@ export class Renderer {
       drawWeatherEffects(this, ctx, world);
     }
 
-    // Ambient spore particles floating through the scene
-    drawAmbientSpores(this, ctx);
+    // Ambient spore particles floating through the scene (motion-only layer).
+    if (!prefersReducedMotion) {
+      drawAmbientSpores(this, ctx);
+    }
   }
 
   _getBiomeTint(biomeType) {

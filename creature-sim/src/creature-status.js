@@ -233,12 +233,15 @@ export class CreatureStatusSystem {
       this.creature.statusTimers = {};
     }
 
+    this.creature.statusTimers.venomTick ??= 0;
+    if (Number.isNaN(this.creature.statusTimers.venomTick)) {
+      this.creature.statusTimers.venomTick = 0;
+    }
     this.creature.statusTimers.venomTick -= dt;
     if (this.creature.statusTimers.venomTick <= 0) {
       this.creature.statusTimers.venomTick = CreatureConfig.STATUS.VENOM_TICK_RATE;
 
       const damage = venom.damagePerSecond * CreatureConfig.STATUS.VENOM_TICK_RATE;
-      this.creature.health -= damage;
 
       if (typeof this.creature.recordDamage === 'function') {
         this.creature.recordDamage(damage);

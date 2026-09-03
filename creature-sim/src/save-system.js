@@ -1137,6 +1137,15 @@ export class SaveSystem {
     });
 
     const json = JSON.stringify(saveData);
+    // Write the payload first (mirroring autoSave): if this throws (e.g.
+    // quota exceeded), the preview below must not describe a save that was
+    // never actually persisted.
+    if (this.compressionEnabled && COMPRESSION_SUPPORTED) {
+      const compressed = await compressJson(json);
+      localStorage.setItem(`creature-sim-slot-${slotNumber}`, compressed);
+    } else {
+      localStorage.setItem(`creature-sim-slot-${slotNumber}`, json);
+    }
     localStorage.setItem(
       `creature-sim-slot-${slotNumber}-preview`,
       JSON.stringify({
@@ -1145,12 +1154,6 @@ export class SaveSystem {
         metadata: saveData.metadata
       })
     );
-    if (this.compressionEnabled && COMPRESSION_SUPPORTED) {
-      const compressed = await compressJson(json);
-      localStorage.setItem(`creature-sim-slot-${slotNumber}`, compressed);
-    } else {
-      localStorage.setItem(`creature-sim-slot-${slotNumber}`, json);
-    }
   }
 
   /**
@@ -1173,9 +1176,20 @@ export class SaveSystem {
         return null;
       }
     }
-    const saveData = JSON.parse(json);
-    const result = this.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld);
-    return result;
+    try {
+      const saveData = JSON.parse(json);
+      const result = this.deserialize(saveData, World, Creature, Camera, makeGenes, BiomeGenerator, existingWorld);
+      return result;
+    } catch (err) {
+      // Payload is corrupt: drop the now-stale preview so slot listings
+      // never advertise a save that cannot load, then surface the error.
+      try {
+        localStorage.removeItem(`creature-sim-slot-${slotNumber}-preview`);
+      } catch {
+        // Ignore storage errors while cleaning up; original error matters.
+      }
+      throw err;
+    }
   }
 
   /**

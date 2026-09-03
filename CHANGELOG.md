@@ -10,6 +10,10 @@
 
 ## Entry Template
 
+Each session adds one `### YYYY-MM-DD — slug — Planned` entry and one matching `### YYYY-MM-DD — slug — Implemented` entry:
+
+### YYYY-MM-DD — slug — Planned | Implemented
+
 - **Date:** YYYY-MM-DD
 - **Scope:** frontend | backend | simulation | render | ui | docs | devops
 - **Type:** Planned | Implemented | Breaking
@@ -18,7 +22,89 @@
 - **Fixes:**
 - **Verification:**
 
+Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` headings and are grandfathered as-is.
+
 ## [UNRELEASED]
+
+### 2026-09-03 — full-audit-phase-4-sourcemap-proof-push — Planned
+
+- **Date:** 2026-09-03
+- **Scope:** devops
+- **Type:** Planned
+- **Issues:** `sourcemap: 'hidden'` emitted 17 .map files (~2.5MB) into dist with no consumer (no error-tracking upload, CSP `connect-src 'self'`), shipped to Vercel as dead weight.
+- **Root Causes:** Sourcemap setting predated the deploy-bloat advisory; nothing reads production maps.
+- **Fixes:** Planned `sourcemap: false` one-liner, full re-proof, then commit/push/Vercel production verification.
+- **Verification:** Planned: lint, full tests, build, bundle (JS bytes must be identical), proof:release, production smokes post-deploy.
+
+### 2026-09-03 — full-audit-phase-4-sourcemap-proof-push — Implemented
+
+- **Date:** 2026-09-03
+- **Scope:** devops
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** `vite.config.js` `sourcemap: 'hidden'` → `false` with rationale comment; `npm run analyze` unaffected (visualizer needs no maps); bundle advisory now reports 0 maps.
+- **Verification:** lint clean; tests green (190/0, 50/0, e2e 1/0, save + migration); build emits 0 .map files with JS bytes identical (index 361,710B, worker 288,820B); bundle passes. `npm run proof:release` PASSES on the exact committed tree (all lanes incl. smoke:main + scenario 2x, evidence board written). Note: two earlier proof attempts tripped smoke:main desktop startup CLS at exactly 0.1511 vs the 0.15 budget; standalone smoke:main passes repeatedly on both this tree (startup CLS 0.0123 in artifacts) and baseline 0c0701c, baseline full proof passes, and this diff contains zero DOM/CSS/HTML changes — diagnosed as a timing-sensitive shift entry racing the startup measurement window at a razor threshold, not a regression. Worker promotion still held by pre-existing frame budgets; production lanes below.
+
+### 2026-09-03 — full-audit-phase-3-fidelity-tooling-docs — Planned
+
+- **Date:** 2026-09-03
+- **Scope:** simulation | docs | devops
+- **Type:** Planned
+- **Issues:** Worker saves still defaulted personality/quirks/memory/full-needs, bundle budget ignored CSS/maps/totals and used deprecated assert, `npm run analyze` hung headless, ROADMAP frozen at 2026-04 with stale hud-menu.js + 200px camera contradiction, CHANGELOG template mismatched actual convention.
+- **Root Causes:** Extras phase-2 covered identity/vitals only; tooling scripts never budgeted non-JS artifacts; docs had no owner after 2026-05 consolidation.
+- **Fixes:** Planned three parallel agents (worker extras-2, scripts/bundle tooling, docs/process) plus central verify and full proof:release.
+- **Verification:** Planned: lint, full tests, build, bundle, diff-check, prettier, proof:release matrix.
+
+### 2026-09-03 — full-audit-phase-3-fidelity-tooling-docs — Implemented
+
+- **Date:** 2026-09-03
+- **Scope:** simulation | docs | devops
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned; no new root causes found in verification.
+- **Fixes:** Worker EXTRAS now carry compact personality (12 scalars)/temperament/quirks/stats/traits/full-needs/goal/ecosystem/emotions/memory (8 locations, sim-time)/deathInfo; proxy merges without clobbering snapshot-fresh hunger/stress/type/age; fidelity tests assert quirks/memory/needs/personality survival through serialize. bundle-budget.mjs: deepStrictEqual + advisory (non-failing) total-JS/CSS/map warnings; vite visualizer open:false. Docs: ROADMAP 2026-09-03 status note + hud-menu.js→control-strip.js/ui-controller-panels.js + 200px→80px correction; CHANGELOG template rewritten to ### slug convention with grandfather note.
+- **Verification:** lint clean; tests green (core 190/0, regression 50/0, e2e 1/0, save + migration pass); build succeeds; bundle passes (worker 288,820B/300k raw, ~3.7% headroom; entry 361.7k/510k). `npm run proof:release` PASSES on this tree (scenario balance 2x pass, evidence board written): worker promotion still HELD by pre-existing strict frame thresholds (desktop avg ~35-36ms vs 26ms budget, mobile p95 ~50ms vs 20ms — matches Sep-2 baseline, headless-CI budgets, no regression from these changes); production lanes stale pending push+Vercel. No push made.
+
+### 2026-09-03 — full-audit-phase-2-depth-fixes — Planned
+
+- **Date:** 2026-09-03
+- **Scope:** simulation | render | ui | docs | devops
+- **Type:** Planned
+- **Issues:** Phase-1 left depth work open: worker saves still lost personality/quirks/memory fields, pre-READY queue unbounded, snapshot validation absent, RNG entirely unseeded, HUD rebuilt innerHTML every tick, quality presets silently flipped visibility flags, GOD core docs were stubs, AGENTS.md referenced a deleted .github workflow.
+- **Root Causes:** Worker snapshot path carried render-only fields; quality preset conflated perf budgets with visibility prefs; GOD harness never fleshed out after consolidation; release-gate docs drifted from the deliberate CI removal.
+- **Fixes:** Planned four parallel agents (worker fidelity, additive seeded RNG, render perf, GOD/gates) plus central verification (lint, full tests, build, bundle) and a proxy ArrayBuffer regression fix.
+- **Verification:** Planned: npm run lint, npm test, npm run build, npm run check:bundle, git diff --check, prettier check.
+
+### 2026-09-03 — full-audit-phase-2-depth-fixes — Implemented
+
+- **Date:** 2026-09-03
+- **Scope:** simulation | render | ui | docs | devops
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned; verification caught one phase-2 regression (snapshot validator rejected ArrayBuffer snapshots, breaking the Scenario Lab protocol test) — root cause was `.length`-only validation on a transferred-buffer path.
+- **Fixes:** Worker: REQUEST_WORLD_EXTRAS now ships creatureExtras/foodFull/corpsesFull/environmentFull on demand (per-tick layout untouched), proxy merges extras by id/position with re-apply after each snapshot, pre-READY queue capped at 60 with STEP_AND_SYNC coalescing + counters, snapshot validation (finite t, count*STRIDE match) with explicit drop counter. Sim: additive mulberry32 + setWorldSeed/getRng (rand() identical when unset), World.worldSeed/rng/_nextId (no `seed` field collision), BiomeGenerator rng-backed. Render/UI: innerHTML dirty-check + 4Hz inspector throttle, perf-vs-visibility preset split with per-instance thresholds, rare-FX zoom/quality gate + seededRand(id+frame) replacing Math.random (zero remaining in creature-render.js). Docs: GOD CORE/RUN/CHECKS fleshed out from AGENT.md, god-shadow.sh marked lint/test/build/bundle-only, AGENTS.md .github reference corrected to intentional-absence + proof:release canonical. Fixed own regression: validator accepts ArrayBuffer via byteLength/4 + Float32Array view for unpack.
+- **Verification:** npm run lint clean (0 errors); npm test green (core 190/0, regression 50/0 incl. Scenario Lab protocol test, e2e 1/0, save-system + save-migration pass); npm run build succeeds; npm run check:bundle passes (worker 286,758B/300k raw — extras cost ~2.9k, headroom ~4%; entry 360k/510k). git diff --check clean; prettier check clean on touched docs. Full browser/worker/scenario smoke matrix NOT rerun — still required before push.
+
+### 2026-09-03 — full-audit-multi-agent-improvements — Planned
+
+- **Date:** 2026-09-03
+- **Scope:** simulation | render | ui | docs | devops
+- **Type:** Planned
+- **Issues:** Repo was current (main...origin/main, clean) but audit found 30+ issues: unseeded RNG + Date.now in sim, mating joint-probability dead, predation NaN/double-pay, venomTick NaN, worker save fidelity loss, save-extras hang, worker ERRORs silent, stale 2.0 version defaults, slot preview-before-payload, non-deterministic migration, render per-creature gradients/shadowBlur, unsynced clocks, HUD innerHTML churn, a11y/mobile gaps, GOD boot-path rot, missing .github workflow, release-checklist port drift, zero save-migration tests, broken type-check.
+- **Root Causes:** Simulation grew organically with Math.random/Date.now in hot paths; worker snapshot path never extended to full serialize fields; docs/GOD harness drifted after 2026-05 consolidation without an owner; test/tooling scripts lacked coverage for migration and worker parity.
+- **Fixes:** Planned five parallel fix agents on non-overlapping scopes (docs/GOD, persistence, sim guards, render low-risk, tests/tooling), then central lint+test verification and CHANGELOG update — no full RNG refactor, no ground-bake, no preset redesign in this slice.
+- **Verification:** Planned: git diff --check, npm run lint, npm test (incl. new save-migration suite), prettier check on touched docs.
+
+### 2026-09-03 — full-audit-multi-agent-improvements — Implemented
+
+- **Date:** 2026-09-03
+- **Scope:** simulation | render | ui | docs | devops
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned; live verification confirmed failures were guards/defaults (venom NaN, predation Infinity, double elder roll, 2.0 defaults, preview ordering) rather than deep algorithmic breaks, so smallest-guard fixes sufficed.
+- **Fixes:** Docs: GOD_BOOT path to GOD/GOD/START.md, AGENTS.md creature-sim/src prefixes, SMOKE_TESTS god keys 1-9/0, RELEASE_CHECKLIST port 5173→8000. Persistence: deterministic deriveSessionSeed (FNV-1a, fill-only-when-absent), requestSaveExtras 3s timeout with stale:true fallback + ERROR_CRITICAL emit, importState/IMPORT_STATE defaults to getCurrentSaveVersion(), saveToSlot payload-before-preview + loadFromSlot try/catch with preview cleanup. Sim: venomTick null/NaN guard + single recordDamage path, predation (maxHealth||1) + isFinite guard, mating single-roll elderChance*mateElderChance. Render: hoisted nowMs through drawWorld→drawCreatures→outlines, deleted unused _circlePath, escapeHtml on headline, prefers-reduced-motion gate for seasonal/spore particles. Tooling: new scripts/save-migration.test.mjs wired into npm test, type-check guarded when tsc absent.
+- **Verification:** git diff --check clean; npm run lint clean (0 errors); npm test green incl. save-system, core-modules 190/0, regression-fixes 50/0, e2e 1/0, save-migration passed; prettier --write applied to new test file. Full smoke matrix (browser/worker/scenarios/proof:release) NOT rerun — required before any push per AGENTS.md.
 
 ### 2026-08-01 — ecosystem-guardrails-objective-feedback — Planned
 
