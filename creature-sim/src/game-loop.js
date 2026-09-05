@@ -104,7 +104,9 @@ export class GameLoop {
       throwCount: 0,
       propCount: 0,
       tinyWinTypes: new Set(),
-      lastThrowToastAt: 0
+      lastThrowToastAt: 0,
+      lastMilestoneToastAt: 0,
+      firstBirthToastShown: false
     };
 
     // Adaptive simulation fidelity (reduces AI load when FPS drops)
@@ -281,6 +283,13 @@ export class GameLoop {
       }
       lifetimeStats.increment('totalCreaturesBorn');
       lifetimeStats.updateMax('highestPopulation', this.world?.creatures?.length || 0);
+      if (this.hasNotifications() && !this.curiosityState.firstBirthToastShown) {
+        const born = Number(lifetimeStats.data?.totalCreaturesBorn ?? 0);
+        if (born <= 1) {
+          this.notifications.show('First new life in this world', 'success', 2400);
+        }
+        this.curiosityState.firstBirthToastShown = true;
+      }
     });
 
     eventSystem.on(GameEvents.CREATURE_DIED, data => {
@@ -307,6 +316,17 @@ export class GameLoop {
         lifetimeStats.updateRecord('oldestCreature', { name: data.creature?.name || 'Unknown', age });
       }
       lifetimeStats.updateMax('longestCreatureLived', age);
+      const now = performance.now();
+      const diedName = data.creature?.name;
+      const diedElder = data.creature?.ageStage === 'elder' || (data.creature?.age || 0) > 180;
+      if (
+        this.hasNotifications() &&
+        (diedName || diedElder) &&
+        now - (this.curiosityState.lastMilestoneToastAt || 0) > 25000
+      ) {
+        this.notifications.show(diedName ? `${diedName} has died` : 'An elder has died', 'info', 2600);
+        this.curiosityState.lastMilestoneToastAt = now;
+      }
     });
 
     eventSystem.on(GameEvents.CREATURE_EAT, data => {
@@ -445,6 +465,16 @@ export class GameLoop {
         this.notifications.show(message, 'success', 2000);
         this.curiosityState.tinyWinTypes.add(type);
       }
+    });
+
+    // God power tap feedback in every runtime mode. GOD_MODE_ACTION already
+    // carries finite x/y for each tap; unknown tools are ignored inside the
+    // effect so brushed tools never double up with their own previews.
+    eventSystem.on(GameEvents.GOD_MODE_ACTION, data => {
+      const x = Number(data?.x);
+      const y = Number(data?.y);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+      this.visualEffects?.createGodPowerEffect?.(data?.action, x, y);
     });
   }
 

@@ -194,6 +194,57 @@ export class VisualEffects {
   }
 
   /**
+   * God power tap feedback: expanding ring + flash + sparkles in the power's
+   * color. Unknown tools are ignored so food/calm/chaos/spawn/prop/remove
+   * (which have their own previews) never double up.
+   */
+  createGodPowerEffect(tool, x, y) {
+    const palette = {
+      bless: '#ffd878',
+      curse: '#ff5a5a',
+      attract: '#78aaff',
+      repel: '#aaaab4'
+    };
+    const color = palette[tool];
+    if (!color || !Number.isFinite(x) || !Number.isFinite(y)) return;
+    this.effects.push({
+      type: 'expand',
+      x,
+      y,
+      radius: 8,
+      maxRadius: 68,
+      speed: 150,
+      color,
+      alpha: 1,
+      life: 0.5
+    });
+    this.effects.push({
+      type: 'flash',
+      x,
+      y,
+      radius: 22,
+      color,
+      alpha: 0.55,
+      life: 0.25
+    });
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      this.effects.push({
+        type: 'sparkle',
+        x,
+        y,
+        vx: Math.cos(angle) * 70,
+        vy: Math.sin(angle) * 70,
+        size: 2,
+        color,
+        alpha: 1,
+        life: 0.5
+      });
+    }
+    this.createRipple(x, y);
+  }
+
+  /**
    * Update all effects
    */
   update(dt) {

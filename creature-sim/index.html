@@ -241,16 +241,19 @@
     <div class="drawer-content">
       <div class="drawer-handle"></div>
       <div class="drawer-header">
-        <span class="drawer-title">Menu</span>
+        <div class="drawer-title-wrap">
+          <span class="drawer-title">Menu</span>
+          <span class="drawer-subtitle">Observe · Nudge · Remember</span>
+        </div>
         <button id="overflow-drawer-close" class="drawer-close" aria-label="Close">×</button>
       </div>
       <div class="drawer-body drawer-menu">
-        <div class="menu-section">
+        <div class="menu-section menu-section-featured">
           <div class="menu-section-title">Simulation</div>
           <button class="menu-item" data-action="step"><span class="menu-item-icon" aria-hidden="true">⏭️</span><span class="menu-item-label">Single Step</span></button>
-          <button class="menu-item" id="menu-food" data-action="food"><span class="menu-item-icon" aria-hidden="true">🌿</span><span class="menu-item-label">Paint Food</span></button>
+          <button class="menu-item" id="menu-food" data-action="food"><span class="menu-item-icon" aria-hidden="true">🌿</span><span class="menu-item-label">Paint Food</span><kbd class="menu-kbd">F</kbd></button>
           <button class="menu-item" id="menu-god-mode" data-action="god-mode"><span class="menu-item-icon" aria-hidden="true">✨</span><span class="menu-item-label">God Mode</span></button>
-          <button class="menu-item" data-action="props"><span class="menu-item-icon" aria-hidden="true">🟣</span><span class="menu-item-label">Sandbox Props</span></button>
+          <button class="menu-item" data-action="props"><span class="menu-item-icon" aria-hidden="true">🟣</span><span class="menu-item-label">Sandbox Props</span><kbd class="menu-kbd">P</kbd></button>
         </div>
         <div class="menu-section">
           <div class="menu-section-title">Remember</div>
@@ -276,15 +279,17 @@
         </div>
         <div class="menu-section">
           <div class="menu-section-title">System</div>
-          <button class="menu-item" data-action="save"><span class="menu-item-icon" aria-hidden="true">💾</span><span class="menu-item-label">Save Game</span></button>
-          <button class="menu-item" data-action="load"><span class="menu-item-icon" aria-hidden="true">📂</span><span class="menu-item-label">Load Game</span></button>
+          <button class="menu-item" data-action="save"><span class="menu-item-icon" aria-hidden="true">💾</span><span class="menu-item-label">Save Game</span><kbd class="menu-kbd">Ctrl S</kbd></button>
+          <button class="menu-item" data-action="load"><span class="menu-item-icon" aria-hidden="true">📂</span><span class="menu-item-label">Load Game</span><kbd class="menu-kbd">Ctrl O</kbd></button>
           <button class="menu-item" data-action="copy-seed"><span class="menu-item-icon" aria-hidden="true">🔗</span><span class="menu-item-label">Copy Share Seed</span></button>
           <button class="menu-item" data-action="fullscreen"><span class="menu-item-icon" aria-hidden="true">⛶</span><span class="menu-item-label">Fullscreen</span></button>
           <button class="menu-item" id="menu-mobile-focus" data-action="mobile-focus"><span class="menu-item-icon" aria-hidden="true">🧭</span><span class="menu-item-label">Focus Mode</span></button>
           <button class="menu-item" id="menu-mobile-battery" data-action="mobile-battery"><span class="menu-item-icon" aria-hidden="true">🔋</span><span class="menu-item-label">Battery Saver</span></button>
           <button class="menu-item" id="menu-mobile-haptics" data-action="mobile-haptics"><span class="menu-item-icon" aria-hidden="true">📳</span><span class="menu-item-label">Haptics</span></button>
           <button class="menu-item" data-action="replay-tutorial"><span class="menu-item-icon" aria-hidden="true">🎓</span><span class="menu-item-label">Replay Tutorial</span></button>
-          <button class="menu-item" data-action="help"><span class="menu-item-icon" aria-hidden="true">❓</span><span class="menu-item-label">Help & Shortcuts</span></button>
+          <button class="menu-item" data-action="help"><span class="menu-item-icon" aria-hidden="true">❓</span><span class="menu-item-label">Help & Shortcuts</span><kbd class="menu-kbd">?</kbd></button>
+        </div>
+        <div class="drawer-footnote" aria-hidden="true"><span>Space pauses</span><span>·</span><span>Esc closes</span><span>·</span><span>W watches</span></div>
         </div>
       </div>
     </div>
