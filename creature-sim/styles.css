@@ -498,6 +498,12 @@ input[type='range']:focus-visible {
   font-size: 14px;
   color: var(--text-primary);
 }
+#selected-info .headline > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 #selected-info .headline .status {
   font-size: 10px;
   padding: 2px 8px;
@@ -505,6 +511,11 @@ input[type='range']:focus-visible {
   text-transform: uppercase;
   font-weight: 600;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  flex: none;
+}
+#selected-info .headline .status.threatened {
+  margin-left: 2px;
 }
 #selected-info .headline .status.alive {
   background: rgba(34, 197, 94, 0.15);
@@ -4640,6 +4651,25 @@ body.home-active #btn-show-inspector {
 }
 .drawer-body::-webkit-scrollbar-track {
   background: transparent;
+}
+/* ============================================================================
+   HUD CLEANUP - compact strip on small phones
+   ============================================================================ */
+@media (max-width: 480px) {
+  .control-strip {
+    max-width: calc(100vw - 24px);
+    padding: 4px;
+    gap: 2px;
+    border-radius: 20px;
+  }
+  .control-strip-primary {
+    gap: 1px;
+  }
+  .ctrl-btn {
+    min-width: 40px;
+    padding: 0 6px;
+    font-size: 15px;
+  }
 }
 @media (min-width: 701px) {
   .bottom-drawer {

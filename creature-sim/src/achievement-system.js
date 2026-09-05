@@ -558,6 +558,12 @@ export class AchievementSystem {
       return;
     }
     if (typeof document === 'undefined' || !document.body) return;
+    // One toast at a time: bursts (e.g. colony + ecosystem unlocking together)
+    // collapse to the latest instead of stacking over each other.
+    if (document.querySelector('.achievement-notification')) {
+      this._toastQueue = [achievement];
+      return;
+    }
     this.ensureNotificationStyles();
 
     // Create notification element
@@ -671,13 +677,16 @@ export class AchievementSystem {
 
     document.body.appendChild(notification);
 
-    // Auto-remove after 5 seconds
+    // Auto-remove after 5 seconds, then show any queued burst toast.
     setTimeout(
       () => {
         notification.style.animation = `${avoidPanelLane ? 'panelToastOut' : 'slideOutRight'} 0.3s ease-out`;
         notification.style.animationFillMode = 'both';
         setTimeout(() => {
           notification.remove();
+          const next = this._toastQueue?.shift?.();
+          this._toastQueue = [];
+          if (next) this.showNotification(next);
         }, 300);
       },
       compactToast ? 3200 : 5000

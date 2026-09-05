@@ -410,7 +410,7 @@ export function renderSelectedInfo(
   }
 
   const statusClass = creature.alive ? 'alive' : 'dead';
-  const threatBadge = threat ? ' <span class="status threatened">⚠ Hunted</span>' : '';
+  const threatBadge = threat ? '<span class="status threatened">⚠ Hunted</span>' : '';
   const sexEmoji = creature.sex === 'male' ? ' ♂️' : ' ♀️';
   const disorderEmojis = (creature.disorders || [])
     .map(d => {

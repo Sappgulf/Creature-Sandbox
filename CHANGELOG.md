@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-05 — hud-cleanup-pass — Planned
+
+- **Date:** 2026-09-05
+- **Scope:** ui | render
+- **Type:** Planned
+- **Issues:** HUNTED badge wrapped to two lines; dossier headline could push pills off; simultaneous achievement unlocks stacked over each other; mobile strip stretched full-bleed with oversized buttons.
+- **Root Causes:** Badge had a breaking leading space; headline name unbounded; fallback toasts appended without coordination; strip had no small-phone constraint.
+- **Fixes:** Planned nowrap/ellipsis surgical CSS, toast queue (collapse bursts to latest), ≤480px strip tightening.
+- **Verification:** Planned: screenshots, lint, tests, smoke:menus, proof:release, push, Vercel + production smokes.
+
+### 2026-09-05 — hud-cleanup-pass — Implemented
+
+- **Date:** 2026-09-05
+- **Scope:** ui | render
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned. Mobile probe showed stats rail present (not missing) and quick-actions absent — only the strip needed sizing.
+- **Fixes:** `.status` nowrap + badge margin, headline name ellipsis, achievement toast queue (one visible, bursts collapse to latest, drained on dismiss), ≤480px strip max-width/padding/button tightening.
+- **Verification:** Before/after screenshots reviewed; lint clean; tests green (190/0, 60/0, e2e 1/0, save + migration); smoke:menus 34/34; proof:release GREEN. Shipped below; production results below.
+
 ### 2026-09-05 — hunted-alerts-god-digits — Planned
 
 - **Date:** 2026-09-05
