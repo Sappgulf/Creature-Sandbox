@@ -44,7 +44,7 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 - **Issues:** Same as planned.
 - **Root Causes:** Same as planned. Upstream already covered worker prop transport (ADD_PROP), god registry consolidation with digits, brush previews, announcer types, throttle table, and shortcuts rows — verified present on disk, not re-implemented.
 - **Fixes:** control-strip.js syncMenuState tracks campaign/achievements panels individually; menu-interaction-proof.mjs clicks #menu-campaign/#menu-achievements by id and expects the journal, plus FULLERR diagnostics mode and the waitForSelector-visible lesson encoded as classList assertions.
-- **Verification:** lint clean; tests green (190/0, 60/0, e2e 1/0, save + migration); smoke:menus 34/34 PASS, zero page errors. proof:release + push + production results below.
+- **Verification:** lint clean; tests green (190/0, 60/0, e2e 1/0, save + migration); smoke:menus 34/34 PASS, zero page errors. proof:release GREEN on the exact tree; pushed 08c2343; Vercel Production Ready serving index-nCP96_GN.js; smoke:production green all viewports; vitals green (FCP 268–320ms, LCP 320–380ms, CLS ~0.001, long tasks ≤60ms).
 
 ### 2026-09-03 — field-guide-sprites-habitat — Planned
 
