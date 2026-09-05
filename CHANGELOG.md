@@ -44,7 +44,7 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 - **Issues:** Same as planned.
 - **Root Causes:** Same as planned. Mobile probe showed stats rail present (not missing) and quick-actions absent — only the strip needed sizing.
 - **Fixes:** `.status` nowrap + badge margin, headline name ellipsis, achievement toast queue (one visible, bursts collapse to latest, drained on dismiss), ≤480px strip max-width/padding/button tightening.
-- **Verification:** Before/after screenshots reviewed; lint clean; tests green (190/0, 60/0, e2e 1/0, save + migration); smoke:menus 34/34; proof:release GREEN. Shipped below; production results below.
+- **Verification:** Before/after screenshots reviewed; lint clean; tests green (190/0, 60/0, e2e 1/0, save + migration); smoke:menus 34/34; proof:release GREEN. Shipped 09e78b1 (index-CzZQI3nW.js live); smoke:production green all viewports; vitals green after cool-down (FCP 392ms, LCP 568ms, CLS 0.0011, long tasks 294ms). Note: two consecutive vitals failures at ~700ms long tasks on a hot box after hours of back-to-back local smokes; 4-min idle retry passed — thermal-throttle measurement noise, not app code (FCP/LCP/CLS unaffected throughout).
 
 ### 2026-09-05 — hunted-alerts-god-digits — Planned
 
