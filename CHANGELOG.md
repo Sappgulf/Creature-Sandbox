@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-05 — menu-redesign-god-ripples-milestones — Planned
+
+- **Date:** 2026-09-05
+- **Scope:** ui | render
+- **Type:** Planned
+- **Issues:** Overflow menu was a flat wall of emoji rows (no hierarchy, hints, or states); god power taps had no in-world feedback beyond the pointer ring; births/deaths passed silently (only particles/audio).
+- **Root Causes:** Menu grew item-by-item with one shared row style; GOD_MODE_ACTION had log/achievement consumers but no visual consumer; lifecycle events fed stats/particles but never the toast rail.
+- **Fixes:** Planned menu restyle (featured tiles, kbd, accents), god ripple effects, milestone toasts — all on existing rails, zero wiring changes.
+- **Verification:** Planned: screenshots, lint, tests, smoke:menus, proof:release, push, Vercel + production smokes.
+
+### 2026-09-05 — menu-redesign-god-ripples-milestones — Implemented
+
+- **Date:** 2026-09-05
+- **Scope:** ui | render
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Menu drawer: featured 2×2 Simulation tiles, icon tiles on rows, verified kbd hints (F/P/Ctrl+S/Ctrl+O/?), section accent bars, Observe·Nudge·Remember subtitle, Space/Esc/W footnote, custom scrollbar; god taps paint expand+flash+sparkle+ripple in per-power colors (unknown tools ignored); first-birth + named/elder-death toasts (25s throttle). No data-action/id/handler changed.
+- **Verification:** Before/after screenshots reviewed; lint clean; tests green (190/0, 60/0, e2e 1/0, save + migration); ripple guards unit-checked (unknown/non-finite ignored); smoke:menus 34/34; proof:release GREEN. Shipped f5f7681; production results below.
+
 ### 2026-09-05 — journal-reconciliation-menu-proof-alignment — Planned
 
 - **Date:** 2026-09-05
