@@ -44,7 +44,7 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 - **Issues:** Same as planned.
 - **Root Causes:** Same as planned.
 - **Fixes:** Menu drawer: featured 2×2 Simulation tiles, icon tiles on rows, verified kbd hints (F/P/Ctrl+S/Ctrl+O/?), section accent bars, Observe·Nudge·Remember subtitle, Space/Esc/W footnote, custom scrollbar; god taps paint expand+flash+sparkle+ripple in per-power colors (unknown tools ignored); first-birth + named/elder-death toasts (25s throttle). No data-action/id/handler changed.
-- **Verification:** Before/after screenshots reviewed; lint clean; tests green (190/0, 60/0, e2e 1/0, save + migration); ripple guards unit-checked (unknown/non-finite ignored); smoke:menus 34/34; proof:release GREEN. Shipped f5f7681; production results below.
+- **Verification:** Before/after screenshots reviewed; lint clean; tests green (190/0, 60/0, e2e 1/0, save + migration); ripple guards unit-checked (unknown/non-finite ignored); smoke:menus 34/34; proof:release GREEN. Shipped f5f7681 (index-CMN3aFP7.js live); smoke:production green all viewports; vitals green on retry (FCP 352–380ms, LCP 456–532ms, CLS ≤0.0011, long tasks ≤128ms). Note: first vitals attempt flaked desktop long tasks at 759ms vs the 350ms budget minutes after deploy while the box was still warm from the browser smoke; isolated retry passed at 128ms — no code path in this change blocks load (CSS-only menu + idle subscriptions), recorded as noise.
 
 ### 2026-09-05 — journal-reconciliation-menu-proof-alignment — Planned
 
