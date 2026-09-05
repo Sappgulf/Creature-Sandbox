@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-05 — inspector-hierarchy-cleanup — Planned
+
+- **Date:** 2026-09-05
+- **Scope:** ui | render
+- **Type:** Planned
+- **Issues:** Inspector was a full-height wall of equal-weight rows; vitals buried as text; zero rows (0 kills, Unknown parents) shouted as loud as data; lineage pulse list unbounded; section titles flat.
+- **Root Causes:** Rows appended feature-by-feature with one shared style; no visual priority, no empty-state dimming, no list cap.
+- **Fixes:** Planned vitals bars, dimmed empties, scroll cap, accented sections — markup-compatible, no logic changes.
+- **Verification:** Planned: screenshots, lint, tests, smoke:menus, proof:release, push, Vercel + production smokes.
+
+### 2026-09-05 — inspector-hierarchy-cleanup — Implemented
+
+- **Date:** 2026-09-05
+- **Scope:** ui | render
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Energy/Health vitals bar block atop Stats tab (same values, same update cadence via existing signature); zero/empty rows dimmed (food/kills/damage/parent/children/births); lineage pulse capped at 220px scroll; section titles gain the menu accent bar. Objective rail reviewed and left alone (dense but legible, CLS-sensitive).
+- **Verification:** Before/after screenshots reviewed; lint clean; tests green (190/0, 60/0, e2e 1/0, save + migration); smoke:menus 34/34; proof:release GREEN. Shipped below; production results below.
+
 ### 2026-09-05 — hud-cleanup-pass — Planned
 
 - **Date:** 2026-09-05

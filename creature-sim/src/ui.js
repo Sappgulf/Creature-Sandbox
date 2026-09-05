@@ -791,22 +791,35 @@ export function renderInspector(model = {}, handlers = {}) {
             )
             .join(', ')
         : '—';
+    const births = stats?.births ?? 0;
     const familyMarkup = `
-      <div class="row"><div>Parent</div><div>${parentCell}</div></div>
-      <div class="row"><div>Children</div><div>${childMarkup}</div></div>
-      <div class="row"><div>Births</div><div>${stats?.births ?? 0}</div></div>
+      <div class="row${creature.parentId ? '' : ' dim'}"><div>Parent</div><div>${parentCell}</div></div>
+      <div class="row${childMarkup === '—' ? ' dim' : ''}"><div>Children</div><div>${childMarkup}</div></div>
+      <div class="row${births ? '' : ' dim'}"><div>Births</div><div>${births}</div></div>
     `;
+    const energyNum = Number(creature.energy ?? 0);
+    const energyMax = Number(creature.maxEnergy ?? 100) || 100;
+    const energyPct = Math.max(0, Math.min(100, (energyNum / energyMax) * 100));
+    const healthNum = Number(creature.health ?? 0);
+    const healthMax = Number(creature.maxHealth ?? creature.health ?? 0) || 1;
+    const healthPct = Math.max(0, Math.min(100, (healthNum / healthMax) * 100));
+    const foodEaten = stats?.food ?? 0;
+    const kills = stats?.kills ?? 0;
+    const dmgDealt = stats?.damageDealt ?? 0;
+    const dmgTaken = stats?.damageTaken ?? 0;
     const statsMarkup = `
+      <div class="vitals">
+        <div class="vital energy"><span>Energy</span><div class="vital-bar"><i style="width:${energyPct.toFixed(0)}%"></i></div><b>${creature.energy.toFixed(1)}</b></div>
+        <div class="vital health"><span>Health</span><div class="vital-bar"><i style="width:${healthPct.toFixed(0)}%"></i></div><b>${creature.health.toFixed(1)} / ${creature.maxHealth.toFixed(0)}</b></div>
+      </div>
       <div class="row"><div>ID</div><div>#${escapeHtml(creature.id)}${creature.alive ? '' : ' †'}${mutationBadge}</div></div>
       <div class="row"><div>Sex</div><div>${sexEmoji} ${sexLabel}</div></div>
       <div class="row"><div>Type</div><div><span class="tag">${creature.genes.predator ? 'Predator' : 'Herbivore'}</span></div></div>
       <div class="row"><div>Age</div><div>${creature.age.toFixed(1)}s</div></div>
-      <div class="row"><div>Energy</div><div>${creature.energy.toFixed(1)}</div></div>
-      <div class="row"><div>Health</div><div>${creature.health.toFixed(1)} / ${creature.maxHealth.toFixed(0)}</div></div>
       ${creature.disorders && creature.disorders.length > 0 ? `<div class="row"><div>Disorders</div><div style="color:#ff6b6b;">${escapeHtml(disorderLabels)}</div></div>` : ''}
-      <div class="row"><div>Food eaten</div><div>${stats?.food ?? 0}</div></div>
-      <div class="row"><div>Kills</div><div>${stats?.kills ?? 0}</div></div>
-      <div class="row"><div>Damage</div><div>${(stats?.damageDealt ?? 0).toFixed(1)} / ${(stats?.damageTaken ?? 0).toFixed(1)}</div></div>
+      <div class="row${foodEaten ? '' : ' dim'}"><div>Food eaten</div><div>${foodEaten}</div></div>
+      <div class="row${kills ? '' : ' dim'}"><div>Kills</div><div>${kills}</div></div>
+      <div class="row${dmgDealt || dmgTaken ? '' : ' dim'}"><div>Damage</div><div>${dmgDealt.toFixed(1)} / ${dmgTaken.toFixed(1)}</div></div>
     `;
     const genesMarkup = `
       <div class="row"><div>Speed</div><div>${creature.genes.speed.toFixed(2)}</div></div>

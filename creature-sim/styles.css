@@ -1895,7 +1895,54 @@ select:focus-visible,
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   margin-bottom: var(--space-sm);
+  border-left: 3px solid var(--accent-primary);
+  padding-left: 8px;
+}
+#inspector .row.dim {
+  opacity: 0.5;
+}
+#inspector .vitals {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  border: 1px solid rgba(151, 218, 255, 0.14);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, rgba(57, 213, 255, 0.06), rgba(57, 213, 255, 0.015));
+}
+#inspector .vital {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+#inspector .vital > b {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
+#inspector .vital-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+#inspector .vital-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #34d399, #a7f3d0);
+}
+#inspector .vital.health .vital-bar > i {
+  background: linear-gradient(90deg, #f87171, #fca5a5);
+}
+#lineage-top-families {
+  max-height: 220px;
+  overflow-y: auto;
 }
 #inspector .row {
   display: grid;
