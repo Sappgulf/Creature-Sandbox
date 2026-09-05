@@ -336,7 +336,11 @@ function markInspected() {
   }
 }
 
-export function renderSelectedInfo(el, creature, { world = null, lineageTracker = null, inspectorOpen = false } = {}) {
+export function renderSelectedInfo(
+  el,
+  creature,
+  { world = null, lineageTracker = null, inspectorOpen = false, threat = null } = {}
+) {
   if (!el) return;
   const isMobile = typeof window !== 'undefined' && (window.matchMedia?.('(max-width: 768px)').matches ?? false);
   const useInspectorChip = !isMobile && !!inspectorOpen;
@@ -406,6 +410,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
   }
 
   const statusClass = creature.alive ? 'alive' : 'dead';
+  const threatBadge = threat ? ' <span class="status threatened">⚠ Hunted</span>' : '';
   const sexEmoji = creature.sex === 'male' ? ' ♂️' : ' ♀️';
   const disorderEmojis = (creature.disorders || [])
     .map(d => {
@@ -574,7 +579,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
       `
       <div class="headline">
         <span>${headline}</span>
-        <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>
+        <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>${threatBadge}
       </div>
       <div class="subline">${lifeStage.icon} ${lifeStage.label} · ${emotion.icon} ${emotion.label} · ${readableState}</div>
       <div class="state-tags">
@@ -594,7 +599,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
       `
       <div class="headline">
         <span>${headline}</span>
-        <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>
+        <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>${threatBadge}
       </div>
       <div class="subline">${sublineParts.join(' · ')}</div>
       ${nameSuggestion ? `<div class="muted tiny">${nameSuggestion}</div>` : ''}
@@ -622,7 +627,7 @@ export function renderSelectedInfo(el, creature, { world = null, lineageTracker 
     `
     <div class="headline">
       <span>${headline}</span>
-      <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>
+      <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>${threatBadge}
     </div>
     <div class="subline">${sublineParts.join(' · ')}</div>
     ${nameSuggestion ? `<div class="muted tiny">${nameSuggestion}</div>` : ''}

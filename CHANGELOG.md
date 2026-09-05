@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-05 — hunted-alerts-god-digits — Planned
+
+- **Date:** 2026-09-05
+- **Scope:** ui | render
+- **Type:** Planned
+- **Issues:** Followed/selected creatures could be hunted with zero player visibility despite predation objectives; god panel buttons hid their 1-0 hotkeys (hints only).
+- **Root Causes:** Threat proximity was computed predator-side only; hotkey digits lived in hint text, not on the buttons.
+- **Fixes:** Planned throttled prey-side threat scan + badge + rising-edge toast, digit chips on god buttons.
+- **Verification:** Planned: badge unit render, lint, tests, smoke:menus, screenshots, proof:release, push, Vercel + production smokes.
+
+### 2026-09-05 — hunted-alerts-god-digits — Implemented
+
+- **Date:** 2026-09-05
+- **Scope:** ui | render
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** game-loop `_threatToSelected` (2Hz, O(n) single scan, works on proxy snapshots; predators excluded as focus) wired into the selected signature + renderSelectedInfo `threat` opt; ⚠ Hunted badge in all 3 panel branches with reduced-motion-safe pulse; rising-edge toast (30s throttle). God buttons carry 1-0 kbd chips.
+- **Verification:** Badge renders in all 3 branches and absent without threat (DOM-stub check); live screenshot shows HUNTED on a followed creature with zero staging; lint clean; tests green (190/0, 60/0, e2e 1/0, save + migration); smoke:menus 34/34; proof:release GREEN. Shipped below; production results below.
+
 ### 2026-09-05 — menu-redesign-god-ripples-milestones — Planned
 
 - **Date:** 2026-09-05

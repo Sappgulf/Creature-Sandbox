@@ -516,6 +516,25 @@ input[type='range']:focus-visible {
   color: var(--accent-danger);
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
+#selected-info .headline .status.threatened {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ff8a8a;
+  border: 1px solid rgba(239, 68, 68, 0.45);
+}
+@media (prefers-reduced-motion: no-preference) {
+  #selected-info .headline .status.threatened {
+    animation: threat-pulse 1.6s ease-in-out infinite;
+  }
+}
+@keyframes threat-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
 #selected-info .metrics {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -838,12 +857,32 @@ input[type='range']:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  position: relative;
   transition:
     background-color var(--transition-fast),
     color var(--transition-fast),
     border-color var(--transition-fast),
     box-shadow var(--transition-fast),
     transform var(--transition-fast);
+}
+.god-kbd {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 0 4px;
+  line-height: 1.5;
+  pointer-events: none;
+}
+.god-mode-tools button.active .god-kbd {
+  color: #d8b4fe;
+  border-color: rgba(168, 85, 247, 0.45);
 }
 .god-mode-tools button.active {
   border-color: rgba(168, 85, 247, 0.55);

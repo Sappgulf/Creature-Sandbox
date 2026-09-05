@@ -106,6 +106,7 @@ export class GameLoop {
       tinyWinTypes: new Set(),
       lastThrowToastAt: 0,
       lastMilestoneToastAt: 0,
+      lastThreatToastAt: 0,
       firstBirthToastShown: false
     };
 
@@ -1238,6 +1239,42 @@ export class GameLoop {
   }
 
   /**
+   * Nearest live predator threatening the focused creature, if any.
+   * Throttled to 2Hz and O(n) over a single radius scan — cheap enough to
+   * run for one creature per UI tick in both runtimes (proxy snapshots
+   * carry predator genes + positions). Returns {id, name} or null.
+   */
+  _threatToSelected(focusCreature) {
+    const now = performance.now();
+    const cached = this._threatCache;
+    if (cached && now - cached.at < 500 && cached.id === focusCreature?.id) return cached.result;
+    let result = null;
+    if (
+      focusCreature?.alive &&
+      !focusCreature.genes?.predator &&
+      Number.isFinite(focusCreature.x) &&
+      Number.isFinite(focusCreature.y)
+    ) {
+      const list = this.world.creatures || [];
+      const R2 = 230 * 230;
+      for (let i = 0; i < list.length; i++) {
+        const c = list[i];
+        if (!c || c.id === focusCreature.id || c.alive === false) continue;
+        if (!c.genes?.predator) continue;
+        const dx = c.x - focusCreature.x;
+        const dy = c.y - focusCreature.y;
+        if (!Number.isFinite(dx) || !Number.isFinite(dy)) continue;
+        if (dx * dx + dy * dy <= R2) {
+          result = { id: c.id, name: c.name || null };
+          break;
+        }
+      }
+    }
+    this._threatCache = { at: now, id: focusCreature?.id ?? null, result };
+    return result;
+  }
+
+  /**
    * Update stats UI
    * OPTIMIZED: Uses static imports instead of dynamic import() to avoid latency spikes
    */
@@ -1247,6 +1284,18 @@ export class GameLoop {
     const interactionHintEl = domCache.get('interactionHint');
     const focusId = gameState.pinnedId ?? gameState.selectedId ?? null;
     const focusCreature = focusId ? this.world.getAnyCreatureById(focusId) : null;
+    const threat = this._threatToSelected(focusCreature);
+    if (threat && focusCreature && this._lastThreatId !== focusCreature.id) {
+      const nowThreat = performance.now();
+      if (this.hasNotifications?.() && nowThreat - (this.curiosityState.lastThreatToastAt || 0) > 30000) {
+        const label = focusCreature.name || `Creature #${focusCreature.id}`;
+        this.notifications.show(`${label} is being hunted!`, 'warning', 2600);
+        this.curiosityState.lastThreatToastAt = nowThreat;
+      }
+      this._lastThreatId = focusCreature.id;
+    } else if (!threat) {
+      this._lastThreatId = null;
+    }
     const statsSignature = [
       this.world.creatures.length,
       this.world.food.length,
@@ -1265,6 +1314,7 @@ export class GameLoop {
       ? [
           focusCreature.id,
           focusCreature.alive ? 1 : 0,
+          threat ? threat.id : '',
           focusCreature.lifeStage || '',
           focusCreature.age?.toFixed?.(1) ?? 0,
           focusCreature.energy?.toFixed?.(1) ?? 0,
@@ -1303,7 +1353,8 @@ export class GameLoop {
       renderSelectedInfo(selectedInfoEl, focusCreature, {
         world: this.world,
         lineageTracker: this.world.lineageTracker,
-        inspectorOpen: gameState.inspectorVisible
+        inspectorOpen: gameState.inspectorVisible,
+        threat: threat ? threat.id : null
       });
       this._selectedInfoSignature = selectedSignature;
     }
