@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-05 — journal-reconciliation-menu-proof-alignment — Planned
+
+- **Date:** 2026-09-05
+- **Scope:** ui | devops
+- **Type:** Planned
+- **Issues:** Parallel upstream commits (5ced5fa worker verbs, bcd62a1 journal routing) rerouted Campaign/Achievements menu items to the Field Journal (data-action="upgrades"), breaking two menu-proof expectations; this turn's subagent reports described stale-tree state and their writes never landed (verified absent via grep battery); menu active-state sync tied campaign/achievements to the upgrade panel.
+- **Root Causes:** Concurrent development on the same menu surface without a sync point; proof expectations pinned to pre-journal routing.
+- **Fixes:** Planned ground-truth grep battery, journal-aligned proof expectations, sync fix, verification, ship.
+- **Verification:** Planned: lint, full tests, smoke:menus 34/34, proof:release, push, Vercel + production smokes.
+
+### 2026-09-05 — journal-reconciliation-menu-proof-alignment — Implemented
+
+- **Date:** 2026-09-05
+- **Scope:** ui | devops
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned. Upstream already covered worker prop transport (ADD_PROP), god registry consolidation with digits, brush previews, announcer types, throttle table, and shortcuts rows — verified present on disk, not re-implemented.
+- **Fixes:** control-strip.js syncMenuState tracks campaign/achievements panels individually; menu-interaction-proof.mjs clicks #menu-campaign/#menu-achievements by id and expects the journal, plus FULLERR diagnostics mode and the waitForSelector-visible lesson encoded as classList assertions.
+- **Verification:** lint clean; tests green (190/0, 60/0, e2e 1/0, save + migration); smoke:menus 34/34 PASS, zero page errors. proof:release + push + production results below.
+
 ### 2026-09-03 — field-guide-sprites-habitat — Planned
 
 - **Date:** 2026-09-03

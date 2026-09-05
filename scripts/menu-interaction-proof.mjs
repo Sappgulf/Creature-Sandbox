@@ -35,7 +35,10 @@ async function step(name, fn) {
     await fn();
     results.push(`PASS: ${name}`);
   } catch (e) {
-    results.push(`FAIL: ${name} — ${e.message.split('\n')[0]}`);
+    const detail = process.env.FULLERR
+      ? ` — ${String(e.message).split('\n').slice(0, 14).join(' | ')}`
+      : ` — ${e.message.split('\n')[0]}`;
+    results.push(`FAIL: ${name}${detail}`);
   }
 }
 
@@ -184,24 +187,27 @@ try {
   });
 
   const PANELS = [
-    ['upgrades', '#upgrade-panel'],
-    ['scenario', '#scenario-panel'],
-    ['gene-editor', '#gene-editor-panel'],
-    ['achievements', '#achievements-panel'],
-    ['sound', '#sound-panel'],
-    ['eco-health', '#eco-health-panel'],
-    ['features', '#features-panel'],
-    ['mode', '#session-meta'],
-    ['help', '#shortcuts-overlay'],
-    ['replay', '#replay-panel'],
-    ['insights', '#insights-panel'],
-    ['lineage-album', '#lineage-album-panel'],
-    ['campaign', '#campaign-panel']
+    // [menu click selector, expected panel selector, step name]
+    // Campaign/Achievements menu items fire data-action="upgrades" (Field
+    // Journal routing, bcd62a1), so they are clicked by button id.
+    ['upgrades', '[data-action="upgrades"]', '#upgrade-panel'],
+    ['scenario', '[data-action="scenario"]', '#scenario-panel'],
+    ['gene-editor', '[data-action="gene-editor"]', '#gene-editor-panel'],
+    ['sound', '[data-action="sound"]', '#sound-panel'],
+    ['eco-health', '[data-action="eco-health"]', '#eco-health-panel'],
+    ['features', '[data-action="features"]', '#features-panel'],
+    ['mode', '[data-action="mode"]', '#session-meta'],
+    ['help', '[data-action="help"]', '#shortcuts-overlay'],
+    ['replay', '[data-action="replay"]', '#replay-panel'],
+    ['insights', '[data-action="insights"]', '#insights-panel'],
+    ['lineage-album', '[data-action="lineage-album"]', '#lineage-album-panel'],
+    ['campaign', '#menu-campaign', '#upgrade-panel'],
+    ['achievements', '#menu-achievements', '#upgrade-panel']
   ];
-  for (const [action, sel] of PANELS) {
+  for (const [action, clickSel, sel] of PANELS) {
     await step(`panel ${action} opens and Esc closes`, async () => {
       await openOverflow();
-      await page.click(`[data-action="${action}"]`);
+      await page.click(clickSel);
       await page.waitForFunction(
         s => {
           const el = document.querySelector(s);
