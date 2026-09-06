@@ -83,6 +83,7 @@ export function applyInputTouchMethods(InputManager) {
         if (isDrag) {
           const food = this.world.addFood?.(x, y, 2.2, 'grass');
           if (food) this.tools?.recordGodFood?.([food]);
+          this.tools?.playToolJuice?.(x, y, 'food');
         } else {
           if (this.tools?.scatterFood) this.tools.scatterFood(x, y, 12);
           else {

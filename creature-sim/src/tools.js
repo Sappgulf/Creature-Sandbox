@@ -46,6 +46,34 @@ export class ToolController {
     this._propPickerEl = null;
     this._propPickerCards = new Map();
     this._propPickerKeyHandler = null;
+
+    this._onGodJuice = payload => {
+      const action = payload?.action;
+      if (!action || action === 'food') return;
+      this.playToolJuice(payload.x, payload.y, action);
+    };
+    eventSystem.on(GameEvents.GOD_MODE_ACTION, this._onGodJuice);
+  }
+
+  playToolJuice(x, y, kind = 'food') {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    const particles = this.world?.particles;
+    if (!particles) return;
+    const palette = {
+      food: { color: 'rgba(74, 222, 128, 1)', size: 12, sparks: 8 },
+      calm: { color: 'rgba(120, 210, 255, 1)', size: 16, sparks: 8 },
+      chaos: { color: 'rgba(200, 120, 255, 1)', size: 18, sparks: 10 },
+      bless: { color: 'rgba(255, 220, 120, 1)', size: 14, sparks: 10 },
+      curse: { color: 'rgba(255, 90, 90, 1)', size: 14, sparks: 8 },
+      attract: { color: 'rgba(120, 170, 255, 1)', size: 14, sparks: 8 },
+      repel: { color: 'rgba(180, 180, 190, 1)', size: 14, sparks: 8 },
+      spawn: { color: 'rgba(57, 213, 255, 1)', size: 10, sparks: 8 },
+      prop: { color: 'rgba(180, 140, 255, 1)', size: 12, sparks: 6 },
+      remove: { color: 'rgba(255, 120, 120, 1)', size: 10, sparks: 5 }
+    };
+    const spec = palette[kind] || palette.food;
+    if (typeof particles.addNudgeBurst === 'function') particles.addNudgeBurst(x, y, spec);
+    else particles.addImpactRing?.(x, y, spec);
   }
 
   setMode(mode) {
@@ -474,10 +502,12 @@ export class ToolController {
 
   scatterFood(x, y, amount = 10) {
     const addedFood = [];
+    let attempted = 0;
     for (let i = 0; i < amount; i++) {
       const fx = x + (Math.random() - 0.5) * this.brushSize;
       const fy = y + (Math.random() - 0.5) * this.brushSize;
       const food = this.world.addFood(fx, fy, 1.2);
+      attempted += 1;
       if (food) {
         addedFood.push(food);
       }
@@ -488,8 +518,13 @@ export class ToolController {
         type: ActionType.ADD_FOOD,
         food: addedFood
       });
+    }
+    // Worker addFood is fire-and-forget (returns null). Still play the drop
+    // so the shipping runtime feels the same as main-thread.
+    if (attempted > 0) {
       this._reactToFoodDrop(x, y);
-      eventSystem.emit(GameEvents.FOOD_DROP, { count: addedFood.length, x, y });
+      this.playToolJuice(x, y, 'food');
+      eventSystem.emit(GameEvents.FOOD_DROP, { count: addedFood.length || attempted, x, y });
     }
   }
 
@@ -663,6 +698,7 @@ export class ToolController {
       x,
       y
     });
+    this.playToolJuice(x, y, 'spawn');
   }
 
   _resolveSpawnedCreatureId(action) {

@@ -197,6 +197,15 @@ export class SimulationProxy {
 
     this.addFood = (x, y, r, type) => {
       this._send('ADD_FOOD', { x, y, r, type });
+      if (Number.isFinite(x) && Number.isFinite(y) && Array.isArray(this.worldSnapshot.food)) {
+        this.worldSnapshot.food.push({
+          id: null,
+          x,
+          y,
+          r: Number.isFinite(r) ? r : 1.2,
+          type: type || 'grass'
+        });
+      }
       return null;
     };
 

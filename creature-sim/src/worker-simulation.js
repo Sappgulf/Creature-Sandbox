@@ -552,11 +552,14 @@ function step(dt) {
 function compactFoodPatches(world) {
   const patches = world?.ecosystem?.foodPatches;
   if (!Array.isArray(patches) || !patches.length) return [];
+  const ranked = patches
+    .filter(Boolean)
+    .slice()
+    .sort((a, b) => Number(b.pressure || 0) - Number(a.pressure || 0));
   const out = [];
-  const max = Math.min(patches.length, 24);
+  const max = Math.min(ranked.length, 24);
   for (let i = 0; i < max; i++) {
-    const p = patches[i];
-    if (!p) continue;
+    const p = ranked[i];
     out.push({
       x: p.x,
       y: p.y,
@@ -566,6 +569,19 @@ function compactFoodPatches(world) {
       pressure: p.pressure,
       fertility: p.fertility
     });
+  }
+  return out;
+}
+
+function compactCalmZones(world) {
+  const zones = world?.environment?.calmZones;
+  if (!Array.isArray(zones) || !zones.length) return [];
+  const out = [];
+  const max = Math.min(zones.length, 12);
+  for (let i = 0; i < max; i++) {
+    const z = zones[i];
+    if (!z || !Number.isFinite(z.x) || !Number.isFinite(z.y)) continue;
+    out.push({ x: z.x, y: z.y, radius: z.radius, t: z.t, strength: z.strength });
   }
   return out;
 }
@@ -648,7 +664,8 @@ function sendSnapshot() {
       weatherIntensity: world.environment.weatherIntensity,
       weatherType: world.environment.weatherType,
       moodState: world.environment.moodState,
-      timeOfDay: world.environment.timeOfDay
+      timeOfDay: world.environment.timeOfDay,
+      calmZones: compactCalmZones(world)
     },
     activeDisaster: world.getActiveDisaster ? world.getActiveDisaster() : null,
     pendingDisasters: world.getPendingDisasters ? world.getPendingDisasters().map(item => ({ ...item })) : []

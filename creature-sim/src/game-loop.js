@@ -834,11 +834,18 @@ export class GameLoop {
         this.camera.targetX += (target.x - this.camera.targetX) * smoothing;
         this.camera.targetY += (target.y - this.camera.targetY) * smoothing;
 
-        // Optional auto-zoom based on creature speed
+        // Ease toward a readable creature-focus zoom. Speed still pulls out a
+        // little so fast hunters don't fill the frame, but we never sit below
+        // ~1.15x while following — the Field Guide silhouette needs to read.
         if (this.camera.followZoomAdjust) {
-          const speed = Math.min(2, Math.max(0.55, Number(target.genes.speed) || 1));
-          const desiredZoom = Math.min(this.camera.maxZoom, Math.max(this.camera.minZoom, 1 / speed));
-          this.camera.targetZoom += (desiredZoom - this.camera.targetZoom) * Math.min(0.2, smoothing * 0.7);
+          const speed = Math.min(2, Math.max(0.55, Number(target.genes?.speed) || 1));
+          const readable = 1.25;
+          const speedZoom = 1 / speed;
+          const desiredZoom = Math.min(
+            this.camera.maxZoom,
+            Math.max(this.camera.minZoom, Math.max(readable, speedZoom * 0.85 + readable * 0.15))
+          );
+          this.camera.targetZoom += (desiredZoom - this.camera.targetZoom) * Math.min(0.18, smoothing * 0.65);
         }
       } else {
         // Target died or lost, return to free mode
@@ -1249,14 +1256,19 @@ export class GameLoop {
     const cached = this._threatCache;
     if (cached && now - cached.at < 500 && cached.id === focusCreature?.id) return cached.result;
     let result = null;
+    const worldTime = Number(this.world?.time ?? this.world?.simTime ?? 0);
+    // Opener herds sit inside 230px of a predator on frame 0 — that is habitat
+    // pressure, not a hunt. Wait for the sim to settle, then require a real
+    // hunt goal or a locked prey id inside a tighter radius.
     if (
+      worldTime >= 8 &&
       focusCreature?.alive &&
       !focusCreature.genes?.predator &&
       Number.isFinite(focusCreature.x) &&
       Number.isFinite(focusCreature.y)
     ) {
       const list = this.world.creatures || [];
-      const R2 = 230 * 230;
+      const R2 = 140 * 140;
       for (let i = 0; i < list.length; i++) {
         const c = list[i];
         if (!c || c.id === focusCreature.id || c.alive === false) continue;
@@ -1264,10 +1276,16 @@ export class GameLoop {
         const dx = c.x - focusCreature.x;
         const dy = c.y - focusCreature.y;
         if (!Number.isFinite(dx) || !Number.isFinite(dy)) continue;
-        if (dx * dx + dy * dy <= R2) {
-          result = { id: c.id, name: c.name || null };
-          break;
-        }
+        if (dx * dx + dy * dy > R2) continue;
+        const goal = String(c.goal?.current || c.currentGoal || c.state || '').toLowerCase();
+        const hunting =
+          goal.includes('hunt') ||
+          c.targetId === focusCreature.id ||
+          c.preyId === focusCreature.id ||
+          c.huntTargetId === focusCreature.id;
+        if (!hunting) continue;
+        result = { id: c.id, name: c.name || null };
+        break;
       }
     }
     this._threatCache = { at: now, id: focusCreature?.id ?? null, result };

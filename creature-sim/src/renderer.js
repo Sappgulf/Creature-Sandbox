@@ -274,10 +274,7 @@ export class Renderer {
 
     // Calm zones (subtle, ambient)
     this.drawCalmZones(world, opts);
-
-    if (opts.godModeActive || this.camera.zoom < 0.72) {
-      this.drawFoodPatches(world, { ambient: !opts.godModeActive });
-    }
+    this.drawFoodPatches(world, { ambient: !opts.godModeActive });
 
     if (this.enableNests) {
       this.drawNests(world);
@@ -706,13 +703,18 @@ export class Renderer {
     const zones = world.environment?.calmZones;
     if (!zones || zones.length === 0) return;
     const ctx = this.ctx;
+    const t = Number(world.t || 0);
     ctx.save();
-    ctx.strokeStyle = 'rgba(160, 240, 220, 0.25)';
-    ctx.fillStyle = 'rgba(120, 220, 200, 0.08)';
-    ctx.lineWidth = 2;
     for (const zone of zones) {
+      if (!Number.isFinite(zone.x) || !Number.isFinite(zone.y)) continue;
+      const pulse = 0.85 + Math.sin(t * 2.2 + (zone.id || 0)) * 0.08;
+      const radius = (zone.radius || 80) * pulse;
+      const strength = Number(zone.strength ?? 0.6);
+      ctx.fillStyle = `rgba(120, 220, 200, ${0.08 + strength * 0.08})`;
+      ctx.strokeStyle = `rgba(160, 240, 220, ${0.28 + strength * 0.18})`;
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(zone.x, zone.y, zone.radius, 0, Math.PI * 2);
+      ctx.arc(zone.x, zone.y, radius, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
     }
@@ -730,20 +732,25 @@ export class Renderer {
       if (!Number.isFinite(patch.x) || !Number.isFinite(patch.y)) continue;
       const stockRatio = clamp((patch.stock ?? 0) / Math.max(1, patch.maxStock ?? 1), 0, 1);
       const pressure = clamp(Number(patch.pressure ?? 0), 0, 1);
-      const stressed = pressure > 0.45;
-      ctx.globalAlpha = ambient ? 0.5 + Math.max(stockRatio, pressure) * 0.5 : 1;
+      const stressed = pressure > 0.32 || stockRatio < 0.28;
+      if (!stressed && ambient && this.camera.zoom >= 0.85) continue;
+      ctx.globalAlpha = stressed ? 0.9 : ambient ? 0.35 : 0.7;
       ctx.fillStyle = stressed
-        ? `rgba(220, 90, 70, ${0.05 + pressure * 0.1})`
-        : `rgba(108, 214, 122, ${0.05 + stockRatio * 0.1})`;
-      ctx.strokeStyle = stressed
-        ? 'rgba(255, 150, 120, 0.32)'
-        : ambient
-          ? 'rgba(175, 245, 160, 0.2)'
-          : 'rgba(140, 255, 180, 0.32)';
+        ? `rgba(241, 140, 70, ${0.06 + pressure * 0.1})`
+        : `rgba(108, 214, 122, ${0.03 + stockRatio * 0.05})`;
+      ctx.strokeStyle = stressed ? 'rgba(255, 176, 110, 0.38)' : 'rgba(140, 255, 180, 0.14)';
       ctx.beginPath();
-      ctx.arc(patch.x, patch.y, (patch.radius || 80) * 0.85, 0, Math.PI * 2);
+      ctx.arc(patch.x, patch.y, (patch.radius || 80) * (stressed ? 0.82 : 0.7), 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+      if (stressed) {
+        ctx.strokeStyle = 'rgba(255, 210, 140, 0.26)';
+        ctx.setLineDash([6, 10]);
+        ctx.beginPath();
+        ctx.arc(patch.x, patch.y, (patch.radius || 80) * 0.58, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
     }
     ctx.setLineDash([]);
     ctx.restore();
@@ -753,14 +760,35 @@ export class Renderer {
     const regions = world.regions;
     if (!Array.isArray(regions) || regions.length === 0) return;
     const ctx = this.ctx;
+    const t = Number(world.t || 0);
     ctx.save();
     for (const region of regions) {
-      const pressure = Number(region?.pressure ?? 0);
-      if (!Number.isFinite(region?.x) || !Number.isFinite(region?.y) || pressure < 0.22) continue;
-      ctx.fillStyle = `rgba(220, 80, 70, ${0.035 + pressure * 0.09})`;
-      ctx.beginPath();
-      ctx.arc(region.x, region.y, (region.size || 220) * 0.4, 0, Math.PI * 2);
-      ctx.fill();
+      if (!Number.isFinite(region?.x) || !Number.isFinite(region?.y)) continue;
+      const pressure = clamp(Number(region.pressure ?? 0), 0, 1);
+      const foodRatio = clamp(Number(region.foodRatio ?? 0.5), 0, 1);
+      const stress = clamp(Number(region.stressAvg ?? 0) / 100, 0, 1);
+      const hungry = 1 - foodRatio;
+      const crowd = Math.max(pressure, stress * 0.7);
+      const populated = Number(region.population || 0) > 0;
+      if (!populated) continue;
+      if (crowd < 0.12 && hungry < 0.55) continue;
+      const radius = (region.size || 220) * (0.38 + crowd * 0.08);
+      if (hungry >= 0.55) {
+        const pulse = 0.9 + Math.sin(t * 1.6 + region.x * 0.01) * 0.08;
+        ctx.fillStyle = `rgba(241, 180, 80, ${0.045 + hungry * 0.1})`;
+        ctx.strokeStyle = `rgba(255, 196, 110, ${0.16 + hungry * 0.18})`;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(region.x, region.y, radius * pulse, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+      if (crowd >= 0.12) {
+        ctx.fillStyle = `rgba(220, 80, 70, ${0.05 + crowd * 0.12})`;
+        ctx.beginPath();
+        ctx.arc(region.x, region.y, radius * 0.82, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
     ctx.restore();
   }
@@ -811,13 +839,15 @@ export class Renderer {
       stroke = 'rgba(170, 170, 180, 0.44)';
     }
 
+    const nowMs = Number(opts.nowMs || 0);
+    const pulse = 1 + Math.sin(nowMs * 0.006) * 0.06;
     ctx.save();
     ctx.fillStyle = color;
     ctx.strokeStyle = stroke;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.8;
     ctx.setLineDash([10, 8]);
     ctx.beginPath();
-    ctx.arc(pointer.x, pointer.y, radius, 0, Math.PI * 2);
+    ctx.arc(pointer.x, pointer.y, radius * pulse, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     ctx.restore();
@@ -1342,8 +1372,8 @@ export class Renderer {
         continue;
       }
 
-      const glowSize = 3 + pulse * 2;
-      const glowAlpha = 0.2 + pulse * 0.15;
+      const glowSize = 4 + pulse * 2.4;
+      const glowAlpha = 0.28 + pulse * 0.18;
 
       ctx.save();
       ctx.shadowBlur = glowSize;

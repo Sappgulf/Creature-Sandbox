@@ -3,6 +3,10 @@ import { clamp } from './utils.js';
 // Debug flag for camera movement logging
 const DEBUG_CAMERA = false;
 
+/** Extra world pixels the camera may pan past the map edge. Keep small so
+ *  border creatures stay mostly on-screen after aggressive pans. */
+export const WORLD_EDGE_MARGIN = 16;
+
 /**
  * Simple 2D camera with smooth pan/zoom controls.
  * Includes ownership model to prevent unwanted automatic movement.
@@ -38,7 +42,7 @@ export class Camera {
     this.followMode = 'free'; // 'free', 'follow', 'smooth-follow'
     this.followTarget = null; // creature ID
     this.followSmoothing = 0.12; // smoother than normal pan
-    this.followZoomAdjust = false; // keep follow framing stable unless explicitly enabled
+    this.followZoomAdjust = true; // ease toward a readable silhouette while following
 
     // Camera ownership model - prevents unwanted automatic movement
     this.userPermanentOverride = false; // User has taken control, no auto until re-enabled
@@ -248,7 +252,7 @@ export class Camera {
   _clampTargets() {
     if (!Number.isFinite(this.worldWidth) || !Number.isFinite(this.worldHeight)) return;
     this._ensureFiniteState();
-    const margin = 80;
+    const margin = WORLD_EDGE_MARGIN;
     const hw = this.viewportWidth / 2 / this.targetZoom;
     const hh = this.viewportHeight / 2 / this.targetZoom;
     const minX = -margin + hw;
@@ -262,7 +266,7 @@ export class Camera {
   _clampPosition() {
     if (!Number.isFinite(this.worldWidth) || !Number.isFinite(this.worldHeight)) return;
     this._ensureFiniteState();
-    const margin = 80;
+    const margin = WORLD_EDGE_MARGIN;
     const hw = this.viewportWidth / 2 / this.zoom;
     const hh = this.viewportHeight / 2 / this.zoom;
     const minX = -margin + hw;
@@ -274,7 +278,7 @@ export class Camera {
   }
 
   _limits(zoom = this.zoom) {
-    const margin = 80;
+    const margin = WORLD_EDGE_MARGIN;
     const hw = this.viewportWidth / 2 / zoom;
     const hh = this.viewportHeight / 2 / zoom;
     return {

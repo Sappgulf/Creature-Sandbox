@@ -250,6 +250,8 @@ export class UnlockableAchievements {
    * Update achievement progress
    */
   update(world, _systems = {}) {
+    const silentBootstrap = !this._bootstrapped;
+    this._bootstrapped = true;
     for (const achievement of this.achievements) {
       if (this.unlockedAchievements.has(achievement.id)) continue;
 
@@ -265,13 +267,13 @@ export class UnlockableAchievements {
         if (conditionMet) {
           this.progress[achievement.id] += 1 / 60; // Assume 60 FPS
           if (this.progress[achievement.id] >= achievement.duration) {
-            this.unlockAchievement(achievement, world);
+            this.unlockAchievement(achievement, world, { silent: silentBootstrap });
           }
         } else {
           this.progress[achievement.id] = 0;
         }
       } else if (conditionMet) {
-        this.unlockAchievement(achievement, world);
+        this.unlockAchievement(achievement, world, { silent: silentBootstrap });
       }
     }
   }
@@ -279,7 +281,7 @@ export class UnlockableAchievements {
   /**
    * Unlock an achievement and apply rewards
    */
-  unlockAchievement(achievement, world) {
+  unlockAchievement(achievement, world, { silent = false } = {}) {
     this.unlockedAchievements.add(achievement.id);
 
     console.debug(`🏆 Achievement Unlocked: ${achievement.name}`);
@@ -292,8 +294,12 @@ export class UnlockableAchievements {
       console.debug(`   🎁 Unlocked: ${achievement.reward.type} - ${achievement.reward.value}`);
     }
 
+    // Seeded openers already satisfy pop_25 / pop_50. Grant the reward
+    // without a toast burst on the first frame.
+    if (silent) return;
+
     // Trigger achievement notification
-    if (world.notificationSystem) {
+    if (world?.notificationSystem) {
       world.notificationSystem.show(
         `🏆 ${achievement.name}`,
         `${achievement.description}\n+${achievement.points} pts`,

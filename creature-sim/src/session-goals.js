@@ -110,6 +110,12 @@ const STARTER_GOAL_TYPES = new Set([
   'creature_throws'
 ]);
 
+const SNAPSHOT_GOAL_METRIC = {
+  population: 'population',
+  aquatic_alive: 'aquaticAlive',
+  predator_count: 'predators'
+};
+
 export class SessionGoals {
   constructor({ notifications = null, audio = null } = {}) {
     this.notifications = notifications;
@@ -143,6 +149,7 @@ export class SessionGoals {
   }
 
   generateGoals(count = 3, { starter = false } = {}) {
+    this._snapshotTargetsArmed = false;
     const pool = starter ? GOAL_POOL.filter(goal => STARTER_GOAL_TYPES.has(goal.type)) : GOAL_POOL;
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
     this.goals = shuffled.slice(0, count).map(def => {
@@ -202,6 +209,7 @@ export class SessionGoals {
     this.propPlacements = 0;
     this.godActions = 0;
     this._lastUpdate = 0;
+    this._snapshotTargetsArmed = false;
 
     if (refreshGoals) {
       this.generateGoals(3, { starter: true });
@@ -247,6 +255,7 @@ export class SessionGoals {
     this._lastUpdate = 0;
 
     const metrics = this._collectMetrics(world);
+    this._raiseUnreachableSnapshotTargets(metrics);
 
     let changed = false;
     for (const goal of this.goals) {
@@ -281,6 +290,21 @@ export class SessionGoals {
     }
     if (this.audio?.playUISound) {
       this.audio.playUISound('success');
+    }
+  }
+
+  _raiseUnreachableSnapshotTargets(metrics) {
+    if (this._snapshotTargetsArmed) return;
+    this._snapshotTargetsArmed = true;
+    for (const goal of this.goals) {
+      const metricKey = SNAPSHOT_GOAL_METRIC[goal.type];
+      if (!metricKey || goal.completed) continue;
+      const current = Number(metrics[metricKey] || 0);
+      if (current < goal.target) continue;
+      const bump = 10 + Math.floor(Math.random() * 12);
+      goal.target = Math.ceil(current + bump);
+      const def = GOAL_POOL.find(item => item.id === goal.id);
+      if (def?.getDescription) goal.description = def.getDescription(goal.target);
     }
   }
 

@@ -26,6 +26,86 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-06 — habitat-and-god-juice — Planned
+
+- **Date:** 2026-09-06
+- **Scope:** render | simulation | ui
+- **Type:** Planned
+- **Issues:** Habitat pressure existed in snapshots but barely painted; worker food/god taps had no local FX because addFood/applyGodPower return null; calm zones never left the worker.
+- **Root Causes:** Region fill skipped below 0.22 and ignored foodRatio; scatterFood bailed when addedFood was empty; environment snapshot omitted calmZones.
+- **Fixes:** Hunger + crowd habitat halos; always-on meadows; optimistic food ghosts; nudge bursts on god tools; calm zones on the wire.
+- **Verification:** Unit tests + playtest.
+
+### 2026-09-06 — habitat-and-god-juice — Implemented
+
+- **Date:** 2026-09-06
+- **Scope:** render | simulation | ui
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** lint clean; 64 regression tests green. Worker playtest: no page errors; habitat no longer tiles the field; god food tool shows a live brush. Screenshots in `output/playtest-upgrade/`.
+
+### 2026-09-06 — gameplay-hud-menu-upgrade — Planned
+
+- **Date:** 2026-09-06
+- **Scope:** ui | simulation | render
+- **Type:** Planned
+- **Issues:** Opener completed "Reach 77 creatures" instantly; Growing Colony / Thriving Ecosystem / ecosystem-growing toasts stacked on first paint; overflow menu clipped Tools; food/spawn had weak juice.
+- **Root Causes:** Snapshot goals compared absolute population to a 70–120 roll; unlockables toasted already-true seed conditions; first_birth fired at pop>=2; drawer-body lacked min-height:0; food/spawn had no impact ring.
+- **Fixes:** Retarget snapshot goals above current pop; silent-bootstrap unlocks; growth toast only after a real pop increase; one visible toast; scrollable taller menu; food glow + paint/spawn rings.
+- **Verification:** Unit tests + playtest screenshots.
+
+### 2026-09-06 — gameplay-hud-menu-upgrade — Implemented
+
+- **Date:** 2026-09-06
+- **Scope:** ui | simulation | render
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** lint clean; tests green (63 regression including snapshot-goal retarget). Playtest: opener goal is a hunt/prop target at 0%, no instant "Reach 77" toast, no colony burst; menu reaches Tools; no page errors.
+
+### 2026-09-06 — browser-playtest-polish — Planned
+
+- **Date:** 2026-09-06
+- **Scope:** ui | render
+- **Type:** Planned
+- **Issues:** Desktop sandbox opened with a false HUNTED badge on a 0s-old omnivore; tutorial card covered the menu; milestone toasts sat on the tutorial; mobile onboarding blocked the chrome with no Skip; Age 0.0s.
+- **Root Causes:** 230px proximity hunt with no hunt-goal check; tutorial z 10000 over drawers; toasts at top:100px; onboarding first card had Next only.
+- **Fixes:** Hunt requires sim-time + hunt goal + 140px; tutorial yields to open chrome; toasts above the strip; Skip on mobile onboarding; Newborn age copy.
+- **Verification:** Playtest screenshots + unit tests.
+
+### 2026-09-06 — browser-playtest-polish — Implemented
+
+- **Date:** 2026-09-06
+- **Scope:** ui | render
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned. Home overlay uses `--z-home` so it no longer shares the toast rung.
+- **Verification:** `npm run lint` clean; `npm test` green (62 regression including age format). Playwright playtest: no page errors; HUNTED gone on opener; Age Newborn; mobile menu reachable after Skip; tutorial yields to overflow/god. Screenshots in `output/playtest-upgrade/`.
+
+### 2026-09-06 — field-guide-upgrade-pass — Planned
+
+- **Date:** 2026-09-06
+- **Scope:** ui | render | simulation
+- **Type:** Planned
+- **Issues:** Empty inspector was a dead prompt; camera overscroll hid border creatures; overlay z-index was a pile of magic numbers; follow framing stayed too far out to read silhouettes.
+- **Root Causes:** Feature-by-feature HUD growth; 80px clamp leftover from an earlier bounds fix; no overlay token scale; follow zoom adjust defaulted off and keyed only on speed.
+- **Fixes:** Planned Field Guide next-action copy, 16px world-edge margin, `--z-*` tokens, readable follow zoom.
+- **Verification:** Planned: unit tests, lint, npm test.
+
+### 2026-09-06 — field-guide-upgrade-pass — Implemented
+
+- **Date:** 2026-09-06
+- **Scope:** ui | render | simulation
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Empty selected-info and inspector now list Observe / Influence / Preserve next actions. Camera `WORLD_EDGE_MARGIN` is 16px and shared across clamp helpers. Overlay z-index literals replaced with `--z-*` tokens. Follow mode eases toward a readable ~1.25x framing instead of sitting at map zoom.
+- **Verification:** `npm run lint` clean; `npm test` green (save, 190 core, 61 regression including camera margin + overlay tokens, reboot, presentation, scenario contract, e2e, migration). Browser smoke / proof:release not run this session.
+
 ### 2026-09-05 — inspector-hierarchy-cleanup — Planned
 
 - **Date:** 2026-09-05

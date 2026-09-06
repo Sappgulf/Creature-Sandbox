@@ -13,12 +13,13 @@ export class NotificationSystem {
     this.triggeredMilestones = new Set();
     this._lastPopulations = { herbivores: 0, predators: 0 };
     this._firstEventToasts = new Set();
+    this._milestonePrimed = false;
 
     // === NEW: Notification filtering ===
     this.showPerformanceAlerts = false;
     this.showMilestones = true;
     this.showAchievements = true;
-    this.maxVisible = 3;
+    this.maxVisible = 1;
     this.defaultDuration = 2500;
     this.renderDomToasts = false;
     this.queue = [];
@@ -87,11 +88,14 @@ export class NotificationSystem {
     }
     if (predators > 0) this.triggeredMilestones.delete('predator_extinct');
 
-    // First-event toasts
-    if (pop >= 2 && !this._firstEventToasts.has('first_birth')) {
+    // First-event toasts: only after the opener is actually growing, not
+    // because a seeded sandbox already has a herd.
+    const lastTotal = this._lastPopulations.herbivores + this._lastPopulations.predators;
+    if (this._milestonePrimed && pop >= lastTotal + 4 && !this._firstEventToasts.has('first_birth')) {
       this.addNotification({ type: 'milestone', title: '', message: 'Your ecosystem is growing!', duration: 3000 });
       this._firstEventToasts.add('first_birth');
     }
+    this._milestonePrimed = true;
 
     this._lastPopulations = { herbivores, predators };
   }
@@ -215,7 +219,7 @@ export class NotificationSystem {
       container.setAttribute('aria-live', 'polite');
       container.setAttribute('aria-label', 'Notifications');
       container.style.cssText =
-        'position:fixed;top:100px;left:50%;transform:translateX(-50%);z-index:3000;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
+        'position:fixed;bottom:108px;left:50%;transform:translateX(-50%);z-index:3000;display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none;';
       document.body.appendChild(container);
     }
 

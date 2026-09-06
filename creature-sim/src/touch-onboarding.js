@@ -148,6 +148,7 @@ class TouchOnboarding {
           <button type="button" class="touch-onboarding-next primary-btn small">Next ›</button>
           <button type="button" class="touch-onboarding-done primary-btn small" hidden>Got it!</button>
         </div>
+        <button type="button" class="touch-onboarding-skip ghost-btn small">Skip</button>
       </div>
     `;
 
@@ -176,6 +177,7 @@ class TouchOnboarding {
     this.nextBtn?.addEventListener('click', () => this._next());
     this.prevBtn?.addEventListener('click', () => this._prev());
     this.doneBtn?.addEventListener('click', () => this._complete());
+    this.overlay.querySelector('.touch-onboarding-skip')?.addEventListener('click', () => this._complete());
 
     this.overlay.addEventListener('click', event => {
       if (event.target === this.overlay) {

@@ -238,16 +238,35 @@ export class TutorialSystem {
   update(_dt, _world) {
     if (!this.active || !this.currentStep) return;
 
-    // Keep overlay visible while active
+    // Keep overlay visible while active, but yield the screen when the player
+    // opens a real surface (menu, god tools, field journal). Those sit under
+    // the tutorial's z-index and were otherwise unusable.
     const overlay = this._overlay || document.getElementById('tutorial-overlay');
-    if (overlay && overlay.style.display === 'none') {
-      overlay.style.display = 'block';
+    if (overlay) {
+      const chromeOpen = this._isChromeBlockingTutorial();
+      overlay.style.display = chromeOpen ? 'none' : 'block';
+      if (chromeOpen) return;
     }
 
     // Reposition highlight each frame (elements might move)
     if (this.currentStep.highlight) {
       this.highlightElement(this.currentStep.highlight);
     }
+  }
+
+  _isChromeBlockingTutorial() {
+    const blocking = [
+      '#overflow-drawer:not(.hidden)',
+      '#god-mode-panel:not(.hidden)',
+      '#upgrade-panel:not(.hidden)',
+      '#prop-picker-drawer:not(.hidden)',
+      '#scenario-panel:not(.hidden)',
+      '#gene-editor-panel:not(.hidden)',
+      '#sound-panel:not(.hidden)',
+      '#features-panel:not(.hidden)',
+      '#eco-health-panel:not(.hidden)'
+    ];
+    return blocking.some(sel => document.querySelector(sel));
   }
 
   // Highlight an element on screen
@@ -611,7 +630,7 @@ export class TutorialSystem {
     overlay.style.cssText = `
       position: fixed;
       inset: 0;
-      z-index: 10000;
+      z-index: var(--z-tutorial, 5100);
       pointer-events: none;
       display: none;
     `;

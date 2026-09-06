@@ -19,6 +19,13 @@ function _setInnerHtmlIfChanged(cache, el, html) {
   return true;
 }
 
+export function formatCreatureAge(age) {
+  const n = Number(age);
+  if (!Number.isFinite(n) || n < 1) return 'Newborn';
+  if (n < 60) return `${Math.round(n)}s`;
+  return `${(n / 60).toFixed(1)}m`;
+}
+
 // Inspector throttle: at most ~4Hz unless the selection changes. The key
 // below is quantized so rapidly-changing floats (age/energy) settle into
 // 4Hz buckets instead of forcing a rebuild every frame.
@@ -362,8 +369,8 @@ export function renderSelectedInfo(
       _selectedHtmlByEl,
       el,
       isMobile
-        ? '<div class="empty-title">Tap a creature to inspect</div>'
-        : '<div class="empty-title">Click a creature to inspect</div><div class="muted">One field note: drive, family, next nudge. Shift-click pins the line.</div>'
+        ? '<div class="empty-title">Tap a creature to inspect</div><ul class="empty-list"><li>Observe one animal</li><li>Paint a food trail</li><li>Place a calm zone</li></ul>'
+        : '<div class="empty-title">Click a creature to inspect</div><div class="muted">One field note: drive, family, next nudge. Shift-click pins the line.</div><ul class="empty-list"><li>Observe — pick one animal</li><li>Influence — paint food or calm</li><li>Preserve — save a seed when it sings</li></ul>'
     );
     return;
   }
@@ -431,7 +438,7 @@ export function renderSelectedInfo(
   const lifeStage = getLifeStageDisplay(creature);
   const emotion = getCreatureEmotion(creature);
   const bonds = buildBondsSummary(creature, world);
-  const sublineParts = [dietLabel, `${lifeStage.icon} ${lifeStage.label}`, `Age ${creature.age.toFixed(1)}s`];
+  const sublineParts = [dietLabel, `${lifeStage.icon} ${lifeStage.label}`, formatCreatureAge(creature.age)];
   if (creature.parentId) {
     sublineParts.push(`Parent #${creature.parentId}`);
   }
@@ -744,7 +751,9 @@ export function renderInspector(model = {}, handlers = {}) {
   };
 
   if (!creature) {
-    body.innerHTML = '<div class="muted">Click a creature to inspect.<br/>Shift-click to set lineage root.</div>';
+    body.innerHTML =
+      '<div class="muted">Click a creature to inspect.<br/>Shift-click to set lineage root.</div>' +
+      '<ul class="empty-list inspector-empty-next"><li>Observe one animal</li><li>Influence with food or calm</li><li>Preserve the seed</li></ul>';
   } else {
     const parentCell = creature.parentId
       ? `<button class="btn-link" id="btn-parent">#${escapeHtml(creature.parentId)}</button>`
@@ -815,7 +824,7 @@ export function renderInspector(model = {}, handlers = {}) {
       <div class="row"><div>ID</div><div>#${escapeHtml(creature.id)}${creature.alive ? '' : ' †'}${mutationBadge}</div></div>
       <div class="row"><div>Sex</div><div>${sexEmoji} ${sexLabel}</div></div>
       <div class="row"><div>Type</div><div><span class="tag">${creature.genes.predator ? 'Predator' : 'Herbivore'}</span></div></div>
-      <div class="row"><div>Age</div><div>${creature.age.toFixed(1)}s</div></div>
+      <div class="row"><div>Age</div><div>${formatCreatureAge(creature.age)}</div></div>
       ${creature.disorders && creature.disorders.length > 0 ? `<div class="row"><div>Disorders</div><div style="color:#ff6b6b;">${escapeHtml(disorderLabels)}</div></div>` : ''}
       <div class="row${foodEaten ? '' : ' dim'}"><div>Food eaten</div><div>${foodEaten}</div></div>
       <div class="row${kills ? '' : ' dim'}"><div>Kills</div><div>${kills}</div></div>

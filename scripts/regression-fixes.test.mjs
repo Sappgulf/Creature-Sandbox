@@ -12,7 +12,7 @@ if (!globalThis.performance) {
 import { makeGenes } from '../creature-sim/src/genetics.js';
 import { World } from '../creature-sim/src/world-core.js';
 import { Creature } from '../creature-sim/src/creature.js';
-import { Camera } from '../creature-sim/src/camera.js';
+import { Camera, WORLD_EDGE_MARGIN } from '../creature-sim/src/camera.js';
 import { SessionGoals } from '../creature-sim/src/session-goals.js';
 import { CampaignSystem } from '../creature-sim/src/campaign-system.js';
 import { GameplayModes } from '../creature-sim/src/gameplay-modes.js';
@@ -206,6 +206,29 @@ test('session-goals: manual spawn progress follows explicit player spawn events'
   assert.equal(sessionGoals.manualSpawns, 1, 'an explicit player spawn should count once');
 });
 
+test('session-goals: snapshot goals raise the bar when the opener already qualifies', () => {
+  const sessionGoals = new SessionGoals({});
+  sessionGoals.goals = [
+    {
+      id: 'population_push',
+      type: 'population',
+      icon: '🌿',
+      target: 70,
+      description: 'Reach 70 creatures at once',
+      progress: 0,
+      completed: false,
+      baseline: null
+    }
+  ];
+  const world = { creatures: Array.from({ length: 80 }, () => ({ alive: true, genes: {} })), food: [], t: 1 };
+  sessionGoals._lastUpdate = 1;
+  sessionGoals.update(world, 1);
+  const goal = sessionGoals.getGoals()[0];
+  assert.equal(goal.completed, false, 'opener population must not complete the goal on the first tick');
+  assert.ok(goal.target > 80, `target should sit above current population, got ${goal.target}`);
+  assert.match(goal.description, /Reach \d+ creatures at once/);
+});
+
 test('session-goals: a fresh sandbox favors goals available in the opener', () => {
   const sessionGoals = new SessionGoals({});
   sessionGoals.resetForNewSession();
@@ -356,6 +379,22 @@ test('camera: _clampTargets keeps the pan target within world bounds', () => {
 
   assert.ok(camera.targetX < 1200, `targetX should be clamped near world bounds, got ${camera.targetX}`);
   assert.ok(camera.targetY > -200, `targetY should be clamped near world bounds, got ${camera.targetY}`);
+  assert.ok(
+    camera.targetY >= -WORLD_EDGE_MARGIN,
+    `targetY overscroll must stay within WORLD_EDGE_MARGIN (${WORLD_EDGE_MARGIN}), got ${camera.targetY}`
+  );
+});
+
+test('camera: WORLD_EDGE_MARGIN is a tight on-screen clamp', () => {
+  assert.equal(WORLD_EDGE_MARGIN, 16);
+});
+
+test('formatCreatureAge: newborns are not Age 0.0s', async () => {
+  const { formatCreatureAge } = await import('../creature-sim/src/ui.js');
+  assert.equal(formatCreatureAge(0), 'Newborn');
+  assert.equal(formatCreatureAge(0.4), 'Newborn');
+  assert.equal(formatCreatureAge(12.2), '12s');
+  assert.equal(formatCreatureAge(90), '1.5m');
 });
 
 test('camera: invalid pan/zoom state recovers to a finite centered view', () => {
@@ -688,12 +727,37 @@ test('styles: inspector sits above its own modal scrim, and its controls meet th
   // .panel-overlay. The overlay is pointer-events:auto, so while the inspector
   // was below it every tap landed on the scrim and the panel could not be used
   // or even closed on a phone.
-  const overlayZ = /\.panel-overlay\s*\{[^}]*z-index:\s*(\d+)/s.exec(css);
-  const inspectorZ = /#inspector\s*\{\s*z-index:\s*(\d+)/s.exec(css);
+  const overlayZ = /\.panel-overlay\s*\{[^}]*z-index:\s*([^;]+)/s.exec(css);
+  const inspectorZ = /#inspector\s*\{\s*z-index:\s*([^;]+)/s.exec(css);
   assert.ok(overlayZ, 'panel-overlay should declare a z-index');
   assert.ok(inspectorZ, 'inspector should declare a z-index above the scrim');
+  const tokenRank = token => {
+    const match = /--z-([a-z-]+)/.exec(token);
+    const order = [
+      'base',
+      'playfield-ui',
+      'hud',
+      'hud-raised',
+      'hud-priority',
+      'hud-top',
+      'hud-overlay',
+      'panel',
+      'panel-raised',
+      'drawer-scrim',
+      'drawer',
+      'sheet',
+      'sheet-raised',
+      'modal',
+      'modal-raised',
+      'blocking',
+      'tutorial',
+      'toast',
+      'a11y'
+    ];
+    return match ? order.indexOf(match[1]) : Number(token);
+  };
   assert.ok(
-    Number(inspectorZ[1]) > Number(overlayZ[1]),
+    tokenRank(inspectorZ[1]) > tokenRank(overlayZ[1]),
     `inspector z-index (${inspectorZ?.[1]}) must exceed the scrim (${overlayZ?.[1]})`
   );
 
@@ -1219,6 +1283,18 @@ test('playfield draws habitat pressure from worker snapshot fields', () => {
   const src = fs.readFileSync(new URL('../creature-sim/src/renderer.js', import.meta.url), 'utf8');
   assert.match(src, /drawRegionPressure\(world\)/, 'regions must paint pressure');
   assert.match(src, /patch\.pressure/, 'food meadows must read pressure');
+  assert.match(src, /foodRatio/, 'region hunger must paint from foodRatio');
+  assert.match(src, /hungry/, 'scarce meadows need a hunger halo');
+});
+
+test('worker food paint juices even when addFood returns null', () => {
+  const toolsSrc = fs.readFileSync(new URL('../creature-sim/src/tools.js', import.meta.url), 'utf8');
+  const proxySrc = fs.readFileSync(new URL('../creature-sim/src/simulation-proxy.js', import.meta.url), 'utf8');
+  const workerSrc = fs.readFileSync(new URL('../creature-sim/src/worker-simulation.js', import.meta.url), 'utf8');
+  assert.match(toolsSrc, /playToolJuice/, 'paint/spawn/god tools must play local juice');
+  assert.match(toolsSrc, /attempted > 0/, 'scatterFood must juice when worker addFood returns null');
+  assert.match(proxySrc, /worldSnapshot\.food\.push/, 'worker addFood should ghost a bite for the next frame');
+  assert.match(workerSrc, /calmZones: compactCalmZones/, 'calm zones must ride the snapshot so god calm is visible');
 });
 
 test('worker-mode grab/throw and habitat snapshot messages exist', () => {

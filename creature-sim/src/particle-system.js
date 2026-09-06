@@ -1147,6 +1147,28 @@ export class ParticleSystem {
     this.particles.push(p);
   }
 
+  addNudgeBurst(x, y, { color = 'rgba(74, 222, 128, 1)', size = 10, sparks = 7 } = {}) {
+    this.addImpactRing(x, y, { color, size });
+    const count = Math.max(0, Math.min(12, sparks | 0));
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2 + Math.random() * 0.3;
+      const speed = 28 + Math.random() * 22;
+      const p = this._getPooledParticle();
+      p.type = 'sparkle';
+      p.category = 'sparkle';
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed - 8;
+      p.life = 0.45 + Math.random() * 0.25;
+      p.maxLife = 0.7;
+      p.size = 1.6 + Math.random() * 1.8;
+      p.color = color;
+      p.opacity = 0.85;
+      this.particles.push(p);
+    }
+  }
+
   /**
    * Add swimming ripple effect
    */
