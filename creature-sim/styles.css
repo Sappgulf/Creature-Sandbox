@@ -934,14 +934,29 @@ input[type='range']:focus-visible {
   pointer-events: none;
 }
 .god-mode-tools button.active .god-kbd {
-  color: #d8b4fe;
-  border-color: rgba(168, 85, 247, 0.45);
+  color: var(--accent-primary);
+  border-color: rgba(var(--accent-primary-rgb), 0.45);
 }
 .god-mode-tools button.active {
-  border-color: rgba(168, 85, 247, 0.55);
-  box-shadow: 0 0 12px rgba(168, 85, 247, 0.25);
-  background: rgba(88, 28, 135, 0.5);
-  color: #f8fafc;
+  border-color: rgba(var(--accent-primary-rgb), 0.55);
+  box-shadow: 0 0 14px rgba(var(--accent-primary-rgb), 0.22);
+  background: rgba(var(--accent-primary-rgb), 0.16);
+  color: var(--text-primary);
+}
+.god-mode-panel[data-active-tool='food'] .god-mode-tools button.active {
+  border-color: rgba(74, 222, 128, 0.55);
+  background: rgba(74, 222, 128, 0.16);
+  box-shadow: 0 0 14px rgba(74, 222, 128, 0.18);
+}
+.god-mode-panel[data-active-tool='calm'] .god-mode-tools button.active {
+  border-color: rgba(120, 210, 255, 0.55);
+  background: rgba(120, 210, 255, 0.16);
+}
+.god-mode-panel[data-active-tool='chaos'] .god-mode-tools button.active,
+.god-mode-panel[data-active-tool='curse'] .god-mode-tools button.active,
+.god-mode-panel[data-active-tool='remove'] .god-mode-tools button.active {
+  border-color: rgba(248, 113, 113, 0.5);
+  background: rgba(248, 113, 113, 0.14);
 }
 .god-mode-tools button:hover {
   background: rgba(51, 65, 85, 0.7);
@@ -952,7 +967,9 @@ input[type='range']:focus-visible {
 }
 .god-mode-hint {
   font-size: 11px;
-  color: var(--text-muted);
+  line-height: 1.45;
+  color: var(--text-secondary);
+  min-height: 2.6em;
 }
 @media (max-width: 768px) {
   .god-mode-panel {
@@ -4641,8 +4658,8 @@ body.home-active #btn-show-inspector {
   padding: 12px 14px;
   margin-bottom: 0;
   position: relative;
-  background: linear-gradient(180deg, rgba(57, 213, 255, 0.07), rgba(57, 213, 255, 0.02));
-  border-color: rgba(151, 218, 255, 0.14);
+  background: linear-gradient(180deg, rgba(197, 242, 126, 0.08), rgba(197, 242, 126, 0.02));
+  border-color: rgba(183, 226, 187, 0.16);
 }
 .menu-section-featured .menu-kbd {
   position: absolute;
@@ -4652,7 +4669,7 @@ body.home-active #btn-show-inspector {
 }
 .menu-section-featured .menu-item:hover {
   transform: translateY(-1px);
-  border-color: rgba(57, 213, 255, 0.4);
+  border-color: rgba(197, 242, 126, 0.42);
 }
 .menu-section-featured .menu-item:active {
   transform: translateY(0) scale(0.98);
@@ -4663,8 +4680,8 @@ body.home-active #btn-show-inspector {
   height: 34px;
   font-size: 20px;
   border-radius: 10px;
-  background: rgba(57, 213, 255, 0.12);
-  border: 1px solid rgba(57, 213, 255, 0.2);
+  background: rgba(197, 242, 126, 0.12);
+  border: 1px solid rgba(197, 242, 126, 0.22);
 }
 .menu-section-featured .menu-item-label {
   font-size: 13px;
@@ -4677,10 +4694,10 @@ body.home-active #btn-show-inspector {
 }
 .menu-section-featured .menu-item.active,
 .menu-section-featured .menu-item[aria-pressed='true'] {
-  border-color: rgba(57, 213, 255, 0.55);
+  border-color: rgba(197, 242, 126, 0.55);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 0 14px rgba(57, 213, 255, 0.12);
+    0 0 14px rgba(197, 242, 126, 0.14);
 }
 /* List rows: icon tiles, kbd hints, section accents. */
 .menu-section-title {

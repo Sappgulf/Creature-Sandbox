@@ -98,7 +98,7 @@ export function recordDamage(creature, amount, ctx = {}) {
  * @returns {number} The current speed in px/s
  */
 export function calculateCurrentSpeed(creature, dt, world) {
-  const biome = world.getBiomeAt ? world.getBiomeAt(creature.x, creature.y) : null;
+  const biome = world?.getBiomeAt ? world.getBiomeAt(creature.x, creature.y) : null;
   const biomeType = biome?.type || 'grassland';
   const inWater = biomeType === 'water' || biomeType === 'ocean';
   const inWetland = biomeType === 'wetland' || biomeType === 'swamp';

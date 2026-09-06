@@ -162,10 +162,8 @@ export function applyInputTouchMethods(InputManager) {
       }
       case 'prop': {
         const propType = gameState.selectedPropType || this.tools?.propType || 'bounce';
-        const prop = this.tools?.placeProp?.(x, y, { type: propType });
-        if (prop) {
-          eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'prop', x, y, propType });
-        }
+        this.tools?.placeProp?.(x, y, { type: propType });
+        eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'prop', x, y, propType });
         break;
       }
       case 'remove': {

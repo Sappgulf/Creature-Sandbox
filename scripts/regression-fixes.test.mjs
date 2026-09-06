@@ -1315,6 +1315,18 @@ test('playfield draws habitat pressure from worker snapshot fields', () => {
   assert.match(src, /hungry/, 'scarce meadows need a hunger halo');
 });
 
+test('god prop taps emit even when worker placeProp returns null', () => {
+  const src = fs.readFileSync(new URL('../creature-sim/src/input-touch.js', import.meta.url), 'utf8');
+  assert.match(src, /placeProp\?\.\(x, y/);
+  assert.match(
+    src,
+    /GOD_MODE_ACTION[\s\S]{0,80}action: 'prop'/,
+    'prop god actions must emit after placeProp, not only when it returns a prop object'
+  );
+  const tools = fs.readFileSync(new URL('../creature-sim/src/tools.js', import.meta.url), 'utf8');
+  assert.match(tools, /action === 'spawn'/, 'spawn juice must not fire twice');
+});
+
 test('worker food paint juices even when addFood returns null', () => {
   const toolsSrc = fs.readFileSync(new URL('../creature-sim/src/tools.js', import.meta.url), 'utf8');
   const proxySrc = fs.readFileSync(new URL('../creature-sim/src/simulation-proxy.js', import.meta.url), 'utf8');

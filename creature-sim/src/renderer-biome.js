@@ -123,7 +123,7 @@ export function drawBiomeGround(renderer, ctx, world) {
     // against the near-black #03050a base, biome color variation was
     // essentially imperceptible. Raised so the world actually reads as a
     // living, colored biome rather than a flat dark canvas.
-    const overlayAlpha = clamp(0.2 + renderer.camera.zoom * 0.2, 0.2, 0.44);
+    const overlayAlpha = clamp(0.24 + renderer.camera.zoom * 0.22, 0.24, 0.5);
     const influenceRadius = sampleSpacing * 0.92;
     const startX = Math.floor(bounds.x1 / sampleSpacing) * sampleSpacing;
     const startY = Math.floor(bounds.y1 / sampleSpacing) * sampleSpacing;
@@ -509,7 +509,11 @@ export function drawMoodOverlay(renderer, ctx, world, intensity, type) {
   const visibleHeight = bounds.y2 - bounds.y1;
   const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
   const tint =
-    type === 'wind' ? `rgba(129, 167, 255, ${0.08 * intensity})` : `rgba(110, 200, 180, ${0.08 * intensity})`;
+    type === 'wind'
+      ? `rgba(168, 140, 255, ${0.1 * intensity})`
+      : type === 'calm'
+        ? `rgba(110, 200, 180, ${0.1 * intensity})`
+        : `rgba(129, 167, 255, ${0.08 * intensity})`;
   ctx.fillStyle = tint;
   ctx.fillRect(
     bounds.x1 - extendAmount,

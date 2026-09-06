@@ -338,7 +338,11 @@ export function applyCreatureMethods(Renderer) {
     const stage = getLifeStageDisplay(c);
     const x = c.x;
     const y = c.y - Math.max(16, (c.size || 8) * 2.1);
-    const label = isSelected || isPinned ? `${stage.icon} ${emotion.icon}` : emotion.icon;
+    const flying = c.traits?.creatureType === 'flying' || numericGene(c.genes?.flying, 0) > 0.6;
+    const burrowing = c.traits?.creatureType === 'burrowing' || numericGene(c.genes?.burrowing, 0) > 0.6;
+    const aquatic = numericGene(c.aquaticAffinity ?? c.genes?.aquatic, 0) > 0.6;
+    const typeMark = flying ? '↑' : burrowing ? '↓' : aquatic ? '~' : '';
+    const label = isSelected || isPinned ? `${stage.icon}${typeMark} ${emotion.icon}` : emotion.icon;
     const color =
       emotion.tone === 'danger'
         ? 'rgba(255, 120, 120, 0.95)'
@@ -459,9 +463,6 @@ export function applyCreatureMethods(Renderer) {
       shadowColor = 'rgba(0, 80, 60';
     }
 
-    ctx.globalAlpha = shadowAlpha;
-    ctx.fillStyle = `${shadowColor}, ${shadowAlpha})`;
-
     // Dynamic shadow offset based on creature velocity (shadow stretches when moving)
     const speed = Math.sqrt((creature.vx || 0) ** 2 + (creature.vy || 0) ** 2);
     const stretchFactor = Math.min(speed / 100, 0.5);
@@ -484,6 +485,9 @@ export function applyCreatureMethods(Renderer) {
       shadowColor = 'rgba(20, 50, 80';
       shadowAlpha *= 0.85;
     }
+
+    ctx.globalAlpha = shadowAlpha;
+    ctx.fillStyle = `${shadowColor}, ${shadowAlpha})`;
 
     // Shadow scale based on creature height (larger = more prominent shadow)
     const heightFactor = creature.baseSize ? creature.baseSize / 10 : 1;

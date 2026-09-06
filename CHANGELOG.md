@@ -26,6 +26,46 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-06 — bug-hunt-ship — Planned
+
+- **Date:** 2026-09-06
+- **Scope:** render | simulation | ui
+- **Type:** Planned
+- **Issues:** Flying/aquatic shadow color/alpha never applied; NaN spawn coords leaked into grabTarget; god spawn double-burst; worker prop taps skipped GOD_MODE_ACTION (no juice, no goal credit).
+- **Root Causes:** fillStyle set before type tweaks; grabTarget used raw constructor args; juice listener overlapped spawnCreature; prop emit gated on a null worker return.
+- **Fixes:** Apply shadow style after type; finite grabTarget; skip spawn in juice listener; always emit prop god actions.
+- **Verification:** lint/tests/build then ship.
+
+### 2026-09-06 — bug-hunt-ship — Implemented
+
+- **Date:** 2026-09-06
+- **Scope:** render | simulation | ui
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** lint/tests/build/bundle green (66 regression).
+
+### 2026-09-06 — node-and-play-surface — Planned
+
+- **Date:** 2026-09-06
+- **Scope:** devops | ui | render | simulation
+- **Type:** Planned
+- **Issues:** Tooling lagged (eslint/lint-staged/playwright); engines still advertised Node 18; god tools and featured menu used leftover cyan/purple; biomes still a bit muddy; food scatter felt thin.
+- **Root Causes:** Patch deps never rolled; Field Journal lime not applied to god/menu tiles; overlay alpha conservative; scatter default 10.
+- **Fixes:** Node >=20 + .nvmrc 22; bump eslint 10.10, lint-staged 17.5, playwright 1.63; lime god/menu; stronger biome wash; chaos/calm mood tints; 12-bite food scatter.
+- **Verification:** lint, tests, build.
+
+### 2026-09-06 — node-and-play-surface — Implemented
+
+- **Date:** 2026-09-06
+- **Scope:** devops | ui | render | simulation
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** lint/tests/build/bundle green on Node 22; eslint 10.10, lint-staged 17.5, playwright 1.63.
+
 ### 2026-09-06 — types-biomes-stability — Planned
 
 - **Date:** 2026-09-06

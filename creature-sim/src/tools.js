@@ -49,7 +49,8 @@ export class ToolController {
 
     this._onGodJuice = payload => {
       const action = payload?.action;
-      if (!action || action === 'food') return;
+      // Food and spawn already juice in scatterFood/spawnCreature.
+      if (!action || action === 'food' || action === 'spawn') return;
       this.playToolJuice(payload.x, payload.y, action);
     };
     eventSystem.on(GameEvents.GOD_MODE_ACTION, this._onGodJuice);
@@ -500,7 +501,7 @@ export class ToolController {
     return this.redoStack.length > 0;
   }
 
-  scatterFood(x, y, amount = 10) {
+  scatterFood(x, y, amount = 12) {
     const addedFood = [];
     let attempted = 0;
     for (let i = 0; i < amount; i++) {

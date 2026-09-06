@@ -256,7 +256,7 @@ export class Creature {
     /** @type {boolean} */
     this.isGrabbed = false;
     /** @type {{x: number, y: number}} */
-    this.grabTarget = { x, y };
+    this.grabTarget = { x: this.x, y: this.y };
     /** @type {number} */
     this.energy = isChild ? CreatureConfig.STARTING_ENERGY.baby : CreatureConfig.STARTING_ENERGY.adult;
     /** @type {number} */
