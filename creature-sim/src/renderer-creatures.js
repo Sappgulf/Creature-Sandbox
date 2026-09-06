@@ -465,8 +465,25 @@ export function applyCreatureMethods(Renderer) {
     // Dynamic shadow offset based on creature velocity (shadow stretches when moving)
     const speed = Math.sqrt((creature.vx || 0) ** 2 + (creature.vy || 0) ** 2);
     const stretchFactor = Math.min(speed / 100, 0.5);
-    const offsetX = 2 + stretchFactor * 2;
-    const offsetY = 3 + stretchFactor * 1;
+    const flying = Number(creature.flyingAffinity ?? creature.genes?.flying?.expressed ?? creature.genes?.flying) || 0;
+    const burrowing =
+      Number(creature.burrowingAffinity ?? creature.genes?.burrowing?.expressed ?? creature.genes?.burrowing) || 0;
+    const aquatic =
+      Number(creature.aquaticAffinity ?? creature.genes?.aquatic?.expressed ?? creature.genes?.aquatic) || 0;
+    let offsetX = 2 + stretchFactor * 2;
+    let offsetY = 3 + stretchFactor * 1;
+    if (flying > 0.55) {
+      offsetX += 3;
+      offsetY += 5;
+      shadowAlpha *= 0.72;
+    } else if (burrowing > 0.55) {
+      offsetX *= 0.6;
+      offsetY *= 0.55;
+      shadowAlpha *= 1.15;
+    } else if (aquatic > 0.55) {
+      shadowColor = 'rgba(20, 50, 80';
+      shadowAlpha *= 0.85;
+    }
 
     // Shadow scale based on creature height (larger = more prominent shadow)
     const heightFactor = creature.baseSize ? creature.baseSize / 10 : 1;

@@ -59,17 +59,26 @@ export function getSeasonalGroundTint(season, phase) {
 export function getBiomeTint(biomeType) {
   switch (biomeType) {
     case 'forest':
-      return 'rgba(72, 96, 84, 0.4)';
+      return 'rgba(72, 96, 84, 0.42)';
+    case 'jungle':
+      return 'rgba(42, 98, 70, 0.44)';
     case 'desert':
-      return 'rgba(150, 118, 84, 0.32)';
+      return 'rgba(168, 128, 78, 0.38)';
+    case 'savanna':
+      return 'rgba(158, 132, 72, 0.36)';
+    case 'tundra':
+      return 'rgba(92, 112, 132, 0.34)';
     case 'mountain':
-      return 'rgba(111, 102, 96, 0.28)';
+      return 'rgba(111, 102, 96, 0.32)';
+    case 'swamp':
+      return 'rgba(48, 86, 72, 0.4)';
     case 'wetland':
-      return 'rgba(86, 122, 111, 0.36)';
+      return 'rgba(86, 122, 111, 0.4)';
+    case 'ocean':
     case 'water':
-      return 'rgba(76, 112, 146, 0.46)';
+      return 'rgba(76, 112, 146, 0.5)';
     case 'meadow':
-      return 'rgba(129, 143, 104, 0.34)';
+      return 'rgba(129, 143, 104, 0.36)';
     case 'grassland':
     default:
       return 'rgba(114, 124, 92, 0.34)';

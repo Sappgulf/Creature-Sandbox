@@ -4,6 +4,12 @@ import { CreatureConfig } from './creature-config.js';
 import { CreatureTuning } from './creature-tuning.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
 import { getAgeSpeedMultiplier } from './creature-age.js';
+import { geneValue } from './creature-genetics-helpers.js';
+
+function numericAffinity(value, genes, key) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  return geneValue(genes, key, 0);
+}
 
 /**
  * Records damage taken by the creature, applying health reduction,
@@ -93,41 +99,64 @@ export function recordDamage(creature, amount, ctx = {}) {
  */
 export function calculateCurrentSpeed(creature, dt, world) {
   const biome = world.getBiomeAt ? world.getBiomeAt(creature.x, creature.y) : null;
-  const inWater = biome?.type === 'water';
-  const inWetland = biome?.type === 'wetland';
+  const biomeType = biome?.type || 'grassland';
+  const inWater = biomeType === 'water' || biomeType === 'ocean';
+  const inWetland = biomeType === 'wetland' || biomeType === 'swamp';
   const goal = creature.goal?.current || 'WANDER';
+  const genes = creature.genes || {};
+  const aquatic = numericAffinity(creature.aquaticAffinity, genes, 'aquatic');
+  const flying = numericAffinity(creature.flyingAffinity, genes, 'flying');
+  const burrowing = numericAffinity(creature.burrowingAffinity, genes, 'burrowing');
+  const speedGene = geneValue(genes, 'speed', 1);
 
   const restFactor = BehaviorConfig.restWeight * clamp(1 - creature.energy / 36, 0, 1);
-  const aggressionFactor = creature.genes.predator ? clamp(creature.personality.aggression, 0.4, 2.2) : 1;
+  const aggressionFactor = genes.predator ? clamp(creature.personality?.aggression ?? 1, 0.4, 2.2) : 1;
 
-  // Scale genes.speed to baseline simulation speeds
-  let baseSpeed = creature.genes.speed * (creature.genes.predator ? 46 : 40);
-  if (creature.genes.predator) baseSpeed *= 0.85 + aggressionFactor * 0.25;
+  // Scale genes.speed to baseline simulation speeds. Diploid genes must go
+  // through geneValue — multiplying the allele object produced NaN speeds.
+  let baseSpeed = speedGene * (genes.predator ? 46 : 40);
+  if (genes.predator) baseSpeed *= 0.85 + aggressionFactor * 0.25;
 
   // Environmental/Biome modifiers
   if (inWater) {
-    if (creature.aquaticAffinity > 0.5) {
-      baseSpeed *= biome.aquaticSpeed || 1.2 + creature.aquaticAffinity * 0.3;
-    } else if (creature.aquaticAffinity > 0.2) {
-      baseSpeed *= 0.7 + creature.aquaticAffinity * 0.5;
+    if (aquatic > 0.5) {
+      baseSpeed *= biome.aquaticSpeed || 1.2 + aquatic * 0.3;
+    } else if (aquatic > 0.2) {
+      baseSpeed *= 0.7 + aquatic * 0.5;
     } else {
       baseSpeed *= biome.movementSpeed || 0.3;
     }
   } else if (inWetland) {
-    if (creature.aquaticAffinity > 0.1) {
-      baseSpeed *= 1 + creature.aquaticAffinity * 0.32;
+    if (aquatic > 0.1) {
+      baseSpeed *= 1 + aquatic * 0.32;
     } else {
       baseSpeed *= 0.88;
     }
-  } else if (creature.aquaticAffinity > 0.5) {
-    baseSpeed *= 0.9 - Math.min(0.2, (creature.aquaticAffinity - 0.5) * 0.25);
+  } else if (aquatic > 0.5) {
+    baseSpeed *= 0.9 - Math.min(0.2, (aquatic - 0.5) * 0.25);
+  }
+
+  if (flying > 0.4) {
+    const high = (biome?.elevation ?? 0) > 0.5 || biomeType === 'mountain';
+    if (inWetland || inWater) baseSpeed *= 0.92;
+    else baseSpeed *= high ? 1.18 + flying * 0.16 : 1.06 + flying * 0.1;
+  }
+
+  if (burrowing > 0.4) {
+    const dugIn = biomeType === 'mountain' || biomeType === 'desert' || (biome?.elevation ?? 0) > 0.65;
+    if (inWater) baseSpeed *= 0.55;
+    else baseSpeed *= dugIn ? 1.12 + burrowing * 0.1 : 0.86 - burrowing * 0.08;
+  }
+
+  if (genes.predator && (biomeType === 'savanna' || biomeType === 'grassland')) {
+    baseSpeed *= 1.06;
   }
 
   // Nocturnal advantage at night
   const dayNight = world?.dayNightState;
   const isNight = dayNight?.phase === 'night' || (dayNight?.light ?? 1) < 0.4;
-  if (isNight && creature.genes.nocturnal !== undefined) {
-    const nocturnalPref = creature.genes.nocturnal;
+  if (isNight && genes.nocturnal !== undefined) {
+    const nocturnalPref = geneValue(genes, 'nocturnal', 0);
     const isNocturnal = nocturnalPref > 0.5;
     if (isNocturnal) {
       baseSpeed *= 1 + CreatureAgentTuning.NOCTURNAL.NIGHT_SPEED_BONUS * nocturnalPref;
@@ -143,11 +172,12 @@ export function calculateCurrentSpeed(creature, dt, world) {
   baseSpeed *= getAgeSpeedMultiplier(creature.age);
 
   let speedBoost = 1;
-  const herdBuff = creature.getStatus('herd-buff');
-  const adrenaline = creature.getStatus('adrenaline');
-  const playBurst = creature.getStatus('play-burst');
-  const elderAid = creature.getStatus('elder-aid');
-  const bleed = creature.getStatus('bleeding');
+  const readStatus = key => (typeof creature.getStatus === 'function' ? creature.getStatus(key) : null);
+  const herdBuff = readStatus('herd-buff');
+  const adrenaline = readStatus('adrenaline');
+  const playBurst = readStatus('play-burst');
+  const elderAid = readStatus('elder-aid');
+  const bleed = readStatus('bleeding');
 
   if (herdBuff && !creature.genes.predator) speedBoost += herdBuff.intensity ?? 0;
   if (adrenaline) speedBoost += adrenaline.metadata?.boost ?? adrenaline.intensity ?? 0;
@@ -171,20 +201,21 @@ export function calculateCurrentSpeed(creature, dt, world) {
   const goalSpeedFactor = goal === 'REST' ? 0.4 : goal === 'SEEK_MATE' ? 1.15 : 1;
   let speedScalar = clamp(1 - restFactor * 0.6, 0.15, 1) * clamp(speedBoost, 0.6, 1.9) * arriveFactor * goalSpeedFactor;
 
-  if (creature.genes.predator) {
-    if (creature.personality.ambushTimer > 0 && creature.target && creature.target.creatureId != null) {
+  if (genes.predator) {
+    if (creature.personality?.ambushTimer > 0 && creature.target && creature.target.creatureId != null) {
       speedScalar *= 0.25 + 0.15 * aggressionFactor;
     } else if (creature.target && creature.target.creatureId != null) {
       speedScalar *= 1.05 + aggressionFactor * 0.15;
     } else if (creature.target && creature.target.signal) {
-      speedScalar *= 0.9 + creature.personality.packInstinct * 0.35;
+      speedScalar *= 0.9 + (creature.personality?.packInstinct ?? 0) * 0.35;
     }
   }
 
   const recallUntil = creature.memory?.focus?.recallUntil ?? -Infinity;
-  if (world.t < recallUntil) speedScalar *= CreatureConfig.MEMORY.RECALL_SLOW;
+  if ((world?.t ?? 0) < recallUntil) speedScalar *= CreatureConfig.MEMORY.RECALL_SLOW;
 
-  return baseSpeed * speedScalar;
+  const speed = baseSpeed * speedScalar;
+  return Number.isFinite(speed) ? speed : 20;
 }
 
 export function applyImpactDamage(creature, amount, { cause = 'impact', intensity = 0.4 } = {}) {

@@ -122,7 +122,11 @@ self.onmessage = function (e) {
 
       case 'SPAWN_TYPE':
         if (world) {
-          world.spawnCreatureType(data.type, data.x, data.y);
+          if (!Number.isFinite(data.x) || !Number.isFinite(data.y)) {
+            console.warn('👷 Worker: dropping invalid SPAWN_TYPE', data);
+            break;
+          }
+          world.spawnCreatureType(typeof data.type === 'string' ? data.type : 'herbivore', data.x, data.y);
           sendSnapshot();
         }
         break;
@@ -140,8 +144,12 @@ self.onmessage = function (e) {
 
       case 'ADD_FOOD':
         if (world) {
+          if (!Number.isFinite(data.x) || !Number.isFinite(data.y)) {
+            console.warn('👷 Worker: dropping invalid ADD_FOOD', data);
+            break;
+          }
           world.addFood(data.x, data.y, data.r, data.type);
-          sendSnapshot(); // Update food list immediately
+          sendSnapshot();
         }
         break;
 
@@ -543,45 +551,22 @@ function step(dt) {
   sendSnapshot();
 }
 
-// Decorations are static for the life of a seeded world (generateDecorations()
-// runs once per seed/reset and never mutates), but they live only in the worker.
-// SimulationProxy has no `decorations` getter, so in worker mode — the product
-// default — the renderer's `if (world.decorations)` guard silently skipped the
-// entire environmental layer and the field rendered as an empty void. Ship the
-// array across once per world instead of per tick.
 function compactFoodPatches(world) {
   const patches = world?.ecosystem?.foodPatches;
   if (!Array.isArray(patches) || !patches.length) return [];
-  const ranked = patches
-    .filter(Boolean)
-    .slice()
-    .sort((a, b) => Number(b.pressure || 0) - Number(a.pressure || 0));
   const out = [];
-  const max = Math.min(ranked.length, 24);
+  const max = Math.min(patches.length, 24);
   for (let i = 0; i < max; i++) {
-    const p = ranked[i];
+    const p = patches[i];
+    if (!p) continue;
     out.push({
       x: p.x,
       y: p.y,
       radius: p.radius,
       stock: p.stock,
       maxStock: p.maxStock,
-      pressure: p.pressure,
-      fertility: p.fertility
+      pressure: p.pressure
     });
-  }
-  return out;
-}
-
-function compactCalmZones(world) {
-  const zones = world?.environment?.calmZones;
-  if (!Array.isArray(zones) || !zones.length) return [];
-  const out = [];
-  const max = Math.min(zones.length, 12);
-  for (let i = 0; i < max; i++) {
-    const z = zones[i];
-    if (!z || !Number.isFinite(z.x) || !Number.isFinite(z.y)) continue;
-    out.push({ x: z.x, y: z.y, radius: z.radius, t: z.t, strength: z.strength });
   }
   return out;
 }
@@ -665,7 +650,13 @@ function sendSnapshot() {
       weatherType: world.environment.weatherType,
       moodState: world.environment.moodState,
       timeOfDay: world.environment.timeOfDay,
-      calmZones: compactCalmZones(world)
+      calmZones: (world.environment?.calmZones || []).slice(0, 12).map(z => ({
+        x: z.x,
+        y: z.y,
+        radius: z.radius,
+        t: z.t,
+        strength: z.strength
+      }))
     },
     activeDisaster: world.getActiveDisaster ? world.getActiveDisaster() : null,
     pendingDisasters: world.getPendingDisasters ? world.getPendingDisasters().map(item => ({ ...item })) : []

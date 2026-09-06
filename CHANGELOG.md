@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-06 — types-biomes-stability — Planned
+
+- **Date:** 2026-09-06
+- **Scope:** simulation | render
+- **Type:** Planned
+- **Issues:** Diploid speed objects could NaN movement; flying/burrowing did not get live speed habitat bonuses; several biomes tinted as grassland; aquatic spawns lacked a type tag; worker accepted NaN food/spawn.
+- **Root Causes:** Live speed path multiplied allele objects; biome switch incomplete; spawnAquatic omitted creatureType; worker ADD_FOOD/SPAWN_TYPE unvalidated.
+- **Fixes:** geneValue speed + type/biome modifiers; full biome tints; type-aware shadows; finite pose recovery; worker payload guards.
+- **Verification:** Unit tests, lint, build, then ship.
+
+### 2026-09-06 — types-biomes-stability — Implemented
+
+- **Date:** 2026-09-06
+- **Scope:** simulation | render
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** lint clean; tests green (65 regression including diploid speed + biome preference; presentation tints).
+
 ### 2026-09-06 — habitat-and-god-juice — Planned
 
 - **Date:** 2026-09-06

@@ -13,6 +13,7 @@ import { makeGenes } from '../creature-sim/src/genetics.js';
 import { World } from '../creature-sim/src/world-core.js';
 import { Creature } from '../creature-sim/src/creature.js';
 import { Camera, WORLD_EDGE_MARGIN } from '../creature-sim/src/camera.js';
+import { calculateCurrentSpeed } from '../creature-sim/src/creature-combat.js';
 import { SessionGoals } from '../creature-sim/src/session-goals.js';
 import { CampaignSystem } from '../creature-sim/src/campaign-system.js';
 import { GameplayModes } from '../creature-sim/src/gameplay-modes.js';
@@ -387,6 +388,33 @@ test('camera: _clampTargets keeps the pan target within world bounds', () => {
 
 test('camera: WORLD_EDGE_MARGIN is a tight on-screen clamp', () => {
   assert.equal(WORLD_EDGE_MARGIN, 16);
+});
+
+test('calculateCurrentSpeed: diploid speed genes do not NaN, and types prefer matching biomes', () => {
+  const worldOf = type => ({
+    t: 10,
+    getBiomeAt: () => ({ type, elevation: type === 'mountain' ? 0.8 : 0.3, aquaticSpeed: 1.3, movementSpeed: 0.3 })
+  });
+  const flyer = {
+    genes: { speed: { expressed: 1.2, allele1: 1.2, allele2: 1.2 }, flying: 0.9, predator: false },
+    flyingAffinity: 0.9,
+    aquaticAffinity: 0,
+    burrowingAffinity: 0,
+    energy: 40,
+    personality: { aggression: 1 },
+    age: 20
+  };
+  const mountain = calculateCurrentSpeed(flyer, 0.016, worldOf('mountain'));
+  const wetland = calculateCurrentSpeed(flyer, 0.016, worldOf('wetland'));
+  assert.ok(Number.isFinite(mountain) && mountain > 0, `mountain speed should be finite, got ${mountain}`);
+  assert.ok(mountain > wetland, `flyers should be faster on peaks than wetlands (${mountain} vs ${wetland})`);
+
+  const diploidNaNGuard = calculateCurrentSpeed(
+    { genes: { speed: { allele1: 1, allele2: 1 }, predator: false }, energy: 40, personality: {}, age: 10 },
+    0.016,
+    worldOf('grassland')
+  );
+  assert.ok(Number.isFinite(diploidNaNGuard) && diploidNaNGuard > 0);
 });
 
 test('formatCreatureAge: newborns are not Age 0.0s', async () => {
@@ -1294,7 +1322,9 @@ test('worker food paint juices even when addFood returns null', () => {
   assert.match(toolsSrc, /playToolJuice/, 'paint/spawn/god tools must play local juice');
   assert.match(toolsSrc, /attempted > 0/, 'scatterFood must juice when worker addFood returns null');
   assert.match(proxySrc, /worldSnapshot\.food\.push/, 'worker addFood should ghost a bite for the next frame');
-  assert.match(workerSrc, /calmZones: compactCalmZones/, 'calm zones must ride the snapshot so god calm is visible');
+  assert.match(workerSrc, /calmZones:/, 'calm zones must ride the snapshot so god calm is visible');
+  assert.match(workerSrc, /dropping invalid ADD_FOOD/, 'malformed food must not enter the worker world');
+  assert.match(workerSrc, /dropping invalid SPAWN_TYPE/, 'malformed spawns must not enter the worker world');
 });
 
 test('worker-mode grab/throw and habitat snapshot messages exist', () => {

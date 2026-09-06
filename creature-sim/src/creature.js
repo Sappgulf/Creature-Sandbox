@@ -24,7 +24,8 @@ import {
   determineSenseType,
   resolveDietRole,
   calculateAttractiveness,
-  pickDesiredTraits
+  pickDesiredTraits,
+  geneValue
 } from './creature-genetics-helpers.js';
 import {
   updateAgeStage,
@@ -239,11 +240,11 @@ export class Creature {
   constructor(x, y, genes, isChild = false) {
     // Core properties
     /** @type {number} x position in world space */
-    this.x = x;
+    this.x = Number.isFinite(x) ? x : 0;
     /** @type {number} y position in world space */
-    this.y = y;
+    this.y = Number.isFinite(y) ? y : 0;
     /** @type {{x: number, y: number}} */
-    this.homeAnchor = { x, y };
+    this.homeAnchor = { x: this.x, y: this.y };
     /** @type {number} */
     this.vx = 0;
     /** @type {number} */
@@ -296,7 +297,7 @@ export class Creature {
     this.baseSize = null; // Will be set below
 
     // Size based on diet (omnivores are medium-sized)
-    const diet = this.genes.diet ?? (this.genes.predator ? 1.0 : 0.0);
+    const diet = geneValue(this.genes, 'diet', this.genes.predator ? 1.0 : 0.0);
     const isOmnivore =
       diet > CreatureConfig.GENETICS.DIET_THRESHOLDS.HERBIVORE_MAX &&
       diet < CreatureConfig.GENETICS.DIET_THRESHOLDS.OMNIVORE_MAX;
@@ -305,11 +306,11 @@ export class Creature {
       : CreatureConfig.GENETICS.SIZE_MODIFIERS.HERBIVORE_BASE +
         (this.genes.predator ? CreatureConfig.GENETICS.SIZE_MODIFIERS.PREDATOR_BONUS : 0);
     /** @type {number} 0..1 affinity for aquatic biomes */
-    this.aquaticAffinity = this.genes.aquatic ?? 0;
+    this.aquaticAffinity = geneValue(this.genes, 'aquatic', 0);
     /** @type {number} 0..1 affinity for flying */
-    this.flyingAffinity = this.genes.flying ?? 0;
+    this.flyingAffinity = geneValue(this.genes, 'flying', 0);
     /** @type {number} 0..1 affinity for burrowing */
-    this.burrowingAffinity = this.genes.burrowing ?? 0;
+    this.burrowingAffinity = geneValue(this.genes, 'burrowing', 0);
 
     // Apply disorder size modifiers
     if (this.genesRaw && this.genesRaw.sizeModifier) {
@@ -856,10 +857,13 @@ export class Creature {
   update(dt, world) {
     // OPTIMIZATION: Fast early exit for dead creatures
     if (!this.alive) return;
-
-    // OPTIMIZATION: Skip validation in production (dev-only checks)
-    // if (typeof dt !== 'number' || dt < 0 || !isFinite(dt)) return;
-    // if (!world || typeof world !== 'object') return;
+    if (!Number.isFinite(dt) || dt < 0) return;
+    if (!Number.isFinite(this.x) || !Number.isFinite(this.y)) {
+      this.x = Number.isFinite(this.homeAnchor?.x) ? this.homeAnchor.x : 0;
+      this.y = Number.isFinite(this.homeAnchor?.y) ? this.homeAnchor.y : 0;
+      this.vx = 0;
+      this.vy = 0;
+    }
 
     this.age += dt;
     this.spawnTime += dt;

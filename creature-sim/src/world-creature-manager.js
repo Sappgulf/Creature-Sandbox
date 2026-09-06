@@ -286,6 +286,7 @@ export class WorldCreatureManager {
     creature.quirks = rollQuirks();
     if (creature.traits) {
       creature.traits.dietRole = 'scavenger';
+      creature.traits.creatureType = 'aquatic';
     }
     return this.addCreature(creature);
   }

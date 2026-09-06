@@ -766,10 +766,17 @@ export class CreatureBehaviorSystem {
   applyMovement(dt) {
     // UNIFIED: Use the definitive speed calculation from the creature instance
     const spd = this.creature.calculateCurrentSpeed(dt, this.creature._lastWorld);
+    if (!Number.isFinite(spd) || !Number.isFinite(dt) || !Number.isFinite(this.creature.dir)) return;
     const { cos: dirCos, sin: dirSin } = this.getCachedTrig(this.creature.dir);
 
     this.creature.x += dirCos * spd * dt;
     this.creature.y += dirSin * spd * dt;
+    if (!Number.isFinite(this.creature.x) || !Number.isFinite(this.creature.y)) {
+      this.creature.x = Number.isFinite(this.creature.homeAnchor?.x) ? this.creature.homeAnchor.x : 0;
+      this.creature.y = Number.isFinite(this.creature.homeAnchor?.y) ? this.creature.homeAnchor.y : 0;
+      this.creature.vx = 0;
+      this.creature.vy = 0;
+    }
 
     // Wind effects
     const windX = this.creature._lastWorld?.moodState?.windX ?? 0;
