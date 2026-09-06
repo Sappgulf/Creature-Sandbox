@@ -2,6 +2,7 @@ import { gameState } from './game-state.js';
 import { buildBondsSummary, getCreatureEmotion, getLifeStageDisplay } from './upgrade-data.js';
 import { escapeHtml } from './safe-html.js';
 import { GOD_TOOL_REGISTRY } from './game/god-tool-system.js';
+import { geneValue } from './creature-genetics-helpers.js';
 
 // Animated number counter helper
 const _counterState = new Map();
@@ -446,8 +447,8 @@ export function renderSelectedInfo(
   const energy = creature.energy?.toFixed(1) ?? '0.0';
   const maxHealth = creature.maxHealth ?? creature.health ?? 0;
   const health = `${(creature.health ?? 0).toFixed(0)} / ${maxHealth.toFixed(0)}`;
-  const speed = creature.genes?.speed?.toFixed(2) ?? '0.00';
-  const sense = creature.genes?.sense?.toFixed(0) ?? '0';
+  const speed = geneValue(creature.genes, 'speed', 0).toFixed(2);
+  const sense = geneValue(creature.genes, 'sense', 0).toFixed(0);
   const socialDrive = Math.round(Number(creature.needs?.socialDrive ?? creature.social?.bondStrength ?? 0));
   const biomeInfo = world?.getBiomeAt?.(creature.x, creature.y);
   const biome = biomeInfo?.name ?? biomeInfo?.type ?? 'Unknown';
@@ -831,9 +832,9 @@ export function renderInspector(model = {}, handlers = {}) {
       <div class="row${dmgDealt || dmgTaken ? '' : ' dim'}"><div>Damage</div><div>${dmgDealt.toFixed(1)} / ${dmgTaken.toFixed(1)}</div></div>
     `;
     const genesMarkup = `
-      <div class="row"><div>Speed</div><div>${creature.genes.speed.toFixed(2)}</div></div>
+      <div class="row"><div>Speed</div><div>${geneValue(creature.genes, 'speed', 0).toFixed(2)}</div></div>
       <div class="row"><div>FOV</div><div>${creature.genes.fov.toFixed(0)}°</div></div>
-      <div class="row"><div>Sense</div><div>${creature.genes.sense.toFixed(0)}px</div></div>
+      <div class="row"><div>Sense</div><div>${geneValue(creature.genes, 'sense', 0).toFixed(0)}px</div></div>
       <div class="row"><div>Metabolism</div><div>${creature.genes.metabolism.toFixed(2)}</div></div>
       <div class="row"><div>Hue</div><div>${creature.genes.hue}</div></div>
       <div class="row"><div>Spines</div><div>${((creature.genes.spines ?? 0) * 100).toFixed(0)}%</div></div>

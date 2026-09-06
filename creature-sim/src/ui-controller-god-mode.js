@@ -42,7 +42,13 @@ export function applyUiGodModeMethods(UIController) {
 
   UIController.prototype.setGodModeActive = function (active, { source = 'menu' } = {}) {
     gameState.godModeActive = !!active;
+    document.body.classList.toggle('god-mode', gameState.godModeActive);
     if (gameState.godModeActive) {
+      const moments = document.getElementById('moments-panel');
+      if (moments && !moments.classList.contains('hidden')) {
+        moments.classList.add('hidden');
+        moments.setAttribute('aria-hidden', 'true');
+      }
       this.tools?.setMode?.('inspect');
       gameState.spawnMode = false;
       gameState.geneEditorSpawnMode = false;

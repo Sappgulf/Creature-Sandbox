@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-06 — menus-and-worker-stats — Planned
+
+- **Date:** 2026-09-06
+- **Scope:** ui | render | simulation
+- **Type:** Planned
+- **Issues:** Inspector showed Speed 0.00 / Senses 0px in worker mode; nameplates tiled the field as black boxes; God Mode stacked on Moments/Session Summary.
+- **Root Causes:** Snapshot stride omitted speed/sense; names drew for every creature; god and moments shared a z-rung and both stayed open.
+- **Fixes:** Pack speed/sense; labels only on focus; close moments and hide session-meta in god mode; restyle god/moments to the field-journal glass.
+- **Verification:** tests, build, ship.
+
+### 2026-09-06 — menus-and-worker-stats — Implemented
+
+- **Date:** 2026-09-06
+- **Scope:** ui | render | simulation
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** lint/tests/build/bundle green; speed/sense round-trip asserted.
+
 ### 2026-09-06 — bug-hunt-ship — Planned
 
 - **Date:** 2026-09-06

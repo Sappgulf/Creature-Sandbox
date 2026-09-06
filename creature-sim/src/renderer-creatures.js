@@ -208,7 +208,7 @@ export function applyCreatureMethods(Renderer) {
         }
       }
 
-      if (showNames && (isSelected || isPinned || zoom > 1.2)) {
+      if (showNames && (isSelected || isPinned || isHovered || isGrabbed)) {
         this._drawCreatureName(c, isSelected, isPinned, opts, nameCache);
       }
 
@@ -670,24 +670,24 @@ export function applyCreatureMethods(Renderer) {
     const offsetY = -creature.size - 8;
 
     ctx.save();
-    ctx.font = `${Math.max(10, 12 * zoom)}px monospace`;
+    ctx.font = `600 ${Math.max(9, 11 * Math.min(zoom, 1.2))}px "JetBrains Mono", ui-monospace, monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
-
-    // Background for readability
     const metrics = ctx.measureText(name);
-    const padding = 4;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(
-      creature.x - metrics.width / 2 - padding,
-      creature.y + offsetY - 14 - padding,
-      metrics.width + padding * 2,
-      14 + padding * 2
-    );
-
-    // Draw name
-    ctx.fillStyle = isSelected || isPinned ? '#7bb7ff' : nameColor;
-    ctx.fillText(name, creature.x, creature.y + offsetY);
+    const padX = 5;
+    const h = 13;
+    const bx = creature.x - metrics.width / 2 - padX;
+    const by = creature.y + offsetY - h;
+    ctx.fillStyle = 'rgba(9, 28, 21, 0.82)';
+    ctx.strokeStyle = isSelected || isPinned ? 'rgba(197, 242, 126, 0.45)' : 'rgba(183, 226, 187, 0.22)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(bx, by, metrics.width + padX * 2, h, 4);
+    else ctx.rect(bx, by, metrics.width + padX * 2, h);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = isSelected || isPinned ? '#c5f27e' : nameColor;
+    ctx.fillText(name, creature.x, creature.y + offsetY - 2);
     ctx.restore();
   };
 

@@ -2006,7 +2006,9 @@ test('simulation-state: packCreature and unpackCreature round-trip stays finite'
       genes: {
         predator: 1,
         diet: { expressed: 0.95 },
-        hue: { expressed: 210 }
+        hue: { expressed: 210 },
+        speed: { expressed: 1.2 },
+        sense: { expressed: 140 }
       }
     },
     buffer,
@@ -2018,6 +2020,8 @@ test('simulation-state: packCreature and unpackCreature round-trip stays finite'
   const unpacked = unpackCreature(buffer, 0);
   assert.ok(unpacked.genes.diet > 0.9, 'unpacked diet should preserve predator diet');
   assert.ok(Math.abs(unpacked.genes.hue - 210) < 1e-5, 'unpacked hue should round-trip');
+  assert.ok(Math.abs(unpacked.genes.speed - 1.2) < 1e-5, 'unpacked speed should round-trip');
+  assert.ok(Math.abs(unpacked.genes.sense - 140) < 1e-5, 'unpacked sense should round-trip');
 });
 
 test('SimulationProxy: queryCreatures filters alive creatures in radius', () => {

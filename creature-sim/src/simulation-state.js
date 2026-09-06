@@ -7,7 +7,7 @@ import { geneValue } from './creature-genetics-helpers.js';
 
 // Each creature takes 21 floats in the buffer
 // (Packed as Float32Array)
-export const CREATURE_STRIDE = 21;
+export const CREATURE_STRIDE = 23;
 
 export const LAYOUT = {
   ID: 0,
@@ -38,7 +38,9 @@ export const LAYOUT = {
   // world, which also zeroed the diversity term in biomeHealthScore.
   AQUATIC: 18,
   FLYING: 19,
-  BURROWING: 20
+  BURROWING: 20,
+  SPEED: 21,
+  SENSE: 22
 };
 
 /**
@@ -81,6 +83,8 @@ export function packCreature(creature, buffer, index) {
   buffer[o + LAYOUT.AQUATIC] = geneValue(creature.genes, 'aquatic', 0);
   buffer[o + LAYOUT.FLYING] = geneValue(creature.genes, 'flying', 0);
   buffer[o + LAYOUT.BURROWING] = geneValue(creature.genes, 'burrowing', 0);
+  buffer[o + LAYOUT.SPEED] = geneValue(creature.genes, 'speed', 0);
+  buffer[o + LAYOUT.SENSE] = geneValue(creature.genes, 'sense', 0);
 }
 
 /**
@@ -143,8 +147,12 @@ export function unpackCreature(buffer, index) {
       aquatic: buffer[o + LAYOUT.AQUATIC],
       flying: buffer[o + LAYOUT.FLYING],
       burrowing: buffer[o + LAYOUT.BURROWING],
+      speed: buffer[o + LAYOUT.SPEED],
+      sense: buffer[o + LAYOUT.SENSE],
       _luckyMutation: buffer[o + LAYOUT.LUCKY] > 0.5
     },
-    aquaticAffinity: buffer[o + LAYOUT.AQUATIC]
+    aquaticAffinity: buffer[o + LAYOUT.AQUATIC],
+    flyingAffinity: buffer[o + LAYOUT.FLYING],
+    burrowingAffinity: buffer[o + LAYOUT.BURROWING]
   };
 }

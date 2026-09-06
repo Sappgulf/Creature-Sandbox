@@ -861,12 +861,16 @@ input[type='range']:focus-visible {
   display: grid;
   gap: var(--space-sm);
   padding: var(--space-md);
-  border-radius: var(--radius-lg);
-  background: rgba(16, 20, 36, 0.82);
-  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 14px;
+  background: rgba(9, 28, 21, 0.94);
+  border: 1px solid rgba(183, 226, 187, 0.22);
   box-shadow: var(--shadow-medium);
   z-index: var(--z-sheet-raised);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+}
+body.god-mode #session-meta,
+body.god-mode #moments-panel {
+  display: none;
 }
 .god-mode-panel.hidden {
   display: none;
@@ -902,9 +906,9 @@ input[type='range']:focus-visible {
   min-height: 44px;
   padding: 10px 12px;
   border-radius: var(--radius-md);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  background: rgba(30, 41, 59, 0.6);
-  color: #e2e8f0;
+  border: 1px solid rgba(183, 226, 187, 0.16);
+  background: rgba(12, 32, 24, 0.72);
+  color: var(--text-primary);
   font-size: 13px;
   display: inline-flex;
   align-items: center;
@@ -959,8 +963,8 @@ input[type='range']:focus-visible {
   background: rgba(248, 113, 113, 0.14);
 }
 .god-mode-tools button:hover {
-  background: rgba(51, 65, 85, 0.7);
-  border-color: rgba(148, 163, 184, 0.4);
+  background: rgba(197, 242, 126, 0.1);
+  border-color: rgba(197, 242, 126, 0.32);
 }
 .god-mode-tools button:active {
   transform: scale(0.97);
@@ -4001,13 +4005,13 @@ body.home-active #btn-show-inspector {
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  border-radius: var(--radius-lg);
-  background: rgba(12, 16, 24, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(9, 28, 21, 0.94);
+  border: 1px solid rgba(183, 226, 187, 0.22);
   color: var(--text-primary);
   backdrop-filter: blur(16px);
-  z-index: var(--z-sheet-raised);
-  box-shadow: var(--shadow-hard);
+  z-index: var(--z-sheet);
+  box-shadow: var(--shadow-medium);
   animation: momentsSlideIn var(--transition-slow) ease-out;
 }
 .moments-panel.hidden {
