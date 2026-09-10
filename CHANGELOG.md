@@ -44,7 +44,7 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 - **Issues:** Same as planned.
 - **Root Causes:** Same as planned.
 - **Fixes:** Same as planned.
-- **Verification:** `npx eslint creature-sim/src scripts/*.mjs` clean; `npm test` green (191 + 70 + E2E, including new nursery objective and worker food-undo coverage); scenario contract validates both new scenarios; `npm run build` + `check:bundle` green (main app JS 379.4 kB / 110.7 kB gzip, worker 305.0 kB under the 312 kB budget); `npm run smoke:browser` and `npm run proof:release` green (worker + main + worker lanes, scenario balance, evidence board).
+- **Verification:** `npx eslint creature-sim/src scripts/*.mjs` clean; `npm test` green (191 + 70 + E2E, including new nursery objective and worker food-undo coverage); scenario contract validates both new scenarios; `npm run build` + `check:bundle` green (main app JS 379.4 kB / 110.7 kB gzip, worker 305.0 kB under the 312 kB budget); `npm run smoke:browser` and `npm run proof:release` green (worker + main + worker lanes, scenario balance, evidence board). Production: pushed `8bdc454`; `npm run proof:vercel` confirms the alias serves it; `npm run smoke:production` and `npm run smoke:production:vitals` green (desktop CLS 0.0011, mobile 0).
 
 ### 2026-09-10 — worker-fx-and-controls — Planned
 
