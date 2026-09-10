@@ -171,6 +171,33 @@ self.onmessage = function (e) {
         }
         break;
 
+      case 'REMOVE_FOOD_AT': {
+        // Worker food does not carry stable ids, so god/brush food undo finds
+        // the nearest item to the recorded coordinates instead.
+        if (world && Number.isFinite(data?.x) && Number.isFinite(data?.y)) {
+          const radius = Number.isFinite(data.radius) ? data.radius : 8;
+          let bestIndex = -1;
+          let bestDistSq = radius * radius;
+          for (let i = 0; i < world.food.length; i++) {
+            const f = world.food[i];
+            const dx = (f.x ?? 0) - data.x;
+            const dy = (f.y ?? 0) - data.y;
+            const distSq = dx * dx + dy * dy;
+            if (distSq <= bestDistSq) {
+              bestDistSq = distSq;
+              bestIndex = i;
+            }
+          }
+          if (bestIndex >= 0) {
+            const [removed] = world.food.splice(bestIndex, 1);
+            if (removed) world.foodGrid?.remove?.(removed);
+            world.foodGridDirty = true;
+            sendSnapshot();
+          }
+        }
+        break;
+      }
+
       case 'TRIGGER_DISASTER':
         if (world) {
           world.triggerDisaster(data.type, data.options);

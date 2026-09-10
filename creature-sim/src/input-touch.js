@@ -91,13 +91,15 @@ export function applyInputTouchMethods(InputManager) {
       case 'food': {
         if (isDrag) {
           const food = this.world.addFood?.(x, y, 2.2, 'grass');
-          if (food) this.tools?.recordGodFood?.([food]);
+          // Worker addFood is fire-and-forget; record coordinates so undo can
+          // still find and remove the placed food.
+          this.tools?.recordGodFood?.([food || { x, y, r: 2.2, type: 'grass' }]);
           this.tools?.playToolJuice?.(x, y, 'food');
         } else {
           if (this.tools?.scatterFood) this.tools.scatterFood(x, y, 12);
           else {
             const food = this.world.addFood?.(x, y, 2.2, 'grass');
-            if (food) this.tools?.recordGodFood?.([food]);
+            this.tools?.recordGodFood?.([food || { x, y, r: 2.2, type: 'grass' }]);
           }
         }
         eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'food', x, y });

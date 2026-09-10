@@ -481,9 +481,15 @@ export class ToolController {
 
   recordGodFood(foodItems) {
     if (!Array.isArray(foodItems) || foodItems.length === 0) return;
+    // Worker-mode addFood returns null and snapshot food carries no stable id,
+    // so remember coordinates too; removeFoodAt() can then undo by position.
+    const positions = foodItems
+      .filter(item => item && Number.isFinite(item.x) && Number.isFinite(item.y))
+      .map(item => ({ x: item.x, y: item.y, r: item.r ?? 2.2, type: item.type ?? 'grass' }));
     this.pushAction({
       type: ActionType.GOD_FOOD,
-      food: foodItems
+      food: foodItems,
+      positions
     });
   }
 
@@ -511,21 +517,24 @@ export class ToolController {
 
   scatterFood(x, y, amount = 12) {
     const addedFood = [];
+    const positions = [];
     let attempted = 0;
     for (let i = 0; i < amount; i++) {
       const fx = x + (Math.random() - 0.5) * this.brushSize;
       const fy = y + (Math.random() - 0.5) * this.brushSize;
       const food = this.world.addFood(fx, fy, 1.2);
       attempted += 1;
+      positions.push({ x: fx, y: fy, r: 1.2, type: 'grass' });
       if (food) {
         addedFood.push(food);
       }
     }
 
-    if (addedFood.length > 0) {
+    if (addedFood.length > 0 || positions.length > 0) {
       this.pushAction({
         type: ActionType.ADD_FOOD,
-        food: addedFood
+        food: addedFood,
+        positions
       });
     }
     // Worker addFood is fire-and-forget (returns null). Still play the drop
@@ -538,7 +547,15 @@ export class ToolController {
   }
 
   undoAddFood(action) {
-    for (const food of action.food) {
+    const positions = Array.isArray(action.positions) ? action.positions : [];
+    if (positions.length > 0 && typeof this.world.removeFoodAt === 'function') {
+      // Worker proxy: snapshot food ids are null, so undo by coordinates.
+      for (const position of positions) {
+        this.world.removeFoodAt(position.x, position.y, 8);
+      }
+      return;
+    }
+    for (const food of action.food || []) {
       if (typeof this.world.removeFood === 'function') {
         this.world.removeFood(food.id);
         continue;
@@ -553,7 +570,18 @@ export class ToolController {
   }
 
   redoAddFood(action) {
-    for (const food of action.food) {
+    const positions = Array.isArray(action.positions) ? action.positions : [];
+    if (
+      positions.length > 0 &&
+      typeof this.world.addFood === 'function' &&
+      typeof this.world.removeFoodAt === 'function'
+    ) {
+      for (const position of positions) {
+        this.world.addFood(position.x, position.y, position.r, position.type);
+      }
+      return;
+    }
+    for (const food of action.food || []) {
       if (!this.world.food.includes(food)) {
         this.world.food.push(food);
         this.world.foodGrid.add(food);

@@ -292,6 +292,37 @@ export const PLAYABLE_SCENARIOS = [
     },
     tuning: { mode: 'frontier', foodRate: 1.42, disasters: false, autoBalance: false, season: 'autumn' },
     steps: ['Feed the bridge exits', 'Follow scavengers after hunts', 'Use calm zones if the corridor panics']
+  },
+  {
+    id: 'nursery_watch',
+    artFrame: 6,
+    icon: '🍼',
+    name: 'Nursery Watch',
+    fantasy: 'A baby boom is fragile: keep the youngest alive while hunters circle.',
+    objective: 'Keep 26 creatures alive with 8+ babies through 2 generations.',
+    targetSeconds: 180,
+    minAlive: 26,
+    minBabies: 8,
+    minGeneration: 2,
+    setup: { herbivore: 32, omnivore: 6, predator: 3, food: 265, props: ['calm', 'spring'] },
+    tuning: { mode: 'balanced', foodRate: 1.28, disasters: false, season: 'spring' },
+    steps: ['Feed the nursery cluster', 'Keep breeding pairs calm', 'Leave hunters room at the edge']
+  },
+  {
+    id: 'storm_chasers',
+    artFrame: 4,
+    icon: '⛈️',
+    name: 'Storm Chasers',
+    fantasy: 'Disaster fronts roll through; keep the herd fed and moving.',
+    objective: 'Survive the storm season with 34+ creatures, 4+ predators, and food in reserve.',
+    targetSeconds: 210,
+    minAlive: 34,
+    minPredators: 4,
+    minFood: 110,
+    maxStress: 66,
+    setup: { herbivore: 48, omnivore: 8, predator: 7, food: 265, props: ['calm', 'fan', 'conveyor'] },
+    tuning: { mode: 'frontier', foodRate: 0.95, disasters: true, season: 'autumn' },
+    steps: ['Stock food between storms', 'Calm panicked herds', 'Follow the healthiest group']
   }
 ];
 
@@ -361,6 +392,15 @@ export function buildScenarioObjectives(scenario) {
       icon: '🧬',
       target: scenario.minVariants,
       description: `Keep ${scenario.minVariants} variant roles alive`
+    });
+  }
+  if (scenario.minBabies) {
+    goals.push({
+      id: `${scenario.id}_babies`,
+      type: 'baby_count',
+      icon: '🍼',
+      target: scenario.minBabies,
+      description: `Keep ${scenario.minBabies}+ babies alive`
     });
   }
   if (scenario.minProps) {
@@ -687,6 +727,7 @@ export class PlayableScenarios {
       ? clamp(1 - Math.max(0, metrics.averageStress - scenario.maxStress) / 60, 0, 1)
       : 1;
     const variantProgress = scenario.minVariants ? clamp(metrics.variants / scenario.minVariants, 0, 1) : 1;
+    const babyProgress = scenario.minBabies ? clamp(metrics.babies / scenario.minBabies, 0, 1) : 1;
     const propProgress = scenario.minProps ? clamp(metrics.props / scenario.minProps, 0, 1) : 1;
     const generationProgress = scenario.minGeneration ? clamp(metrics.maxGeneration / scenario.minGeneration, 0, 1) : 1;
     const progress = Math.min(
@@ -696,6 +737,7 @@ export class PlayableScenarios {
       predatorProgress,
       stressProgress,
       variantProgress,
+      babyProgress,
       propProgress,
       generationProgress
     );
@@ -718,6 +760,7 @@ export class PlayableScenarios {
       (!scenario.minPredators || metrics.predators >= scenario.minPredators) &&
       (!scenario.maxStress || metrics.averageStress <= scenario.maxStress) &&
       (!scenario.minVariants || metrics.variants >= scenario.minVariants) &&
+      (!scenario.minBabies || metrics.babies >= scenario.minBabies) &&
       (!scenario.minProps || metrics.props >= scenario.minProps) &&
       (!scenario.minGeneration || metrics.maxGeneration >= scenario.minGeneration);
 
@@ -787,6 +830,14 @@ export class PlayableScenarios {
         headline: 'Predator count is below the objective',
         why: 'This scenario needs a real predator-prey balance, not only grazers.',
         nextAction: 'Spawn a predator near the edge of the herd and keep food available.'
+      };
+    }
+    if (scenario.minBabies && metrics.babies < scenario.minBabies) {
+      return {
+        level: 'medium',
+        headline: 'The nursery is thinning',
+        why: 'Babies are the run timer: without new births the next generation never lands.',
+        nextAction: 'Keep breeding pairs fed and calm, and push predators away from the nursery.'
       };
     }
     if (metrics.averageStress > (scenario.maxStress || 58)) {

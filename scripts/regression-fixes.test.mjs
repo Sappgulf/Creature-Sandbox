@@ -242,7 +242,8 @@ test('session-goals: a fresh sandbox favors goals available in the opener', () =
     'births',
     'survival_time',
     'manual_spawns',
-    'creature_throws'
+    'creature_throws',
+    'baby_count'
   ]);
   const goals = sessionGoals.getGoals();
 
@@ -1267,6 +1268,26 @@ test('worker-mode prop transport: proxy sends ADD_PROP/REMOVE_PROP shapes and dr
   proxy.removeNearestProp(Number.NaN, 1);
   proxy.removePropById(null);
   assert.equal(sentMessages.length, before, 'malformed prop payloads must be dropped instead of sent to the worker');
+});
+
+test('worker-mode food undo: proxy sends REMOVE_FOOD_AT for coordinate-based removal', () => {
+  const { proxy, sentMessages } = makeFakeWorkerProxy();
+  proxy.handleMessage({ data: { type: 'READY' } });
+
+  // Worker food carries no stable id, so brush/god food undo must be able to
+  // remove by the coordinates the player painted.
+  proxy.removeFoodAt(10, 20, 8);
+  const last = sentMessages[sentMessages.length - 1];
+  assert.equal(last.type, 'REMOVE_FOOD_AT');
+  assert.deepEqual(last.data, { x: 10, y: 20, radius: 8 });
+
+  const before = sentMessages.length;
+  proxy.removeFoodAt(Number.NaN, 20);
+  assert.equal(sentMessages.length, before, 'malformed REMOVE_FOOD_AT should be dropped');
+
+  const src = fs.readFileSync(new URL('../creature-sim/src/worker-simulation.js', import.meta.url), 'utf8');
+  assert.match(src, /case 'REMOVE_FOOD_AT'/, 'worker must handle coordinate food removal');
+  assert.match(src, /world\.foodGrid\?\.remove/, 'coordinate food removal must update the spatial grid');
 });
 
 test('worker-mode prop transport: per-tick STATE_UPDATE carries sandboxProps to the renderer/save stub', () => {

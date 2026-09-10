@@ -4,8 +4,23 @@ import {
   buildScenarioObjectives,
   validatePlayableScenarioDefinitions
 } from '../creature-sim/src/playable-scenarios.js';
+import { getObjectiveProgress } from '../creature-sim/src/gameplay-objectives.js';
 
 assert.deepEqual(validatePlayableScenarioDefinitions(), []);
+
+const nurseryWatch = PLAYABLE_SCENARIOS.find(scenario => scenario.id === 'nursery_watch');
+assert.ok(nurseryWatch, 'nursery_watch scenario should exist');
+assert.equal(nurseryWatch?.minBabies, 8);
+assert.equal(nurseryWatch?.minGeneration, 2);
+const nurseryGoals = buildScenarioObjectives(nurseryWatch);
+assert.equal(nurseryGoals.find(goal => goal.type === 'baby_count')?.target, 8);
+assert.equal(getObjectiveProgress('baby_count', 8, { babies: 4 }), 0.5);
+assert.equal(getObjectiveProgress('baby_count', 8, { babies: 12 }), 1.5);
+
+const stormChasers = PLAYABLE_SCENARIOS.find(scenario => scenario.id === 'storm_chasers');
+assert.ok(stormChasers, 'storm_chasers scenario should exist');
+assert.equal(stormChasers?.tuning?.disasters, true);
+assert.ok(stormChasers?.minPredators >= 1, 'storm chasers should require predators');
 
 const mutationShowcase = PLAYABLE_SCENARIOS.find(scenario => scenario.id === 'mutation_showcase');
 assert.equal(mutationShowcase?.minVariants, 3);

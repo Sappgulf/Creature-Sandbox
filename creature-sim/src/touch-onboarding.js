@@ -86,6 +86,9 @@ class TouchOnboarding {
     if (!force && !this.shouldShow()) return;
     this.shown = true;
     this.currentStep = 0;
+    // Remember who opened the tutorial so focus can return there on close.
+    this._returnFocus =
+      typeof document !== 'undefined' && document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     // Make sure the markup is present in the document
     this._ensureMarkup();
@@ -300,6 +303,11 @@ class TouchOnboarding {
     // NOTE: the keydown handler stays bound for the lifetime of the overlay.
     // It early-returns while hidden, and _bindEvents() guards on dataset.bound,
     // so removing it here permanently broke keyboard nav after "Replay Tutorial".
+    const returnFocus = this._returnFocus;
+    this._returnFocus = null;
+    if (returnFocus && returnFocus.isConnected) {
+      returnFocus.focus?.({ preventScroll: true });
+    }
   }
 }
 

@@ -136,6 +136,8 @@ export function getObjectiveProgress(type, target, metrics = {}) {
   switch (type) {
     case 'population':
       return metrics.population / safeTarget;
+    case 'baby_count':
+      return metrics.babies / safeTarget;
     case 'predator_count':
       return metrics.predators / safeTarget;
     case 'predator_kills':

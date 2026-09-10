@@ -24,7 +24,8 @@ const OBJECTIVE_LABELS = Object.freeze({
   lineage_generation: 'Lineage',
   prop_places: 'Props',
   god_actions: 'Interventions',
-  stress_cap: 'Calm biome'
+  stress_cap: 'Calm biome',
+  baby_count: 'Nursery'
 });
 
 const OBJECTIVE_ICONS = Object.freeze({
@@ -40,7 +41,8 @@ const OBJECTIVE_ICONS = Object.freeze({
   lineage_generation: '🌳',
   prop_places: '🧩',
   god_actions: '✨',
-  stress_cap: '🌤️'
+  stress_cap: '🌤️',
+  baby_count: '🍼'
 });
 
 function normalizeType(type) {

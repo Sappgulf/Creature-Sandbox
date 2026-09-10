@@ -1406,7 +1406,6 @@ export async function initializeApp() {
     const continueHint = domCache.get('continueHint') || document.getElementById('continue-hint');
     const newGameBtn = domCache.get('newGameBtn') || document.getElementById('btn-new-game');
     const guidedRunBtn = domCache.get('guidedRunBtn') || document.getElementById('btn-guided-run');
-    const campaignBtn = domCache.get('campaignBtn') || document.getElementById('btn-campaign');
 
     // Show home page
     errorHandler.safeExecute(() => {
@@ -1540,26 +1539,10 @@ export async function initializeApp() {
       }
     }, 'Guided run button setup');
 
-    // Handle campaign button (opens campaign panel from home)
-    errorHandler.safeExecute(() => {
-      if (campaignBtn) {
-        campaignBtn.addEventListener('click', () => {
-          errorHandler.safeExecute(() => {
-            initAudioOnInteraction();
-            if (audio) audio.playUISound('click');
-            setElementHidden(homePage, true);
-            setHomePageActive(false);
-
-            // Trigger campaign panel open
-            const campaignPanel = document.getElementById('campaign-panel');
-            setElementHidden(campaignPanel, false);
-
-            // Start new game in background
-            startNewGame();
-          }, 'Campaign launch');
-        });
-      }
-    }, 'Campaign button setup');
+    // Campaign is opened from the overflow menu now. The legacy hidden
+    // #btn-campaign already registers a panel-open listener above; a second
+    // listener here double-fired (and called startNewGame) if it was ever
+    // revealed, so it was removed.
   }
 
   // Home page animated background

@@ -213,6 +213,11 @@ export class SimulationProxy {
       if (id) this._send('REMOVE_FOOD', { id });
     };
 
+    this.removeFoodAt = (x, y, radius = 8) => {
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+      this._send('REMOVE_FOOD_AT', { x, y, radius: Number.isFinite(radius) ? radius : 8 });
+    };
+
     // Disaster Stubs
     // Note: Worker sync requires additional message protocol - currently uses cached snapshot
     this.getActiveDisaster = () => {

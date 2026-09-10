@@ -170,6 +170,22 @@ export function applyCreatureMethods(Renderer) {
       renderOpts.world = world;
       renderOpts.lodLevel = zoom < 0.25 ? 'low' : zoom < 0.5 ? 'medium' : 'high';
 
+      // Worker-mode color identity: snapshot creatures carry mutation bits but
+      // no gene-level color override, so albino/melanic identity is baked into
+      // the sprite tint here instead of only a halo.
+      if (!c.draw && (c.mutationBits || 0)) {
+        const hue = Number.isFinite(c.genes?.hue) ? c.genes.hue : 0;
+        if (c.mutationBits & MUTATION_BITS.ALBINO) {
+          renderOpts.spriteColorOverride = `hsl(${hue}, 12%, 92%)`;
+        } else if (c.mutationBits & MUTATION_BITS.MELANIC) {
+          renderOpts.spriteColorOverride = `hsl(${hue}, 40%, 18%)`;
+        } else {
+          renderOpts.spriteColorOverride = null;
+        }
+      } else {
+        renderOpts.spriteColorOverride = null;
+      }
+
       // PERFORMANCE: Level of Detail (LOD) handling
       if (zoom < 0.05 && !forceDetail) {
         // ULTRA LOW LOD: Colored dot with outline, sized by creature

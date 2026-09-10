@@ -114,7 +114,10 @@ function requestSpriteFrames(assetKey, size, color) {
     .finally(() => pendingSpriteRequests.delete(requestKey));
 }
 
-export function getCreatureSpriteFrame(creature = {}, { worldTime = 0, renderSize = 64, clusterHue = null } = {}) {
+export function getCreatureSpriteFrame(
+  creature = {},
+  { worldTime = 0, renderSize = 64, clusterHue = null, spriteColor = null } = {}
+) {
   if (typeof document === 'undefined') return null;
   const assetKey = getCreatureAssetKey(creature);
   const size = assetLoader.getNearestSpriteSize(
@@ -122,7 +125,7 @@ export function getCreatureSpriteFrame(creature = {}, { worldTime = 0, renderSiz
       Math.abs(candidate - renderSize) < Math.abs(closest - renderSize) ? candidate : closest
     )
   );
-  const color = getCreatureSpriteColor(creature, clusterHue);
+  const color = spriteColor || getCreatureSpriteColor(creature, clusterHue);
   let sprite = assetLoader.getSpriteFramesSync(assetKey, { size, color });
   if (!sprite) {
     requestSpriteFrames(assetKey, size, color);
@@ -157,7 +160,8 @@ export function drawCreatureSprite(ctx, creature = {}, opts = {}) {
   const sprite = getCreatureSpriteFrame(creature, {
     worldTime: opts.worldTime,
     renderSize,
-    clusterHue: opts.clusterHue
+    clusterHue: opts.clusterHue,
+    spriteColor: opts.spriteColorOverride || null
   });
   if (!sprite?.frame) return false;
 

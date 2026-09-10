@@ -51,6 +51,13 @@ const GOAL_POOL = [
     getDescription: target => `Welcome ${target} new births`
   },
   {
+    id: 'nursery_boom',
+    type: 'baby_count',
+    icon: '🍼',
+    makeTarget: () => 6 + Math.floor(Math.random() * 5),
+    getDescription: target => `Keep ${target} babies alive at once`
+  },
+  {
     id: 'endure',
     type: 'survival_time',
     icon: '⏳',
@@ -107,7 +114,8 @@ const STARTER_GOAL_TYPES = new Set([
   'births',
   'survival_time',
   'manual_spawns',
-  'creature_throws'
+  'creature_throws',
+  'baby_count'
 ]);
 
 const SNAPSHOT_GOAL_METRIC = {
@@ -115,7 +123,8 @@ const SNAPSHOT_GOAL_METRIC = {
   aquatic_alive: 'aquaticAlive',
   predator_count: 'predators',
   food_available: 'foodAvailable',
-  variant_alive: 'variantsAlive'
+  variant_alive: 'variantsAlive',
+  baby_count: 'babies'
 };
 
 // Snapshot goals describe a state ("keep N alive"), not a cumulative score, so

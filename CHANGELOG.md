@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-10 — nursery-and-food-undo — Planned
+
+- **Date:** 2026-09-10
+- **Scope:** simulation | gameplay | ui | render
+- **Type:** Planned
+- **Issues:** Worker-mode food painting could not be undone at all (food has no stable id and the proxy removed by id), god food was never recorded in worker mode, and redo rebuilt nothing. Only 16 scenarios existed, none about raising the next generation, and there was no live "babies" objective type. Albino/melanic creatures still drew with normal colors in the worker runtime (halo only). The hidden legacy campaign button registered two click listeners and would double-fire.
+- **Root Causes:** `undoAddFood`/`redoAddFood` only handled concrete food objects with ids; `scatterFood` recorded nothing when the proxy returned null; no `REMOVE_FOOD_AT` worker command; no `baby_count` metric wiring; `drawCreatureSprite` tint was not overridable; duplicated campaign listener.
+- **Fixes:** Coordinate-based worker food undo/redo (`removeFoodAt` proxy + `REMOVE_FOOD_AT` worker case + position tracking in scatter/god food), two new scenarios (`nursery_watch`, `storm_chasers`) with a new live `baby_count` objective across metrics/goals/HUD, albino/melanic sprite recoloring for worker snapshots, removal of the duplicate campaign listener, and touch-onboarding focus return.
+- **Verification:** Pending full release proof.
+
+### 2026-09-10 — nursery-and-food-undo — Implemented
+
+- **Date:** 2026-09-10
+- **Scope:** simulation | gameplay | ui | render
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npx eslint creature-sim/src scripts/*.mjs` clean; `npm test` green (191 + 70 + E2E, including new nursery objective and worker food-undo coverage); scenario contract validates both new scenarios; `npm run build` + `check:bundle` green (main app JS 379.4 kB / 110.7 kB gzip, worker 305.0 kB under the 312 kB budget); `npm run smoke:browser` and `npm run proof:release` green (worker + main + worker lanes, scenario balance, evidence board).
+
 ### 2026-09-10 — worker-fx-and-controls — Planned
 
 - **Date:** 2026-09-10
