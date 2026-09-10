@@ -44,7 +44,7 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 - **Issues:** Same as planned.
 - **Root Causes:** Same as planned.
 - **Fixes:** Same as planned.
-- **Verification:** `npx eslint creature-sim/src` clean; `npm test` green (191 + 69 + E2E, new mutation/status bit round-trip); `npm run build` green (main app JS 377.33 kB / 110.81 kB gzip); `npm run check:bundle` green (worker 304.6 kB under the 312 kB budget); `npm run proof:release` green; manually verified worker elemental/bioluminescent auras and the night grade with forced-mutation screenshots.
+- **Verification:** `npx eslint creature-sim/src` clean; `npm test` green (191 + 69 + E2E, new mutation/status bit round-trip); `npm run build` green (main app JS 377.33 kB / 110.81 kB gzip); `npm run check:bundle` green (worker 304.6 kB under the 312 kB budget); `npm run proof:release` green; manually verified worker elemental/bioluminescent auras and the night grade with forced-mutation screenshots. Production: pushed `170e2be`; `npm run proof:vercel` confirms the alias serves it; `npm run smoke:production` and `npm run smoke:production:vitals` green (desktop CLS 0.0011, mobile 0).
 
 ### 2026-09-10 — gameplay-visual-hud-polish — Planned
 
