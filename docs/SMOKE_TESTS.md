@@ -127,6 +127,7 @@
 13. **Help section**
     - Open **⋯ More Actions**.
     - Confirm the Help section lists controls, shortcuts, and where features live.
+    - Open Help with the keyboard and confirm focus enters the dialog, then Escape closes it and returns focus to **More Actions**.
 
 14. **Session goals**
     - Open **🎛️ Modes & Goals**.

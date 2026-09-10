@@ -221,22 +221,35 @@ export function applyUiPanelMethods(UIController) {
     this.syncScenarioControls();
   };
 
-  UIController.prototype.toggleShortcutsHelp = function (forceVisible = null) {
+  UIController.prototype.toggleShortcutsHelp = function (forceVisible = null, options = {}) {
     const overlay = document.getElementById('shortcuts-overlay');
     if (!overlay) return;
     const shouldShow = forceVisible === null ? overlay.classList.contains('hidden') : !!forceVisible;
-    if (!shouldShow) {
+    if (shouldShow) {
+      const returnTarget = options.returnFocus || document.activeElement;
+      this._shortcutsReturnTarget =
+        returnTarget &&
+        returnTarget !== overlay &&
+        !overlay.contains(returnTarget) &&
+        typeof returnTarget.focus === 'function'
+          ? returnTarget
+          : null;
+    } else {
       this.blurFocusedDescendant(overlay);
     }
     overlay.classList.toggle('hidden', !shouldShow);
     overlay.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
     if (shouldShow) {
-      requestAnimationFrame(() => {
-        const firstFocusable = overlay.querySelector(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        if (firstFocusable) firstFocusable.focus();
-      });
+      const firstFocusable = overlay.querySelector(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      firstFocusable?.focus?.({ preventScroll: true });
+    } else {
+      const returnTarget = this._shortcutsReturnTarget;
+      this._shortcutsReturnTarget = null;
+      if (returnTarget && document.body.contains(returnTarget)) {
+        returnTarget.focus({ preventScroll: true });
+      }
     }
   };
 

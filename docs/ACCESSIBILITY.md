@@ -21,4 +21,4 @@
 2. **Reduced motion:** Toggle Reduced Motion and confirm animations are minimized.
 3. **Labels:** Verify icon buttons announce meaningful labels with a screen reader.
 4. **Mobile touch:** Confirm tap targets are comfortably sized and panels remain visible with the keyboard open.
-5. **Help content:** Open the ⋯ menu and ensure the Help section is readable via keyboard focus.
+5. **Help content:** Open the ⋯ menu and ensure Help moves focus into the shortcuts dialog and returns focus to **More Actions** on close.

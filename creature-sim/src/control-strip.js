@@ -716,8 +716,12 @@ export class ControlStripController {
 
     if (action === 'help') {
       const shortcutsOverlay = document.getElementById('shortcuts-overlay');
-      shortcutsOverlay?.classList.remove('hidden');
-      shortcutsOverlay?.setAttribute('aria-hidden', 'false');
+      if (this.uiController?.toggleShortcutsHelp) {
+        this.uiController.toggleShortcutsHelp(true, { returnFocus: this.lastDrawerTrigger });
+      } else {
+        shortcutsOverlay?.classList.remove('hidden');
+        shortcutsOverlay?.setAttribute('aria-hidden', 'false');
+      }
       return;
     }
 

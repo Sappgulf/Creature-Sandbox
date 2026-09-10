@@ -404,12 +404,40 @@ export class InputManager {
   /**
    * Toggle keyboard shortcuts help overlay
    */
-  toggleShortcutsHelp() {
+  toggleShortcutsHelp(forceVisible = null) {
+    if (this.uiController?.toggleShortcutsHelp) {
+      this.uiController.toggleShortcutsHelp(forceVisible);
+      return;
+    }
+
     const overlay = document.getElementById('shortcuts-overlay');
-    if (overlay) {
-      const shouldShow = overlay.classList.contains('hidden');
-      overlay.classList.toggle('hidden', !shouldShow);
-      overlay.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+    if (!overlay) return;
+    const shouldShow = forceVisible === null ? overlay.classList.contains('hidden') : !!forceVisible;
+    if (shouldShow) {
+      const returnTarget = document.activeElement;
+      this.shortcutsReturnTarget =
+        returnTarget &&
+        returnTarget !== overlay &&
+        !overlay.contains(returnTarget) &&
+        typeof returnTarget.focus === 'function'
+          ? returnTarget
+          : null;
+    } else if (overlay.contains(document.activeElement) && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
+    overlay.classList.toggle('hidden', !shouldShow);
+    overlay.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+    if (shouldShow) {
+      const firstFocusable = overlay.querySelector(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      firstFocusable?.focus?.({ preventScroll: true });
+    } else {
+      const returnTarget = this.shortcutsReturnTarget;
+      this.shortcutsReturnTarget = null;
+      if (returnTarget && document.body.contains(returnTarget)) {
+        returnTarget.focus({ preventScroll: true });
+      }
     }
   }
 
@@ -419,8 +447,7 @@ export class InputManager {
   handleEscape() {
     const shortcutsOverlay = document.getElementById('shortcuts-overlay');
     if (shortcutsOverlay && !shortcutsOverlay.classList.contains('hidden')) {
-      shortcutsOverlay.classList.add('hidden');
-      shortcutsOverlay.setAttribute('aria-hidden', 'true');
+      this.toggleShortcutsHelp(false);
       return;
     }
 

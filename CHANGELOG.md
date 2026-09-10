@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-10 — shortcuts-focus-lifecycle — Planned
+
+- **Date:** 2026-09-10
+- **Scope:** ui | input | docs
+- **Type:** Planned
+- **Issues:** The keyboard-shortcuts dialog opened from Help or `?` without moving focus into the dialog, and closing it did not reliably return focus to the control that opened it.
+- **Root Causes:** The menu path directly toggled the overlay, while the keyboard path used a separate toggle with no stored return target or focus lifecycle.
+- **Fixes:** Give both entry paths an explicit return target, focus the first dialog control on open, blur on close, restore the initiating control, and add browser/unit coverage for menu and keyboard entry.
+- **Verification:** Pending full release proof.
+
+### 2026-09-10 — shortcuts-focus-lifecycle — Implemented
+
+- **Date:** 2026-09-10
+- **Scope:** ui | input | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npm run smoke:menus` passes (34/34) with Help focus entry, Escape closure, focus restoration, and `?` keyboard entry; focused regression suite passes (75/75); canonical `npm run proof:release` passes end-to-end with tests, lint, build, bundle, worker/default and main-thread fallback browser lanes, scenario balance, and release evidence. Worker readiness remains `needs-more-proof` on the existing headless pacing threshold; fallback readiness is `fallback-proof`.
+
 ### 2026-09-10 — camera-edge-guardrails — Planned
 
 - **Date:** 2026-09-10

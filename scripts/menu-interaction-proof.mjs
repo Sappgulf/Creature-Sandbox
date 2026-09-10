@@ -216,6 +216,13 @@ try {
         sel,
         { timeout: 8000 }
       );
+      if (action === 'help') {
+        assert.equal(
+          await page.evaluate(s => document.querySelector(s)?.contains(document.activeElement), sel),
+          true,
+          'shortcuts overlay should receive focus when it opens'
+        );
+      }
       if (action === 'campaign') {
         assert.equal(
           await page.evaluate(s => document.querySelector(s)?.contains(document.activeElement), sel),
@@ -227,6 +234,13 @@ try {
       await page.waitForFunction(s => document.querySelector(s)?.classList.contains('hidden'), sel, {
         timeout: 5000
       });
+      if (action === 'help') {
+        assert.equal(
+          await page.evaluate(() => document.activeElement?.id),
+          'ctrl-more',
+          'shortcuts overlay should restore focus to the menu trigger'
+        );
+      }
     });
   }
 
@@ -237,6 +251,11 @@ try {
     await page.keyboard.press('q');
     await page.keyboard.press('?');
     assert.ok(await visible('#shortcuts-overlay'), 'shortcuts should show');
+    assert.equal(
+      await page.evaluate(() => document.querySelector('#shortcuts-overlay')?.contains(document.activeElement)),
+      true,
+      'keyboard shortcuts should move focus into the dialog'
+    );
     await page.keyboard.press('Escape');
   });
 

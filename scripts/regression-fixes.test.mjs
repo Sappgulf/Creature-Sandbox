@@ -815,6 +815,29 @@ test('menu panels: campaign routing and keyboard semantics match the live panels
   assert.match(gameMode, /const interactionAttributes = locked \? 'aria-disabled="true"' : 'type="button"'/);
 });
 
+test('shortcuts help: menu and keyboard entry preserve dialog focus lifecycle', () => {
+  const panels = fs.readFileSync(new URL('../creature-sim/src/ui-controller-panels.js', import.meta.url), 'utf8');
+  const input = fs.readFileSync(new URL('../creature-sim/src/input-manager.js', import.meta.url), 'utf8');
+  const strip = fs.readFileSync(new URL('../creature-sim/src/control-strip.js', import.meta.url), 'utf8');
+  const bootstrap = fs.readFileSync(new URL('../creature-sim/src/app-bootstrap.js', import.meta.url), 'utf8');
+
+  assert.match(panels, /_shortcutsReturnTarget/, 'panel help should retain its return target');
+  assert.match(panels, /returnTarget\.focus\(\{ preventScroll: true \}\)/, 'panel help should restore focus');
+  assert.match(input, /this\.shortcutsReturnTarget/, 'keyboard help should retain its return target');
+  assert.match(
+    input,
+    /this\.uiController\?\.toggleShortcutsHelp/,
+    'keyboard help should use the shared controller when available'
+  );
+  assert.match(input, /this\.toggleShortcutsHelp\(false\)/, 'Escape should use the keyboard help close path');
+  assert.match(strip, /returnFocus: this\.lastDrawerTrigger/, 'menu help should pass the drawer trigger to the dialog');
+  assert.match(
+    bootstrap,
+    /inputManager\.uiController\s*=\s*uiController/,
+    'bootstrap should connect shared Help state'
+  );
+});
+
 test('styles: inspector sits above its own modal scrim, and its controls meet the touch floor', () => {
   const css = fs.readFileSync(new URL('../creature-sim/styles.css', import.meta.url), 'utf8');
 

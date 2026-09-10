@@ -902,6 +902,10 @@ export async function initializeApp() {
     console.warn('⚠️ UI controller failed to initialize, UI may not work');
   }
 
+  if (inputManager && uiController) {
+    inputManager.uiController = uiController;
+  }
+
   godToolSystem = errorHandler.safeExecute(
     () => {
       return new GodToolSystem({ tools, uiController });
