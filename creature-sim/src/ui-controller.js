@@ -775,27 +775,60 @@ export class UIController {
     const iconEl = indicator.querySelector('.tool-icon');
     const nameEl = indicator.querySelector('.tool-name');
     const hintEl = indicator.querySelector('.tool-hint');
+    const brushControls = indicator.querySelector('#tool-brush-controls');
+    const brushOutput = indicator.querySelector('#tool-brush-size');
+    const brushDecrease = indicator.querySelector('#tool-brush-decrease');
+    const brushIncrease = indicator.querySelector('#tool-brush-increase');
 
     if (iconEl) iconEl.textContent = meta.icon;
     if (nameEl) nameEl.textContent = meta.label;
 
     // Live brush size in hint for relevant tools
     const brush = this.tools?.brushSize;
+    const brushMode = mode === 'food' || mode === 'erase';
     if (hintEl) {
-      if ((mode === 'food' || mode === 'erase') && Number.isFinite(brush)) {
+      if (brushMode && Number.isFinite(brush)) {
         hintEl.textContent = `[/] ${Math.round(brush)}px`;
       } else {
         hintEl.textContent = meta.hint || '';
       }
     }
 
+    if (brushControls) {
+      brushControls.hidden = !brushMode;
+      brushControls.setAttribute('aria-hidden', brushMode ? 'false' : 'true');
+      if (brushMode && Number.isFinite(brush)) {
+        const size = Math.round(brush);
+        const sizeLabel = size <= 16 ? 'Fine' : size <= 34 ? 'Medium' : size <= 70 ? 'Wide' : 'Huge';
+        brushControls.setAttribute('aria-label', `${meta.label} brush size: ${sizeLabel}, ${size} world units`);
+        if (brushOutput) {
+          brushOutput.textContent = sizeLabel;
+          brushOutput.setAttribute('aria-label', `Brush size: ${sizeLabel}, ${size} world units`);
+          brushOutput.title = `${sizeLabel} brush · ${size} world units`;
+        }
+        if (brushDecrease) {
+          brushDecrease.disabled = size <= (this.tools?.minBrushSize ?? 8);
+          brushDecrease.setAttribute('aria-label', `Make ${sizeLabel.toLowerCase()} brush smaller`);
+        }
+        if (brushIncrease) {
+          brushIncrease.disabled = size >= (this.tools?.maxBrushSize ?? 120);
+          brushIncrease.setAttribute('aria-label', `Make ${sizeLabel.toLowerCase()} brush larger`);
+        }
+      }
+    }
+
     indicator.classList.add('visible');
 
-    // Hide indicator after brief display
+    // Brush controls are persistent while a paint/erase tool is armed so the
+    // player can adjust them with touch. Other tool confirmations remain
+    // transient and do not add permanent HUD chrome.
     clearTimeout(this._toolIndicatorTimeout);
-    this._toolIndicatorTimeout = setTimeout(() => {
-      indicator.classList.remove('visible');
-    }, 1800);
+    indicator.classList.toggle('persistent', brushMode);
+    if (!brushMode) {
+      this._toolIndicatorTimeout = setTimeout(() => {
+        indicator.classList.remove('visible');
+      }, 1800);
+    }
   }
 
   onBehaviorChange() {

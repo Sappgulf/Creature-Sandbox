@@ -361,6 +361,7 @@ export const GameEvents = {
   // God mode events
   GOD_MODE_ACTION: 'god:action',
   GOD_MODE_TOGGLE: 'god:toggle',
+  TOOL_BRUSH_CHANGED: 'tool:brush_changed',
   FOOD_DROP: 'world:food_drop',
   SCENARIO_STARTED: 'scenario:started',
 

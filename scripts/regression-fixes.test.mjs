@@ -751,6 +751,59 @@ test('control-strip: battery saver caps speed instead of freezing it at 1x', () 
   assert.deepEqual(new Set(full), new Set([2, 3, 0, 1]), 'without battery saver every speed should be reachable');
 });
 
+test('tools: brush size stays finite, bounded, and notifies the UI', () => {
+  const camera = new Camera({
+    x: 100,
+    y: 100,
+    zoom: 1,
+    worldWidth: 200,
+    worldHeight: 200,
+    viewportWidth: 800,
+    viewportHeight: 600
+  });
+  const tools = new ToolController({ particles: null }, camera);
+  tools.setMode('food');
+  const changes = [];
+  const unsubscribe = eventSystem.on(GameEvents.TOOL_BRUSH_CHANGED, payload => changes.push(payload));
+
+  assert.equal(tools.setBrushSize(Number.NaN), 26, 'invalid brush sizes should keep the last finite value');
+  assert.equal(tools.setBrushSize(999), 120, 'brush size should clamp to the maximum');
+  assert.equal(tools.setBrushSize(-999), 8, 'brush size should clamp to the minimum');
+  assert.deepEqual(changes, [
+    { size: 120, mode: 'food' },
+    { size: 8, mode: 'food' }
+  ]);
+
+  unsubscribe();
+});
+
+test('tool controls: brush dock is wired for touch and keyboard changes', () => {
+  const html = fs.readFileSync(new URL('../creature-sim/index.html', import.meta.url), 'utf8');
+  const strip = fs.readFileSync(new URL('../creature-sim/src/control-strip.js', import.meta.url), 'utf8');
+  const input = fs.readFileSync(new URL('../creature-sim/src/input-manager.js', import.meta.url), 'utf8');
+
+  assert.match(html, /id="tool-brush-controls"/, 'the brush dock should exist in the player HUD');
+  assert.match(html, /id="tool-brush-decrease"/, 'the brush dock should expose a smaller button');
+  assert.match(html, /id="tool-brush-increase"/, 'the brush dock should expose a larger button');
+  assert.match(html, /id="tool-brush-size"/, 'the brush dock should expose an accessible size readout');
+  assert.match(strip, /toolBrushDecrease/, 'the control strip should cache the smaller button');
+  assert.match(strip, /toolBrushIncrease/, 'the control strip should cache the larger button');
+  assert.match(strip, /TOOL_BRUSH_CHANGED/, 'brush changes should refresh the HUD immediately');
+  assert.match(input, /case '\[':[\s\S]{0,360}preventDefault\(\)/, 'keyboard brush changes should not scroll the page');
+});
+
+test('menu panels: campaign routing and keyboard semantics match the live panels', () => {
+  const menuProof = fs.readFileSync(new URL('./menu-interaction-proof.mjs', import.meta.url), 'utf8');
+  const gameMode = fs.readFileSync(new URL('../creature-sim/src/ui-controller-game-mode.js', import.meta.url), 'utf8');
+
+  assert.match(menuProof, /\['campaign', '#menu-campaign', '#campaign-panel'\]/);
+  assert.match(menuProof, /\['achievements', '#menu-achievements', '#achievements-panel'\]/);
+  assert.match(gameMode, /this\.closeMajorPanels\('campaign-panel'\)/);
+  assert.match(gameMode, /this\.setPanelVisibility\(panel, true\)/);
+  assert.match(gameMode, /const tagName = locked \? 'div' : 'button'/);
+  assert.match(gameMode, /const interactionAttributes = locked \? 'aria-disabled="true"' : 'type="button"'/);
+});
+
 test('styles: inspector sits above its own modal scrim, and its controls meet the touch floor', () => {
   const css = fs.readFileSync(new URL('../creature-sim/styles.css', import.meta.url), 'utf8');
 

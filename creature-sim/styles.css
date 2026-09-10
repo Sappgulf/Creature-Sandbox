@@ -818,6 +818,9 @@ input[type='range']:focus-visible {
   color: var(--text-secondary);
   z-index: var(--z-hud-priority);
   opacity: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   transition: opacity var(--transition-fast);
   pointer-events: none;
 }
@@ -832,8 +835,71 @@ input[type='range']:focus-visible {
   margin-left: 6px;
   font-size: 10px;
 }
+#tool-indicator.persistent {
+  bottom: calc(var(--space-xl) + 174px);
+  opacity: 1;
+  pointer-events: auto;
+  padding: 5px 8px 5px 10px;
+  border-color: rgba(151, 218, 255, 0.3);
+  box-shadow: var(--shadow-soft), 0 0 18px rgba(57, 213, 255, 0.08);
+}
+.tool-brush-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding-left: 7px;
+  border-left: 1px solid var(--glass-border);
+}
+.tool-brush-controls[hidden] {
+  display: none;
+}
+.tool-brush-caption {
+  color: var(--text-muted);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.tool-adjust-btn {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  background: rgba(57, 213, 255, 0.08);
+  color: var(--text-primary);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tool-adjust-btn:hover,
+.tool-adjust-btn:focus-visible {
+  border-color: var(--glass-border-hover);
+  background: rgba(57, 213, 255, 0.18);
+}
+.tool-adjust-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+.tool-brush-size {
+  min-width: 42px;
+  color: var(--accent-primary);
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+}
 .mobile-device #tool-indicator {
   bottom: calc(env(safe-area-inset-bottom, 0) + var(--space-xl) + 168px);
+}
+.mobile-device #tool-indicator.persistent {
+  bottom: calc(env(safe-area-inset-bottom, 0) + var(--space-xl) + 216px);
+}
+@media (max-width: 600px) {
+  #tool-indicator.persistent {
+    bottom: calc(env(safe-area-inset-bottom, 0) + var(--space-xl) + 216px);
+    max-width: calc(100vw - 24px);
+  }
 }
 /* Tool button pulse animation */
 @keyframes tool-pulse {
@@ -2263,10 +2329,14 @@ select:focus-visible,
   gap: var(--space-md);
 }
 .campaign-level-card {
+  width: 100%;
   background: var(--bg-elevated);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   padding: var(--space-lg);
+  color: inherit;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
   transition:
     background-color var(--transition-normal),

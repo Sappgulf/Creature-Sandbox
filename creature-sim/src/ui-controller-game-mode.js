@@ -125,20 +125,21 @@ export function applyUiGameModeMethods(UIController) {
       return;
     }
     if (!panel.classList.contains('hidden')) {
-      panel.classList.add('hidden');
-      panel.setAttribute('aria-hidden', 'true');
+      this.setPanelVisibility(panel, false);
+      this.dismissInteractionHint();
       return;
     }
+    this.closeMajorPanels('campaign-panel');
     try {
       const { ensureCampaignSystem } = await import('./bootstrap-lazy-loaders.js');
       const campaignSystem = await ensureCampaignSystem();
       this.renderCampaignLevels(campaignSystem);
-      panel.classList.remove('hidden');
-      panel.setAttribute('aria-hidden', 'false');
+      this.setPanelVisibility(panel, true);
     } catch (error) {
       console.error('Campaign panel failed to open:', error);
       this.notifications?.show?.('Campaign panel failed to open', 'error', 2600);
     }
+    this.dismissInteractionHint();
   };
 
   UIController.prototype.renderCampaignLevels = function (campaignSystem) {
@@ -149,13 +150,14 @@ export function applyUiGameModeMethods(UIController) {
       .map(level => {
         const stars = level.progress?.stars || 0;
         const locked = !level.unlocked;
+        const tagName = locked ? 'div' : 'button';
+        const interactionAttributes = locked ? 'aria-disabled="true"' : 'type="button"';
         const label =
           `${level.name}, ${level.subtitle}. ${level.description} ` +
           `Difficulty ${level.difficulty}. ${stars} of 3 stars.` +
           (locked ? ' Locked.' : '');
         return `
-          <div class="campaign-level-card ${level.unlocked ? '' : 'locked'} ${level.progress?.completed ? 'completed' : ''}"
-               ${locked ? 'aria-disabled="true"' : 'role="button" tabindex="0"'}
+          <${tagName} ${interactionAttributes} class="campaign-level-card ${level.unlocked ? '' : 'locked'} ${level.progress?.completed ? 'completed' : ''}"
                aria-label="${escapeHtml(label)}"
                data-level-id="${escapeHtml(level.id)}">
             <div class="campaign-level-header">
@@ -172,7 +174,7 @@ export function applyUiGameModeMethods(UIController) {
                 ${[1, 2, 3].map(i => `<span class="${i <= stars ? 'earned' : ''}">⭐</span>`).join('')}
               </span>
             </div>
-          </div>
+          </${tagName}>
         `;
       })
       .join('');
@@ -182,12 +184,6 @@ export function applyUiGameModeMethods(UIController) {
         this.startCampaignLevel(Number(card.dataset.levelId));
       };
       card.addEventListener('click', activate);
-      card.addEventListener('keydown', event => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          activate();
-        }
-      });
     });
   };
 

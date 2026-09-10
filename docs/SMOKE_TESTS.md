@@ -44,6 +44,7 @@
    - Press **]** several times and confirm the tool indicator (if visible) updates the brush size in real time (e.g. "Food 42px").
    - Press **[** to shrink the brush and confirm the size decreases.
    - Switch tools and confirm the indicator icon + label update correctly.
+   - On mobile, confirm the persistent Brush dock appears for Food/Erase, its −/＋ buttons change the size, and it hides again for Observe/Spawn.
    - On mobile, confirm the tool cycle buttons still work.
    - Confirm repeated rapid impacts respect brief i-frames (no rapid multi-hit damage).
    - Observe that creatures settle (less jitter) when left alone and show more wobble after repeated impacts.
@@ -84,6 +85,7 @@
 10. **Top menu navigation**
     - Click **🎛️ Modes & Goals** and confirm the Game Mode + Session Goals card toggles.
     - Open **⋯ More Actions** and verify every item opens its respective panel or toggle.
+    - Confirm **Expedition medals** opens Campaign Mode and **Discoveries** opens Achievements; press **Escape** to close each and return to the menu.
     - Open **✨ Upgrade Hub** and confirm recipe presets, action cards, follow modes, readability modes, discovery journal, seed gallery, run history, and postcard controls render without covering the playfield.
 
 11. **Upgrade Hub + creature clarity**

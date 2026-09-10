@@ -26,6 +26,46 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-10 — panel-navigation-polish — Planned
+
+- **Date:** 2026-09-10
+- **Scope:** ui | docs
+- **Type:** Planned
+- **Issues:** The menu interaction proof still expected Campaign and Achievements to open the retired Field Journal panel, masking the real panel contract. Campaign also bypassed the shared panel lifecycle and rendered unlocked level cards as custom `div[role="button"]` controls.
+- **Root Causes:** Menu selectors and expected panel ids were stale after the Field Journal routing update; Campaign used direct class toggles and custom key handling instead of the shared visibility/focus path.
+- **Fixes:** Align the menu proof with the dedicated Campaign/Achievements panels, assert Escape closure and Campaign focus, use shared panel visibility for Campaign, and render unlocked campaign levels as native buttons.
+- **Verification:** Pending full release proof.
+
+### 2026-09-10 — panel-navigation-polish — Implemented
+
+- **Date:** 2026-09-10
+- **Scope:** ui | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `node scripts/regression-fixes.test.mjs` passed (73/73); `npm run smoke:menus` passed (34/34), including dedicated Campaign/Achievements routing, focus entry, and Escape closure; canonical `npm run proof:release` passed end-to-end with tests, lint, build, bundle, worker/fallback/forced-worker browser lanes, scenario balance, and evidence board. Worker readiness remains `needs-more-proof` on the existing headless pacing threshold; fallback readiness is `fallback-proof`.
+
+### 2026-09-10 — brush-intervention-dock — Planned
+
+- **Date:** 2026-09-10
+- **Scope:** ui | input | docs
+- **Type:** Planned
+- **Issues:** The Food and Erase tools exposed brush size through transient keyboard feedback, but touch players had no persistent way to discover or adjust it. The documented `[`/`]` path also allowed the browser to scroll when focus was not inside a text field.
+- **Root Causes:** The tool indicator had no interactive brush controls, and keyboard adjustment handled the size change without preventing the browser's bracket-key behavior.
+- **Fixes:** Add an accessible, persistent Food/Erase brush dock with 40px touch targets and live size labels; route touch and keyboard adjustments through `ToolController`; emit brush-change events for UI synchronization; and expand the mobile smoke instructions.
+- **Verification:** Pending full release proof.
+
+### 2026-09-10 — brush-intervention-dock — Implemented
+
+- **Date:** 2026-09-10
+- **Scope:** ui | input | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `node scripts/regression-fixes.test.mjs` passed (72/72); `npm test`, `npm run lint`, `npm run build`, and `npm run check:bundle` passed (main app 379.58 kB / 111.42 kB gzip; worker 305.00 kB); `npm run smoke:browser` passed worker desktop/mobile-compact/mobile-large brush interactions; `npm run smoke:main` passed all three fallback layouts; `npm run smoke:scenarios` passed both scenarios twice; `node scripts/playtest-upgrade.mjs` reported no findings, page errors, or console errors; canonical `npm run proof:release` passed end-to-end. Worker readiness remains `needs-more-proof` on the existing headless pacing threshold; fallback readiness is `fallback-proof`.
+
 ### 2026-09-10 — nursery-and-food-undo — Planned
 
 - **Date:** 2026-09-10

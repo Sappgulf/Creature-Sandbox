@@ -3,7 +3,7 @@
  * Replaces the legacy top HUD with a thumb-friendly bottom control strip
  */
 import { gameState, SPEED_OPTIONS, SPEED_LABELS } from './game-state.js';
-import { eventSystem } from './event-system.js';
+import { eventSystem, GameEvents } from './event-system.js';
 import { batteryManager } from './battery-manager.js';
 
 const SPAWN_GLYPHS = {
@@ -96,6 +96,8 @@ export class ControlStripController {
     this.ctrlInspect = document.getElementById('ctrl-inspect');
     this.ctrlWatch = document.getElementById('ctrl-watch');
     this.ctrlMore = document.getElementById('ctrl-more');
+    this.toolBrushDecrease = document.getElementById('tool-brush-decrease');
+    this.toolBrushIncrease = document.getElementById('tool-brush-increase');
     this.menuFood = document.getElementById('menu-food');
     this.menuGodMode = document.getElementById('menu-god-mode');
     this.menuMode = document.getElementById('menu-mode');
@@ -148,6 +150,8 @@ export class ControlStripController {
     this.ctrlInspect?.addEventListener('click', () => this.activateInspectTool());
     this.ctrlWatch?.addEventListener('click', () => this.toggleWatchMode());
     this.ctrlMore?.addEventListener('click', () => this.openOverflowDrawer());
+    this.toolBrushDecrease?.addEventListener('click', () => this.adjustBrushSize(-4));
+    this.toolBrushIncrease?.addEventListener('click', () => this.adjustBrushSize(4));
 
     // Spawn drawer
     this.spawnDrawerClose?.addEventListener('click', () => this.closeSpawnDrawer());
@@ -230,6 +234,9 @@ export class ControlStripController {
       if (data?.mode === 'spawn' && !gameState.spawnMode) {
         this.syncSpawnModeFromTool();
       }
+    });
+    eventSystem.on(GameEvents.TOOL_BRUSH_CHANGED, data => {
+      this.uiController?.updateToolIndicator?.(data?.mode || this.tools?.mode || 'inspect');
     });
 
     this._initBatteryManager();
@@ -553,6 +560,13 @@ export class ControlStripController {
     this.uiController?.updateToolIndicator?.('inspect');
     this.updateToolButtons();
     this.buzz(8);
+  }
+
+  adjustBrushSize(delta) {
+    const next = this.tools?.adjustBrushSize?.(delta);
+    if (!Number.isFinite(next)) return null;
+    this.buzz(6);
+    return next;
   }
 
   updateToolButtons() {

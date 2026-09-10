@@ -275,10 +275,12 @@ export class InputManager {
         eventSystem.emit('tool:changed', { mode: 'prop' });
         break;
       case '[':
+        e.preventDefault();
         this.tools?.adjustBrushSize?.(-4);
         this.uiController?.updateToolIndicator?.(this.tools?.mode);
         break;
       case ']':
+        e.preventDefault();
         this.tools?.adjustBrushSize?.(4);
         this.uiController?.updateToolIndicator?.(this.tools?.mode);
         break;

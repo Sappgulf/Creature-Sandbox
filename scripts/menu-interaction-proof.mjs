@@ -188,8 +188,8 @@ try {
 
   const PANELS = [
     // [menu click selector, expected panel selector, step name]
-    // Campaign/Achievements menu items fire data-action="upgrades" (Field
-    // Journal routing, bcd62a1), so they are clicked by button id.
+    // Campaign and Achievements each have a dedicated panel, so these are
+    // clicked by their stable menu ids rather than the generic action hook.
     ['upgrades', '[data-action="upgrades"]', '#upgrade-panel'],
     ['scenario', '[data-action="scenario"]', '#scenario-panel'],
     ['gene-editor', '[data-action="gene-editor"]', '#gene-editor-panel'],
@@ -201,8 +201,8 @@ try {
     ['replay', '[data-action="replay"]', '#replay-panel'],
     ['insights', '[data-action="insights"]', '#insights-panel'],
     ['lineage-album', '[data-action="lineage-album"]', '#lineage-album-panel'],
-    ['campaign', '#menu-campaign', '#upgrade-panel'],
-    ['achievements', '#menu-achievements', '#upgrade-panel']
+    ['campaign', '#menu-campaign', '#campaign-panel'],
+    ['achievements', '#menu-achievements', '#achievements-panel']
   ];
   for (const [action, clickSel, sel] of PANELS) {
     await step(`panel ${action} opens and Esc closes`, async () => {
@@ -216,8 +216,17 @@ try {
         sel,
         { timeout: 8000 }
       );
+      if (action === 'campaign') {
+        assert.equal(
+          await page.evaluate(s => document.querySelector(s)?.contains(document.activeElement), sel),
+          true,
+          'campaign panel should receive focus when it opens'
+        );
+      }
       await page.keyboard.press('Escape');
-      await page.waitForTimeout(400);
+      await page.waitForFunction(s => document.querySelector(s)?.classList.contains('hidden'), sel, {
+        timeout: 5000
+      });
     });
   }
 

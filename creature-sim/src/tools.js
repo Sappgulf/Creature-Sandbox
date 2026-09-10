@@ -84,8 +84,12 @@ export class ToolController {
   }
 
   setBrushSize(size) {
-    const next = Math.max(this.minBrushSize, Math.min(this.maxBrushSize, size));
+    const numericSize = Number(size);
+    const safeSize = Number.isFinite(numericSize) ? numericSize : this.brushSize;
+    const next = Math.max(this.minBrushSize, Math.min(this.maxBrushSize, safeSize));
+    if (next === this.brushSize) return this.brushSize;
     this.brushSize = next;
+    eventSystem.emit(GameEvents.TOOL_BRUSH_CHANGED, { size: next, mode: this.mode });
     return this.brushSize;
   }
 

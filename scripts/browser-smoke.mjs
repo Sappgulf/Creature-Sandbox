@@ -573,6 +573,52 @@ async function clickOverflowAction(page, action, scenarioName) {
   }
 }
 
+async function exerciseBrushControls(page, scenarioName) {
+  const controls = page.locator('#tool-indicator.persistent #tool-brush-controls:not([hidden])');
+  await controls.waitFor({ state: 'visible', timeout: 5000 });
+
+  const readBrushSize = async () => {
+    const state = await readGameState(page);
+    return Number(state.ui?.brushSize || 0);
+  };
+  const labelFor = size => (size <= 16 ? 'Fine' : size <= 34 ? 'Medium' : size <= 70 ? 'Wide' : 'Huge');
+  const output = page.locator('#tool-brush-size');
+  const dockLabel = await controls.getAttribute('aria-label');
+  assert.match(dockLabel || '', /brush size/i, `${scenarioName}: brush dock should describe its control group`);
+
+  const before = await readBrushSize();
+  await page.locator('#tool-brush-increase').click();
+  await page.waitForTimeout(40);
+  const afterIncrease = await readBrushSize();
+  assert.equal(
+    afterIncrease,
+    Math.min(120, before + 4),
+    `${scenarioName}: touch brush increase should update the live brush size`
+  );
+  assert.equal(
+    (await output.textContent())?.trim(),
+    labelFor(afterIncrease),
+    `${scenarioName}: brush readout should use player-facing size labels`
+  );
+
+  await page.locator('#tool-brush-decrease').click();
+  await page.waitForTimeout(40);
+  assert.equal(await readBrushSize(), before, `${scenarioName}: touch brush decrease should restore the prior size`);
+
+  await page.keyboard.press(']');
+  await page.waitForTimeout(40);
+  assert.equal(
+    await readBrushSize(),
+    Math.min(120, before + 4),
+    `${scenarioName}: keyboard brush increase should share the touch path`
+  );
+  await page.keyboard.press('[');
+  await page.waitForTimeout(40);
+  assert.equal(await readBrushSize(), before, `${scenarioName}: keyboard brush decrease should share the touch path`);
+
+  await page.screenshot({ path: path.join(outDir, `${scenarioName}-brush.png`) });
+}
+
 async function exerciseScenarioLab(page, scenarioName) {
   const refreshScenarioUi = async () => {
     // updateScenarioStatus is intentionally throttled to the UI cadence, while
@@ -997,6 +1043,7 @@ async function runScenario(browser, scenario) {
     state = await readGameState(page);
     assert.ok(state.summary.totalFood >= beforeFood, `${scenario.name}: worker food flow should keep food sync valid`);
     assert.equal(state.ui.tool, 'food', `${scenario.name}: worker food tool should be reflected`);
+    await exerciseBrushControls(page, scenario.name);
 
     await page.locator('#ctrl-watch').click();
     await advance(page, 240);
@@ -1419,6 +1466,7 @@ async function runScenario(browser, scenario) {
   state = await readGameState(page);
   assert.ok(state.summary.totalFood >= beforeFood, `${scenario.name}: food tool should not reduce food count`);
   assert.equal(state.ui.tool, 'food', `${scenario.name}: food tool should be reflected in text state`);
+  await exerciseBrushControls(page, scenario.name);
   await page.locator('#ctrl-more').click();
   await page.locator('#menu-food').waitFor({ state: 'visible', timeout: 5000 });
   assert.equal(
