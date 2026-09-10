@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-10 — camera-edge-guardrails — Planned
+
+- **Date:** 2026-09-10
+- **Scope:** ui | input | docs
+- **Type:** Planned
+- **Issues:** Camera panning still allowed a 16px overscroll beyond the world edge. When zoomed out far enough that the viewport exceeded the world, inverted bounds allowed the overview to drift instead of staying centered.
+- **Root Causes:** The camera limits intentionally retained a non-zero edge margin, and both target/current clamping skipped an axis whenever its viewport span was larger than the world.
+- **Fixes:** Remove world-edge overscroll, recenter oversized overview axes, and add regression/manual smoke coverage for both edge and overview behavior.
+- **Verification:** Pending full release proof.
+
+### 2026-09-10 — camera-edge-guardrails — Implemented
+
+- **Date:** 2026-09-10
+- **Scope:** ui | input | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** Focused regression checks pass (74/74); canonical `npm run proof:release` passes end-to-end with tests, lint, build, bundle, worker/default and main-thread fallback browser lanes, scenario balance, and evidence board. Worker readiness remains `needs-more-proof` on the existing headless pacing threshold; fallback readiness is `fallback-proof`.
+
 ### 2026-09-10 — panel-navigation-polish — Planned
 
 - **Date:** 2026-09-10

@@ -3,9 +3,8 @@ import { clamp } from './utils.js';
 // Debug flag for camera movement logging
 const DEBUG_CAMERA = false;
 
-/** Extra world pixels the camera may pan past the map edge. Keep small so
- *  border creatures stay mostly on-screen after aggressive pans. */
-export const WORLD_EDGE_MARGIN = 16;
+/** Extra world pixels the camera may pan past the map edge. */
+export const WORLD_EDGE_MARGIN = 0;
 
 /**
  * Simple 2D camera with smooth pan/zoom controls.
@@ -252,29 +251,17 @@ export class Camera {
   _clampTargets() {
     if (!Number.isFinite(this.worldWidth) || !Number.isFinite(this.worldHeight)) return;
     this._ensureFiniteState();
-    const margin = WORLD_EDGE_MARGIN;
-    const hw = this.viewportWidth / 2 / this.targetZoom;
-    const hh = this.viewportHeight / 2 / this.targetZoom;
-    const minX = -margin + hw;
-    const maxX = this.worldWidth + margin - hw;
-    const minY = -margin + hh;
-    const maxY = this.worldHeight + margin - hh;
-    if (maxX > minX) this.targetX = clamp(this.targetX, minX, maxX);
-    if (maxY > minY) this.targetY = clamp(this.targetY, minY, maxY);
+    const limits = this._limits(this.targetZoom);
+    this.targetX = limits.maxX > limits.minX ? clamp(this.targetX, limits.minX, limits.maxX) : this.worldWidth * 0.5;
+    this.targetY = limits.maxY > limits.minY ? clamp(this.targetY, limits.minY, limits.maxY) : this.worldHeight * 0.5;
   }
 
   _clampPosition() {
     if (!Number.isFinite(this.worldWidth) || !Number.isFinite(this.worldHeight)) return;
     this._ensureFiniteState();
-    const margin = WORLD_EDGE_MARGIN;
-    const hw = this.viewportWidth / 2 / this.zoom;
-    const hh = this.viewportHeight / 2 / this.zoom;
-    const minX = -margin + hw;
-    const maxX = this.worldWidth + margin - hw;
-    const minY = -margin + hh;
-    const maxY = this.worldHeight + margin - hh;
-    if (maxX > minX) this.x = clamp(this.x, minX, maxX);
-    if (maxY > minY) this.y = clamp(this.y, minY, maxY);
+    const limits = this._limits(this.zoom);
+    this.x = limits.maxX > limits.minX ? clamp(this.x, limits.minX, limits.maxX) : this.worldWidth * 0.5;
+    this.y = limits.maxY > limits.minY ? clamp(this.y, limits.minY, limits.maxY) : this.worldHeight * 0.5;
   }
 
   _limits(zoom = this.zoom) {

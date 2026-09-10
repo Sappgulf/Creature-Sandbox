@@ -146,6 +146,7 @@
 17. **Balance pass: camera stability**
     - Pan and zoom quickly, then release.
     - Confirm the camera settles without lingering jitter and overlays reappear after it stops.
+    - Pan to each world edge and zoom out past the world size; confirm the edge meets the canvas cleanly and the overview stays centered.
 
 18. **Balance pass: creature reactions**
     - Trigger a bounce pad or spinner on a creature.

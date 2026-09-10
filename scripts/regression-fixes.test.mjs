@@ -390,7 +390,18 @@ test('camera: _clampTargets keeps the pan target within world bounds', () => {
 });
 
 test('camera: WORLD_EDGE_MARGIN is a tight on-screen clamp', () => {
-  assert.equal(WORLD_EDGE_MARGIN, 16);
+  assert.equal(WORLD_EDGE_MARGIN, 0);
+});
+
+test('camera: overview mode recenters axes whose viewport exceeds the world', () => {
+  const camera = new Camera({ worldWidth: 200, worldHeight: 150, viewportWidth: 800, viewportHeight: 600, zoom: 1 });
+
+  camera.targetX = 999;
+  camera.targetY = -999;
+  camera._clampTargets();
+
+  assert.equal(camera.targetX, 100, 'wide overview should stay centered on the world x midpoint');
+  assert.equal(camera.targetY, 75, 'tall overview should stay centered on the world y midpoint');
 });
 
 test('calculateCurrentSpeed: diploid speed genes do not NaN, and types prefer matching biomes', () => {

@@ -8,7 +8,7 @@
    - **Description:** Camera clamping re-enabled with 200px margin. Aggressive panning near edges may still show slight overscroll.
    - **Impact:** Minor — use focus/re-center to snap back quickly.
    - **Status:** Fixed (was: camera had no bounds at all).
-   - **Correction (2026-09-03):** The 200px value above is stale — the current margin is 80px per docs/KNOWN_ISSUES.md, which is authoritative.
+   - **Correction (2026-09-10):** The historical values above are stale — current camera clamping has no edge overscroll, and overview mode recenters when the viewport exceeds the world.
 
 ## Shipped (2026-04-13)
 
