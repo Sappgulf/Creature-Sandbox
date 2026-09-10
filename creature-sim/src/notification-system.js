@@ -219,7 +219,7 @@ export class NotificationSystem {
       container.setAttribute('aria-live', 'polite');
       container.setAttribute('aria-label', 'Notifications');
       container.style.cssText =
-        'position:fixed;bottom:108px;left:50%;transform:translateX(-50%);z-index:3000;display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none;';
+        'position:fixed;bottom:108px;left:50%;transform:translateX(-50%);z-index:var(--z-toast);display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none;';
       document.body.appendChild(container);
     }
 

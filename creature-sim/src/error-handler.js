@@ -107,7 +107,7 @@ export class ErrorHandler {
         padding: 15px 20px;
         border-radius: 10px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        z-index: 10001;
+        z-index: var(--z-toast);
         display: flex;
         align-items: center;
         gap: 15px;
@@ -219,7 +219,7 @@ export class ErrorHandler {
         width: 100%;
         height: 100%;
         background: rgba(0, 0, 0, 0.8);
-        z-index: 10002;
+        z-index: var(--z-home);
         display: flex;
         align-items: center;
         justify-content: center;

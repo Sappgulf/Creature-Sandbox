@@ -618,7 +618,7 @@ export class PerformanceMonitor {
       font-size: 12px;
       padding: 10px;
       border-radius: 5px;
-      z-index: 10000;
+      z-index: var(--z-home);
       min-width: 300px;
       max-width: 500px;
       display: none;

@@ -37,7 +37,7 @@ export class MobileGestureTutorial {
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-label', 'Gesture tutorial');
     overlay.style.cssText = `
-      position: fixed; inset: 0; z-index: 5000;
+      position: fixed; inset: 0; z-index: var(--z-tutorial);
       display: flex; align-items: center; justify-content: center;
       background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);
       animation: fadeIn 0.3s ease;

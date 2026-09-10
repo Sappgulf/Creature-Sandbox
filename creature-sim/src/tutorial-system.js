@@ -451,7 +451,7 @@ export class TutorialSystem {
       position: fixed;
       inset: 0;
       pointer-events: none;
-      z-index: 9999;
+      z-index: var(--z-toast);
     `;
     return overlay;
   }

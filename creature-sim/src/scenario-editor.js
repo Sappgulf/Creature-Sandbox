@@ -195,7 +195,7 @@ export class ScenarioEditor {
       border: 2px solid #00ff00;
       border-radius: 8px;
       display: none;
-      z-index: 9998;
+      z-index: var(--z-tutorial);
       font-family: monospace;
       color: #00ff00;
       backdrop-filter: blur(15px);

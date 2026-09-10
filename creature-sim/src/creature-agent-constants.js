@@ -203,8 +203,12 @@ export const CreatureAgentTuning = {
     // at the very distance mating required them to close to.
     RANGE: 30,
     // Minimum energy either partner needs to breed, previously an inline 24 in
-    // creature.js.
-    MIN_ENERGY: 24,
+    // creature.js. Set to 16 (not 24): the population's normal operating level
+    // sits around ~20 energy even with stocked food (measured 59% of adult
+    // frames at or below 24), so 24 priced out nearly every courtship and the
+    // energy gate became ~80% of all SEEK_MATE failures. 16 still requires a
+    // genuine surplus — starving creatures (energy near 0) cannot breed.
+    MIN_ENERGY: 16,
     BOND_TIME: 1.15,
     // Courtship decays rather than resetting the moment a creature glances at
     // food. The bond needs BOND_TIME of qualifying frames, roughly 69 at 60fps,
@@ -213,6 +217,17 @@ export const CreatureAgentTuning = {
     // consecutively, no bond could ever complete. Measured: a seeded world of
     // 64 produced zero births in 300s.
     BOND_DECAY: 0.5,
+    // Committed courtship: a lock forms at sense range as soon as one adult
+    // courts a biologically able partner, and both animals then pursue each
+    // other instead of waiting for a per-frame coincidence inside RANGE.
+    // Measured failure it replaces: a seeded world of 64 produced ~1 birth in
+    // 300s with auto-balance off, because SEEK_MATE is rare, the bond needed
+    // ~69 consecutive qualifying frames, and only the lower-id partner could
+    // ever trigger a birth. The hold multipliers keep a locked pair in
+    // SEEK_MATE through minor distractions; they bias goal choice but never
+    // override the stress veto or the post-birth cooldown.
+    COURTSHIP_HOLD_MULT: 1.6,
+    COURTED_HOLD_MULT: 2.0,
     // Pair affinity, -1 to 1. Creatures remember who they have spent time
     // beside and either warm to them or sour on them, which makes mate choice
     // sticky instead of "whoever is nearest this frame". That stickiness is

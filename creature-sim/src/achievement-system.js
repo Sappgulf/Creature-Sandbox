@@ -615,7 +615,7 @@ export class AchievementSystem {
       padding: ${compactToast ? '7px 10px' : '15px 20px'};
       border-radius: 10px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-      z-index: 10001;
+      z-index: var(--z-toast);
       display: flex;
       align-items: center;
       gap: ${compactToast ? '8px' : '15px'};

@@ -437,6 +437,34 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 - **Fixes:** Docs: GOD_BOOT path to GOD/GOD/START.md, AGENTS.md creature-sim/src prefixes, SMOKE_TESTS god keys 1-9/0, RELEASE_CHECKLIST port 5173→8000. Persistence: deterministic deriveSessionSeed (FNV-1a, fill-only-when-absent), requestSaveExtras 3s timeout with stale:true fallback + ERROR_CRITICAL emit, importState/IMPORT_STATE defaults to getCurrentSaveVersion(), saveToSlot payload-before-preview + loadFromSlot try/catch with preview cleanup. Sim: venomTick null/NaN guard + single recordDamage path, predation (maxHealth||1) + isFinite guard, mating single-roll elderChance*mateElderChance. Render: hoisted nowMs through drawWorld→drawCreatures→outlines, deleted unused _circlePath, escapeHtml on headline, prefers-reduced-motion gate for seasonal/spore particles. Tooling: new scripts/save-migration.test.mjs wired into npm test, type-check guarded when tsc absent.
 - **Verification:** git diff --check clean; npm run lint clean (0 errors); npm test green incl. save-system, core-modules 190/0, regression-fixes 50/0, e2e 1/0, save-migration passed; prettier --write applied to new test file. Full smoke matrix (browser/worker/scenarios/proof:release) NOT rerun — required before any push per AGENTS.md.
 
+### 2026-09-10 — committed-courtship-rework — Planned
+
+- **Issues:** Reproduction was gated on a per-frame coincidence (both partners in SEEK_MATE, all gates passing, within 30px, ~69 consecutive qualifying frames) plus a lower-id-only birth trigger, so a seeded world of 64 produced ~1 birth in 300s with auto-balance off and the population was sustained by the spawner rather than breeding.
+- **Root Causes:** No pair commitment existed (approach depended on chance proximity); goal selection dropped courtship for snacks (no hold); only the lower-id partner could trigger a birth (asymmetric courtships doomed by id ordering); and MIN_ENERGY 24 sat above the population's normal ~20-energy operating level, becoming ~80% of SEEK_MATE failures once the other gates were fixed.
+- **Fixes:** Planned lock-at-sense-range pair commitment with mutual pursuit, SEEK_MATE hold multipliers, either-partner birth trigger with pre-spawn bilateral reset, dead-partner fast release, energy-floor recalibration to measured economy, and regression guards.
+- **Verification:** Planned: before/after headless soaks (autoBalance-off stress case + shipped config + young prime cohort), full `npm test`, syntax/diff checks, then build/lint, commit, push, Vercel production verification.
+
+### 2026-09-10 — committed-courtship-rework — Implemented
+
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned; instrumentation additionally showed SEEK_MATE entry at 3.6% of adult frames, 111 distance failures per sample, and (after the approach/id fixes) energy as 80%+ of remaining failures with 59% of adult frames at or below energy 24 despite stocked food.
+- **Fixes:** `creature-agent-constants.js`: `COURTSHIP_HOLD_MULT 1.6` / `COURTED_HOLD_MULT 2.0`, `MIN_ENERGY 24 → 16` (genuine surplus still required; starving creatures cannot breed). `creature-agent-needs.js`: `isCourtshipReady()` shared gate, `ensureCourtshipLock()` (lock at sense range, switch releases previous claim), `clearCourtship()`, suitor-pinned `senses.mate` with stale-claim release, hold multipliers in `selectGoal` (never overriding stress veto or cooldown). `creature.js`: early lock formation, either-partner birth with pre-spawn bilateral reset (sequential updates make double-spawn impossible), dead-partner immediate release without affinity grudge, `courtedBy` typedef/init (transient — never saved, no migration needed). No movement, worker-protocol, save-schema, or asset changes.
+- **Verification:** Before → after: autoBalance-off stress soak 1 → 4 births/300s; shipped config (seed 60/6/180, autoBalance on) 1 → 7 births/300s with stable population (65 → 61) and stocked food; young prime cohort 22 births/400s (mechanics proven — baseline was ~0). SEEK_MATE entry 3.6% → 11.2% of adult frames, distance failures → 0, every ready pair locks. After rebasing onto the 2026-09-06 main (which independently shipped seeded-RNG single-roll elder gating, kept by this merge): `npm test` passes (190 core + 69 regression incl. 3 new courtship guards + E2E). `node --check` + `git diff --check` clean. Known remaining (separate systems, documented for next passes): adult energy equilibrium ~20 makes foraging intake rate the next bottleneck (adults starve amid stocked food — intake, not drain, needs its own instrumented pass); 36s cooldown + 30-cost + social-65 pacing intentionally limits frequency; seeded-cohort aging means 300s windows always decline. Production SHA/runtime verification follows push and Vercel deployment.
+
+### 2026-09-10 — ui-polish-overlay-convergence — Planned
+
+- **Issues:** A parallel session shipped the `--z-*` token scale, the 16px camera clamp, and the transition-token pass first; this branch had built an overlapping scale with different rung names/values. Merging both verbatim would fork the layering system the other session just unified.
+- **Root Causes:** Two sessions solved the same KNOWN_ISSUES items (ad hoc z-index, 80px camera margin, off-token transitions) concurrently on a fast-moving main.
+- **Fixes:** Planned: adopt the canonical scale (`--z-base` … `--z-home`), drop the duplicate stylesheet/camera/transition edits, and keep only the uncovered remainder — JS inline overlays remapped onto canonical rungs.
+- **Verification:** Planned: regression suite, full `npm test`, syntax/diff checks.
+
+### 2026-09-10 — ui-polish-overlay-convergence — Implemented
+
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Dropped this branch's duplicate `--z-*` scale, `EDGE_MARGIN`, and transition tokens in favor of the canonical ones (16px `WORLD_EDGE_MARGIN`, drawer/sheet/modal/blocking/tutorial/toast/a11y/home rungs). Remapped the 8 JS inline overlays onto canonical rungs with stacking order preserved: notifications/tutorial-tooltip/achievements/error-toast/analytics → `--z-toast`; gesture coach/scenario editor → `--z-tutorial`; critical error dialog/profiler → `--z-home`. Toast container keeps the bottom-queue layout and gains the token rung.
+- **Verification:** Covered by the merged regression run below (canonical camera/toast/drawer guards plus courtship guards). No simulation, worker-protocol, save-schema, or asset changes from this slice.
+
 ### 2026-08-01 — ecosystem-guardrails-objective-feedback — Planned
 
 - **Issues:** Mode-specific ecosystem settings were not fully respected by emergency balancing, starter sessions could open with goals that require controls hidden behind menus, and the objective rail did not provide a reliable path into the modes/goals panel on compact layouts.

@@ -10,6 +10,8 @@ if (!globalThis.performance) {
 }
 
 import { makeGenes } from '../creature-sim/src/genetics.js';
+import { BiomeGenerator } from '../creature-sim/src/perlin-noise.js';
+import { updateAgeStage } from '../creature-sim/src/creature-age.js';
 import { World } from '../creature-sim/src/world-core.js';
 import { Creature } from '../creature-sim/src/creature.js';
 import { Camera, WORLD_EDGE_MARGIN } from '../creature-sim/src/camera.js';
@@ -1451,6 +1453,128 @@ test('tools: placeProp/eraseAt prefer the worker proxy when present, sandbox oth
   const prop = directTools.placeProp(10, 10, { type: 'spring' });
   assert.ok(prop && prop.id === 2, 'main-thread placeProp should return the created prop');
   assert.equal(directCalls[0][0], 'add');
+});
+
+// ----------------------------------------------------------------------------
+// Committed courtship rework: reproduction used to need a per-frame
+// coincidence (both in SEEK_MATE, all gates, within 30px, ~69 consecutive
+// frames) plus the lower id to trigger the birth — a seeded world of 64
+// produced ~1 birth in 300s with auto-balance off. A lock now forms at sense
+// range, both partners pursue, holds keep them in SEEK_MATE, and either
+// partner may finish the bond.
+// ----------------------------------------------------------------------------
+function buildCourtshipWorld() {
+  const world = new World(1200, 800);
+  world.biomeGenerator = new BiomeGenerator(7);
+  world.biomeMap = world.biomeGenerator.generateBiomeMap(1200, 800, 50);
+  world.seed(0, 0, 160);
+  world.autoBalanceSettings.enabled = false;
+  return world;
+}
+
+// An earlier async test in this file leaves `globalThis.window = {}` behind
+// until its dynamic import resolves, and getDebugFlags() then crashes on
+// `window.location.search` during world stepping. Run world-sim tests behind
+// a minimal valid stub so they never depend on file execution order.
+function withNodeWindow(fn) {
+  const priorWindow = globalThis.window;
+  globalThis.window = { location: { search: '' } };
+  try {
+    fn();
+  } finally {
+    globalThis.window = priorWindow;
+  }
+}
+
+function makeAdultCourtier(world, x, y) {
+  const creature = new Creature(x, y, makeGenes({}));
+  creature.age = 100;
+  updateAgeStage(creature);
+  creature.energy = 80;
+  creature.needs.hunger = 10;
+  creature.needs.energy = 80;
+  creature.needs.socialDrive = 90;
+  creature.needs.stress = 5;
+  world.addCreature(creature);
+  return creature;
+}
+
+function countBirths(world, fn) {
+  let births = 0;
+  const manager = world.creatureManager;
+  const orig = manager.spawnChild.bind(manager);
+  manager.spawnChild = (p1, p2) => {
+    const child = orig(p1, p2);
+    if (child) births++;
+    return child;
+  };
+  try {
+    fn();
+  } finally {
+    manager.spawnChild = orig;
+  }
+  return births;
+}
+
+test('courtship: a courter locks a biologically able partner at sense range', () => {
+  withNodeWindow(() => {
+    const world = buildCourtshipWorld();
+    const a = makeAdultCourtier(world, 500, 400);
+    const b = makeAdultCourtier(world, 560, 400);
+    let births = 0;
+    const manager = world.creatureManager;
+    const orig = manager.spawnChild.bind(manager);
+    manager.spawnChild = (p1, p2) => {
+      const child = orig(p1, p2);
+      if (child) births++;
+      return child;
+    };
+    for (let i = 0; i < 40; i++) world.step(0.05); // 2 sim-sec: lock yes, birth unlikely yet
+    manager.spawnChild = orig;
+    const locked = a.goal.bondingWith === b.id || b.goal.bondingWith === a.id;
+    // A birth within the window also proves the lock worked (locks clear on birth).
+    assert.ok(
+      locked || births > 0,
+      `expected a courtship lock, got A->${a.goal.bondingWith} B->${b.goal.bondingWith} goals ${a.goal.current}/${b.goal.current}`
+    );
+  });
+});
+
+test('courtship: close compatible pairs produce births (no id-ordering deadlock)', () => {
+  withNodeWindow(() => {
+    const world = buildCourtshipWorld();
+    for (const [x, y] of [
+      [300, 300],
+      [700, 300],
+      [500, 550]
+    ]) {
+      makeAdultCourtier(world, x, y);
+      makeAdultCourtier(world, x + 45, y + 10);
+    }
+    const births = countBirths(world, () => {
+      for (let i = 0; i < 2400; i++) world.step(0.05); // 120 sim-sec
+    });
+    assert.ok(births >= 1, `expected >=1 birth from 3 close pairs in 120s, got ${births}`);
+    assert.ok(world.creatures.length <= 190, 'population must respect the hard cap');
+  });
+});
+
+test('courtship: babies are never locked or bred', () => {
+  withNodeWindow(() => {
+    const world = buildCourtshipWorld();
+    const adult = makeAdultCourtier(world, 500, 400);
+    const baby = new Creature(545, 400, makeGenes({}));
+    baby.age = 5;
+    updateAgeStage(baby);
+    world.addCreature(baby);
+    assert.equal(baby.ageStage, 'baby', 'test setup must actually produce a baby');
+    const births = countBirths(world, () => {
+      for (let i = 0; i < 600; i++) world.step(0.05); // 30 sim-sec (still juvenile at the end)
+    });
+    assert.equal(births, 0, 'no birth may involve a baby');
+    assert.ok(adult.goal.bondingWith !== baby.id, 'adult must not lock onto a baby');
+    assert.equal(baby.goal.bondingWith, null, 'baby must not hold a courtship lock');
+  });
 });
 
 console.log('\n=== SUMMARY ===');

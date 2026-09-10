@@ -115,6 +115,20 @@ export function updateAgentSenses(creature, world, dt = 0) {
   }
   senses.mate = bestMate;
 
+  // Committed courtship: a suitor that locked onto me pins my mate sense, so
+  // we pursue each other instead of me wandering off mid-approach. A stale
+  // claim (suitor dead or courting someone else now) is released so nobody
+  // chases a ghost.
+  const suitorId = creature.goal?.courtedBy;
+  if (suitorId != null) {
+    const suitor = world?.getAnyCreatureById?.(suitorId);
+    if (suitor?.alive && suitor.goal?.bondingWith === creature.id && isMateCompatible(creature, suitor)) {
+      senses.mate = suitor;
+    } else {
+      creature.goal.courtedBy = null;
+    }
+  }
+
   if (dietRole === 'scavenger' || diet >= 0.3) {
     senses.corpse = world?.findNearbyCorpse
       ? world.findNearbyCorpse(creature.x, creature.y, creature.genes.sense * 0.9)
@@ -322,6 +336,31 @@ export function selectGoal(creature, world) {
   mateScore *= roleTuning.mateBias ?? 1;
   wanderScore *= roleTuning.wanderBias ?? 1;
 
+  // Committed-courtship holds: a locked pair stays in SEEK_MATE through minor
+  // distractions so the approach can complete. These bias the choice but never
+  // override the stress veto or the cooldown zeroing above (mateScore is 0
+  // while cooling down, and the stress penalty has already been applied).
+  if (mateScore > 0) {
+    const partner = creature.goal?.bondingWith != null ? world?.getAnyCreatureById?.(creature.goal.bondingWith) : null;
+    if (partner?.alive) {
+      mateScore *= CreatureAgentTuning.MATING.COURTSHIP_HOLD_MULT;
+    }
+    const suitorId = creature.goal?.courtedBy;
+    if (suitorId != null) {
+      const suitor = world?.getAnyCreatureById?.(suitorId);
+      if (suitor?.alive && suitor.goal?.bondingWith === creature.id) {
+        if (isCourtshipReady(creature)) {
+          mateScore *= CreatureAgentTuning.MATING.COURTED_HOLD_MULT;
+        }
+        if (isMateCompatible(creature, suitor)) {
+          senses.mate = suitor;
+        }
+      } else {
+        creature.goal.courtedBy = null;
+      }
+    }
+  }
+
   // FLEE goal when threatened
   let fleeScore = 0;
   if (stressScore > 0.8 || (senses.threat && senses.threat.length > 0)) {
@@ -408,6 +447,62 @@ export function isMateCompatible(creature, other) {
   const otherDiet = other.genes.diet ?? (other.genes.predator ? 1.0 : 0.0);
   if (Math.abs(diet - otherDiet) > 0.4) return false;
   return true;
+}
+
+/**
+ * Biological breeding readiness shared by the courter gate, the partner gate,
+ * and the courted-hold check, so the three can never drift apart. This covers
+ * condition only — life-stage willingness is checked separately at each site.
+ */
+export function isCourtshipReady(creature) {
+  if (!creature) return false;
+  return (
+    (creature.needs?.socialDrive ?? 0) >= CreatureAgentTuning.MATING.SOCIAL_THRESHOLD &&
+    (creature.needs?.stress ?? 100) <= CreatureAgentTuning.MATING.STRESS_MAX &&
+    (creature.goal?.mateCooldown ?? 0) <= 0 &&
+    (creature.energy ?? 0) > CreatureAgentTuning.MATING.MIN_ENERGY
+  );
+}
+
+/**
+ * Establish (or confirm) a committed courtship lock between a courter and a
+ * biologically able partner. The lock forms at sense range — long before the
+ * pair is close enough to bond — so both animals pursue each other instead of
+ * the bond depending on a per-frame coincidence inside MATING.RANGE.
+ * Switching targets releases the previous partner's claim on me.
+ */
+export function ensureCourtshipLock(creature, world, mate) {
+  if (!creature?.goal || !mate?.goal) return;
+  if (creature.goal.bondingWith !== mate.id) {
+    const prevId = creature.goal.bondingWith;
+    if (prevId != null) {
+      const prev = world?.getAnyCreatureById?.(prevId);
+      if (prev?.goal?.courtedBy === creature.id) prev.goal.courtedBy = null;
+    }
+    creature.goal.bondingWith = mate.id;
+    creature.goal.bondTimer = 0;
+    creature.goal.bondAnnounced = false;
+  }
+  if (mate.goal.courtedBy !== creature.id) mate.goal.courtedBy = creature.id;
+}
+
+/**
+ * Release my side of a courtship lock: my bonding timer/claim and my
+ * courted-by marker, plus the ex-partner's claim on me if it points back.
+ * The ex-partner's own bonding state is theirs to resolve — if they still
+ * want me, their next mating tick re-establishes the lock.
+ */
+export function clearCourtship(creature, world) {
+  if (!creature?.goal) return;
+  const partnerId = creature.goal.bondingWith;
+  if (partnerId != null) {
+    const partner = world?.getAnyCreatureById?.(partnerId);
+    if (partner?.goal?.courtedBy === creature.id) partner.goal.courtedBy = null;
+  }
+  creature.goal.bondingWith = null;
+  creature.goal.bondTimer = 0;
+  creature.goal.bondAnnounced = false;
+  creature.goal.courtedBy = null;
 }
 
 export function applyRestRecovery(creature, dt, world, { inRestZone = false, nest = null } = {}) {
@@ -559,11 +654,7 @@ export function adjustAffinity(creature, otherId, delta) {
 
 export function updateMatingBond(creature, world, mate, dt, bondDuration) {
   if (!creature.goal || !mate?.goal) return false;
-  if (creature.goal.bondingWith !== mate.id) {
-    creature.goal.bondingWith = mate.id;
-    creature.goal.bondTimer = 0;
-    creature.goal.bondAnnounced = false;
-  }
+  ensureCourtshipLock(creature, world, mate);
   if (!creature.goal.bondAnnounced) {
     creature.goal.bondAnnounced = true;
     try {

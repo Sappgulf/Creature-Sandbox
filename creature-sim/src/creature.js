@@ -12,6 +12,9 @@ import {
   applyRestRecovery,
   updateRestHome,
   updateMatingBond,
+  ensureCourtshipLock,
+  clearCourtship,
+  isCourtshipReady,
   applyHungerRelief,
   getHomeBias,
   getAffinity,
@@ -172,6 +175,7 @@ const { TRAIL_INTERVAL, TRAIL_MAX, LOG_MAX } = CreatureConfig;
  * @property {number} cooldown - Seconds
  * @property {number} mateCooldown - Seconds
  * @property {?number} bondingWith - Creature id currently being bonded with
+ * @property {?number} courtedBy - Creature id of the suitor locked onto me (transient, never saved)
  * @property {number} bondTimer - Seconds of current bond
  * @property {boolean} bondAnnounced - Whether bond-announce was emitted
  * @property {number} score - Internal score
@@ -570,6 +574,7 @@ export class Creature {
       cooldown: 0,
       mateCooldown: 0,
       bondingWith: null,
+      courtedBy: null,
       bondTimer: 0,
       bondAnnounced: false,
       score: 0
@@ -1736,31 +1741,30 @@ export class Creature {
     const canReproduce =
       this.ageStage === 'adult' ||
       (this.lifeStage === 'elder' && this.age < CreatureAgentTuning.LIFE_STAGE.ELDER_FADE_START);
-    const socialReady = (this.needs?.socialDrive ?? 0) >= CreatureAgentTuning.MATING.SOCIAL_THRESHOLD;
-    const calmEnough = (this.needs?.stress ?? 100) <= CreatureAgentTuning.MATING.STRESS_MAX;
-    const mateCooldownReady = (this.goal?.mateCooldown ?? 0) <= 0;
-    const energyReady = this.energy > CreatureAgentTuning.MATING.MIN_ENERGY;
+    const selfReady = canReproduce && isCourtshipReady(this);
     const mate = this.senses?.mate;
-    if (goal === 'SEEK_MATE' && canReproduce && socialReady && calmEnough && mateCooldownReady && energyReady && mate) {
+    if (goal === 'SEEK_MATE' && selfReady && mate) {
       const elderChance = this.lifeStage === 'elder' ? CreatureAgentTuning.MATING.ELDER_CHANCE_MULT : 1;
       const mateElderChance = mate.lifeStage === 'elder' ? CreatureAgentTuning.MATING.ELDER_CHANCE_MULT : 1;
       // The partner no longer has to be independently courting at this exact
       // instant. Requiring both creatures to hold SEEK_MATE on the same frame,
       // on top of six other gates and a proximity check, made pairing
       // vanishingly rare: measured with auto-balance off, a seeded world of 64
-      // produced zero births in 300 seconds. One animal courts and the other
+      // produced ~1 birth in 300 seconds. One animal courts and the other
       // accepts if it is biologically able — it still has to be a willing
       // adult, fed, calm and off cooldown.
       const mateWillingStage =
         mate.ageStage === 'adult' ||
         (mate.lifeStage === 'elder' && mate.age < CreatureAgentTuning.LIFE_STAGE.ELDER_FADE_START);
-      const mateReady =
-        mateWillingStage &&
-        mate.needs?.socialDrive >= CreatureAgentTuning.MATING.SOCIAL_THRESHOLD &&
-        mate.needs?.stress <= CreatureAgentTuning.MATING.STRESS_MAX &&
-        (mate.goal?.mateCooldown ?? 0) <= 0 &&
-        mate.energy > CreatureAgentTuning.MATING.MIN_ENERGY &&
-        rand() < elderChance * mateElderChance;
+      const mateReady = mateWillingStage && isCourtshipReady(mate) && rand() < elderChance * mateElderChance;
+      // Committed courtship: lock the pair at sense range, before they are
+      // close enough to bond. The lock pins both animals' mate sense to each
+      // other (see updateAgentSenses) and holds them in SEEK_MATE (see
+      // selectGoal), so they close the distance as a pair instead of the bond
+      // depending on a per-frame coincidence inside RANGE.
+      if (mateReady) {
+        ensureCourtshipLock(this, world, mate);
+      }
       const distance = Math.hypot(mate.x - this.x, mate.y - this.y);
       const population = world.creatures.length;
       if (
@@ -1785,7 +1789,31 @@ export class Creature {
         const bondDuration = CreatureAgentTuning.MATING.BOND_TIME * bondMultiplier * familiarity;
         const bonded = updateMatingBond(this, world, mate, dt, bondDuration);
 
-        if (bonded && this.id < mate.id) {
+        if (bonded) {
+          // Either partner may finish the bond. The old `this.id < mate.id`
+          // gate meant a higher-id courter could complete a bond that never
+          // produced a birth — roughly half of all asymmetric courtships were
+          // doomed by id ordering alone. Mutual lock state is cleared BEFORE
+          // spawning: creature updates run sequentially, so the partner's
+          // later update this frame sees a fresh timer and cannot double-spawn.
+          // (The outer gate already guarantees population is under the hard
+          // cap here; the capped path below only sets a cooldown.)
+          const cooldownMult = overload > 0 ? CreatureAgentTuning.MATING.OVERCROWD_COOLDOWN_MULT : 1;
+          const cooldown = CreatureAgentTuning.MATING.COOLDOWN * cooldownMult;
+          for (const c of [this, mate]) {
+            c.goal.bondingWith = null;
+            c.goal.bondTimer = 0;
+            c.goal.bondAnnounced = false;
+            c.goal.mateCooldown = cooldown;
+          }
+          if (this.goal.courtedBy === mate.id) this.goal.courtedBy = null;
+          if (mate.goal.courtedBy === this.id) mate.goal.courtedBy = null;
+
+          this.energy = Math.max(0, this.energy - CreatureAgentTuning.MATING.ENERGY_COST_FLAT);
+          mate.energy = Math.max(0, mate.energy - CreatureAgentTuning.MATING.ENERGY_COST_FLAT);
+
+          this.needs.socialDrive = clamp(this.needs.socialDrive - 45, 0, 100);
+          mate.needs.socialDrive = clamp(mate.needs.socialDrive - 45, 0, 100);
           world.spawnChild(this, mate);
           if (this.memory) {
             const now = world.t;
@@ -1799,22 +1827,6 @@ export class Creature {
             }
           }
 
-          const cooldownMult = overload > 0 ? CreatureAgentTuning.MATING.OVERCROWD_COOLDOWN_MULT : 1;
-          const cooldown = CreatureAgentTuning.MATING.COOLDOWN * cooldownMult;
-          this.goal.mateCooldown = cooldown;
-          mate.goal.mateCooldown = cooldown;
-          this.goal.bondingWith = null;
-          this.goal.bondTimer = 0;
-          this.goal.bondAnnounced = false;
-          mate.goal.bondingWith = null;
-          mate.goal.bondTimer = 0;
-          mate.goal.bondAnnounced = false;
-
-          this.energy = Math.max(0, this.energy - CreatureAgentTuning.MATING.ENERGY_COST_FLAT);
-          mate.energy = Math.max(0, mate.energy - CreatureAgentTuning.MATING.ENERGY_COST_FLAT);
-
-          this.needs.socialDrive = clamp(this.needs.socialDrive - 45, 0, 100);
-          mate.needs.socialDrive = clamp(mate.needs.socialDrive - 45, 0, 100);
           adjustAffinity(this, mate.id, CreatureAgentTuning.MATING.AFFINITY_ON_BIRTH);
           adjustAffinity(mate, this.id, CreatureAgentTuning.MATING.AFFINITY_ON_BIRTH);
           this.setMood('💖', 0.9);
@@ -1827,15 +1839,21 @@ export class Creature {
       // Let courtship fade instead of snapping to zero: a creature that breaks
       // off for a bite should be able to resume, otherwise the bond timer can
       // never accumulate the frames it needs.
-      this.goal.bondTimer = Math.max(0, (this.goal.bondTimer ?? 0) - dt * CreatureAgentTuning.MATING.BOND_DECAY);
-      const partnerLost = mate && mate.id !== this.goal.bondingWith;
-      if (this.goal.bondTimer <= 0 || partnerLost) {
-        // A courtship that fell apart leaves both a little cooler on each
-        // other, so repeated failures push a pair apart rather than looping.
-        adjustAffinity(this, this.goal.bondingWith, -CreatureAgentTuning.MATING.AFFINITY_ON_INTERRUPT);
-        this.goal.bondingWith = null;
-        this.goal.bondTimer = 0;
-        this.goal.bondAnnounced = false;
+      const lockedPartner = world.getAnyCreatureById?.(this.goal.bondingWith);
+      if (!lockedPartner?.alive) {
+        // Partner dead or gone: release immediately with no grudge — death is
+        // not rejection, and holding SEEK_MATE for a corpse walks the courter
+        // to a stale position.
+        clearCourtship(this, world);
+      } else {
+        this.goal.bondTimer = Math.max(0, (this.goal.bondTimer ?? 0) - dt * CreatureAgentTuning.MATING.BOND_DECAY);
+        const partnerLost = mate && mate.id !== this.goal.bondingWith;
+        if (this.goal.bondTimer <= 0 || partnerLost) {
+          // A courtship that fell apart leaves both a little cooler on each
+          // other, so repeated failures push a pair apart rather than looping.
+          adjustAffinity(this, this.goal.bondingWith, -CreatureAgentTuning.MATING.AFFINITY_ON_INTERRUPT);
+          clearCourtship(this, world);
+        }
       }
     }
 
