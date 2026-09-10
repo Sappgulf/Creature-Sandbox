@@ -3,6 +3,7 @@ import { buildBondsSummary, getCreatureEmotion, getLifeStageDisplay } from './up
 import { escapeHtml } from './safe-html.js';
 import { GOD_TOOL_REGISTRY } from './game/god-tool-system.js';
 import { geneValue } from './creature-genetics-helpers.js';
+import { getBadges } from './creature-render.js';
 
 // Animated number counter helper
 const _counterState = new Map();
@@ -536,11 +537,17 @@ export function renderSelectedInfo(
     return String(goal).replaceAll('_', ' ');
   })();
   const memoryCount = Array.isArray(creature.memory?.locations) ? creature.memory.locations.length : 0;
+  // Identity chips (rare mutations, statuses) so the compact mobile dossier
+  // shows why a creature looks special, not only its vitals.
+  const identityBadges = getBadges(creature)
+    .filter(badge => /Glow|Albino|Dark|Sick|Poisoned|Venom|Giant|Tiny|Armor|Mind|Heal|Hidden|Lucky/.test(badge))
+    .slice(0, isMobile ? 2 : 4);
   const stateTags = [
     `${emotion.icon} ${emotion.label}`,
     readableState,
     `Hunger ${Math.round(hunger)}`,
     `Stress ${Math.round(stress)}`,
+    ...identityBadges,
     memoryCount ? `${memoryCount} memories` : null
   ].filter(Boolean);
   const stateTagMarkup = `<div class="state-tags">${stateTags.map(tag => `<span>${tag}</span>`).join('')}</div>`;

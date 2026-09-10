@@ -5,9 +5,9 @@ import { geneValue } from './creature-genetics-helpers.js';
  * This allows super-fast data transfer between the worker and main thread.
  */
 
-// Each creature takes 21 floats in the buffer
+// Each creature takes 26 floats in the buffer
 // (Packed as Float32Array)
-export const CREATURE_STRIDE = 23;
+export const CREATURE_STRIDE = 26;
 
 export const LAYOUT = {
   ID: 0,
@@ -40,8 +40,31 @@ export const LAYOUT = {
   FLYING: 19,
   BURROWING: 20,
   SPEED: 21,
-  SENSE: 22
+  SENSE: 22,
+  // Presentation-only traits. They do not affect the simulation, but without
+  // them the worker runtime (the shipping default) drew every creature with
+  // the same flat sprite: elemental auras, bioluminescent night glow, albino/
+  // melanic color identity, and disease/venom cues all lived in the
+  // main-thread draw path only.
+  ELEMENTAL: 23, // 0 none, 1 fire, 2 ice, 3 electric, 4 earth
+  MUTATIONS: 24, // bitmask: 1 bioluminescent, 2 albino, 4 melanic
+  STATUSES: 25 // bitmask: 1 disease, 2 venom, 4 bleeding
 };
+
+const ELEMENTAL_IDS = [null, 'fire', 'ice', 'electric', 'earth'];
+const ELEMENTAL_ENUM = { fire: 1, ice: 2, electric: 3, earth: 4 };
+
+export const MUTATION_BITS = Object.freeze({
+  BIOLUMINESCENT: 1,
+  ALBINO: 2,
+  MELANIC: 4
+});
+
+export const STATUS_BITS = Object.freeze({
+  DISEASE: 1,
+  VENOM: 2,
+  BLEEDING: 4
+});
 
 /**
  * Creates a buffer large enough for N creatures
@@ -85,6 +108,31 @@ export function packCreature(creature, buffer, index) {
   buffer[o + LAYOUT.BURROWING] = geneValue(creature.genes, 'burrowing', 0);
   buffer[o + LAYOUT.SPEED] = geneValue(creature.genes, 'speed', 0);
   buffer[o + LAYOUT.SENSE] = geneValue(creature.genes, 'sense', 0);
+
+  buffer[o + LAYOUT.ELEMENTAL] = ELEMENTAL_ENUM[creature.genes?.elementalAffinity] || 0;
+
+  let mutationBits = 0;
+  const rareMutations = creature.rareMutations || creature.mutations || [];
+  for (const mutation of rareMutations) {
+    switch (mutation?.name) {
+      case 'Bioluminescence':
+        mutationBits |= MUTATION_BITS.BIOLUMINESCENT;
+        break;
+      case 'Albinism':
+        mutationBits |= MUTATION_BITS.ALBINO;
+        break;
+      case 'Melanism':
+        mutationBits |= MUTATION_BITS.MELANIC;
+        break;
+    }
+  }
+  buffer[o + LAYOUT.MUTATIONS] = mutationBits;
+
+  let statusBits = 0;
+  if (creature.statuses?.has?.('disease')) statusBits |= STATUS_BITS.DISEASE;
+  if (creature.statuses?.has?.('venom')) statusBits |= STATUS_BITS.VENOM;
+  if (creature.statuses?.has?.('bleeding')) statusBits |= STATUS_BITS.BLEEDING;
+  buffer[o + LAYOUT.STATUSES] = statusBits;
 }
 
 /**
@@ -149,8 +197,11 @@ export function unpackCreature(buffer, index) {
       burrowing: buffer[o + LAYOUT.BURROWING],
       speed: buffer[o + LAYOUT.SPEED],
       sense: buffer[o + LAYOUT.SENSE],
+      elementalAffinity: ELEMENTAL_IDS[Math.round(buffer[o + LAYOUT.ELEMENTAL])] || null,
       _luckyMutation: buffer[o + LAYOUT.LUCKY] > 0.5
     },
+    mutationBits: Math.round(buffer[o + LAYOUT.MUTATIONS]) || 0,
+    statusBits: Math.round(buffer[o + LAYOUT.STATUSES]) || 0,
     aquaticAffinity: buffer[o + LAYOUT.AQUATIC],
     flyingAffinity: buffer[o + LAYOUT.FLYING],
     burrowingAffinity: buffer[o + LAYOUT.BURROWING]

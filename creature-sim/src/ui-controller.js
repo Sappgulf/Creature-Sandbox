@@ -8,6 +8,7 @@ import { eventSystem, GameEvents } from './event-system.js';
 import { SANDBOX_PROP_TYPES } from './sandbox-props.js';
 import { clamp } from './utils.js';
 import { BehaviorConfig, setBehaviorWeights } from './behavior.js';
+import { togglePerformanceMonitor } from './performance-profiler.js';
 
 import { applyUiExportMethods } from './ui-controller-exports.js';
 import { applyUiGameModeMethods } from './ui-controller-game-mode.js';
@@ -594,6 +595,15 @@ export class UIController {
   /**
    * Event handlers
    */
+  onProfilerToggle() {
+    // The F8 shortcut used to call a method that did not exist, so the
+    // documented performance overlay never opened.
+    const visible = togglePerformanceMonitor();
+    if (visible === false) {
+      this.notifications?.show?.('Performance monitor unavailable', 'info', 1600);
+    }
+  }
+
   onPause() {
     const paused = gameState.togglePause();
     eventSystem.emit(paused ? 'game:paused' : 'game:resumed', { reason: 'ui' });

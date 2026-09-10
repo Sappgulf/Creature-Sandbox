@@ -1968,6 +1968,41 @@ test('simulation-state: packCreature encodes diploid diet and hue traits', () =>
   assert.ok(Math.abs(buffer[12] - 100) < 1e-5, 'hue slot should use expressed value');
 });
 
+test('simulation-state: mutation, elemental, and status bits round-trip for worker FX', () => {
+  const buffer = createCreatureBuffer(1);
+  packCreature(
+    {
+      id: 21,
+      x: 5,
+      y: 6,
+      dir: 0,
+      vx: 0,
+      vy: 0,
+      energy: 20,
+      health: 20,
+      age: 2,
+      size: 5,
+      alive: true,
+      ageStage: 'adult',
+      genes: {
+        predator: 0,
+        diet: 0,
+        hue: 90,
+        elementalAffinity: 'ice'
+      },
+      rareMutations: [{ name: 'Bioluminescence' }, { name: 'Albinism' }],
+      statuses: new Map([['disease', { severity: 0.5 }]])
+    },
+    buffer,
+    0
+  );
+  const unpacked = unpackCreature(buffer, 0);
+  assert.equal(unpacked.genes.elementalAffinity, 'ice', 'elemental affinity should round-trip');
+  assert.ok(unpacked.mutationBits & 1, 'bioluminescent bit should be packed');
+  assert.ok(unpacked.mutationBits & 2, 'albino bit should be packed');
+  assert.ok(unpacked.statusBits & 1, 'disease status bit should be packed');
+});
+
 test('simulation-state: compactCreature bridges diploid traits with finite numbers', () => {
   const compacted = compactCreature({
     id: 9,

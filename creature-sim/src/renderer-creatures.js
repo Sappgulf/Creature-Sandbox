@@ -2,6 +2,7 @@ import { clamp } from './utils.js';
 import { getCreatureEmotion, getLifeStageDisplay } from './upgrade-data.js';
 import { drawBatchedTrails } from './creature-render.js';
 import { drawCreatureSprite, getCreatureRenderSize } from './creature-presentation.js';
+import { MUTATION_BITS, STATUS_BITS } from './simulation-state.js';
 
 function numericGene(value, fallback = 0) {
   if (value && typeof value === 'object') {
@@ -203,6 +204,13 @@ export function applyCreatureMethods(Renderer) {
         if (c.statuses?.has?.('disease') && zoom > 0.3) {
           this._drawDiseaseEffect(c, worldTime);
         }
+      }
+
+      // Worker snapshots have no `draw` method, so the mutation/status FX that
+      // live in the main-thread creature renderer never ran in the shipping
+      // runtime. Draw a lightweight worker-safe equivalent from packed bits.
+      if (!c.draw) {
+        this._drawWorkerCreatureFx(ctx, c, renderOpts);
       }
 
       if (showOutlines && (isSelected || isPinned || isHovered || isGrabbed)) {
@@ -415,6 +423,78 @@ export function applyCreatureMethods(Renderer) {
       ctx.beginPath();
       ctx.arc(0, 0, ringR + 3, 0, Math.PI * 2);
       ctx.stroke();
+    }
+
+    ctx.restore();
+  };
+
+  // Worker-safe presentation FX for snapshot creatures. Reads packed
+  // mutation/status/elemental bits and paints soft auras so rarity and state
+  // read the same in the worker runtime as on the main thread — without
+  // touching the scalar simulation.
+  Renderer.prototype._drawWorkerCreatureFx = function (ctx, creature, opts = {}) {
+    const mutations = creature.mutationBits || 0;
+    const statuses = creature.statusBits || 0;
+    const elemental = creature.genes?.elementalAffinity || null;
+    if (!mutations && !statuses && !elemental) return;
+
+    const zoom = opts.zoom ?? this.camera.zoom ?? 1;
+    if (zoom < 0.18) return;
+    const size = getCreatureRenderSize(creature, {
+      zoom,
+      isSelected: opts.isSelected,
+      isPinned: opts.isPinned
+    });
+    const radius = size * 0.5;
+    const dayLight = opts.dayLight ?? 1;
+    const isNight = dayLight < 0.45;
+    const t = opts.worldTime || 0;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 3 + (Number(creature.id) || 0) * 0.7);
+
+    const softGlow = (color, alpha, scale = 1.7) => {
+      const outer = radius * scale;
+      const gradient = ctx.createRadialGradient(0, 0, radius * 0.35, 0, 0, outer);
+      gradient.addColorStop(0, `rgba(${color}, ${alpha})`);
+      gradient.addColorStop(1, `rgba(${color}, 0)`);
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(0, 0, outer, 0, Math.PI * 2);
+      ctx.fill();
+    };
+
+    ctx.save();
+    ctx.translate(creature.x, creature.y);
+
+    if (elemental) {
+      const elementalColors = {
+        fire: '255, 130, 50',
+        ice: '150, 210, 255',
+        electric: '255, 240, 130',
+        earth: '160, 200, 100'
+      };
+      const color = elementalColors[elemental] || '160, 200, 160';
+      softGlow(color, 0.16 + pulse * 0.08, 1.9);
+      ctx.strokeStyle = `rgba(${color}, ${0.4 + pulse * 0.2})`;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * 1.35, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    if (mutations & MUTATION_BITS.BIOLUMINESCENT) {
+      softGlow('120, 255, 210', isNight ? 0.3 + pulse * 0.12 : 0.1, 2.1);
+    }
+
+    if (mutations & MUTATION_BITS.ALBINO) {
+      softGlow('245, 245, 235', 0.16, 1.6);
+    } else if (mutations & MUTATION_BITS.MELANIC) {
+      softGlow('70, 40, 110', 0.22, 1.6);
+    }
+
+    if (statuses & STATUS_BITS.DISEASE) {
+      softGlow('120, 235, 120', 0.14 + pulse * 0.1, 1.7);
+    } else if (statuses & STATUS_BITS.VENOM) {
+      softGlow('190, 110, 240', 0.16 + pulse * 0.08, 1.7);
     }
 
     ctx.restore();

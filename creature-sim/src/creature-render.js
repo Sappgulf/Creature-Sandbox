@@ -50,6 +50,7 @@ import { getDebugFlags } from './debug-flags.js';
 import { renderResolution } from './render-resolution.js';
 import { colorCache } from './color-cache.js';
 import { getCreatureAssetKey, getCreatureRenderSize } from './creature-presentation.js';
+import { MUTATION_BITS, STATUS_BITS } from './simulation-state.js';
 
 import { getAgeStageIcon, getElderFadeAlpha } from './creature-age.js';
 
@@ -100,23 +101,31 @@ export function isAlphaCreature(creature, world) {
 }
 
 export function getBadges(creature) {
+  if (!creature) return [];
   const badges = [];
-  const g = creature.genes;
+  const g = creature.genes || {};
+  const stats = creature.stats || {};
 
   badges.push(getAgeStageIcon(creature.ageStage));
 
   if (g._luckyMutation) badges.push('🍀 Lucky');
 
-  if (g.speed >= 1.45) badges.push('Swift');
-  if (g.sense >= 150) badges.push('Scout');
-  if (g.metabolism <= 0.6) badges.push('Efficient');
+  if (Number.isFinite(g.speed) && g.speed >= 1.45) badges.push('Swift');
+  if (Number.isFinite(g.sense) && g.sense >= 150) badges.push('Scout');
+  if (Number.isFinite(g.metabolism) && g.metabolism <= 0.6) badges.push('Efficient');
   if (creature.ageStage === 'elder') badges.push('Elder');
-  if (!g.predator && creature.stats.food >= 15) badges.push('Grazer');
-  if (g.predator && creature.stats.kills >= 3) badges.push('Apex');
-  if (creature.energy >= 35) badges.push('Charged');
+  if (!g.predator && (stats.food ?? 0) >= 15) badges.push('Grazer');
+  if (g.predator && (stats.kills ?? 0) >= 3) badges.push('Apex');
+  if (Number.isFinite(creature.energy) && creature.energy >= 35) badges.push('Charged');
   if (creature.aquaticAffinity > 0.6) badges.push('Amphibious');
   if (creature.hasStatus && creature.hasStatus('disease')) badges.push('Sick');
   if (creature.hasStatus && creature.hasStatus('venom')) badges.push('Poisoned');
+  // Worker snapshots do not expose statuses/rare mutations as objects; read the
+  // packed presentation bits instead so worker creatures are not badge-less.
+  if (!creature.hasStatus && creature.statusBits) {
+    if (creature.statusBits & STATUS_BITS.DISEASE) badges.push('Sick');
+    if (creature.statusBits & STATUS_BITS.VENOM) badges.push('Poisoned');
+  }
   if (creature.funStats?.hardLandings >= 2) badges.push('😵 Crash Landed');
   if (creature.funStats?.propBounces >= 3) badges.push('🎯 Bounce Star');
   if (creature.funStats?.goofyFails >= 2) badges.push('🤹 Goofball');
@@ -156,6 +165,12 @@ export function getBadges(creature) {
         badges.push('📡 Mind');
         break;
     }
+  }
+
+  if (!rareMutations.length && creature.mutationBits) {
+    if (creature.mutationBits & MUTATION_BITS.BIOLUMINESCENT) badges.push('✨ Glow');
+    if (creature.mutationBits & MUTATION_BITS.ALBINO) badges.push('⚪ Albino');
+    else if (creature.mutationBits & MUTATION_BITS.MELANIC) badges.push('⬛ Dark');
   }
   return badges;
 }

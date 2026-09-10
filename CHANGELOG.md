@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-10 — worker-fx-and-controls — Planned
+
+- **Date:** 2026-09-10
+- **Scope:** render | simulation | ui | input
+- **Type:** Planned
+- **Issues:** The worker runtime (shipping default) rendered every creature as a flat sprite: elemental auras, bioluminescent glow, albino/melanic identity, and disease/venom cues existed only in the main-thread draw path. The inspector badges panel could never populate (`badges: []`). F8, Ctrl/Cmd+S, Ctrl/Cmd+O, and Shift+P were documented but dead or unreachable. Replay snapshot rows looked clickable but were inert. Reduced-motion never reached the real ParticleSystem, and adaptive quality telemetry froze whenever a quality override was pinned.
+- **Root Causes:** The snapshot buffer had no slots for presentation traits; `_drawExplicit` returned right after the sprite; `getBadges` was never called and not null-safe for snapshots; the keyboard handlers were no-ops or shadowed by lowercased switch keys; replay rows had no handler; `setReducedParticleMode` mutated the legacy `renderer.particles` array; `adjustQuality` returned before sampling FPS under an override.
+- **Fixes:** Pack elemental/mutation/status bits in the creature stride and paint worker-safe auras in `drawCreatures`; null-safe `getBadges` with packed-bit fallbacks, wired into the inspector and compact dossier; implement `onProfilerToggle`, route save/load shortcuts through events, fix Shift+P, make replay rows keyboard-scrubbable with focus preservation; halve the particle budget under `reduced-motion`; always sample real FPS before the quality-override return.
+- **Verification:** Pending full release proof.
+
+### 2026-09-10 — worker-fx-and-controls — Implemented
+
+- **Date:** 2026-09-10
+- **Scope:** render | simulation | ui | input
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npx eslint creature-sim/src` clean; `npm test` green (191 + 69 + E2E, new mutation/status bit round-trip); `npm run build` green (main app JS 377.33 kB / 110.81 kB gzip); `npm run check:bundle` green (worker 304.6 kB under the 312 kB budget); `npm run proof:release` green; manually verified worker elemental/bioluminescent auras and the night grade with forced-mutation screenshots.
+
 ### 2026-09-10 — gameplay-visual-hud-polish — Planned
 
 - **Date:** 2026-09-10

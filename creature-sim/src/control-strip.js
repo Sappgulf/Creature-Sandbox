@@ -212,6 +212,10 @@ export class ControlStripController {
     // Keep control strip state synced with global events
     eventSystem.on('game:paused', () => this.updatePauseButton());
     eventSystem.on('game:resumed', () => this.updatePauseButton());
+    // Keyboard save/load (Ctrl/Cmd+S, Ctrl/Cmd+O) routes here so the shortcut
+    // and the overflow menu share one implementation.
+    eventSystem.on('ui:save-request', () => this.requestSaveGame());
+    eventSystem.on('ui:load-request', () => this.requestLoadGame());
     // The +/- shortcuts change the speed without going through this control.
     eventSystem.on('game:speed', () => {
       this.syncSpeedIndexFromState();

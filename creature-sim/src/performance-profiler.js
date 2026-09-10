@@ -870,6 +870,16 @@ export function updatePerformanceMonitor() {
   }
 }
 
+/**
+ * Toggle the on-screen performance overlay. Exported so keyboard shortcuts
+ * (F8) and UI controls can open the monitor without a direct reference.
+ */
+export function togglePerformanceMonitor() {
+  if (!monitor) return false;
+  monitor.toggle();
+  return monitor.isVisible;
+}
+
 // Convenience profiling functions
 export const profile = {
   start: name => performanceProfiler.startScope(name),

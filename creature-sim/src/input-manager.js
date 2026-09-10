@@ -160,9 +160,11 @@ export class InputManager {
         break;
       case 's':
         e.preventDefault();
+        eventSystem.emit('ui:save-request', { source: 'keyboard' });
         break;
       case 'o':
         e.preventDefault();
+        eventSystem.emit('ui:load-request', { source: 'keyboard' });
         break;
     }
   }
@@ -259,12 +261,18 @@ export class InputManager {
         eventSystem.emit('tool:changed', { mode: 'inspect' });
         break;
       case 'p':
+        // Shift+P cycles the prop type without leaving prop mode. The switch
+        // key is lowercased, so this must live in the 'p' case.
+        if (e.shiftKey && this.tools?.cyclePropType) {
+          this.tools.cyclePropType(1);
+          eventSystem.emit('ui:toast', {
+            message: `Prop · ${this.tools.propType || 'prop'}`,
+            duration: 1200
+          });
+          break;
+        }
         this.tools.setMode('prop');
         eventSystem.emit('tool:changed', { mode: 'prop' });
-        break;
-      case 'P':
-        // Shift+P cycles the prop type without leaving prop mode.
-        this.tools?.cyclePropType?.(1);
         break;
       case '[':
         this.tools?.adjustBrushSize?.(-4);

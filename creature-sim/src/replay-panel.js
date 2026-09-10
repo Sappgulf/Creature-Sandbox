@@ -91,6 +91,22 @@ export class ReplayPanelController {
       });
     if (liveBtn) liveBtn.addEventListener('click', () => this.replay?.scrubTo(-1));
     if (shareBtn) shareBtn.addEventListener('click', () => this._share());
+    if (this.list) {
+      // Rows looked interactive (hover/active styling) but had no handler; the
+      // only way to jump was the scrubber.
+      const jumpToRow = target => {
+        const row = target?.closest?.('.replay-snapshot-row');
+        if (!row) return;
+        const index = Number(row.dataset.index);
+        if (Number.isFinite(index)) this.replay?.scrubTo(index);
+      };
+      this.list.addEventListener('click', event => jumpToRow(event.target));
+      this.list.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        jumpToRow(event.target);
+      });
+    }
     if (this.scrubber) {
       this.scrubber.addEventListener('input', event => {
         const value = Number(event.target.value);
@@ -133,12 +149,18 @@ export class ReplayPanelController {
         '<div class="muted tiny">Snapshots appear every 5 seconds. Keep the simulation running.</div>';
       return;
     }
+    const focusedIndex =
+      document.activeElement && this.list.contains(document.activeElement)
+        ? document.activeElement.closest?.('.replay-snapshot-row')?.dataset?.index
+        : null;
     const rows = snapshots
       .map((snapshot, index) => {
         const isActive = index === cursor;
         const summary = snapshot?.payload?.summary || {};
         return `
-        <div class="replay-snapshot-row${isActive ? ' active' : ''}" data-index="${index}">
+        <div class="replay-snapshot-row${isActive ? ' active' : ''}" data-index="${index}"
+          role="button" tabindex="0"
+          aria-label="Jump to ${formatTime(snapshot.t)}: population ${summary.population ?? 0}, predators ${summary.predators ?? 0}, food ${summary.food ?? 0}">
           <span class="replay-snapshot-time">${formatTime(snapshot.t)}</span>
           <span class="replay-snapshot-stat">Pop ${summary.population ?? 0}</span>
           <span class="replay-snapshot-stat">Pred ${summary.predators ?? 0}</span>
@@ -147,6 +169,9 @@ export class ReplayPanelController {
       })
       .join('');
     this.list.innerHTML = rows;
+    if (focusedIndex != null) {
+      this.list.querySelector(`.replay-snapshot-row[data-index="${focusedIndex}"]`)?.focus?.({ preventScroll: true });
+    }
   }
 
   _share() {

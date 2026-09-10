@@ -210,8 +210,6 @@ export class RendererPerformanceMonitor {
    * ENHANCED: Uses quality presets for smoother transitions
    */
   adjustQuality() {
-    if (this.qualityOverride) return;
-
     const stats = this.getStats();
     this.frameCount++;
 
@@ -224,6 +222,11 @@ export class RendererPerformanceMonitor {
       sum += this.fpsHistory[i];
     }
     this.currentFps = sum / sampleCount;
+
+    // Quality overrides (battery saver, main-thread fallback) should pin the
+    // preset, not the telemetry: compute currentFps first so the reported FPS
+    // is real even while adaptive changes are disabled.
+    if (this.qualityOverride) return;
 
     // Decrement quality lock timer
     if (this.qualityLockTimer > 0) {

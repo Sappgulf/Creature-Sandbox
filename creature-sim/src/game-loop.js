@@ -20,6 +20,7 @@ import { ghostTrails } from './ecosystem-ghosts.js';
 import { lifetimeStats } from './lifetime-stats.js';
 import { RendererConfig } from './renderer-config.js';
 import { geneValue } from './creature-genetics-helpers.js';
+import { getBadges } from './creature-render.js';
 // STATIC UI IMPORTS - avoids dynamic import() latency in hot path
 import {
   renderStats,
@@ -205,6 +206,14 @@ export class GameLoop {
     // Item 9: More aggressive particle budget in explicit main-thread fallback
     if (!this.world?.isWorker && maxParticles) {
       maxParticles = Math.floor(maxParticles * 0.65);
+    }
+
+    // Accessibility: the reduced-motion preference halves the budget. The old
+    // performance.setReducedParticleMode() path mutated the legacy
+    // renderer.particles array and never touched this real ParticleSystem.
+    const reducedMotion = typeof document !== 'undefined' && document.body?.classList?.contains('reduced-motion');
+    if (reducedMotion && Number.isFinite(maxParticles)) {
+      maxParticles = Math.max(4, Math.floor(maxParticles * 0.5));
     }
 
     if (quality === this._lastSyncedParticleQuality && this.particles.maxParticles === maxParticles) return;
@@ -1464,7 +1473,7 @@ export class GameLoop {
         creature: focusCreature,
         stats: focusCreature?.stats ?? null,
         world: this.world,
-        badges: [],
+        badges: focusCreature ? getBadges(focusCreature) : [],
         activity,
         pinned: !!(focusId && gameState.pinnedId === focusId),
         isRoot: !!(focusId && lineageRootId === focusId),
