@@ -629,14 +629,22 @@ export class PlayableScenarios {
     if (typeof tuning.autoBalance === 'boolean' && this.world.autoBalanceSettings) {
       this.world.autoBalanceSettings.enabled = tuning.autoBalance;
     }
-    if (tuning.season && this.world.environment?.seasonCycle) {
-      const idx = this.world.environment.seasonCycle.indexOf(tuning.season);
-      if (idx >= 0) {
-        this.world.environment.currentSeason = tuning.season;
-        this.world.environment.seasonIndex = idx;
-        const config = this.world.environment.seasonConfigs?.[tuning.season];
-        if (config) {
-          this.world.environment.applySeasonConfig?.(config, { announce: false });
+    if (tuning.season) {
+      // Worker mode: apply via the worker command so the real environment
+      // changes. The old gate on environment.seasonCycle was never present on
+      // the proxy snapshot, so scenario start-seasons silently did nothing.
+      if (typeof this.world.setSeason === 'function') {
+        this.world.setSeason(tuning.season);
+      } else if (this.world.environment) {
+        const seasonOrder = ['spring', 'summer', 'autumn', 'winter'];
+        const idx = seasonOrder.indexOf(tuning.season);
+        if (idx >= 0) {
+          this.world.environment.currentSeason = tuning.season;
+          this.world.environment.seasonIndex = idx;
+          const config = this.world.environment.seasonConfigs?.[tuning.season];
+          if (config) {
+            this.world.environment.applySeasonConfig?.(config, { announce: false });
+          }
         }
       }
     }
@@ -650,12 +658,27 @@ export class PlayableScenarios {
     return collectGameplayMetrics(this.world, { founderId: gameState.lineageRootId });
   }
 
+  /**
+   * Scenario elapsed time, resilient to the worker's async reset: the reset
+   * lands a few frames after startScenario(), so the first snapshots can still
+   * carry the previous session's world clock. If world time ever moves behind
+   * startedAt, treat the new clock as authoritative and rebase.
+   */
+  _elapsedSeconds() {
+    if (!this.activeRun) return 0;
+    const worldTime = Number(this.world?.t ?? 0);
+    if (!Number.isFinite(this.activeRun.startedAt) || worldTime < this.activeRun.startedAt) {
+      this.activeRun.startedAt = 0;
+    }
+    return Math.max(0, worldTime - this.activeRun.startedAt);
+  }
+
   _evaluateRun() {
     if (!this.activeRun || this.activeRun.completed || this.activeRun.failed) return;
     const snapshot = this.lastSnapshot;
     const scenario = this.activeRun.scenario;
     const metrics = snapshot.metrics;
-    const elapsed = Math.max(0, (this.world?.t ?? 0) - this.activeRun.startedAt);
+    const elapsed = this._elapsedSeconds();
     const timeProgress = clamp(elapsed / Math.max(1, scenario.targetSeconds), 0, 1);
     const populationProgress = clamp(metrics.alive / Math.max(1, scenario.minAlive || 1), 0, 1);
     const foodProgress = scenario.minFood ? clamp(metrics.food / scenario.minFood, 0, 1) : 1;
@@ -707,7 +730,7 @@ export class PlayableScenarios {
     const scenario = this.activeRun?.scenario || PLAYABLE_SCENARIOS[0];
     const metrics = this._collectMetrics();
     metrics.foodPerCreature = Number(foodPerCreature(metrics).toFixed(2));
-    const elapsed = this.activeRun ? Math.max(0, (this.world?.t ?? 0) - this.activeRun.startedAt) : 0;
+    const elapsed = this._elapsedSeconds();
     const risk = this._risk(metrics, scenario);
     const progress = this.activeRun ? Math.round((this.activeRun.progress || 0) * 100) : 0;
 
@@ -853,6 +876,14 @@ export class PlayableScenarios {
     this.activeRun.state = 'failed';
     this.lastSnapshot = this._buildSnapshot();
     this.notifications?.show?.(`Scenario failed: ${reason}`, 'error', 4200);
+    this._emitUpdate();
+
+    // Stop advertising the dead run on the objective rail and put the sandbox
+    // back on open-ended starter goals. Previously the failed scenario stayed
+    // "active" with a frozen progress bar until another scenario was started.
+    this.activeRun = null;
+    this.sessionGoals?.resetForNewSession?.({ refreshGoals: true });
+    this.lastSnapshot = this._buildSnapshot();
     this._emitUpdate();
   }
 

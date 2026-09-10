@@ -27,6 +27,7 @@ export class InputManager {
       onPointerDown: this.onPointerDown.bind(this),
       onPointerMove: this.onPointerMove.bind(this),
       onPointerUp: this.onPointerUp.bind(this),
+      onPointerCancel: this.onPointerCancel.bind(this),
       onPointerLeave: this.onPointerLeave.bind(this),
       onWheel: this.onWheel.bind(this),
       onBlur: this.onBlur.bind(this),
@@ -60,7 +61,9 @@ export class InputManager {
     this.godHoldTriggered = false;
     this.godHoldStart = null;
     this.godHoldThreshold = 14;
-    this.grabActivateMs = 160;
+    // Mouse hold-to-grab is deliberately long so a normal slow click still
+    // selects instead of silently starting a drag.
+    this.grabActivateMs = 450;
     this.grabActivateMsTouch = 220;
     this.grabMoveThreshold = 7;
     this.grabMoveThresholdTouch = 11;
@@ -95,6 +98,7 @@ export class InputManager {
     this.canvas.addEventListener('pointerdown', this.boundHandlers.onPointerDown);
     this.canvas.addEventListener('pointermove', this.boundHandlers.onPointerMove);
     this.canvas.addEventListener('pointerup', this.boundHandlers.onPointerUp);
+    this.canvas.addEventListener('pointercancel', this.boundHandlers.onPointerCancel);
     this.canvas.addEventListener('pointerleave', this.boundHandlers.onPointerLeave);
     this.canvas.addEventListener('wheel', this.boundHandlers.onWheel, { passive: false });
 
@@ -112,6 +116,7 @@ export class InputManager {
     this.canvas.removeEventListener('pointerdown', this.boundHandlers.onPointerDown);
     this.canvas.removeEventListener('pointermove', this.boundHandlers.onPointerMove);
     this.canvas.removeEventListener('pointerup', this.boundHandlers.onPointerUp);
+    this.canvas.removeEventListener('pointercancel', this.boundHandlers.onPointerCancel);
     this.canvas.removeEventListener('pointerleave', this.boundHandlers.onPointerLeave);
     this.canvas.removeEventListener('wheel', this.boundHandlers.onWheel);
     this.canvas.removeEventListener('mobiletap', this.boundHandlers.onMobileTap);
@@ -581,6 +586,7 @@ export class InputManager {
     } else {
       if (this._autoPausedOnBlur) {
         this._autoPausedOnBlur = false;
+        this._activePointerId = null;
         gameState.paused = false;
         eventSystem.emit('game:resumed', { reason: 'visibility' });
       }

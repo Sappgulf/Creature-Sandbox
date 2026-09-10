@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-10 — gameplay-visual-hud-polish — Planned
+
+- **Date:** 2026-09-10
+- **Scope:** render | simulation | ui | input
+- **Type:** Planned
+- **Issues:** Creatures rendered ~2.8x smaller on the default LOD path and popped on hover/select; ground decorations never used the authored sprites (hue cache key mismatch) so the field was a repeated tally-mark glyph; parallax background was painted over; day/night and the weather overlay were unreachable; predation cooldown was bypassed by the behavior path; kills dropped no corpses; random disasters never fired; scenario run clocks stalled in worker mode; scenario "keep N alive" cards latched complete; the launch-creature goal fought its own hint; touch long-press copy did not match the actual gestures; mobile focus mode hid stats and the selection dossier with no reopen path; pause buttons got emoji written over their SVG icons; battery state never colored; stats leaked debug units; inspector could throw on partial data and dropped keyboard focus.
+- **Root Causes:** Two divergent creature size formulas and an LOD gate keyed on zoom; tint cache keys used raw float hues while requests rounded; `drawWorld` drew parallax before the opaque ground fill; feature defaults were never pushed to renderer properties; `tryPredation` lacked a cooldown gate; `world.corpseSystem` never existed; `triggerRandomDisaster` had no scheduler; `startedAt` was captured before the worker reset landed; snapshot goals latched and scenario targets were auto-raised; `throwSpeedMin` gated the only `CREATURE_THROWN` emission; several UI writers used `textContent` on icon buttons and mismatched class names.
+- **Fixes:** One shared `getCreatureRenderSize` (x8, 24px floor) with contact shadow/dark glow in the sprite path and overlay geometry derived from it; decorations tint with a quantized hue + baked seasonal hue shift (no per-draw `ctx.filter`), with flip/rotation variation; parallax draws between the base fill and biome detail; feature defaults applied at construction; cooldown gate in `tryPredation`; corpse creation with decay; random-disaster scheduler honoring `randomDisasters`/`disasterCooldown`; scenario clock rebases if world time moves backwards; live snapshot goals un-complete, scenario targets are locked, and failed runs clear; slow drag-releases count as throws and release the worker grab; touch tap/pinch/pan no longer fight creature drags and `pointercancel` cleans up; stats use player units and labels, pause glyphs stay SVG, battery classes match CSS, watch strip has distinct icons, inspector is crash-guarded and preserves focus, and new panels close each other. Also fixes the pre-existing startup CLS (dossier expanding `#hud-bottom-left` by ~350px) with desktop absolute positioning, and the God Mode/Moments panel conflict by exiting God Mode when Moments opens.
+- **Verification:** Pending full release proof.
+
+### 2026-09-10 — gameplay-visual-hud-polish — Implemented
+
+- **Date:** 2026-09-10
+- **Scope:** render | simulation | ui | input
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `git diff --check` clean; `npx eslint creature-sim/src` clean; `npm test` green (190 + 69 + E2E); `npm run build` green (main app JS 377.98 kB / 110.56 kB gzip); `npm run check:bundle` green (worker 303,615 B, budget raised 302 kB → 312 kB to cover the new worker-side corpse/disaster/season/threat code after measuring 301.3 kB pre-change); `npm run proof:release` green end-to-end (lint, tests, build, bundle, browser smoke worker + main + worker lanes, scenario balance, release evidence board). Also fixed two pre-existing `smoke:main` blockers found during proof: the 0.17 startup CLS from the dossier resizing the HUD (now 0.004) and the God Mode/Moments panel conflict; hardened `clickVisibleCreature` to avoid UI-overlaid coordinates.
+
 ### 2026-09-06 — menus-and-worker-stats — Planned
 
 - **Date:** 2026-09-06

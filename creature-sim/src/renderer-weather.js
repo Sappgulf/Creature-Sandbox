@@ -29,7 +29,10 @@ export function drawWeatherEffects(renderer, ctx, world) {
   if ((weatherType === 'rain' || weatherType === 'storm') && weatherIntensity > 0.3) {
     drawRainLens(renderer, ctx, world, weatherIntensity);
   }
-  if (world?.currentBiome === 'desert' || world?.currentBiome === 'mountain') {
+  // Heat shimmer belongs to hot biomes under the camera. `world.currentBiome`
+  // is a creature property, not a world one, so this never fired.
+  const cameraBiome = renderer.camera ? world?.getBiomeAt?.(renderer.camera.x, renderer.camera.y)?.type : null;
+  if (cameraBiome === 'desert' || cameraBiome === 'mountain') {
     drawHeatShimmer(renderer, ctx, world);
   }
 }
@@ -41,7 +44,7 @@ export function drawStorm(renderer, ctx, world, weatherIntensity) {
   const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
 
   const darkness = 0.1 + (weatherIntensity - 0.3) * 0.25;
-  ctx.fillStyle = `rgba(10, 15, 30, ${clamp(darkness, 0.1, 0.35)})`;
+  ctx.fillStyle = `rgba(10, 15, 30, ${clamp(darkness, 0.1, 0.28)})`;
   ctx.fillRect(
     bounds.x1 - extendAmount,
     bounds.y1 - extendAmount,

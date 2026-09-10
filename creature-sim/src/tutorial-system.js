@@ -71,7 +71,7 @@ const DEFAULT_STEPS = [
   {
     id: 'scenario',
     title: 'Earn a Scenario Medal',
-    text: 'Open More → Scenarios and try Stress Sanctuary for a guided medal run.',
+    text: 'Open More → Scenario Lab and try Stress Sanctuary for a guided medal run.',
     highlight: ['#ctrl-more', '#menu-scenario'],
     waitFor: { type: 'scenario_start', count: 1 },
     autoAdvance: true,
@@ -257,6 +257,7 @@ export class TutorialSystem {
   _isChromeBlockingTutorial() {
     const blocking = [
       '#overflow-drawer:not(.hidden)',
+      '#spawn-drawer:not(.hidden)',
       '#god-mode-panel:not(.hidden)',
       '#upgrade-panel:not(.hidden)',
       '#prop-picker-drawer:not(.hidden)',

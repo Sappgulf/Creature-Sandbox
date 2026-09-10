@@ -112,6 +112,12 @@ export class WorldEcosystem {
 
     const weatherMultiplier = 1.0 + (this.world.environment?.weatherIntensity || 0) * 0.2;
     const dayNightMultiplier = this.world.environment?.getDayNightState?.().foodGrowthMult ?? 1.0;
+    // Modes and scenarios write environment.foodRateMultiplier (Winter
+    // Survival 0.62, Drought 0.55, Chill 1.25...). It was never read, making
+    // every scarcity/abundance tuning cosmetic.
+    const scenarioMultiplier = Number.isFinite(this.world.environment?.foodRateMultiplier)
+      ? this.world.environment.foodRateMultiplier
+      : 1;
 
     const population = this.world.creatures?.length ?? 0;
     const pressureStart = CreatureAgentTuning.FOOD_PATCHES.POP_PRESSURE_START;
@@ -126,6 +132,7 @@ export class WorldEcosystem {
       seasonMultiplier *
       weatherMultiplier *
       dayNightMultiplier *
+      scenarioMultiplier *
       populationMultiplier *
       this.foodGrowthMultiplier *
       eventMultiplier
@@ -517,11 +524,10 @@ export class WorldEcosystem {
     const { herbivores, predators, omnivores, foodCount } = stats;
     const total = herbivores + predators + omnivores;
 
-    // Skip balancing if ecosystem is too young or empty
-    // Only an empty world is left alone. Bailing at fewer than five gave up
-    // exactly when the floor mattered most and guaranteed the die-off ran to
-    // extinction.
-    if (total < 1 || this.world.t < 60) return;
+    // Skip balancing while the world is still warming up. Extinction is not
+    // skipped anymore: with a mode minPopulation set, the add_herbivores branch
+    // below now recovers a dead sandbox instead of dead-ending it.
+    if (this.world.t < 60) return;
 
     const actions = [];
 
@@ -535,7 +541,7 @@ export class WorldEcosystem {
     // Gameplay modes advertise a population floor so a bad season or a
     // predator spike can become a recoverable story beat instead of silently
     // ending the sandbox. Refill in small pulses to preserve player agency.
-    if (total > 0 && total < minPopulation) {
+    if (total < minPopulation) {
       actions.push('add_herbivores');
     }
 
@@ -650,6 +656,18 @@ export class WorldEcosystem {
       if (creature.alive) {
         creature.alive = false;
         creature.deathCause = creature.deathCause || 'ecosystem_cull';
+        // Culls used to happen with no event, so creatures the player bred
+        // just vanished. Surface each one like the predator cull does.
+        try {
+          eventSystem.emit(GameEvents.WORLD_ECOSYSTEM_CULL, {
+            x: creature.x,
+            y: creature.y,
+            creatureId: creature.id,
+            worldTime: this.world?.t ?? 0
+          });
+        } catch (error) {
+          console.warn('Failed to emit ecosystem cull event:', error);
+        }
       }
     }
   }

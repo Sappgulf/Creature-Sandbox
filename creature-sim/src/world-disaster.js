@@ -15,6 +15,7 @@ export class WorldDisaster {
     this.pendingDisasters = [];
     this.disasterCooldown = 0;
     this.disasterHistory = [];
+    this._randomTimer = null;
 
     // Disaster configurations
     this.disasterTypes = {
@@ -64,6 +65,23 @@ export class WorldDisaster {
     // Update cooldown
     if (this.disasterCooldown > 0) {
       this.disasterCooldown -= dt;
+    }
+
+    // Random disaster scheduling. `triggerRandomDisaster()` had no callers, so
+    // the `randomDisasters` flag and mode/scenario cooldowns were dead. Respect
+    // a 60s grace period so a fresh sandbox is not hit immediately.
+    if (this.world.randomDisasters === true && !this.activeDisaster && this.world.t > 60) {
+      if (this._randomTimer == null) this._randomTimer = this._rollRandomDelay();
+      this._randomTimer -= dt;
+      if (this._randomTimer <= 0) {
+        if (this.disasterCooldown <= 0 && this.triggerRandomDisaster()) {
+          this._randomTimer = this._rollRandomDelay();
+        } else {
+          this._randomTimer = 5;
+        }
+      }
+    } else if (this.world.randomDisasters !== true) {
+      this._randomTimer = null;
     }
 
     // Process scheduled disasters
@@ -127,6 +145,12 @@ export class WorldDisaster {
       intensity: 0.8 + rand() * 0.4, // 0.8-1.2 intensity
       manual: false
     });
+  }
+
+  _rollRandomDelay() {
+    const base = Number.isFinite(this.world.disasterCooldown) ? this.world.disasterCooldown : 40;
+    const clamped = Math.max(20, Math.min(base, 600));
+    return clamped * (0.75 + rand() * 0.5);
   }
 
   // Begin disaster execution
@@ -227,7 +251,7 @@ export class WorldDisaster {
         // 10% chance per second
         this.world.combat?.applyDamage(creature, damageRate, {
           disaster: this.activeDisaster.type,
-          bypassIframes: true
+          ignoreIframes: true
         });
       }
     }

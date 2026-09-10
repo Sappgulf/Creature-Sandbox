@@ -257,6 +257,7 @@ export class MobileSupport {
 
     // Reset pinch/pan state
     if (e.touches.length < 2) {
+      gameState.pinchActive = false;
       this.lastPinchDistance = null;
       this.lastPanCenter = null;
     }
@@ -272,6 +273,10 @@ export class MobileSupport {
 
   handleSingleTouchMove(touch) {
     if (!this.lastPanCenter) return;
+
+    // A creature grab/throw owns this finger; let InputManager move the
+    // creature instead of panning the camera out from under it.
+    if (gameState.creatureDragActive) return;
 
     // Pan camera
     const dx = touch.clientX - this.lastPanCenter.x;
@@ -290,6 +295,7 @@ export class MobileSupport {
   }
 
   handlePinchStart(touches) {
+    gameState.pinchActive = true;
     const distance = Math.hypot(touches[1].clientX - touches[0].clientX, touches[1].clientY - touches[0].clientY);
     this.lastPinchDistance = distance;
 
@@ -351,8 +357,10 @@ export class MobileSupport {
     const now = Date.now();
 
     // Double tap detection
+    let tapCount = 1;
     if (now - this.lastTapTime < 300) {
       this.tapCount++;
+      tapCount = this.tapCount;
       if (this.tapCount === 2) {
         // Double tap = zoom to location
         this.noteCameraOverride();
@@ -375,10 +383,11 @@ export class MobileSupport {
 
     this.lastTapTime = now;
 
-    // Emit tap event for creature selection
+    // Emit tap event for creature selection. Consumers use tapCount to ignore
+    // the second tap of a double-tap (which is a camera zoom).
     this.canvas.dispatchEvent(
       new CustomEvent('mobiletap', {
-        detail: { x, y }
+        detail: { x, y, tapCount }
       })
     );
   }

@@ -108,6 +108,16 @@
     <symbol id="i-god" viewBox="0 0 24 24">
       <g class="fj-icon"><path d="M12 3.4 13.8 9l5.6 1.8-5.6 1.8L12 18.2 10.2 12.6 4.6 10.8 10.2 9z"/><path d="M18.6 16.4l.7 2.1 2.1.7-2.1.7-.7 2.1-.7-2.1-2.1-.7 2.1-.7z"/></g>
     </symbol>
+    <symbol id="i-moments" viewBox="0 0 24 24">
+      <g class="fj-icon"><circle cx="12" cy="12" r="8.4"/><path d="M12 6.8V12l3.4 2"/></g>
+    </symbol>
+    <symbol id="i-recenter" viewBox="0 0 24 24">
+      <g class="fj-icon"><circle cx="12" cy="12" r="5.4"/><path d="M12 3.2v3M12 17.8v3M3.2 12h3M17.8 12h3"/></g>
+      <circle cx="12" cy="12" r="1.3" class="fj-solid"/>
+    </symbol>
+    <symbol id="i-close" viewBox="0 0 24 24">
+      <g class="fj-icon"><path d="m6.4 6.4 11.2 11.2M17.6 6.4 6.4 17.6"/></g>
+    </symbol>
     <!-- Creature silhouettes: the same body language as the sprites in the
          world, so the spawn control shows what it will actually place. -->
     <symbol id="i-herbivore" viewBox="0 0 24 24">
@@ -259,8 +269,8 @@
           <div class="menu-section-title">Remember</div>
           <button class="menu-item" id="menu-upgrades" data-action="upgrades"><span class="menu-item-icon" aria-hidden="true">📓</span><span class="menu-item-label">Field Journal</span></button>
           <button class="menu-item" id="menu-mode" data-action="mode"><span class="menu-item-icon" aria-hidden="true">🎛️</span><span class="menu-item-label">Expedition</span></button>
-          <button class="menu-item" id="menu-campaign" data-action="upgrades"><span class="menu-item-icon" aria-hidden="true">🏆</span><span class="menu-item-label">Expedition medals</span></button>
-          <button class="menu-item" id="menu-achievements" data-action="upgrades"><span class="menu-item-icon" aria-hidden="true">🏅</span><span class="menu-item-label">Discoveries</span></button>
+          <button class="menu-item" id="menu-campaign" data-action="campaign"><span class="menu-item-icon" aria-hidden="true">🏆</span><span class="menu-item-label">Expedition medals</span></button>
+          <button class="menu-item" id="menu-achievements" data-action="achievements"><span class="menu-item-icon" aria-hidden="true">🏅</span><span class="menu-item-label">Discoveries</span></button>
         </div>
         <div class="menu-section">
           <div class="menu-section-title">Tools</div>
@@ -272,6 +282,7 @@
         <div class="menu-section">
           <div class="menu-section-title">Insights</div>
           <button class="menu-item" id="menu-eco-health" data-action="eco-health"><span class="menu-item-icon" aria-hidden="true">🌍</span><span class="menu-item-label">Ecosystem Health</span></button>
+          <button class="menu-item" id="menu-inspector" data-action="inspector"><span class="menu-item-icon" aria-hidden="true">🔎</span><span class="menu-item-label">Inspector</span><kbd class="menu-kbd">I</kbd></button>
           <button class="menu-item" id="menu-analytics" data-action="analytics"><span class="menu-item-icon" aria-hidden="true">📊</span><span class="menu-item-label">Analytics</span></button>
           <button class="menu-item" id="menu-replay" data-action="replay"><span class="menu-item-icon" aria-hidden="true">▶️</span><span class="menu-item-label">Session Replay</span></button>
           <button class="menu-item" id="menu-insights" data-action="insights"><span class="menu-item-icon" aria-hidden="true">💡</span><span class="menu-item-label">Insights</span></button>
@@ -313,10 +324,10 @@
     <button id="watch-speed" class="watch-btn" aria-label="Watch speed">1×</button>
     <button id="watch-follow" class="watch-btn" aria-label="Toggle follow"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-goals"/></svg></button>
     <button id="watch-recenter" class="watch-btn" aria-label="Recenter camera"
-      title="Re-enable auto-director">⟳</button>
-    <button id="watch-moments" class="watch-btn watch-btn-wide" aria-label="Open moments log"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-god"/></svg><span class="watch-btn-label">Moments</span></button>
+      title="Re-enable auto-director"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-recenter"/></svg></button>
+    <button id="watch-moments" class="watch-btn watch-btn-wide" aria-label="Open moments log"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-moments"/></svg><span class="watch-btn-label">Moments</span></button>
     <button id="watch-god-mode" class="watch-btn" aria-label="Toggle god mode"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-god"/></svg></button>
-    <button id="watch-exit" class="watch-btn watch-btn-exit" aria-label="Exit watch mode">✕</button>
+    <button id="watch-exit" class="watch-btn watch-btn-exit" aria-label="Exit watch mode"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-close"/></svg></button>
   </div>
 
   <div id="moments-panel" class="moments-panel hidden" role="dialog" aria-label="Moments log" aria-hidden="true">
@@ -361,7 +372,14 @@
   <div id="objective-rail" class="objective-rail" aria-live="polite"></div>
 
   <!-- Touch-first Onboarding Flow (mobile only) -->
-  <div id="touch-onboarding" class="touch-onboarding hidden" aria-hidden="true">
+  <div
+    id="touch-onboarding"
+    class="touch-onboarding hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Mobile onboarding"
+    aria-hidden="true"
+  >
     <div class="touch-onboarding-card glass-hero" role="document" tabindex="-1">
       <div class="touch-onboarding-icon" aria-hidden="true"></div>
       <div class="touch-onboarding-step" aria-live="polite"></div>
@@ -377,6 +395,7 @@
         <button type="button" class="touch-onboarding-next primary-btn small">Next ›</button>
         <button type="button" class="touch-onboarding-done primary-btn small" hidden>Got it!</button>
       </div>
+      <button type="button" class="touch-onboarding-skip ghost-btn small">Skip</button>
     </div>
   </div>
 
@@ -469,8 +488,8 @@
          on top of the last stat and clipped the FPS readout mid-glyph. -->
     <div id="hud-bottom-right">
       <button id="btn-show-inspector" class="chip floating hidden" title="Show inspector"
-        aria-label="Show inspector">Show Panel</button>
-      <div id="stats"></div>
+        aria-label="Show inspector">Inspector</button>
+      <div id="stats" role="group" aria-label="Ecosystem stats"></div>
     </div>
     <div id="battery-indicator" class="battery-indicator" hidden aria-live="polite">
       <span class="battery-icon" aria-hidden="true">🔋</span>
@@ -674,7 +693,7 @@
           <input type="range" id="gene-speed" min="0.2" max="2.0" step="0.05" value="1.0" />
         </label>
         <label class="gene-slider">
-          <span class="gene-label">FOV <span id="gene-fov-value" class="gene-value">90</span></span>
+          <span class="gene-label">FOV <span id="gene-fov-value" class="gene-value">90°</span></span>
           <input type="range" id="gene-fov" min="20" max="160" step="5" value="90" />
         </label>
         <label class="gene-slider">

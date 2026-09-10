@@ -8,7 +8,8 @@ import { applyFeatureVizMethods } from './renderer-features-viz.js';
 import { applyMinimapMethods } from './renderer-minimap.js';
 import { applyCreatureMethods } from './renderer-creatures.js';
 import {
-  drawBiomeGround,
+  drawBiomeBase,
+  drawBiomeDetail,
   drawWaterBiomes,
   drawCreatureTerritoryZones,
   drawDayNightOverlay,
@@ -262,9 +263,8 @@ export class Renderer {
       this._lastDebugSpawnVersion = world._debugSpawn.version;
     }
 
-    // Parallax background layers (stars, midground orbs, ambient particles)
-    drawParallaxBackground(this, ctx, world);
-
+    // Parallax background is drawn inside drawBiomes, between the opaque base
+    // fill and the biome detail layers, so it is no longer painted over.
     // Draw biomes
     this.drawBiomes(world);
     this.drawRegionPressure(world);
@@ -629,7 +629,14 @@ export class Renderer {
     const ctx = this.ctx;
     const bounds = this._viewBounds;
 
-    drawBiomeGround(this, ctx, world);
+    // Opaque base first, then the parallax depth layers, then biome detail.
+    drawBiomeBase(this, ctx, world);
+    const prefersReducedMotionForParallax =
+      typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    if (!prefersReducedMotionForParallax) {
+      drawParallaxBackground(this, ctx, world);
+    }
+    drawBiomeDetail(this, ctx, world);
 
     // A low-zoom habitat layer gives the generated world a readable shape
     // before individual decorations become visible.
@@ -680,8 +687,15 @@ export class Renderer {
       drawMoodOverlay(this, ctx, world, mood.intensity, mood.type);
     }
 
-    // Weather effects
-    if (this.enableWeather && this.weatherType) {
+    // Weather effects. Sync the state from the world every frame: the
+    // renderer's weatherType/weatherIntensity were initialized to null/0 and
+    // never updated, so the whole authored weather overlay was unreachable.
+    const weatherSource = world.weatherType != null ? world : world.environment;
+    const weatherType = weatherSource?.weatherType ?? null;
+    const weatherIntensity = Number(weatherSource?.weatherIntensity);
+    this.weatherType = weatherType;
+    this.weatherIntensity = Number.isFinite(weatherIntensity) ? weatherIntensity : 0;
+    if (this.enableWeather && weatherType && this.weatherIntensity > 0) {
       drawWeatherEffects(this, ctx, world);
     }
 
@@ -1351,11 +1365,24 @@ export class Renderer {
         ctx.beginPath();
         for (let i = 0; i < items.length; i++) {
           const f = items[i];
-          const radius = Math.max(1.5, f.r || 2);
+          const radius = Math.max(1.5, Number.isFinite(f.r) ? f.r : 2);
           ctx.moveTo(f.x + radius, f.y);
           ctx.arc(f.x, f.y, radius, 0, Math.PI * 2);
         }
         ctx.fill();
+
+        // A dark rim keeps food readable against ground cover and the ambient
+        // particle layer even when the glow pass is skipped for performance.
+        ctx.strokeStyle = 'rgba(6, 12, 8, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let i = 0; i < items.length; i++) {
+          const f = items[i];
+          const radius = Math.max(1.5, Number.isFinite(f.r) ? f.r : 2) + 0.75;
+          ctx.moveTo(f.x + radius, f.y);
+          ctx.arc(f.x, f.y, radius, 0, Math.PI * 2);
+        }
+        ctx.stroke();
 
         if (type === 'golden_fruit') {
           ctx.strokeStyle = 'rgba(255,255,200,0.38)';
@@ -1363,7 +1390,7 @@ export class Renderer {
           ctx.beginPath();
           for (let i = 0; i < items.length; i++) {
             const f = items[i];
-            const radius = Math.max(2, (f.r || 2) + 1.5);
+            const radius = Math.max(2, (Number.isFinite(f.r) ? f.r : 2) + 1.5);
             ctx.moveTo(f.x + radius, f.y);
             ctx.arc(f.x, f.y, radius, 0, Math.PI * 2);
           }
@@ -1383,9 +1410,10 @@ export class Renderer {
       ctx.beginPath();
       for (let i = 0; i < items.length; i++) {
         const f = items[i];
-        const sizeMod = 1 + pulse * 0.08 + (f.r || 2) * 0.03;
-        ctx.moveTo(f.x + f.r * sizeMod, f.y);
-        ctx.arc(f.x, f.y, f.r * sizeMod, 0, Math.PI * 2);
+        const fr = Number.isFinite(f.r) ? Math.max(1, f.r) : 2;
+        const sizeMod = 1 + pulse * 0.08 + fr * 0.03;
+        ctx.moveTo(f.x + fr * sizeMod, f.y);
+        ctx.arc(f.x, f.y, fr * sizeMod, 0, Math.PI * 2);
       }
       ctx.fill();
       ctx.restore();
@@ -1396,7 +1424,8 @@ export class Renderer {
       ctx.beginPath();
       for (let i = 0; i < items.length; i++) {
         const f = items[i];
-        const auraSize = (f.r || 2) + glowSize * 1.5;
+        const fr = Number.isFinite(f.r) ? Math.max(1, f.r) : 2;
+        const auraSize = fr + glowSize * 1.5;
         ctx.moveTo(f.x + auraSize, f.y);
         ctx.arc(f.x, f.y, auraSize, 0, Math.PI * 2);
       }
@@ -1409,8 +1438,9 @@ export class Renderer {
         ctx.beginPath();
         for (let i = 0; i < items.length; i++) {
           const f = items[i];
-          ctx.moveTo(f.x, f.y + f.r);
-          ctx.lineTo(f.x, f.y + f.r + 2);
+          const fr = Number.isFinite(f.r) ? Math.max(1, f.r) : 2;
+          ctx.moveTo(f.x, f.y + fr);
+          ctx.lineTo(f.x, f.y + fr + 2);
         }
         ctx.stroke();
       }
@@ -1424,8 +1454,9 @@ export class Renderer {
         ctx.beginPath();
         for (let i = 0; i < items.length; i++) {
           const f = items[i];
-          ctx.moveTo(f.x + f.r + 2, f.y);
-          ctx.arc(f.x, f.y, f.r + 2, 0, Math.PI * 2);
+          const fr = Number.isFinite(f.r) ? Math.max(1, f.r) : 2;
+          ctx.moveTo(f.x + fr + 2, f.y);
+          ctx.arc(f.x, f.y, fr + 2, 0, Math.PI * 2);
         }
         ctx.stroke();
         ctx.restore();
@@ -1448,15 +1479,18 @@ export class Renderer {
     this.performance.stats.culled += world.corpses.length - visibleCorpses.length;
 
     for (const corpse of visibleCorpses) {
-      const decayAlpha = 1 - corpse.decay;
-      const energyRatio = corpse.energy / corpse.maxEnergy;
+      const decay = Number.isFinite(corpse.decay) ? corpse.decay : 0;
+      const decayAlpha = 1 - decay;
+      const maxEnergy = Number.isFinite(corpse.maxEnergy) && corpse.maxEnergy > 0 ? corpse.maxEnergy : 1;
+      const energyRatio = clamp((Number.isFinite(corpse.energy) ? corpse.energy : 0) / maxEnergy, 0, 1);
+      const corpseSize = Number.isFinite(corpse.size) ? corpse.size : 4;
 
       // Draw corpse as a dark brown/gray decaying mass
       ctx.save();
       ctx.globalAlpha = decayAlpha * 0.7;
       ctx.fillStyle = corpse.fromPredator ? '#5D4E37' : '#6B8E23'; // Brown for predators, olive for herbivores
       ctx.beginPath();
-      ctx.arc(corpse.x, corpse.y, corpse.size * energyRatio, 0, Math.PI * 2);
+      ctx.arc(corpse.x, corpse.y, corpseSize * energyRatio, 0, Math.PI * 2);
       ctx.fill();
 
       // Draw small X to indicate it's dead
@@ -1465,7 +1499,7 @@ export class Renderer {
       ctx.lineWidth = 1;
       const x = corpse.x;
       const y = corpse.y;
-      const s = corpse.size * 0.5;
+      const s = corpseSize * 0.5;
       ctx.beginPath();
       ctx.moveTo(x - s, y - s);
       ctx.lineTo(x + s, y + s);

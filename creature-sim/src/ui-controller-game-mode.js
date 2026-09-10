@@ -1,4 +1,5 @@
 import { domCache } from './dom-cache.js';
+import { escapeHtml } from './safe-html.js';
 
 export function applyUiGameModeMethods(UIController) {
   UIController.prototype.bindGameplayModeControls = function () {
@@ -96,9 +97,9 @@ export function applyUiGameModeMethods(UIController) {
         return `
         <div class="goal-row ${complete ? 'complete' : ''}">
           <div class="goal-row-header">
-            <span class="goal-icon">${goal.icon || '🎯'}</span>
+            <span class="goal-icon">${escapeHtml(goal.icon || '🎯')}</span>
             <div class="goal-text">
-              <div class="goal-desc">${goal.description}</div>
+              <div class="goal-desc">${escapeHtml(goal.description)}</div>
               <div class="goal-meta">${complete ? 'Complete' : `${percent}%`}</div>
             </div>
           </div>
@@ -155,16 +156,16 @@ export function applyUiGameModeMethods(UIController) {
         return `
           <div class="campaign-level-card ${level.unlocked ? '' : 'locked'} ${level.progress?.completed ? 'completed' : ''}"
                ${locked ? 'aria-disabled="true"' : 'role="button" tabindex="0"'}
-               aria-label="${String(label).replace(/"/g, '&quot;')}"
-               data-level-id="${level.id}">
+               aria-label="${escapeHtml(label)}"
+               data-level-id="${escapeHtml(level.id)}">
             <div class="campaign-level-header">
-              <span class="campaign-level-icon">${level.icon}</span>
+              <span class="campaign-level-icon">${escapeHtml(level.icon)}</span>
               <div class="campaign-level-title">
-                <h3 class="campaign-level-name">${level.name}</h3>
-                <p class="campaign-level-subtitle">${level.subtitle}</p>
+                <h3 class="campaign-level-name">${escapeHtml(level.name)}</h3>
+                <p class="campaign-level-subtitle">${escapeHtml(level.subtitle)}</p>
               </div>
             </div>
-            <p class="campaign-level-desc">${level.description}</p>
+            <p class="campaign-level-desc">${escapeHtml(level.description)}</p>
             <div class="campaign-level-footer">
               <span class="campaign-difficulty ${level.difficulty}">${level.difficulty}</span>
               <span class="campaign-stars">

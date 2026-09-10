@@ -1393,6 +1393,7 @@ export class GameLoop {
       this.updateCuriosityPrompt();
       const refreshedHintSignature = [
         this.uiController?.tools?.mode || '',
+        gameState.godModeActive ? gameState.godModeTool : '',
         gameState.selectedPropType || '',
         focusId ? 1 : 0,
         gameState.curiosityPrompt?.id || '',
@@ -1405,6 +1406,8 @@ export class GameLoop {
           tool: this.uiController?.tools?.mode,
           propType: gameState.selectedPropType,
           hasSelection: !!focusId,
+          godMode: gameState.godModeActive,
+          godTool: gameState.godModeTool,
           customMessage: gameState.curiosityPrompt?.message || null,
           customId: gameState.curiosityPrompt?.id || null,
           hintDurationMs: gameState.curiosityPrompt?.durationMs || 4500

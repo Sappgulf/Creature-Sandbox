@@ -85,13 +85,12 @@ export function getBiomeTint(biomeType) {
   }
 }
 
-export function drawBiomeGround(renderer, ctx, world) {
+export function drawBiomeBase(renderer, ctx, _world) {
   const bounds = renderer._viewBounds;
-  const season = world.currentSeason || 'spring';
-  const phase = world.seasonPhase || 0;
-  const seasonGroundTint = getSeasonalGroundTint(season, phase);
 
-  // Fill base background
+  // Fill base background. Parallax layers are drawn on top of this fill (and
+  // below drawBiomeDetail) so the star/orb depth layers are actually visible
+  // instead of being painted over by the opaque base.
   ctx.fillStyle = renderer.background;
   const visibleWidth = bounds.x2 - bounds.x1;
   const visibleHeight = bounds.y2 - bounds.y1;
@@ -102,6 +101,17 @@ export function drawBiomeGround(renderer, ctx, world) {
     visibleWidth + extendAmount * 2,
     visibleHeight + extendAmount * 2
   );
+}
+
+export function drawBiomeDetail(renderer, ctx, world) {
+  const bounds = renderer._viewBounds;
+  const season = world.currentSeason || 'spring';
+  const phase = world.seasonPhase || 0;
+  const seasonGroundTint = getSeasonalGroundTint(season, phase);
+
+  const visibleWidth = bounds.x2 - bounds.x1;
+  const visibleHeight = bounds.y2 - bounds.y1;
+  const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
 
   const atmosphereGradient = ctx.createLinearGradient(bounds.x1, bounds.y1, bounds.x2, bounds.y2);
   atmosphereGradient.addColorStop(0, 'rgba(40, 64, 92, 0.12)');
@@ -390,7 +400,9 @@ export function drawDayNightOverlay(renderer, ctx, world) {
   const dayNight = world.dayNightState || world.environment?.getDayNightState?.();
   const light = dayNight?.light ?? 1;
   const phase = dayNight?.phase ?? null;
-  const darkness = clamp(1 - light, 0, 0.75);
+  // Night used to cap at 0.75 and stacked with season/mood/storm fills, which
+  // could crush the ground to near-black while creatures stayed full-bright.
+  const darkness = clamp(1 - light, 0, 0.58);
 
   if (darkness > 0.05) {
     // Fill entire visible area, not just world bounds
@@ -413,7 +425,7 @@ export function drawDayNightOverlay(renderer, ctx, world) {
         ? `rgba(255, 170, 120, ${0.12 * (1 - darkness * 0.5)})`
         : phase === 'dusk'
           ? `rgba(120, 110, 200, ${0.12 * (1 - darkness * 0.4)})`
-          : `rgba(35, 60, 120, ${0.08 + darkness * 0.15})`;
+          : `rgba(35, 60, 120, ${0.06 + darkness * 0.12})`;
     const bounds = renderer._viewBounds;
     const visibleWidth = bounds.x2 - bounds.x1;
     const visibleHeight = bounds.y2 - bounds.y1;
@@ -447,8 +459,9 @@ export function drawSeasonOverlay(renderer, ctx, world) {
   const currentIdx = seasonOrder.indexOf(season);
   const nextIdx = (currentIdx + 1) % 4;
 
-  const current = seasonColors[season];
-  const next = seasonColors[seasonOrder[nextIdx]];
+  const current = seasonColors[season] || seasonColors.spring;
+  const next = seasonColors[seasonOrder[nextIdx]] || seasonColors.spring;
+  if (!Number.isFinite(phase)) return;
 
   let r, g, b, alpha, warm;
   if (phase < 0.7) {
@@ -650,7 +663,11 @@ export function drawDecorationFromSprite(renderer, ctx, dec, spriteInfo, assetKe
   ctx.translate(dec.x, dec.y);
 
   const scale = (dec.size || 40) / frameHeight;
-  ctx.scale(scale, scale);
+  // Mirror and rotate individual instances so a stand of the same sprite does
+  // not read as a stamped tile.
+  if (dec.flipX) ctx.scale(-scale, scale);
+  else ctx.scale(scale, scale);
+  if (dec.rotation) ctx.rotate(dec.rotation);
 
   // Ground cover is scenery, not subject. At a flat 0.85 the grass and flowers
   // carried more visual weight than the creatures standing on them, so a
@@ -659,34 +676,30 @@ export function drawDecorationFromSprite(renderer, ctx, dec, spriteInfo, assetKe
   const isGroundCover = dec.type === 'grass' || dec.type === 'flower' || dec.type === 'rock';
   ctx.globalAlpha = (isGroundCover ? 0.46 : 0.78) * mod.alphaMult;
 
-  // Rocks now take the per-decoration hue (browns) from the sheet's
-  // `currentColor` fills, but they are still scenery: pull the value down so
-  // they read as stone sitting in the ground rather than sitting on top of it.
-  if (dec.type === 'rock') {
-    mod.lightnessMult *= 0.78;
-  }
+  // NOTE: this used to set ctx.filter (saturate/brightness/hue-rotate) before
+  // every filtered sprite draw. In software rendering Chromium flushes that
+  // filter as an offscreen pass per decoration, which stalled entire frames
+  // for seconds. Only the seasonal hue shift is baked into the tint (stable
+  // per hue, so the tint cache does not churn); saturation/brightness ride on
+  // globalAlpha and the season overlays. Rocks keep a darker stone value.
+  const tintHue = Math.round(((Number(dec.hue) || 0) + (mod.hueShift || 0)) / 8) * 8;
+  const tintLightness = dec.type === 'rock' ? 39 : 50;
+  const tintColor = `hsl(${tintHue}, 50%, ${tintLightness}%)`;
 
-  if (mod.hueShift !== 0 || mod.saturationMult !== 1 || mod.lightnessMult !== 1) {
-    ctx.filter = `saturate(${mod.saturationMult * 100}%) brightness(${mod.lightnessMult * 100}%)`;
-    if (mod.hueShift !== 0) {
-      ctx.filter += ` hue-rotate(${mod.hueShift}deg)`;
-    }
-  }
-
-  const frame = assetLoader.getSpriteFrameSync(assetKey, spriteIndex, frameWidth, dec.hue);
+  const frame = assetLoader.getSpriteFrameSync(assetKey, spriteIndex, frameWidth, tintColor);
   if (frame) {
     const anchor = spriteInfo.anchor || { x: 0.5, y: 1 };
     const anchorX = Number.isFinite(Number(anchor.x)) ? Number(anchor.x) : 0.5;
     const anchorY = Number.isFinite(Number(anchor.y)) ? Number(anchor.y) : 1;
     ctx.drawImage(frame, -frameWidth * anchorX, -frameHeight * anchorY);
   } else {
-    const requestKey = `${assetKey}|${frameWidth}|${Math.round(Number(dec.hue) || 0)}`;
+    const requestKey = `${assetKey}|${frameWidth}|${tintColor}`;
     if (!pendingDecorationRequests.has(requestKey)) {
       pendingDecorationRequests.add(requestKey);
       assetLoader
         .requestSpriteFrames(assetKey, {
           size: frameWidth,
-          color: `hsl(${Math.round(Number(dec.hue) || 0)}, 50%, 50%)`
+          color: tintColor
         })
         .catch(error => console.debug(`[Renderer] decoration sprite load failed: ${assetKey}`, error))
         .finally(() => pendingDecorationRequests.delete(requestKey));

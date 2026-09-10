@@ -95,8 +95,13 @@ export function getCreatureRenderSize(creature = {}, { zoom = 1, isSelected = fa
   const energyRatio = clamp(numericGene(creature.energy, 40) / 40, 0.2, 1);
   const creatureSize = Math.max(1, numericGene(creature.size, 5));
   const radius = energyRatio * (3 + creatureSize);
+  // One size formula for every render path. The LOD path used x5 with a 24px
+  // floor while the detailed path used x14 with a 16px floor, so a creature
+  // grew ~2.8x when hovered/selected or when the camera crossed the LOD zoom.
+  // x8 keeps adults readable at the 0.9 opening zoom without turning a herd
+  // into an overlapping blob.
   const minimumScreenSize = isSelected || isPinned ? 30 : 24;
-  return Math.max(radius * 5, minimumScreenSize / Math.max(0.01, numericGene(zoom, 1)));
+  return Math.max(radius * 8, minimumScreenSize / Math.max(0.01, numericGene(zoom, 1)));
 }
 
 function requestSpriteFrames(assetKey, size, color) {
@@ -158,9 +163,29 @@ export function drawCreatureSprite(ctx, creature = {}, opts = {}) {
 
   const anchorX = Number.isFinite(Number(sprite.anchor?.x)) ? Number(sprite.anchor.x) : 0.5;
   const anchorY = Number.isFinite(Number(sprite.anchor?.y)) ? Number(sprite.anchor.y) : 0.5;
+  const spriteZoom = Math.max(0.01, numericGene(opts.zoom, 1));
+  const screenSize = renderSize * spriteZoom;
   ctx.save();
   ctx.translate(Number(creature.x) || 0, Number(creature.y) || 0);
   ctx.rotate(Number(creature.dir) || 0);
+
+  // Contact shadow and dark separation glow. The detailed draw path carries
+  // these, but most creatures at play zoom render through this sprite path, so
+  // without them a green herbivore disappears into green ground cover.
+  if (screenSize >= 8) {
+    ctx.save();
+    ctx.globalAlpha *= 0.3;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(0, renderSize * 0.34, renderSize * 0.3, renderSize * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  if (screenSize >= 12) {
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+    ctx.shadowBlur = Math.min(10, screenSize * 0.22);
+  }
+
   ctx.drawImage(sprite.frame, -renderSize * anchorX, -renderSize * anchorY, renderSize, renderSize);
   ctx.restore();
   return true;

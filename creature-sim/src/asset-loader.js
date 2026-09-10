@@ -685,7 +685,10 @@ export class AssetLoader {
 
   async getSpriteFrame(name, frameIndex = 0, size = 64, hue = null) {
     if (typeof document === 'undefined') return null;
-    const color = hue !== null ? `hsl(${hue}, 50%, 50%)` : null;
+    // Hue may be a number (converted to the standard tint) or a full CSS color
+    // string, which lets callers bake seasonal sat/light into the tint instead
+    // of using an expensive per-draw ctx.filter.
+    const color = typeof hue === 'string' ? hue : hue !== null ? `hsl(${hue}, 50%, 50%)` : null;
     const frames = await this.requestSpriteFrames(name, { size, color });
     if (!frames || !frames.frames) return null;
     const idx = Math.max(0, Math.min(frameIndex, frames.frames.length - 1));
@@ -693,7 +696,7 @@ export class AssetLoader {
   }
 
   getSpriteFrameSync(name, frameIndex = 0, size = 64, hue = null) {
-    const color = hue !== null ? `hsl(${hue}, 50%, 50%)` : '';
+    const color = typeof hue === 'string' ? hue : hue !== null ? `hsl(${hue}, 50%, 50%)` : '';
     const frames = this.getSpriteFramesSync(name, { size, color });
     if (!frames || !frames.frames) return null;
     const idx = Math.max(0, Math.min(frameIndex, frames.frames.length - 1));

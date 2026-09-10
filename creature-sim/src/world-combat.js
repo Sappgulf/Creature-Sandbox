@@ -21,6 +21,11 @@ export class WorldCombat {
   tryPredation(predator) {
     if (!predator.alive) return null;
 
+    // Honor the attack cooldown here instead of only at the call site:
+    // updatePredatorBehavior() invokes tryPredation every frame, which used to
+    // bypass the 0.7-0.9s cadence set by executeAttack().
+    if ((predator.personality?.attackCooldown ?? 0) > 0) return null;
+
     const prey = this.findPrey(predator, 120);
     if (!prey) return null;
 
@@ -102,7 +107,7 @@ export class WorldCombat {
 
       this.world.memoryLearning?.learnFromHunt?.(predator, true, this.world);
 
-      return { success: true, damage: appliedDamage, prey };
+      return { success: true, damage: appliedDamage, prey, victim: prey, killed: !prey.alive };
     } else {
       // Attack fails - possible counterattack
       if (rand() < 0.3) {
@@ -118,7 +123,7 @@ export class WorldCombat {
       if (prey.alive) {
         this.world.memoryLearning?.recordPredatorEncounter?.(prey, predator, true, this.world);
       }
-      return { success: false, prey };
+      return { success: false, damage: 0, prey, victim: prey, killed: false };
     }
   }
 
@@ -259,10 +264,10 @@ export class WorldCombat {
 
   // Handle creature death
   handleCreatureDeath(creature, ctx = {}) {
-    // Create corpse
-    if (this.world.corpseSystem) {
-      this.world.corpseSystem.createCorpse(creature);
-    }
+    // Leave carrion behind so scavengers and the corpse renderer have
+    // something to find. `world.corpseSystem` never existed, so this path was
+    // silently dropping every kill.
+    this.createCorpse(creature);
 
     // Trigger death effects
     if (ctx.attacker) {
@@ -274,6 +279,32 @@ export class WorldCombat {
     if (this.world.lineageTracker) {
       this.world.lineageTracker.onCreatureDied(creature);
     }
+  }
+
+  createCorpse(creature) {
+    const corpses = this.world.corpses;
+    if (!creature || !Array.isArray(corpses)) return null;
+    if (corpses.some(corpse => corpse.creatureId === creature.id)) return null;
+
+    const size = Number.isFinite(creature.size) ? creature.size : 6;
+    const energy = clamp((Number(creature.energy) || 0) * 0.5 + size * 1.6, 4, 40);
+    const corpse = {
+      x: creature.x,
+      y: creature.y,
+      energy,
+      maxEnergy: energy,
+      size,
+      decay: 0,
+      decayDuration: 30,
+      decayTimer: 30,
+      fromPredator: creature.genes?.predator === true || (creature.genes?.diet ?? 0) > 0.7,
+      creatureId: creature.id
+    };
+
+    corpses.push(corpse);
+    this.world.corpseGrid?.add?.(corpse);
+    this.world.corpseGridDirty = true;
+    return corpse;
   }
 
   // Trigger visual damage effects

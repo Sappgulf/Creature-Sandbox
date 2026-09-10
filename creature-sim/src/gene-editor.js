@@ -224,6 +224,7 @@ export class GeneEditor {
       case 'aggression':
         return value.toFixed(2);
       case 'fov':
+        return `${Math.round(value)}°`;
       case 'sense':
       case 'hue':
         return Math.round(value);
@@ -513,7 +514,7 @@ export class GeneEditor {
     const spawnCountValue = document.getElementById('gene-spawn-count-value');
     const spawnSpreadValue = document.getElementById('gene-spawn-spread-value');
     if (spawnCountValue) spawnCountValue.textContent = `${this.spawnCount}`;
-    if (spawnSpreadValue) spawnSpreadValue.textContent = `${this.spawnSpread}px`;
+    if (spawnSpreadValue) spawnSpreadValue.textContent = `${this.spawnSpread}`;
   }
 
   updateGeneCodeField() {

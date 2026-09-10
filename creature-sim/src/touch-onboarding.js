@@ -24,8 +24,8 @@ const STEPS = [
   {
     icon: '🔍',
     accent: 'purple',
-    title: 'Inspect',
-    text: 'Tap a creature to see its genes. Long-press to grab and throw.'
+    title: 'Inspect & Move',
+    text: 'Tap a creature to see its genes. Press and drag to carry it, then flick to launch.'
   },
   {
     icon: '✨',
@@ -297,10 +297,9 @@ class TouchOnboarding {
     } catch {
       // Ignore
     }
-    if (this._keyHandler) {
-      document.removeEventListener('keydown', this._keyHandler);
-      this._keyHandler = null;
-    }
+    // NOTE: the keydown handler stays bound for the lifetime of the overlay.
+    // It early-returns while hidden, and _bindEvents() guards on dataset.bound,
+    // so removing it here permanently broke keyboard nav after "Replay Tutorial".
   }
 }
 

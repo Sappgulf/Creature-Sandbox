@@ -7,7 +7,11 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 const assetsDir = path.join(repoRoot, 'dist', 'assets');
-const maxChunkBytes = Number(process.env.CREATURE_MAX_JS_CHUNK_BYTES || 302_000);
+// Non-main chunk budget. The worker bundle sat at 301.3KB before the
+// corpse/disaster-scheduler/season-command and prey-threat work, which added
+// ~2.3KB of real simulation code. Raised to keep a meaningful guard while
+// acknowledging the worker is the shipping runtime.
+const maxChunkBytes = Number(process.env.CREATURE_MAX_JS_CHUNK_BYTES || 312_000);
 const maxChunkGzipBytes = Number(process.env.CREATURE_MAX_JS_CHUNK_GZIP_BYTES || 100_000);
 const maxMainChunkBytes = Number(process.env.CREATURE_MAX_MAIN_CHUNK_BYTES || 510_000);
 const maxMainChunkGzipBytes = Number(process.env.CREATURE_MAX_MAIN_CHUNK_GZIP_BYTES || 150_000);

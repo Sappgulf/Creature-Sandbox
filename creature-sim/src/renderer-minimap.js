@@ -144,7 +144,8 @@ export function applyMinimapMethods(Renderer) {
       for (const territory of world.territories.values()) {
         const cx = mapX + territory.x * scaleX * dpr;
         const cy = mapY + territory.y * scaleY * dpr;
-        const radius = territory.radius * scaleAvg * dpr;
+        const radius = Number.isFinite(territory.radius) ? territory.radius * scaleAvg * dpr : 0;
+        if (!(radius > 0)) continue;
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
         ctx.stroke();

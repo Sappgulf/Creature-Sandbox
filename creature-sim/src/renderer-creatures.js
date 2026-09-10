@@ -1,7 +1,7 @@
 import { clamp } from './utils.js';
 import { getCreatureEmotion, getLifeStageDisplay } from './upgrade-data.js';
 import { drawBatchedTrails } from './creature-render.js';
-import { drawCreatureSprite } from './creature-presentation.js';
+import { drawCreatureSprite, getCreatureRenderSize } from './creature-presentation.js';
 
 function numericGene(value, fallback = 0) {
   if (value && typeof value === 'object') {
@@ -10,6 +10,13 @@ function numericGene(value, fallback = 0) {
   }
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : fallback;
+}
+
+// Overlay geometry (rings, shadows, labels) must track the drawn sprite, not
+// the tiny simulation radius: the sprite is rendered at several times
+// `creature.size`, so radius-based rings sat inside the body.
+function creatureOverlayRadius(creature, zoom) {
+  return Math.max(4, getCreatureRenderSize(creature, { zoom: zoom || 1 }) * 0.5);
 }
 
 export function applyCreatureMethods(Renderer) {
@@ -337,7 +344,7 @@ export function applyCreatureMethods(Renderer) {
     const emotion = getCreatureEmotion(c);
     const stage = getLifeStageDisplay(c);
     const x = c.x;
-    const y = c.y - Math.max(16, (c.size || 8) * 2.1);
+    const y = c.y - (getCreatureRenderSize(c, { zoom: this.camera.zoom }) * 0.62 + 6);
     const flying = c.traits?.creatureType === 'flying' || numericGene(c.genes?.flying, 0) > 0.6;
     const burrowing = c.traits?.creatureType === 'burrowing' || numericGene(c.genes?.burrowing, 0) > 0.6;
     const aquatic = numericGene(c.aquaticAffinity ?? c.genes?.aquatic, 0) > 0.6;
@@ -402,10 +409,11 @@ export function applyCreatureMethods(Renderer) {
     ctx.stroke();
 
     if (isSelected || isPinned) {
+      const ringR = Math.max(4, getCreatureRenderSize(c, { zoom: _zoom || 1 }) * 0.5);
       ctx.strokeStyle = isSelected ? 'white' : 'skyblue';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.arc(0, 0, r + 4, 0, Math.PI * 2);
+      ctx.arc(0, 0, ringR + 3, 0, Math.PI * 2);
       ctx.stroke();
     }
 
@@ -415,7 +423,6 @@ export function applyCreatureMethods(Renderer) {
   Renderer.prototype._drawCreatureShadow = function (creature) {
     // Enhanced dynamic shadow with biome/time-of-day awareness
     const ctx = this.ctx;
-    const r = creature.size || creature.genes?.size || 5;
     const g = creature.genes;
 
     ctx.save();
@@ -491,13 +498,14 @@ export function applyCreatureMethods(Renderer) {
 
     // Shadow scale based on creature height (larger = more prominent shadow)
     const heightFactor = creature.baseSize ? creature.baseSize / 10 : 1;
+    const spriteSize = getCreatureRenderSize(creature, { zoom: this.camera.zoom });
 
     ctx.beginPath();
     ctx.ellipse(
       creature.x + offsetX,
       creature.y + offsetY,
-      r * 1.1 * (1 + stretchFactor * 0.3),
-      r * 0.6 * (1 - stretchFactor * 0.15) * heightFactor,
+      spriteSize * 0.34 * (1 + stretchFactor * 0.3),
+      spriteSize * 0.13 * (1 - stretchFactor * 0.15) * heightFactor,
       0,
       0,
       Math.PI * 2
@@ -509,7 +517,7 @@ export function applyCreatureMethods(Renderer) {
   Renderer.prototype._drawCreatureOutline = function (creature, isSelected, selectionPulseUntil = null, nowMs = null) {
     // Subtle outline for contrast (not too thick!)
     const ctx = this.ctx;
-    const r = creature.size || creature.genes?.size || 5;
+    const r = creatureOverlayRadius(creature, this.camera.zoom);
     const now = nowMs ?? performance.now();
     const pulseActive = isSelected && typeof selectionPulseUntil === 'number' && now < selectionPulseUntil;
     const pulseProgress = pulseActive ? 1 - (selectionPulseUntil - now) / 400 : 0;
@@ -530,7 +538,7 @@ export function applyCreatureMethods(Renderer) {
 
   Renderer.prototype._drawCreatureHoverOutline = function (creature, nowMs = null) {
     const ctx = this.ctx;
-    const r = creature.size || creature.genes?.size || 5;
+    const r = creatureOverlayRadius(creature, this.camera.zoom);
     const now = nowMs ?? performance.now();
     const pulse = 0.6 + Math.sin(now * 0.006) * 0.15;
 
@@ -547,7 +555,7 @@ export function applyCreatureMethods(Renderer) {
 
   Renderer.prototype._drawCreatureGrabbedOutline = function (creature, nowMs = null) {
     const ctx = this.ctx;
-    const r = creature.size || creature.genes?.size || 5;
+    const r = creatureOverlayRadius(creature, this.camera.zoom);
     const now = nowMs ?? performance.now();
     const pulse = 0.7 + Math.sin(now * 0.01) * 0.2;
 
@@ -574,7 +582,10 @@ export function applyCreatureMethods(Renderer) {
 
     const r = creature.genes?.size || 4;
     const severity = diseaseStatus.metadata?.severity || diseaseStatus.severity || 0.5;
-    const diseaseColor = diseaseStatus.metadata?.color || '#7fff7f';
+    const rawDiseaseColor = diseaseStatus.metadata?.color || '#7fff7f';
+    // The FX code appends hex alpha; a non-hex color produced an invalid
+    // fillStyle and left the previous style bleeding into later draws.
+    const diseaseColor = /^#[0-9a-f]{6}$/i.test(rawDiseaseColor) ? rawDiseaseColor : '#7fff7f';
 
     ctx.save();
 
@@ -667,7 +678,7 @@ export function applyCreatureMethods(Renderer) {
     }
 
     // Position above creature
-    const offsetY = -creature.size - 8;
+    const offsetY = -(getCreatureRenderSize(creature, { zoom }) * 0.55 + 8);
 
     ctx.save();
     ctx.font = `600 ${Math.max(9, 11 * Math.min(zoom, 1.2))}px "JetBrains Mono", ui-monospace, monospace`;

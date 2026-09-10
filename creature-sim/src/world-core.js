@@ -540,6 +540,8 @@ export class World {
     for (let i = this.corpses.length - 1; i >= 0; i--) {
       const corpse = this.corpses[i];
       corpse.decayTimer -= dt;
+      const duration = corpse.decayDuration > 0 ? corpse.decayDuration : 30;
+      corpse.decay = Math.min(1, Math.max(0, 1 - corpse.decayTimer / duration));
 
       if (corpse.decayTimer <= 0) {
         this.corpses.splice(i, 1);
@@ -871,7 +873,13 @@ export class World {
         type: decorTemplate.type,
         sprite: decorTemplate.sprite,
         size,
-        hue,
+        // Round hue: the sprite tint cache keys on the exact color string, and
+        // the draw path looked the frame up with the raw float while the async
+        // request rounded it, so every decoration missed its authored sprite
+        // and fell back to the procedural tally-mark glyph.
+        hue: Math.round(hue),
+        flipX: Math.random() < 0.5,
+        rotation: decorTemplate.type === 'grass' || decorTemplate.type === 'flower' ? (Math.random() - 0.5) * 0.5 : 0,
         season: 0 // 0=none, 1=spring, 2=summer, 3=autumn, 4=winter
       });
     }

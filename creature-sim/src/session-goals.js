@@ -113,8 +113,15 @@ const STARTER_GOAL_TYPES = new Set([
 const SNAPSHOT_GOAL_METRIC = {
   population: 'population',
   aquatic_alive: 'aquaticAlive',
-  predator_count: 'predators'
+  predator_count: 'predators',
+  food_available: 'foodAvailable',
+  variant_alive: 'variantsAlive'
 };
+
+// Snapshot goals describe a state ("keep N alive"), not a cumulative score, so
+// their completed flag must track the live metric: it reopens when the world
+// dips below target instead of latching forever.
+const LIVE_SNAPSHOT_GOAL_TYPES = new Set([...Object.keys(SNAPSHOT_GOAL_METRIC), 'stress_cap']);
 
 export class SessionGoals {
   constructor({ notifications = null, audio = null } = {}) {
@@ -150,6 +157,8 @@ export class SessionGoals {
 
   generateGoals(count = 3, { starter = false } = {}) {
     this._snapshotTargetsArmed = false;
+    this._announcedGoalKeys = new Set();
+    this._liveGoalsReady = false;
     const pool = starter ? GOAL_POOL.filter(goal => STARTER_GOAL_TYPES.has(goal.type)) : GOAL_POOL;
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
     this.goals = shuffled.slice(0, count).map(def => {
@@ -173,6 +182,11 @@ export class SessionGoals {
   }
 
   setGoals(goals = [], { announce = true } = {}) {
+    // Scenario-authored targets are authoritative: do not auto-raise them, and
+    // let live snapshot goals evaluate immediately.
+    this._snapshotTargetsArmed = true;
+    this._announcedGoalKeys = new Set();
+    this._liveGoalsReady = false;
     this.goals = goals.map(goal => ({
       id: goal.id,
       type: goal.type,
@@ -259,7 +273,8 @@ export class SessionGoals {
 
     let changed = false;
     for (const goal of this.goals) {
-      if (goal.completed) continue;
+      const live = LIVE_SNAPSHOT_GOAL_TYPES.has(goal.type);
+      if (goal.completed && !live) continue;
       const progress = clamp(this._calculateProgress(goal, metrics), 0, 1);
       if (progress !== goal.progress) {
         goal.progress = progress;
@@ -268,9 +283,16 @@ export class SessionGoals {
       if (progress >= 1 && !goal.completed) {
         goal.completed = true;
         changed = true;
-        this._announceCompletion(goal);
+        // Live goals can start satisfied (e.g. a scenario begins above its
+        // population floor). Suppress that first-tick announcement so a run
+        // does not open with a stack of pre-completed toasts.
+        if (!live || this._liveGoalsReady) this._announceGoalOnce(goal);
+      } else if (live && goal.completed && progress < 1) {
+        goal.completed = false;
+        changed = true;
       }
     }
+    this._liveGoalsReady = true;
 
     if (changed) {
       eventSystem.emit(GameEvents.SESSION_GOAL_UPDATED, this.getGoals());
@@ -281,6 +303,14 @@ export class SessionGoals {
     if (allCompleted) {
       this.refresh();
     }
+  }
+
+  _announceGoalOnce(goal) {
+    const key = `${goal.id}:${goal.target}`;
+    if (!this._announcedGoalKeys) this._announcedGoalKeys = new Set();
+    if (this._announcedGoalKeys.has(key)) return;
+    this._announcedGoalKeys.add(key);
+    this._announceCompletion(goal);
   }
 
   _announceCompletion(goal) {

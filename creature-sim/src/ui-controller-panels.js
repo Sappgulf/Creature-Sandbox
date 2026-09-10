@@ -38,7 +38,11 @@ export function applyUiPanelMethods(UIController) {
       'scenario-panel',
       'achievements-panel',
       'gene-editor-panel',
-      'eco-health-panel'
+      'eco-health-panel',
+      'replay-panel',
+      'insights-panel',
+      'lineage-album-panel',
+      'campaign-panel'
     ];
 
     for (const panelId of panelIds) {

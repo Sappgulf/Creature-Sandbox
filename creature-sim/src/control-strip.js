@@ -279,8 +279,13 @@ export class ControlStripController {
       this.batteryIconEl.textContent = charging ? '⚡' : low ? '🪫' : '🔋';
     }
 
-    this.batteryIndicatorEl.classList.toggle('low', low);
-    this.batteryIndicatorEl.classList.toggle('saver-active', !!state.saverOn || this.mobilePrefs.batterySaver);
+    // Class names must match styles.css: this used to toggle `low`/
+    // `saver-active`, which had no rules, so battery state never colored.
+    this.batteryIndicatorEl.classList.toggle('battery-level-low', low);
+    this.batteryIndicatorEl.classList.toggle('battery-level-medium', !low && !charging && level < 0.5);
+    this.batteryIndicatorEl.classList.toggle('battery-level-good', !low && !charging && level >= 0.5);
+    this.batteryIndicatorEl.classList.toggle('battery-charging', charging);
+    this.batteryIndicatorEl.classList.toggle('battery-saver-on', !!state.saverOn || this.mobilePrefs.batterySaver);
     this.batteryIndicatorEl.classList.remove('hidden');
     this.batteryIndicatorEl.setAttribute('aria-hidden', 'false');
     this.batteryIndicatorEl.setAttribute(
@@ -300,13 +305,17 @@ export class ControlStripController {
       const storedBattery = localStorage.getItem('creature-mobile-battery');
       const storedHaptics = localStorage.getItem('creature-mobile-haptics');
       return {
-        focusMode: storedFocus !== null ? storedFocus === 'true' : compactMobile,
+        // Focus mode hides the stats rail and selected-creature dossier; on a
+        // compact phone that left new players with no stats or selection
+        // details and no visible way to bring them back. Default it off and
+        // keep it as an opt-in via the overflow menu.
+        focusMode: storedFocus !== null ? storedFocus === 'true' : false,
         batterySaver: storedBattery !== null ? storedBattery === 'true' : compactMobile || lowMemoryMobile,
         haptics: storedHaptics !== null ? storedHaptics !== 'false' : true
       };
     } catch {
       return {
-        focusMode: compactMobile,
+        focusMode: false,
         batterySaver: compactMobile || lowMemoryMobile,
         haptics: true
       };
@@ -782,6 +791,11 @@ export class ControlStripController {
         this.uiController?.onEcoHealthToggle();
         this.syncMenuState();
         break;
+      case 'inspector':
+        gameState.toggleInspector();
+        gameState.setInspectorAutoOpen(gameState.inspectorVisible);
+        this.uiController?.updateInspectorVisibility?.();
+        break;
       case 'sound':
         this.uiController?.onSoundToggle();
         this.syncMenuState();
@@ -949,6 +963,11 @@ export class ControlStripController {
     const momentsPanel = document.getElementById('moments-panel');
     if (!momentsPanel) return;
     const visible = momentsPanel.classList.contains('hidden');
+    // God Mode hides the moments panel via CSS and must not stack with it.
+    // Opening moments therefore exits God Mode first so the panel is usable.
+    if (visible && gameState.godModeActive) {
+      this.uiController?.setGodModeActive?.(false, { source: 'moments' });
+    }
     momentsPanel.classList.toggle('hidden', !visible);
     momentsPanel.setAttribute('aria-hidden', visible ? 'false' : 'true');
   }

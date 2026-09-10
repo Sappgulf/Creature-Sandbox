@@ -496,6 +496,19 @@ input[type='range']:focus-visible {
   pointer-events: none;
   animation: slideUp var(--transition-slow);
 }
+@media (min-width: 769px) {
+  /* Desktop only: float the dossier over the HUD column instead of letting it
+     grow #hud-bottom-left. When the startup spotlight selected a creature, the
+     container (and its top edge) resized by ~350px, which registered as a
+     0.17 cumulative layout shift. Absolute positioning keeps the same visual
+     bottom-left anchor without moving any existing element. */
+  #selected-info {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: min(320px, 40vw);
+  }
+}
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -3324,6 +3337,14 @@ body.mobile-focus-mode #watch-strip {
     margin: 0;
   }
 }
+@media (max-width: 768px) {
+  #session-meta {
+    /* Cap the modes/goals stack well above the mid-playfield on phones. The
+       664px tall panel used to swallow world taps (including spawn taps)
+       across the middle of the screen; it stays internally scrollable. */
+    max-height: max(180px, 30vh);
+  }
+}
 /* iOS Safe Area */
 @supports (padding: env(safe-area-inset-bottom)) {
   .mobile-device #hud-bottom-left {
@@ -4282,14 +4303,14 @@ body.home-active #btn-show-inspector {
   pointer-events: auto;
   backdrop-filter: blur(20px);
   box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
-  animation: slideUp var(--transition-slow);
+  animation: slideUpDrawer var(--transition-slow);
   padding-bottom: env(safe-area-inset-bottom, 16px);
   /* Prevent drawer interactions from panning the world */
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
 }
-@keyframes slideUp {
+@keyframes slideUpDrawer {
   from {
     opacity: 0;
     transform: translateY(100%);
@@ -7211,5 +7232,33 @@ body {
 
   .ctrl-divider {
     margin: 0 1px;
+  }
+}
+
+/* Touch ergonomics: keep close buttons and compact action buttons at the
+   project's minimum target size (docs/RELEASE_CHECKLIST.md: >=40px) on
+   coarse pointers, where the default 27-36px sizes caused mis-taps. */
+@media (pointer: coarse) {
+  .panel-close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .ghost-btn.small,
+  .primary-btn.small,
+  .replay-btn.small,
+  .touch-onboarding-skip {
+    min-height: 40px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  /* The God Mode panel's Done button must stay compact so the panel keeps its
+     playfield footprint; its ten tool buttons are already 44px targets. */
+  .god-mode-panel .ghost-btn.small,
+  .god-mode-panel .primary-btn.small {
+    min-height: 24px;
+    padding-top: 5px;
+    padding-bottom: 5px;
   }
 }

@@ -2,6 +2,7 @@ import { isPredatorFromGenes } from './creature-genetics-helpers.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { gameState } from './game-state.js';
 import { SANDBOX_PROP_TYPES } from './sandbox-props.js';
+import { CreatureAgentTuning } from './creature-agent-constants.js';
 
 export const ToolModes = Object.freeze({
   INSPECT: 'inspect',
@@ -19,6 +20,7 @@ const ActionType = {
   ERASE_CREATURES: 'erase_creatures',
   ADD_FOOD: 'add_food',
   PLACE_PROP: 'place_prop',
+  ADD_PROP: 'add_prop',
   REMOVE_PROP: 'remove_prop',
   CALM_ZONE: 'calm_zone',
   CHAOS_NUDGE: 'chaos_nudge',
@@ -351,6 +353,9 @@ export class ToolController {
       case ActionType.PLACE_PROP:
         this.undoPlaceProp(action);
         break;
+      case ActionType.ADD_PROP:
+        this.undoAddProp(action);
+        break;
       case ActionType.REMOVE_PROP:
         this.undoRemoveProp(action);
         break;
@@ -392,6 +397,9 @@ export class ToolController {
         break;
       case ActionType.PLACE_PROP:
         this.redoPlaceProp(action);
+        break;
+      case ActionType.ADD_PROP:
+        this.redoAddProp(action);
         break;
       case ActionType.REMOVE_PROP:
         this.redoRemoveProp(action);
@@ -562,7 +570,7 @@ export class ToolController {
     if (typeof this.world.addProp === 'function') {
       this.world.addProp(type, x, y, options);
       this.pushAction({
-        type: 'add-prop',
+        type: ActionType.ADD_PROP,
         prop: { type, x, y, ...options }
       });
       return null;
@@ -647,6 +655,27 @@ export class ToolController {
     this.world.sandbox?.addProp?.(action.prop.type, action.prop.x, action.prop.y, action.prop);
   }
 
+  // Worker-mode prop undo/redo. The proxy round-trip is async, so the prop is
+  // tracked by coordinates and removed/added through the proxy methods.
+  undoAddProp(action) {
+    if (!action.prop) return;
+    const radius = action.prop.radius || 48;
+    if (typeof this.world.removeNearestProp === 'function') {
+      this.world.removeNearestProp(action.prop.x, action.prop.y, radius);
+      return;
+    }
+    this.world.sandbox?.removeNearestProp?.(action.prop.x, action.prop.y, radius);
+  }
+
+  redoAddProp(action) {
+    if (!action.prop) return;
+    if (typeof this.world.addProp === 'function') {
+      this.world.addProp(action.prop.type, action.prop.x, action.prop.y, action.prop);
+      return;
+    }
+    this.world.sandbox?.addProp?.(action.prop.type, action.prop.x, action.prop.y, action.prop);
+  }
+
   undoRemoveProp(action) {
     if (!action.prop) return;
     this.world.sandbox?.addProp?.(action.prop.type, action.prop.x, action.prop.y, action.prop);
@@ -674,6 +703,21 @@ export class ToolController {
   spawnCreature(x, y, options = {}) {
     const normalizedOptions = options && typeof options === 'object' ? options : { predator: Boolean(options) };
     const { type = 'herbivore', predator = false, genes = null } = normalizedOptions;
+
+    // Enforce the same population cap the god-mode spawn path uses. The
+    // regular spawn tool (and canvas drag-spawn) had no cap, so rapid clicks
+    // could run far past the hard cap before auto-balance culled them.
+    const aliveCount = Array.isArray(this.world?.creatures) ? this.world.creatures.length : 0;
+    const hardCap = CreatureAgentTuning.MATING?.POPULATION_HARD_CAP;
+    if (Number.isFinite(hardCap) && aliveCount >= hardCap) {
+      eventSystem.emit(GameEvents.NOTIFICATION, {
+        message: 'Population at limit. Let them breathe.',
+        type: 'warning',
+        duration: 2000
+      });
+      this.onActionFeedback?.('Population at limit');
+      return null;
+    }
 
     const creature = this._spawnForAction({
       x,

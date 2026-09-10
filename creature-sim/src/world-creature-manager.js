@@ -179,11 +179,10 @@ export class WorldCreatureManager {
     // Add to world
     this.addCreature(child, parent1.id);
 
-    // Update parent stats
+    // Update parent stats. Credit the birth once (the initiating parent) —
+    // incrementing both parents made the summed `births` gameplay metric count
+    // every paired birth twice.
     parent1.stats.births++;
-    if (parent2) {
-      parent2.stats.births++;
-    }
 
     return child;
   }

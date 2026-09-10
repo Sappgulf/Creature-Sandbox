@@ -452,25 +452,30 @@ export class UIController {
   /**
    * Update pause button state
    */
+  _setPauseGlyph(button, isPaused) {
+    // Prefer swapping the SVG <use> reference; falling back to an emoji
+    // textContent write only when the element has no icon sprite (assigning
+    // textContent destroys the sprite for every later update).
+    const use = button?.querySelector?.('.ctrl-glyph use');
+    if (use) {
+      use.setAttribute('href', isPaused ? '#i-play' : '#i-pause');
+      return;
+    }
+    button.textContent = isPaused ? '▶️' : '⏸️';
+  }
+
   updatePauseButton() {
     const pauseBtn = domCache.get('pauseBtn');
     if (pauseBtn) {
-      if (gameState.paused) {
-        pauseBtn.textContent = '▶️ Play';
-        pauseBtn.setAttribute('aria-label', 'Resume simulation');
-        pauseBtn.setAttribute('aria-pressed', 'true');
-        pauseBtn.classList.add('active');
-      } else {
-        pauseBtn.textContent = '⏸️ Pause';
-        pauseBtn.setAttribute('aria-label', 'Pause simulation');
-        pauseBtn.setAttribute('aria-pressed', 'false');
-        pauseBtn.classList.remove('active');
-      }
+      this._setPauseGlyph(pauseBtn, gameState.paused);
+      pauseBtn.setAttribute('aria-label', gameState.paused ? 'Resume simulation' : 'Pause simulation');
+      pauseBtn.setAttribute('aria-pressed', gameState.paused ? 'true' : 'false');
+      pauseBtn.classList.toggle('active', gameState.paused);
     }
 
     const watchPauseBtn = domCache.get('watchPauseBtn');
     if (watchPauseBtn) {
-      watchPauseBtn.textContent = gameState.paused ? '▶️' : '⏸️';
+      this._setPauseGlyph(watchPauseBtn, gameState.paused);
       watchPauseBtn.setAttribute('aria-pressed', gameState.paused ? 'true' : 'false');
       watchPauseBtn.setAttribute('aria-label', gameState.paused ? 'Resume simulation' : 'Pause simulation');
       watchPauseBtn.classList.toggle('active', gameState.paused);
@@ -801,7 +806,13 @@ export class UIController {
     const ctrlSpeedIcon = document.querySelector('#ctrl-speed .ctrl-icon');
 
     if (ctrlPauseIcon) {
-      ctrlPauseIcon.textContent = gameState.paused ? '▶️' : '⏸️';
+      // Keep the SVG glyph intact; only fall back to emoji for legacy markup.
+      const use = ctrlPauseIcon.querySelector('.ctrl-glyph use');
+      if (use) {
+        use.setAttribute('href', gameState.paused ? '#i-play' : '#i-pause');
+      } else {
+        ctrlPauseIcon.textContent = gameState.paused ? '▶️' : '⏸️';
+      }
     }
     if (ctrlPauseBtn) {
       ctrlPauseBtn.classList.toggle('active', gameState.paused);

@@ -1738,7 +1738,9 @@ export async function initializeApp() {
             world.ecosystem.spawnFoodFromPatch(patch);
           }
         } else if (typeof world.addFood === 'function') {
-          world.addFood(x, y, 28, 'grass');
+          // 28 was a typo that spawned an ~84-world-unit food sprite; normal
+          // food radii are 1.5-2.5.
+          world.addFood(x, y, 2.2, 'grass');
         }
       }
     } else if (roll < 0.75) {

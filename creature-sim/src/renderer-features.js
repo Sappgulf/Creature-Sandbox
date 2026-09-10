@@ -17,6 +17,11 @@ export class RendererFeatureManager {
     if (this.renderer.isMobile) {
       this.applyMobileOptimizations();
     }
+
+    // Push the resolved feature states onto the renderer. Without this, every
+    // default-on flag (notably DAY_NIGHT) was never copied to its renderer
+    // property and the feature was silently dead until toggled by hand.
+    this.onFeaturesReset();
   }
 
   applyMobileOptimizations() {

@@ -158,15 +158,33 @@ export function renderStats(el, world, fps, extra = {}) {
   const animPop = animateNumber('pop', n);
   const animPreds = animateNumber('preds', preds);
   const animFood = animateNumber('food', world.food.length);
-  statParts.push(`<span>${glyph('i-population')} <span class="value">${animPop}</span></span>`);
-  statParts.push(`<span>${glyph('i-predator')} <span class="value">${animPreds}</span></span>`);
-  statParts.push(`<span>${glyph('i-food')} <span class="value">${animFood}</span></span>`);
+  statParts.push(
+    `<span>${glyph('i-population')} <span class="sr-only">Creatures</span> <span class="value">${animPop}</span></span>`
+  );
+  statParts.push(
+    `<span>${glyph('i-predator')} <span class="sr-only">Predators</span> <span class="value">${animPreds}</span></span>`
+  );
+  statParts.push(
+    `<span>${glyph('i-food')} <span class="sr-only">Food</span> <span class="value">${animFood}</span></span>`
+  );
 
   // Tool indicator
   if (extra.tool) {
     const meta = toolMeta[extra.tool] || { icon: glyph('i-tool'), label: extra.tool };
     const brushSize = Number.isFinite(extra.brushSize) ? Math.round(extra.brushSize) : null;
-    const toolLabel = brushSize && extra.tool !== 'inspect' ? `${meta.label} ${brushSize}px` : meta.label;
+    // World units mean nothing to a player; describe the brush instead of
+    // leaking "Food 26px" debug units into the HUD.
+    const brushLabel =
+      !brushSize || extra.tool === 'inspect'
+        ? ''
+        : brushSize <= 16
+          ? ' · fine'
+          : brushSize <= 34
+            ? ' · medium'
+            : brushSize <= 70
+              ? ' · wide'
+              : ' · huge';
+    const toolLabel = `${meta.label}${brushLabel}`;
     statParts.push(`<span class="stat-tool">${meta.icon} <span class="value">${toolLabel}</span></span>`);
   }
 
@@ -230,9 +248,9 @@ export function renderStats(el, world, fps, extra = {}) {
     const evt = events[0];
     const icon = evt.icon || '✦';
     const label = evt.label || 'Event';
-    statParts.push(
-      `<span style="color: var(--accent-warning);">${icon} ${label} · ${Math.ceil(evt.remaining)}s</span>`
-    );
+    const remaining = Number(evt.remaining);
+    const remainingLabel = Number.isFinite(remaining) ? ` · ${Math.max(0, Math.ceil(remaining))}s` : '';
+    statParts.push(`<span style="color: var(--accent-warning);">${icon} ${label}${remainingLabel}</span>`);
   }
 
   _setInnerHtmlIfChanged(_statsHtmlByEl, el, statParts.join(''));
@@ -246,7 +264,9 @@ export function renderInteractionHint(
     hasSelection = false,
     hintDurationMs = 3200,
     customMessage = null,
-    customId = null
+    customId = null,
+    godMode = false,
+    godTool = null
   } = {}
 ) {
   if (!el) return;
@@ -265,28 +285,44 @@ export function renderInteractionHint(
   };
 
   let message = '';
-  switch (tool) {
-    case 'food':
-      message = 'Paint food · drag to brush';
-      break;
-    case 'spawn':
-      message = 'Spawn creatures · tap the world';
-      break;
-    case 'erase':
-      message = 'Erase creatures or props';
-      break;
-    case 'prop': {
-      const label = propLabels[propType] || 'Prop';
-      message = `Place ${label} · use the props menu`;
-      break;
+  if (godMode) {
+    const godLabels = {
+      food: 'Scatter food',
+      calm: 'Place a calm zone',
+      chaos: 'Nudge chaos',
+      spawn: 'Spawn creatures',
+      prop: 'Place a sandbox prop',
+      remove: 'Remove a creature or prop',
+      bless: 'Bless creatures',
+      curse: 'Curse creatures',
+      attract: 'Attract creatures',
+      repel: 'Repel creatures'
+    };
+    message = `God Mode: ${godLabels[godTool] || 'use the selected tool'} · tap the world`;
+  } else {
+    switch (tool) {
+      case 'food':
+        message = 'Paint food · drag to brush';
+        break;
+      case 'spawn':
+        message = 'Spawn creatures · tap the world';
+        break;
+      case 'erase':
+        message = 'Erase creatures or props';
+        break;
+      case 'prop': {
+        const label = propLabels[propType] || 'Prop';
+        message = `Place ${label} · use the props menu`;
+        break;
+      }
+      case 'inspect':
+      default:
+        // With nothing selected the selection panel already carries this exact
+        // prompt; showing it twice at once, in two places, reads as a bug. The
+        // hint speaks only when it has something the panel does not.
+        message = hasSelection ? 'Drag to move · tap to inspect' : '';
+        break;
     }
-    case 'inspect':
-    default:
-      // With nothing selected the selection panel already carries this exact
-      // prompt; showing it twice at once, in two places, reads as a bug. The
-      // hint speaks only when it has something the panel does not.
-      message = hasSelection ? 'Drag to move · tap to inspect' : '';
-      break;
   }
 
   const now = performance.now();
@@ -448,7 +484,7 @@ export function renderSelectedInfo(
   const maxHealth = creature.maxHealth ?? creature.health ?? 0;
   const health = `${(creature.health ?? 0).toFixed(0)} / ${maxHealth.toFixed(0)}`;
   const speed = geneValue(creature.genes, 'speed', 0).toFixed(2);
-  const sense = geneValue(creature.genes, 'sense', 0).toFixed(0);
+  const sense = Math.round((geneValue(creature.genes, 'sense', 0) / 200) * 100);
   const socialDrive = Math.round(Number(creature.needs?.socialDrive ?? creature.social?.bondStrength ?? 0));
   const biomeInfo = world?.getBiomeAt?.(creature.x, creature.y);
   const biome = biomeInfo?.name ?? biomeInfo?.type ?? 'Unknown';
@@ -647,7 +683,7 @@ export function renderSelectedInfo(
       <span><span>Energy</span><span>${energy}</span></span>
       <span><span>Health</span><span>${health}</span></span>
       <span><span>Speed</span><span>${speed}</span></span>
-      <span><span>Senses</span><span>${sense}px</span></span>
+      <span><span>Senses</span><span>${sense}</span></span>
       <span><span>Hunger</span><span>${Math.round(hunger)}</span></span>
       <span><span>Stress</span><span>${Math.round(stress)}</span></span>
       <span><span>Biome</span><span>${biome}</span></span>
@@ -819,8 +855,8 @@ export function renderInspector(model = {}, handlers = {}) {
     const dmgTaken = stats?.damageTaken ?? 0;
     const statsMarkup = `
       <div class="vitals">
-        <div class="vital energy"><span>Energy</span><div class="vital-bar"><i style="width:${energyPct.toFixed(0)}%"></i></div><b>${creature.energy.toFixed(1)}</b></div>
-        <div class="vital health"><span>Health</span><div class="vital-bar"><i style="width:${healthPct.toFixed(0)}%"></i></div><b>${creature.health.toFixed(1)} / ${creature.maxHealth.toFixed(0)}</b></div>
+        <div class="vital energy"><span>Energy</span><div class="vital-bar"><i style="width:${energyPct.toFixed(0)}%"></i></div><b>${energyNum.toFixed(1)}</b></div>
+        <div class="vital health"><span>Health</span><div class="vital-bar"><i style="width:${healthPct.toFixed(0)}%"></i></div><b>${healthNum.toFixed(1)} / ${healthMax.toFixed(0)}</b></div>
       </div>
       <div class="row"><div>ID</div><div>#${escapeHtml(creature.id)}${creature.alive ? '' : ' †'}${mutationBadge}</div></div>
       <div class="row"><div>Sex</div><div>${sexEmoji} ${sexLabel}</div></div>
@@ -829,40 +865,47 @@ export function renderInspector(model = {}, handlers = {}) {
       ${creature.disorders && creature.disorders.length > 0 ? `<div class="row"><div>Disorders</div><div style="color:#ff6b6b;">${escapeHtml(disorderLabels)}</div></div>` : ''}
       <div class="row${foodEaten ? '' : ' dim'}"><div>Food eaten</div><div>${foodEaten}</div></div>
       <div class="row${kills ? '' : ' dim'}"><div>Kills</div><div>${kills}</div></div>
-      <div class="row${dmgDealt || dmgTaken ? '' : ' dim'}"><div>Damage</div><div>${dmgDealt.toFixed(1)} / ${dmgTaken.toFixed(1)}</div></div>
+      <div class="row${dmgDealt || dmgTaken ? '' : ' dim'}"><div>Damage</div><div>${Number(dmgDealt).toFixed(1)} / ${Number(dmgTaken).toFixed(1)}</div></div>
     `;
+    const geneNumber = (key, fallback = 0) => {
+      const value = Number(geneValue(creature.genes, key, fallback));
+      return Number.isFinite(value) ? value : fallback;
+    };
     const genesMarkup = `
-      <div class="row"><div>Speed</div><div>${geneValue(creature.genes, 'speed', 0).toFixed(2)}</div></div>
-      <div class="row"><div>FOV</div><div>${creature.genes.fov.toFixed(0)}°</div></div>
-      <div class="row"><div>Sense</div><div>${geneValue(creature.genes, 'sense', 0).toFixed(0)}px</div></div>
-      <div class="row"><div>Metabolism</div><div>${creature.genes.metabolism.toFixed(2)}</div></div>
-      <div class="row"><div>Hue</div><div>${creature.genes.hue}</div></div>
-      <div class="row"><div>Spines</div><div>${((creature.genes.spines ?? 0) * 100).toFixed(0)}%</div></div>
-      <div class="row"><div>Herd</div><div>${((creature.genes.herdInstinct ?? 0) * 100).toFixed(0)}%</div></div>
-      <div class="row"><div>Panic</div><div>${((creature.genes.panicPheromone ?? 0) * 100).toFixed(0)}%</div></div>
-      <div class="row"><div>Grit</div><div>${((creature.genes.grit ?? 0) * 100).toFixed(0)}%</div></div>
+      <div class="row"><div>Speed</div><div>${geneNumber('speed').toFixed(2)}</div></div>
+      <div class="row"><div>FOV</div><div>${geneNumber('fov').toFixed(0)}°</div></div>
+      <div class="row"><div>Sense</div><div>${Math.round((geneNumber('sense') / 200) * 100)}</div></div>
+      <div class="row"><div>Metabolism</div><div>${geneNumber('metabolism').toFixed(2)}</div></div>
+      <div class="row"><div>Hue</div><div>${geneNumber('hue')}</div></div>
+      <div class="row"><div>Spines</div><div>${(geneNumber('spines') * 100).toFixed(0)}%</div></div>
+      <div class="row"><div>Herd</div><div>${(geneNumber('herdInstinct') * 100).toFixed(0)}%</div></div>
+      <div class="row"><div>Panic</div><div>${(geneNumber('panicPheromone') * 100).toFixed(0)}%</div></div>
+      <div class="row"><div>Grit</div><div>${(geneNumber('grit') * 100).toFixed(0)}%</div></div>
       ${
         creature.genes.predator
           ? `
-        <div class="row"><div>Pack</div><div>${(creature.genes.packInstinct * 100).toFixed(0)}%</div></div>
-        <div class="row"><div>Ambush</div><div>${creature.genes.ambushDelay.toFixed(1)}s</div></div>
-        <div class="row"><div>Aggression</div><div>${creature.genes.aggression.toFixed(2)}</div></div>
+        <div class="row"><div>Pack</div><div>${(geneNumber('packInstinct') * 100).toFixed(0)}%</div></div>
+        <div class="row"><div>Ambush</div><div>${geneNumber('ambushDelay').toFixed(1)}s</div></div>
+        <div class="row"><div>Aggression</div><div>${geneNumber('aggression').toFixed(2)}</div></div>
       `
           : ''
       }
     `;
 
+    const focusedTab =
+      document.activeElement && body.contains(document.activeElement) ? document.activeElement.dataset?.tab : null;
+    const previousScrollTop = body.scrollTop;
     body.innerHTML = `
       <div class="inspector-tabs" role="tablist" aria-label="Inspector sections">
-        <button class="inspector-tab" data-tab="stats" role="tab">Stats</button>
-        <button class="inspector-tab" data-tab="memory" role="tab">Memory</button>
-        <button class="inspector-tab" data-tab="family" role="tab">Family</button>
-        <button class="inspector-tab" data-tab="genes" role="tab">Genes</button>
+        <button class="inspector-tab" id="inspector-tab-stats" data-tab="stats" role="tab" aria-selected="false" aria-controls="inspector-panel-stats">Stats</button>
+        <button class="inspector-tab" id="inspector-tab-memory" data-tab="memory" role="tab" aria-selected="false" aria-controls="inspector-panel-memory">Memory</button>
+        <button class="inspector-tab" id="inspector-tab-family" data-tab="family" role="tab" aria-selected="false" aria-controls="inspector-panel-family">Family</button>
+        <button class="inspector-tab" id="inspector-tab-genes" data-tab="genes" role="tab" aria-selected="false" aria-controls="inspector-panel-genes">Genes</button>
       </div>
-      <div class="inspector-tab-panel" data-tab-panel="stats">${statsMarkup}</div>
-      <div class="inspector-tab-panel" data-tab-panel="memory">${memoryMarkup}</div>
-      <div class="inspector-tab-panel" data-tab-panel="family">${familyMarkup}</div>
-      <div class="inspector-tab-panel" data-tab-panel="genes">${genesMarkup}</div>
+      <div class="inspector-tab-panel" id="inspector-panel-stats" data-tab-panel="stats" role="tabpanel" aria-labelledby="inspector-tab-stats">${statsMarkup}</div>
+      <div class="inspector-tab-panel" id="inspector-panel-memory" data-tab-panel="memory" role="tabpanel" aria-labelledby="inspector-tab-memory">${memoryMarkup}</div>
+      <div class="inspector-tab-panel" id="inspector-panel-family" data-tab-panel="family" role="tabpanel" aria-labelledby="inspector-tab-family">${familyMarkup}</div>
+      <div class="inspector-tab-panel" id="inspector-panel-genes" data-tab-panel="genes" role="tabpanel" aria-labelledby="inspector-tab-genes">${genesMarkup}</div>
     `;
     const showInspectorTab = tab => {
       inspectorActiveTab = tab;
@@ -870,6 +913,7 @@ export function renderInspector(model = {}, handlers = {}) {
         const active = button.dataset.tab === tab;
         button.classList.toggle('active', active);
         button.setAttribute('aria-selected', active ? 'true' : 'false');
+        button.tabIndex = active ? 0 : -1;
       });
       body.querySelectorAll('.inspector-tab-panel').forEach(panel => {
         panel.classList.toggle('active', panel.dataset.tabPanel === tab);
@@ -879,6 +923,12 @@ export function renderInspector(model = {}, handlers = {}) {
       button.onclick = () => showInspectorTab(button.dataset.tab || 'stats');
     });
     showInspectorTab(inspectorActiveTab);
+    // innerHTML rebuilds (up to 4Hz) used to drop keyboard focus to <body> and
+    // reset panel scroll; restore both across the refresh.
+    if (focusedTab) {
+      body.querySelector(`.inspector-tab[data-tab="${focusedTab}"]`)?.focus?.({ preventScroll: true });
+    }
+    body.scrollTop = previousScrollTop;
     body.querySelectorAll('.family-jump-body').forEach(btn => {
       btn.onclick = () => handlers.onInspectId?.(Number(btn.dataset.id));
     });

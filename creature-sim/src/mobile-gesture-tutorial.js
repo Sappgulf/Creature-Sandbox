@@ -60,7 +60,8 @@ export class MobileGestureTutorial {
       <p style="margin: 0 0 16px; color: var(--text-secondary, #9aa3b8); font-size: 13px; line-height: 1.5;">
         Swipe with one finger to pan.<br>
         Pinch with two fingers to zoom.<br>
-        Long-press a creature to inspect.
+        Tap a creature to inspect; press and drag to carry it.<br>
+        Hold the world to enter God Mode.
       </p>
       <button id="gesture-tutorial-dismiss" style="
         background: var(--accent-primary, #39d5ff);

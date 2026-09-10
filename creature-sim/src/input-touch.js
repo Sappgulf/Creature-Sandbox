@@ -13,6 +13,15 @@ export function applyInputTouchMethods(InputManager) {
   InputManager.prototype.onMobileTap = function (e) {
     const detail = e.detail;
     if (!detail) return;
+    // Second tap of a double-tap is a camera zoom, not a selection.
+    if (detail.tapCount >= 2) return;
+    if (this.godHoldTriggered) return;
+    // Match desktop routing: God Mode owns the tap, and non-inspect tools act
+    // as tools instead of selecting/poking a creature.
+    if (gameState.godModeActive) return;
+    const mode = this.tools?.mode || 'inspect';
+    if (mode !== 'inspect') return;
+
     const rect = this.canvas.getBoundingClientRect();
     const sx = detail.x - rect.left - rect.width / 2;
     const sy = detail.y - rect.top - rect.height / 2;

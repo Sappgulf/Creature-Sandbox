@@ -12,6 +12,12 @@ export function applyInputPointerMethods(InputManager) {
    * Handle pointer down events
    */
   InputManager.prototype.onPointerDown = function (e) {
+    // A second finger while pinching must not select, grab, or paint.
+    if (gameState.pinchActive) return;
+    // Only one pointer may drive tools/drags at a time; additional fingers are
+    // reserved for pinch/pan.
+    if (this._activePointerId != null && e.pointerId !== this._activePointerId) return;
+
     const rect = this.canvas.getBoundingClientRect();
     const canvasX = e.clientX - rect.left;
     const canvasY = e.clientY - rect.top;
@@ -61,6 +67,7 @@ export function applyInputPointerMethods(InputManager) {
 
     if (e.button === 0) {
       gameState.painting = true;
+      this._activePointerId = e.pointerId;
 
       const allowDrag = !gameState.godModeActive;
       const dragCandidate = allowDrag ? this._prepareCreatureDrag(worldPos.x, worldPos.y, e) : false;
@@ -90,6 +97,13 @@ export function applyInputPointerMethods(InputManager) {
    * Handle pointer move events
    */
   InputManager.prototype.onPointerMove = function (e) {
+    if (gameState.pinchActive && this.dragState.pending) {
+      this.dragState.pending = false;
+      this.dragState.creature = null;
+      this.dragState.pointerId = null;
+      gameState.creatureDragActive = false;
+    }
+
     if (this.godHoldPointerId === e.pointerId && this.godHoldStart) {
       const dx = e.clientX - this.godHoldStart.x;
       const dy = e.clientY - this.godHoldStart.y;
@@ -153,6 +167,7 @@ export function applyInputPointerMethods(InputManager) {
   InputManager.prototype.onPointerUp = function (e) {
     this.canvas.releasePointerCapture?.(e.pointerId);
     this.clearGodHold();
+    if (this._activePointerId === e.pointerId) this._activePointerId = null;
 
     const wasDragging = this.dragState.active;
     if (this.dragState.active || this.dragState.pending) {
@@ -161,6 +176,7 @@ export function applyInputPointerMethods(InputManager) {
       this.dragState.active = false;
       this.dragState.creature = null;
       this.dragState.pointerId = null;
+      gameState.creatureDragActive = false;
     }
     if (wasDragging) {
       gameState.travelDrag = null;
@@ -194,6 +210,36 @@ export function applyInputPointerMethods(InputManager) {
     gameState.travelPreview = null;
     gameState.painting = false;
     gameState.panning = false;
+  };
+
+  /**
+   * Handle pointer cancel events (OS gesture, notification, alt-tab)
+   * Without this, a cancelled drag left the creature grabbed and
+   * gameState.painting stuck true.
+   */
+  InputManager.prototype.onPointerCancel = function (e) {
+    this.clearGodHold();
+    if (this._activePointerId === e?.pointerId) this._activePointerId = null;
+
+    if (this.dragState.active || this.dragState.pending) {
+      const creature = this.dragState.creature;
+      if (creature) {
+        creature.isGrabbed = false;
+        creature.grabTarget = { x: creature.x, y: creature.y };
+        if (this.dragState.active) this.world?.throwCreature?.(creature.id, 0, 0);
+      }
+      this.dragState.pending = false;
+      this.dragState.active = false;
+      this.dragState.creature = null;
+      this.dragState.pointerId = null;
+      this.canvas.style.cursor = 'default';
+    }
+    gameState.creatureDragActive = false;
+
+    gameState.painting = false;
+    gameState.panning = false;
+    gameState.travelDrag = null;
+    gameState.travelPreview = null;
   };
 
   /**
@@ -400,6 +446,7 @@ export function applyInputPointerMethods(InputManager) {
 
     this.dragState.pending = true;
     this.dragState.active = false;
+    gameState.creatureDragActive = true;
     this.dragState.creature = creature;
     this.dragState.pointerId = event.pointerId;
     this.dragState.startX = event.clientX;
@@ -412,6 +459,7 @@ export function applyInputPointerMethods(InputManager) {
     this.dragState.lastTime = this.dragState.startTime;
     this.dragState.velocityX = 0;
     this.dragState.velocityY = 0;
+    this.dragState.moved = false;
     this.dragState.grabOffsetX = creature.x - x;
     this.dragState.grabOffsetY = creature.y - y;
 
@@ -427,6 +475,9 @@ export function applyInputPointerMethods(InputManager) {
     this.dragState.active = true;
     this.dragState.pending = false;
     creature.isGrabbed = true;
+    // Grabbing is deliberate; cancel the hold-to-toggle-god-mode timer so a
+    // long press on a creature does not flip the world into God Mode.
+    this.clearGodHold?.();
     this.world?.grabCreature?.(creature.id, creature.x, creature.y);
     this.canvas.style.cursor = 'grabbing';
     if (typeof navigator.vibrate === 'function') {
@@ -462,6 +513,7 @@ export function applyInputPointerMethods(InputManager) {
       const moveThreshold = event.pointerType === 'touch' ? this.grabMoveThresholdTouch : this.grabMoveThreshold;
       const activateMs = event.pointerType === 'touch' ? this.grabActivateMsTouch : this.grabActivateMs;
       if (dist >= moveThreshold || heldMs >= activateMs) {
+        if (dist >= moveThreshold) this.dragState.moved = true;
         this._activateCreatureDrag(worldX, worldY);
       } else {
         return;
@@ -475,6 +527,7 @@ export function applyInputPointerMethods(InputManager) {
     const dt = Math.max(0.016, (now - this.dragState.lastTime) / 1000);
     const vx = (worldX - this.dragState.lastWorldX) / dt;
     const vy = (worldY - this.dragState.lastWorldY) / dt;
+    if (Math.abs(vx) > 2 || Math.abs(vy) > 2) this.dragState.moved = true;
 
     this.dragState.velocityX = this.dragState.velocityX * 0.6 + vx * 0.4;
     this.dragState.velocityY = this.dragState.velocityY * 0.6 + vy * 0.4;
@@ -500,7 +553,9 @@ export function applyInputPointerMethods(InputManager) {
       const throwVX = this.dragState.velocityX;
       const throwVY = this.dragState.velocityY;
       const throwSpeed = Math.hypot(throwVX, throwVY);
-      if (throwSpeed >= this.throwSpeedMin) {
+      // Throwing while paused queued an impulse that fired on unpause; release
+      // the grab but skip the launch.
+      if (!gameState.paused && throwSpeed >= this.throwSpeedMin) {
         const clampedSpeed = Math.min(throwSpeed, this.throwSpeedMax);
         const speedScale = clampedSpeed / Math.max(throwSpeed, 1);
         const scaledVX = throwVX * speedScale;
@@ -518,6 +573,15 @@ export function applyInputPointerMethods(InputManager) {
         const intensity = clamp((clampedSpeed - this.throwSpeedMin) / (this.throwSpeedMax - this.throwSpeedMin), 0, 1);
         const ringSize = 6 + intensity * 12;
         this.world?.particles?.addImpactRing?.(creature.x, creature.y, { color: '#facc15', size: ringSize });
+      } else {
+        // Slow/gentle release: still tell the worker to drop the creature (it
+        // would otherwise stay grabbed forever), with zero impulse. A moved
+        // drag counts toward launch goals so the "release gently" hint and the
+        // CREATURE_THROWN objective agree.
+        this.world?.throwCreature?.(creature.id, 0, 0);
+        if (this.dragState.moved) {
+          eventSystem.emit(GameEvents.CREATURE_THROWN, { creatureId: creature.id, speed: 0, gentle: true });
+        }
       }
       if (typeof creature.reactToDrop === 'function') {
         creature.reactToDrop({ x: creature.x, y: creature.y });

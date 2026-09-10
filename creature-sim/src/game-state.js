@@ -50,6 +50,8 @@ export class GameState {
     this.panning = false;
     this.travelDrag = null;
     this.travelPreview = null;
+    this.creatureDragActive = false;
+    this.pinchActive = false;
     this.lastPointer = { x: 0, y: 0 };
     this.lastPointerWorld = { x: 0, y: 0 };
     this.chaosLevel = 0.5;

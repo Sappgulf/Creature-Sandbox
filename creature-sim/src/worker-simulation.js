@@ -527,6 +527,22 @@ self.onmessage = function (e) {
         }
         break;
 
+      case 'SET_SEASON': {
+        const env = world?.environment;
+        const season = data?.season;
+        const idx = Array.isArray(env?.seasonCycle) ? env.seasonCycle.indexOf(season) : -1;
+        if (env && idx >= 0) {
+          env.currentSeason = season;
+          env.seasonIndex = idx;
+          env.seasonTime = 0;
+          env.seasonPhase = 0;
+          const config = env.seasonConfigs?.[season];
+          if (config) env.applySeasonConfig?.(config, { announce: false });
+          sendSnapshot();
+        }
+        break;
+      }
+
       case 'STEP_AND_SYNC':
         step(data.dt);
         break;

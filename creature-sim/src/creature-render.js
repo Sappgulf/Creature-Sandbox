@@ -49,7 +49,7 @@ import { assetLoader } from './asset-loader.js';
 import { getDebugFlags } from './debug-flags.js';
 import { renderResolution } from './render-resolution.js';
 import { colorCache } from './color-cache.js';
-import { getCreatureAssetKey } from './creature-presentation.js';
+import { getCreatureAssetKey, getCreatureRenderSize } from './creature-presentation.js';
 
 import { getAgeStageIcon, getElderFadeAlpha } from './creature-age.js';
 
@@ -325,6 +325,15 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   ctx.save();
   ctx.translate(creature.x, creature.y);
+
+  // Fear tremble: displace the whole body (the old block saved/restored around
+  // an empty transform, so scared creatures never visibly shook).
+  const fearAmount = creature.emotions?.fear ?? 0;
+  if (fearAmount > 0.6 && !isSelected && !isPinned) {
+    const trembleTime = opts.worldTime ?? creature._lastWorld?.t ?? 0;
+    ctx.translate(Math.sin(trembleTime * 20) * 0.8, Math.sin(trembleTime * 31) * 0.35);
+  }
+
   ctx.globalAlpha *= getElderFadeAlpha(creature.age);
 
   const spawnScale = creature.spawnScale ?? 1;
@@ -534,13 +543,7 @@ export function drawCreature(creature, ctx, opts = {}) {
       ctx.fill();
     }
 
-    // Scared creatures tremble slightly (visual only)
-    if (fear > 0.6 && isLowZoom && !isSelected && !isPinned) {
-      ctx.save();
-      const wobble = Math.sin(worldTime * 20) * 0.5;
-      ctx.translate(wobble, 0);
-      ctx.restore();
-    }
+    // Scared creatures tremble — applied at the body transform above.
 
     // Very scared creatures emit fear wave ripples (emotion contagion visualization)
     if (fear > 0.7 && isLowZoom && !isSelected && !isPinned) {
@@ -1263,14 +1266,9 @@ export function drawCreature(creature, ctx, opts = {}) {
   }
 
   const zoom = Math.max(0.01, opts.zoom || 1);
-  // `r` runs about 1.2 (a starving juvenile) to 2.6 (a well-fed adult). At the
-  // old x5 that is 6-13 world units, which at normal play zoom is 5-12 screen
-  // pixels — entirely below the 14px floor, so every creature in the world
-  // drew at exactly 14px and body size communicated nothing. x14 puts the
-  // range at roughly 15-33 screen pixels, where the sprite's silhouette,
-  // diet markings and facing eye are actually legible and growth reads.
-  const minimumSpriteScreenSize = isSelected || isPinned ? 26 : 16;
-  const renderSize = Math.max(r * 14 * eatScale, minimumSpriteScreenSize / zoom);
+  // One shared render-size formula (see getCreatureRenderSize) so the detailed
+  // path and the sprite/LOD path draw a creature at the same scale.
+  const renderSize = getCreatureRenderSize(creature, { zoom, isSelected, isPinned }) * eatScale;
   // The cache bucket has to be chosen in *device* pixels. Passing world units
   // picked a 32px sprite for a creature covering 60 device pixels, so the
   // sheet was upscaled even when a sharp 64px frame was available.
@@ -1494,7 +1492,7 @@ export function drawCreature(creature, ctx, opts = {}) {
     ctx.lineWidth = 1.4;
     ctx.setLineDash([3, 2]);
     ctx.beginPath();
-    ctx.arc(0, 0, r + 4.5, 0, TAU);
+    ctx.arc(0, 0, renderSize * 0.5 + 3, 0, TAU);
     ctx.stroke();
     ctx.setLineDash([]);
   }
@@ -1503,7 +1501,7 @@ export function drawCreature(creature, ctx, opts = {}) {
     ctx.strokeStyle = 'rgba(255,255,220,0.9)';
     ctx.lineWidth = 1.6;
     ctx.beginPath();
-    ctx.arc(0, 0, r + 7, 0, TAU);
+    ctx.arc(0, 0, renderSize * 0.5 + 5.5, 0, TAU);
     ctx.stroke();
   }
 
@@ -1511,10 +1509,10 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   if (creature.maxHealth > 0) {
     const hpRatio = clamp(creature.health / creature.maxHealth, 0, 1);
-    const barWidth = 12;
+    const barWidth = clamp(renderSize * 0.42, 12, 44);
     const barHeight = 2;
     const x = creature.x - barWidth / 2;
-    const y = creature.y - creature.size - 8;
+    const y = creature.y - renderSize * 0.55 - 6;
     ctx.fillStyle = 'rgba(0,0,0,0.45)';
     ctx.fillRect(x, y, barWidth, barHeight);
     ctx.fillStyle = creature.genes.predator ? 'rgba(255,120,120,0.85)' : 'rgba(120,255,160,0.85)';
@@ -1965,7 +1963,7 @@ export function drawBehaviorState(creature, ctx) {
 }
 
 export function drawTraits(creature, ctx, g, hue, r) {
-  const eyeSize = clamp(g.sense / 100, 0.6, 1.5);
+  const eyeSize = clamp((Number.isFinite(g.sense) ? g.sense : 100) / 100, 0.6, 1.5);
   const look = creature._getLookOffset();
   ctx.fillStyle = '#ffffff';
   ctx.beginPath();

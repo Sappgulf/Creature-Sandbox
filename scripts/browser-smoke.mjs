@@ -512,12 +512,40 @@ async function clickWorld(page, x, y, { touch = false } = {}) {
 }
 
 async function clickVisibleCreature(page, state) {
-  const creature = state.visibleCreatures?.[0];
-  assert.ok(creature, 'at least one creature should be visible for selection');
-  const point = {
-    x: state.camera.viewportWidth / 2 + (creature.x - state.camera.x) * state.camera.zoom,
-    y: state.camera.viewportHeight / 2 + (creature.y - state.camera.y) * state.camera.zoom
-  };
+  const candidates = state.visibleCreatures || [];
+  assert.ok(candidates.length > 0, 'at least one creature should be visible for selection');
+  const box = await page.locator('#view').boundingBox();
+  assert.ok(box, 'canvas should have a bounding box');
+  const viewportWidth = state.camera.viewportWidth;
+  const viewportHeight = state.camera.viewportHeight;
+
+  // Pick a creature whose screen position is not covered by a DOM overlay
+  // (objective rail, session meta, hint, ...). Blindly clicking the first
+  // visible creature intermittently hit the rail's Goals button instead of
+  // the canvas, opening a panel that then blocked later world taps.
+  let point = null;
+  for (const creature of candidates) {
+    const candidate = {
+      x: viewportWidth / 2 + (creature.x - state.camera.x) * state.camera.zoom,
+      y: viewportHeight / 2 + (creature.y - state.camera.y) * state.camera.zoom
+    };
+    if (candidate.x < 8 || candidate.y < 8 || candidate.x > viewportWidth - 8 || candidate.y > viewportHeight - 8) {
+      continue;
+    }
+    const unobstructed = await page.evaluate(
+      p => {
+        const el = document.elementFromPoint(p.x, p.y);
+        return !!el && (el.id === 'view' || el.tagName === 'CANVAS' || !!el.closest?.('#view'));
+      },
+      { x: box.x + candidate.x, y: box.y + candidate.y }
+    );
+    if (unobstructed) {
+      point = candidate;
+      break;
+    }
+  }
+
+  assert.ok(point, 'at least one visible creature should be clickable without UI covering it');
   await clickWorld(page, point.x, point.y);
   await advance(page, 320);
 }

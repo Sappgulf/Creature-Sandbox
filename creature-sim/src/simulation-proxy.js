@@ -330,6 +330,11 @@ export class SimulationProxy {
       return null;
     };
 
+    this.setSeason = season => {
+      if (!season) return;
+      this._send('SET_SEASON', { season });
+    };
+
     // Initialize biome generator with a fixed seed if possible, or random
     this.biomeGenerator = new BiomeGenerator(0.123);
 

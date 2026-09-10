@@ -1470,7 +1470,8 @@ export class Creature {
           if (attackResult.killed) {
             this.energy += 14; // BALANCED: Less OP, need more strategic hunting
             applyHungerRelief(this, 14);
-            this.stats.kills += 1;
+            // Kill bookkeeping (stats.kills, CREATURE_KILLED) happens in
+            // WorldCombat.applyDamage; do not double-count it here.
             this.logEvent(
               attackResult.victim?.id != null ? `Claimed prey #${attackResult.victim.id}` : 'Claimed prey',
               world.t

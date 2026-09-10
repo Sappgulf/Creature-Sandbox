@@ -137,6 +137,26 @@ export function updateAgentSenses(creature, world, dt = 0) {
     senses.corpse = null;
   }
 
+  // Threat sensing for prey: populate senses.threat so the FLEE goal can fire
+  // on predator proximity instead of only at stress > 80. The field was
+  // declared but never assigned, so the flee branch was effectively dead.
+  if (diet < 0.7) {
+    const threatRadius = clamp(creature.genes.sense * CreatureAgentTuning.SENSES.FOOD_RADIUS_MULT, 50, 180);
+    const nearThreats = world?.creatureManager?.queryCreaturesFast
+      ? world.creatureManager.queryCreaturesFast(creature.x, creature.y, threatRadius)
+      : world?.queryCreatures?.(creature.x, creature.y, threatRadius) || [];
+    let threats = null;
+    for (const other of nearThreats) {
+      if (!other?.alive || other === creature) continue;
+      const otherDiet = other.genes?.diet ?? (other.genes?.predator ? 1.0 : 0.0);
+      if (otherDiet < 0.7) continue;
+      (threats || (threats = [])).push(other);
+    }
+    senses.threat = threats;
+  } else {
+    senses.threat = null;
+  }
+
   const crowdRadius = CreatureAgentTuning.SENSES.OVERCROWD_RADIUS;
   const crowd = world?.creatureManager?.queryCreaturesFast
     ? world.creatureManager.queryCreaturesFast(creature.x, creature.y, crowdRadius)
