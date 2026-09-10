@@ -21,6 +21,11 @@ function _setInnerHtmlIfChanged(cache, el, html) {
   return true;
 }
 
+function finiteNumber(value, fallback = 0) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+}
+
 export function formatCreatureAge(age) {
   const n = Number(age);
   if (!Number.isFinite(n) || n < 1) return 'Newborn';
@@ -850,16 +855,17 @@ export function renderInspector(model = {}, handlers = {}) {
       <div class="row${childMarkup === '—' ? ' dim' : ''}"><div>Children</div><div>${childMarkup}</div></div>
       <div class="row${births ? '' : ' dim'}"><div>Births</div><div>${births}</div></div>
     `;
-    const energyNum = Number(creature.energy ?? 0);
-    const energyMax = Number(creature.maxEnergy ?? 100) || 100;
+    const genes = creature.genes ?? {};
+    const energyNum = finiteNumber(creature.energy);
+    const energyMax = finiteNumber(creature.maxEnergy, 100) || 100;
     const energyPct = Math.max(0, Math.min(100, (energyNum / energyMax) * 100));
-    const healthNum = Number(creature.health ?? 0);
-    const healthMax = Number(creature.maxHealth ?? creature.health ?? 0) || 1;
+    const healthNum = finiteNumber(creature.health);
+    const healthMax = finiteNumber(creature.maxHealth, healthNum || 1) || 1;
     const healthPct = Math.max(0, Math.min(100, (healthNum / healthMax) * 100));
-    const foodEaten = stats?.food ?? 0;
-    const kills = stats?.kills ?? 0;
-    const dmgDealt = stats?.damageDealt ?? 0;
-    const dmgTaken = stats?.damageTaken ?? 0;
+    const foodEaten = finiteNumber(stats?.food);
+    const kills = finiteNumber(stats?.kills);
+    const dmgDealt = finiteNumber(stats?.damageDealt);
+    const dmgTaken = finiteNumber(stats?.damageTaken);
     const statsMarkup = `
       <div class="vitals">
         <div class="vital energy"><span>Energy</span><div class="vital-bar"><i style="width:${energyPct.toFixed(0)}%"></i></div><b>${energyNum.toFixed(1)}</b></div>
@@ -867,7 +873,7 @@ export function renderInspector(model = {}, handlers = {}) {
       </div>
       <div class="row"><div>ID</div><div>#${escapeHtml(creature.id)}${creature.alive ? '' : ' †'}${mutationBadge}</div></div>
       <div class="row"><div>Sex</div><div>${sexEmoji} ${sexLabel}</div></div>
-      <div class="row"><div>Type</div><div><span class="tag">${creature.genes.predator ? 'Predator' : 'Herbivore'}</span></div></div>
+      <div class="row"><div>Type</div><div><span class="tag">${genes.predator ? 'Predator' : 'Herbivore'}</span></div></div>
       <div class="row"><div>Age</div><div>${formatCreatureAge(creature.age)}</div></div>
       ${creature.disorders && creature.disorders.length > 0 ? `<div class="row"><div>Disorders</div><div style="color:#ff6b6b;">${escapeHtml(disorderLabels)}</div></div>` : ''}
       <div class="row${foodEaten ? '' : ' dim'}"><div>Food eaten</div><div>${foodEaten}</div></div>
@@ -875,7 +881,7 @@ export function renderInspector(model = {}, handlers = {}) {
       <div class="row${dmgDealt || dmgTaken ? '' : ' dim'}"><div>Damage</div><div>${Number(dmgDealt).toFixed(1)} / ${Number(dmgTaken).toFixed(1)}</div></div>
     `;
     const geneNumber = (key, fallback = 0) => {
-      const value = Number(geneValue(creature.genes, key, fallback));
+      const value = Number(geneValue(genes, key, fallback));
       return Number.isFinite(value) ? value : fallback;
     };
     const genesMarkup = `
@@ -889,7 +895,7 @@ export function renderInspector(model = {}, handlers = {}) {
       <div class="row"><div>Panic</div><div>${(geneNumber('panicPheromone') * 100).toFixed(0)}%</div></div>
       <div class="row"><div>Grit</div><div>${(geneNumber('grit') * 100).toFixed(0)}%</div></div>
       ${
-        creature.genes.predator
+        genes.predator
           ? `
         <div class="row"><div>Pack</div><div>${(geneNumber('packInstinct') * 100).toFixed(0)}%</div></div>
         <div class="row"><div>Ambush</div><div>${geneNumber('ambushDelay').toFixed(1)}s</div></div>

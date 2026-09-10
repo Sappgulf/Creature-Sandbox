@@ -159,7 +159,7 @@
         <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-food"/></svg></span>
       </button>
       <button id="ctrl-spawn" class="ctrl-btn ctrl-spawn-btn" title="Spawn Creature" aria-label="Spawn creature"
-        aria-haspopup="true">
+        aria-haspopup="true" aria-controls="spawn-drawer" aria-expanded="false">
         <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-herbivore"/></svg></span>
         <span class="ctrl-caret">▾</span>
       </button>
@@ -172,7 +172,7 @@
         <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-watch"/></svg></span>
       </button>
       <button id="ctrl-more" class="ctrl-btn" title="Remember · Field Journal and more" aria-label="Remember: open Field Journal and more" aria-haspopup="menu"
-        aria-expanded="false">
+        aria-controls="overflow-drawer" aria-expanded="false">
         <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-more"/></svg></span>
       </button>
     </div>
@@ -331,7 +331,7 @@
     <button id="watch-follow" class="watch-btn" aria-label="Toggle follow"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-goals"/></svg></button>
     <button id="watch-recenter" class="watch-btn" aria-label="Recenter camera"
       title="Re-enable auto-director"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-recenter"/></svg></button>
-    <button id="watch-moments" class="watch-btn watch-btn-wide" aria-label="Open moments log"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-moments"/></svg><span class="watch-btn-label">Moments</span></button>
+    <button id="watch-moments" class="watch-btn watch-btn-wide" aria-label="Open moments log" aria-controls="moments-panel" aria-expanded="false"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-moments"/></svg><span class="watch-btn-label">Moments</span></button>
     <button id="watch-god-mode" class="watch-btn" aria-label="Toggle god mode"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-god"/></svg></button>
     <button id="watch-exit" class="watch-btn watch-btn-exit" aria-label="Exit watch mode"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-close"/></svg></button>
   </div>

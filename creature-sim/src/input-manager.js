@@ -493,6 +493,10 @@ export class InputManager {
         this.uiController?.setSessionMetaVisible?.(false);
         gameState.sessionMetaVisible = false;
       }
+      if (panelId === 'moments-panel') {
+        this.uiController?.moments?.closePanel?.();
+        document.getElementById('watch-moments')?.setAttribute('aria-expanded', 'false');
+      }
       panel.classList.add('hidden');
       panel.setAttribute('aria-hidden', 'true');
       if (panelId === 'features-panel') gameState.featuresPanelVisible = false;

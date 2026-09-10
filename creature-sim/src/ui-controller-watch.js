@@ -63,6 +63,14 @@ export function applyUiWatchMethods(UIController) {
   };
 
   UIController.prototype.onWatchMoments = function () {
+    // God Mode intentionally hides the Moments panel so the two live overlays
+    // never stack. If the player asks for Moments while God Mode is active,
+    // complete that handoff first; otherwise togglePanel() can expose a node
+    // whose CSS still keeps it display:none, leaving aria-hidden and the
+    // visible state out of sync.
+    if (gameState.godModeActive) {
+      this.setGodModeActive(false, { source: 'moments' });
+    }
     this.moments?.togglePanel?.();
   };
 

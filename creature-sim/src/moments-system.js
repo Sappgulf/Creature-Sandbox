@@ -27,6 +27,7 @@ export class MomentsSystem {
     this.summaryEl = null;
     this._listBound = false;
     this._migrationCooldowns = new Map();
+    this.lastPanelTrigger = null;
 
     this._bindEvents();
   }
@@ -71,9 +72,17 @@ export class MomentsSystem {
 
   openPanel() {
     if (!this.panel) return;
+    const active = document.activeElement;
+    this.lastPanelTrigger = active instanceof HTMLElement && !this.panel.contains(active) ? active : null;
     this.panel.classList.remove('hidden');
     this.panel.setAttribute('aria-hidden', 'false');
+    document.getElementById('watch-moments')?.setAttribute('aria-expanded', 'true');
     this.render();
+    requestAnimationFrame(() => {
+      this.panel
+        ?.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+        ?.focus?.({ preventScroll: true });
+    });
   }
 
   closePanel() {
@@ -84,6 +93,12 @@ export class MomentsSystem {
     }
     this.panel.classList.add('hidden');
     this.panel.setAttribute('aria-hidden', 'true');
+    document.getElementById('watch-moments')?.setAttribute('aria-expanded', 'false');
+    const trigger = this.lastPanelTrigger;
+    this.lastPanelTrigger = null;
+    if (trigger instanceof HTMLElement && document.body.contains(trigger)) {
+      trigger.focus({ preventScroll: true });
+    }
   }
 
   logMoment({ type, icon, text, x, y, worldTime }) {

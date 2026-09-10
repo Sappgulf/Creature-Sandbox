@@ -186,6 +186,38 @@ try {
     }
   });
 
+  await step('Moments hands off cleanly from God Mode', async () => {
+    await page.click('#ctrl-watch');
+    await page.waitForSelector('#watch-strip:not(.hidden)', { timeout: 5000 });
+    await page.click('#watch-god-mode');
+    await page.waitForSelector('#god-mode-panel:not(.hidden)', { timeout: 5000 });
+    await page.click('#watch-moments');
+    await page.waitForSelector('#moments-panel:not(.hidden)', { timeout: 5000 });
+    assert.equal(await visible('#god-mode-panel'), false, 'God Mode should close before Moments opens');
+    assert.equal(await page.locator('#moments-panel').getAttribute('aria-hidden'), 'false');
+    await page.click('#moments-close');
+    await page.waitForFunction(() => document.querySelector('#moments-panel').classList.contains('hidden'), null, {
+      timeout: 5000
+    });
+    await page.click('#watch-exit');
+    await page.waitForSelector('#control-strip:not(.hidden)', { timeout: 5000 });
+  });
+
+  await step('Help opens with dialog focus', async () => {
+    await openOverflow();
+    await page.click('[data-action="help"]');
+    await page.waitForSelector('#shortcuts-overlay:not(.hidden)', { timeout: 5000 });
+    assert.equal(
+      await page.evaluate(() => document.activeElement?.id),
+      'btn-shortcuts-close',
+      'Help should focus its close control'
+    );
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.querySelector('#shortcuts-overlay').classList.contains('hidden'), null, {
+      timeout: 5000
+    });
+  });
+
   const PANELS = [
     // [menu click selector, expected panel selector, step name]
     // Campaign and Achievements each have a dedicated panel, so these are

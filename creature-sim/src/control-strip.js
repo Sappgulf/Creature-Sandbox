@@ -722,6 +722,13 @@ export class ControlStripController {
         shortcutsOverlay?.classList.remove('hidden');
         shortcutsOverlay?.setAttribute('aria-hidden', 'false');
       }
+      if (!this.uiController?.toggleShortcutsHelp) {
+        requestAnimationFrame(() => {
+          shortcutsOverlay
+            ?.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+            ?.focus?.({ preventScroll: true });
+        });
+      }
       return;
     }
 
@@ -984,6 +991,22 @@ export class ControlStripController {
   openMoments() {
     const momentsPanel = document.getElementById('moments-panel');
     if (!momentsPanel) return;
+    // Keep the DOM fallback and the UI controller on the same overlay
+    // transition. In the normal runtime the controller owns Moments and can
+    // close God Mode before revealing the panel; the fallback preserves that
+    // invariant for lightweight embeds/tests without a full controller.
+    if (this.uiController?.onWatchMoments) {
+      this.uiController.onWatchMoments();
+      return;
+    }
+    if (gameState.godModeActive) {
+      gameState.godModeActive = false;
+      document.body.classList.remove('god-mode');
+      this.isGodMode = false;
+      const godModePanel = document.getElementById('god-mode-panel');
+      godModePanel?.classList.add('hidden');
+      godModePanel?.setAttribute('aria-hidden', 'true');
+    }
     const visible = momentsPanel.classList.contains('hidden');
     // God Mode hides the moments panel via CSS and must not stack with it.
     // Opening moments therefore exits God Mode first so the panel is usable.

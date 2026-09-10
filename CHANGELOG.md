@@ -165,6 +165,25 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 - **Root Causes:** Same as planned.
 - **Fixes:** Same as planned.
 - **Verification:** `git diff --check` clean; `npx eslint creature-sim/src` clean; `npm test` green (190 + 69 + E2E); `npm run build` green (main app JS 377.98 kB / 110.56 kB gzip); `npm run check:bundle` green (worker 303,615 B, budget raised 302 kB → 312 kB to cover the new worker-side corpse/disaster/season/threat code after measuring 301.3 kB pre-change); `npm run proof:release` green end-to-end (lint, tests, build, bundle, browser smoke worker + main + worker lanes, scenario balance, release evidence board). Also fixed two pre-existing `smoke:main` blockers found during proof: the 0.17 startup CLS from the dossier resizing the HUD (now 0.004) and the God Mode/Moments panel conflict; hardened `clickVisibleCreature` to avoid UI-overlaid coordinates. Production: pushed `dea5a17`; Vercel deployment `creature-sandbox-6kepytua9` Ready; alias serves `dea5a17` (`npm run proof:vercel`); `npm run smoke:production` and `npm run smoke:production:vitals` green (desktop CLS 0.0011, mobile 0).
+### 2026-09-10 — overlay-handoff-and-dialog-focus — Planned
+
+- **Date:** 2026-09-10
+- **Scope:** ui | qa
+- **Type:** Planned
+- **Issues:** Watch Mode could leave Moments semantically open but visually hidden after a God Mode transition; Help and Moments did not consistently move focus into their dialogs; drawer and panel triggers did not expose all expanded relationships; the worker-backed inspector could throw when partial creature snapshots omitted full health/gene metadata.
+- **Root Causes:** God Mode intentionally hides Moments through a body-level CSS rule; the Control Strip could bypass the UI controller; direct overlay toggles did not share focus behavior; related controls lacked synchronized ARIA state; the fixed hot-path snapshot is intentionally lean while inspector rendering assumed a complete main-thread Creature shape.
+- **Fixes:** Route overlay handoffs through the UI controller, add dialog focus and restoration, synchronize trigger state, normalize partial inspector values, and add a regression sequence covering God Mode → Moments, Help → Escape, and worker inspection.
+- **Verification:** Targeted menu proof, lint, tests, build, bundle, and worker/main/browser smoke lanes.
+
+### 2026-09-10 — overlay-handoff-and-dialog-focus — Implemented
+
+- **Date:** 2026-09-10
+- **Scope:** ui | qa
+- **Type:** Implemented
+- **Issues:** Watch Mode could leave Moments semantically open but visually hidden after a God Mode transition; Help and Moments did not consistently move focus into their dialogs; drawer and panel triggers did not expose all expanded relationships; the worker-backed inspector could throw when partial creature snapshots omitted full health/gene metadata.
+- **Root Causes:** God Mode intentionally hides Moments through a body-level CSS rule; the Control Strip could bypass the UI controller; direct overlay toggles did not share focus behavior; related controls lacked synchronized ARIA state; the fixed hot-path snapshot is intentionally lean while inspector rendering assumed a complete main-thread Creature shape.
+- **Fixes:** Routed Moments and Help through controller-owned transitions, wired the controller into keyboard input, added Moments focus/restore behavior, synchronized `aria-hidden`/`aria-expanded`, normalized partial worker inspector values, and added the God Mode → Moments plus Help → Escape regression sequence.
+- **Verification:** `npm run lint`, `npm test` (190 core + 66 regression checks), `npm run smoke:menus` (36/36), `node scripts/playtest-upgrade.mjs` (no findings, page errors, or console errors), and `npm run proof:release` all passed; scenario balance passed 2× for both scenarios and release evidence was generated.
 
 ### 2026-09-06 — menus-and-worker-stats — Planned
 

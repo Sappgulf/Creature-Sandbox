@@ -49,6 +49,7 @@ export function applyUiGodModeMethods(UIController) {
         moments.classList.add('hidden');
         moments.setAttribute('aria-hidden', 'true');
       }
+      document.getElementById('watch-moments')?.setAttribute('aria-expanded', 'false');
       this.tools?.setMode?.('inspect');
       gameState.spawnMode = false;
       gameState.geneEditorSpawnMode = false;
