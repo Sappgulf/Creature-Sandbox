@@ -20,6 +20,9 @@ export function applyUiWatchMethods(UIController) {
 
   UIController.prototype.onWatchModeToggle = function () {
     gameState.watchModeEnabled = !gameState.watchModeEnabled;
+    // Watch Mode is one of the explicit director opt-ins; scenario runs set
+    // autoDirectorEnabled separately and are unaffected while active.
+    gameState.autoDirectorEnabled = gameState.watchModeEnabled;
     if (gameState.watchModeEnabled) {
       const speed = Math.min(2, Math.max(0.5, gameState.fastForward || 1));
       gameState.setWatchSpeed(speed);

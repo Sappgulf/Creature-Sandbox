@@ -133,6 +133,7 @@ export function restoreRuntimeSaveMetadata(
   if (metadata.uiState && gameState) {
     const uiState = metadata.uiState;
     gameState.watchModeEnabled = !!(uiState.watchModeEnabled ?? uiState.watchMode);
+    if (gameState.watchModeEnabled) gameState.autoDirectorEnabled = true;
     gameState.godModeActive = !!uiState.godModeActive;
     gameState.godModeTool = uiState.godModeTool || gameState.godModeTool || null;
     gameState.selectedId = uiState.selectedCreatureId ?? metadata.share?.selectedCreatureId ?? gameState.selectedId;

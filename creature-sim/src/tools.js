@@ -650,10 +650,9 @@ export class ToolController {
       }
       if (hit) {
         this.world.removeNearestProp(x, y, radius);
-        return;
+        return { kind: 'prop' };
       }
-      this.eraseCreatures(x, y);
-      return;
+      return this.eraseCreatures(x, y) > 0 ? { kind: 'creature' } : { kind: null };
     }
     const removedProp = this.world.sandbox?.removeNearestProp?.(x, y, this.brushSize * 0.65);
     if (removedProp) {
@@ -670,10 +669,10 @@ export class ToolController {
           color: removedProp.color
         }
       });
-      return;
+      return { kind: 'prop' };
     }
 
-    this.eraseCreatures(x, y);
+    return this.eraseCreatures(x, y) > 0 ? { kind: 'creature' } : { kind: null };
   }
 
   undoPlaceProp(action) {
@@ -821,7 +820,7 @@ export class ToolController {
 
   eraseCreatures(x, y) {
     const candidates = this._queryCreaturesNearby(x, y, this.brushSize * 0.7);
-    if (candidates.length === 0) return;
+    if (candidates.length === 0) return 0;
 
     // Store creature data for undo
     const erasedData = candidates.map(c => ({
@@ -854,6 +853,7 @@ export class ToolController {
       type: ActionType.ERASE_CREATURES,
       creatures: erasedData
     });
+    return candidates.length;
   }
 
   undoEraseCreatures(action) {

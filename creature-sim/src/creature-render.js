@@ -53,6 +53,7 @@ import { getCreatureAssetKey, getCreatureRenderSize } from './creature-presentat
 import { MUTATION_BITS, STATUS_BITS } from './simulation-state.js';
 
 import { getAgeStageIcon, getElderFadeAlpha } from './creature-age.js';
+import { isReducedMotion } from './accessibility-prefs.js';
 
 const { TAU } = CreatureConfig;
 const SPRITE_CACHE_SIZES = [32, 48, 64, 96, 128];
@@ -344,7 +345,7 @@ export function drawCreature(creature, ctx, opts = {}) {
   // Fear tremble: displace the whole body (the old block saved/restored around
   // an empty transform, so scared creatures never visibly shook).
   const fearAmount = creature.emotions?.fear ?? 0;
-  if (fearAmount > 0.6 && !isSelected && !isPinned) {
+  if (fearAmount > 0.6 && !isSelected && !isPinned && !isReducedMotion()) {
     const trembleTime = opts.worldTime ?? creature._lastWorld?.t ?? 0;
     ctx.translate(Math.sin(trembleTime * 20) * 0.8, Math.sin(trembleTime * 31) * 0.35);
   }

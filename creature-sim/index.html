@@ -159,7 +159,7 @@
         <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-food"/></svg></span>
       </button>
       <button id="ctrl-spawn" class="ctrl-btn ctrl-spawn-btn" title="Spawn Creature" aria-label="Spawn creature"
-        aria-haspopup="true" aria-controls="spawn-drawer" aria-expanded="false">
+        aria-haspopup="dialog" aria-controls="spawn-drawer" aria-expanded="false">
         <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-herbivore"/></svg></span>
         <span class="ctrl-caret">▾</span>
       </button>
@@ -171,7 +171,7 @@
       <button id="ctrl-watch" class="ctrl-btn" title="Watch Mode" aria-label="Toggle watch mode">
         <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-watch"/></svg></span>
       </button>
-      <button id="ctrl-more" class="ctrl-btn" title="Remember · Field Journal and more" aria-label="Remember: open Field Journal and more" aria-haspopup="menu"
+      <button id="ctrl-more" class="ctrl-btn" title="Remember · Field Journal and more" aria-label="Remember: open Field Journal and more" aria-haspopup="dialog"
         aria-controls="overflow-drawer" aria-expanded="false">
         <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-more"/></svg></span>
       </button>
@@ -188,54 +188,54 @@
         <span class="drawer-title">Spawn Creature</span>
         <button id="spawn-drawer-close" class="drawer-close" aria-label="Close">×</button>
       </div>
-      <div class="drawer-body" role="listbox" aria-label="Choose creature to spawn">
-        <button class="spawn-card" data-creature="herbivore" role="option">
+      <div class="drawer-body" role="group" aria-label="Choose creature to spawn">
+        <button class="spawn-card" data-creature="herbivore" aria-pressed="false">
           <span class="spawn-card-icon spawn-card-preview spawn-card-herbivore" aria-hidden="true"></span>
           <span class="spawn-card-info">
             <span class="spawn-card-name">Herbivore</span>
             <span class="spawn-card-desc">Balanced grazer</span>
           </span>
-          <span class="spawn-card-check">✓</span>
+          <span class="spawn-card-check" aria-hidden="true">✓</span>
         </button>
-        <button class="spawn-card" data-creature="omnivore" role="option">
+        <button class="spawn-card" data-creature="omnivore" aria-pressed="false">
           <span class="spawn-card-icon spawn-card-preview spawn-card-omnivore" aria-hidden="true"></span>
           <span class="spawn-card-info">
             <span class="spawn-card-name">Omnivore</span>
             <span class="spawn-card-desc">Adaptable eater</span>
           </span>
-          <span class="spawn-card-check">✓</span>
+          <span class="spawn-card-check" aria-hidden="true">✓</span>
         </button>
-        <button class="spawn-card" data-creature="predator" role="option">
+        <button class="spawn-card" data-creature="predator" aria-pressed="false">
           <span class="spawn-card-icon spawn-card-preview spawn-card-predator" aria-hidden="true"></span>
           <span class="spawn-card-info">
             <span class="spawn-card-name">Predator</span>
             <span class="spawn-card-desc">Fast hunter</span>
           </span>
-          <span class="spawn-card-check">✓</span>
+          <span class="spawn-card-check" aria-hidden="true">✓</span>
         </button>
-        <button class="spawn-card" data-creature="aquatic" role="option">
+        <button class="spawn-card" data-creature="aquatic" aria-pressed="false">
           <span class="spawn-card-icon spawn-card-preview spawn-card-aquatic" aria-hidden="true"></span>
           <span class="spawn-card-info">
             <span class="spawn-card-name">Aquatic</span>
             <span class="spawn-card-desc">Wetland scavenger</span>
           </span>
-          <span class="spawn-card-check">✓</span>
+          <span class="spawn-card-check" aria-hidden="true">✓</span>
         </button>
-        <button class="spawn-card" data-creature="flying" role="option">
+        <button class="spawn-card" data-creature="flying" aria-pressed="false">
           <span class="spawn-card-icon spawn-card-preview spawn-card-flying" aria-hidden="true"></span>
           <span class="spawn-card-info">
             <span class="spawn-card-name">Flying</span>
             <span class="spawn-card-desc">Swift aerial grazer</span>
           </span>
-          <span class="spawn-card-check">✓</span>
+          <span class="spawn-card-check" aria-hidden="true">✓</span>
         </button>
-        <button class="spawn-card" data-creature="burrowing" role="option">
+        <button class="spawn-card" data-creature="burrowing" aria-pressed="false">
           <span class="spawn-card-icon spawn-card-preview spawn-card-burrowing" aria-hidden="true"></span>
           <span class="spawn-card-info">
             <span class="spawn-card-name">Burrowing</span>
             <span class="spawn-card-desc">Underground forager</span>
           </span>
-          <span class="spawn-card-check">✓</span>
+          <span class="spawn-card-check" aria-hidden="true">✓</span>
         </button>
       </div>
       <div class="drawer-footer">
@@ -285,6 +285,7 @@
           <button class="menu-item" id="menu-inspector" data-action="inspector"><span class="menu-item-icon" aria-hidden="true">🔎</span><span class="menu-item-label">Inspector</span><kbd class="menu-kbd">I</kbd></button>
           <button class="menu-item" id="menu-analytics" data-action="analytics"><span class="menu-item-icon" aria-hidden="true">📊</span><span class="menu-item-label">Analytics</span></button>
           <button class="menu-item" id="menu-replay" data-action="replay"><span class="menu-item-icon" aria-hidden="true">▶️</span><span class="menu-item-label">Session Replay</span></button>
+          <button class="menu-item" id="menu-moments" data-action="moments"><span class="menu-item-icon" aria-hidden="true">🎬</span><span class="menu-item-label">Moments</span></button>
           <button class="menu-item" id="menu-insights" data-action="insights"><span class="menu-item-icon" aria-hidden="true">💡</span><span class="menu-item-label">Insights</span></button>
           <button class="menu-item" id="menu-lineage-album" data-action="lineage-album"><span class="menu-item-icon" aria-hidden="true">📖</span><span class="menu-item-label">Lineage Album</span></button>
         </div>
@@ -326,13 +327,13 @@
 
   <!-- Watch Mode Strip (replaces control strip when in watch mode) -->
   <div id="watch-strip" class="watch-strip hidden" role="toolbar" aria-label="Watch mode controls" aria-hidden="true">
-    <button id="watch-pause" class="watch-btn" aria-label="Pause or resume"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-pause"/></svg></button>
+    <button id="watch-pause" class="watch-btn" aria-label="Pause or resume" aria-pressed="false"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-pause"/></svg></button>
     <button id="watch-speed" class="watch-btn" aria-label="Watch speed">1×</button>
-    <button id="watch-follow" class="watch-btn" aria-label="Toggle follow"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-goals"/></svg></button>
-    <button id="watch-recenter" class="watch-btn" aria-label="Recenter camera"
+    <button id="watch-follow" class="watch-btn" aria-label="Toggle follow" aria-pressed="false"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-goals"/></svg></button>
+    <button id="watch-recenter" class="watch-btn" aria-label="Recenter camera" aria-pressed="false"
       title="Re-enable auto-director"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-recenter"/></svg></button>
     <button id="watch-moments" class="watch-btn watch-btn-wide" aria-label="Open moments log" aria-controls="moments-panel" aria-expanded="false"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-moments"/></svg><span class="watch-btn-label">Moments</span></button>
-    <button id="watch-god-mode" class="watch-btn" aria-label="Toggle god mode"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-god"/></svg></button>
+    <button id="watch-god-mode" class="watch-btn" aria-label="Toggle god mode" aria-pressed="false"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-god"/></svg></button>
     <button id="watch-exit" class="watch-btn watch-btn-exit" aria-label="Exit watch mode"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-close"/></svg></button>
   </div>
 
@@ -353,7 +354,11 @@
   <div id="god-mode-panel" class="god-mode-panel hidden" role="dialog" aria-label="God mode tools" aria-hidden="true">
     <div class="god-mode-header">
       <span class="god-mode-title">God Mode</span>
-      <button id="god-mode-exit" class="ghost-btn small" aria-label="Exit god mode">Done</button>
+      <div class="god-mode-header-actions">
+        <button id="god-undo" class="ghost-btn small god-history-btn" data-god-action="undo" aria-label="Undo last god action" title="Undo (Ctrl+Z)">↩</button>
+        <button id="god-redo" class="ghost-btn small god-history-btn" data-god-action="redo" aria-label="Redo last god action" title="Redo (Ctrl+Shift+Z)">↪</button>
+        <button id="god-mode-exit" class="ghost-btn small" aria-label="Exit god mode">Done</button>
+      </div>
     </div>
     <div class="god-mode-tools" role="group" aria-label="God mode tools">
       <div class="god-mode-group-title">Tools</div>
@@ -436,6 +441,8 @@
         <div class="meta-actions">
           <button id="playable-scenario-start" class="primary-btn small" title="Start selected scenario"
             aria-label="Start selected playable scenario">Start</button>
+          <button id="playable-scenario-leave" class="ghost-btn small hidden" title="Leave the active run"
+            aria-label="Leave active playable run">Leave</button>
         </div>
       </div>
       <div class="meta-row">
@@ -1333,6 +1340,7 @@
           <div class="shortcut-row"><kbd>P</kbd><span>Sandbox prop tool</span></div>
           <div class="shortcut-row"><kbd>Shift+F</kbd><span>Toggle camera follow</span></div>
           <div class="shortcut-row"><kbd>1-9</kbd> / <kbd>0</kbd><span>God mode tool select</span></div>
+          <div class="shortcut-row"><kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Shift+Z</kbd><span>Undo / redo god-mode action</span></div>
           <div class="shortcut-row"><kbd>[</kbd> / <kbd>]</kbd><span>Adjust brush size</span></div>
         </div>
         <div class="shortcuts-section">

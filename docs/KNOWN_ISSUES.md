@@ -9,8 +9,8 @@ List issues that could not be fixed quickly, with severity and reproduction step
 
 2. **Desktop main-thread heavy final state is still below 60fps**
    - **Severity:** Medium
-   - **Description:** The forced main-thread desktop smoke is improved but still not a 60fps claim: latest fallback proof sampled desktop avg `33.37ms` / p95 `49.9ms`, with profiled non-`drawImage` work at `3.4038ms/frame`. Top scoped costs remain `world-step`, `render`, and `subsystem-update`.
-   - **Impact:** Treat desktop main-thread pacing as environment-sensitive and fallback-only. Worker default proof is the release performance lane.
+   - **Description:** The forced main-thread desktop smoke remains environment-sensitive: latest fallback proof sampled desktop avg `58.88ms` / p95 `100.4ms` with the top scoped costs at `world-step` and `render`. Worker-mode desktop headless runs also land above the `26ms` avg gate (`47-55ms` across runs) while the worker gate is held.
+   - **Impact:** Treat desktop pacing as environment-sensitive. Mobile worker pacing is healthy (p95 `33.4ms` after adaptive resolution engages); worker default proof remains the release performance lane.
 
 3. **Overlay stacking now uses `--z-*` tokens; keep new UI on those rungs**
    - **Severity:** Low

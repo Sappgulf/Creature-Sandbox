@@ -3,6 +3,9 @@ import { RendererConfig } from './renderer-config.js';
 import { RendererFeatureManager } from './renderer-features.js';
 import { RendererPerformanceMonitor } from './renderer-performance.js';
 import { getDebugFlags } from './debug-flags.js';
+import { isReducedMotion } from './accessibility-prefs.js';
+import { CreatureAgentTuning } from './creature-agent-constants.js';
+import { godPowers } from './god-powers.js';
 import { assetLoader } from './asset-loader.js';
 import { applyFeatureVizMethods } from './renderer-features-viz.js';
 import { applyMinimapMethods } from './renderer-minimap.js';
@@ -631,9 +634,7 @@ export class Renderer {
 
     // Opaque base first, then the parallax depth layers, then biome detail.
     drawBiomeBase(this, ctx, world);
-    const prefersReducedMotionForParallax =
-      typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-    if (!prefersReducedMotionForParallax) {
+    if (!isReducedMotion()) {
       drawParallaxBackground(this, ctx, world);
     }
     drawBiomeDetail(this, ctx, world);
@@ -675,10 +676,8 @@ export class Renderer {
     drawSeasonOverlay(this, ctx, world);
 
     // Seasonal ambient particles (pollen, leaves, snow). Skipped entirely
-    // under prefers-reduced-motion; static background layers still draw.
-    const prefersReducedMotion =
-      typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-    if (!prefersReducedMotion) {
+    // under reduced-motion; static background layers still draw.
+    if (!isReducedMotion()) {
       drawSeasonalParticles(this, ctx, world);
     }
 
@@ -700,7 +699,7 @@ export class Renderer {
     }
 
     // Ambient spore particles floating through the scene (motion-only layer).
-    if (!prefersReducedMotion) {
+    if (!isReducedMotion()) {
       drawAmbientSpores(this, ctx);
     }
   }
@@ -714,12 +713,16 @@ export class Renderer {
   }
 
   drawCalmZones(world) {
-    const zones = world.environment?.calmZones;
-    if (!zones || zones.length === 0) return;
+    const calmZones = world.environment?.calmZones || [];
+    // Scenario rest zones live on world.restZones (main thread) or arrive via
+    // the worker snapshot's environment payload. They were previously never
+    // drawn, so authored safe areas were invisible to the player.
+    const restZones = (world.restZones?.length ? world.restZones : world.environment?.restZones) || [];
+    if (calmZones.length === 0 && restZones.length === 0) return;
     const ctx = this.ctx;
     const t = Number(world.t || 0);
     ctx.save();
-    for (const zone of zones) {
+    for (const zone of calmZones) {
       if (!Number.isFinite(zone.x) || !Number.isFinite(zone.y)) continue;
       const pulse = 0.85 + Math.sin(t * 2.2 + (zone.id || 0)) * 0.08;
       const radius = (zone.radius || 80) * pulse;
@@ -731,6 +734,25 @@ export class Renderer {
       ctx.arc(zone.x, zone.y, radius, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+    }
+
+    // Rest/safe zones: slower breathing pulse and a dashed ring so they read
+    // as calm habitat rather than an active god-power.
+    if (restZones.length) {
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([12, 10]);
+      for (const zone of restZones) {
+        if (!Number.isFinite(zone.x) || !Number.isFinite(zone.y)) continue;
+        const pulse = 0.92 + Math.sin(t * 0.9 + zone.x * 0.01) * 0.05;
+        const radius = (zone.radius || 120) * pulse;
+        ctx.fillStyle = 'rgba(140, 230, 180, 0.05)';
+        ctx.strokeStyle = 'rgba(170, 245, 200, 0.22)';
+        ctx.beginPath();
+        ctx.arc(zone.x, zone.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
     }
     ctx.restore();
   }
@@ -812,11 +834,16 @@ export class Renderer {
     if (!pointer) return;
     const ctx = this.ctx;
     const tool = opts.godModeTool || 'food';
-    let radius = 82;
+    // Derive radii from the tuning the tools actually use so placement reads
+    // true. Previously food previewed ~3x its real spread and calm understated
+    // the zone by ~30%, which made the first tutorials feel imprecise.
+    const brushSize = Number(opts.toolBrushSize) > 0 ? Number(opts.toolBrushSize) : 26;
+    const powerRadius = godPowers.brushSize || 50;
+    let radius = Math.max(16, brushSize * 0.5);
     let color = 'rgba(120, 255, 180, 0.12)';
     let stroke = 'rgba(120, 255, 180, 0.34)';
     if (tool === 'calm') {
-      radius = 96;
+      radius = CreatureAgentTuning.GOD_MODE.CALM_RADIUS;
       color = 'rgba(120, 210, 255, 0.1)';
       stroke = 'rgba(120, 210, 255, 0.34)';
     } else if (tool === 'chaos') {
@@ -832,23 +859,23 @@ export class Renderer {
       color = 'rgba(180, 140, 255, 0.1)';
       stroke = 'rgba(180, 140, 255, 0.38)';
     } else if (tool === 'remove') {
-      radius = 28;
+      radius = Math.max(16, brushSize * 0.7);
       color = 'rgba(255, 120, 120, 0.12)';
       stroke = 'rgba(255, 120, 120, 0.44)';
     } else if (tool === 'bless') {
-      radius = 64;
+      radius = powerRadius;
       color = 'rgba(255, 220, 120, 0.12)';
       stroke = 'rgba(255, 220, 120, 0.44)';
     } else if (tool === 'curse') {
-      radius = 64;
+      radius = powerRadius;
       color = 'rgba(255, 90, 90, 0.12)';
       stroke = 'rgba(255, 90, 90, 0.44)';
     } else if (tool === 'attract') {
-      radius = 72;
+      radius = powerRadius;
       color = 'rgba(120, 170, 255, 0.12)';
       stroke = 'rgba(120, 170, 255, 0.44)';
     } else if (tool === 'repel') {
-      radius = 72;
+      radius = powerRadius;
       color = 'rgba(170, 170, 180, 0.12)';
       stroke = 'rgba(170, 170, 180, 0.44)';
     }

@@ -36,6 +36,8 @@ export class Camera {
     this.viewportWidth = viewportWidth;
     this.viewportHeight = viewportHeight;
     this.travel = null;
+    // Reused travel-state vector (see getTravelState) to avoid per-frame allocs.
+    this._travelState = { from: { x: 0, y: 0 }, to: { x: 0, y: 0 }, progress: 0 };
 
     // Follow mode
     this.followMode = 'free'; // 'free', 'follow', 'smooth-follow'
@@ -184,11 +186,13 @@ export class Camera {
   getTravelState() {
     if (!this.travel) return null;
     const t = Math.min(1, this.travel.elapsed / this.travel.duration);
-    return {
-      from: { x: this.travel.fromX, y: this.travel.fromY },
-      to: { x: this.travel.toX, y: this.travel.toY },
-      progress: t
-    };
+    const state = this._travelState;
+    state.from.x = this.travel.fromX;
+    state.from.y = this.travel.fromY;
+    state.to.x = this.travel.toX;
+    state.to.y = this.travel.toY;
+    state.progress = t;
+    return state;
   }
 
   worldToScreen(x, y) {

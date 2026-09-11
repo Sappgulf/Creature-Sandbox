@@ -1,4 +1,6 @@
 import { domCache } from './dom-cache.js';
+import { gameState } from './game-state.js';
+import { eventSystem, GameEvents } from './event-system.js';
 
 function formatTime(seconds = 0) {
   const safe = Math.max(0, Math.floor(seconds));
@@ -22,24 +24,65 @@ export function applyUiPlayableMethods(UIController) {
     const startBtn = domCache.get('playableScenarioStart');
     if (!this.playableScenarios) return;
 
+    // Guided-loop checklist state. The steps used to render as static
+    // decoration; these flags let the panel check them off as the player acts.
+    this._guidedInfluenceDone = false;
+    this._playableOptionSignature = '';
+    eventSystem.on(GameEvents.SCENARIO_STARTED, () => {
+      this._guidedInfluenceDone = false;
+    });
+    eventSystem.on(GameEvents.FOOD_DROP, () => {
+      this._guidedInfluenceDone = true;
+    });
+
     if (select) {
-      select.innerHTML = this.playableScenarios
-        .getScenarios()
-        .map(scenario => {
-          const progress = scenario.progress || {};
-          const suffix = progress.completions
-            ? ` (${progress.completions} clear${progress.completions === 1 ? '' : 's'})`
-            : '';
-          return `<option value="${scenario.id}">${scenario.icon} ${escapeHtml(scenario.name)}${suffix}</option>`;
-        })
-        .join('');
+      this._renderPlayableOptions();
     }
 
     if (startBtn) {
       startBtn.addEventListener('click', this.boundHandlers.onPlayableScenarioStart);
     }
 
+    const leaveBtn = document.getElementById('playable-scenario-leave');
+    if (leaveBtn) {
+      leaveBtn.addEventListener('click', () => {
+        const left = this.gameDirector?.leaveScenario?.() ?? this.playableScenarios?.leaveRun?.() ?? false;
+        if (left) {
+          this.renderPlayableDirector();
+          this.dismissInteractionHint?.();
+        }
+      });
+    }
+
     this.renderPlayableDirector();
+  };
+
+  UIController.prototype._renderPlayableOptions = function () {
+    const select = domCache.get('playableScenarioSelect');
+    if (!select || !this.playableScenarios) return;
+    const scenarios = this.playableScenarios.getScenarios();
+    // Rebuild only when clear counts change, and preserve the current pick.
+    const signature = scenarios.map(s => `${s.id}:${s.progress?.completions || 0}`).join('|');
+    if (signature === this._playableOptionSignature) return;
+    this._playableOptionSignature = signature;
+    const current = select.value;
+    select.innerHTML = scenarios
+      .map(scenario => {
+        const progress = scenario.progress || {};
+        const suffix = progress.completions
+          ? ` (${progress.completions} clear${progress.completions === 1 ? '' : 's'})`
+          : '';
+        return `<option value="${scenario.id}">${scenario.icon} ${escapeHtml(scenario.name)}${suffix}</option>`;
+      })
+      .join('');
+    if (current) select.value = current;
+  };
+
+  UIController.prototype._getGuidedLoopStates = function (data) {
+    if (!data?.active || !data?.scenario?.guidedLoop) return null;
+    const calmZones = this.world?.environment?.calmZones?.length || 0;
+    const restZones = this.world?.restZones?.length || 0;
+    return [!!gameState.selectedId, !!this._guidedInfluenceDone, !!gameState.pinnedId, calmZones > 0 || restZones > 0];
   };
 
   UIController.prototype.onPlayableScenarioStart = function () {
@@ -68,6 +111,12 @@ export function applyUiPlayableMethods(UIController) {
     const objectiveCards = directorSnapshot?.objectives?.cards || [];
     document.body?.classList.toggle('playable-run-active', !!data.active);
 
+    const leaveBtn = document.getElementById('playable-scenario-leave');
+    if (leaveBtn) {
+      leaveBtn.classList.toggle('hidden', !data.active);
+      leaveBtn.setAttribute('aria-hidden', data.active ? 'false' : 'true');
+    }
+
     if (select && scenario?.id) {
       select.value = scenario.id;
     }
@@ -80,16 +129,21 @@ export function applyUiPlayableMethods(UIController) {
       scenario?.steps?.length && !scenario?.guidedLoop
         ? `<div class="director-steps">${scenario.steps.map(step => `<span>${escapeHtml(step)}</span>`).join('')}</div>`
         : '';
+    const guidedStates = this._getGuidedLoopStates(data);
+    const guidedDoneCount = guidedStates ? guidedStates.filter(Boolean).length : 0;
     const guidedLoop =
       scenario?.guidedLoop && scenario?.steps?.length
         ? `<section class="director-guided-loop" aria-label="Guided expedition loop">
-          <div class="guided-loop-heading"><span>First expedition</span><em>Three careful moves</em></div>
+          <div class="guided-loop-heading"><span>First expedition</span><em>${guidedDoneCount}/${scenario.steps.length} done</em></div>
           <ol>
             ${scenario.steps
-              .map(
-                (step, index) => `
-              <li><span class="guided-loop-index">${index + 1}</span><strong>${escapeHtml(step)}</strong></li>`
-              )
+              .map((step, index) => {
+                const done = !!guidedStates?.[index];
+                return `
+              <li class="${done ? 'done' : ''}"${done ? ' aria-label="Completed"' : ''}><span class="guided-loop-index">${
+                done ? '✓' : index + 1
+              }</span><strong>${escapeHtml(step)}</strong></li>`;
+              })
               .join('')}
           </ol>
         </section>`
@@ -135,5 +189,8 @@ export function applyUiPlayableMethods(UIController) {
       ${guidedLoop}
       ${steps}
     `;
+
+    // Keep the scenario picker's clear counts fresh after a finished run.
+    this._renderPlayableOptions();
   };
 }

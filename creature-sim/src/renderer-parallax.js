@@ -37,6 +37,28 @@ const midLayer = Array.from({ length: MID_LAYER_COUNT }, (_, i) => ({
   drift: 0.2 + seededRand(i + 1100) * 0.3
 }));
 
+// Pre-baked orb sprites. Recreating 35 radial gradients per frame was a top
+// render cost; the sprites are static, only their offsets animate.
+let _orbSprites = null;
+function getOrbSprites() {
+  if (_orbSprites || typeof document === 'undefined') return _orbSprites;
+  _orbSprites = midLayer.map(orb => {
+    const radius = orb.r * 2.5;
+    const size = Math.max(4, Math.ceil(radius * 2));
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const octx = canvas.getContext('2d');
+    const gradient = octx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, radius);
+    gradient.addColorStop(0, `hsla(${orb.hue}, 60%, 70%, ${orb.alpha})`);
+    gradient.addColorStop(1, `hsla(${orb.hue}, 60%, 70%, 0)`);
+    octx.fillStyle = gradient;
+    octx.fillRect(0, 0, size, size);
+    return { canvas, half: size / 2 };
+  });
+  return _orbSprites;
+}
+
 /**
  * Draw the parallax background layers.
  * Call BEFORE biome ground so layers are behind everything.
@@ -69,10 +91,17 @@ export function drawParallaxBackground(renderer, ctx, world) {
   const midZoom = camera.zoom * 0.8;
   ctx.translate(midOffsetX, midOffsetY);
   ctx.scale(midZoom, midZoom);
-  for (const orb of midLayer) {
+  const orbSprites = getOrbSprites();
+  for (let i = 0; i < midLayer.length; i++) {
+    const orb = midLayer[i];
     // Slow drift
     const driftX = Math.sin(time * orb.drift + orb.x * 0.001) * 20;
     const driftY = Math.cos(time * orb.drift * 0.7 + orb.y * 0.001) * 15;
+    if (orbSprites) {
+      const sprite = orbSprites[i];
+      ctx.drawImage(sprite.canvas, orb.x + driftX - sprite.half, orb.y + driftY - sprite.half);
+      continue;
+    }
     const gradient = ctx.createRadialGradient(
       orb.x + driftX,
       orb.y + driftY,
@@ -130,16 +159,23 @@ export function drawParallaxBackground(renderer, ctx, world) {
 export function drawVignette(renderer, ctx) {
   const vpW = renderer._viewportWidth || window.innerWidth;
   const vpH = renderer._viewportHeight || window.innerHeight;
-  const cx = vpW / 2;
-  const cy = vpH / 2;
-  const innerR = Math.min(vpW, vpH) * 0.25;
-  const outerR = Math.max(vpW, vpH) * 0.75;
 
-  const gradient = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
-  gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-  gradient.addColorStop(0.6, 'rgba(0, 0, 0, 0.05)');
-  gradient.addColorStop(1, 'rgba(0, 0, 0, 0.35)');
-  ctx.fillStyle = gradient;
+  // Cache the radial gradient; viewport size changes invalidate it.
+  let cache = renderer._vignetteCache;
+  if (!cache || cache.w !== vpW || cache.h !== vpH) {
+    const cx = vpW / 2;
+    const cy = vpH / 2;
+    const innerR = Math.min(vpW, vpH) * 0.25;
+    const outerR = Math.max(vpW, vpH) * 0.75;
+    const gradient = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
+    gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    gradient.addColorStop(0.6, 'rgba(0, 0, 0, 0.05)');
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.35)');
+    cache = { w: vpW, h: vpH, gradient };
+    renderer._vignetteCache = cache;
+  }
+
+  ctx.fillStyle = cache.gradient;
   ctx.fillRect(0, 0, vpW, vpH);
 }
 
@@ -148,6 +184,7 @@ export function drawVignette(renderer, ctx) {
  * Very subtle, uses a small cached noise pattern.
  */
 let _noisePattern = null;
+let _grainPattern = null;
 export function drawGrainOverlay(renderer, ctx) {
   const vpW = renderer._viewportWidth || window.innerWidth;
   const vpH = renderer._viewportHeight || window.innerHeight;
@@ -166,12 +203,15 @@ export function drawGrainOverlay(renderer, ctx) {
     }
     nctx.putImageData(imageData, 0, 0);
     _noisePattern = noiseCanvas;
+    _grainPattern = null;
+  }
+  if (!_grainPattern) {
+    _grainPattern = ctx.createPattern(_noisePattern, 'repeat');
   }
   ctx.save();
   ctx.globalAlpha = 0.3;
-  const pattern = ctx.createPattern(_noisePattern, 'repeat');
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = pattern;
+  ctx.fillStyle = _grainPattern;
   ctx.fillRect(0, 0, vpW, vpH);
   ctx.restore();
 }

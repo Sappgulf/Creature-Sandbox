@@ -70,6 +70,8 @@ export class MobileSupport {
       // Keep the last good value instead.
       if (!(viewportHeight > 0)) return;
       const vh = viewportHeight * 0.01;
+      if (vh === this._lastVh) return;
+      this._lastVh = vh;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
     };
 
@@ -78,6 +80,8 @@ export class MobileSupport {
       const viewportHeight = visualViewport?.height || window.innerHeight;
       const viewportOffset = visualViewport?.offsetTop || 0;
       const offset = Math.max(0, window.innerHeight - viewportHeight - viewportOffset);
+      if (offset === this._lastKeyboardOffset) return;
+      this._lastKeyboardOffset = offset;
       document.documentElement.style.setProperty('--keyboard-offset', `${offset}px`);
       document.body.classList.toggle('keyboard-open', offset > 0);
     };
@@ -119,21 +123,30 @@ export class MobileSupport {
       }
     };
 
+    // Coalesce every viewport signal (window resize, orientationchange,
+    // visualViewport resize/scroll) into one rAF pass. Previously each event
+    // independently wrote CSS vars and toggled body classes, so URL-bar
+    // movement during a scroll produced repeated identical DOM writes.
+    let viewportSyncRaf = null;
+    const runViewportSync = () => {
+      viewportSyncRaf = null;
+      setViewportHeight();
+      updateKeyboardOffset();
+      syncMobileLayoutProfile();
+    };
+    const scheduleViewportSync = () => {
+      if (viewportSyncRaf !== null) return;
+      viewportSyncRaf = requestAnimationFrame(runViewportSync);
+    };
+
     setViewportHeight();
     updateKeyboardOffset();
     syncMobileLayoutProfile();
-    this.registerListener(window, 'resize', setViewportHeight);
-    this.registerListener(window, 'orientationchange', setViewportHeight);
-    this.registerListener(window, 'resize', updateKeyboardOffset);
-    this.registerListener(window, 'orientationchange', updateKeyboardOffset);
-    this.registerListener(window, 'resize', syncMobileLayoutProfile);
-    this.registerListener(window, 'orientationchange', syncMobileLayoutProfile);
+    this.registerListener(window, 'resize', scheduleViewportSync);
+    this.registerListener(window, 'orientationchange', scheduleViewportSync);
     if (window.visualViewport) {
-      this.registerListener(window.visualViewport, 'resize', setViewportHeight);
-      this.registerListener(window.visualViewport, 'scroll', setViewportHeight);
-      this.registerListener(window.visualViewport, 'resize', updateKeyboardOffset);
-      this.registerListener(window.visualViewport, 'scroll', updateKeyboardOffset);
-      this.registerListener(window.visualViewport, 'resize', syncMobileLayoutProfile);
+      this.registerListener(window.visualViewport, 'resize', scheduleViewportSync);
+      this.registerListener(window.visualViewport, 'scroll', scheduleViewportSync);
     }
 
     this.registerListener(document, 'focusin', event => {

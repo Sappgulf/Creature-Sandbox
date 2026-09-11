@@ -52,6 +52,16 @@ export class GameDirector {
     return this.lastSnapshot;
   }
 
+  leaveScenario() {
+    const left = this.playableScenarios?.leaveRun?.() || false;
+    if (left) {
+      this.mode = 'sandbox';
+      this.sessionGoals?.resetForNewSession?.({ refreshGoals: true });
+      this.update(1, { force: true });
+    }
+    return left;
+  }
+
   setMode(mode = 'sandbox') {
     this.mode = mode;
     eventSystem.emit(GameDirectorEvents.MODE_CHANGED, { mode });

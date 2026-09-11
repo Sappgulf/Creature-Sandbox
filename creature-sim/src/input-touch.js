@@ -136,6 +136,18 @@ export function applyInputTouchMethods(InputManager) {
         // snapshot copy and silently do nothing. Mirrors the calm/chaos path
         // above, which likewise calls straight through `this.world`.
         if (typeof this.world.applyGodPower === 'function') {
+          // Pre-check the snapshot so an empty cast does not play the full
+          // success celebration. Worker cooldowns still resolve worker-side.
+          const radius = godPowers.brushSize || 50;
+          const targets = godPowers.getCreaturesInRadius(x, y, this.world, radius);
+          if (targets.length === 0) {
+            eventSystem.emit(GameEvents.NOTIFICATION, {
+              message: `No creatures within ${Math.round(radius)} units.`,
+              type: 'warning',
+              duration: 1500
+            });
+            break;
+          }
           this.world.applyGodPower(tool, x, y);
           eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: tool, x, y });
           break;
@@ -179,15 +191,26 @@ export function applyInputTouchMethods(InputManager) {
       }
       case 'remove': {
         if (this.tools?.eraseAt) {
-          const creatureCount = this.world.creatures.length;
-          const propCount = this.world.sandbox?.props?.length || 0;
-          this.tools.eraseAt(x, y);
-          const nextCreatureCount = this.world.creatures.length;
-          const nextPropCount = this.world.sandbox?.props?.length || 0;
-          if (nextCreatureCount < creatureCount) {
-            eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'remove', x, y });
-          } else if (nextPropCount < propCount) {
+          // Prefer the tool's own hit report: comparing array lengths is a
+          // no-op in worker mode, where removals apply asynchronously, which
+          // left remove with no juice, moment, or goal credit.
+          const result = this.tools.eraseAt(x, y);
+          if (result?.kind === 'prop') {
             eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'remove-prop', x, y });
+          } else if (result?.kind === 'creature') {
+            eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'remove', x, y });
+          } else if (result === undefined) {
+            // Legacy tools without a return value: fall back to counts.
+            const creatureCount = this.world.creatures.length;
+            const propCount = this.world.sandbox?.props?.length || 0;
+            this.tools.eraseAt(x, y);
+            const nextCreatureCount = this.world.creatures.length;
+            const nextPropCount = this.world.sandbox?.props?.length || 0;
+            if (nextCreatureCount < creatureCount) {
+              eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'remove', x, y });
+            } else if (nextPropCount < propCount) {
+              eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: 'remove-prop', x, y });
+            }
           }
           break;
         }

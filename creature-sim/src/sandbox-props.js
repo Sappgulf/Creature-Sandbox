@@ -288,7 +288,13 @@ export class SandboxProps {
     if (this.world.particles?.addPlayBurst) {
       this.world.particles.addPlayBurst(creature.x, creature.y);
     }
-    eventSystem.emit(GameEvents.SANDBOX_PROP_TRIGGERED, { type: 'bounce', propId: prop.id, creatureId: creature.id });
+    eventSystem.emit(GameEvents.SANDBOX_PROP_TRIGGERED, {
+      type: 'bounce',
+      propId: prop.id,
+      creatureId: creature.id,
+      x: creature.x,
+      y: creature.y
+    });
   }
 
   _applySpring(prop, creature, dx, dy) {
@@ -311,7 +317,13 @@ export class SandboxProps {
     if (this.world.audio?.playUISound) {
       this.world.audio.playUISound('success');
     }
-    eventSystem.emit(GameEvents.SANDBOX_PROP_TRIGGERED, { type: 'spring', propId: prop.id, creatureId: creature.id });
+    eventSystem.emit(GameEvents.SANDBOX_PROP_TRIGGERED, {
+      type: 'spring',
+      propId: prop.id,
+      creatureId: creature.id,
+      x: creature.x,
+      y: creature.y
+    });
   }
 
   _applySpinner(prop, creature, dx, dy) {
@@ -330,7 +342,13 @@ export class SandboxProps {
     if (this.world.particles?.addImpactRing) {
       this.world.particles.addImpactRing(creature.x, creature.y, { color: prop.color });
     }
-    eventSystem.emit(GameEvents.SANDBOX_PROP_TRIGGERED, { type: 'spinner', propId: prop.id, creatureId: creature.id });
+    eventSystem.emit(GameEvents.SANDBOX_PROP_TRIGGERED, {
+      type: 'spinner',
+      propId: prop.id,
+      creatureId: creature.id,
+      x: creature.x,
+      y: creature.y
+    });
   }
 
   _applySeeSaw(prop, creature, dx, dy) {
@@ -349,7 +367,13 @@ export class SandboxProps {
     if (this.world.particles?.addImpactRing) {
       this.world.particles.addImpactRing(creature.x, creature.y, { color: prop.color, size: 10 });
     }
-    eventSystem.emit(GameEvents.SANDBOX_PROP_TRIGGERED, { type: 'seesaw', propId: prop.id, creatureId: creature.id });
+    eventSystem.emit(GameEvents.SANDBOX_PROP_TRIGGERED, {
+      type: 'seesaw',
+      propId: prop.id,
+      creatureId: creature.id,
+      x: creature.x,
+      y: creature.y
+    });
   }
 
   _applyConveyor(prop, creature, dt) {
@@ -375,7 +399,13 @@ export class SandboxProps {
     if (this.world.particles?.addImpactRing) {
       this.world.particles.addImpactRing(creature.x, creature.y, { color: prop.color, size: 9 });
     }
-    eventSystem.emit(GameEvents.SANDBOX_PROP_TRIGGERED, { type: 'slope', propId: prop.id, creatureId: creature.id });
+    eventSystem.emit(GameEvents.SANDBOX_PROP_TRIGGERED, {
+      type: 'slope',
+      propId: prop.id,
+      creatureId: creature.id,
+      x: creature.x,
+      y: creature.y
+    });
   }
 
   _applyFan(prop, creature, dx, dy, dt) {
@@ -448,7 +478,13 @@ export class SandboxProps {
       this.world.audio.playUISound('success');
     }
 
-    eventSystem.emit(GameEvents.SANDBOX_PROP_TRIGGERED, { type: 'button', propId: prop.id, creatureId: creature.id });
+    eventSystem.emit(GameEvents.SANDBOX_PROP_TRIGGERED, {
+      type: 'button',
+      propId: prop.id,
+      creatureId: creature.id,
+      x: creature.x,
+      y: creature.y
+    });
   }
 
   _applyLaunch(prop, creature, dx, dy) {
@@ -472,7 +508,13 @@ export class SandboxProps {
     if (this.world.audio?.playUISound) {
       this.world.audio.playUISound('toggle');
     }
-    eventSystem.emit(GameEvents.SANDBOX_PROP_TRIGGERED, { type: 'launch', propId: prop.id, creatureId: creature.id });
+    eventSystem.emit(GameEvents.SANDBOX_PROP_TRIGGERED, {
+      type: 'launch',
+      propId: prop.id,
+      creatureId: creature.id,
+      x: creature.x,
+      y: creature.y
+    });
   }
 
   serialize() {

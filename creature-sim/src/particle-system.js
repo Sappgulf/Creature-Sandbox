@@ -4,12 +4,14 @@
 
 import { poolManager } from './object-pool.js';
 import { assetLoader } from './asset-loader.js';
+import { isReducedMotion } from './accessibility-prefs.js';
 
 export class ParticleSystem {
   constructor() {
     this.particles = [];
     this.maxParticles = 500;
     this.screenShake = { x: 0, y: 0, intensity: 0 };
+    this._shakeOffset = { x: 0, y: 0 };
     // Performance tracking
     this._particleCreated = 0;
     this._particleReleased = 0;
@@ -1265,10 +1267,11 @@ export class ParticleSystem {
   }
 
   _drawParticleSpriteOrCircle(ctx, p, { scale = 1, shadowBlur = 0 } = {}) {
-    // Skip the expensive shadowBlur glow once particle load is high — this
-    // previously checked the fixed maxParticles ceiling (always > 80), which
-    // meant the guard never actually engaged. Gate on current live count.
-    const useGlow = shadowBlur > 0 && this.particles.length <= 80;
+    // Skip the expensive shadowBlur glow once particle load approaches the
+    // active budget. The old fixed `<= 80` ceiling was always true on mobile
+    // and worker budgets (<= 36), so low-end devices paid the glow every frame.
+    const glowBudget = Math.min(80, Math.max(12, Math.floor(this.maxParticles * 0.6)));
+    const useGlow = shadowBlur > 0 && this.particles.length <= glowBudget;
     if (useGlow) {
       ctx.save();
       ctx.shadowColor = p.color;
@@ -1514,20 +1517,26 @@ export class ParticleSystem {
     ctx.globalAlpha = 1.0;
   }
 
-  // Trigger screen shake
+  // Trigger screen shake. Reduced-motion disables it entirely (vestibular
+  // safety) rather than merely damping it.
   triggerShake(intensity = 5.0) {
+    if (isReducedMotion()) return;
     this.screenShake.intensity = Math.max(this.screenShake.intensity, intensity);
     this.screenShake.x = (Math.random() - 0.5) * intensity;
     this.screenShake.y = (Math.random() - 0.5) * intensity;
   }
 
-  // Get current screen shake offset (for camera)
+  // Get current screen shake offset (for camera). Reuses a scratch vector
+  // instead of allocating a fresh object per frame.
   getShakeOffset() {
-    if (this.screenShake.intensity < 0.1) return { x: 0, y: 0 };
-    return {
-      x: (Math.random() - 0.5) * this.screenShake.intensity,
-      y: (Math.random() - 0.5) * this.screenShake.intensity
-    };
+    if (this.screenShake.intensity < 0.1 || isReducedMotion()) {
+      this._shakeOffset.x = 0;
+      this._shakeOffset.y = 0;
+      return this._shakeOffset;
+    }
+    this._shakeOffset.x = (Math.random() - 0.5) * this.screenShake.intensity;
+    this._shakeOffset.y = (Math.random() - 0.5) * this.screenShake.intensity;
+    return this._shakeOffset;
   }
 
   clear() {

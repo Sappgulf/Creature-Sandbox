@@ -1,4 +1,5 @@
 import { gameState } from './game-state.js';
+import { isReducedMotion } from './accessibility-prefs.js';
 import {
   DISCOVERY_MILESTONES,
   FOLLOW_TARGET_MODES,
@@ -309,7 +310,10 @@ export class UpgradeController {
     if (actionId === 'watch_herd') {
       if (!gameState.watchModeEnabled) {
         this.uiController?.onWatchModeToggle?.();
-        if (!gameState.watchModeEnabled) gameState.watchModeEnabled = true;
+        if (!gameState.watchModeEnabled) {
+          gameState.watchModeEnabled = true;
+          gameState.autoDirectorEnabled = true;
+        }
       }
       gameState.watchModeFollow = false;
       this.uiController?.updateWatchModeUI?.();
@@ -330,6 +334,7 @@ export class UpgradeController {
     gameState.pinnedId = target.id;
     gameState.watchModeEnabled = true;
     gameState.watchModeFollow = true;
+    gameState.autoDirectorEnabled = true;
     if (this.camera) {
       this.camera.targetX = target.x;
       this.camera.targetY = target.y;
@@ -619,6 +624,25 @@ export class UpgradeController {
     const phaseLabel = objective.phaseLabel || story.phaseLabel || 'Observe';
     const phaseKicker = objective.phaseKicker || story.phaseKicker || 'READ THE FIELD';
 
+    // Signature gate: this runs on the stats cadence and previously rewrote
+    // ~15 DOM nodes even when nothing had changed.
+    const signature = [
+      phase,
+      phaseLabel,
+      phaseKicker,
+      objective.icon || '',
+      objective.title || '',
+      objective.action || '',
+      Math.round(objective.progress || 0),
+      modeChip?.id || '',
+      modeChip?.label || '',
+      rhythmChip?.label || '',
+      rhythmChip?.shortLabel || '',
+      story.level || ''
+    ].join('|');
+    if (rail.dataset.initialized === 'true' && this._railSignature === signature) return;
+    this._railSignature = signature;
+
     if (rail.dataset.initialized !== 'true') {
       rail.innerHTML = `
         <span class="objective-icon"></span>
@@ -716,7 +740,7 @@ export class UpgradeController {
   focusScenarioResult({ smooth = true } = {}) {
     const target = this.panel?.querySelector('#upgrade-scenario-result');
     if (!target) return false;
-    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const prefersReducedMotion = isReducedMotion();
     window.requestAnimationFrame(() => {
       target.scrollIntoView({
         block: 'start',

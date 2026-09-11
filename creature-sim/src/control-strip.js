@@ -424,16 +424,22 @@ export class ControlStripController {
     document.body.classList.toggle('drawer-open', this.spawnDrawerOpen || this.overflowDrawerOpen);
   }
 
-  setMenuActive(button, active, { pressed = active } = {}) {
+  setMenuActive(button, active, { pressed = null } = {}) {
     if (!button) return;
     button.classList.toggle('active', !!active);
-    button.setAttribute('aria-pressed', pressed ? 'true' : 'false');
+    // Only real toggles advertise pressed state. Panel openers and one-shot
+    // actions previously surfaced a misleading "On" badge.
+    if (pressed === null) {
+      button.removeAttribute('aria-pressed');
+    } else {
+      button.setAttribute('aria-pressed', pressed ? 'true' : 'false');
+    }
   }
 
   syncMenuState() {
     const toolMode = this.tools?.mode || 'inspect';
-    this.setMenuActive(this.menuFood, toolMode === 'food');
-    this.setMenuActive(this.menuGodMode, gameState.godModeActive);
+    this.setMenuActive(this.menuFood, toolMode === 'food', { pressed: toolMode === 'food' });
+    this.setMenuActive(this.menuGodMode, gameState.godModeActive, { pressed: gameState.godModeActive });
     this.setMenuActive(this.menuMode, gameState.sessionMetaVisible !== false);
     const journalOpen = isPanelVisible('upgrade-panel');
     this.setMenuActive(this.menuUpgrades, journalOpen);
@@ -445,9 +451,11 @@ export class ControlStripController {
     this.setMenuActive(this.menuSound, isPanelVisible('sound-panel'));
     this.setMenuActive(this.menuAnalytics, isPanelVisible('analytics-dashboard'));
     this.setMenuActive(this.menuEcoHealth, isPanelVisible('eco-health-panel'));
-    this.setMenuActive(this.menuMobileFocus, this.mobilePrefs.focusMode);
-    this.setMenuActive(this.menuMobileBattery, this.mobilePrefs.batterySaver);
-    this.setMenuActive(this.menuMobileHaptics, this.mobilePrefs.haptics);
+    this.setMenuActive(this.menuMobileFocus, this.mobilePrefs.focusMode, { pressed: this.mobilePrefs.focusMode });
+    this.setMenuActive(this.menuMobileBattery, this.mobilePrefs.batterySaver, {
+      pressed: this.mobilePrefs.batterySaver
+    });
+    this.setMenuActive(this.menuMobileHaptics, this.mobilePrefs.haptics, { pressed: this.mobilePrefs.haptics });
   }
 
   handleDrawerKeydown(event, drawer) {
@@ -455,6 +463,25 @@ export class ControlStripController {
       event.preventDefault();
       if (drawer === this.spawnDrawer) this.closeSpawnDrawer();
       if (drawer === this.overflowDrawer) this.closeOverflowDrawer();
+      return;
+    }
+
+    // aria-modal dialogs must trap Tab inside the drawer.
+    if (event.key === 'Tab') {
+      const focusable = getDrawerFocusableElements(drawer);
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey) {
+        if (active === first || !drawer.contains(active)) {
+          event.preventDefault();
+          last.focus({ preventScroll: true });
+        }
+      } else if (active === last || !drawer.contains(active)) {
+        event.preventDefault();
+        first.focus({ preventScroll: true });
+      }
       return;
     }
 
@@ -529,9 +556,12 @@ export class ControlStripController {
     const label = SPEED_LABELS[this.speedIndex];
     if (this.ctrlSpeed) {
       this.ctrlSpeed.querySelector('.ctrl-icon').textContent = label;
+      this.ctrlSpeed.setAttribute('aria-label', `Simulation speed ${label}`);
+      this.ctrlSpeed.setAttribute('title', `Speed ${label} (1-4)`);
     }
     if (this.watchSpeed) {
       this.watchSpeed.textContent = label;
+      this.watchSpeed.setAttribute('aria-label', `Simulation speed ${label}`);
     }
   }
 
@@ -622,7 +652,10 @@ export class ControlStripController {
     this.spawnCards?.forEach(card => {
       const isSelected = card.dataset.creature === this.currentSpawnType;
       card.classList.toggle('selected', isSelected);
-      card.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+      // Cards are toggle buttons in a labelled group; aria-pressed is the
+      // correct semantics (the old listbox/option pairing made every card a
+      // separate tab stop while claiming to be a single composite widget).
+      card.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
     });
 
     // Update spawn button icon
@@ -795,6 +828,9 @@ export class ControlStripController {
       }
       case 'replay':
         this.openLazyPanel('Replay', 'ensureReplayPanel', panel => panel?.show?.());
+        break;
+      case 'moments':
+        this.openMoments();
         break;
       case 'insights':
         this.openLazyPanel('Insights', 'ensureInsightsPanel', panel => panel?.show?.());
@@ -1008,13 +1044,20 @@ export class ControlStripController {
       godModePanel?.setAttribute('aria-hidden', 'true');
     }
     const visible = momentsPanel.classList.contains('hidden');
-    // God Mode hides the moments panel via CSS and must not stack with it.
-    // Opening moments therefore exits God Mode first so the panel is usable.
-    if (visible && gameState.godModeActive) {
-      this.uiController?.setGodModeActive?.(false, { source: 'moments' });
-    }
     momentsPanel.classList.toggle('hidden', !visible);
     momentsPanel.setAttribute('aria-hidden', visible ? 'false' : 'true');
+
+    // Moments is reachable outside Watch Mode now, so it owns its own focus
+    // lifecycle instead of relying on the watch strip.
+    const returnFocus = this.lastDrawerTrigger;
+    window.requestAnimationFrame(() => {
+      if (visible) {
+        const closeBtn = momentsPanel.querySelector('#moments-close, button');
+        closeBtn?.focus?.({ preventScroll: true });
+      } else if (returnFocus instanceof HTMLElement && document.body.contains(returnFocus)) {
+        returnFocus.focus({ preventScroll: true });
+      }
+    });
   }
 
   /**
@@ -1069,12 +1112,12 @@ export class ControlStripController {
         break;
       case 'escape':
         if (this.spawnDrawerOpen || this.overflowDrawerOpen) {
-          this.closeSpawnDrawer();
-          this.closeOverflowDrawer();
+          // Close only the open drawer: closeSpawnDrawer() consumes
+          // lastDrawerTrigger, so calling both destroyed focus return.
+          if (this.spawnDrawerOpen) this.closeSpawnDrawer();
+          else this.closeOverflowDrawer();
           return;
         }
-        this.closeSpawnDrawer();
-        this.closeOverflowDrawer();
         if (gameState.godModeActive) this.toggleGodMode();
         break;
     }

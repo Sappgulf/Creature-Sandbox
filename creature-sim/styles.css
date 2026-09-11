@@ -964,6 +964,21 @@ body.god-mode #moments-panel {
   font-weight: 600;
   color: var(--text-primary);
 }
+.god-mode-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.god-history-btn {
+  min-width: 28px;
+  min-height: 24px;
+  padding: 2px 6px;
+  font-size: 13px;
+  line-height: 1;
+}
+.god-history-btn:disabled {
+  opacity: 0.35;
+}
 .god-mode-tools {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1068,7 +1083,7 @@ body.god-mode #moments-panel {
 
   .god-mode-tools {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
+    gap: 4px;
   }
 
   .god-mode-tools button {
@@ -6844,6 +6859,17 @@ body {
   text-transform: uppercase;
 }
 
+.director-guided-loop li.done {
+  border-color: rgba(128, 216, 196, 0.42);
+  background: rgba(128, 216, 196, 0.1);
+}
+
+.director-guided-loop li.done strong {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  text-decoration-color: rgba(128, 216, 196, 0.45);
+}
+
 .director-guided-loop strong {
   grid-area: title;
   min-width: 0;
@@ -7323,8 +7349,17 @@ body {
     padding-bottom: 8px;
   }
 
+  /* God Mode tool buttons stay at the project touch minimum even though the
+     compact layout's base rule shrinks them to 38px. 40px (not 44px) keeps
+     the four-row grid inside its 260px mobile-compact budget. */
+  .god-mode-tools button {
+    min-height: 40px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
   /* The God Mode panel's Done button must stay compact so the panel keeps its
-     playfield footprint; its ten tool buttons are already 44px targets. */
+     playfield footprint. */
   .god-mode-panel .ghost-btn.small,
   .god-mode-panel .primary-btn.small {
     min-height: 24px;

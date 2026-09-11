@@ -24,6 +24,23 @@ export function applyUiGodModeMethods(UIController) {
       if (!btn) continue;
       btn.addEventListener('click', this.boundHandlers.onGodToolSelect);
     }
+
+    // Undo/redo were keyboard-only and undiscoverable; surface them in the
+    // panel with pressed-state sync from the tool controller stacks.
+    const godUndoBtn = document.getElementById('god-undo');
+    const godRedoBtn = document.getElementById('god-redo');
+    if (godUndoBtn) {
+      godUndoBtn.addEventListener('click', () => {
+        this.tools?.undo?.();
+        this.updateGodModeUI();
+      });
+    }
+    if (godRedoBtn) {
+      godRedoBtn.addEventListener('click', () => {
+        this.tools?.redo?.();
+        this.updateGodModeUI();
+      });
+    }
   };
 
   UIController.prototype.onGodModeToggle = function () {
@@ -122,6 +139,19 @@ export function applyUiGodModeMethods(UIController) {
       const tool = btn.dataset.godTool;
       btn.classList.toggle('active', gameState.godModeTool === tool);
       btn.setAttribute('aria-pressed', gameState.godModeTool === tool ? 'true' : 'false');
+    }
+
+    const undoBtn = document.getElementById('god-undo');
+    const redoBtn = document.getElementById('god-redo');
+    if (undoBtn) {
+      const canUndo = !!this.tools?.canUndo?.();
+      undoBtn.disabled = !canUndo;
+      undoBtn.dataset.available = canUndo ? 'true' : 'false';
+    }
+    if (redoBtn) {
+      const canRedo = !!this.tools?.canRedo?.();
+      redoBtn.disabled = !canRedo;
+      redoBtn.dataset.available = canRedo ? 'true' : 'false';
     }
 
     if (panel) {

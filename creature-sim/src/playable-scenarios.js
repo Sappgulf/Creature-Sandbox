@@ -494,7 +494,11 @@ export class PlayableScenarios {
     gameState.sessionMetaVisible = true;
     gameState.selectedId = null;
     gameState.pinnedId = null;
+    // AutoDirector.canDirect() checks autoDirectorEnabled; scenario runs keep
+    // the authored cinematic camera without forcing the Watch Mode UI. A short
+    // grace keeps the authored opening framing stable before cinematics begin.
     gameState.autoDirectorEnabled = true;
+    this.autoDirector?.setGrace?.(3000);
 
     if (this.sessionGoals) {
       this.sessionGoals.setGoals?.(this._scenarioGoals(scenario), { announce: false });
@@ -505,7 +509,9 @@ export class PlayableScenarios {
       this.camera.y = this.world.height * 0.5;
       this.camera.targetX = this.camera.x;
       this.camera.targetY = this.camera.y;
-      this.camera.zoom = Math.max(this.camera.minZoom || 0.1, Math.min(0.72, this.camera.maxZoom || 3));
+      // 0.8 keeps food above the sprite threshold (0.75) so scenario openings
+      // show authored assets instead of flat fallback circles.
+      this.camera.zoom = Math.max(this.camera.minZoom || 0.1, Math.min(0.8, this.camera.maxZoom || 3));
       this.camera.targetZoom = this.camera.zoom;
     }
 
@@ -603,6 +609,7 @@ export class PlayableScenarios {
 
     gameState.sessionMetaVisible = true;
     gameState.autoDirectorEnabled = true;
+    this.autoDirector?.setGrace?.(2000);
 
     if (this.sessionGoals) {
       this.sessionGoals.setGoals?.(this._scenarioGoals(scenario), { announce: false });
@@ -621,6 +628,9 @@ export class PlayableScenarios {
     if (Array.isArray(this.world.food)) this.world.food.length = 0;
     if (Array.isArray(this.world.corpses)) this.world.corpses.length = 0;
     this.world.sandbox?.clear?.();
+    // Stale death/combat particles from the previous world would otherwise
+    // drift through the freshly authored scenario for several seconds.
+    this.world.particles?.clear?.();
 
     const center = { x: this.world.width * 0.5, y: this.world.height * 0.5 };
     const radius = scenario.setup.radius || 520;
@@ -933,9 +943,29 @@ export class PlayableScenarios {
     // back on open-ended starter goals. Previously the failed scenario stayed
     // "active" with a frozen progress bar until another scenario was started.
     this.activeRun = null;
+    gameState.autoDirectorEnabled = false;
     this.sessionGoals?.resetForNewSession?.({ refreshGoals: true });
     this.lastSnapshot = this._buildSnapshot();
     this._emitUpdate();
+  }
+
+  /**
+   * Leave the active run without failure or reward. Returns false when no run
+   * is active. Restores starter goals so the sandbox stays playable.
+   */
+  leaveRun({ silent = false } = {}) {
+    if (!this.activeRun) return false;
+    const scenario = this.activeRun.scenario;
+    this.activeRun.state = 'abandoned';
+    this.activeRun = null;
+    gameState.autoDirectorEnabled = false;
+    this.sessionGoals?.resetForNewSession?.({ refreshGoals: true });
+    if (!silent) {
+      this.notifications?.show?.(`Left ${scenario?.name || 'scenario'} run`, 'info', 2000);
+    }
+    this.lastSnapshot = this._buildSnapshot();
+    this._emitUpdate();
+    return true;
   }
 
   _emitUpdate() {

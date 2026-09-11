@@ -591,7 +591,35 @@ function step(dt) {
     world.step(scaledDt);
   }
 
-  sendSnapshot();
+  scheduleSnapshot();
+}
+
+// Snapshot coalescing. The main thread can issue up to 6 STEP_AND_SYNC
+// messages in a single rAF frame; posting a full snapshot (creature buffer +
+// structured-cloned food/corpses/props) for each one wasted ~5/6 of the clone
+// work because only the newest state is ever rendered. Post immediately when
+// the throttle window has elapsed, otherwise schedule one trailing post.
+const SNAPSHOT_MIN_INTERVAL_MS = 10;
+let _lastSnapshotAt = 0;
+let _snapshotTimer = null;
+
+function scheduleSnapshot() {
+  const now = performance.now();
+  const elapsed = now - _lastSnapshotAt;
+  if (elapsed >= SNAPSHOT_MIN_INTERVAL_MS) {
+    _lastSnapshotAt = now;
+    sendSnapshot();
+    return;
+  }
+  if (_snapshotTimer !== null) return;
+  _snapshotTimer = setTimeout(
+    () => {
+      _snapshotTimer = null;
+      _lastSnapshotAt = performance.now();
+      sendSnapshot();
+    },
+    Math.max(0, SNAPSHOT_MIN_INTERVAL_MS - elapsed)
+  );
 }
 
 function compactFoodPatches(world) {
@@ -699,6 +727,13 @@ function sendSnapshot() {
         radius: z.radius,
         t: z.t,
         strength: z.strength
+      })),
+      // Scenario/sandbox rest zones are long-lived safe areas; the renderer
+      // draws them alongside god-mode calm zones.
+      restZones: (world.restZones || []).slice(0, 12).map(z => ({
+        x: z.x,
+        y: z.y,
+        radius: z.radius
       }))
     },
     activeDisaster: world.getActiveDisaster ? world.getActiveDisaster() : null,

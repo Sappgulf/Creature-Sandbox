@@ -158,6 +158,9 @@ export class World {
     this.width = width;
     this.height = height;
     this.t = 0; // Simulation time
+    // Explicit capability flag (see SimulationProxy.isWorker). The main-thread
+    // world is false so renderer/loop tuning can branch without duck-typing.
+    this.isWorker = false;
 
     // Additive seeded RNG: no behavior change unless a seed is provided.
     // Reads options.seed / options.sessionSeed / options.meta.sessionSeed so

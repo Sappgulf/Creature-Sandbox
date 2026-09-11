@@ -243,7 +243,13 @@ export function buildObjectiveRail(playableSnapshot = null, goals = []) {
       prop_triggers: 'Place toys near the herd edge.',
       prop_places: 'Open Props and build near open ground.',
       god_actions: 'Use God Mode for food, calm, or cleanup.',
-      aquatic_alive: 'Keep wetland creatures fed and uncrowded.'
+      aquatic_alive: 'Keep wetland creatures fed and uncrowded.',
+      predator_count: 'Protect the hunters and let them feed.',
+      food_available: 'Keep patches stocked so grazers can recover.',
+      variant_alive: 'Shelter the marked variant away from hazards.',
+      baby_count: 'Feed parents and keep them close to a rest zone.',
+      lineage_generation: 'Let a stable family reach the next generation.',
+      stress_cap: 'Place calm zones beside the stressed group.'
     };
     const phase = resolveFieldGuidePhase({ hasActiveGoal: true });
     return {

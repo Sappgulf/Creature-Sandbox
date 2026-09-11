@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-10 — web-mobile-polish-tranche — Planned
+
+- **Date:** 2026-09-10
+- **Scope:** ui | render | simulation | input | docs
+- **Type:** Planned
+- **Issues:** Adaptive resolution never saw real FPS (the profiler is disabled by default, so the `|| 60` fallback won every frame) and mobile kept a 2.0x backing store under 50-67ms p95 frames. Worker mode posted a full snapshot (creature buffer + cloned food/corpses/props) for every fixed step. Overlay rendering recreated 35 radial orb gradients, a vignette gradient, and a noise pattern per frame. Dialogs missed a Tab trap, Escape closed both drawers and dropped focus return, menus painted "On" badges on non-toggles, drawers had no `aria-controls`, and panels focused their close button first. The in-app Reduced Motion toggle only reached DOM CSS, screen shake/tremble/home background ignored it, and the home background leaked resize listeners. Scenario rest zones were added to `world.restZones` but never drawn, scenario runs never enabled the auto-director (which itself also hard-required watch mode), and scenario openings sat just below the food-sprite zoom threshold. Worker-mode remove emitted no feedback, prop triggers carried no coordinates for moments/director focus, god-mode brush previews did not match real radii, and low-fidelity parity gating could starve scenario snapshots of accumulated dt.
+- **Root Causes:** Runtime systems read the disabled profiler instead of wall-clock frames; per-step worker snapshots were never coalesced; gradients/patterns were recreated inside draw loops; modal semantics were declared in HTML without the matching keyboard lifecycle; reduced motion had two storage keys and a `matchMedia`-only renderer check; `restZones` had no renderer pass; `AutoDirector.canDirect()` required `watchModeEnabled`; fidelity throttling used rendered-frame parity that can stick under synthetic stepping.
+- **Fixes:** Wall-clock FPS window for adaptive resolution/fidelity and HUD telemetry; worker snapshot throttle with immediate first post and trailing coalescing; cached vignette/grain and pre-baked orb sprites; proxy scratch arrays and cached sandbox facade; `isWorker` capability flag; audio/particle glow budgets; rail DOM signature gate; drawer Tab trap, single-drawer Escape, `aria-controls`, toggle-only `aria-pressed`, preferred panel focus, input Escape passthrough, 40px coarse-pointer god tools; unified `accessibility-prefs.js` wired to renderer, particles, tremble, scroll, and home background (with listener cleanup); rest-zone rendering; scenario director grace + auto-director enabling; prop trigger coordinates; remove-tool hit reporting; tuned previews; guided-loop checklist state; Leave Run; scenario hint coverage; Moments in the More menu; undo/redo buttons.
+- **Verification:** Pending full release proof.
+
+### 2026-09-10 — web-mobile-polish-tranche — Implemented
+
+- **Date:** 2026-09-10
+- **Scope:** ui | render | simulation | input | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned, plus: `updateSubsystems` now advances a call-count parity and has a coarse-step escape hatch so synthetic/low-fidelity stepping can never starve scenario/goal updates; `advanceTime` resets the FPS sampling window so automated soaks do not depress adaptive quality; the smoke `selectVisibleCreature` hook falls back to the nearest-to-camera creature.
+- **Verification:** `npm run proof:release` passes end-to-end (unit/regression/E2E suites, lint, build, bundle check, worker + main-thread + forced-worker browser lanes, scenario balance, release evidence). `npm run smoke:menus` passes 34/34 including the new god history buttons and Escape-from-input behavior. Perf before/after from `output/browser-smoke/runtime-readiness.json`: mobile-compact p95 50.9ms → 33.4ms, mobile-large p95 66.7ms → 33.4ms, mobile backing store 780×1688 (2.0x) → 487×1055 (1.25x) as adaptive resolution finally engages; desktop worker snapshot rate ~36/s → ~20/s (731 snapshots / 36.4s) with 0 pending messages and 0 worker errors; scenario balance elapsed now tracks the soak exactly (72.5s for a 75s soak) across all four runs. Bundle: main app 382.41 kB / 111.69 kB gzip, worker 305.65 kB / 90.74 kB gzip under the 312 kB budget. Worker readiness remains `needs-more-proof` on the existing headless desktop pacing threshold; fallback readiness is `fallback-proof`.
+
 ### 2026-09-10 — shortcuts-focus-lifecycle — Planned
 
 - **Date:** 2026-09-10

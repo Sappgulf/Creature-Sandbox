@@ -40,6 +40,14 @@ export class AutoDirector {
     this.enabled = !!enabled;
   }
 
+  /**
+   * Hold off directing for a moment (e.g. the opening seconds of a scenario)
+   * so authored start framing and first player actions are not interrupted.
+   */
+  setGrace(durationMs = 0) {
+    this._graceUntil = performance.now() + Math.max(0, Number(durationMs) || 0);
+  }
+
   clearOverride() {
     gameState.autoDirectorOverrideUntil = 0;
     // Also clear camera permanent override when user explicitly re-enables
@@ -62,12 +70,17 @@ export class AutoDirector {
   }
 
   canDirect() {
-    // First check: is auto-director properly enabled?
-    if (!this.enabled || !gameState.watchModeEnabled || !gameState.autoDirectorEnabled) return false;
+    // Two entry points: classic Watch Mode (which sets autoDirectorEnabled
+    // when toggled) and explicit scenario/director sessions. Requiring watch
+    // mode here made scenario-run direction unreachable.
+    if (!this.enabled || !gameState.autoDirectorEnabled) return false;
     if (!this.camera || !this.world) return false;
 
     // Second check: is camera in follow mode? (follow takes priority)
     if (this.camera.followMode !== 'free') return false;
+
+    // Third check: opening/director grace period.
+    if (performance.now() < (this._graceUntil || 0)) return false;
 
     // Third check: has user taken manual control of camera?
     if (this.camera.canAutoMove && !this.camera.canAutoMove()) return false;

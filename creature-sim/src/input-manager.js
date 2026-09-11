@@ -126,7 +126,20 @@ export class InputManager {
    * Handle keyboard input
    */
   onKeyDown(e) {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+    const target = e.target;
+    const isEditable =
+      target?.tagName === 'INPUT' ||
+      target?.tagName === 'TEXTAREA' ||
+      (target instanceof HTMLElement && target.isContentEditable);
+    if (isEditable) {
+      // Escape must still close the surface that owns the focused field.
+      // Previously the whole handler bailed for inputs, so panels whose first
+      // control is a range/text field (Sound, Features) could not be closed
+      // with Escape at all.
+      if (e.key === 'Escape') {
+        this.handleEscape();
+        e.preventDefault();
+      }
       return;
     }
 
@@ -488,17 +501,24 @@ export class InputManager {
       if (panelId === 'god-mode-panel') {
         this.uiController?.setGodModeActive?.(false, { source: 'escape' });
         gameState.godModeActive = false;
-      }
-      if (panelId === 'session-meta') {
+        panel.classList.add('hidden');
+        panel.setAttribute('aria-hidden', 'true');
+      } else if (panelId === 'session-meta') {
         this.uiController?.setSessionMetaVisible?.(false);
         gameState.sessionMetaVisible = false;
+        panel.classList.add('hidden');
+        panel.setAttribute('aria-hidden', 'true');
+      } else if (panelId === 'moments-panel' && this.uiController?.moments?.closePanel) {
+        // Moments owns its focus restore and the watch-trigger aria state.
+        this.uiController.moments.closePanel();
+      } else if (typeof this.uiController?.setPanelVisibility === 'function') {
+        // Route through the shared lifecycle so the mobile scrim and
+        // `panel-open` body state are recomputed on Escape too.
+        this.uiController.setPanelVisibility(panel, false);
+      } else {
+        panel.classList.add('hidden');
+        panel.setAttribute('aria-hidden', 'true');
       }
-      if (panelId === 'moments-panel') {
-        this.uiController?.moments?.closePanel?.();
-        document.getElementById('watch-moments')?.setAttribute('aria-expanded', 'false');
-      }
-      panel.classList.add('hidden');
-      panel.setAttribute('aria-hidden', 'true');
       if (panelId === 'features-panel') gameState.featuresPanelVisible = false;
       if (panelId === 'scenario-panel') gameState.scenarioPanelVisible = false;
       return;

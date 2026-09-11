@@ -271,7 +271,10 @@ export class RendererPerformanceMonitor {
     // Clamp values to reasonable ranges
     cullDistance = Math.max(500, Math.min(2000, cullDistance));
     this.cullDistance = cullDistance;
-    this.maxRenderedObjects = Math.max(500, Math.min(2000, this.maxRenderedObjects));
+    // Preserve the preset's per-instance creature budget. The old floor of 500
+    // silently invalidated the low/medium presets (100/200) every frame.
+    const presetFloor = RendererConfig.QUALITY_PRESETS[this.currentQuality]?.maxRenderedCreatures ?? 100;
+    this.maxRenderedObjects = Math.max(presetFloor, Math.min(2000, this.maxRenderedObjects));
   }
 
   /**

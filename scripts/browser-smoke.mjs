@@ -378,9 +378,12 @@ async function readGodPanelMetrics(page) {
       return {
         width: Number(buttonRect.width.toFixed(1)),
         height: Number(buttonRect.height.toFixed(1)),
-        tool: button.dataset.godTool
+        tool: button.dataset.godTool || null,
+        action: button.dataset.godAction || null
       };
     });
+    const toolButtons = buttons.filter(button => button.tool);
+    const historyButtons = Array.from(panel.querySelectorAll('[data-god-action]'));
     const groupTitles = Array.from(toolContainer?.querySelectorAll('.god-mode-group-title') || []).map(title =>
       title.textContent.trim()
     );
@@ -390,9 +393,10 @@ async function readGodPanelMetrics(page) {
       height: Number(rect.height.toFixed(1)),
       top: Number(rect.top.toFixed(1)),
       bottom: Number(rect.bottom.toFixed(1)),
-      buttonMinHeight: Number(Math.min(...buttons.map(button => button.height)).toFixed(1)),
-      buttonCount: buttons.length,
-      tools: buttons.map(button => button.tool),
+      buttonMinHeight: Number(Math.min(...toolButtons.map(button => button.height)).toFixed(1)),
+      buttonCount: toolButtons.length,
+      historyCount: historyButtons.length,
+      tools: toolButtons.map(button => button.tool),
       groupTitles
     };
   });
@@ -1506,6 +1510,7 @@ async function runScenario(browser, scenario) {
   const godPanel = await readGodPanelMetrics(page);
   assert.ok(godPanel?.visible, `${scenario.name}: god mode panel should be visible and measurable`);
   assert.equal(godPanel.buttonCount, 10, `${scenario.name}: god mode panel should expose all ten tools and powers`);
+  assert.equal(godPanel.historyCount, 2, `${scenario.name}: god mode panel should expose undo and redo`);
   assert.deepEqual(
     godPanel.groupTitles,
     ['Tools', 'Powers'],

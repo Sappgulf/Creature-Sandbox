@@ -25,6 +25,12 @@ import { MomentsSystem } from './moments-system.js';
 import { ControlStripController } from './control-strip.js';
 import { encodeSeed, getSeedFromUrl, setSeedInUrl } from './seed-utils.js';
 import { touchOnboarding } from './touch-onboarding.js';
+import {
+  resolveReducedMotionPreference,
+  setReducedMotion,
+  isReducedMotion,
+  REDUCED_MOTION_STORAGE_KEY
+} from './accessibility-prefs.js';
 
 // Import new modular systems (via barrels where available)
 import { domCache, InputManager, UIController, GameLoop, ToolController } from './ui/index.js';
@@ -137,10 +143,7 @@ export async function initializeApp() {
     if (localStorage.getItem('creature-sim-high-contrast') === 'true') {
       document.body.classList.add('high-contrast');
     }
-    if (
-      localStorage.getItem('creature-sim-reduced-motion') === 'true' ||
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    ) {
+    if (resolveReducedMotionPreference()) {
       document.body.classList.add('reduced-motion');
     }
   } catch {
@@ -198,9 +201,18 @@ export async function initializeApp() {
         };
       }
 
+      const width = Math.floor(rect.width * dpr);
+      const height = Math.floor(rect.height * dpr);
+      // Resize events can fire in bursts (URL bar, keyboard, orientation).
+      // Reassigning canvas.width/height reallocates the backing store and
+      // clears the frame, so skip identical geometry.
+      const sizeSignature = `${width}x${height}@${dpr}`;
+      if (sizeSignature === canvas._sizeSignature) return;
+      canvas._sizeSignature = sizeSignature;
+
       // Ensure even dimensions to avoid subpixel artifacts
-      canvas.width = Math.floor(rect.width * dpr);
-      canvas.height = Math.floor(rect.height * dpr);
+      canvas.width = width;
+      canvas.height = height;
       ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform before scaling
       ctx.scale(dpr, dpr);
 
@@ -329,12 +341,10 @@ export async function initializeApp() {
 
   // Accessibility: reduced motion toggle (defaults to OS preference)
   errorHandler.safeExecute(() => {
-    const prefersReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
-    const storedPreference = window.localStorage?.getItem('creatureSandboxReducedMotion');
-    const initialReduced = storedPreference ? storedPreference === 'true' : prefersReduced;
+    const initialReduced = resolveReducedMotionPreference();
 
     const applyReducedMotion = enabled => {
-      document.body.classList.toggle('reduced-motion', enabled);
+      setReducedMotion(enabled);
     };
 
     applyReducedMotion(initialReduced);
@@ -343,10 +353,9 @@ export async function initializeApp() {
     if (reducedMotionToggle) {
       reducedMotionToggle.checked = initialReduced;
       reducedMotionToggle.addEventListener('change', () => {
-        const enabled = reducedMotionToggle.checked;
-        applyReducedMotion(enabled);
-        window.localStorage?.setItem('creatureSandboxReducedMotion', String(enabled));
+        applyReducedMotion(reducedMotionToggle.checked);
       });
+      reducedMotionToggle.dataset.storageKey = REDUCED_MOTION_STORAGE_KEY;
     }
 
     // High-contrast toggle
@@ -1553,6 +1562,10 @@ export async function initializeApp() {
   function startHomeBackgroundAnimation(canvas) {
     if (!canvas) return;
 
+    // Restarting the home page (e.g. after a failed Continue) must not stack
+    // loops or leak resize listeners.
+    canvas._homeBgCleanup?.();
+
     const ctx = canvas.getContext('2d');
     const particles = [];
     const stars = [];
@@ -1563,6 +1576,7 @@ export async function initializeApp() {
     function resize() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      if (isReducedMotion()) renderFrame();
     }
     resize();
     window.addEventListener('resize', resize);
@@ -1656,7 +1670,7 @@ export async function initializeApp() {
       ctx.fill();
     }
 
-    function animate() {
+    function renderFrame() {
       const time = performance.now() * 0.001;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -1689,15 +1703,37 @@ export async function initializeApp() {
 
         drawParticle(p);
       }
+    }
+
+    function stopHomeBackground() {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      window.removeEventListener('resize', resize);
+      if (canvas._homeBgCleanup === stopHomeBackground) {
+        canvas._homeBgCleanup = null;
+      }
+    }
+    canvas._homeBgCleanup = stopHomeBackground;
+
+    function animate() {
+      renderFrame();
 
       // Check if home page still visible
       const homePage = domCache.get('homePage');
       if (homePage && !homePage.classList.contains('hidden')) {
         animationId = requestAnimationFrame(animate);
-      } else if (animationId) {
-        cancelAnimationFrame(animationId);
-        animationId = null;
+      } else {
+        stopHomeBackground();
       }
+    }
+
+    // Reduced motion: render one static composition and skip the rAF loop.
+    // The resize handler redraws the static frame when the viewport changes.
+    if (isReducedMotion()) {
+      renderFrame();
+      return;
     }
 
     animate();
@@ -2140,6 +2176,11 @@ export async function initializeApp() {
     gameLoop.lastNow = performance.now();
     gameState.accumulator = 0;
     gameState.paused = previousPaused;
+    // Synthetic stepping is not a real frame-pacing sample: reset the
+    // wall-clock FPS window so automated soaks do not depress adaptive
+    // fidelity/resolution for the rest of the session.
+    gameLoop._fpsAccum = 0;
+    gameLoop._fpsFrames = 0;
 
     return {
       steps,
@@ -2479,7 +2520,27 @@ export async function initializeApp() {
         };
       },
       selectVisibleCreature: () => {
-        const [visible] = getVisibleCreatures(1);
+        let visible = getVisibleCreatures(1)[0];
+        if (!visible) {
+          // Fallback: nearest alive creature to the camera center. Keeps the
+          // smoke hook reliable while the auto-director is mid-pan and the
+          // viewport momentarily contains no creatures.
+          const cx = camera?.x ?? world.width * 0.5;
+          const cy = camera?.y ?? world.height * 0.5;
+          let nearest = null;
+          let best = Infinity;
+          for (const candidate of world.creatures || []) {
+            if (!candidate || candidate.alive === false) continue;
+            const dx = candidate.x - cx;
+            const dy = candidate.y - cy;
+            const distSq = dx * dx + dy * dy;
+            if (distSq < best) {
+              best = distSq;
+              nearest = candidate;
+            }
+          }
+          if (nearest) visible = { id: nearest.id };
+        }
         if (!visible) return { ok: false, reason: 'no-visible-creature' };
         gameState.selectCreature(visible.id);
         const creature = world.registry?.get?.(visible.id) || world.creatures?.find(item => item.id === visible.id);

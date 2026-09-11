@@ -21,10 +21,22 @@ export function applyUiPanelMethods(UIController) {
     }
     if (isVisible) {
       requestAnimationFrame(() => {
-        const firstFocusable = panel.querySelector(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        // Prefer the panel's first real control over its header close button;
+        // landing on "Close" before any content was a keyboard dead end.
+        const selector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+        const focusable = Array.from(panel.querySelectorAll(selector)).filter(
+          el => !el.disabled && el.getAttribute('aria-hidden') !== 'true'
         );
-        if (firstFocusable) firstFocusable.focus();
+        const preferred =
+          panel.querySelector('[data-panel-initial-focus]') ||
+          focusable.find(el => !el.classList.contains('panel-close')) ||
+          focusable[0];
+        if (preferred) {
+          preferred.focus({ preventScroll: true });
+        } else {
+          panel.setAttribute('tabindex', '-1');
+          panel.focus({ preventScroll: true });
+        }
       });
     }
     return isVisible;
@@ -411,19 +423,30 @@ export function applyUiPanelMethods(UIController) {
   };
 
   UIController.prototype.onGeneEditorToggle = async function () {
+    if (this._geneEditorBusy) return;
     const panel = domCache.get('geneEditorPanel') || document.getElementById('gene-editor-panel');
     const shouldShow = panel?.classList.contains('hidden') ?? false;
+    // Show a busy state on the invoking control (the first load is a lazy
+    // chunk fetch); repeated clicks used to race overlapping ensure() calls.
+    const invoker = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    this._geneEditorBusy = true;
+    invoker?.classList?.add('loading');
+    invoker?.setAttribute?.('aria-busy', 'true');
     let editor = null;
-    if (shouldShow) {
-      this.closeMajorPanels('gene-editor-panel');
-      try {
+    try {
+      if (shouldShow) {
+        this.closeMajorPanels('gene-editor-panel');
         editor = await this.geneEditor?.ensure?.();
-      } catch (error) {
-        console.error('Gene editor failed to load:', error);
-        this.notifications?.show?.('Gene editor failed to load', 'error', 3000);
+      } else {
+        editor = await this.geneEditor?.ensure?.();
       }
-    } else {
-      editor = await this.geneEditor?.ensure?.().catch(() => null);
+    } catch (error) {
+      console.error('Gene editor failed to load:', error);
+      this.notifications?.show?.('Gene editor failed to load', 'error', 3000);
+    } finally {
+      this._geneEditorBusy = false;
+      invoker?.classList?.remove('loading');
+      invoker?.removeAttribute?.('aria-busy');
     }
 
     if (editor) {
@@ -452,8 +475,17 @@ export function applyUiPanelMethods(UIController) {
   };
 
   UIController.prototype.onAnalyticsToggle = async function () {
-    const { analyticsDashboard } = await loadEnhancedAnalyticsModule();
-    analyticsDashboard.toggle();
+    if (this._analyticsBusy) return;
+    this._analyticsBusy = true;
+    const invoker = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    invoker?.classList?.add('loading');
+    try {
+      const { analyticsDashboard } = await loadEnhancedAnalyticsModule();
+      analyticsDashboard.toggle();
+    } finally {
+      this._analyticsBusy = false;
+      invoker?.classList?.remove('loading');
+    }
   };
 
   UIController.prototype.onDebugToggle = function () {

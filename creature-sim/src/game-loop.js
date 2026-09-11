@@ -21,6 +21,7 @@ import { lifetimeStats } from './lifetime-stats.js';
 import { RendererConfig } from './renderer-config.js';
 import { geneValue } from './creature-genetics-helpers.js';
 import { getBadges } from './creature-render.js';
+import { isReducedMotion } from './accessibility-prefs.js';
 // STATIC UI IMPORTS - avoids dynamic import() latency in hot path
 import {
   renderStats,
@@ -134,7 +135,8 @@ export class GameLoop {
     this.worldUpdateEvent = {
       time: 0,
       creatureCount: 0,
-      foodCount: 0
+      foodCount: 0,
+      context: { analytics: null, lineageTracker: null }
     };
     this.godModeTimeScale = 1;
 
@@ -175,6 +177,13 @@ export class GameLoop {
     this._watchdogInterval = null;
     this._watchdogMisses = 0;
 
+    // Wall-clock frame pacing. This is the single source of truth for
+    // adaptive resolution/fidelity; it never depends on the profiler being
+    // enabled and never substitutes a healthy default for missing samples.
+    this._fpsAccum = 0;
+    this._fpsFrames = 0;
+    this._measuredFps = 60;
+
     // Profiling report controls
     this.profileReportEnabled = !!configManager.get('performance', 'profiling.enabled', false);
     this.profileReportInterval = Number(configManager.get('performance', 'profiling.sampleRate', 1000)) || 1000;
@@ -211,8 +220,7 @@ export class GameLoop {
     // Accessibility: the reduced-motion preference halves the budget. The old
     // performance.setReducedParticleMode() path mutated the legacy
     // renderer.particles array and never touched this real ParticleSystem.
-    const reducedMotion = typeof document !== 'undefined' && document.body?.classList?.contains('reduced-motion');
-    if (reducedMotion && Number.isFinite(maxParticles)) {
+    if (isReducedMotion() && Number.isFinite(maxParticles)) {
       maxParticles = Math.max(4, Math.floor(maxParticles * 0.5));
     }
 
@@ -585,6 +593,16 @@ export class GameLoop {
       const dt = Math.min(0.05, Math.max(0, rawDt));
       this.lastNow = now;
 
+      // Wall-clock FPS over a rolling ~0.5s window. Clamp the sample so a
+      // return-from-hidden or programmatic advanceTime frame cannot spike it.
+      this._fpsAccum += Math.min(Math.max(rawDt, 0), 0.5);
+      this._fpsFrames++;
+      if (this._fpsAccum >= 0.5) {
+        this._measuredFps = this._fpsFrames / this._fpsAccum;
+        this._fpsAccum = 0;
+        this._fpsFrames = 0;
+      }
+
       // Calculate time scale (pause/speed controls)
       const targetGodScale = gameState.godModeActive ? gameState.godModeTimeScale : 1;
       const blend = Math.min(1, dt * 3);
@@ -630,16 +648,12 @@ export class GameLoop {
 
       // Per-frame updates for systems that want wall-clock cadence
       try {
-        eventSystem.emit(
-          GameEvents.FRAME_UPDATE,
-          {
-            dt,
-            now,
-            worldTime: this.world.t,
-            timeScale: gameState.timeScale
-          },
-          { throwOnError: false }
-        );
+        const frameUpdate = this._frameUpdatePayload || (this._frameUpdatePayload = {});
+        frameUpdate.dt = dt;
+        frameUpdate.now = now;
+        frameUpdate.worldTime = this.world.t;
+        frameUpdate.timeScale = gameState.timeScale;
+        eventSystem.emit(GameEvents.FRAME_UPDATE, frameUpdate, { throwOnError: false });
       } catch {
         // Ignore frame update listener failures to keep loop alive
       }
@@ -659,7 +673,7 @@ export class GameLoop {
       }
 
       // Adaptive simulation fidelity: throttle non-critical systems when FPS drops
-      const avgFps = performanceProfiler.getStats().averages.fps || 60;
+      const avgFps = this._measuredFps || 60;
       // Resolution is the first thing we trade away under load, before we
       // start skipping simulation work the player can actually see.
       renderResolution.notifyFps(avgFps);
@@ -780,10 +794,8 @@ export class GameLoop {
       this.worldUpdateEvent.creatureCount = this.world.creatures.length;
       this.worldUpdateEvent.foodCount = this.world.food.length;
       this.worldUpdateEvent.world = this.world;
-      this.worldUpdateEvent.context = {
-        analytics: this.analytics,
-        lineageTracker: this.lineageTracker
-      };
+      this.worldUpdateEvent.context.analytics = this.analytics;
+      this.worldUpdateEvent.context.lineageTracker = this.lineageTracker;
       eventSystem.emit(GameEvents.WORLD_UPDATE, this.worldUpdateEvent);
     }
 
@@ -916,6 +928,7 @@ export class GameLoop {
     opts.godModeActive = gameState.godModeActive;
     opts.godModeTool = gameState.godModeTool;
     opts.godModePointer = gameState.lastPointerWorld;
+    opts.toolBrushSize = this.tools?.brushSize || 0;
 
     this.renderer.drawWorld(this.world, opts);
 
@@ -962,8 +975,9 @@ export class GameLoop {
       this.particles?.particles?.length || 0
     );
 
-    // Update FPS calculation
-    gameState.fps = 0.9 * gameState.fps + 0.1 * (1 / Math.max(dt, 0.0001));
+    // Update FPS calculation from the wall-clock window (never from a single
+    // clamped dt, which can spike to thousands of FPS on programmatic frames).
+    gameState.fps = this._measuredFps || gameState.fps || 60;
 
     // Render heatmaps (if active)
     if (this.world.heatmaps?.activeType) {
@@ -1132,10 +1146,19 @@ export class GameLoop {
   updateSubsystems(dt) {
     // Achievement system is event-driven; no per-frame update needed.
     const fidelity = this.simulationFidelity;
-    const frame = this.frameCount;
+    // Parity gates must advance with every updateSubsystems call, not with
+    // rendered rAF frames. `frameCount` can stick on one parity when the loop
+    // is driven synchronously (advanceTime smoke stepping) or when rAF is
+    // starved, which silently froze scenario/goal snapshots under throttling.
+    this._subsystemFrame = ((this._subsystemFrame || 0) + 1) >>> 0;
+    const frame = this._subsystemFrame;
+    // A large single step (synthetic advance) must never be swallowed by a
+    // parity gate: otherwise low-fidelity sessions can starve the UI systems
+    // of their accumulated dt indefinitely.
+    const coarseStep = dt >= 0.25;
 
     // Update audio system (skip every other frame when FPS is struggling)
-    if (this.audio && (fidelity >= 0.5 || frame % 2 === 0)) {
+    if (this.audio && (fidelity >= 0.5 || frame % 2 === 0 || coarseStep)) {
       this.audio.update(dt, this.world);
     }
 
@@ -1156,19 +1179,19 @@ export class GameLoop {
     }
 
     // Update session goals tracking
-    if (this.sessionGoals && (fidelity >= 0.5 || frame % 2 === 0)) {
+    if (this.sessionGoals && (fidelity >= 0.5 || frame % 2 === 0 || coarseStep)) {
       this.sessionGoals.update(this.world, dt);
     }
 
-    if (this.playableScenarios && (fidelity >= 0.5 || frame % 2 === 0)) {
+    if (this.playableScenarios && (fidelity >= 0.5 || frame % 2 === 0 || coarseStep)) {
       this.playableScenarios.update(dt);
     }
 
-    if (this.upgradeController && (fidelity >= 0.25 || frame % 4 === 0)) {
+    if (this.upgradeController && (fidelity >= 0.25 || frame % 4 === 0 || coarseStep)) {
       this.upgradeController.update(dt);
     }
 
-    if (this.gameDirector && (fidelity >= 0.25 || frame % 4 === 0)) {
+    if (this.gameDirector && (fidelity >= 0.25 || frame % 4 === 0 || coarseStep)) {
       this.gameDirector.update(dt);
     }
 

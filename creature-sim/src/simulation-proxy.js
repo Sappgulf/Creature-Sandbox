@@ -50,6 +50,9 @@ export class SimulationProxy {
       eventSystem.emit(GameEvents.ERROR_CRITICAL, { message: 'Simulation Worker Crashed: ' + e.message });
     };
     this.isReady = false;
+    // Capability flag: consumers use this to scale work for the worker
+    // runtime (which pays structured-clone costs instead of main-thread cost).
+    this.isWorker = true;
     this._decorations = [];
     this.diagnostics = {
       errorCount: 0,
@@ -64,6 +67,13 @@ export class SimulationProxy {
       lastFoodCount: 0,
       lastError: null
     };
+
+    // Reused filter outputs for the renderer's per-frame frustum queries.
+    // Allocating a fresh array per grid per frame was pure GC churn.
+    this._queryScratch = { creatures: [], food: [], corpses: [] };
+    // Stable fallbacks so getter wrappers can be identity-cached.
+    this._emptyProps = [];
+    this._sandboxFacade = null;
 
     this.worldSnapshot = {
       t: 0,
@@ -123,18 +133,39 @@ export class SimulationProxy {
       creatureManager: {
         creatureGrid: {
           queryRect: (x1, y1, x2, y2) => {
-            return this.worldSnapshot.creatures.filter(c => c.x >= x1 && c.x <= x2 && c.y >= y1 && c.y <= y2);
+            const src = this.worldSnapshot.creatures;
+            const out = this._queryScratch.creatures;
+            out.length = 0;
+            for (let i = 0; i < src.length; i++) {
+              const c = src[i];
+              if (c.x >= x1 && c.x <= x2 && c.y >= y1 && c.y <= y2) out.push(c);
+            }
+            return out;
           }
         }
       },
       foodGrid: {
         queryRect: (x1, y1, x2, y2) => {
-          return this.worldSnapshot.food.filter(f => f.x >= x1 && f.x <= x2 && f.y >= y1 && f.y <= y2);
+          const src = this.worldSnapshot.food;
+          const out = this._queryScratch.food;
+          out.length = 0;
+          for (let i = 0; i < src.length; i++) {
+            const f = src[i];
+            if (f.x >= x1 && f.x <= x2 && f.y >= y1 && f.y <= y2) out.push(f);
+          }
+          return out;
         }
       },
       corpseGrid: {
         queryRect: (x1, y1, x2, y2) => {
-          return this.worldSnapshot.corpses.filter(c => c.x >= x1 && c.x <= x2 && c.y >= y1 && c.y <= y2);
+          const src = this.worldSnapshot.corpses;
+          const out = this._queryScratch.corpses;
+          out.length = 0;
+          for (let i = 0; i < src.length; i++) {
+            const c = src[i];
+            if (c.x >= x1 && c.x <= x2 && c.y >= y1 && c.y <= y2) out.push(c);
+          }
+          return out;
         }
       }
     };
@@ -780,7 +811,11 @@ export class SimulationProxy {
     return this._saveExtras?.nests || [];
   }
   get restZones() {
-    return this._saveExtras?.restZones || [];
+    // Save-extras carry the full list once a save requests it; otherwise fall
+    // back to the per-tick snapshot so the renderer can draw scenario zones.
+    const extras = this._saveExtras?.restZones;
+    if (extras && extras.length) return extras;
+    return this.worldSnapshot.environment?.restZones || [];
   }
   get _nextId() {
     return this._saveExtras?._nextId ?? 1;
@@ -789,19 +824,31 @@ export class SimulationProxy {
     return this._saveExtras?.chaosBaseLevel ?? 0.5;
   }
   get sandbox() {
-    const self = this;
-    const props = this._saveExtras?.sandboxProps || [];
-    return {
-      props,
-      serialize: () => props,
-      addProp: (type, x, y, options) => self.addProp(type, x, y, options),
-      removePropById: id => self.removePropById(id),
-      removeNearestProp: (x, y, radius) => self.removeNearestProp(x, y, radius),
-      clear: () => self.clearProps(),
-      restore: list => self.restoreProps(list),
-      update: () => {},
-      getTypes: () => []
-    };
+    const props = this._saveExtras?.sandboxProps || this._emptyProps;
+    let facade = this._sandboxFacade;
+    if (!facade) {
+      const self = this;
+      facade = {
+        _props: props,
+        props,
+        // Read through the facade so a refreshed snapshot array is visible.
+        serialize: () => facade.props,
+        addProp: (type, x, y, options) => self.addProp(type, x, y, options),
+        removePropById: id => self.removePropById(id),
+        removeNearestProp: (x, y, radius) => self.removeNearestProp(x, y, radius),
+        clear: () => self.clearProps(),
+        restore: list => self.restoreProps(list),
+        update: () => {},
+        getTypes: () => []
+      };
+      this._sandboxFacade = facade;
+    } else if (facade._props !== props) {
+      // Per-tick snapshots replace the array reference; refresh in place
+      // instead of rebuilding ten closures every frame.
+      facade._props = props;
+      facade.props = props;
+    }
+    return facade;
   }
   get disaster() {
     return {
