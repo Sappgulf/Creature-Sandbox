@@ -3496,7 +3496,11 @@ body.mobile-focus-mode #watch-strip {
   inset: 0;
   z-index: var(--z-home);
   display: flex;
+  /* `safe center` centres the menu when it fits and falls back to start when
+     it does not, so the hero is always reachable. The plain `center` line is
+     the fallback for engines without the safe keyword. */
   align-items: center;
+  align-items: safe center;
   justify-content: center;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -3886,6 +3890,71 @@ body.home-active #btn-show-inspector {
     text-align: center;
   }
   .home-separator {
+    display: none;
+  }
+}
+
+/* Short viewports (landscape phones, small laptops): compress the vertical
+   rhythm so the primary actions stay visible without scrolling. */
+@media (max-height: 720px) {
+  .home-content {
+    gap: var(--space-md);
+    padding: var(--space-md);
+  }
+  .home-logo {
+    font-size: 52px;
+  }
+  .home-title {
+    font-size: 34px;
+  }
+  .home-features {
+    margin: var(--space-md) 0;
+  }
+}
+
+@media (max-height: 560px) {
+  .home-page {
+    padding-top: max(12px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  }
+  .home-content {
+    gap: 10px;
+  }
+  .home-logo {
+    display: none;
+  }
+  .home-title {
+    font-size: 28px;
+  }
+  .home-tagline {
+    font-size: 13px;
+  }
+  .home-features {
+    gap: 8px;
+    margin: 0 auto;
+    /* Cap the row width so the 16:9 card art stays short in landscape; at full
+       width each card's art alone was ~132px tall and pushed Start off-screen. */
+    max-width: 620px;
+  }
+  .home-feature {
+    padding: 8px;
+  }
+  .home-feature::before {
+    /* Landscape phones get compact title chips: the 16:9 art cannot shrink
+       without stretching its baked-in frame, and Start must stay above the
+       fold. */
+    display: none;
+  }
+  .home-feature h3 {
+    font-size: 10px;
+  }
+  .home-feature p {
+    display: none;
+  }
+  .home-btn {
+    padding: 10px 14px;
+  }
+  .home-footer {
     display: none;
   }
 }

@@ -499,6 +499,9 @@ export class PlayableScenarios {
     // grace keeps the authored opening framing stable before cinematics begin.
     gameState.autoDirectorEnabled = true;
     this.autoDirector?.setGrace?.(3000);
+    // Story mode uses slower, more cinematic pans on dramatic events; scenario
+    // runs are the authored place for that language.
+    if (this.autoDirector) this.autoDirector.storyMode = true;
 
     if (this.sessionGoals) {
       this.sessionGoals.setGoals?.(this._scenarioGoals(scenario), { announce: false });
@@ -610,6 +613,7 @@ export class PlayableScenarios {
     gameState.sessionMetaVisible = true;
     gameState.autoDirectorEnabled = true;
     this.autoDirector?.setGrace?.(2000);
+    if (this.autoDirector) this.autoDirector.storyMode = true;
 
     if (this.sessionGoals) {
       this.sessionGoals.setGoals?.(this._scenarioGoals(scenario), { announce: false });
@@ -944,6 +948,7 @@ export class PlayableScenarios {
     // "active" with a frozen progress bar until another scenario was started.
     this.activeRun = null;
     gameState.autoDirectorEnabled = false;
+    if (this.autoDirector) this.autoDirector.storyMode = false;
     this.sessionGoals?.resetForNewSession?.({ refreshGoals: true });
     this.lastSnapshot = this._buildSnapshot();
     this._emitUpdate();
@@ -959,6 +964,7 @@ export class PlayableScenarios {
     this.activeRun.state = 'abandoned';
     this.activeRun = null;
     gameState.autoDirectorEnabled = false;
+    if (this.autoDirector) this.autoDirector.storyMode = false;
     this.sessionGoals?.resetForNewSession?.({ refreshGoals: true });
     if (!silent) {
       this.notifications?.show?.(`Left ${scenario?.name || 'scenario'} run`, 'info', 2000);

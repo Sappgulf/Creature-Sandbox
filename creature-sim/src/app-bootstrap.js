@@ -31,6 +31,8 @@ import {
   isReducedMotion,
   REDUCED_MOTION_STORAGE_KEY
 } from './accessibility-prefs.js';
+import { buildAccessibilitySummary } from './accessibility-summary.js';
+import { buildBrowserProfileSnapshot } from './player-profile.js';
 
 // Import new modular systems (via barrels where available)
 import { domCache, InputManager, UIController, GameLoop, ToolController } from './ui/index.js';
@@ -371,6 +373,21 @@ export async function initializeApp() {
         } catch {
           // Ignore
         }
+      });
+    }
+
+    // Screen-reader summary toggle. When enabled, a compact ecosystem
+    // narration is announced on a slow cadence and on demand.
+    const a11ySummaryToggle = document.getElementById('toggle-a11y-summary');
+    if (a11ySummaryToggle) {
+      a11ySummaryToggle.checked = readA11ySummaryPreference();
+      a11ySummaryToggle.addEventListener('change', () => {
+        try {
+          localStorage.setItem('creature-sim-a11y-summary', String(a11ySummaryToggle.checked));
+        } catch {
+          // Ignore
+        }
+        if (a11ySummaryToggle.checked) announceAccessibilitySummary(true);
       });
     }
 
@@ -949,6 +966,18 @@ export async function initializeApp() {
     });
   }
 
+  // Screen-reader narration cadence. The summary builder is a no-op unless the
+  // player opted in, and identical summaries are never re-announced.
+  {
+    let lastA11ySummaryAt = 0;
+    eventSystem.on(GameEvents.FRAME_UPDATE, data => {
+      const now = Number(data?.now) || performance.now();
+      if (now - lastA11ySummaryAt < 30000) return;
+      lastA11ySummaryAt = now;
+      announceAccessibilitySummary(false);
+    });
+  }
+
   if (!USE_SIM_WORKER) {
     renderer.performance?.setQualityOverride?.(startupProfile.mobile ? 'low' : 'medium');
   }
@@ -1423,6 +1452,8 @@ export async function initializeApp() {
     // Show home page
     errorHandler.safeExecute(() => {
       setElementHidden(homePage, false);
+      // Returning to the title should always start at the top of the menu.
+      if (homePage) homePage.scrollTop = 0;
 
       // Show continue button if save exists
       if (saveSystem && saveSystem.hasAutoSave()) {
@@ -2014,6 +2045,45 @@ export async function initializeApp() {
       }));
   };
 
+  /**
+   * Build a plain-text summary of the live world for screen readers and
+   * automation. Deliberately read-only: it never mutates simulation state.
+   */
+  function buildCurrentAccessibilitySummary(focusCreatureArg = undefined) {
+    const creature = focusCreatureArg === undefined ? getFocusCreature() : focusCreatureArg;
+    return buildAccessibilitySummary({
+      world,
+      gameState,
+      camera,
+      focusCreature: creature,
+      focusPresentation: creature ? (upgradeController?.getCreaturePresentation?.(creature) ?? null) : null,
+      playableSnapshot: playableScenarios?.getSnapshot?.() ?? null,
+      directorSnapshot: gameDirector?.getSnapshot?.() ?? null,
+      momentsSnapshot: { latest: moments?.moments?.[0] ?? null },
+      profileSnapshot: buildBrowserProfileSnapshot()
+    });
+  }
+
+  function readA11ySummaryPreference() {
+    try {
+      return localStorage.getItem('creature-sim-a11y-summary') === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  let _lastA11ySummaryText = '';
+
+  function announceAccessibilitySummary(force = false) {
+    if (!force && !readA11ySummaryPreference()) return false;
+    const summary = buildCurrentAccessibilitySummary();
+    if (!summary?.text) return false;
+    if (!force && summary.text === _lastA11ySummaryText) return false;
+    _lastA11ySummaryText = summary.text;
+    notifications?.announceNarrative?.(summary.text, 'info');
+    return true;
+  }
+
   const renderGameToText = () => {
     const focusCreature = getFocusCreature();
     const homePage = domCache.get('homePage') || document.getElementById('home-page');
@@ -2135,9 +2205,13 @@ export async function initializeApp() {
       director: gameDirector?.getSnapshot?.() ?? null,
       visibleCreatures: getVisibleCreatures(),
       visibleFood: getVisibleFood(),
-      upgrades: upgradeController?.getSnapshot?.() ?? null
+      upgrades: upgradeController?.getSnapshot?.() ?? null,
+      accessibilitySummary: buildCurrentAccessibilitySummary(focusCreature),
+      profile: buildBrowserProfileSnapshot()
     });
   };
+
+  let advanceCallCount = 0;
 
   const advanceTime = (ms = 16) => {
     const requestedMs = Number(ms);
@@ -2145,6 +2219,7 @@ export async function initializeApp() {
     const fixedStepMs = Math.max(1, Math.round((gameLoop.fixedDt || 1 / 60) * 1000));
     const steps = Math.max(1, Math.round(safeMs / fixedStepMs));
     const previousPaused = gameState.paused;
+    advanceCallCount += 1;
 
     gameState.paused = true;
 
@@ -2574,6 +2649,9 @@ export async function initializeApp() {
         return snapshot;
       },
       directorState: () => gameDirector?.getSnapshot?.() ?? null,
+      accessibilitySummary: () => buildCurrentAccessibilitySummary(),
+      profileState: () => buildBrowserProfileSnapshot(),
+      announceAccessibilitySummary: (force = true) => announceAccessibilitySummary(force),
       setGodTool: (tool = 'food') => {
         godToolSystem?.setTool?.(tool, { source: 'smoke', announce: false });
         if (!godToolSystem) {
@@ -2797,6 +2875,14 @@ export async function initializeApp() {
           rendered,
           culled,
           totalObjects,
+          // Frame-pacing provenance for realtime tooling: distinguishes
+          // animation-frame runs from deterministic advanceTime soaks.
+          timing: {
+            mode: 'animation-frame',
+            advanceCalls: advanceCallCount,
+            sampledFps: Number((gameLoop?._measuredFps ?? 0).toFixed(1)),
+            frameTimeMs: Number((1000 / Math.max(1, gameLoop?._measuredFps || 60)).toFixed(2))
+          },
           renderer: {
             rendered: Number(rendererStats.rendered ?? rendered) || 0,
             culled: Number(rendererStats.culled ?? culled) || 0,

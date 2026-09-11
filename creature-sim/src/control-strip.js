@@ -5,6 +5,7 @@
 import { gameState, SPEED_OPTIONS, SPEED_LABELS } from './game-state.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { batteryManager } from './battery-manager.js';
+import { buildBrowserProfileSnapshot } from './player-profile.js';
 
 const SPAWN_GLYPHS = {
   herbivore: 'i-herbivore',
@@ -795,6 +796,11 @@ export class ControlStripController {
       return;
     }
 
+    if (action === 'download-profile') {
+      this.downloadProfileSnapshot();
+      return;
+    }
+
     // Direct controller actions
     switch (action) {
       case 'step':
@@ -942,6 +948,31 @@ export class ControlStripController {
       this.uiController?.notifications?.show?.('Share seed copied', 'success', 1400);
     } catch {
       this.uiController?.notifications?.show?.('Share URL ready in the address bar', 'info', 1800);
+    }
+  }
+
+  /**
+   * Download a machine-readable snapshot of browser-local profile state
+   * (accessibility and mobile preferences, progress caches, save inventory).
+   * World saves stay separate — this is the diagnostic/backup companion.
+   */
+  downloadProfileSnapshot() {
+    try {
+      const snapshot = buildBrowserProfileSnapshot();
+      const payload = { exportedAt: new Date().toISOString(), ...snapshot };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `creature-sandbox-profile-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      this.uiController?.notifications?.show?.('Profile downloaded', 'success', 1800);
+    } catch (error) {
+      console.warn('Profile export failed:', error);
+      this.uiController?.notifications?.show?.('Profile export failed', 'error', 2200);
     }
   }
 

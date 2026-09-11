@@ -100,6 +100,7 @@ npm run smoke:main          # explicit main-thread fallback proof
 npm run smoke:worker
 npm run smoke:scenarios
 npm run smoke:scenarios:variance
+npm run smoke:realtime     # opt-in real animation-frame + service-worker offline lane
 npm run smoke:production    # against live Vercel alias
 npm run proof:release
 npm run evidence:release

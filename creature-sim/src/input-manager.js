@@ -240,6 +240,12 @@ export class InputManager {
 
     switch (e.key.toLowerCase()) {
       case ' ':
+        // Never hijack Space from a focused control. On the start menu this is
+        // how keyboard players activate "Guided Run" / "New Sandbox"; the
+        // global pause shortcut applies only when the canvas/body has focus.
+        if (e.target?.closest?.('button, [role="button"], a[href], [contenteditable="true"]')) {
+          return;
+        }
         if (gameState.togglePause()) {
           eventSystem.emit('game:paused', { reason: 'keyboard' });
         } else {

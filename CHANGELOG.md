@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-10 — start-menu-and-branch-consolidation — Planned
+
+- **Date:** 2026-09-10
+- **Scope:** ui | render | input | docs | devops
+- **Type:** Planned
+- **Issues:** The only branch with unique commits (`codex/creature-polish-1-7`, 102 commits behind) held two orphan modules and a realtime smoke lane that never landed, while 30+ fully-merged stale branches cluttered the remote. The start menu hijacked Space from focused buttons so keyboard players could not start the game with Space; short viewports used centred flex overflow so the hero top could be unreachable; landscape phones pushed both primary CTAs below the fold; and the feature-card art could not shrink without stretching its baked-in sprite frame.
+- **Root Causes:** The global Space pause hotkey ran before native button activation; `align-items: center` on an overflowing scroll container clips the top; no viewport-height media queries existed; the sprite sheet maps 16:9 art by stretching; the branch predated the worker/save/scenario rework so its edits were superseded except for four standalone files.
+- **Fixes:** Port `player-profile.js` and `accessibility-summary.js` plus their unit tests; wire a Screen Reader Summary toggle and slow-cadence announcer, expose the summary and profile snapshot through the smoke/text state, and add a Download Profile action; add frame-pacing provenance (`timing`) to `perfBudget`; enable AutoDirector story mode for scenario pans; remove the dead `window.godModeEffects` layer; give the start menu `safe center` fallback, height-based compression, landscape feature chips, scroll reset, and Space passthrough for controls; port the realtime animation-frame + service-worker offline smoke as `npm run smoke:realtime`; close and delete fully-merged stale branches.
+- **Verification:** Pending full release proof.
+
+### 2026-09-10 — start-menu-and-branch-consolidation — Implemented
+
+- **Date:** 2026-09-10
+- **Scope:** ui | render | input | docs | devops
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npx eslint creature-sim/src scripts` clean; `npm test` green including the new accessibility-summary and profile-snapshot unit tests; `npm run smoke:realtime` passes end-to-end (animation-frame avg 23.4 fps, worst frame 45.5 ms, service-worker install + online/offline shell reload); start-menu audit at desktop/mobile/short/landscape keeps both CTAs visible without scrolling and Space activates focused buttons while still pausing from the canvas. Full `npm run proof:release` pending.
+
 ### 2026-09-10 — web-mobile-polish-tranche — Planned
 
 - **Date:** 2026-09-10

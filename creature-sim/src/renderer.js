@@ -438,9 +438,6 @@ export class Renderer {
       drawGrainOverlay(this, ctx);
     }
 
-    // Draw god mode effects
-    this._drawGodModeEffects();
-
     // Draw mini-map overlay (bottom-right corner)
     if (this.enableMiniMap) {
       this.drawMiniMap(world, opts);
@@ -495,38 +492,9 @@ export class Renderer {
   }
 
   _drawGodModeEffects() {
-    if (!window.godModeEffects || window.godModeEffects.length === 0) return;
-
-    const ctx = this.ctx;
-    const now = performance.now();
-
-    // Update and draw effects
-    for (let i = window.godModeEffects.length - 1; i >= 0; i--) {
-      const effect = window.godModeEffects[i];
-      const age = (now - effect.createdAt) / 1000; // seconds
-      effect.life = 1 - age / 1.5; // 1.5 second duration
-
-      if (effect.life <= 0) {
-        window.godModeEffects.splice(i, 1);
-        continue;
-      }
-
-      ctx.save();
-      ctx.globalAlpha = effect.life;
-      ctx.font = `${32 * (1 + (1 - effect.life) * 0.5)}px Arial`; // Grow as it fades
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      // Float upward
-      const floatOffset = (1 - effect.life) * 30;
-
-      // Draw emoji with glow
-      ctx.shadowColor = effect.color;
-      ctx.shadowBlur = 20;
-      ctx.fillText(effect.emoji, effect.x, effect.y - floatOffset);
-
-      ctx.restore();
-    }
+    // Retired: it read a `window.godModeEffects` array that no subsystem ever
+    // wrote. God-tool feedback now lives in the particle system, notifications,
+    // and ToolController juice. Method kept as a no-op for embed compatibility.
   }
 
   drawTravelIndicator(segment, { preview = false } = {}) {
