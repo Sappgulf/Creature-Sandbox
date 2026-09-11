@@ -2060,8 +2060,20 @@ export async function initializeApp() {
       playableSnapshot: playableScenarios?.getSnapshot?.() ?? null,
       directorSnapshot: gameDirector?.getSnapshot?.() ?? null,
       momentsSnapshot: { latest: moments?.moments?.[0] ?? null },
-      profileSnapshot: buildBrowserProfileSnapshot()
+      profileSnapshot: getProfileSnapshot()
     });
+  }
+
+  // Profile snapshots JSON.parse several localStorage entries, so cache them
+  // briefly. Text-state polling during startup measurements would otherwise
+  // re-parse the same caches on every call.
+  let _profileSnapshotCache = { at: -Infinity, value: null };
+  function getProfileSnapshot() {
+    const now = performance.now();
+    if (_profileSnapshotCache.value === null || now - _profileSnapshotCache.at > 2000) {
+      _profileSnapshotCache = { at: now, value: buildBrowserProfileSnapshot() };
+    }
+    return _profileSnapshotCache.value;
   }
 
   function readA11ySummaryPreference() {
@@ -2207,7 +2219,7 @@ export async function initializeApp() {
       visibleFood: getVisibleFood(),
       upgrades: upgradeController?.getSnapshot?.() ?? null,
       accessibilitySummary: buildCurrentAccessibilitySummary(focusCreature),
-      profile: buildBrowserProfileSnapshot()
+      profile: getProfileSnapshot()
     });
   };
 
