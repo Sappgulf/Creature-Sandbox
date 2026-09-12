@@ -26,6 +26,46 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-12 — presentation-fidelity-and-perf — Planned
+
+- **Date:** 2026-09-12
+- **Scope:** render | ui | input | docs
+- **Type:** Planned
+- **Issues:** Rarity/status FX (elemental, bioluminescent, albino, melanic, disease, venom) only reached worker snapshots; the main-thread fallback showed none at normal play zoom because the detailed renderer only runs past the vector LOD. Health bars and lineage crowns were likewise invisible at default zoom, and naively extending crowns showed one on every seeded creature. Damage hit-flash fed the sprite-tint cache key, so combat rebuilt a creature's sprite cache bucket-by-bucket. The tinted-sprite LRU (128) was smaller than the live hue/type/size variant space, causing visible sprite/vector popping. `VisualEffects` allocated two arrays per frame via `filter()` even when empty and had no cap. Particles had a dead `_createParticle`, an emitted `territory` marker with no draw case, and an O(n) `splice` trim. The mobile long-press timer was a single handle that multi-touch overwrote and leaked. Weather particles animated under reduced motion. `renderer-performance` carried dead culling/LOD/pool APIs, wrote `enableShadows`/`enableHeatmap` that nothing reads, and ran dead `cullDistance` drift every frame. The Sensory Types toggle had no consumer, `#stats:hover` could never fire (`pointer-events:none`), and SimProxy logged every snapshot at 1% random plus every population change.
+- **Root Causes:** Presentation FX split across two render paths with different zoom gates; transient combat state included in stable cache keys; caches sized below their working set; dead refactors left in place; a single shared timer slot for a multi-touch device.
+- **Fixes:** Derive mutation/status bits from main-thread creature objects inside the worker-FX path and run it for main-thread creatures under sprite LOD; draw health bars for damaged creatures at sprite LOD; crown only roots with known children; exclude hit flash from the sprite tint key; adaptive tinted-sprite LRU (384 desktop / 192 compact) and five prewarm hues; in-place VisualEffects compaction with effect/ripple caps; remove dead particle API, draw territory markers, use `copyWithin` trim; per-touch long-press timer map with pinch cancellation and focus return/trap for the prop picker; skip weather emission under reduced motion; delete dead renderer-performance APIs and per-frame drift; wire `drawSensoryViz`; drop the dead `#stats:hover` rule; gate SimProxy snapshot logs behind `renderDebug`.
+- **Verification:** Pending full release proof.
+
+### 2026-09-12 — presentation-fidelity-and-perf — Implemented
+
+- **Date:** 2026-09-12
+- **Scope:** render | ui | input | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npm run lint` clean; `npm test` green across unit/regression/reboot/presentation/scenario/E2E/save-migration suites; `npm run build` + `npm run check:bundle` under budget (main app 401.45 kB / 117.39 kB gzip, worker 307.38 kB / 91.34 kB gzip). `npm run smoke:browser` (worker desktop/mobile; mobile p95 33.4–34.2 ms), `npm run smoke:main` (fallback-proof), and `npm run smoke:menus` remain green. Screenshot review of `output/browser-smoke/desktop-clean.png` and `mobile-large-clean.png` confirmed crowns no longer appear on seeded creatures and the field stays readable.
+
+### 2026-09-12 — deep-defect-sweep — Planned
+
+- **Date:** 2026-09-12
+- **Scope:** render | ui | simulation | input | docs
+- **Type:** Planned
+- **Issues:** A dual code audit found shipped features that were silently dead or misrendered. Visual effects (birth/death/mating/hit/god-power) were drawn after the camera transform was popped, so they appeared at raw world coordinates (usually off-screen) and `world.visualEffects` was never assigned. Camera viewport was only updated through the dev-only `window.camera`, so resize/rotation left culling and centring stale. The creature render list aliased `SpatialGrid.tempResults`, which per-creature fear/pack queries then overwrote mid-iteration (skipped/duplicated creatures). Heatmaps were unreachable from the UI, never recorded data, and decayed ~112k cells per frame for nothing. Adaptive-fidelity gates (`fidelity >= 0.5 || frame % 2 === 0`) were always true, so nothing throttled. Minimap/mini-graphs used `devicePixelRatio` while the backing store used adaptive scale, and the challenge overlay double-applied the pixel ratio with an unguarded `roundRect`. Menus: Single Step only paused; overflow-menu Save/Load bypassed the canonical path and dropped scenario/goals/moments/lineage metadata; Inspector export buttons no-op'd (no analytics subsystem); analytics charts used a nonexistent `#inspector-panel` selector and `world.chartCtx`; the lineage tree never left "Computing..."; Ecosystem Health read `world.ecoHealth` (never assigned) and its model advanced at 1/30 speed; feature toggles for Emotions/Sensory/Intelligence/Mating and Mini-Graphs had no listeners; `ui:toast` had no listener; watch speed desynced at 4×; god Undo/Redo buttons never refreshed; panel collapse arrows did nothing; Replay/Insights/Lineage Album were cached shells with no owning system; Scenario Editor had a dead `#scenario-editor-toggle` lookup; save migration laundered unknown versions to 3.0, skipped 2.1–2.4, and never moved flat v1 arrays into `world`.
+- **Root Causes:** Effect/particle draw order split across modules; camera update routed through a dev export; shared scratch arrays reused by re-entrant queries; UI wired against IDs that no longer exist; subsystems never instantiated or passed to their panels; boolean gate expressions that short-circuit to always-true; save-migration returning success on unknown versions.
+- **Fixes:** Draw `visualEffects` inside the renderer camera transform and attach it to `world`; `camera.setViewport` on every canvas resize plus an initial sync; dedicated render-list copy and per-call spatial scratch arrays; heatmap radio wiring, birth/death recording, 1 Hz activity/energy sampling, and an early-out decay guard; tiered `_fidelityDue` throttle helper; canvas-derived backing-scale for minimap/mini-graphs/grain and a device-space reset + `roundRect` fallback for the challenge overlay; canonical Save/Load for the overflow menu (including unsupported-save messaging); analytics passthrough for Inspector exports; real chart contexts and visibility gates; eco-health instance wiring and sim-time advancement; feature + mini-graph bindings and a working Features Reset; `ui:toast` bridge; 4× watch speed sync; `tools:history-changed` bridge; panel-header collapse; instantiate/update/subscribe Replay and Insights and pass all three lazy panels their real systems; Scenario Editor menu entry; strict save-version support (no laundering, 2.1–2.4 and flat v1 handled); Insights population history sampled at 1 Hz so its 60-sample window covers a minute instead of a second; lineage root/generation caches no longer persist results computed while worker snapshots omitted `parentId`.
+- **Verification:** Pending full release proof.
+
+### 2026-09-12 — deep-defect-sweep — Implemented
+
+- **Date:** 2026-09-12
+- **Scope:** render | ui | simulation | input | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npm run lint` clean; `npm test` green (unit, regression, reboot, presentation, scenario contract, E2E, save-migration); `npm run build` + `npm run check:bundle` under budget (main app 400.55 kB / 117.22 kB gzip, worker 307.24 kB / 91.25 kB gzip). `npm run smoke:browser` (worker desktop/mobile-compact/mobile-large; mobile p95 33.4 ms, no pacing regression), `npm run smoke:worker`, `npm run smoke:main` (fallback-proof), and `npm run smoke:menus` 36/36 all pass. A dedicated Playwright probe verified in the shipping worker runtime: camera viewport tracks a 1280→900 resize, Single Step advances world time while paused (0 → 0.02), Replay lists captured snapshots, Insights and Lineage Album render real content, Ecosystem Health computes a live score (81), analytics charts paint, god Undo enables after an action, Emotions toggles change renderer state, heatmap radios activate, Features Reset restores defaults, and the Scenario Editor opens from the More menu. Save-migration unit tests now cover flat v1 payload loading and assert unsupported future versions are rejected instead of laundered.
+
 ### 2026-09-10 — start-menu-and-branch-consolidation — Planned
 
 - **Date:** 2026-09-10

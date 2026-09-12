@@ -62,6 +62,9 @@ export class HeatmapSystem {
 
   // Update heatmaps (apply decay)
   update(dt) {
+    // Nothing to decay when no heatmap overlay is active; the grid can be
+    // tens of thousands of cells, so skip the full sweep in normal play.
+    if (!this.activeType) return;
     const decay = Math.pow(this.decayRate, dt);
 
     for (let row = 0; row < this.rows; row++) {

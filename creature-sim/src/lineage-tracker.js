@@ -144,15 +144,23 @@ export class LineageTracker {
     let current = world.getAnyCreatureById(id);
     let last = current;
     const path = [id]; // Track path to cache all intermediate nodes
+    // Worker snapshots omit `parentId` until the WORLD_EXTRAS merge. Caching a
+    // root derived from missing data locked lineages to the wrong founder even
+    // after the real ancestry arrived.
+    const dataComplete = !!current && current.parentId !== undefined;
+    const cachePath = rootId => {
+      if (!dataComplete) return;
+      for (const nodeId of path) {
+        this.rootCache.set(nodeId, rootId);
+      }
+    };
 
     while (current && current.parentId) {
       // Check if we've already cached the parent's root
       if (this.rootCache.has(current.parentId)) {
         const rootId = this.rootCache.get(current.parentId);
         // Cache all nodes in path
-        for (const nodeId of path) {
-          this.rootCache.set(nodeId, rootId);
-        }
+        cachePath(rootId);
         return rootId;
       }
 
@@ -163,18 +171,14 @@ export class LineageTracker {
       if (!current.parentId) {
         const rootId = current.id;
         // Cache all nodes in path
-        for (const nodeId of path) {
-          this.rootCache.set(nodeId, rootId);
-        }
+        cachePath(rootId);
         return rootId;
       }
     }
 
     const rootId = last?.id ?? id;
     // Cache all nodes in path
-    for (const nodeId of path) {
-      this.rootCache.set(nodeId, rootId);
-    }
+    cachePath(rootId);
     return rootId;
   }
 
@@ -187,6 +191,10 @@ export class LineageTracker {
     let depth = 0;
     let node = world.getAnyCreatureById(id);
     const path = [id];
+    // Missing `parentId` (worker snapshot before the extras merge) must not be
+    // cached as generation 0: the scenario goals and objective cards would
+    // never recover once the real ancestry arrived.
+    const dataComplete = !!node && node.parentId !== undefined;
 
     while (node && node.parentId) {
       // Check if parent's generation is cached
@@ -201,6 +209,10 @@ export class LineageTracker {
         depth++;
         break;
       }
+    }
+
+    if (!dataComplete) {
+      return depth;
     }
 
     // Cache generation for all nodes in path (backfill)

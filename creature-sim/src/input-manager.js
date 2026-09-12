@@ -397,7 +397,9 @@ export class InputManager {
 
       case '`':
       case '~':
+        // Open the in-game debug console (the help dialog documents this key).
         e.preventDefault();
+        this.uiController?.onDebugToggle?.();
         break;
 
       case 'f8':

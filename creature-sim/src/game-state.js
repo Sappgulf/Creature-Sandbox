@@ -252,22 +252,22 @@ export class GameState {
    * Update watch mode speed setting
    */
   cycleWatchSpeed() {
-    const speeds = [0.5, 1, 2];
+    const speeds = [0.5, 1, 2, 4];
     this.watchSpeedIndex = (this.watchSpeedIndex + 1) % speeds.length;
     this.fastForward = speeds[this.watchSpeedIndex];
   }
 
   setWatchSpeed(value = 1) {
-    const speeds = [0.5, 1, 2];
+    const speeds = [0.5, 1, 2, 4];
     const idx = speeds.indexOf(value);
     this.watchSpeedIndex = idx >= 0 ? idx : 1;
     this.fastForward = speeds[this.watchSpeedIndex];
   }
 
   getWatchSpeedInfo() {
-    const speeds = [0.5, 1, 2];
-    const labels = ['0.5×', '1×', '2×'];
-    const emoji = ['🐢', '⏯️', '⚡'];
+    const speeds = [0.5, 1, 2, 4];
+    const labels = ['0.5×', '1×', '2×', '4×'];
+    const emoji = ['🐢', '⏯️', '⚡', '⚡⚡'];
     return {
       speed: speeds[this.watchSpeedIndex],
       label: labels[this.watchSpeedIndex],

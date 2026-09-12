@@ -66,6 +66,13 @@ const BASE_SPRITE_CACHE_SIZE = 64;
 // creatures are not held in memory by this cache.
 const _dayAuraGradientCache = new WeakMap();
 
+// Scratch arrays for per-creature spatial queries. Without these, the calls
+// below reuse SpatialGrid.tempResults — the very array the renderer iterates
+// as its visible-creature list, which rewrote the list mid-frame and skipped
+// or duplicated creatures.
+const _fearQueryScratch = [];
+const _packQueryScratch = [];
+
 function quantizeHue(value, step = 24) {
   const hue = Number(value);
   if (!Number.isFinite(hue)) return 0;
@@ -582,7 +589,7 @@ export function drawCreature(creature, ctx, opts = {}) {
       if (opts.world?.creatureManager && zoom > 0.4) {
         const nearbyRadius = 60 + fear * 30;
         const nearby = opts.world.creatureManager
-          .queryCreaturesFast(creature.x, creature.y, nearbyRadius)
+          .queryCreaturesFast(creature.x, creature.y, nearbyRadius, _fearQueryScratch)
           .filter(c => c !== creature && c.alive && c.emotions);
         for (const other of nearby) {
           const dist = Math.sqrt((other.x - creature.x) ** 2 + (other.y - creature.y) ** 2);
@@ -612,7 +619,11 @@ export function drawCreature(creature, ctx, opts = {}) {
   const assetType = getCreatureAssetKey(creature);
 
   const spriteHue = quantizeHue(displayHue);
-  const spriteLightness = quantizeLightness(lightness);
+  // Exclude the transient hit flash from the sprite tint. Including it made
+  // combat rebuild the creature's sprite cache bucket-by-bucket for every
+  // flash step; the damage ring at the top of this function still reads the
+  // hit, and the flash overlay is separate.
+  const spriteLightness = quantizeLightness(Math.min(85, baseLight - stressTint * 6 + calmBoost + dayNightAdjust));
   const colorStr = colorCache.cssHsl(spriteHue, 85, spriteLightness);
 
   if (assetLoader.isReady() && (creature._cachedColor !== colorStr || creature._cachedAssetType !== assetType)) {
@@ -1377,7 +1388,7 @@ export function drawCreature(creature, ctx, opts = {}) {
 
       if (opts.world?.creatureManager) {
         const packMembers = opts.world.creatureManager
-          .queryCreaturesFast(creature.x, creature.y, 150)
+          .queryCreaturesFast(creature.x, creature.y, 150, _packQueryScratch)
           .filter(
             c =>
               c !== creature &&

@@ -104,6 +104,12 @@ export class LineageAlbumController {
         const entry = rootCounts.get(root);
         entry.total += 1;
         if (c.alive !== false) entry.alive += 1;
+        // Track the newest birth in the family; the old formula
+        // `world.t - (world.t - total)` was just `total`.
+        const age = Number(c.age);
+        const bornAt =
+          Number.isFinite(age) && Number.isFinite(Number(world.t)) ? Number(world.t) - age : Number(world.t) || 0;
+        if (bornAt > entry.recentActivity) entry.recentActivity = bornAt;
         try {
           const gen = tracker.generation(world, c.id);
           if (gen > entry.peakGen) entry.peakGen = gen;
@@ -124,7 +130,7 @@ export class LineageAlbumController {
         peak: entry.peakGen,
         isHero: heroGens >= 5,
         heroGens,
-        recentActivity: world.t - (Number(world.t) - entry.total)
+        recentActivity: entry.recentActivity
       };
     });
   }

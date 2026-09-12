@@ -4,6 +4,8 @@ import { getCurrentSaveVersion, migrateSaveData } from '../creature-sim/src/save
 import { SimulationProxy } from '../creature-sim/src/simulation-proxy.js';
 import { packCreature, createCreatureBuffer } from '../creature-sim/src/simulation-state.js';
 import { SaveSystem } from '../creature-sim/src/save-system.js';
+import { World, Creature, makeGenes, BiomeGenerator } from '../creature-sim/src/core/index.js';
+import { Camera } from '../creature-sim/src/camera.js';
 
 const CURRENT = getCurrentSaveVersion();
 assert.equal(CURRENT, '3.0', 'CURRENT_SAVE_VERSION should be 3.0');
@@ -17,22 +19,15 @@ assert.equal(CURRENT, '3.0', 'CURRENT_SAVE_VERSION should be 3.0');
   assert.deepEqual(result.path, ['2.0 -> 2.5', '2.5 -> 3.0'], '2.0 input should walk 2.0 -> 2.5 -> 3.0');
 }
 
-// Unknown version: documents current behavior.
-// Ideal behavior would be to NOT launder an unknown version stamp to CURRENT.
-// Current implementation (save-migration.js) breaks out of the migration loop
-// but then unconditionally stamps data.version = CURRENT_SAVE_VERSION, so an
-// unknown version IS laundered to CURRENT with migrated=false and an empty path.
-// This test pins that behavior so a future fix is intentional.
+// Unknown/future version: must be reported as unsupported and must NOT be
+// laundered forward (a v9 save parsed as v3 could silently lose state).
 {
   const input = { version: '9.9', creatures: [], world: {} };
   const result = migrateSaveData(structuredClone(input));
   assert.deepEqual(result.path, [], 'unknown version should have an empty migration path');
   assert.equal(result.migrated, false, 'unknown version should report migrated=false');
-  assert.equal(
-    result.data.version,
-    CURRENT,
-    'documents current behavior: unknown version is stamped to CURRENT (laundered)'
-  );
+  assert.equal(result.unsupported, true, 'unknown version should report unsupported=true');
+  assert.equal(result.data.version, '9.9', 'unknown version must keep its original version stamp');
 }
 
 // 2.5 -> 3.0 sessionSeed should be deterministic for the same input.
@@ -56,6 +51,42 @@ assert.equal(CURRENT, '3.0', 'CURRENT_SAVE_VERSION should be 3.0');
   } finally {
     Math.random = originalRandom;
   }
+}
+
+// Flat v1 payloads kept `creatures`/`food` at the root. Deserialize must move
+// them under `world` instead of throwing on `undefined`.
+{
+  const flat = {
+    version: '1.0',
+    width: 4000,
+    height: 2800,
+    world: { width: 4000, height: 2800 },
+    camera: { x: 100, y: 100, zoom: 1 },
+    creatures: [
+      {
+        id: 1,
+        x: 50,
+        y: 60,
+        energy: 30,
+        alive: true,
+        genes: { speed: 1, sense: 80, metabolism: 1, predator: 0 }
+      }
+    ],
+    food: [{ x: 10, y: 10, type: 'grass', energy: 1 }]
+  };
+  const result = new SaveSystem().deserialize(flat, World, Creature, Camera, makeGenes, BiomeGenerator, null);
+  assert.equal(result.world.creatures.length, 1, 'flat v1 creature should load from the root');
+  assert.ok(result.world.food.length >= 1, 'flat v1 food should load from the root');
+}
+
+// Future versions must refuse to load instead of being stamped forward.
+{
+  const future = { version: '9.9', world: {} };
+  assert.throws(
+    () => new SaveSystem().deserialize(future, World, Creature, Camera, makeGenes, BiomeGenerator, null),
+    err => err?.code === 'UNSUPPORTED_SAVE_VERSION',
+    'future save versions should raise UNSUPPORTED_SAVE_VERSION'
+  );
 }
 
 // Worker-mode save field fidelity (mock worker payload + real SimulationProxy

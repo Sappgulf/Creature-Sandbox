@@ -2,6 +2,7 @@ import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
 import { loadEnhancedAnalyticsModule } from './enhanced-analytics-loader.js';
 import { touchOnboarding } from './touch-onboarding.js';
+import { eventSystem } from './event-system.js';
 
 export function applyUiPanelMethods(UIController) {
   UIController.prototype.setPanelVisibility = function (panel, visible) {
@@ -79,6 +80,8 @@ export function applyUiPanelMethods(UIController) {
   };
 
   UIController.prototype.bindPanelControls = function () {
+    this.bindPanelCollapse();
+
     const featuresCloseBtn = domCache.get('featuresCloseBtn') || document.getElementById('btn-features-close');
     const soundCloseBtn = document.getElementById('btn-sound-close');
     const scenarioCloseBtn = domCache.get('scenarioCloseBtn') || document.getElementById('btn-scenario-close');
@@ -103,6 +106,22 @@ export function applyUiPanelMethods(UIController) {
     if (geneEditorCloseBtn) geneEditorCloseBtn.addEventListener('click', this.boundHandlers.onGeneEditorToggle);
 
     if (ecoHealthCloseBtn) ecoHealthCloseBtn.addEventListener('click', this.boundHandlers.onEcoHealthToggle);
+  };
+
+  UIController.prototype.bindPanelCollapse = function () {
+    if (this._panelCollapseBound || typeof document === 'undefined') return;
+    this._panelCollapseBound = true;
+    const headers = document.querySelectorAll('.panel-header[data-panel]');
+    for (const header of headers) {
+      header.addEventListener('click', event => {
+        // Let buttons inside the header (close, tabs) keep their own actions.
+        if (event.target.closest('button, a, input, select, textarea')) return;
+        const panel = header.closest('.panel');
+        if (!panel) return;
+        const collapsed = panel.classList.toggle('collapsed');
+        panel.setAttribute('data-collapsed', collapsed ? 'true' : 'false');
+      });
+    }
   };
 
   UIController.prototype.bindScenarioControls = function () {
@@ -377,6 +396,8 @@ export function applyUiPanelMethods(UIController) {
           chaosSlider.value = '50';
         }
         chaosSlider?.dispatchEvent(new Event('input', { bubbles: true }));
+        // Restore renderer features to defaults (the label promised a reset).
+        eventSystem.emit('creature:features-reset');
       });
       resetBtn._boundFeaturesAction = true;
     }
@@ -470,6 +491,16 @@ export function applyUiPanelMethods(UIController) {
         this.closeMajorPanels('eco-health-panel');
       }
       this.togglePanelVisibility(panel);
+      // The panel readout is driven by the ecosystem-health instance; without
+      // show()/hide() the score stayed at its initial "Analyzing..." state.
+      const ecoHealth = this.subsystems?.ecoHealth;
+      if (ecoHealth) {
+        if (panel.classList.contains('hidden')) {
+          ecoHealth.hide?.();
+        } else {
+          ecoHealth.show?.();
+        }
+      }
     }
     this.dismissInteractionHint();
   };
@@ -521,9 +552,18 @@ export function applyUiPanelMethods(UIController) {
     }
 
     if (touchOnboarding) {
-      touchOnboarding.reset();
-      touchOnboarding.show({ force: true });
-      replayed = true;
+      // Only force the gesture card on touch hardware; `force` bypasses the
+      // onboarding's own coarse-pointer check, which used to show "Pinch to
+      // zoom" to mouse users.
+      const coarsePointer =
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(pointer: coarse)').matches;
+      if (coarsePointer) {
+        touchOnboarding.reset();
+        touchOnboarding.show({ force: true });
+        replayed = true;
+      }
     }
 
     if (replayed) {

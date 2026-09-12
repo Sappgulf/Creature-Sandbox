@@ -844,6 +844,10 @@ export class ControlStripController {
       case 'lineage-album':
         this.openLazyPanel('Lineage album', 'ensureLineageAlbum', panel => panel?.show?.());
         break;
+      case 'scenario-editor':
+        window.dispatchEvent(new CustomEvent('creature:toggle-scenario-editor'));
+        this.syncMenuState();
+        break;
       case 'achievements':
         this.uiController?.onAchievementsToggle();
         break;
@@ -929,7 +933,15 @@ export class ControlStripController {
         if (typeof ensure !== 'function') {
           throw new Error(`Unknown lazy loader: ${loaderName}`);
         }
-        return ensure({ getWorld: () => this.world });
+        // The lazy panels are cached on first open, so hand them the owning
+        // systems here; without this the Replay/Insights/Lineage views opened
+        // as permanently empty shells.
+        return ensure({
+          getWorld: () => this.world,
+          replay: this.uiController?.replaySystem,
+          engine: this.uiController?.insightsEngine,
+          getLineageTracker: () => this.uiController?.lineageTracker || this.world?.lineageTracker
+        });
       })
       .then(panel => {
         show(panel);

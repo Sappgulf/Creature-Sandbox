@@ -617,9 +617,12 @@ export class UIController {
     if (!wasPaused) {
       eventSystem.emit('game:paused', { reason: 'step' });
     }
+    // Actually advance one fixed tick. Previously this only paused.
+    if (typeof this.gameLoop?.stepOnce === 'function') {
+      this.gameLoop.stepOnce();
+    }
     this.updatePauseButton();
     this.updateMobileControls();
-    // Single step handled by game loop's step mode
   }
 
   onSessionMetaToggle() {
@@ -692,7 +695,11 @@ export class UIController {
     picker.accept = '.crsim,.json,application/json';
     picker.className = 'hidden';
     const chosen = new Promise(resolve => {
-      picker.addEventListener('change', () => resolve(picker.files?.[0] || null), { once: true });
+      const finish = () => resolve(picker.files?.[0] || null);
+      picker.addEventListener('change', finish, { once: true });
+      // Without this, cancelling the dialog left the promise (and input)
+      // dangling forever.
+      picker.addEventListener('cancel', finish, { once: true });
     });
     document.body.appendChild(picker);
     picker.click();

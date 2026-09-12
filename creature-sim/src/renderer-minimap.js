@@ -30,7 +30,12 @@ export function applyMinimapMethods(Renderer) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = this.miniMapOpacity;
 
-    const dpr = window.devicePixelRatio || 1;
+    // Backing-store scale: derive it from the canvas instead of assuming
+    // window.devicePixelRatio, because adaptive resolution can render at
+    // 1/1.25/1.5/1.75/etc. A mismatched dpr offsets the minimap and breaks
+    // its click mapping.
+    const layoutWidth = Number(opts.viewportWidth || this._viewportWidth || 0);
+    const dpr = layoutWidth > 0 ? this.ctx.canvas.width / layoutWidth : window.devicePixelRatio || 1;
     const layout = this._getMiniMapLayout(world, opts, dpr);
     const { mapXCss, mapYCss, mapX, mapY, mapW, mapH, mapWCanvas, mapHCanvas, scaleX, scaleY, aspectRatio } = layout;
     // Store CSS coordinates for click handler

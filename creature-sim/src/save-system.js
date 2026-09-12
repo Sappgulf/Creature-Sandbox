@@ -80,6 +80,7 @@ import { CreatureAgentTuning } from './creature-agent-constants.js';
 import { CreatureConfig } from './creature-config.js';
 import { clamp, rand } from './utils.js';
 import { migrateSaveData } from './save-migration.js';
+import { eventSystem } from './event-system.js';
 
 const COMPRESSED_MARKER = 'C2:';
 const COMPRESSION_SUPPORTED = typeof CompressionStream !== 'undefined';
@@ -474,16 +475,52 @@ export class SaveSystem {
     }
 
     // Handle version migration (new declarative system first, then legacy fallback)
-    const version = saveData.version || '1.0';
+    const version = String(saveData.version || '1.0');
+    const legacySupported = /^1\./.test(version) || ['2.0', '2.1', '2.2', '2.3', '2.4'].includes(version);
+    const currentSupported = ['2.5', '3.0'].includes(version);
+
     let migratedData;
-    try {
-      const migrationResult = migrateSaveData(saveData);
-      migratedData = migrationResult.data;
-      if (migrationResult.migrated) {
-        console.debug(`[SaveSystem] Migrated save via pipeline: ${migrationResult.path.join(', ')}`);
-      }
-    } catch {
+    if (!legacySupported && !currentSupported) {
+      // Never launder a future/unknown version forward: parsing partial state
+      // looks like data loss to the player.
+      const unsupported = new Error(
+        `This save was made with a newer version of the game (v${version}) and cannot be loaded.`
+      );
+      unsupported.code = 'UNSUPPORTED_SAVE_VERSION';
+      throw unsupported;
+    }
+
+    if (legacySupported) {
+      // Prefer the legacy migrator for pre-2.5 saves: it carries the
+      // per-version defaults (needs, goals, memory, food bites, territory)
+      // that the declarative 2.x step does not cover.
       migratedData = this._migrateSaveData(saveData, version);
+      // Normalize truly flat payloads (`creatures` at the root) so deserialize
+      // can read them from `world`.
+      if (!migratedData.world) migratedData.world = {};
+      if (!Array.isArray(migratedData.world.creatures) && Array.isArray(migratedData.creatures)) {
+        migratedData.world.creatures = migratedData.creatures;
+      }
+      for (const key of ['food', 'corpses', 'props', 'decorations']) {
+        if (!Array.isArray(migratedData.world[key]) && Array.isArray(migratedData[key])) {
+          migratedData.world[key] = migratedData[key];
+        }
+      }
+      const normalized = migrateSaveData(migratedData);
+      migratedData = normalized.data;
+    } else {
+      try {
+        const migrationResult = migrateSaveData(saveData);
+        if (migrationResult.unsupported) {
+          throw new Error(`No migration path from ${version}`);
+        }
+        migratedData = migrationResult.data;
+        if (migrationResult.migrated) {
+          console.debug(`[SaveSystem] Migrated save via pipeline: ${migrationResult.path.join(', ')}`);
+        }
+      } catch {
+        migratedData = this._migrateSaveData(saveData, version);
+      }
     }
 
     const data = migratedData.world;
@@ -1059,6 +1096,16 @@ export class SaveSystem {
         );
       } catch (err) {
         console.warn('Auto-save failed:', err);
+        // Surface the failure once per session instead of silently leaving
+        // players to assume their progress is safe.
+        if (!this._autoSaveFailureNotified) {
+          this._autoSaveFailureNotified = true;
+          eventSystem.emit('ui:toast', {
+            message: '⚠️ Auto-save failed — storage may be full',
+            type: 'error',
+            duration: 4200
+          });
+        }
       }
     };
 
@@ -1117,6 +1164,12 @@ export class SaveSystem {
   clearAutoSave() {
     localStorage.removeItem('creature-sim-autosave');
     localStorage.removeItem('creature-sim-autosave-preview');
+    // Rotating slots are written alongside the legacy key; removing only the
+    // legacy key leaked up to three large compressed saves per New Sandbox.
+    for (let slot = 1; slot <= this._autoSaveSlotCount; slot++) {
+      localStorage.removeItem(`creature-sim-autosave-${slot}`);
+      localStorage.removeItem(`creature-sim-autosave-${slot}-preview`);
+    }
   }
 
   /**

@@ -58,7 +58,7 @@ export function prewarmCreatureSprites() {
     'creature_flying',
     'creature_burrowing'
   ];
-  const hues = [96, 48, 168];
+  const hues = [96, 48, 168, 24, 240];
   for (const key of keys) {
     requestSpriteFrames(key, 32, null);
     requestSpriteFrames(key, 48, null);

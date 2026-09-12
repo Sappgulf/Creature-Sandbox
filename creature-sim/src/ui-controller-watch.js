@@ -96,7 +96,9 @@ export function applyUiWatchMethods(UIController) {
 
     document.body.classList.toggle('watch-mode', !!gameState.watchModeEnabled);
 
-    const watchSpeeds = [0.5, 1, 2];
+    // Keep the watch-speed index aligned with whatever the speed controls set
+    // (they cycle 0.5/1/2/4 through `gameState.fastForward`).
+    const watchSpeeds = [0.5, 1, 2, 4];
     const speedIndex = watchSpeeds.indexOf(gameState.fastForward);
     if (speedIndex >= 0) {
       gameState.watchSpeedIndex = speedIndex;

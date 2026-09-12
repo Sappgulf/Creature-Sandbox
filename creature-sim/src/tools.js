@@ -118,10 +118,14 @@ export class ToolController {
       if (!drawer) return null;
       document.body.appendChild(drawer);
     }
+    this._propPickerReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     this._propPickerEl = drawer;
     this._syncPropPickerSelection();
     drawer.classList.remove('hidden');
     drawer.setAttribute('aria-hidden', 'false');
+    // Move focus into the modal so keyboard users are not left behind it.
+    const firstFocusable = drawer.querySelector('button, [href], input, select, [tabindex]:not([tabindex="-1"])');
+    firstFocusable?.focus?.({ preventScroll: true });
     return drawer;
   }
 
@@ -131,6 +135,8 @@ export class ToolController {
     if (!drawer) return;
     drawer.classList.add('hidden');
     drawer.setAttribute('aria-hidden', 'true');
+    this._propPickerReturnFocus?.focus?.({ preventScroll: true });
+    this._propPickerReturnFocus = null;
   }
 
   _syncPropPickerSelection() {
@@ -233,8 +239,27 @@ export class ToolController {
 
     if (!this._propPickerKeyHandler) {
       this._propPickerKeyHandler = event => {
-        if (event.key === 'Escape' && this._propPickerEl && !this._propPickerEl.classList.contains('hidden')) {
+        const isOpen = this._propPickerEl && !this._propPickerEl.classList.contains('hidden');
+        if (!isOpen) return;
+        if (event.key === 'Escape') {
           this.closePropPicker();
+          return;
+        }
+        // Trap Tab inside the aria-modal drawer.
+        if (event.key === 'Tab') {
+          const focusables = this._propPickerEl.querySelectorAll(
+            'button, [href], input, select, [tabindex]:not([tabindex="-1"])'
+          );
+          if (!focusables.length) return;
+          const first = focusables[0];
+          const last = focusables[focusables.length - 1];
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
         }
       };
       document.addEventListener('keydown', this._propPickerKeyHandler);
@@ -330,6 +355,7 @@ export class ToolController {
     }
     // Clear redo stack when new action is performed
     this.redoStack = [];
+    eventSystem.emit('tools:history-changed', { canUndo: true, canRedo: false });
   }
 
   /**
@@ -374,6 +400,7 @@ export class ToolController {
         break;
     }
 
+    eventSystem.emit('tools:history-changed', { canUndo: this.canUndo(), canRedo: this.canRedo() });
     return true;
   }
 
@@ -419,6 +446,7 @@ export class ToolController {
         break;
     }
 
+    eventSystem.emit('tools:history-changed', { canUndo: this.canUndo(), canRedo: this.canRedo() });
     return true;
   }
 

@@ -69,31 +69,32 @@ export function applyCreatureMethods(Renderer) {
 
     // Ensure selected/pinned creatures are rendered even if results are truncated or edge-cases
     // (queryRect usually handles this but we want to be safe for UI consistency)
-    let finalRenderList = visibleCreatures;
-    if (opts.selectedId || opts.pinnedId) {
-      const renderList = this._renderList;
-      renderList.length = 0;
-      for (let i = 0; i < visibleCreatures.length; i++) {
-        renderList.push(visibleCreatures[i]);
-      }
-
-      const appendIfMissing = candidate => {
-        if (!candidate || !candidate.alive) return;
-        for (let i = 0; i < renderList.length; i++) {
-          if (renderList[i].id === candidate.id) return;
-        }
-        renderList.push(candidate);
-      };
-
-      if (opts.selectedId) {
-        appendIfMissing(world.getAnyCreatureById(opts.selectedId));
-      }
-      if (opts.pinnedId) {
-        appendIfMissing(world.getAnyCreatureById(opts.pinnedId));
-      }
-
-      finalRenderList = renderList;
+    // Always copy into the dedicated render list. `queryRect` returns the
+    // shared `tempResults` array, and per-creature draw code issues its own
+    // spatial queries (fear contagion, pack links) that would otherwise
+    // rewrite the list mid-iteration.
+    const renderList = this._renderList;
+    renderList.length = 0;
+    for (let i = 0; i < visibleCreatures.length; i++) {
+      renderList.push(visibleCreatures[i]);
     }
+
+    const appendIfMissing = candidate => {
+      if (!candidate || !candidate.alive) return;
+      for (let i = 0; i < renderList.length; i++) {
+        if (renderList[i].id === candidate.id) return;
+      }
+      renderList.push(candidate);
+    };
+
+    if (opts.selectedId) {
+      appendIfMissing(world.getAnyCreatureById(opts.selectedId));
+    }
+    if (opts.pinnedId) {
+      appendIfMissing(world.getAnyCreatureById(opts.pinnedId));
+    }
+
+    const finalRenderList = renderList;
 
     // OPTIMIZATION: Throttle clustering - only compute every 60 frames (~1Hz)
     let clusterMap = null;
@@ -126,6 +127,26 @@ export function applyCreatureMethods(Renderer) {
     }
     const nameCache = this._nameCache.map;
 
+    // Day/night light is identical for every creature: sample it once. In
+    // worker mode the proxy allocates a fresh object per call, so doing this
+    // per creature was also pure GC churn.
+    const dayNight = world?.dayNightState || world?.environment?.getDayNightState?.();
+    const dayLight = dayNight?.light ?? 1;
+
+    // Parents that currently have at least one child. Lineage crowns only make
+    // sense once a family line actually exists, otherwise every seeded
+    // creature (all roots) gets one and the field reads as crown spam.
+    const parentsWithChildren = this._parentsWithChildren || (this._parentsWithChildren = new Set());
+    parentsWithChildren.clear();
+    for (let i = 0; i < finalRenderList.length; i++) {
+      const parentId = finalRenderList[i]?.parentId;
+      if (parentId != null) parentsWithChildren.add(parentId);
+    }
+    const childIndex = world?.creatureManager?.childrenOf;
+    if (childIndex?.size) {
+      for (const parentId of childIndex.keys()) parentsWithChildren.add(parentId);
+    }
+
     for (let i = 0; i < finalRenderList.length; i++) {
       const c = finalRenderList[i];
 
@@ -149,10 +170,6 @@ export function applyCreatureMethods(Renderer) {
 
       const clusterHue = clusterMap ? clusterMap.get(c.id) : null;
 
-      // Get day/night light level for creature lighting
-      const dayNight = world?.dayNightState || world?.environment?.getDayNightState?.();
-      const dayLight = dayNight?.light ?? 1;
-
       const renderOpts = this._creatureRenderOptions || (this._creatureRenderOptions = {});
       renderOpts.isSelected = isSelected;
       renderOpts.isPinned = isPinned;
@@ -169,6 +186,7 @@ export function applyCreatureMethods(Renderer) {
       renderOpts.dayLight = dayLight;
       renderOpts.world = world;
       renderOpts.lodLevel = zoom < 0.25 ? 'low' : zoom < 0.5 ? 'medium' : 'high';
+      renderOpts.hasChildren = parentsWithChildren.has(c.id);
 
       // Worker-mode color identity: snapshot creatures carry mutation bits but
       // no gene-level color override, so albino/melanic identity is baked into
@@ -224,9 +242,25 @@ export function applyCreatureMethods(Renderer) {
 
       // Worker snapshots have no `draw` method, so the mutation/status FX that
       // live in the main-thread creature renderer never ran in the shipping
-      // runtime. Draw a lightweight worker-safe equivalent from packed bits.
-      if (!c.draw) {
+      // runtime. Draw a lightweight worker-safe equivalent from packed bits —
+      // and use the same path for main-thread creatures while the sprite LOD
+      // is active, so rarity/status cues survive at normal play zoom.
+      if (!c.draw || (useVectorCreatureLOD && !forceDetail)) {
         this._drawWorkerCreatureFx(ctx, c, renderOpts);
+      }
+
+      // Damaged creatures keep a compact health bar at sprite LOD, where the
+      // detailed renderer's bar never runs.
+      if (
+        useVectorCreatureLOD &&
+        !forceDetail &&
+        zoom >= 0.35 &&
+        Number.isFinite(c.health) &&
+        Number.isFinite(c.maxHealth) &&
+        c.maxHealth > 0 &&
+        c.health < c.maxHealth - 0.01
+      ) {
+        this._drawSpriteHealthBar(ctx, c);
       }
 
       if (showOutlines && (isSelected || isPinned || isHovered || isGrabbed)) {
@@ -449,10 +483,30 @@ export function applyCreatureMethods(Renderer) {
   // read the same in the worker runtime as on the main thread — without
   // touching the scalar simulation.
   Renderer.prototype._drawWorkerCreatureFx = function (ctx, creature, opts = {}) {
-    const mutations = creature.mutationBits || 0;
-    const statuses = creature.statusBits || 0;
+    let mutations = creature.mutationBits || 0;
+    let statuses = creature.statusBits || 0;
     const elemental = creature.genes?.elementalAffinity || null;
-    if (!mutations && !statuses && !elemental) return;
+
+    // Main-thread creatures carry mutation/status objects rather than packed
+    // bits. Derive equivalent bits so the low-zoom sprite path shows the same
+    // rarity/status cues as the worker snapshot path.
+    if (!mutations && !statuses) {
+      const rareMutations = creature.rareMutations || creature.mutations || [];
+      for (const mutation of rareMutations) {
+        const name = String(mutation?.name || mutation || '').toLowerCase();
+        if (name.includes('biolum')) mutations |= MUTATION_BITS.BIOLUMINESCENT;
+        else if (name.includes('albin')) mutations |= MUTATION_BITS.ALBINO;
+        else if (name.includes('melan')) mutations |= MUTATION_BITS.MELANIC;
+      }
+      const statusMap = creature.statuses;
+      if (statusMap?.has) {
+        if (statusMap.has('disease')) statuses |= STATUS_BITS.DISEASE;
+        if (statusMap.has('venom') || statusMap.has('venomous')) statuses |= STATUS_BITS.VENOM;
+      }
+    }
+
+    const isLineageRoot = creature.parentId !== undefined && creature.parentId === null && opts.hasChildren === true;
+    if (!mutations && !statuses && !elemental && !isLineageRoot) return;
 
     const zoom = opts.zoom ?? this.camera.zoom ?? 1;
     if (zoom < 0.18) return;
@@ -513,7 +567,42 @@ export function applyCreatureMethods(Renderer) {
       softGlow('190, 110, 240', 0.16 + pulse * 0.08, 1.7);
     }
 
+    // Lineage-founders carry a crown at every zoom level so family identity
+    // survives the sprite LOD that skips the detailed creature renderer.
+    if (isLineageRoot) {
+      const crownY = -radius - 4;
+      const crownScale = Math.max(0.7, Math.min(1.4, radius / 7));
+      ctx.save();
+      ctx.shadowColor = 'rgba(255, 215, 50, 0.8)';
+      ctx.shadowBlur = 6;
+      ctx.fillStyle = `rgba(255, 215, 50, ${0.8 + pulse * 0.2})`;
+      ctx.beginPath();
+      ctx.moveTo(-5 * crownScale, crownY + 3 * crownScale);
+      ctx.lineTo(-5 * crownScale, crownY - 1 * crownScale);
+      ctx.lineTo(-2.5 * crownScale, crownY - 3 * crownScale);
+      ctx.lineTo(0, crownY - 1 * crownScale);
+      ctx.lineTo(2.5 * crownScale, crownY - 3 * crownScale);
+      ctx.lineTo(5 * crownScale, crownY - 1 * crownScale);
+      ctx.lineTo(5 * crownScale, crownY + 3 * crownScale);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
     ctx.restore();
+  };
+
+  Renderer.prototype._drawSpriteHealthBar = function (ctx, creature) {
+    const size = getCreatureRenderSize(creature, { zoom: this.camera.zoom });
+    const barWidth = clamp(size * 0.42, 12, 44);
+    const barHeight = 2;
+    const x = creature.x - barWidth / 2;
+    const y = creature.y - size * 0.55 - 6;
+    const ratio = clamp(creature.health / creature.maxHealth, 0, 1);
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(x, y, barWidth, barHeight);
+    ctx.fillStyle = creature.genes?.predator ? 'rgba(255,120,120,0.85)' : 'rgba(120,255,160,0.85)';
+    ctx.fillRect(x, y, barWidth * ratio, barHeight);
   };
 
   Renderer.prototype._drawCreatureShadow = function (creature) {

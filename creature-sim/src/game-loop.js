@@ -84,6 +84,8 @@ export class GameLoop {
     this.advancedAI = subsystems.advancedAI;
     this.godPowers = subsystems.godPowers;
     this.tools = subsystems.tools;
+    this.replaySystem = subsystems.replaySystem;
+    this.insightsEngine = subsystems.insightsEngine;
 
     this.lastNow = performance.now();
     this.fixedDt = configManager.get('performance', 'fixedTimeStep', 1 / 60);
@@ -122,6 +124,11 @@ export class GameLoop {
 
     // Visual effects system
     this.visualEffects = new VisualEffects();
+    // God powers and other subsystems emit effects through `world.visualEffects`;
+    // keep it pointing at the loop's instance so those effects actually render.
+    if (this.world && !this.world.visualEffects) {
+      this.world.visualEffects = this.visualEffects;
+    }
 
     // Track pause state for UI sync
     this._lastPausedState = false;
@@ -285,7 +292,15 @@ export class GameLoop {
 
     // World events
     eventSystem.on(GameEvents.WORLD_UPDATE, () => {
-      if (this.ecoHealth) this.ecoHealth.update(this.world);
+      if (!this.ecoHealth) return;
+      // WORLD_UPDATE fires every 30 frames; handing `update()` its default dt
+      // made the health model advance at ~1/30th speed, so the panel looked
+      // frozen for the first half minute. Advance it by the elapsed sim time.
+      const now = Number(this.world?.t);
+      const previous = Number(this._lastEcoHealthTime);
+      const elapsed = Number.isFinite(now) && Number.isFinite(previous) ? now - previous : this.fixedDt * 30;
+      this._lastEcoHealthTime = Number.isFinite(now) ? now : previous;
+      this.ecoHealth.update(this.world, Math.max(0.016, elapsed));
     });
 
     // Creature events
@@ -294,6 +309,9 @@ export class GameLoop {
       if (this.audio) this.audio.playCreatureSound(data.creature, 'birth', this.camera);
       if (this.visualEffects && data.creature) {
         this.visualEffects.createBirthEffect(data.creature.x, data.creature.y, data.creature.genes?.hue ?? 0);
+      }
+      if (this.heatmaps && data.creature) {
+        this.heatmaps.recordBirth(data.creature.x, data.creature.y);
       }
       if (this.particles && data.creature) {
         const diet = data.creature.genes?.diet ?? (data.creature.genes?.predator ? 1.0 : 0.0);
@@ -328,6 +346,9 @@ export class GameLoop {
       }
       // Record ghost trail
       ghostTrails.recordDeath(data.creature?.x || 0, data.creature?.y || 0, data.creature);
+      if (this.heatmaps && data.creature) {
+        this.heatmaps.recordDeath(data.creature.x, data.creature.y);
+      }
       lifetimeStats.increment('totalCreaturesDied');
       const age = data.creature?.age || 0;
       if (age > lifetimeStats.data.oldestCreature.age) {
@@ -809,23 +830,23 @@ export class GameLoop {
 
     // Update new advanced systems (respect simulation fidelity)
     const fidelity = this.simulationFidelity;
-    if (this.seasonalEvents?.update && (fidelity >= 1 || this.frameCount % 2 === 0)) {
+    if (this.seasonalEvents?.update && this._fidelityDue(fidelity, this.frameCount, 2)) {
       this.seasonalEvents.update(this.world, dt);
     }
 
-    if (this.familyBonds?.update && (fidelity >= 0.5 || this.frameCount % 2 === 0)) {
+    if (this.familyBonds?.update && this._fidelityDue(fidelity, this.frameCount, 2)) {
       this.familyBonds.update(this.world, dt);
     }
 
-    if (this.memoryLearning?.update && (fidelity >= 0.5 || this.frameCount % 2 === 0)) {
+    if (this.memoryLearning?.update && this._fidelityDue(fidelity, this.frameCount, 2)) {
       this.memoryLearning.update(this.world, dt);
     }
 
-    if (this.challengeSystem?.update && (fidelity >= 0.25 || this.frameCount % 4 === 0)) {
+    if (this.challengeSystem?.update && this._fidelityDue(fidelity, this.frameCount, 4)) {
       this.challengeSystem.update(this.world, dt);
     }
 
-    if (this.unlockableAchievements?.update && (fidelity >= 0.25 || this.frameCount % 4 === 0)) {
+    if (this.unlockableAchievements?.update && this._fidelityDue(fidelity, this.frameCount, 4)) {
       this.unlockableAchievements.update(this.world, {
         analytics: this.analytics,
         sessionGoals: this.sessionGoals,
@@ -929,6 +950,13 @@ export class GameLoop {
     opts.godModeTool = gameState.godModeTool;
     opts.godModePointer = gameState.lastPointerWorld;
     opts.toolBrushSize = this.tools?.brushSize || 0;
+    // Effect positions are stored in world coordinates, so the renderer must
+    // draw them inside the camera transform; updating here keeps them in sync
+    // with the frame about to be painted.
+    if (this.visualEffects?.update) {
+      this.visualEffects.update(dt);
+      opts.visualEffects = this.visualEffects;
+    }
 
     this.renderer.drawWorld(this.world, opts);
 
@@ -960,12 +988,8 @@ export class GameLoop {
       });
     }
 
-    // Draw visual effects (damage numbers, starbursts, hearts)
-    if (this.visualEffects?.draw) {
-      const ctx = this.renderer.ctx;
-      this.visualEffects.update(dt);
-      this.visualEffects.draw(ctx);
-    }
+    // Draw visual effects (damage numbers, starbursts, hearts) — these are
+    // rendered inside `Renderer.drawWorld` under the camera transform.
 
     const drawEstimate =
       (this.renderer.renderedCount || 0) + (this.world.food?.length || 0) + (this.world.corpses?.length || 0);
@@ -1140,6 +1164,18 @@ export class GameLoop {
   }
 
   /**
+   * Returns true when a throttled subsystem should run for the given frame.
+   * Fidelity 1 = every frame, 0.5 = every other frame, 0.25 = every fourth.
+   * The old `fidelity >= x || frame % n === 0` form was always true, so no
+   * subsystem was ever actually throttled when the device was struggling.
+   */
+  _fidelityDue(fidelity, frame, divisor = 2) {
+    if (fidelity >= 1) return true;
+    const step = divisor >= 4 && fidelity < 0.5 ? 4 : 2;
+    return frame % step === 0;
+  }
+
+  /**
    * Update all subsystems
    * @param {number} dt - Delta time
    */
@@ -1158,7 +1194,7 @@ export class GameLoop {
     const coarseStep = dt >= 0.25;
 
     // Update audio system (skip every other frame when FPS is struggling)
-    if (this.audio && (fidelity >= 0.5 || frame % 2 === 0 || coarseStep)) {
+    if (this.audio && (this._fidelityDue(fidelity, frame, 2) || coarseStep)) {
       this.audio.update(dt, this.world);
     }
 
@@ -1173,25 +1209,53 @@ export class GameLoop {
       this.notifications.update(dt);
     }
 
+    // Periodic replay snapshots and insight generation feed their panels.
+    if (this.replaySystem?.update) {
+      this.replaySystem.update(this.world, dt);
+    }
+    if (this.insightsEngine?.update) {
+      this.insightsEngine.update(this.world, dt);
+    }
+
     // Update heatmaps (apply decay) — expensive at scale, drop first under load
     if (this.heatmaps && fidelity >= 0.5) {
       this.heatmaps.update(dt);
     }
 
+    // Activity/energy maps have no per-event source, so sample the population
+    // at 1Hz while one of them is active.
+    if (this.heatmaps && (this.heatmaps.activeType === 'activity' || this.heatmaps.activeType === 'energy')) {
+      this._heatmapSampleTimer = (this._heatmapSampleTimer || 0) + dt;
+      if (this._heatmapSampleTimer >= 1) {
+        this._heatmapSampleTimer = 0;
+        const wantEnergy = this.heatmaps.activeType === 'energy';
+        const list = this.world?.creatures || [];
+        for (const c of list) {
+          if (!c || c.alive === false || !Number.isFinite(c.x) || !Number.isFinite(c.y)) continue;
+          if (wantEnergy) {
+            this.heatmaps.recordEnergy(c.x, c.y, Number(c.energy) || 0);
+          } else {
+            const speed = Math.hypot(Number(c.vx) || 0, Number(c.vy) || 0);
+            if (speed > 1) this.heatmaps.recordActivity(c.x, c.y, Math.min(speed / 40, 0.5));
+          }
+        }
+      }
+    }
+
     // Update session goals tracking
-    if (this.sessionGoals && (fidelity >= 0.5 || frame % 2 === 0 || coarseStep)) {
+    if (this.sessionGoals && (this._fidelityDue(fidelity, frame, 2) || coarseStep)) {
       this.sessionGoals.update(this.world, dt);
     }
 
-    if (this.playableScenarios && (fidelity >= 0.5 || frame % 2 === 0 || coarseStep)) {
+    if (this.playableScenarios && (this._fidelityDue(fidelity, frame, 2) || coarseStep)) {
       this.playableScenarios.update(dt);
     }
 
-    if (this.upgradeController && (fidelity >= 0.25 || frame % 4 === 0 || coarseStep)) {
+    if (this.upgradeController && (this._fidelityDue(fidelity, frame, 4) || coarseStep)) {
       this.upgradeController.update(dt);
     }
 
-    if (this.gameDirector && (fidelity >= 0.25 || frame % 4 === 0 || coarseStep)) {
+    if (this.gameDirector && (this._fidelityDue(fidelity, frame, 4) || coarseStep)) {
       this.gameDirector.update(dt);
     }
 
@@ -1621,15 +1685,41 @@ export class GameLoop {
   }
 
   /**
+   * Lazily resolve the analytics chart canvases into a context map.
+   * `world.chartCtx` never existed, so every chart silently no-op'd.
+   */
+  getChartContexts() {
+    if (this._chartContexts) return this._chartContexts;
+    const ids = {
+      pop: 'chart-pop',
+      speed: 'chart-speed',
+      metabolism: 'chart-metabolism',
+      variance: 'chart-variance',
+      ratio: 'chart-ratio',
+      predators: 'chart-predators',
+      health: 'chart-health'
+    };
+    const map = {};
+    for (const [key, id] of Object.entries(ids)) {
+      const canvas = document.getElementById(id);
+      map[key] = canvas ? canvas.getContext('2d') : null;
+    }
+    this._chartContexts = map;
+    return map;
+  }
+
+  /**
    * Update analytics charts
    * OPTIMIZED: Uses static import instead of dynamic import()
    */
   updateCharts() {
     if (!gameState.inspectorVisible) return;
 
-    // Check if Evolution Analytics section is visible
+    // Check if Evolution Analytics section is visible (the element is
+    // `#analytics-panel` inside `#inspector`; the old `#inspector-panel`
+    // selector never matched).
     const analyticsSection = this.getCachedElement('analyticsSection', () =>
-      document.querySelector('#inspector-panel > .panel-body > div:nth-child(4)')
+      document.getElementById('analytics-panel')
     );
     if (!analyticsSection || analyticsSection.offsetParent === null) return;
 
@@ -1637,7 +1727,7 @@ export class GameLoop {
     if (data.version === gameState.analyticsVersion) return;
 
     gameState.analyticsVersion = data.version;
-    renderAnalyticsCharts(this.world.chartCtx, data);
+    renderAnalyticsCharts(this.getChartContexts(), data);
   }
 
   /**
@@ -1651,11 +1741,15 @@ export class GameLoop {
     }
     this.lastAdvancedAnalyticsUpdate = now;
 
-    // Update phylogeny if panel is visible
+    // Update phylogeny if panel is visible. Gate on the inspector/analytics
+    // section itself — `#phylogeny-list` has no `.panel-body` ancestor, so the
+    // previous check was always false and the list stayed on "Computing...".
     const phylogenyList = this.getCachedElement('phylogeny-list', () => document.getElementById('phylogeny-list'));
     if (phylogenyList && this.analytics) {
-      const phylogenySection = phylogenyList.closest('.panel-body');
-      const isVisible = phylogenySection && phylogenySection.offsetParent !== null;
+      const analyticsSection = this.getCachedElement('analyticsSection', () =>
+        document.getElementById('analytics-panel')
+      );
+      const isVisible = !!gameState.inspectorVisible && !!analyticsSection && analyticsSection.offsetParent !== null;
 
       if (isVisible) {
         const phylogeny = this.analytics.buildPhylogeny(this.world);
@@ -1703,11 +1797,13 @@ export class GameLoop {
    * Update ecosystem health UI
    */
   updateEcoHealthUI() {
-    if (!this.world.ecoHealth?.visible) return;
+    // `world.ecoHealth` is never assigned; the instance lives on the loop.
+    const ecoHealth = this.ecoHealth || this.world.ecoHealth;
+    if (!ecoHealth?.visible) return;
 
-    const metrics = this.world.ecoHealth.metrics;
-    const status = this.world.ecoHealth.getHealthStatus();
-    const recommendations = this.world.ecoHealth.getRecommendations(this.world);
+    const metrics = ecoHealth.metrics;
+    const status = ecoHealth.getHealthStatus();
+    const recommendations = ecoHealth.getRecommendations(this.world);
 
     // Update overall score
     const overallScore = this.getCachedElement('health-overall-score', () =>
@@ -1862,6 +1958,8 @@ export class GameLoop {
    */
   _emitWeatherParticles(dt) {
     if (!this.particles || !this.world?.environment) return;
+    // Reduced motion: weather is decorative, so skip emitting it entirely.
+    if (isReducedMotion()) return;
 
     const env = this.world.environment;
     const weatherType = env.weatherType;

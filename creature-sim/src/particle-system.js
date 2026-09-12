@@ -39,27 +39,6 @@ export class ParticleSystem {
     }
   }
 
-  /**
-   * OPTIMIZATION: Get a particle object, reusing from pool or creating new
-   * @returns {Object} Particle object
-   */
-  _createParticle(type, x, y, vx, vy, life, opts = {}) {
-    this._particleCreated++;
-    return {
-      type,
-      x,
-      y,
-      vx,
-      vy,
-      life,
-      maxLife: life,
-      size: opts.size || 2,
-      color: opts.color || '#ffffff',
-      opacity: opts.opacity || 1.0,
-      ...opts
-    };
-  }
-
   // Add birth sparkles with celebratory puff effect
   addBirthEffect(x, y, diet = 0) {
     const hueBase = diet > 0.7 ? 0 : diet > 0.3 ? 45 : 120;
@@ -934,7 +913,9 @@ export class ParticleSystem {
       for (let i = 0; i < excess; i++) {
         this._releaseParticle(particles[i]);
       }
-      particles.splice(0, excess);
+      // Shift the survivors down in place instead of an O(n) splice per frame.
+      particles.copyWithin(0, excess);
+      particles.length = this.maxParticles;
     }
   }
 
@@ -1500,6 +1481,18 @@ export class ParticleSystem {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
+      } else if (p.type === 'territory') {
+        // Territory markers were emitted but had no draw case, so they were
+        // invisible. Expanding, fading ring.
+        const progress = p.maxLife > 0 ? 1 - p.life / p.maxLife : 1;
+        ctx.save();
+        ctx.globalAlpha = p.opacity * (1 - progress);
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * (0.6 + progress * 0.8), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
       } else if (p.type === 'rainstreak') {
         // Screen-wide rain streak (vertical line)
         ctx.save();

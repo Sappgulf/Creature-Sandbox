@@ -87,19 +87,19 @@ const GOD_TOOL_TOOLTIPS = Object.fromEntries(
 
 const TOOLTIP_CONFIG = {
   '#ctrl-pause': { text: 'Pause or resume simulation', shortcut: 'Space' },
-  '#ctrl-speed': { text: 'Adjust simulation speed', shortcut: '1-4' },
+  '#ctrl-speed': { text: 'Adjust simulation speed', shortcut: '+ / -' },
   '#ctrl-inspect': { text: 'Observe: inspect a creature', shortcut: 'X' },
   '#ctrl-food': { text: 'Nudge: paint food', shortcut: 'F' },
   '#ctrl-spawn': { text: 'Spawn creatures', shortcut: 'S' },
   '#ctrl-watch': { text: 'Follow creatures automatically', shortcut: 'W' },
-  '#ctrl-more': { text: 'Remember: Field Journal and more', shortcut: 'M' },
+  '#ctrl-more': { text: 'Remember: Field Journal and more', shortcut: null },
   '#menu-food': { text: 'Paint food on the world', shortcut: 'F' },
-  '#menu-god-mode': { text: 'God mode tools', shortcut: 'G' },
+  '#menu-god-mode': { text: 'God mode tools', shortcut: null },
   '#watch-pause': { text: 'Pause or resume', shortcut: 'Space' },
-  '#watch-speed': { text: 'Adjust watch speed', shortcut: '1-4' },
+  '#watch-speed': { text: 'Adjust watch speed', shortcut: '+ / -' },
   '#watch-follow': { text: 'Toggle creature follow', shortcut: 'Shift+F' },
-  '#watch-moments': { text: 'View notable events', shortcut: 'M' },
-  '#watch-god-mode': { text: 'Toggle god mode', shortcut: 'G' },
+  '#watch-moments': { text: 'View notable events', shortcut: null },
+  '#watch-god-mode': { text: 'Toggle god mode', shortcut: null },
   ...GOD_TOOL_TOOLTIPS
 };
 

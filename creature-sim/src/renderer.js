@@ -398,6 +398,12 @@ export class Renderer {
       world.particles.draw(ctx);
     }
 
+    // Birth/death/mating/hit effects store world coordinates; draw them while
+    // the camera transform is still active.
+    if (opts.visualEffects?.draw) {
+      opts.visualEffects.draw(ctx);
+    }
+
     if (selectedId) {
       const selectedCreature = world.getAnyCreatureById?.(selectedId);
       if (selectedCreature) {
@@ -413,6 +419,12 @@ export class Renderer {
 
     if (this.enableIntelligence) {
       this.drawIntelligenceIndicators(world);
+    }
+
+    // The Sensory Types toggle had no consumer; draw the sense-radius overlay
+    // when it is enabled (main-thread creatures carry `senseType`).
+    if (this.enableSensoryViz && this.camera.zoom > 0.3) {
+      this.drawSensoryViz(world);
     }
 
     if (cameraTravel) {

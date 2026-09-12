@@ -85,8 +85,14 @@ export class AssetLoader {
     this.untintedSpriteInFlight = new Map();
     this.unavailableSpriteKeys = new Set();
 
-    this.maxTintedCanvases = 256;
-    this.maxTintedSpriteVariants = 128;
+    // Tinted sprite/lightness buckets across ~15 hues × asset types × sizes
+    // exceed 300 live variants. The old 128-entry cap thrashed during play, so
+    // creatures popped between tinted sprites and their vector fallback.
+    const compactDevice =
+      typeof window !== 'undefined' &&
+      (window.matchMedia?.('(max-width: 768px)')?.matches || (navigator.maxTouchPoints || 0) > 1);
+    this.maxTintedCanvases = compactDevice ? 256 : 512;
+    this.maxTintedSpriteVariants = compactDevice ? 192 : 384;
     this.maxUntintedSpriteVariants = 192;
     this._missingAssetWarnings = new Set();
     this._manifestAutoQueued = false;

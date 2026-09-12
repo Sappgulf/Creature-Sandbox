@@ -125,7 +125,10 @@ export class MiniGraphs {
     if (this.opacity < 0.01) return;
 
     ctx.save();
-    const dpr = window.devicePixelRatio || 1;
+    // Match the backing-store scale actually in use (adaptive resolution may
+    // differ from devicePixelRatio). Layout below is in CSS pixels.
+    const layoutWidth = Number(opts.viewportWidth || 0);
+    const dpr = layoutWidth > 0 ? ctx.canvas.width / layoutWidth : window.devicePixelRatio || 1;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // Work in CSS pixel space
     ctx.globalAlpha = this.opacity;
 

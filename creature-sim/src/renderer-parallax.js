@@ -212,7 +212,9 @@ export function drawGrainOverlay(renderer, ctx) {
   ctx.globalAlpha = 0.3;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = _grainPattern;
-  ctx.fillRect(0, 0, vpW, vpH);
+  // After resetting the transform we are in device pixels; vpW/vpH are CSS.
+  const grainScale = vpW > 0 ? ctx.canvas.width / vpW : 1;
+  ctx.fillRect(0, 0, vpW * grainScale, vpH * grainScale);
   ctx.restore();
 }
 

@@ -54,6 +54,8 @@ import { UnlockableAchievements } from './unlockable-achievements.js';
 import { FamilyBondsSystem } from './family-bonds.js';
 import { MemoryLearningSystem } from './memory-learning.js';
 import { ChallengeSystem } from './challenge-system.js';
+import { ReplaySystem } from './replay-system.js';
+import { InsightsEngine } from './insights-engine.js';
 import { setupDevExports } from './dev-exports.js';
 import {
   getDevToolsConfig,
@@ -186,6 +188,9 @@ export async function initializeApp() {
   }
 
   // Set initial canvas size
+  // Camera is created later in bootstrap; this ref lets resize handling update
+  // its viewport without touching the dev-only `window.camera` export.
+  let cameraRef = null;
   function setCanvasSize() {
     errorHandler.safeExecute(() => {
       let rect = canvas.getBoundingClientRect();
@@ -218,10 +223,11 @@ export async function initializeApp() {
       ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform before scaling
       ctx.scale(dpr, dpr);
 
-      // Update camera viewport if it exists
-      if (window.camera) {
-        window.camera.viewportWidth = rect.width;
-        window.camera.viewportHeight = rect.height;
+      // Keep the camera viewport in sync with the CSS box. Without this the
+      // renderer keeps centring/culling against the pre-resize viewport after
+      // window resizes and device rotations.
+      if (cameraRef && typeof cameraRef.setViewport === 'function') {
+        cameraRef.setViewport(rect.width, rect.height);
       }
 
       console.debug(
@@ -310,6 +316,16 @@ export async function initializeApp() {
     errorHandler.criticalError(new Error('Failed to create camera'), 'Camera initialization');
     throw new Error('Cannot continue without camera');
   }
+
+  cameraRef = camera;
+  // Re-sync immediately in case the canvas was already sized before the
+  // camera existed (initial setCanvasSize runs earlier in bootstrap).
+  errorHandler.safeExecute(() => {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width >= 100 && rect.height >= 100) {
+      camera.setViewport(rect.width, rect.height);
+    }
+  }, 'Camera viewport sync');
 
   // Renderer
   const renderer = errorHandler.safeExecute(
@@ -462,7 +478,13 @@ export async function initializeApp() {
       { id: 'toggle-memory', feature: 'MEMORY', prop: 'enableMemory' },
       { id: 'toggle-social', feature: 'SOCIAL', prop: 'enableSocialBonds' },
       { id: 'toggle-migration', feature: 'MIGRATION', prop: 'enableMigration' },
-      { id: 'toggle-nests', feature: 'NESTS', prop: 'enableNests' }
+      { id: 'toggle-nests', feature: 'NESTS', prop: 'enableNests' },
+      // These toggles existed in the panel but had no listeners, so the
+      // checkboxes were decorative.
+      { id: 'toggle-emotions', feature: 'EMOTIONS', prop: 'enableEmotions' },
+      { id: 'toggle-sensory', feature: 'SENSORY', prop: 'enableSensoryViz' },
+      { id: 'toggle-intelligence', feature: 'INTELLIGENCE', prop: 'enableIntelligence' },
+      { id: 'toggle-mating', feature: 'MATING', prop: 'enableMating' }
     ];
     for (const binding of featureBindings) {
       const toggle = document.getElementById(binding.id);
@@ -472,6 +494,21 @@ export async function initializeApp() {
         renderer.setFeature?.(binding.feature, toggle.checked);
       });
     }
+
+    // Features-panel "Reset" button: restore renderer defaults and resync the
+    // checkboxes to match.
+    eventSystem.on('creature:features-reset', () => {
+      renderer.features?.resetToDefaults?.();
+      for (const binding of featureBindings) {
+        const toggle = document.getElementById(binding.id);
+        if (toggle) toggle.checked = !!renderer[binding.prop];
+      }
+      const miniGraphToggle = document.getElementById('toggle-minigraphs');
+      if (miniGraphs) {
+        miniGraphs.enabled = false;
+      }
+      if (miniGraphToggle) miniGraphToggle.checked = false;
+    });
   }, 'Feature toggles');
 
   // Tools system
@@ -519,6 +556,18 @@ export async function initializeApp() {
     null
   );
 
+  // Mini-graphs toggle (the L shortcut already existed; the checkbox did not)
+  errorHandler.safeExecute(() => {
+    const miniGraphToggle = document.getElementById('toggle-minigraphs');
+    if (!miniGraphToggle) return;
+    miniGraphToggle.checked = !!miniGraphs?.enabled;
+    miniGraphToggle.addEventListener('change', () => {
+      if (miniGraphs) {
+        miniGraphs.enabled = miniGraphToggle.checked;
+      }
+    });
+  }, 'Mini-graphs toggle');
+
   const particles = errorHandler.safeExecute(
     () => {
       return new ParticleSystem();
@@ -553,6 +602,21 @@ export async function initializeApp() {
     null
   );
 
+  // Heatmap radio controls (the grid was previously unreachable from the UI).
+  errorHandler.safeExecute(() => {
+    if (!heatmaps) return;
+    const radios = document.querySelectorAll('input[name="heatmap"]');
+    for (const radio of radios) {
+      radio.addEventListener('change', () => {
+        if (!radio.checked) return;
+        const type = radio.value === 'off' ? null : radio.value;
+        if (heatmaps.activeType !== type) {
+          heatmaps.setType(type);
+        }
+      });
+    }
+  }, 'Heatmap controls');
+
   const moments = errorHandler.safeExecute(
     () => {
       return new MomentsSystem({ world, camera, notifications });
@@ -566,6 +630,24 @@ export async function initializeApp() {
       return new AutoDirector({ world, camera });
     },
     'Auto-director initialization',
+    null
+  );
+
+  // Replay + insights were shipped as panel shells with no owning system, so
+  // their menus opened permanently empty views.
+  const replaySystem = errorHandler.safeExecute(
+    () => {
+      return new ReplaySystem();
+    },
+    'Replay system initialization',
+    null
+  );
+
+  const insightsEngine = errorHandler.safeExecute(
+    () => {
+      return new InsightsEngine();
+    },
+    'Insights engine initialization',
     null
   );
 
@@ -917,7 +999,12 @@ export async function initializeApp() {
         sessionGoals,
         playableScenarios,
         autoDirector,
-        moments
+        moments,
+        // Inspector export buttons previously silently no-op'd because the
+        // analytics subsystem was never handed to the controller.
+        analytics,
+        saveSystem,
+        lineageTracker
       });
     },
     'UI controller initialization',
@@ -930,6 +1017,13 @@ export async function initializeApp() {
 
   if (inputManager && uiController) {
     inputManager.uiController = uiController;
+  }
+
+  if (uiController) {
+    // Shared with the lazy Replay / Insights / Lineage Album panels.
+    uiController.replaySystem = replaySystem;
+    uiController.insightsEngine = insightsEngine;
+    uiController.lineageTracker = lineageTracker;
   }
 
   godToolSystem = errorHandler.safeExecute(
@@ -1065,7 +1159,9 @@ export async function initializeApp() {
         seasonalEvents: seasonalEventsSystem,
         advancedAI,
         godPowers,
-        tools
+        tools,
+        replaySystem,
+        insightsEngine
       });
     },
     'Game loop initialization',
@@ -1080,6 +1176,10 @@ export async function initializeApp() {
   // Wire game loop back to input manager for god-mode undo and other loop-level actions
   if (inputManager) {
     inputManager.gameLoop = gameLoop;
+  }
+  // ...and to the UI controller so Single Step can advance one tick.
+  if (uiController) {
+    uiController.gameLoop = gameLoop;
   }
 
   // Save/load hotkeys (Ctrl/⌘ + S / O)
@@ -1117,6 +1217,10 @@ export async function initializeApp() {
       }
       notifyUI('📂 Save loaded', 'success');
     } catch (err) {
+      if (err?.code === 'UNSUPPORTED_SAVE_VERSION') {
+        notifyUI(err.message, 'error', 4600);
+        return;
+      }
       console.error('Load failed:', err);
       notifyUI('Load failed. Verify the save file.', 'error', 3200);
     }
@@ -1128,6 +1232,33 @@ export async function initializeApp() {
     await handleLoadFromFile(file);
     saveFileInput.value = '';
   });
+
+  // Route the overflow-menu Save/Load actions through the same canonical path
+  // as Ctrl+S / Ctrl+O. The prototype versions built a throwaway SaveSystem and
+  // dropped runtime metadata (scenario, goals, moments, diplomacy, etc.).
+  if (uiController) {
+    uiController.onSaveGame = handleSaveToFile;
+    uiController.onLoadGame = () => saveFileInput.click();
+    uiController.applyLoadedState = applyLoadedState;
+  }
+
+  // Surface UI feedback requested by input/tool systems (bookmarks, prop cycle).
+  errorHandler.safeExecute(() => {
+    eventSystem.on('ui:toast', payload => {
+      const message = typeof payload === 'string' ? payload : payload?.message;
+      if (!message) return;
+      const type = (typeof payload === 'object' && payload?.type) || 'info';
+      const duration = (typeof payload === 'object' && payload?.duration) || 1600;
+      notifyUI(message, type, duration);
+    });
+  }, 'UI toast bridge');
+
+  // Keep the god-mode Undo/Redo buttons in sync with the tool history.
+  errorHandler.safeExecute(() => {
+    eventSystem.on('tools:history-changed', () => {
+      uiController?.updateGodModeUI?.();
+    });
+  }, 'Tool history bridge');
 
   window.addEventListener(
     'keydown',
@@ -1161,15 +1292,17 @@ export async function initializeApp() {
     initializePerformanceMonitor(document.body);
   }, 'Performance monitor initialization');
 
-  // Connect scenario editor to UI
+  // Connect scenario editor to UI (the old lookup targeted a nonexistent
+  // `#scenario-editor-toggle`; the overflow menu now dispatches this event).
   errorHandler.safeExecute(() => {
-    const scenarioToggle = domCache.get('scenario-editor-toggle');
-    if (scenarioToggle) {
-      scenarioToggle.addEventListener('click', async () => {
-        const scenarioEditor = await ensureScenarioEditor();
-        scenarioEditor.toggle();
-      });
-    }
+    window.addEventListener('creature:toggle-scenario-editor', () => {
+      ensureScenarioEditor()
+        .then(editor => editor?.toggle?.())
+        .catch(error => {
+          console.error('Scenario editor failed to open:', error);
+          uiController?.notifications?.show?.('Scenario editor failed to open', 'error', 2600);
+        });
+    });
   }, 'Scenario editor UI connection');
 
   // ============================================================================
@@ -2965,36 +3098,11 @@ export async function initializeApp() {
   // ============================================================================
 
   errorHandler.safeExecute(() => {
-    const hud = document.getElementById('hud');
     const stats = document.getElementById('stats');
-
-    let lastInteractionTime = Date.now();
-
-    // Track user interactions
-    const updateInteraction = () => {
-      lastInteractionTime = Date.now();
-      // Remove auto-hidden state on interaction
-      if (hud) hud.classList.remove('auto-hidden');
-    };
-
-    document.addEventListener('mousemove', updateInteraction);
-    document.addEventListener('mousedown', updateInteraction);
-    document.addEventListener('keydown', updateInteraction);
-    document.addEventListener('touchstart', updateInteraction);
 
     // Auto-hide check interval
     setInterval(() => {
-      const now = Date.now();
-      const idleTime = now - lastInteractionTime;
-      const isIdle = idleTime > 4000; // 4 seconds of no interaction
       const cameraMoving = camera?.isMoving || false;
-
-      // Auto-hide HUD when idle
-      if (hud) {
-        if (isIdle && !cameraMoving) {
-          hud.classList.add('auto-hidden');
-        }
-      }
 
       // Fade stats when camera moving
       if (stats) {

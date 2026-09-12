@@ -358,6 +358,10 @@ export class ChallengeSystem {
     const sy = y * pixelRatio;
 
     ctx.save();
+    // The game loop invokes this while the base ctx transform is still
+    // `scale(dpr)`; this routine works in device pixels via `pixelRatio`, so
+    // reset the transform first or HiDPI screens double-apply the ratio.
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.textBaseline = 'top';
 
     const panelWidth = (compact ? Math.min(230, layoutWidth - 20) : 248) * pixelRatio;
@@ -370,7 +374,11 @@ export class ChallengeSystem {
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.09)';
     ctx.lineWidth = Math.max(1, pixelRatio);
     ctx.beginPath();
-    ctx.roundRect(sx, sy, panelWidth, panelHeight, 12 * pixelRatio);
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(sx, sy, panelWidth, panelHeight, 12 * pixelRatio);
+    } else {
+      ctx.rect(sx, sy, panelWidth, panelHeight);
+    }
     ctx.fill();
     ctx.stroke();
 

@@ -7,6 +7,10 @@ export class VisualEffects {
     this.effects = [];
     this.ripples = [];
     this.trails = [];
+    // Mass-death/hit storms could pile up thousands of objects for their
+    // lifetime; cap the lists so the draw pass stays bounded.
+    this.maxEffects = 500;
+    this.maxRipples = 160;
   }
 
   /**
@@ -248,73 +252,90 @@ export class VisualEffects {
    * Update all effects
    */
   update(dt) {
-    // Update effects
-    this.effects = this.effects.filter(effect => {
+    // In-place compaction: the old filter() allocated a fresh array every
+    // frame even when the lists were empty.
+    const effects = this.effects;
+    for (let i = effects.length - 1; i >= 0; i--) {
+      const effect = effects[i];
+      let alive = true;
       if (effect.delay) {
         effect.delay -= dt;
-        return true;
+      } else {
+        effect.life -= dt;
+        if (effect.life <= 0) {
+          alive = false;
+        } else {
+          switch (effect.type) {
+            case 'expand':
+              effect.radius += effect.speed * dt;
+              effect.alpha = effect.life / 0.5;
+              break;
+
+            case 'sparkle':
+            case 'nom':
+            case 'fall':
+              effect.x += effect.vx * dt;
+              effect.y += effect.vy * dt;
+              effect.vy += 50 * dt; // Gravity
+              effect.alpha = effect.life;
+              break;
+
+            case 'heart':
+              effect.y += effect.vy * dt;
+              effect.wobble += dt * 3;
+              effect.alpha = effect.life;
+              break;
+
+            case 'spiral':
+              effect.y += effect.vy * dt;
+              effect.radius += effect.radiusGrowth * dt;
+              effect.alpha = effect.life / 1.5;
+              break;
+
+            case 'death-mark':
+              effect.rotation += effect.rotationSpeed * dt;
+              effect.alpha = effect.life / 1.2;
+              break;
+
+            case 'flash':
+              effect.alpha = effect.life / 0.3;
+              break;
+
+            case 'damage-number':
+              effect.y += effect.vy * dt;
+              effect.alpha = effect.life;
+              break;
+
+            case 'starburst':
+              effect.alpha = effect.life / 0.8;
+              break;
+          }
+        }
       }
 
-      effect.life -= dt;
-      if (effect.life <= 0) return false;
-
-      // Update based on type
-      switch (effect.type) {
-        case 'expand':
-          effect.radius += effect.speed * dt;
-          effect.alpha = effect.life / 0.5;
-          break;
-
-        case 'sparkle':
-        case 'nom':
-        case 'fall':
-          effect.x += effect.vx * dt;
-          effect.y += effect.vy * dt;
-          effect.vy += 50 * dt; // Gravity
-          effect.alpha = effect.life;
-          break;
-
-        case 'heart':
-          effect.y += effect.vy * dt;
-          effect.wobble += dt * 3;
-          effect.alpha = effect.life;
-          break;
-
-        case 'spiral':
-          effect.y += effect.vy * dt;
-          effect.radius += effect.radiusGrowth * dt;
-          effect.alpha = effect.life / 1.5;
-          break;
-
-        case 'death-mark':
-          effect.rotation += effect.rotationSpeed * dt;
-          effect.alpha = effect.life / 1.2;
-          break;
-
-        case 'flash':
-          effect.alpha = effect.life / 0.3;
-          break;
-
-        case 'damage-number':
-          effect.y += effect.vy * dt;
-          effect.alpha = effect.life;
-          break;
-
-        case 'starburst':
-          effect.alpha = effect.life / 0.8;
-          break;
+      if (!alive) {
+        effects[i] = effects[effects.length - 1];
+        effects.pop();
       }
+    }
+    if (effects.length > this.maxEffects) {
+      effects.length = this.maxEffects;
+    }
 
-      return true;
-    });
-
-    // Update ripples
-    this.ripples = this.ripples.filter(ripple => {
+    const ripples = this.ripples;
+    for (let i = ripples.length - 1; i >= 0; i--) {
+      const ripple = ripples[i];
       ripple.radius += ripple.speed * dt;
       ripple.life -= dt;
       ripple.alpha = (ripple.life / 0.6) * 0.4;
-      return ripple.life > 0;
-    });
+      if (ripple.life <= 0) {
+        ripples[i] = ripples[ripples.length - 1];
+        ripples.pop();
+      }
+    }
+    if (ripples.length > this.maxRipples) {
+      ripples.length = this.maxRipples;
+    }
   }
 
   /**

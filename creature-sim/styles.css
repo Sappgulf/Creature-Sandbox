@@ -445,9 +445,6 @@ input[type='range']:focus-visible {
 #stats.faded {
   opacity: 0.4;
 }
-#stats:hover {
-  opacity: 1;
-}
 #stats span {
   color: var(--text-secondary);
   display: flex;
@@ -1342,6 +1339,12 @@ button:not(:disabled):active .ctrl-icon,
   font-size: 10px;
   transition: transform var(--transition-fast);
   color: var(--text-muted);
+}
+.panel.collapsed .panel-body {
+  display: none;
+}
+.panel.collapsed .panel-collapse-icon {
+  transform: rotate(-90deg);
 }
 .panel-close {
   background: rgba(255, 255, 255, 0.05);

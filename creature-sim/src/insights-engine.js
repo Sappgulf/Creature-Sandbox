@@ -99,7 +99,16 @@ export class InsightsEngine {
     const safeDt = Number.isFinite(dt) && dt > 0 ? dt : 0;
     const currentTime = this.now ? this.now() : Number(world.t) || 0;
     this._lastUpdateAt += safeDt;
-    this._trackHistory(world, currentTime);
+
+    // Sample population history at ~1 Hz. Sampling every frame filled the
+    // 60-entry ring with ~1 second of data, so every comparison that looks
+    // a minute back ("population dropped 20% in the last minute") could never
+    // find a sample — the insights feed stayed permanently empty.
+    this._historyTimer = (this._historyTimer || 0) + safeDt;
+    if (this._historyTimer >= 1) {
+      this._historyTimer = 0;
+      this._trackHistory(world, currentTime);
+    }
 
     if (this._lastUpdateAt < INSIGHT_INTERVAL) return [];
     this._lastUpdateAt = 0;

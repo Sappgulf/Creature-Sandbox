@@ -8,6 +8,10 @@ export class MobileSupport {
     this.isMobile = this.detectMobile();
     this.touchHandlersAttached = false;
     this.touches = new Map();
+    // Per-touch long-press timers. A single shared field meant a second finger
+    // overwrote the first timer's handle, which then leaked and could fire
+    // mid-pinch.
+    this._longPressTimers = new Map();
     this.lastPinchDistance = null;
     this.lastPanCenter = null;
     this.doubleTapTimer = null;
@@ -187,7 +191,8 @@ export class MobileSupport {
       });
 
       // Long-press detection
-      this._longPressTimer = setTimeout(() => {
+      const timer = setTimeout(() => {
+        this._longPressTimers.delete(touch.identifier);
         const stored = this.touches.get(touch.identifier);
         if (stored) {
           const distance = Math.hypot(stored.currentX - stored.startX, stored.currentY - stored.startY);
@@ -196,12 +201,18 @@ export class MobileSupport {
           }
         }
       }, 600);
+      this._longPressTimers.set(touch.identifier, timer);
     }
 
     // Handle different gestures based on touch count
     if (e.touches.length === 1) {
       this.handleSingleTouchStart(e.touches[0]);
     } else if (e.touches.length === 2) {
+      // A pinch supersedes any pending long-press.
+      for (const timer of this._longPressTimers.values()) {
+        clearTimeout(timer);
+      }
+      this._longPressTimers.clear();
       this.handlePinchStart(e.touches);
     }
   }
@@ -223,9 +234,12 @@ export class MobileSupport {
         stored.currentY = touch.clientY;
         // Cancel long-press if moved too far
         const distance = Math.hypot(stored.currentX - stored.startX, stored.currentY - stored.startY);
-        if (distance > 10 && this._longPressTimer) {
-          clearTimeout(this._longPressTimer);
-          this._longPressTimer = null;
+        if (distance > 10) {
+          const timer = this._longPressTimers.get(touch.identifier);
+          if (timer) {
+            clearTimeout(timer);
+            this._longPressTimers.delete(touch.identifier);
+          }
         }
       }
     }
@@ -260,12 +274,11 @@ export class MobileSupport {
 
         this.touches.delete(touch.identifier);
       }
-    }
-
-    // Clear long-press timer
-    if (this._longPressTimer) {
-      clearTimeout(this._longPressTimer);
-      this._longPressTimer = null;
+      const timer = this._longPressTimers.get(touch.identifier);
+      if (timer) {
+        clearTimeout(timer);
+        this._longPressTimers.delete(touch.identifier);
+      }
     }
 
     // Reset pinch/pan state

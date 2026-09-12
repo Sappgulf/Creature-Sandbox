@@ -36,9 +36,7 @@ export class RendererPerformanceMonitor {
     // global defaults but never written back, so one renderer's adaptive
     // scaling cannot shift culling for every other renderer/worker.
     this.cullDistance = RendererConfig.THRESHOLDS.CULL_DISTANCE;
-    this.lodDistance = RendererConfig.THRESHOLDS.LOD_DISTANCE;
     this.maxRenderedObjects = RendererConfig.THRESHOLDS.MAX_RENDERED_OBJECTS;
-    this.frameSkipThreshold = RendererConfig.THRESHOLDS.FRAME_SKIP_THRESHOLD;
 
     // Detect mobile for default quality
     const isMobile =
@@ -67,13 +65,7 @@ export class RendererPerformanceMonitor {
 
     // Apply preset settings to renderer (perf only)
     if (this.renderer.particles) {
-      if (this.reducedParticleMode) {
-        // Keep reduced mode relative to the new preset cap.
-        this._savedMaxParticles = preset.maxParticles;
-        this.renderer.particles.maxParticles = Math.max(4, Math.floor(preset.maxParticles * 0.5));
-      } else {
-        this.renderer.particles.maxParticles = preset.maxParticles;
-      }
+      this.renderer.particles.maxParticles = preset.maxParticles;
     }
 
     // NOTE: preset.trailsEnabled / clusteringEnabled / miniMapEnabled /
@@ -82,8 +74,6 @@ export class RendererPerformanceMonitor {
     // level: it replaces every creature's own hue with one of six k-means
     // cluster colours. Only the player toggles these (see renderer-features.js
     // and RendererConfig.QUALITY_VISIBILITY_KEYS).
-    this.renderer.enableShadows = preset.shadowsEnabled;
-    this.renderer.enableHeatmap = preset.heatmapEnabled;
     // Per-instance budget (never mutates the shared RendererConfig).
     this.maxRenderedObjects = preset.maxRenderedCreatures;
 
@@ -124,70 +114,6 @@ export class RendererPerformanceMonitor {
     this.stats.frameTime = performance.now() - this.stats.lastFrameTime;
   }
 
-  // Distance-based culling
-  shouldCull(x, y, camera) {
-    const viewport = camera.getViewportBounds();
-    const distance = this.getDistanceFromViewport(x, y, viewport);
-
-    return distance > this.cullDistance;
-  }
-
-  // Level of detail based on distance
-  getLOD(x, y, camera) {
-    const viewport = camera.getViewportBounds();
-    const distance = this.getDistanceFromViewport(x, y, viewport);
-
-    if (distance < this.lodDistance * 0.5) return 'high';
-    if (distance < this.lodDistance) return 'medium';
-    return 'low';
-  }
-
-  // Calculate distance from viewport center
-  getDistanceFromViewport(x, y, viewport) {
-    const centerX = (viewport.left + viewport.right) / 2;
-    const centerY = (viewport.top + viewport.bottom) / 2;
-
-    const dx = x - centerX;
-    const dy = y - centerY;
-
-    return Math.sqrt(dx * dx + dy * dy);
-  }
-
-  // Check if object should be rendered based on performance
-  shouldRender(object, camera) {
-    this.stats.totalObjects++;
-
-    // Always render selected/highlighted objects
-    if (object.isSelected || object.isHighlighted) {
-      this.stats.rendered++;
-      return true;
-    }
-
-    // Performance-based culling
-    if (this.stats.frameTime > this.frameSkipThreshold) {
-      // Skip rendering distant objects when frame rate is low
-      if (this.shouldCull(object.x, object.y, camera)) {
-        this.stats.culled++;
-        return false;
-      }
-    }
-
-    // Distance-based culling
-    if (this.shouldCull(object.x, object.y, camera)) {
-      this.stats.culled++;
-      return false;
-    }
-
-    // Limit total rendered objects
-    if (this.stats.rendered >= this.maxRenderedObjects) {
-      this.stats.culled++;
-      return false;
-    }
-
-    this.stats.rendered++;
-    return true;
-  }
-
   // Get performance statistics
   getStats() {
     return {
@@ -210,7 +136,6 @@ export class RendererPerformanceMonitor {
    * ENHANCED: Uses quality presets for smoother transitions
    */
   adjustQuality() {
-    const stats = this.getStats();
     this.frameCount++;
 
     // FPS is now updated in beginFrame() using real frame counting.
@@ -255,22 +180,6 @@ export class RendererPerformanceMonitor {
       this.qualityLockTimer = this.qualityLockDuration;
     }
 
-    // Legacy threshold adjustments (fine-tuning) - per-instance copies so the
-    // shared RendererConfig is never mutated per frame.
-    let cullDistance = this.cullDistance;
-    if (stats.cullRatio > 0.7) {
-      cullDistance *= 0.95;
-    }
-    if (stats.frameTime > 20) {
-      cullDistance *= 0.98;
-    }
-    if (stats.frameTime < 12) {
-      cullDistance *= 1.01;
-    }
-
-    // Clamp values to reasonable ranges
-    cullDistance = Math.max(500, Math.min(2000, cullDistance));
-    this.cullDistance = cullDistance;
     // Preserve the preset's per-instance creature budget. The old floor of 500
     // silently invalidated the low/medium presets (100/200) every frame.
     const presetFloor = RendererConfig.QUALITY_PRESETS[this.currentQuality]?.maxRenderedCreatures ?? 100;
@@ -295,79 +204,9 @@ export class RendererPerformanceMonitor {
   }
 
   /**
-   * Toggle a reduced-particle mode on or off. When enabled, the particle
-   * cap is cut in half (clamped to a minimum of 4) regardless of the
-   * current quality preset. When disabled, the particle cap returns to
-   * the value from the current quality preset.
-   * @param {boolean} enabled
-   * @returns {boolean}  the new reduced-particle state
-   */
-  setReducedParticleMode(enabled) {
-    this.reducedParticleMode = !!enabled;
-    if (!this.renderer) return this.reducedParticleMode;
-    const particles = this.renderer.particles;
-    if (!particles) return this.reducedParticleMode;
-
-    if (this.reducedParticleMode) {
-      // Stash the un-reduced cap so we can restore it later.
-      if (this._savedMaxParticles == null) {
-        this._savedMaxParticles = particles.maxParticles;
-      }
-      particles.maxParticles = Math.max(4, Math.floor((this._savedMaxParticles || 60) * 0.5));
-    } else {
-      if (this._savedMaxParticles != null) {
-        particles.maxParticles = this._savedMaxParticles;
-      }
-      this._savedMaxParticles = null;
-    }
-    return this.reducedParticleMode;
-  }
-
-  /**
-   * Returns true when reduced-particle mode is currently active.
-   * @returns {boolean}
-   */
-  isReducedParticleMode() {
-    return !!this.reducedParticleMode;
-  }
-
-  /**
    * Get current FPS (rolling average)
    */
   getCurrentFps() {
     return this.currentFps;
-  }
-
-  // Batch rendering optimization
-  optimizeBatch(objects, camera) {
-    // Sort objects by distance for better rendering order
-    return objects
-      .filter(obj => this.shouldRender(obj, camera))
-      .sort((a, b) => {
-        const distA = this.getDistanceFromViewport(a.x, a.y, camera.getViewportBounds());
-        const distB = this.getDistanceFromViewport(b.x, b.y, camera.getViewportBounds());
-        return distA - distB; // Closer objects first
-      });
-  }
-
-  // Memory pool for render operations
-  getRenderPool() {
-    if (!this.renderPool) {
-      this.renderPool = {
-        vectors: [],
-        colors: [],
-        transforms: []
-      };
-    }
-    return this.renderPool;
-  }
-
-  // Clean up render pool
-  cleanupPool() {
-    if (this.renderPool) {
-      this.renderPool.vectors.length = 0;
-      this.renderPool.colors.length = 0;
-      this.renderPool.transforms.length = 0;
-    }
   }
 }

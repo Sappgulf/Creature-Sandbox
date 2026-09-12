@@ -2,6 +2,7 @@ import { eventSystem, GameEvents } from './event-system.js';
 import { unpackCreature, CREATURE_STRIDE } from './simulation-state.js';
 import { BiomeGenerator } from './perlin-noise.js';
 import { getCurrentSaveVersion } from './save-migration.js';
+import { getDebugFlags } from './debug-flags.js';
 
 // Upper bound for commands queued before the worker signals READY. The
 // pre-READY window is short (INIT -> READY), so anything beyond this is a
@@ -546,8 +547,9 @@ export class SimulationProxy {
     this.diagnostics.lastCreatureCount = countNum;
     this.diagnostics.lastFoodCount = Array.isArray(food) ? food.length : 0;
 
-    // Debug first few updates or if count changes
-    if (Math.random() < 0.01 || countNum !== this.worldSnapshot.creatures.length) {
+    // Only log snapshot transitions when render debugging is explicitly on;
+    // the old 1%-per-snapshot sample flooded the console in normal play.
+    if (getDebugFlags().renderDebug && countNum !== this.worldSnapshot.creatures.length) {
       console.debug(
         `📡 SimProxy: Snapshot t=${tNum.toFixed(2)} count=${countNum} buffer=${creatureBuffer?.byteLength ?? creatureBuffer?.length ?? floatLength}`
       );
