@@ -318,6 +318,10 @@ export class SimulationProxy {
         return null;
       }
       this._send('ADD_PROP', { type, x, y, options: opts });
+      // The worker's own SANDBOX_PROP_PLACED event never crosses the thread
+      // boundary, so session goals / scenario prop objectives never counted a
+      // placement in the shipping worker runtime. Mirror it on the main thread.
+      eventSystem.emit(GameEvents.SANDBOX_PROP_PLACED, { prop: { type, x, y, ...opts } });
       return null;
     };
 

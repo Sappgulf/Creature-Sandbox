@@ -632,6 +632,10 @@ export class PlayableScenarios {
     if (Array.isArray(this.world.food)) this.world.food.length = 0;
     if (Array.isArray(this.world.corpses)) this.world.corpses.length = 0;
     this.world.sandbox?.clear?.();
+    // Scenario prop goals must count the player's placements, not the props
+    // the scenario itself authored. Clear the running session counters before
+    // this run's goals are installed.
+    this.sessionGoals?.resetForNewSession?.({ refreshGoals: false });
     // Stale death/combat particles from the previous world would otherwise
     // drift through the freshly authored scenario for several seconds.
     this.world.particles?.clear?.();
@@ -653,18 +657,26 @@ export class PlayableScenarios {
     }
 
     const props = scenario.setup.props || [];
-    props.forEach((type, index) => {
-      if (type === 'calm') {
-        // Use the proper mutator instead of assigning restZones directly --
-        // in worker mode `world` is a SimulationProxy where restZones is a
-        // read-only getter (mirrors the worker's snapshot), so a direct
-        // assignment throws and crashes every scenario with a 'calm' prop.
-        this.world.addRestZone?.(center.x + (index - 0.5) * 160, center.y + 180, 145);
-        return;
-      }
-      const pos = randAround(center, radius * 0.55);
-      this.world.sandbox?.addProp?.(type, pos.x, pos.y);
-    });
+    // Authored setup props must not increment the player's placement counters,
+    // or "Place 4 props" would start already complete.
+    const sessionGoals = this.sessionGoals;
+    if (sessionGoals) sessionGoals._suppressCounters = true;
+    try {
+      props.forEach((type, index) => {
+        if (type === 'calm') {
+          // Use the proper mutator instead of assigning restZones directly --
+          // in worker mode `world` is a SimulationProxy where restZones is a
+          // read-only getter (mirrors the worker's snapshot), so a direct
+          // assignment throws and crashes every scenario with a 'calm' prop.
+          this.world.addRestZone?.(center.x + (index - 0.5) * 160, center.y + 180, 145);
+          return;
+        }
+        const pos = randAround(center, radius * 0.55);
+        this.world.sandbox?.addProp?.(type, pos.x, pos.y);
+      });
+    } finally {
+      if (sessionGoals) sessionGoals._suppressCounters = false;
+    }
 
     this.world.ensureSpatial?.();
   }
@@ -709,7 +721,17 @@ export class PlayableScenarios {
   }
 
   _collectMetrics() {
-    return collectGameplayMetrics(this.world, { founderId: gameState.lineageRootId });
+    // Session counters live on SessionGoals; without forwarding them the
+    // scenario objective cards always read 0 (e.g. "Place 4 props").
+    const sessionGoals = this.sessionGoals;
+    return collectGameplayMetrics(this.world, {
+      founderId: gameState.lineageRootId,
+      manualSpawns: sessionGoals?.manualSpawns,
+      creatureThrows: sessionGoals?.creatureThrows,
+      propTriggers: sessionGoals?.propTriggers,
+      propPlacements: sessionGoals?.propPlacements,
+      godActions: sessionGoals?.godActions
+    });
   }
 
   /**
@@ -742,7 +764,7 @@ export class PlayableScenarios {
       : 1;
     const variantProgress = scenario.minVariants ? clamp(metrics.variants / scenario.minVariants, 0, 1) : 1;
     const babyProgress = scenario.minBabies ? clamp(metrics.babies / scenario.minBabies, 0, 1) : 1;
-    const propProgress = scenario.minProps ? clamp(metrics.props / scenario.minProps, 0, 1) : 1;
+    const propProgress = scenario.minProps ? clamp(metrics.propPlacements / scenario.minProps, 0, 1) : 1;
     const generationProgress = scenario.minGeneration ? clamp(metrics.maxGeneration / scenario.minGeneration, 0, 1) : 1;
     const progress = Math.min(
       timeProgress,
@@ -775,7 +797,7 @@ export class PlayableScenarios {
       (!scenario.maxStress || metrics.averageStress <= scenario.maxStress) &&
       (!scenario.minVariants || metrics.variants >= scenario.minVariants) &&
       (!scenario.minBabies || metrics.babies >= scenario.minBabies) &&
-      (!scenario.minProps || metrics.props >= scenario.minProps) &&
+      (!scenario.minProps || metrics.propPlacements >= scenario.minProps) &&
       (!scenario.minGeneration || metrics.maxGeneration >= scenario.minGeneration);
 
     if (complete) {

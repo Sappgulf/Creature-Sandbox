@@ -502,6 +502,7 @@ export function applyCreatureMethods(Renderer) {
       if (statusMap?.has) {
         if (statusMap.has('disease')) statuses |= STATUS_BITS.DISEASE;
         if (statusMap.has('venom') || statusMap.has('venomous')) statuses |= STATUS_BITS.VENOM;
+        if (statusMap.has('golden-feast')) statuses |= STATUS_BITS.GOLDEN;
       }
     }
 
@@ -565,6 +566,10 @@ export function applyCreatureMethods(Renderer) {
       softGlow('120, 235, 120', 0.14 + pulse * 0.1, 1.7);
     } else if (statuses & STATUS_BITS.VENOM) {
       softGlow('190, 110, 240', 0.16 + pulse * 0.08, 1.7);
+    }
+
+    if (statuses & STATUS_BITS.GOLDEN) {
+      softGlow('255, 220, 110', 0.2 + pulse * 0.1, 1.85);
     }
 
     // Lineage-founders carry a crown at every zoom level so family identity

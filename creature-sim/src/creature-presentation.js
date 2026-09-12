@@ -77,7 +77,9 @@ export function getCreatureHue(creature = {}, clusterHue = null) {
 
 export function getCreatureSpriteColor(creature = {}, clusterHue = null) {
   const predator = Boolean(creature.genes?.predator) || getCreatureAssetKey(creature) === 'creature_predator';
-  return colorCache.cssHsl(getCreatureHue(creature, clusterHue), 85, predator ? 50 : 60);
+  // Slightly brighter than the original 50/60: on the dark field the old tint
+  // read as indistinct blobs at default zoom.
+  return colorCache.cssHsl(getCreatureHue(creature, clusterHue), 85, predator ? 56 : 66);
 }
 
 export function getCreatureAnimationDetails(creature = {}) {
@@ -100,8 +102,8 @@ export function getCreatureRenderSize(creature = {}, { zoom = 1, isSelected = fa
   // grew ~2.8x when hovered/selected or when the camera crossed the LOD zoom.
   // x8 keeps adults readable at the 0.9 opening zoom without turning a herd
   // into an overlapping blob.
-  const minimumScreenSize = isSelected || isPinned ? 30 : 24;
-  return Math.max(radius * 8, minimumScreenSize / Math.max(0.01, numericGene(zoom, 1)));
+  const minimumScreenSize = isSelected || isPinned ? 32 : 28;
+  return Math.max(radius * 9, minimumScreenSize / Math.max(0.01, numericGene(zoom, 1)));
 }
 
 function requestSpriteFrames(assetKey, size, color) {

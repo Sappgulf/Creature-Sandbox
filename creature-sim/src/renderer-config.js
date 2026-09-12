@@ -109,7 +109,9 @@ export const RendererConfig = {
     ATMOSPHERE: false,
     WEATHER: false,
     DAY_NIGHT: true,
-    MINIMAP: false,
+    // Desktop keeps the world map visible by default; mobile optimizations turn
+    // it back off, and auto-hide keeps it out of the way while panning.
+    MINIMAP: true,
     MINIMAP_AUTO_HIDE: true
   },
 

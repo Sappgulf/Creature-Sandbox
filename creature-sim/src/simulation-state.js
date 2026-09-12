@@ -5,9 +5,9 @@ import { geneValue } from './creature-genetics-helpers.js';
  * This allows super-fast data transfer between the worker and main thread.
  */
 
-// Each creature takes 26 floats in the buffer
+// Each creature takes 27 floats in the buffer
 // (Packed as Float32Array)
-export const CREATURE_STRIDE = 26;
+export const CREATURE_STRIDE = 27;
 
 export const LAYOUT = {
   ID: 0,
@@ -48,7 +48,11 @@ export const LAYOUT = {
   // main-thread draw path only.
   ELEMENTAL: 23, // 0 none, 1 fire, 2 ice, 3 electric, 4 earth
   MUTATIONS: 24, // bitmask: 1 bioluminescent, 2 albino, 4 melanic
-  STATUSES: 25 // bitmask: 1 disease, 2 venom, 4 bleeding
+  STATUSES: 25, // bitmask: 1 disease, 2 venom, 4 bleeding
+  // Ancestry travels per-tick so lineage generation/objective metrics are
+  // correct immediately in worker mode (the shipping default) instead of only
+  // after the 60s WORLD_EXTRAS round trip. -1 means "root / no parent".
+  PARENT_ID: 26
 };
 
 const ELEMENTAL_IDS = [null, 'fire', 'ice', 'electric', 'earth'];
@@ -63,7 +67,8 @@ export const MUTATION_BITS = Object.freeze({
 export const STATUS_BITS = Object.freeze({
   DISEASE: 1,
   VENOM: 2,
-  BLEEDING: 4
+  BLEEDING: 4,
+  GOLDEN: 8
 });
 
 /**
@@ -132,7 +137,13 @@ export function packCreature(creature, buffer, index) {
   if (creature.statuses?.has?.('disease')) statusBits |= STATUS_BITS.DISEASE;
   if (creature.statuses?.has?.('venom')) statusBits |= STATUS_BITS.VENOM;
   if (creature.statuses?.has?.('bleeding')) statusBits |= STATUS_BITS.BLEEDING;
+  if (creature.statuses?.has?.('golden-feast')) statusBits |= STATUS_BITS.GOLDEN;
   buffer[o + LAYOUT.STATUSES] = statusBits;
+
+  // Float32 represents integers exactly up to 2^24; ids are far below that.
+  // Encode "no parent" as -1 so null and 0 stay distinguishable.
+  const parentId = Number(creature.parentId);
+  buffer[o + LAYOUT.PARENT_ID] = creature.parentId == null || !Number.isFinite(parentId) ? -1 : parentId;
 }
 
 /**
@@ -202,6 +213,7 @@ export function unpackCreature(buffer, index) {
     },
     mutationBits: Math.round(buffer[o + LAYOUT.MUTATIONS]) || 0,
     statusBits: Math.round(buffer[o + LAYOUT.STATUSES]) || 0,
+    parentId: buffer[o + LAYOUT.PARENT_ID] >= 0 ? Math.round(buffer[o + LAYOUT.PARENT_ID]) : null,
     aquaticAffinity: buffer[o + LAYOUT.AQUATIC],
     flyingAffinity: buffer[o + LAYOUT.FLYING],
     burrowingAffinity: buffer[o + LAYOUT.BURROWING]

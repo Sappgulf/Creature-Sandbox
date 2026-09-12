@@ -975,13 +975,25 @@ export class Renderer {
       const frameIndex =
         type === 'golden_fruit' ? assetLoader.getAnimationFrameIndex(sprite, 'idle', time, speedScale) : stockFrame;
       const frame = sprite.frames[frameIndex] || sprite.frames[0];
-      const drawSize = Math.max(4, (f.r || 2) * 3);
+      // Food was drawn at `r * 3` (a ~6px dot at default zoom), which read as
+      // confetti rather than forage. Scale to the sprite art and add a gentle
+      // bob + contact shadow so it reads as an object on the ground.
+      const drawSize = Math.max(9, (f.r || 2) * 5.2);
       const pulse = Math.sin(time * pulseSpeeds[type] + i * 0.1) * 0.5 + 0.5;
+      const bob = Math.sin(time * 1.6 + i * 0.7) * drawSize * 0.05;
+
+      ctx.save();
+      ctx.globalAlpha *= 0.26;
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.ellipse(f.x, f.y + drawSize * 0.3, drawSize * 0.28, drawSize * 0.11, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
 
       ctx.save();
       ctx.shadowBlur = 6 + pulse * 4;
       ctx.shadowColor = glowColors[type] || glowColors.grass;
-      this._drawSpriteAt(frame, f.x, f.y, drawSize, sprite.anchor);
+      this._drawSpriteAt(frame, f.x, f.y + bob, drawSize, sprite.anchor);
       ctx.restore();
 
       if (type === 'golden_fruit') {
@@ -1354,7 +1366,7 @@ export class Renderer {
 
     const time = world?.t ?? 0;
     const quality = this.performance?.getCurrentQuality?.() || this.performance?.currentQuality || 'high';
-    const lowDetailFood = quality !== 'ultra' && (visibleFood.length > 120 || this.camera.zoom < 1.08);
+    const lowDetailFood = quality !== 'ultra' && (visibleFood.length > 160 || this.camera.zoom < 0.55);
 
     const foodVisuals = this._foodVisuals;
     const foodTypeOrder = this._foodTypeOrder;

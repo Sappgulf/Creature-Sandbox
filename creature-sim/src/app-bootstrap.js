@@ -350,6 +350,13 @@ export async function initializeApp() {
     throw new Error('Cannot continue without renderer');
   }
 
+  // Input, profiler UI, and the minimap all reach the renderer through
+  // `world.renderer`. Nothing was assigning it, so minimap click-to-travel and
+  // the keyboard visualization toggles (V/C/T/M/B/G/N/A) silently did nothing.
+  if (!world.renderer) {
+    world.renderer = renderer;
+  }
+
   if (!USE_SIM_WORKER) {
     renderer.performance?.setQualityOverride?.(startupProfile.mobile ? 'low' : 'medium');
   }

@@ -15,7 +15,7 @@ assert.equal(getCreatureAssetKey({ ageStage: 'adult', genes: { diet: 0.5 } }), '
 assert.equal(getCreatureAssetKey({ ageStage: 'adult', genes: { diet: 0.1 } }), 'creature_herbivore');
 
 assert.equal(getCreatureHue({ genes: { hue: 361 } }), 0);
-assert.equal(getCreatureSpriteColor({ genes: { hue: 120, predator: false } }), 'hsl(120, 85%, 60%)');
+assert.equal(getCreatureSpriteColor({ genes: { hue: 120, predator: false } }), 'hsl(120, 85%, 65%)');
 
 const idle = getCreatureAnimationDetails({ animation: { state: 'idle', speedRatio: 0.5 } });
 const running = getCreatureAnimationDetails({ animation: { state: 'running', speedRatio: 1.2 } });
@@ -25,8 +25,8 @@ assert.ok(running.speedScale > idle.speedScale);
 
 const ordinarySize = getCreatureRenderSize({ energy: 20, size: 2 }, { zoom: 1 });
 const focusedSize = getCreatureRenderSize({ energy: 20, size: 2 }, { zoom: 1, isSelected: true });
-assert.ok(ordinarySize >= 24);
-assert.ok(focusedSize >= 30);
+assert.ok(ordinarySize >= 28);
+assert.ok(focusedSize >= 32);
 
 const landmarks = getLandscapeLandmarks(4000, 2800);
 assert.equal(landmarks.length, 7);

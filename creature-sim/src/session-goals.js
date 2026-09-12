@@ -156,6 +156,9 @@ export class SessionGoals {
       this.propTriggers += 1;
     });
     eventSystem.on(GameEvents.SANDBOX_PROP_PLACED, () => {
+      // Scenario setup places authored props; those must not count toward
+      // player prop goals.
+      if (this._suppressCounters) return;
       this.propPlacements += 1;
     });
     eventSystem.on(GameEvents.GOD_MODE_ACTION, () => {

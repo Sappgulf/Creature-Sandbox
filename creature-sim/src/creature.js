@@ -1553,6 +1553,7 @@ export class Creature {
             this.health = Math.min(this.maxHealth, this.health + energyGain * 0.15);
             this.stats.food += 1;
             applyHungerRelief(this, energyGain);
+            this._applyFoodQualityBonus(food, world);
             this.logEvent(`Foraged ${food?.type || 'food'}`, world.t);
             world.dropPheromone(this.x, this.y, 0.5);
 
@@ -1613,6 +1614,7 @@ export class Creature {
           this.health = Math.min(this.maxHealth, this.health + energyGain * 0.15);
           this.stats.food += 1;
           applyHungerRelief(this, energyGain);
+          this._applyFoodQualityBonus(food, world);
           this.logEvent(`Foraged ${food?.type || 'food'}`, world.t);
           world.dropPheromone(this.x, this.y, 0.5);
 
@@ -1911,6 +1913,28 @@ export class Creature {
    */
   applyStatus(key, opts = {}) {
     return this.statusSystem.applyStatus(key, opts);
+  }
+
+  /**
+   * Golden fruit is rare forage; eating it grants a short well-fed regen buff
+   * instead of being just another generic bite.
+   * @param {Object} food
+   * @param {Object} world
+   */
+  _applyFoodQualityBonus(food, world) {
+    if (food?.type !== 'golden_fruit') return;
+    this.health = Math.min(this.maxHealth, this.health + 2);
+    this.applyStatus?.('golden-feast', {
+      duration: 14,
+      intensity: 1,
+      metadata: { healthRegen: 1.6, energyBonus: 0.8, color: '#ffd966' }
+    });
+    if (typeof this.logEvent === 'function') {
+      this.logEvent('Feasted on golden fruit', world?.t ?? 0);
+    }
+    if (world?.particles?.emit) {
+      world.particles.emit(this.x, this.y, 'levelup', {});
+    }
   }
 
   /**

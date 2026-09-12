@@ -128,33 +128,34 @@ export function drawBiomeDetail(renderer, ctx, world) {
   // Blend biome-colored ground with soft radial patches to avoid the hard
   // checkerboard look of one-fill-per-cell terrain blocks.
   if (world.getBiomeAt && renderer.camera.zoom > 0.18) {
-    const sampleSpacing = Math.max(110, 250 / renderer.camera.zoom);
-    // Previously capped at 0.18 -- at the default 0.38 opening zoom, blended
-    // against the near-black #03050a base, biome color variation was
-    // essentially imperceptible. Raised so the world actually reads as a
-    // living, colored biome rather than a flat dark canvas.
-    const overlayAlpha = clamp(0.24 + renderer.camera.zoom * 0.22, 0.24, 0.5);
-    const influenceRadius = sampleSpacing * 0.92;
+    // Larger, overlapping, jittered patches read as terrain; the previous
+    // 0.92-radius grid produced visibly circular discs at default zoom.
+    const sampleSpacing = Math.max(170, 380 / renderer.camera.zoom);
+    const overlayAlpha = clamp(0.2 + renderer.camera.zoom * 0.16, 0.2, 0.36);
+    const influenceRadius = sampleSpacing * 1.25;
     const startX = Math.floor(bounds.x1 / sampleSpacing) * sampleSpacing;
     const startY = Math.floor(bounds.y1 / sampleSpacing) * sampleSpacing;
     for (let gx = startX; gx < bounds.x2 + sampleSpacing; gx += sampleSpacing) {
       for (let gy = startY; gy < bounds.y2 + sampleSpacing; gy += sampleSpacing) {
-        const cx = gx + sampleSpacing * 0.5;
-        const cy = gy + sampleSpacing * 0.5;
+        const jitterX = Math.sin(gx * 0.013 + gy * 0.021) * sampleSpacing * 0.18;
+        const jitterY = Math.cos(gx * 0.017 - gy * 0.011) * sampleSpacing * 0.16;
+        const cx = gx + sampleSpacing * 0.5 + jitterX;
+        const cy = gy + sampleSpacing * 0.5 + jitterY;
         const biome = world.getBiomeAt(cx, cy);
         const biomeColor = biome?.type ? biomeColors[biome.type] : null;
         if (!biomeColor) {
           continue;
         }
 
-        const gradient = ctx.createRadialGradient(cx, cy, influenceRadius * 0.12, cx, cy, influenceRadius);
+        const gradient = ctx.createRadialGradient(cx, cy, influenceRadius * 0.08, cx, cy, influenceRadius);
         const tintedColor = [
           clamp(biomeColor[0] + seasonGroundTint.r * 100, 0, 255),
           clamp(biomeColor[1] + seasonGroundTint.g * 100, 0, 255),
           clamp(biomeColor[2] + seasonGroundTint.b * 100, 0, 255)
         ];
         gradient.addColorStop(0, `rgba(${tintedColor.join(',')}, ${overlayAlpha})`);
-        gradient.addColorStop(0.55, `rgba(${tintedColor.join(',')}, ${overlayAlpha * 0.46})`);
+        gradient.addColorStop(0.42, `rgba(${tintedColor.join(',')}, ${overlayAlpha * 0.62})`);
+        gradient.addColorStop(0.75, `rgba(${tintedColor.join(',')}, ${overlayAlpha * 0.22})`);
         gradient.addColorStop(1, `rgba(${tintedColor.join(',')}, 0)`);
         ctx.fillStyle = gradient;
         ctx.fillRect(cx - influenceRadius, cy - influenceRadius, influenceRadius * 2, influenceRadius * 2);
@@ -163,15 +164,15 @@ export function drawBiomeDetail(renderer, ctx, world) {
   }
 
   if (renderer.camera.zoom > 0.3) {
-    const textureSpacing = Math.max(90, 150 / renderer.camera.zoom);
+    const textureSpacing = Math.max(64, 118 / renderer.camera.zoom);
     const dotRadius = clamp(0.9 / renderer.camera.zoom, 0.65, 1.8);
     const startX = Math.floor(bounds.x1 / textureSpacing) * textureSpacing;
     const startY = Math.floor(bounds.y1 / textureSpacing) * textureSpacing;
     ctx.save();
     for (let gx = startX; gx < bounds.x2 + textureSpacing; gx += textureSpacing) {
       for (let gy = startY; gy < bounds.y2 + textureSpacing; gy += textureSpacing) {
-        const jitterX = Math.sin(gx * 0.031 + gy * 0.017) * textureSpacing * 0.28;
-        const jitterY = Math.cos(gx * 0.021 - gy * 0.029) * textureSpacing * 0.22;
+        const jitterX = Math.sin(gx * 0.031 + gy * 0.017) * textureSpacing * 0.42;
+        const jitterY = Math.cos(gx * 0.021 - gy * 0.029) * textureSpacing * 0.38;
         const x = gx + textureSpacing * 0.5 + jitterX;
         const y = gy + textureSpacing * 0.5 + jitterY;
         const biome = world.getBiomeAt?.(x, y);
@@ -181,9 +182,18 @@ export function drawBiomeDetail(renderer, ctx, world) {
             : biome?.type === 'desert'
               ? 'rgba(244, 190, 120, 0.22)'
               : 'rgba(170, 210, 170, 0.2)';
+        const radiusVariation = 0.7 + Math.abs(Math.sin(gx * 0.07 + gy * 0.053)) * 0.7;
         ctx.fillStyle = tint;
         ctx.beginPath();
-        ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+        ctx.arc(x, y, dotRadius * radiusVariation, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Tiny companion fleck gives the floor a mottled, hand-painted feel.
+        const fleckX = x + Math.cos(gx * 0.043 + gy * 0.06) * textureSpacing * 0.24;
+        const fleckY = y + Math.sin(gx * 0.05 - gy * 0.037) * textureSpacing * 0.22;
+        ctx.fillStyle = biome?.type === 'water' ? 'rgba(180, 225, 255, 0.16)' : 'rgba(120, 160, 120, 0.13)';
+        ctx.beginPath();
+        ctx.arc(fleckX, fleckY, dotRadius * 0.62, 0, Math.PI * 2);
         ctx.fill();
       }
     }

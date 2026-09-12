@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-12 — world-visuals-and-props — Planned
+
+- **Date:** 2026-09-12
+- **Scope:** render | simulation | ui | docs
+- **Type:** Planned
+- **Issues:** The world map existed but was disabled by default and its click-to-travel never worked because nothing ever assigned `world.renderer`; the same missing reference silently disabled the keyboard visualization toggles (V/C/T/M/B/G/N/A) and the profiler's world lookup. Food was drawn at ~6px (`r * 3`) and dropped to flat circles below 1.08 zoom, so forage read as confetti. Creatures were small and dark at the opening zoom, biome patches read as hard-edged discs, and sandbox props had no map presence. In gameplay, per-tick worker snapshots omitted `parentId`, so lineage generation goals were unreachable until the 60 s extras roundtrip and could cache a permanent generation 0. Scenario prop goals could never be completed in the shipping worker runtime: the worker's `SANDBOX_PROP_PLACED` never crossed the thread boundary, scenario metric collection did not forward session counters, authored setup props counted as player placements, and the win check used the world prop count while the objective card used placement count. Golden fruit was a rarer food with no payoff.
+- **Root Causes:** Renderer reachability left to a dev-only export; food/prop visual scale tuned for ultra-zoom; biome falloff authored against a different spacing; ancestry and placement events designed for the main-thread path and never bridged for the worker default; scenario metrics built from world state only.
+- **Fixes:** Assign `world.renderer`; enable the minimap by default on desktop with HUD-aware positioning; draw faction dots, region grid, compass, disaster pill, rounded panel, and relative brightness on the minimap; scale food sprites up with bob + contact shadow and keep them at default zoom; brighten/size creature sprites; soften and jitter biome patches with a mottled twin-dot floor texture; pack `parentId` into the 27-float snapshot and unpack it; mirror `SANDBOX_PROP_PLACED` on the main thread from the proxy; forward session counters through scenario metrics; suppress counters while authored props are placed; evaluate prop goals on player placements; give golden fruit a 14 s `golden-feast` regen buff with a worker-safe gold glow.
+- **Verification:** Pending full release proof.
+
+### 2026-09-12 — world-visuals-and-props — Implemented
+
+- **Date:** 2026-09-12
+- **Scope:** render | simulation | ui | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npm run lint` clean; `npm test` green across unit/regression/reboot/presentation/scenario/E2E/save-migration (save-migration now covers `parentId` binary roundtrip); `npm run build` + `npm run check:bundle` under budget (main app 402.63 kB / 117.75 kB gzip). `npm run smoke:browser` (worker desktop/mobile; mobile p95 34.4 ms), `npm run smoke:main` (fallback-proof), and `npm run smoke:menus` 36/36 pass. Browser probes verified: minimap click travel moved the camera ~1334 world units and the keyboard renderer toggles reach the live renderer; Prop Playground starts at 0 placements and reaches 4/4 after four player props while authored setup props no longer count. Production proof pending push.
+
 ### 2026-09-12 — presentation-fidelity-and-perf — Planned
 
 - **Date:** 2026-09-12

@@ -133,7 +133,20 @@ export class CreatureStatusSystem {
       case 'attracted':
         this.applyAttractedEffects(dt, status);
         break;
+      case 'golden-feast':
+        this.applyGoldenFeastEffects(dt, status);
+        break;
     }
+  }
+
+  /**
+   * Golden fruit bonus: a short, well-fed glow with health/energy regen.
+   */
+  applyGoldenFeastEffects(dt, status) {
+    const healthRegen = status.metadata?.healthRegen ?? 1.6;
+    const energyBonus = status.metadata?.energyBonus ?? 0.8;
+    this.creature.health = Math.min(this.creature.maxHealth, this.creature.health + healthRegen * dt);
+    this.creature.energy = Math.min(this.creature.maxEnergy ?? 100, this.creature.energy + energyBonus * dt);
   }
 
   /**

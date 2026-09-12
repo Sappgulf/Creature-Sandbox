@@ -1,4 +1,14 @@
 export function applyMinimapMethods(Renderer) {
+  const numericDiet = value => {
+    if (value && typeof value === 'object') {
+      const expressed = Number(value.expressed ?? value.value ?? value.mean);
+      return Number.isFinite(expressed) ? expressed : 0;
+    }
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+    return value ? 1 : 0;
+  };
+
   const createLayerCanvas = (width, height) => {
     const safeWidth = Math.max(1, Math.ceil(width));
     const safeHeight = Math.max(1, Math.ceil(height));
@@ -50,9 +60,21 @@ export function applyMinimapMethods(Renderer) {
       worldHeight: world.height
     };
 
-    // Background (darker, less distracting) - use scaled coordinates for drawing
-    ctx.fillStyle = 'rgba(8, 10, 14, 0.95)';
-    ctx.fillRect(mapX, mapY, mapWCanvas, mapHCanvas);
+    // Panel background: rounded, with a soft top-light so the map reads as a
+    // framed instrument instead of a flat rectangle.
+    ctx.save();
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(mapX, mapY, mapWCanvas, mapHCanvas, 8 * dpr);
+    } else {
+      ctx.rect(mapX, mapY, mapWCanvas, mapHCanvas);
+    }
+    const panelGradient = ctx.createLinearGradient(0, mapY, 0, mapY + mapHCanvas);
+    panelGradient.addColorStop(0, 'rgba(14, 20, 30, 0.97)');
+    panelGradient.addColorStop(1, 'rgba(6, 9, 14, 0.97)');
+    ctx.fillStyle = panelGradient;
+    ctx.fill();
+    ctx.restore();
 
     const activeDisaster =
       this.miniMapSettings.disaster && typeof world.getActiveDisaster === 'function' ? world.getActiveDisaster() : null;
@@ -71,6 +93,24 @@ export function applyMinimapMethods(Renderer) {
     if (biomeLayer) {
       ctx.drawImage(biomeLayer, mapX, mapY, mapWCanvas, mapHCanvas);
     }
+
+    // Region grid every 1000 world units for navigation reference.
+    ctx.save();
+    ctx.strokeStyle = 'rgba(150, 180, 220, 0.1)';
+    ctx.lineWidth = Math.max(1, dpr * 0.75);
+    ctx.beginPath();
+    for (let gx = 1000; gx < world.width; gx += 1000) {
+      const x = mapX + gx * scaleX * dpr;
+      ctx.moveTo(x, mapY);
+      ctx.lineTo(x, mapY + mapHCanvas);
+    }
+    for (let gy = 1000; gy < world.height; gy += 1000) {
+      const y = mapY + gy * scaleY * dpr;
+      ctx.moveTo(mapX, y);
+      ctx.lineTo(mapX + mapWCanvas, y);
+    }
+    ctx.stroke();
+    ctx.restore();
 
     if (this.miniMapSettings.heatmap) {
       // OPTIMIZED: Draw creature population as HEAT MAP with caching
@@ -128,7 +168,7 @@ export function applyMinimapMethods(Renderer) {
               const count = heatmap[hy * heatmapW + hx];
               if (count > 0) {
                 const intensity = Math.min(count / 3, 1);
-                heatmapCtx.fillStyle = `rgba(123, 183, 255, ${intensity * 0.8})`;
+                heatmapCtx.fillStyle = `rgba(123, 183, 255, ${intensity * 0.5})`;
                 heatmapCtx.fillRect((hx / heatmapW) * heatmapCanvasW, (hy / heatmapH) * heatmapCanvasH, cellW, cellH);
               }
             }
@@ -140,6 +180,30 @@ export function applyMinimapMethods(Renderer) {
         ctx.drawImage(cache.canvas, mapX, mapY, mapWCanvas, mapHCanvas);
       }
     }
+
+    // Faction dots: predators red, herbivores green, omnivores amber. The
+    // population heatmap shows density; these show where the actors are.
+    ctx.save();
+    const dotSize = Math.max(1.5, 1.7 * dpr);
+    const creatures = Array.isArray(world.creatures) ? world.creatures : [];
+    for (let i = 0; i < creatures.length; i++) {
+      const c = creatures[i];
+      if (!c || c.alive === false || !Number.isFinite(c.x) || !Number.isFinite(c.y)) continue;
+      const predator = Boolean(c.genes?.predator) || numericDiet(c.genes?.diet) > 0.7;
+      const omnivore = !predator && numericDiet(c.genes?.diet) > 0.3;
+      ctx.fillStyle = predator
+        ? 'rgba(255, 118, 118, 0.95)'
+        : omnivore
+          ? 'rgba(250, 204, 90, 0.9)'
+          : 'rgba(126, 231, 135, 0.9)';
+      ctx.fillRect(
+        mapX + c.x * scaleX * dpr - dotSize * 0.5,
+        mapY + c.y * scaleY * dpr - dotSize * 0.5,
+        dotSize,
+        dotSize
+      );
+    }
+    ctx.restore();
 
     if (this.miniMapSettings.territories && world.territories && world.territories.size) {
       ctx.save();
@@ -228,21 +292,53 @@ export function applyMinimapMethods(Renderer) {
       drawCreatureMarker(opts.pinnedId, 'rgba(167, 139, 250, 0.9)', 'rgba(129, 140, 248, 1)', '★');
     }
     if (activeDisaster && this.miniMapSettings.disaster) {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      const label = `${activeDisaster.name} · ${Math.ceil(activeDisaster.timeRemaining ?? 0)}s`;
+      ctx.save();
       ctx.font = `bold ${10 * dpr}px sans-serif`;
-      ctx.fillText(
-        `${activeDisaster.name} · ${Math.ceil(activeDisaster.timeRemaining ?? 0)}s`,
-        mapX + 6 * dpr,
-        mapY + 14 * dpr
-      );
+      ctx.textBaseline = 'middle';
+      const labelWidth = ctx.measureText(label).width + 12 * dpr;
+      ctx.fillStyle = 'rgba(20, 12, 12, 0.78)';
+      ctx.strokeStyle = 'rgba(248, 113, 113, 0.7)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(mapX + 6 * dpr, mapY + 6 * dpr, labelWidth, 18 * dpr, 5 * dpr);
+      } else {
+        ctx.rect(mapX + 6 * dpr, mapY + 6 * dpr, labelWidth, 18 * dpr);
+      }
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255, 226, 226, 0.95)';
+      ctx.fillText(label, mapX + 12 * dpr, mapY + 15 * dpr);
+      ctx.restore();
     }
+
+    // Compass marker (world north is up).
+    ctx.save();
+    ctx.fillStyle = 'rgba(216, 225, 239, 0.85)';
+    ctx.font = `bold ${9 * dpr}px sans-serif`;
+    ctx.textAlign = 'right';
+    ctx.fillText('N', mapX + mapWCanvas - 6 * dpr, mapY + 12 * dpr);
+    ctx.strokeStyle = 'rgba(216, 225, 239, 0.6)';
+    ctx.lineWidth = Math.max(1, dpr);
+    ctx.beginPath();
+    ctx.moveTo(mapX + mapWCanvas - 10 * dpr, mapY + 16 * dpr);
+    ctx.lineTo(mapX + mapWCanvas - 10 * dpr, mapY + 22 * dpr);
+    ctx.stroke();
+    ctx.restore();
 
     // Border with slight glow
     ctx.shadowColor = 'rgba(146, 188, 255, 0.24)';
     ctx.shadowBlur = 4;
     ctx.strokeStyle = 'rgba(153, 190, 244, 0.74)';
     ctx.lineWidth = 2;
-    ctx.strokeRect(mapX - dpr, mapY - dpr, mapWCanvas + 2 * dpr, mapHCanvas + 2 * dpr);
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(mapX - dpr, mapY - dpr, mapWCanvas + 2 * dpr, mapHCanvas + 2 * dpr, 9 * dpr);
+    } else {
+      ctx.rect(mapX - dpr, mapY - dpr, mapWCanvas + 2 * dpr, mapHCanvas + 2 * dpr);
+    }
+    ctx.stroke();
     ctx.shadowBlur = 0;
 
     // Label
@@ -279,7 +375,8 @@ export function applyMinimapMethods(Renderer) {
       Math.round(cssHeight * 10),
       Math.round(dpr * 100),
       Math.round(world.width),
-      Math.round(world.height)
+      Math.round(world.height),
+      Math.round(Number(opts.hudBottomHeight) || 0)
     ].join('|');
     const cache = this._miniMapLayoutCache || (this._miniMapLayoutCache = { key: null, layout: null });
     if (cache.key === key && cache.layout) return cache.layout;
@@ -303,7 +400,7 @@ export function applyMinimapMethods(Renderer) {
 
     // Calculate CSS pixel positions (for click handler)
     const cssMarginX = Math.max(16, Math.round(cssWidth * 0.015));
-    const cssMarginY = Math.max(16, Math.round(cssHeight * 0.015));
+    const cssMarginY = Math.max(16, Math.round(cssHeight * 0.015)) + Math.max(0, Number(opts.hudBottomHeight) || 0);
     const mapXCss = cssWidth - mapW - cssMarginX;
     const mapYCss = cssHeight - mapH - cssMarginY;
 

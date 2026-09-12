@@ -950,6 +950,8 @@ export class GameLoop {
     opts.godModeTool = gameState.godModeTool;
     opts.godModePointer = gameState.lastPointerWorld;
     opts.toolBrushSize = this.tools?.brushSize || 0;
+    // Lets the minimap lift itself above the bottom HUD bank.
+    opts.hudBottomHeight = gameState.hudBottomHeight || 0;
     // Effect positions are stored in world coordinates, so the renderer must
     // draw them inside the camera transform; updating here keeps them in sync
     // with the frame about to be painted.

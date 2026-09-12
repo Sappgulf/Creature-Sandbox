@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 import { getCurrentSaveVersion, migrateSaveData } from '../creature-sim/src/save-migration.js';
 import { SimulationProxy } from '../creature-sim/src/simulation-proxy.js';
-import { packCreature, createCreatureBuffer } from '../creature-sim/src/simulation-state.js';
+import { packCreature, createCreatureBuffer, unpackCreature } from '../creature-sim/src/simulation-state.js';
 import { SaveSystem } from '../creature-sim/src/save-system.js';
 import { World, Creature, makeGenes, BiomeGenerator } from '../creature-sim/src/core/index.js';
 import { Camera } from '../creature-sim/src/camera.js';
@@ -162,6 +162,16 @@ assert.equal(CURRENT, '3.0', 'CURRENT_SAVE_VERSION should be 3.0');
     assert.equal(proxy.diagnostics.snapshotDropped, 2, 'malformed snapshots should be counted');
   }
 
+  // Parent id survives the binary round trip (worker lineage depends on it).
+  {
+    const childBuffer = createCreatureBuffer(1);
+    packCreature({ id: 9, parentId: 4, x: 1, y: 2, genes: {} }, childBuffer, 0);
+    assert.equal(unpackCreature(childBuffer, 0).parentId, 4, 'packed parentId should round-trip');
+    const rootBuffer = createCreatureBuffer(1);
+    packCreature({ id: 10, parentId: null, x: 1, y: 2, genes: {} }, rootBuffer, 0);
+    assert.equal(unpackCreature(rootBuffer, 0).parentId, null, 'root parentId should round-trip as null');
+  }
+
   // Field fidelity: binary snapshot + WORLD_EXTRAS merge + serialize.
   {
     const proxy = makeProxy();
@@ -200,7 +210,11 @@ assert.equal(CURRENT, '3.0', 'CURRENT_SAVE_VERSION should be 3.0');
       corpses: [{ x: 30, y: 40, age: 5 }],
       environment: { timeOfDay: 18.5, seasonPhase: 0.1, currentSeason: 'autumn', dayLight: 0.8, dayPhase: 'dusk' }
     });
-    assert.equal(proxy.worldSnapshot.creatures[0].parentId, undefined, 'binary snapshot alone carries no parentId');
+    assert.equal(
+      proxy.worldSnapshot.creatures[0].parentId,
+      null,
+      'binary snapshot should carry parentId (null for a root) so worker lineage works before extras'
+    );
     assert.equal(proxy.worldSnapshot.food[0].energy, undefined, 'binary snapshot alone carries no food energy');
 
     proxy.handleMessage({
