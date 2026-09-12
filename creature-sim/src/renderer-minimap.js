@@ -428,35 +428,47 @@ export function applyMinimapMethods(Renderer) {
     const canvasWidth = Math.max(1, Math.ceil(layout.mapWCanvas));
     const canvasHeight = Math.max(1, Math.ceil(layout.mapHCanvas));
     const key = [Math.round(world.width), Math.round(world.height), canvasWidth, canvasHeight, sampleSize].join('|');
-    const cache = this._miniMapBiomeCache || (this._miniMapBiomeCache = { key: null, canvas: null });
+    const cache = this._miniMapBiomeCache || (this._miniMapBiomeCache = { key: null, canvas: null, pendingKey: null });
     if (cache.key === key && cache.canvas) return cache.canvas;
+    if (cache.pendingKey === key) return null;
 
-    const layer = createLayerCanvas(canvasWidth, canvasHeight);
-    const layerCtx = layer.getContext('2d');
-    if (!layerCtx) return null;
-
-    layerCtx.clearRect(0, 0, canvasWidth, canvasHeight);
-    layerCtx.globalAlpha = 0.2; // Very faint biome colors
-    const scaleXPx = layout.scaleX * layout.dpr;
-    const scaleYPx = layout.scaleY * layout.dpr;
-    for (let y = 0; y < world.height; y += sampleSize) {
-      for (let x = 0; x < world.width; x += sampleSize) {
-        const biome = world.getBiomeAt(x, y);
-        // STABILITY: Guard against undefined biome
-        layerCtx.fillStyle = this._getBiomeTint(biome?.type);
-        layerCtx.fillRect(
-          x * scaleXPx,
-          y * scaleYPx,
-          Math.max(1, sampleSize * scaleXPx),
-          Math.max(1, sampleSize * scaleYPx)
-        );
+    // Building the layer samples the whole biome grid; doing it inline on the
+    // first minimap draw created a startup long task. Build it idle and draw
+    // it from the next frame on.
+    cache.pendingKey = key;
+    const build = () => {
+      cache.pendingKey = null;
+      if (cache.key === key && cache.canvas) return;
+      const layer = createLayerCanvas(canvasWidth, canvasHeight);
+      const layerCtx = layer.getContext('2d');
+      if (!layerCtx) return;
+      layerCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+      layerCtx.globalAlpha = 0.2; // Very faint biome colors
+      const scaleXPx = layout.scaleX * layout.dpr;
+      const scaleYPx = layout.scaleY * layout.dpr;
+      for (let y = 0; y < world.height; y += sampleSize) {
+        for (let x = 0; x < world.width; x += sampleSize) {
+          const biome = world.getBiomeAt(x, y);
+          // STABILITY: Guard against undefined biome
+          layerCtx.fillStyle = this._getBiomeTint(biome?.type);
+          layerCtx.fillRect(
+            x * scaleXPx,
+            y * scaleYPx,
+            Math.max(1, sampleSize * scaleXPx),
+            Math.max(1, sampleSize * scaleYPx)
+          );
+        }
       }
+      layerCtx.globalAlpha = 1;
+      cache.key = key;
+      cache.canvas = layer;
+    };
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(build, { timeout: 1500 });
+    } else {
+      setTimeout(build, 80);
     }
-    layerCtx.globalAlpha = 1;
-
-    cache.key = key;
-    cache.canvas = layer;
-    return layer;
+    return null;
   };
 
   // NEW: Draw biome labels on mini-map

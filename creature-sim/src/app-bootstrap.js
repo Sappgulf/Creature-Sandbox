@@ -115,11 +115,22 @@ assetLoader
   })
   .then(() => {
     console.debug('✅ Sprite assets loaded successfully');
-    prewarmCreatureSprites();
+    // Defer prewarming off the first paint; decoding ~100 tinted sheets during
+    // startup creates avoidable long tasks.
+    scheduleIdle(() => prewarmCreatureSprites());
   })
   .catch(error => {
     console.warn('⚠️ Some sprite assets failed to load, falling back to shapes:', error);
   });
+
+function scheduleIdle(callback) {
+  if (typeof callback !== 'function') return;
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(callback, { timeout: 2500 });
+  } else {
+    setTimeout(callback, 120);
+  }
+}
 
 // Wait for DOM to be ready before initializing
 export async function initializeApp() {
@@ -2070,7 +2081,7 @@ export async function initializeApp() {
       })();
       sessionGoals?.resetForNewSession?.({ refreshGoals: firstExpeditionDone });
       try {
-        prewarmCreatureSprites();
+        scheduleIdle(() => prewarmCreatureSprites());
       } catch {
         /* asset loader may not be ready in tests */
       }

@@ -28,6 +28,79 @@ const LANDSCAPE_LANDMARKS = Object.freeze([
 
 const pendingDecorationRequests = new Set();
 
+// Baked, world-space ground layer. The per-frame radial-gradient patch pass
+// was the most expensive thing on screen (tens of millions of software-
+// rasterized pixels per second); baking it once per season bucket and drawing
+// it as a single scaled image keeps the look and removes the frame cost.
+const terrainLayerCache = { key: '', canvas: null, pendingKey: '' };
+
+function buildTerrainLayer(world, season, phase, key) {
+  const scale = 0.2;
+  const width = Math.max(1, Math.round(world.width * scale));
+  const height = Math.max(1, Math.round(world.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const layerCtx = canvas.getContext('2d');
+  if (!layerCtx) return null;
+
+  const seasonGroundTint = getSeasonalGroundTint(season, phase);
+  const sampleSpacing = Math.max(200, 360) * scale;
+  const influenceRadius = sampleSpacing * 0.95;
+  const overlayAlpha = 0.26;
+  for (let gy = 0; gy < height + sampleSpacing; gy += sampleSpacing) {
+    for (let gx = 0; gx < width + sampleSpacing; gx += sampleSpacing) {
+      const jitterX = Math.sin(gx * 0.013 + gy * 0.021) * sampleSpacing * 0.18;
+      const jitterY = Math.cos(gx * 0.017 - gy * 0.011) * sampleSpacing * 0.16;
+      const cx = gx + sampleSpacing * 0.5 + jitterX;
+      const cy = gy + sampleSpacing * 0.5 + jitterY;
+      const biome = world.getBiomeAt(cx / scale, cy / scale);
+      const biomeColor = biome?.type ? biomeColors[biome.type] : null;
+      if (!biomeColor) continue;
+      const gradient = layerCtx.createRadialGradient(cx, cy, influenceRadius * 0.08, cx, cy, influenceRadius);
+      const tintedColor = [
+        clamp(biomeColor[0] + seasonGroundTint.r * 100, 0, 255),
+        clamp(biomeColor[1] + seasonGroundTint.g * 100, 0, 255),
+        clamp(biomeColor[2] + seasonGroundTint.b * 100, 0, 255)
+      ];
+      gradient.addColorStop(0, `rgba(${tintedColor.join(',')}, ${overlayAlpha})`);
+      gradient.addColorStop(0.45, `rgba(${tintedColor.join(',')}, ${overlayAlpha * 0.6})`);
+      gradient.addColorStop(0.75, `rgba(${tintedColor.join(',')}, ${overlayAlpha * 0.2})`);
+      gradient.addColorStop(1, `rgba(${tintedColor.join(',')}, 0)`);
+      layerCtx.fillStyle = gradient;
+      layerCtx.fillRect(cx - influenceRadius, cy - influenceRadius, influenceRadius * 2, influenceRadius * 2);
+    }
+  }
+  terrainLayerCache.key = key;
+  terrainLayerCache.canvas = canvas;
+  return canvas;
+}
+
+function getTerrainLayer(world, season, phase) {
+  const seed = world.worldSeed ?? world.biomeGenerator?.seed ?? world._saveExtras?.biomeSeed ?? '';
+  const key = [Math.round(world.width), Math.round(world.height), season, Math.round((phase || 0) * 20), seed].join(
+    '|'
+  );
+  if (terrainLayerCache.key === key && terrainLayerCache.canvas) {
+    return terrainLayerCache.canvas;
+  }
+  if (terrainLayerCache.pendingKey !== key) {
+    terrainLayerCache.pendingKey = key;
+    const build = () => {
+      terrainLayerCache.pendingKey = '';
+      if (terrainLayerCache.key === key) return;
+      buildTerrainLayer(world, season, phase, key);
+    };
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(build, { timeout: 1200 });
+    } else {
+      setTimeout(build, 60);
+    }
+  }
+  // Draw the previous season's layer until the new one is ready.
+  return terrainLayerCache.canvas;
+}
+
 export function getLandscapeLandmarks(width, height) {
   const safeWidth = Number.isFinite(Number(width)) && Number(width) > 0 ? Number(width) : 4000;
   const safeHeight = Number.isFinite(Number(height)) && Number(height) > 0 ? Number(height) : 2800;
@@ -107,7 +180,6 @@ export function drawBiomeDetail(renderer, ctx, world) {
   const bounds = renderer._viewBounds;
   const season = world.currentSeason || 'spring';
   const phase = world.seasonPhase || 0;
-  const seasonGroundTint = getSeasonalGroundTint(season, phase);
 
   const visibleWidth = bounds.x2 - bounds.x1;
   const visibleHeight = bounds.y2 - bounds.y1;
@@ -125,41 +197,13 @@ export function drawBiomeDetail(renderer, ctx, world) {
     visibleHeight + extendAmount * 2
   );
 
-  // Blend biome-colored ground with soft radial patches to avoid the hard
-  // checkerboard look of one-fill-per-cell terrain blocks.
+  // Baked biome-colored ground. The layer covers the whole world at quarter
+  // resolution and is drawn as one image (the browser clips to the viewport),
+  // replacing a per-frame grid of radial-gradient fills.
   if (world.getBiomeAt && renderer.camera.zoom > 0.18) {
-    // Larger, overlapping, jittered patches read as terrain; the previous
-    // 0.92-radius grid produced visibly circular discs at default zoom.
-    const sampleSpacing = Math.max(170, 380 / renderer.camera.zoom);
-    const overlayAlpha = clamp(0.2 + renderer.camera.zoom * 0.16, 0.2, 0.36);
-    const influenceRadius = sampleSpacing * 1.25;
-    const startX = Math.floor(bounds.x1 / sampleSpacing) * sampleSpacing;
-    const startY = Math.floor(bounds.y1 / sampleSpacing) * sampleSpacing;
-    for (let gx = startX; gx < bounds.x2 + sampleSpacing; gx += sampleSpacing) {
-      for (let gy = startY; gy < bounds.y2 + sampleSpacing; gy += sampleSpacing) {
-        const jitterX = Math.sin(gx * 0.013 + gy * 0.021) * sampleSpacing * 0.18;
-        const jitterY = Math.cos(gx * 0.017 - gy * 0.011) * sampleSpacing * 0.16;
-        const cx = gx + sampleSpacing * 0.5 + jitterX;
-        const cy = gy + sampleSpacing * 0.5 + jitterY;
-        const biome = world.getBiomeAt(cx, cy);
-        const biomeColor = biome?.type ? biomeColors[biome.type] : null;
-        if (!biomeColor) {
-          continue;
-        }
-
-        const gradient = ctx.createRadialGradient(cx, cy, influenceRadius * 0.08, cx, cy, influenceRadius);
-        const tintedColor = [
-          clamp(biomeColor[0] + seasonGroundTint.r * 100, 0, 255),
-          clamp(biomeColor[1] + seasonGroundTint.g * 100, 0, 255),
-          clamp(biomeColor[2] + seasonGroundTint.b * 100, 0, 255)
-        ];
-        gradient.addColorStop(0, `rgba(${tintedColor.join(',')}, ${overlayAlpha})`);
-        gradient.addColorStop(0.42, `rgba(${tintedColor.join(',')}, ${overlayAlpha * 0.62})`);
-        gradient.addColorStop(0.75, `rgba(${tintedColor.join(',')}, ${overlayAlpha * 0.22})`);
-        gradient.addColorStop(1, `rgba(${tintedColor.join(',')}, 0)`);
-        ctx.fillStyle = gradient;
-        ctx.fillRect(cx - influenceRadius, cy - influenceRadius, influenceRadius * 2, influenceRadius * 2);
-      }
+    const layer = getTerrainLayer(world, season, phase);
+    if (layer) {
+      ctx.drawImage(layer, 0, 0, world.width, world.height);
     }
   }
 

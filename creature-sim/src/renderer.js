@@ -990,11 +990,17 @@ export class Renderer {
       ctx.fill();
       ctx.restore();
 
-      ctx.save();
-      ctx.shadowBlur = 6 + pulse * 4;
-      ctx.shadowColor = glowColors[type] || glowColors.grass;
+      // Per-item shadowBlur is a software-rasterizer killer at play zoom (the
+      // sprite already bakes a soft shadow), so only the rare golden fruit gets
+      // an extra bloom.
+      const useGlow = type === 'golden_fruit' || this.camera.zoom >= 1.25;
+      if (useGlow) ctx.save();
+      if (useGlow) {
+        ctx.shadowBlur = 6 + pulse * 4;
+        ctx.shadowColor = glowColors[type] || glowColors.grass;
+      }
       this._drawSpriteAt(frame, f.x, f.y + bob, drawSize, sprite.anchor);
-      ctx.restore();
+      if (useGlow) ctx.restore();
 
       if (type === 'golden_fruit') {
         ctx.save();
