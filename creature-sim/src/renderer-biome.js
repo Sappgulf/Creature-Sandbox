@@ -93,10 +93,12 @@ function buildTerrainLayer(world, season, phase, key) {
   }
 
   // 3. Dappled sunlight: broad warm and cool patches break the flat wash.
-  for (let i = 0; i < 46; i++) {
+  //    Kept to 20 moderate patches: large gradient fills are the expensive
+  //    part of the bake, and this still reads as light through a canopy.
+  for (let i = 0; i < 20; i++) {
     const x = rand() * width;
     const y = rand() * height;
-    const r = 90 + rand() * 220;
+    const r = 70 + rand() * 130;
     const warm = rand() > 0.42;
     const g = layerCtx.createRadialGradient(x, y, r * 0.1, x, y, r);
     if (warm) {
@@ -110,24 +112,32 @@ function buildTerrainLayer(world, season, phase, key) {
     layerCtx.fillRect(x - r, y - r, r * 2, r * 2);
   }
 
-  // 4. Ground-cover speckle carpet: thousands of tiny blades/moss flecks baked
-  //    in, so the floor has texture without per-frame draws.
-  const coverCount = Math.round((width * height) / 120);
+  // 4. Ground-cover speckle carpet: baked mottling so the floor has texture
+  //    without per-frame draws. Batched into three rect passes — thousands of
+  //    arc() paths in one idle callback was itself a long task.
+  const coverCount = Math.round((width * height) / 260);
+  const lightFlecks = [];
+  const midFlecks = [];
+  const darkFlecks = [];
   for (let i = 0; i < coverCount; i++) {
-    const x = rand() * width;
-    const y = rand() * height;
-    const r = 0.6 + rand() * 1.8;
-    const light = rand();
-    layerCtx.fillStyle =
-      light > 0.72
-        ? `rgba(150, 196, 120, ${0.1 + rand() * 0.1})`
-        : light > 0.35
-          ? `rgba(70, 118, 72, ${0.12 + rand() * 0.12})`
-          : `rgba(24, 52, 34, ${0.14 + rand() * 0.12})`;
-    layerCtx.beginPath();
-    layerCtx.arc(x, y, r, 0, Math.PI * 2);
-    layerCtx.fill();
+    const fleck = [rand() * width, rand() * height, 0.8 + rand() * 1.8];
+    const roll = rand();
+    if (roll > 0.7) lightFlecks.push(fleck);
+    else if (roll > 0.35) midFlecks.push(fleck);
+    else darkFlecks.push(fleck);
   }
+  const drawFlecks = (list, color) => {
+    if (!list.length) return;
+    layerCtx.beginPath();
+    for (const [x, y, r] of list) {
+      layerCtx.rect(x - r, y - r, r * 2, r * 2);
+    }
+    layerCtx.fillStyle = color;
+    layerCtx.fill();
+  };
+  drawFlecks(darkFlecks, 'rgba(24, 52, 34, 0.2)');
+  drawFlecks(midFlecks, 'rgba(70, 118, 72, 0.18)');
+  drawFlecks(lightFlecks, 'rgba(150, 196, 120, 0.16)');
 
   terrainLayerCache.key = key;
   terrainLayerCache.canvas = canvas;
@@ -149,11 +159,16 @@ function getTerrainLayer(world, season, phase) {
       if (terrainLayerCache.key === key) return;
       buildTerrainLayer(world, season, phase, key);
     };
-    if (typeof requestIdleCallback === 'function') {
-      requestIdleCallback(build, { timeout: 1200 });
-    } else {
-      setTimeout(build, 60);
-    }
+    // Delay the bake past first paint / world-ready so the (necessarily
+    // heavier) terrain build never lands inside the startup long-task window.
+    const schedule = () => {
+      if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(build, { timeout: 1500 });
+      } else {
+        build();
+      }
+    };
+    setTimeout(schedule, 700);
   }
   // Draw the previous season's layer until the new one is ready.
   return terrainLayerCache.canvas;
