@@ -1,4 +1,5 @@
 import { clamp } from './utils.js';
+import { isMobileDevice } from './device-profile.js';
 import { RendererConfig } from './renderer-config.js';
 import { RendererFeatureManager } from './renderer-features.js';
 import { RendererPerformanceMonitor } from './renderer-performance.js';
@@ -46,9 +47,7 @@ export class Renderer {
     this.camera = camera;
 
     // Detect mobile for performance optimizations
-    this.isMobile =
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-      (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+    this.isMobile = isMobileDevice();
 
     // Setup image smoothing based on device
     ctx.imageSmoothingEnabled = true;
@@ -395,7 +394,9 @@ export class Renderer {
 
     // NEW: Draw particle effects (birth sparkles, death markers, etc.)
     if (world.particles) {
-      world.particles.draw(ctx);
+      // Pass the camera so the particle system culls off-screen work; without
+      // it every particle was iterated and drawn even outside the viewport.
+      world.particles.draw(ctx, this.camera);
     }
 
     // Birth/death/mating/hit effects store world coordinates; draw them while

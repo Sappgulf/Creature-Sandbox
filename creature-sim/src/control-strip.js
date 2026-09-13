@@ -367,6 +367,10 @@ export class ControlStripController {
       this.renderer?.performance?.setQualityOverride?.('low');
       if (gameState.fastForward > 1) {
         gameState.fastForward = 1;
+        // Keep the speed button honest: it renders from `speedIndex`, which
+        // was left stale by this clamp.
+        this.syncSpeedIndexFromState?.();
+        eventSystem.emit('game:speed', { speed: gameState.fastForward });
       }
     } else {
       this.renderer?.performance?.setQualityOverride?.(null);

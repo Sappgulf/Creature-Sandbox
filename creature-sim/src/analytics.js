@@ -408,11 +408,13 @@ export class AnalyticsTracker {
       // Check cache first
       let lineage = this._phylogenyCache.get(rootId);
       if (!lineage || lineage.version !== counts.count) {
-        // Only build full overview if not cached or counts changed
-        lineage = world.buildLineageOverview(rootId, 4); // Limit depth to 4 instead of 6
-        if (lineage) {
-          this._phylogenyCache.set(rootId, { ...lineage, version: counts.count });
-        }
+        // Worker snapshots expose no buildLineageOverview; fall back to a
+        // live-count-only root instead of throwing (which left the panel stuck
+        // on "Computing..." in the shipping runtime).
+        const overview =
+          typeof world.buildLineageOverview === 'function' ? world.buildLineageOverview(rootId, 4) : null;
+        lineage = overview || { levels: null };
+        this._phylogenyCache.set(rootId, { ...lineage, version: counts.count });
       }
 
       if (lineage) {

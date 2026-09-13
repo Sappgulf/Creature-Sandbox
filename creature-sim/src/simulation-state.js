@@ -57,6 +57,9 @@ export const LAYOUT = {
 
 const ELEMENTAL_IDS = [null, 'fire', 'ice', 'electric', 'earth'];
 const ELEMENTAL_ENUM = { fire: 1, ice: 2, electric: 3, earth: 4 };
+// Hoisted: unpackCreature runs per creature per snapshot, so rebuilding this
+// array 36k times/second was pure GC churn.
+const CREATURE_STAGES = ['baby', 'juvenile', 'adult', 'elder'];
 
 export const MUTATION_BITS = Object.freeze({
   BIOLUMINESCENT: 1,
@@ -178,7 +181,6 @@ export function compactCreature(creature) {
 export function unpackCreature(buffer, index) {
   const o = index * CREATURE_STRIDE;
   const stageInt = buffer[o + LAYOUT.AGE_STAGE];
-  const STAGES = ['baby', 'juvenile', 'adult', 'elder'];
 
   return {
     id: buffer[o + LAYOUT.ID],
@@ -192,7 +194,7 @@ export function unpackCreature(buffer, index) {
     age: buffer[o + LAYOUT.AGE],
     size: buffer[o + LAYOUT.SIZE],
     alive: buffer[o + LAYOUT.ALIVE] > 0.5,
-    ageStage: STAGES[stageInt] || 'adult',
+    ageStage: CREATURE_STAGES[stageInt] || 'adult',
     // Shaped as `needs` so main-thread metric code reads worker creatures and
     // real Creature instances through the same path.
     needs: {

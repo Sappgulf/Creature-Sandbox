@@ -106,8 +106,11 @@ export class SpatialGrid {
    * @param {number} y - World Y coordinate
    */
   insert(item, x, y) {
-    const [gx, gy] = this.coords(x, y);
-    const cellIndex = this.getCellIndex(gx, gy);
+    // Inline cell math: coords() allocated a [gx, gy] array per insert, twice
+    // per creature per tick across the simulation.
+    const gx = Math.max(0, Math.min(this.gridWidth - 1, Math.floor(x / this.cellSize)));
+    const gy = Math.max(0, Math.min(this.gridHeight - 1, Math.floor(y / this.cellSize)));
+    const cellIndex = gy * this.gridWidth + gx;
 
     // Ensure we have space
     this.ensureCapacity(this.itemCount + 1);
@@ -170,8 +173,9 @@ export class SpatialGrid {
       const item = tempItems[i];
       // Note: We need to store position with item or pass it in
       // For now, assume items have x,y properties
-      const [gx, gy] = this.coords(item.x, item.y);
-      const cellIndex = this.getCellIndex(gx, gy);
+      const gx = Math.max(0, Math.min(this.gridWidth - 1, Math.floor(item.x / this.cellSize)));
+      const gy = Math.max(0, Math.min(this.gridHeight - 1, Math.floor(item.y / this.cellSize)));
+      const cellIndex = gy * this.gridWidth + gx;
 
       const targetIndex = this.cellOffsets[cellIndex] + tempCounts[cellIndex];
       this.itemArray[targetIndex] = item;

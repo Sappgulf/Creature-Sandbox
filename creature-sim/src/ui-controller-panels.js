@@ -3,6 +3,7 @@ import { domCache } from './dom-cache.js';
 import { loadEnhancedAnalyticsModule } from './enhanced-analytics-loader.js';
 import { touchOnboarding } from './touch-onboarding.js';
 import { eventSystem } from './event-system.js';
+import { isMobileDevice } from './device-profile.js';
 
 export function applyUiPanelMethods(UIController) {
   UIController.prototype.setPanelVisibility = function (panel, visible) {
@@ -13,7 +14,7 @@ export function applyUiPanelMethods(UIController) {
     }
     panel.classList.toggle('hidden', !isVisible);
     panel.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
-    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    const isMobile = isMobileDevice();
     if (isMobile) {
       const anyPanelOpen = document.querySelector('.panel:not(.hidden)');
       document.body.classList.toggle('panel-open', !!anyPanelOpen);

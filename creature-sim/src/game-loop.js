@@ -1962,6 +1962,9 @@ export class GameLoop {
     if (!this.particles || !this.world?.environment) return;
     // Reduced motion: weather is decorative, so skip emitting it entirely.
     if (isReducedMotion()) return;
+    // Mobile disables the weather overlay (renderer-features); emitting the
+    // particles anyway still cost update/draw time on phones.
+    if (this.renderer?.isMobile) return;
 
     const env = this.world.environment;
     const weatherType = env.weatherType;

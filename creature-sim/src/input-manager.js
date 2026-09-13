@@ -647,6 +647,12 @@ export class InputManager {
    */
   onVisibilityChange() {
     if (document.hidden) {
+      // Backgrounding can swallow the pointercancel; release any grab and
+      // clear painting so the creature is not left stuck to the hand.
+      this.onPointerCancel?.({ pointerId: this._activePointerId });
+      if (gameState.pinchActive) {
+        gameState.pinchActive = false;
+      }
       if (!gameState.paused) {
         this._autoPausedOnBlur = true;
         gameState.paused = true;

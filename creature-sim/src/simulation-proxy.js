@@ -172,14 +172,27 @@ export class SimulationProxy {
     };
 
     // NUCLEAR FIX: Define methods directly on 'this' to prevent "not a function" errors
+    // Biome sampling runs per texture/water cell every frame, and the raw
+    // generator runs 10 perlin evaluations and allocates a new biome object per
+    // call. Cache by 50px cell like the main-thread World does.
+    this._biomeCache = new Map();
     this.getBiomeAt = (x, y) => {
       if (!this.biomeGenerator) return { type: 'plain', color: '#4d7c0f' };
+      const cx = Math.floor(x / 50);
+      const cy = Math.floor(y / 50);
+      const key = cy * 100000 + cx;
+      const cached = this._biomeCache.get(key);
+      if (cached) return cached;
       const biome = this.biomeGenerator.getBiomeAt(x, y, this.worldSnapshot.width, this.worldSnapshot.height);
-      return biome || { type: 'plain', color: '#4d7c0f' };
+      const resolved = biome || { type: 'plain', color: '#4d7c0f' };
+      if (this._biomeCache.size > 4096) this._biomeCache.clear();
+      this._biomeCache.set(key, resolved);
+      return resolved;
     };
 
     this.reset = () => {
       console.debug('📡 SimProxy: Reset Command Sent [v3]');
+      this._biomeCache?.clear?.();
       this._send('RESET', {});
     };
 
@@ -431,6 +444,18 @@ export class SimulationProxy {
   }
 
   handleMessage(e) {
+    // Never let a malformed bridge payload throw inside `onmessage` and kill
+    // the dispatch: a missing/primitive `data` used to do exactly that.
+    if (!e || !e.data || typeof e.data !== 'object') return;
+    try {
+      this._handleWorkerMessage(e);
+    } catch (error) {
+      this._recordWorkerError(error);
+      console.error('🚨 SimulationProxy: message handler failed', error);
+    }
+  }
+
+  _handleWorkerMessage(e) {
     const { type } = e.data;
 
     switch (type) {
@@ -626,6 +651,11 @@ export class SimulationProxy {
         creatures[i] = unpackCreature(creatureView, i);
       }
       this.worldSnapshot.creatures = creatures;
+      // id -> creature index map so renderer/UI lookups are O(1) instead of a
+      // linear scan several times per frame.
+      const byId = new Map();
+      for (let i = 0; i < creatures.length; i++) byId.set(creatures[i].id, creatures[i]);
+      this._creatureById = byId;
       // Re-apply cached save fidelity fields: snapshots arriving after a
       // WORLD_EXTRAS round-trip would otherwise present bare unpacked
       // creatures (no parentId/maxHealth/full genes) to serialize().
@@ -888,9 +918,17 @@ export class SimulationProxy {
     if (!extras || !snap) return;
 
     if (Array.isArray(extras.creatureExtras) && Array.isArray(snap.creatures)) {
-      const byId = new Map();
-      for (const entry of extras.creatureExtras) {
-        if (entry && entry.id != null) byId.set(entry.id, entry);
+      // The extras payload only changes on a WORLD_EXTRAS round-trip, but this
+      // merge runs every snapshot. Rebuild the id map once per payload instead
+      // of once per frame.
+      let byId = this._extrasById;
+      if (!byId || this._extrasByIdSource !== extras) {
+        byId = new Map();
+        for (const entry of extras.creatureExtras) {
+          if (entry && entry.id != null) byId.set(entry.id, entry);
+        }
+        this._extrasById = byId;
+        this._extrasByIdSource = extras;
       }
       for (const creature of snap.creatures) {
         if (!creature) continue;
@@ -1001,6 +1039,8 @@ export class SimulationProxy {
 
   // Search helper
   getAnyCreatureById(id) {
+    const byId = this._creatureById;
+    if (byId) return byId.get(id);
     return this.worldSnapshot.creatures.find(c => c.id === id);
   }
 

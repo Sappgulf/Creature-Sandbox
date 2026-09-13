@@ -3,6 +3,7 @@
  * ENHANCED: Added quality presets and FPS-based dynamic quality scaling
  */
 import { RendererConfig } from './renderer-config.js';
+import { isMobileDevice } from './device-profile.js';
 
 export class RendererPerformanceMonitor {
   constructor(renderer) {
@@ -39,9 +40,7 @@ export class RendererPerformanceMonitor {
     this.maxRenderedObjects = RendererConfig.THRESHOLDS.MAX_RENDERED_OBJECTS;
 
     // Detect mobile for default quality
-    const isMobile =
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-      (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+    const isMobile = isMobileDevice();
     if (isMobile) {
       this.currentQuality = 'medium';
       this.applyQualityPreset('medium');
@@ -74,6 +73,9 @@ export class RendererPerformanceMonitor {
     // level: it replaces every creature's own hue with one of six k-means
     // cluster colours. Only the player toggles these (see renderer-features.js
     // and RendererConfig.QUALITY_VISIBILITY_KEYS).
+    // Perf knobs that actually reach the draw path. `shadowsEnabled` feeds
+    // drawCreatures; without this the presets only changed particles.
+    this.renderer.enableShadows = preset.shadowsEnabled !== false;
     // Per-instance budget (never mutates the shared RendererConfig).
     this.maxRenderedObjects = preset.maxRenderedCreatures;
 
@@ -174,7 +176,10 @@ export class RendererPerformanceMonitor {
     }
 
     // Upgrade quality after sustained real samples, so temporary dips recover without flapping.
-    if (this._qualityRecoveryStreak >= 2 && currentIndex < presets.length - 1) {
+    // Touch devices cap at 'medium' (index 1): ultra is not reachable on a
+    // phone and climbing to it only causes oscillation and battery drain.
+    const promotionCeiling = this.renderer?.isMobile ? 1 : presets.length - 1;
+    if (this._qualityRecoveryStreak >= 2 && currentIndex < promotionCeiling) {
       this._qualityRecoveryStreak = 0;
       this.applyQualityPreset(presets[currentIndex + 1]);
       this.qualityLockTimer = this.qualityLockDuration;

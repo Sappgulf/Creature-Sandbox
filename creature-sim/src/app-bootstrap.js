@@ -933,7 +933,12 @@ export async function initializeApp() {
     }
 
     if (loaded.lineageNames && lineageTracker) {
-      lineageTracker.names = loaded.lineageNames;
+      lineageTracker.names =
+        loaded.lineageNames instanceof Map
+          ? loaded.lineageNames
+          : new Map(
+              Array.isArray(loaded.lineageNames) ? loaded.lineageNames : Object.entries(loaded.lineageNames || {})
+            );
     }
     restoreRuntimeSaveMetadata(loaded.metadata || {}, {
       playableScenarios,
@@ -2039,10 +2044,20 @@ export async function initializeApp() {
 
   // Start new game
   function startNewGame() {
+    // Clear stale session/UI state first: curiosity prompts, god/watch mode,
+    // spawn mode, selection and debug flags used to leak across sessions and
+    // permanently suppress events like the curiosity nudges.
+    gameState.reset();
     // CRITICAL: Always set game state to ready FIRST
     // This ensures the game loop renders even if initialization has errors
     setHomePageActive(false);
     gameState.startGame();
+    // reset() restores desktop defaults (inspector auto-open); on touch the
+    // inspector must stay closed so it never covers the control strip.
+    if (uiController) {
+      uiController.mobileDefaultsApplied = false;
+      uiController.applyMobileDefaults?.();
+    }
     gameState.selectedId = null;
     gameState.paused = false;
 
@@ -2745,7 +2760,7 @@ export async function initializeApp() {
           ok:
             !!applied &&
             after.creatures === before.creatures &&
-            after.food >= Math.min(before.food, 1) &&
+            after.food >= before.food &&
             after.props === before.props &&
             after.playable === before.playable &&
             after.moments >= before.moments &&

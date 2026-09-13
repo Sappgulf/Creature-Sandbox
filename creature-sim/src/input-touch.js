@@ -15,6 +15,9 @@ export function applyInputTouchMethods(InputManager) {
     if (!detail) return;
     // Second tap of a double-tap is a camera zoom, not a selection.
     if (detail.tapCount >= 2) return;
+    // The pointer path already selected/poked this tap (and with a better zoom
+    // preference); running both made every mobile tap fire twice.
+    if (performance.now() - (this._lastPointerTapAt || 0) < 350) return;
     if (this.godHoldTriggered) return;
     // Match desktop routing: God Mode owns the tap, and non-inspect tools act
     // as tools instead of selecting/poking a creature.

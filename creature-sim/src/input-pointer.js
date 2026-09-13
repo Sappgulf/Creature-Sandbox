@@ -26,6 +26,9 @@ export function applyInputPointerMethods(InputManager) {
     const worldPos = this.camera.screenToWorld(sx, sy);
 
     if (this.handleMiniMapClick(canvasX, canvasY, e)) {
+      // Remember which pointer was consumed so pointerup does not also run the
+      // inspect focusOn and drag the camera back off the travel target.
+      this._minimapPointerId = e.pointerId;
       return;
     }
 
@@ -90,6 +93,9 @@ export function applyInputPointerMethods(InputManager) {
       }
 
       this.handlePointerAction(e, false);
+      // Marks that the pointer path already handled this tap; the touch layer's
+      // `mobiletap` selection must not run a second time.
+      this._lastPointerTapAt = performance.now();
     }
   };
 
@@ -97,12 +103,19 @@ export function applyInputPointerMethods(InputManager) {
    * Handle pointer move events
    */
   InputManager.prototype.onPointerMove = function (e) {
-    if (gameState.pinchActive && this.dragState.pending) {
-      this.dragState.pending = false;
-      this.dragState.creature = null;
-      this.dragState.pointerId = null;
-      gameState.creatureDragActive = false;
+    // A pinch owns both pointers: never paint/spawn/fire a god tool while it is
+    // active, and only the pointer that started an interaction may drive it.
+    if (gameState.pinchActive) {
+      if (this.dragState.pending) {
+        this.dragState.pending = false;
+        this.dragState.creature = null;
+        this.dragState.pointerId = null;
+        gameState.creatureDragActive = false;
+      }
+      this.clearGodHold?.();
+      return;
     }
+    if (this._activePointerId != null && e.pointerId !== this._activePointerId) return;
 
     if (this.godHoldPointerId === e.pointerId && this.godHoldStart) {
       const dx = e.clientX - this.godHoldStart.x;
@@ -169,6 +182,17 @@ export function applyInputPointerMethods(InputManager) {
     this.clearGodHold();
     if (this._activePointerId === e.pointerId) this._activePointerId = null;
 
+    // Minimap tap already moved the camera; do not let the inspect path focus
+    // on the raw world position under the map.
+    if (this._minimapPointerId != null && this._minimapPointerId === e.pointerId) {
+      this._minimapPointerId = null;
+      gameState.travelDrag = null;
+      gameState.travelPreview = null;
+      gameState.painting = false;
+      gameState.panning = false;
+      return;
+    }
+
     const wasDragging = this.dragState.active;
     if (this.dragState.active || this.dragState.pending) {
       this._releaseCreatureDrag(e);
@@ -219,7 +243,9 @@ export function applyInputPointerMethods(InputManager) {
    */
   InputManager.prototype.onPointerCancel = function (e) {
     this.clearGodHold();
+    this.canvas.releasePointerCapture?.(e?.pointerId);
     if (this._activePointerId === e?.pointerId) this._activePointerId = null;
+    this._minimapPointerId = null;
 
     if (this.dragState.active || this.dragState.pending) {
       const creature = this.dragState.creature;

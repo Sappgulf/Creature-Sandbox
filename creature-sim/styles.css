@@ -1414,6 +1414,8 @@ button:not(:disabled):active .ctrl-icon,
   right: var(--space-lg);
   bottom: 80px;
   width: 280px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 /* Features Panel */
 #features-panel {
@@ -7437,5 +7439,39 @@ body {
     min-height: 24px;
     padding-top: 5px;
     padding-bottom: 5px;
+  }
+}
+
+/* Touch devices get a full panel scrim even when they are wider than the
+   phone breakpoint (landscape phones/tablets), where the 768px media query
+   above does not match. */
+@media (pointer: coarse) {
+  .panel-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: var(--z-drawer-scrim);
+  }
+  body.panel-open .panel-overlay {
+    display: block;
+  }
+  /* Keep the God Mode Done/Undo/Redo controls tappable on touch hardware
+     (they were 24px) without growing the panel past its compact budget: the
+     hint drops to a single line, which it was already clipping mid-sentence. */
+  .god-mode-panel .ghost-btn.small,
+  .god-mode-panel .primary-btn.small {
+    min-height: 36px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  .god-mode-panel .god-mode-hint {
+    max-height: 1.4em;
+  }
+  /* Reclaim the header growth so the panel keeps its compact playfield budget. */
+  .god-mode-panel {
+    gap: 6px;
+    padding-top: 6px;
+    padding-bottom: 6px;
   }
 }

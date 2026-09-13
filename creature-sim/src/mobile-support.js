@@ -12,6 +12,9 @@ export class MobileSupport {
     // overwrote the first timer's handle, which then leaked and could fire
     // mid-pinch.
     this._longPressTimers = new Map();
+    this._multiTouchGesture = false;
+    this.lastTapX = null;
+    this.lastTapY = null;
     this.lastPinchDistance = null;
     this.lastPanCenter = null;
     this.doubleTapTimer = null;
@@ -96,8 +99,11 @@ export class MobileSupport {
 
       const viewportWidth = window.visualViewport?.width || window.innerWidth;
       const viewportHeight = window.visualViewport?.height || window.innerHeight;
-      const isCompact = this.isMobile && viewportWidth <= this.compactBreakpoint;
-      const isLandscape = this.isMobile && viewportWidth > viewportHeight && viewportWidth <= this.landscapeBreakpoint;
+      // "Compact" is the short edge so portrait and landscape agree; landscape
+      // is just wider-than-tall (the old 900px cap dropped every large phone).
+      const shortEdge = Math.min(viewportWidth, viewportHeight);
+      const isCompact = this.isMobile && shortEdge <= this.compactBreakpoint;
+      const isLandscape = this.isMobile && viewportWidth > viewportHeight;
 
       document.body.classList.toggle('mobile-device', this.isMobile);
       document.body.classList.toggle('mobile-compact-ui', isCompact);
@@ -209,6 +215,7 @@ export class MobileSupport {
       this.handleSingleTouchStart(e.touches[0]);
     } else if (e.touches.length === 2) {
       // A pinch supersedes any pending long-press.
+      this._multiTouchGesture = true;
       for (const timer of this._longPressTimers.values()) {
         clearTimeout(timer);
       }
@@ -267,8 +274,9 @@ export class MobileSupport {
         const duration = Date.now() - stored.startTime;
         const distance = Math.hypot(stored.currentX - stored.startX, stored.currentY - stored.startY);
 
-        // It's a tap if quick and not moved much
-        if (duration < 300 && distance < 10) {
+        // It's a tap if quick and not moved much. Taps that were part of a
+        // multi-touch gesture (pinch / two-finger tap) never count.
+        if (!this._multiTouchGesture && duration < 300 && distance < 10) {
           this.handleTap(stored.currentX, stored.currentY);
         }
 
@@ -286,6 +294,9 @@ export class MobileSupport {
       gameState.pinchActive = false;
       this.lastPinchDistance = null;
       this.lastPanCenter = null;
+    }
+    if (e.touches.length === 0) {
+      this._multiTouchGesture = false;
     }
   }
 
@@ -355,8 +366,11 @@ export class MobileSupport {
       // own smoothing toward those targets.
       if (zoomAfter !== zoomBefore && zoomBefore > 0 && zoomAfter > 0) {
         const rect = this.canvas?.getBoundingClientRect?.();
-        const anchorX = centerX - (rect?.left ?? 0);
-        const anchorY = centerY - (rect?.top ?? 0);
+        // Camera stores its world center; screen offsets must be measured from
+        // the viewport center, not the left/top edge, or the anchor maths pans
+        // the world sideways while pinching.
+        const anchorX = centerX - (rect?.left ?? 0) - (rect?.width ?? 0) / 2;
+        const anchorY = centerY - (rect?.top ?? 0) - (rect?.height ?? 0) / 2;
         const worldX = anchorX / zoomBefore + this.camera.targetX;
         const worldY = anchorY / zoomBefore + this.camera.targetY;
         this.camera.targetX = worldX - anchorX / zoomAfter;
@@ -382,9 +396,14 @@ export class MobileSupport {
   handleTap(x, y) {
     const now = Date.now();
 
-    // Double tap detection
+    // Double tap detection: also require the taps to be near each other, and
+    // ignore any tap that was part of a multi-touch gesture.
     let tapCount = 1;
-    if (now - this.lastTapTime < 300) {
+    const nearPrevious = Math.hypot(x - (this.lastTapX ?? x), y - (this.lastTapY ?? y)) < 30;
+    if (this._multiTouchGesture) {
+      tapCount = 1;
+      this.tapCount = 0;
+    } else if (now - this.lastTapTime < 300 && nearPrevious) {
       this.tapCount++;
       tapCount = this.tapCount;
       if (this.tapCount === 2) {
@@ -398,7 +417,8 @@ export class MobileSupport {
 
         this.camera.targetX = worldPos.x;
         this.camera.targetY = worldPos.y;
-        this.camera.targetZoom = Math.min(this.camera.targetZoom * 1.5, 2.0);
+        const maxZoom = this.camera.maxZoom ?? 3;
+        this.camera.targetZoom = Math.min(this.camera.targetZoom * 1.5, maxZoom);
         this.camera._clampTargets?.();
 
         this.tapCount = 0;
@@ -408,6 +428,8 @@ export class MobileSupport {
     }
 
     this.lastTapTime = now;
+    this.lastTapX = x;
+    this.lastTapY = y;
 
     // Emit tap event for creature selection. Consumers use tapCount to ignore
     // the second tap of a double-tap (which is a camera zoom).

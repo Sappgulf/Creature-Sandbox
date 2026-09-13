@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-12 — mobile-stability-perf-rehaul — Planned
+
+- **Date:** 2026-09-12
+- **Scope:** render | input | simulation | ui | docs
+- **Type:** Planned
+- **Issues:** Mobile: a two-finger pinch also painted/spawned/erased (pointermove never checked `pinchActive`), pinch-zoom anchored on the viewport corner and jumped the world sideways, the inline `height:100vh` on the canvas defeated the maintained `--vh` value, and every mobile detection used only `max-width:768px`, so landscape phones/tablets fell back to desktop quality, no panel scrim, and desktop HUD. A minimap tap was immediately overridden by the inspect `focusOn`, quality presets never applied shadows, phones could auto-promote to ultra, weather particles still emitted on mobile, battery saver left the speed button stale, a backgrounded drag left creatures grabbed, taps were processed twice, and double-tap ignored tap distance and multi-touch. Stability: `eventSystem.emit` rethrew listener errors and aborted the world tick, proxy `handleMessage` dereferenced a possibly-missing `e.data`, `startNewGame` never cleared `gameState`, restored lineage names could be a non-Map, and analytics' phylogeny called a `buildLineageOverview` the worker proxy does not have. Performance: the worker-FX path built a fresh radial gradient per creature per frame, `_applySaveExtras` rebuilt a Map every snapshot, `unpackCreature` re-allocated a stage array per creature, the proxy sampled perlin biomes with no cache, `maxRenderedObjects` was computed but never enforced, particles were drawn without camera culling, and `colorCache` silently stopped caching once full.
+- **Root Causes:** Input listeners not gated on gesture state; camera anchoring measured from the viewport edge instead of centre; mobile classification duplicated with a width-only check; canvas inline styles overriding the stylesheet; preset knobs never wired to draw paths; symmetric unpack/merge paths missing guards; hot paths written for clarity, not allocation budget.
+- **Fixes:** Gate `pointermove` on pinch/active-pointer and stop tap double-handling; anchor pinch on the viewport centre; drop the inline canvas size; add `device-profile.js` and use it for renderer/performance/UI/panels; skip the minimap's pointerup focus; apply `shadowsEnabled` and cap mobile quality at medium; skip mobile weather emission; sync battery-saver speed HUD; clean pointer state on visibility change; tap-distance + multi-touch guards; default-isolate event listeners; guard proxy messages; reset `gameState` (and re-apply mobile UI defaults) on new game; normalize lineage names to a Map; guard phylogeny; pre-render aura sprites; cache the extras id-map; hoist unpack stage array; cache proxy biomes; enforce the render budget; pass the camera to particle drawing; evict from `colorCache`; delete the unused gesture-tutorial module.
+- **Verification:** Pending full release proof.
+
+### 2026-09-12 — mobile-stability-perf-rehaul — Implemented
+
+- **Date:** 2026-09-12
+- **Scope:** render | input | simulation | ui | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npm run lint` clean; `npm test` green (unit/regression/reboot/presentation/scenario/E2E/save-migration); `npm run build` + `npm run check:bundle` under budget (main app 404.81 kB / 118.25 kB gzip). `npm run smoke:browser` (worker desktop/mobile-compact/mobile-large; mobile p95 33.5 / 34.4 ms), `npm run smoke:main` (fallback-proof), and `npm run smoke:menus` 36/36 all pass. Two regressions found and fixed during the run: `gameState.reset()` had re-enabled mobile inspector auto-open (covering the control strip), and raising the God Mode header tap targets overflowed the panel's 260px compact budget until the header was capped at 36px and the already-clipped hint collapsed to one line. Production proof pending push.
+
 ### 2026-09-12 — world-visuals-and-props — Planned
 
 - **Date:** 2026-09-12

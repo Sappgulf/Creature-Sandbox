@@ -6,6 +6,23 @@ import { poolManager } from './object-pool.js';
 import { assetLoader } from './asset-loader.js';
 import { isReducedMotion } from './accessibility-prefs.js';
 
+// Hoisted: this lookup table was rebuilt for every particle every frame.
+const PARTICLE_SPRITE_GROUP_BASE = Object.freeze({
+  sparkle: 0,
+  food: 0,
+  evolution: 0,
+  heal: 4,
+  play: 4,
+  dust: 8,
+  blood: 8,
+  venom: 8,
+  ring: 12,
+  puff: 12,
+  fade: 12,
+  elder: 12,
+  ripple: 12
+});
+
 export class ParticleSystem {
   constructor() {
     this.particles = [];
@@ -1206,37 +1223,25 @@ export class ParticleSystem {
     const sprite = this._getParticleSpriteRuntime();
     if (!sprite) return null;
 
-    const groupBaseByType = {
-      sparkle: 0,
-      food: 0,
-      evolution: 0,
-      heal: 4,
-      play: 4,
-      dust: 8,
-      blood: 8,
-      venom: 8,
-      ring: 12,
-      puff: 12,
-      fade: 12,
-      elder: 12,
-      ripple: 12
-    };
-    const base = groupBaseByType[p.category] ?? groupBaseByType[p.type];
+    const base = PARTICLE_SPRITE_GROUP_BASE[p.category] ?? PARTICLE_SPRITE_GROUP_BASE[p.type];
     if (base === undefined) return null;
 
     const progress = p.maxLife > 0 ? 1 - Math.max(0, Math.min(1, p.life / p.maxLife)) : 0;
     const offset = Math.min(3, Math.max(0, Math.floor(progress * 4)));
-    const frame = sprite.frames[(base + offset) % sprite.frames.length] || sprite.frames[base] || sprite.frames[0];
-    return frame ? { frame, anchor: sprite.anchor || { x: 0.5, y: 0.5 } } : null;
+    return sprite.frames[(base + offset) % sprite.frames.length] || sprite.frames[base] || sprite.frames[0] || null;
   }
 
   _drawParticleSprite(ctx, p, scale = 1) {
-    const sprite = this._getParticleSpriteFrame(p);
-    if (!sprite) return false;
+    // Returns the frame directly (no per-particle wrapper object) and reads the
+    // anchor off the shared sprite runtime.
+    const frame = this._getParticleSpriteFrame(p);
+    if (!frame) return false;
+    const sprite = this._getParticleSpriteRuntime();
+    const anchor = sprite?.anchor;
     const size = Math.max(6, (p.size || 2) * 4 * scale);
-    const anchorX = Number.isFinite(Number(sprite.anchor.x)) ? Number(sprite.anchor.x) : 0.5;
-    const anchorY = Number.isFinite(Number(sprite.anchor.y)) ? Number(sprite.anchor.y) : 0.5;
-    ctx.drawImage(sprite.frame, p.x - size * anchorX, p.y - size * anchorY, size, size);
+    const anchorX = Number.isFinite(Number(anchor?.x)) ? Number(anchor.x) : 0.5;
+    const anchorY = Number.isFinite(Number(anchor?.y)) ? Number(anchor.y) : 0.5;
+    ctx.drawImage(frame, p.x - size * anchorX, p.y - size * anchorY, size, size);
     return true;
   }
 

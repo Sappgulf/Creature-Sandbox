@@ -4,6 +4,7 @@ import { escapeHtml } from './safe-html.js';
 import { GOD_TOOL_REGISTRY } from './game/god-tool-system.js';
 import { geneValue } from './creature-genetics-helpers.js';
 import { getBadges } from './creature-render.js';
+import { isMobileDevice } from './device-profile.js';
 
 // Animated number counter helper
 const _counterState = new Map();
@@ -139,7 +140,7 @@ export function renderStats(el, world, fps, extra = {}) {
   if (!el) return;
 
   const n = world.creatures.length;
-  const isMobile = typeof window !== 'undefined' && (window.matchMedia?.('(max-width: 768px)').matches ?? false);
+  const isMobile = isMobileDevice();
   // Drawn glyphs rather than emoji: the stats rail is chrome the player reads
   // at a glance, and emoji render as a different typeface on every platform.
   const toolMeta = {

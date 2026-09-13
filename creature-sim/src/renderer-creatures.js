@@ -20,6 +20,33 @@ function creatureOverlayRadius(creature, zoom) {
   return Math.max(4, getCreatureRenderSize(creature, { zoom: zoom || 1 }) * 0.5);
 }
 
+// Pre-rendered soft aura sprites. The worker-FX path used to build a fresh
+// radial gradient per creature per frame (hundreds of CanvasGradient objects
+// under elemental/disease load). One 64px sprite per (color, alpha bucket) is
+// drawn scaled instead.
+const AURA_SPRITE_SIZE = 64;
+const auraSpriteCache = new Map();
+function getAuraSprite(color, alpha) {
+  const safeAlpha = Math.max(0, Math.min(1, Math.round((Number(alpha) || 0) * 20) / 20));
+  const key = `${color}|${safeAlpha}`;
+  const cached = auraSpriteCache.get(key);
+  if (cached) return cached;
+  if (typeof document === 'undefined') return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = AURA_SPRITE_SIZE;
+  canvas.height = AURA_SPRITE_SIZE;
+  const g = canvas.getContext('2d');
+  if (!g) return null;
+  const r = AURA_SPRITE_SIZE / 2;
+  const gradient = g.createRadialGradient(r, r, r * 0.35, r, r, r);
+  gradient.addColorStop(0, `rgba(${color}, ${safeAlpha})`);
+  gradient.addColorStop(1, `rgba(${color}, 0)`);
+  g.fillStyle = gradient;
+  g.fillRect(0, 0, AURA_SPRITE_SIZE, AURA_SPRITE_SIZE);
+  auraSpriteCache.set(key, canvas);
+  return canvas;
+}
+
 export function applyCreatureMethods(Renderer) {
   Renderer.prototype.drawCreatures = function (world, opts) {
     if (!world || !world.creatures) return;
@@ -79,6 +106,13 @@ export function applyCreatureMethods(Renderer) {
       renderList.push(visibleCreatures[i]);
     }
 
+    // Adaptive-quality budget was computed but never enforced. Truncate before
+    // appending the selected/pinned creatures so focus is never dropped.
+    const renderBudget = this.performance?.maxRenderedObjects;
+    if (renderBudget && renderList.length > renderBudget) {
+      renderList.length = renderBudget;
+    }
+
     const appendIfMissing = candidate => {
       if (!candidate || !candidate.alive) return;
       for (let i = 0; i < renderList.length; i++) {
@@ -107,7 +141,7 @@ export function applyCreatureMethods(Renderer) {
       clusterMap = this._clusterCache.clusters;
     }
 
-    const showShadows = zoom > 0.4;
+    const showShadows = this.enableShadows !== false && zoom > 0.4;
     const showOutlines = zoom > 0.5;
     const showTrails = this.enableTrails && zoom > 0.6;
     const showNames = this.enableNameLabels && zoom > 0.5;
@@ -524,6 +558,11 @@ export function applyCreatureMethods(Renderer) {
 
     const softGlow = (color, alpha, scale = 1.7) => {
       const outer = radius * scale;
+      const sprite = getAuraSprite(color, alpha);
+      if (sprite) {
+        ctx.drawImage(sprite, -outer, -outer, outer * 2, outer * 2);
+        return;
+      }
       const gradient = ctx.createRadialGradient(0, 0, radius * 0.35, 0, 0, outer);
       gradient.addColorStop(0, `rgba(${color}, ${alpha})`);
       gradient.addColorStop(1, `rgba(${color}, 0)`);

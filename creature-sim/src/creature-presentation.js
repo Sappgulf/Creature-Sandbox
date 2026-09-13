@@ -4,6 +4,21 @@ import { clamp } from './utils.js';
 
 const SPRITE_SIZES = [32, 48, 64, 96, 128];
 const pendingSpriteRequests = new Set();
+const DEFAULT_SPRITE_ANCHOR = { x: 0.5, y: 0.5 };
+
+function nearestSpriteSize(renderSize) {
+  const target = Number(renderSize) || 64;
+  let closest = SPRITE_SIZES[0];
+  let closestDelta = Math.abs(closest - target);
+  for (let i = 1; i < SPRITE_SIZES.length; i++) {
+    const delta = Math.abs(SPRITE_SIZES[i] - target);
+    if (delta < closestDelta) {
+      closest = SPRITE_SIZES[i];
+      closestDelta = delta;
+    }
+  }
+  return closest;
+}
 
 function numericGene(value, fallback = 0) {
   if (value && typeof value === 'object') {
@@ -122,11 +137,7 @@ export function getCreatureSpriteFrame(
 ) {
   if (typeof document === 'undefined') return null;
   const assetKey = getCreatureAssetKey(creature);
-  const size = assetLoader.getNearestSpriteSize(
-    SPRITE_SIZES.reduce((closest, candidate) =>
-      Math.abs(candidate - renderSize) < Math.abs(closest - renderSize) ? candidate : closest
-    )
-  );
+  const size = assetLoader.getNearestSpriteSize(nearestSpriteSize(renderSize));
   const color = spriteColor || getCreatureSpriteColor(creature, clusterHue);
   let sprite = assetLoader.getSpriteFramesSync(assetKey, { size, color });
   if (!sprite) {
@@ -139,14 +150,22 @@ export function getCreatureSpriteFrame(
   }
 
   const { state, speedScale } = getCreatureAnimationDetails(creature);
-  const clipped = sprite.animations
-    ? sprite
-    : { ...sprite, animations: CREATURE_CLIPS, defaultAnimation: 'idle', frameCount: sprite.frames?.length || 10 };
+  // Cache the clip-wrapped sprite on the cached sprite set instead of cloning
+  // it for every creature every frame.
+  if (!sprite.animations && !sprite._clipsWrapped) {
+    sprite._clipsWrapped = {
+      ...sprite,
+      animations: CREATURE_CLIPS,
+      defaultAnimation: 'idle',
+      frameCount: sprite.frames?.length || 10
+    };
+  }
+  const clipped = sprite.animations ? sprite : sprite._clipsWrapped;
   const frameIndex = assetLoader.getAnimationFrameIndex(clipped, state, worldTime, speedScale);
   return {
     assetKey,
     frame: sprite.frames[frameIndex] || sprite.frames[0] || null,
-    anchor: sprite.anchor || { x: 0.5, y: 0.5 },
+    anchor: sprite.anchor || DEFAULT_SPRITE_ANCHOR,
     size
   };
 }

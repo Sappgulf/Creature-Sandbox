@@ -5,6 +5,7 @@
 import { gameState } from './game-state.js';
 import { domCache } from './dom-cache.js';
 import { eventSystem, GameEvents } from './event-system.js';
+import { isMobileDevice } from './device-profile.js';
 import { SANDBOX_PROP_TYPES } from './sandbox-props.js';
 import { clamp } from './utils.js';
 import { BehaviorConfig, setBehaviorWeights } from './behavior.js';
@@ -569,7 +570,7 @@ export class UIController {
         showBtn.setAttribute('aria-hidden', 'false');
       }
     }
-    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    const isMobile = isMobileDevice();
     if (isMobile) {
       const anyPanelOrInspectorOpen = document.querySelector('.panel:not(.hidden), #inspector:not(.hidden)');
       document.body.classList.toggle('panel-open', !!anyPanelOrInspectorOpen);

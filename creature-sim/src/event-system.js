@@ -148,8 +148,10 @@ export class EventSystem {
             break;
           }
         } catch (error) {
+          // A single bad listener must never abort the caller's tick. Hard
+          // failure is opt-in via `{ throwOnError: true }`.
           console.error(`Error in event listener for '${eventType}':`, error);
-          if (options.throwOnError !== false) {
+          if (options.throwOnError === true) {
             throw error;
           }
         }
@@ -166,7 +168,7 @@ export class EventSystem {
           callback(data, eventType);
         } catch (error) {
           console.error(`Error in once event listener for '${eventType}':`, error);
-          if (options.throwOnError !== false) {
+          if (options.throwOnError === true) {
             throw error;
           }
         }

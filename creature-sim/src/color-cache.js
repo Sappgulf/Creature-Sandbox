@@ -85,6 +85,18 @@ function qRgb(v) {
   return q;
 }
 
+// Map preserves insertion order, so evicting from the front approximates an
+// LRU and — unlike the old hard stop — keeps the cache useful once a busy
+// scene fills the HSL space.
+function evictOldest(map, count) {
+  if (!map || count <= 0) return;
+  let removed = 0;
+  for (const key of map.keys()) {
+    map.delete(key);
+    if (++removed >= count) break;
+  }
+}
+
 export class ColorCache {
   /**
    * @param {{ maxEntries?: number }} [opts]
@@ -118,7 +130,7 @@ export class ColorCache {
       return cached;
     }
     if (this._hsl.size >= this._maxEntries) {
-      // Bail out without caching — return a fresh string but count as a miss.
+      evictOldest(this._hsl, Math.floor(this._maxEntries / 4));
       this._misses++;
       return `hsl(${h}, ${s}%, ${l}%)`;
     }
@@ -149,6 +161,7 @@ export class ColorCache {
       return cached;
     }
     if (this._hsla.size >= this._maxEntries) {
+      evictOldest(this._hsla, Math.floor(this._maxEntries / 4));
       this._misses++;
       return `hsla(${h}, ${s}%, ${l}%, ${a})`;
     }
@@ -179,6 +192,7 @@ export class ColorCache {
       return cached;
     }
     if (this._rgba.size >= this._maxEntries) {
+      evictOldest(this._rgba, Math.floor(this._maxEntries / 4));
       this._misses++;
       return `rgba(${rr}, ${gg}, ${bb}, ${a})`;
     }
