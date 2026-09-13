@@ -45,8 +45,8 @@ export function getRuntimeProfile() {
       mobile: false,
       compact: false,
       lowMemory: false,
-      defaultZoom: 0.5,
-      openingZoom: 0.9,
+      defaultZoom: 0.9,
+      openingZoom: 1.35,
       startupSeed: DESKTOP_STARTUP_SEED
     };
   }
@@ -62,8 +62,10 @@ export function getRuntimeProfile() {
     mobile: mobileViewport,
     compact: compactViewport,
     lowMemory,
-    defaultZoom: mobileViewport ? 0.48 : 0.5,
-    openingZoom: mobileViewport ? (compactViewport ? 0.68 : 0.74) : 0.9,
+    // Zoom in far enough that creatures and ground cover fill the frame; the
+    // old 0.9 desktop / 0.68 mobile opening looked like an empty field.
+    defaultZoom: mobileViewport ? 0.8 : 0.9,
+    openingZoom: mobileViewport ? (compactViewport ? 1.0 : 1.08) : 1.35,
     startupSeed:
       compactViewport || lowMemory
         ? COMPACT_MOBILE_STARTUP_SEED

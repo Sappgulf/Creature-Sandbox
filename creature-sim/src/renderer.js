@@ -708,9 +708,10 @@ export class Renderer {
       const pulse = 0.85 + Math.sin(t * 2.2 + (zone.id || 0)) * 0.08;
       const radius = (zone.radius || 80) * pulse;
       const strength = Number(zone.strength ?? 0.6);
-      ctx.fillStyle = `rgba(120, 220, 200, ${0.08 + strength * 0.08})`;
-      ctx.strokeStyle = `rgba(160, 240, 220, ${0.28 + strength * 0.18})`;
-      ctx.lineWidth = 2;
+      // Subtle habitat cue, not a filled disc that reads as debug UI.
+      ctx.fillStyle = `rgba(120, 220, 200, ${0.02 + strength * 0.03})`;
+      ctx.strokeStyle = `rgba(160, 240, 220, ${0.14 + strength * 0.1})`;
+      ctx.lineWidth = 1.4;
       ctx.beginPath();
       ctx.arc(zone.x, zone.y, radius, 0, Math.PI * 2);
       ctx.fill();
@@ -726,8 +727,8 @@ export class Renderer {
         if (!Number.isFinite(zone.x) || !Number.isFinite(zone.y)) continue;
         const pulse = 0.92 + Math.sin(t * 0.9 + zone.x * 0.01) * 0.05;
         const radius = (zone.radius || 120) * pulse;
-        ctx.fillStyle = 'rgba(140, 230, 180, 0.05)';
-        ctx.strokeStyle = 'rgba(170, 245, 200, 0.22)';
+        ctx.fillStyle = 'rgba(140, 230, 180, 0.02)';
+        ctx.strokeStyle = 'rgba(170, 245, 200, 0.12)';
         ctx.beginPath();
         ctx.arc(zone.x, zone.y, radius, 0, Math.PI * 2);
         ctx.fill();
@@ -979,7 +980,7 @@ export class Renderer {
       // Food was drawn at `r * 3` (a ~6px dot at default zoom), which read as
       // confetti rather than forage. Scale to the sprite art and add a gentle
       // bob + contact shadow so it reads as an object on the ground.
-      const drawSize = Math.max(9, (f.r || 2) * 5.2);
+      const drawSize = Math.max(12, (f.r || 2) * 6);
       const pulse = Math.sin(time * pulseSpeeds[type] + i * 0.1) * 0.5 + 0.5;
       const bob = Math.sin(time * 1.6 + i * 0.7) * drawSize * 0.05;
 

@@ -514,7 +514,7 @@ export class PlayableScenarios {
       this.camera.targetY = this.camera.y;
       // 0.8 keeps food above the sprite threshold (0.75) so scenario openings
       // show authored assets instead of flat fallback circles.
-      this.camera.zoom = Math.max(this.camera.minZoom || 0.1, Math.min(0.8, this.camera.maxZoom || 3));
+      this.camera.zoom = Math.max(this.camera.minZoom || 0.1, Math.min(1.15, this.camera.maxZoom || 3));
       this.camera.targetZoom = this.camera.zoom;
     }
 

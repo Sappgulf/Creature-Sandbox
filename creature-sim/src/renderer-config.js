@@ -5,7 +5,7 @@
 export const RendererConfig = {
   // Canvas and rendering
   CANVAS: {
-    DEFAULT_BACKGROUND: '#03050a',
+    DEFAULT_BACKGROUND: '#0a1810',
     IMAGE_SMOOTHING: {
       MOBILE: 'medium',
       DESKTOP: 'high'
@@ -94,7 +94,9 @@ export const RendererConfig = {
 
   // Visual feature toggles (default states)
   FEATURES: {
-    TRAILS: false,
+    // Motion trails make creature movement readable at a glance; mobile
+    // optimizations turn them back off.
+    TRAILS: true,
     VISION: false,
     CLUSTERING: false,
     TERRITORIES: false,

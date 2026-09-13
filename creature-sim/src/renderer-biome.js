@@ -44,10 +44,30 @@ function buildTerrainLayer(world, season, phase, key) {
   const layerCtx = canvas.getContext('2d');
   if (!layerCtx) return null;
 
+  // Deterministic RNG so the same world/season rebuilds an identical layer.
+  let seed = 0x9e3779b9;
+  for (let i = 0; i < key.length; i++) seed = Math.imul(seed ^ key.charCodeAt(i), 0x85ebca6b);
+  const rand = () => {
+    seed ^= seed << 13;
+    seed ^= seed >>> 17;
+    seed ^= seed << 5;
+    return ((seed >>> 0) % 100000) / 100000;
+  };
+
+  // 1. Base ground: a living green instead of the near-black canvas showing
+  //    through, with a gentle vertical variation for depth.
+  const base = layerCtx.createLinearGradient(0, 0, 0, height);
+  base.addColorStop(0, 'rgba(24, 48, 34, 0.9)');
+  base.addColorStop(0.55, 'rgba(18, 40, 28, 0.92)');
+  base.addColorStop(1, 'rgba(13, 32, 23, 0.94)');
+  layerCtx.fillStyle = base;
+  layerCtx.fillRect(0, 0, width, height);
+
+  // 2. Biome color fields.
   const seasonGroundTint = getSeasonalGroundTint(season, phase);
   const sampleSpacing = Math.max(200, 360) * scale;
   const influenceRadius = sampleSpacing * 0.95;
-  const overlayAlpha = 0.26;
+  const overlayAlpha = 0.46;
   for (let gy = 0; gy < height + sampleSpacing; gy += sampleSpacing) {
     for (let gx = 0; gx < width + sampleSpacing; gx += sampleSpacing) {
       const jitterX = Math.sin(gx * 0.013 + gy * 0.021) * sampleSpacing * 0.18;
@@ -64,13 +84,51 @@ function buildTerrainLayer(world, season, phase, key) {
         clamp(biomeColor[2] + seasonGroundTint.b * 100, 0, 255)
       ];
       gradient.addColorStop(0, `rgba(${tintedColor.join(',')}, ${overlayAlpha})`);
-      gradient.addColorStop(0.45, `rgba(${tintedColor.join(',')}, ${overlayAlpha * 0.6})`);
-      gradient.addColorStop(0.75, `rgba(${tintedColor.join(',')}, ${overlayAlpha * 0.2})`);
+      gradient.addColorStop(0.45, `rgba(${tintedColor.join(',')}, ${overlayAlpha * 0.62})`);
+      gradient.addColorStop(0.75, `rgba(${tintedColor.join(',')}, ${overlayAlpha * 0.24})`);
       gradient.addColorStop(1, `rgba(${tintedColor.join(',')}, 0)`);
       layerCtx.fillStyle = gradient;
       layerCtx.fillRect(cx - influenceRadius, cy - influenceRadius, influenceRadius * 2, influenceRadius * 2);
     }
   }
+
+  // 3. Dappled sunlight: broad warm and cool patches break the flat wash.
+  for (let i = 0; i < 46; i++) {
+    const x = rand() * width;
+    const y = rand() * height;
+    const r = 90 + rand() * 220;
+    const warm = rand() > 0.42;
+    const g = layerCtx.createRadialGradient(x, y, r * 0.1, x, y, r);
+    if (warm) {
+      g.addColorStop(0, 'rgba(236, 246, 190, 0.1)');
+      g.addColorStop(1, 'rgba(236, 246, 190, 0)');
+    } else {
+      g.addColorStop(0, 'rgba(6, 16, 12, 0.16)');
+      g.addColorStop(1, 'rgba(6, 16, 12, 0)');
+    }
+    layerCtx.fillStyle = g;
+    layerCtx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+
+  // 4. Ground-cover speckle carpet: thousands of tiny blades/moss flecks baked
+  //    in, so the floor has texture without per-frame draws.
+  const coverCount = Math.round((width * height) / 120);
+  for (let i = 0; i < coverCount; i++) {
+    const x = rand() * width;
+    const y = rand() * height;
+    const r = 0.6 + rand() * 1.8;
+    const light = rand();
+    layerCtx.fillStyle =
+      light > 0.72
+        ? `rgba(150, 196, 120, ${0.1 + rand() * 0.1})`
+        : light > 0.35
+          ? `rgba(70, 118, 72, ${0.12 + rand() * 0.12})`
+          : `rgba(24, 52, 34, ${0.14 + rand() * 0.12})`;
+    layerCtx.beginPath();
+    layerCtx.arc(x, y, r, 0, Math.PI * 2);
+    layerCtx.fill();
+  }
+
   terrainLayerCache.key = key;
   terrainLayerCache.canvas = canvas;
   return canvas;
@@ -186,9 +244,9 @@ export function drawBiomeDetail(renderer, ctx, world) {
   const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
 
   const atmosphereGradient = ctx.createLinearGradient(bounds.x1, bounds.y1, bounds.x2, bounds.y2);
-  atmosphereGradient.addColorStop(0, 'rgba(40, 64, 92, 0.12)');
-  atmosphereGradient.addColorStop(0.48, 'rgba(5, 8, 18, 0.04)');
-  atmosphereGradient.addColorStop(1, 'rgba(0, 0, 0, 0.16)');
+  atmosphereGradient.addColorStop(0, 'rgba(64, 96, 74, 0.1)');
+  atmosphereGradient.addColorStop(0.48, 'rgba(8, 22, 16, 0.02)');
+  atmosphereGradient.addColorStop(1, 'rgba(0, 0, 0, 0.12)');
   ctx.fillStyle = atmosphereGradient;
   ctx.fillRect(
     bounds.x1 - extendAmount,
@@ -728,7 +786,10 @@ export function drawDecorationFromSprite(renderer, ctx, dec, spriteInfo, assetKe
   // player scanning the field found texture before they found life. Trees and
   // rocks stay heavier — they are the landmarks you navigate by.
   const isGroundCover = dec.type === 'grass' || dec.type === 'flower' || dec.type === 'rock';
-  ctx.globalAlpha = (isGroundCover ? 0.46 : 0.78) * mod.alphaMult;
+  // Ground cover was faded to 0.46, which made a field of flowers read as a
+  // faint smudge. Keep it a touch under full so life stays the subject, but
+  // let the layer actually show.
+  ctx.globalAlpha = (isGroundCover ? 0.72 : 0.88) * mod.alphaMult;
 
   // NOTE: this used to set ctx.filter (saturate/brightness/hue-rotate) before
   // every filtered sprite draw. In software rendering Chromium flushes that
@@ -737,14 +798,25 @@ export function drawDecorationFromSprite(renderer, ctx, dec, spriteInfo, assetKe
   // per hue, so the tint cache does not churn); saturation/brightness ride on
   // globalAlpha and the season overlays. Rocks keep a darker stone value.
   const tintHue = Math.round(((Number(dec.hue) || 0) + (mod.hueShift || 0)) / 8) * 8;
-  const tintLightness = dec.type === 'rock' ? 39 : 50;
-  const tintColor = `hsl(${tintHue}, 50%, ${tintLightness}%)`;
+  const tintLightness = dec.type === 'rock' ? 44 : 58;
+  const tintColor = `hsl(${tintHue}, 52%, ${tintLightness}%)`;
 
   const frame = assetLoader.getSpriteFrameSync(assetKey, spriteIndex, frameWidth, tintColor);
   if (frame) {
     const anchor = spriteInfo.anchor || { x: 0.5, y: 1 };
     const anchorX = Number.isFinite(Number(anchor.x)) ? Number(anchor.x) : 0.5;
     const anchorY = Number.isFinite(Number(anchor.y)) ? Number(anchor.y) : 1;
+    // Soft contact shadow grounds the sprite on the floor at no per-frame cost
+    // beyond one small gradient-free ellipse.
+    if (dec.type !== 'grass') {
+      ctx.save();
+      ctx.globalAlpha *= 0.2;
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.ellipse(0, -frameHeight * 0.03, frameWidth * 0.3, frameHeight * 0.07, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
     ctx.drawImage(frame, -frameWidth * anchorX, -frameHeight * anchorY);
   } else {
     const requestKey = `${assetKey}|${frameWidth}|${tintColor}`;

@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-12 — lush-field-visual-overhaul — Planned
+
+- **Date:** 2026-09-12
+- **Scope:** render | docs
+- **Type:** Planned
+- **Issues:** The playfield read as a near-black empty plane: the base color was `#03050a`, baked biome fields were only 0.26 alpha over it, ground cover (grass/flowers/rocks) was faded to 0.46 alpha with dark tints, creatures were 24–28px low-contrast dots, food was ~6px, and the calm/rest zones were large filled discs that looked like debug overlays. The opening camera (0.9 desktop / 0.68 mobile) framed vast emptiness, so the world looked lifeless even though the simulation was healthy.
+- **Root Causes:** Palette and alpha tuned for a darker art direction that never shipped elsewhere; terrain layer built from transparent biome patches only; ground-cover opacity tuned down to keep creatures dominant at the old tiny creature scale; zones authored as filled habitat discs.
+- **Fixes:** Warmer deep base; baked terrain now fills a living green gradient plus stronger biome fields, 46 broad dappled sun/shade patches and a per-pixel speckle carpet (deterministic per seed); ground cover at 0.72 alpha with brighter tints and contact shadows; camera default/opening zoom raised (0.9/1.35 desktop, 0.8/1.1 mobile; scenarios 1.15); creatures ~20% larger with a higher screen-size floor; food ~30% larger; calm/rest zones reduced to faint breathing rings; trails on by default on desktop (mobile stays off).
+- **Verification:** Pending full release proof.
+
+### 2026-09-12 — lush-field-visual-overhaul — Implemented
+
+- **Date:** 2026-09-12
+- **Scope:** render | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npm run lint` clean; `npm test` green; `npm run build` + `npm run check:bundle` under budget (main app 404.81 kB / 118.26 kB gzip). `npm run smoke:browser` (worker desktop/mobile-compact/mobile-large; mobile p95 33.4 / 34.1 ms), `npm run smoke:menus` 36/36, and `npm run smoke:main` pass. Before/after screenshots captured in `output/look/` and `output/browser-smoke/` show a populated green field with readable creatures, decorations and shadows versus the previous near-empty dark plane. Production proof pending push.
+
 ### 2026-09-12 — mobile-stability-perf-rehaul — Planned
 
 - **Date:** 2026-09-12
