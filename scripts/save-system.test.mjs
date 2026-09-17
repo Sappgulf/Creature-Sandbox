@@ -312,4 +312,38 @@ assert.equal(systemsResult.world.sandbox.props[0].type, 'spring', 'sandbox prop 
 assert.equal(systemsResult.world.events.activeEvent.type, 'food_bloom', 'active world event should round-trip');
 assert.equal(systemsResult.world.eventModifiers.foodGrowth, 1.4, 'event modifiers should round-trip');
 
+// Regression: decorations are derived from the biome map, not serialized.
+// `reset()` clears them, so a load must regenerate them or the field is bare.
+assert.ok(systemsResult.world.decorations.length > 0, 'loading a save should regenerate environmental decorations');
+
+// Regression: food visual fields (r/size/color) must survive a round-trip so
+// loaded food does not render uniformly at the default radius/color.
+const foodVisualWorld = new World(200, 150);
+foodVisualWorld.reset();
+foodVisualWorld.food = [
+  { x: 30, y: 40, r: 2.75, size: 3.25, color: '#8fce00', energy: 2, bites: 2, biteEnergy: 1, type: 'berry' }
+];
+const foodVisualSave = saveSystem.serialize(foodVisualWorld, camera, null, null);
+const foodVisualResult = saveSystem.deserialize(foodVisualSave, World, Creature, Camera, makeGenes, BiomeGenerator);
+assert.equal(foodVisualResult.world.food[0].r, 2.75, 'food r should round-trip');
+assert.equal(foodVisualResult.world.food[0].size, 3.25, 'food size should round-trip');
+assert.equal(foodVisualResult.world.food[0].color, '#8fce00', 'food color should round-trip');
+
+// Regression: a save whose world payload lost its `creatures` array must not
+// throw mid-deserialize; it should degrade to an empty population instead.
+const missingCreaturesSave = JSON.parse(JSON.stringify(systemsSave));
+delete missingCreaturesSave.world.creatures;
+let missingCreaturesResult = null;
+assert.doesNotThrow(() => {
+  missingCreaturesResult = saveSystem.deserialize(
+    missingCreaturesSave,
+    World,
+    Creature,
+    Camera,
+    makeGenes,
+    BiomeGenerator
+  );
+}, 'deserialize should tolerate a missing creature list');
+assert.equal(missingCreaturesResult.world.creatures.length, 0, 'missing creature list should restore empty');
+
 console.log('Save system tests passed.');

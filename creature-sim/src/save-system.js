@@ -333,6 +333,9 @@ export class SaveSystem {
         food: world.food.map(f => ({
           x: f.x,
           y: f.y,
+          r: f.r,
+          size: f.size,
+          color: f.color,
           energy: f.energy,
           bites: f.bites,
           biteEnergy: f.biteEnergy,
@@ -645,6 +648,13 @@ export class SaveSystem {
       world.biomeMap = world.biomeGenerator.generateBiomeMap(data.width, data.height, 50);
     }
 
+    // `reset()` above clears decorations. They are derived from the biome map
+    // (not serialized), so without this every load left the field bare even
+    // though the worker comment claimed they were rebuilt.
+    if (typeof world.generateDecorations === 'function' && world.biomeMap) {
+      world.generateDecorations();
+    }
+
     if (world.sandbox?.restore) {
       world.sandbox.restore(data.sandboxProps || data.sandbox?.props || []);
     }
@@ -689,7 +699,11 @@ export class SaveSystem {
     // Restore creatures
     world.creatures = [];
     world.registry.clear();
-    for (const cData of data.creatures) {
+    const restoredCreatures = Array.isArray(data.creatures) ? data.creatures : [];
+    if (!Array.isArray(data.creatures)) {
+      console.warn('⚠️ Save contained no creature list; restoring an empty population');
+    }
+    for (const cData of restoredCreatures) {
       const creature = new Creature(cData.x, cData.y, cData.genes || makeGenes(), false);
       creature.id = cData.id;
       creature.parentId = cData.parentId || null;
@@ -835,6 +849,9 @@ export class SaveSystem {
     world.food = (data.food || []).map(f => ({
       x: f.x,
       y: f.y,
+      r: toNumber(f.r, undefined),
+      size: toNumber(f.size, undefined),
+      color: f.color ?? undefined,
       energy: toNumber(f.energy, 1.0),
       bites: toNumber(f.bites, Math.max(1, Math.round(toNumber(f.energy, 1.0) / CreatureAgentTuning.FOOD.BITE_ENERGY))),
       biteEnergy: toNumber(f.biteEnergy, CreatureAgentTuning.FOOD.BITE_ENERGY),

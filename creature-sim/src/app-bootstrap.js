@@ -917,7 +917,13 @@ export async function initializeApp() {
   const applyLoadedState = (loaded, source = 'save') => {
     if (!loaded) return false;
 
-    if (typeof world.importState === 'function' && loaded.saveWorld) {
+    // Worker proxies can only receive a save-format world (`saveWorld`) and
+    // re-hydrate it inside the worker. The main-thread `World` was already
+    // reconstructed in-place by `deserialize()`, so importing `saveWorld` into
+    // it would overwrite real Creature instances with plain objects and reset
+    // `t` to 0. Only take the `saveWorld` path for worker proxies.
+    const activeIsWorker = world.isWorker === true;
+    if (activeIsWorker && typeof world.importState === 'function' && loaded.saveWorld) {
       world.importState(loaded.saveWorld, loaded.metadata?.version || '2.0');
     } else if (loaded.world && loaded.world !== world) {
       if (typeof world.importState === 'function' && typeof loaded.world.exportState === 'function') {
@@ -2728,15 +2734,11 @@ export async function initializeApp() {
           source: 'browser-smoke'
         });
         const canApplyLoadedWorld = typeof world.importState === 'function';
-        const loaded = saveSystem.deserialize(
-          data,
-          World,
-          Creature,
-          Camera,
-          makeGenes,
-          BiomeGenerator,
-          canApplyLoadedWorld ? null : world
-        );
+        // Mirror the real load paths (file/autosave): hand `deserialize` the
+        // active world so the main-thread fallback restores in place. Passing
+        // `null` forced the exportState round-trip, which replaces real
+        // Creature instances with plain objects.
+        const loaded = saveSystem.deserialize(data, World, Creature, Camera, makeGenes, BiomeGenerator, world);
 
         const applied = applyLoadedState(loaded, 'browser-smoke');
         if (canApplyLoadedWorld && applied) {

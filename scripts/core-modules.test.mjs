@@ -2257,6 +2257,34 @@ test('GameLoop: undoGodMode and redoGodMode forward to ToolController', () => {
   assert.deepEqual(calls, ['undo', 'redo']);
 });
 
+test('GameLoop: threat detection reads the simulation clock from world.t', () => {
+  const prey = { id: 1, alive: true, x: 100, y: 100, genes: { predator: false } };
+  const predator = {
+    id: 2,
+    alive: true,
+    x: 110,
+    y: 110,
+    genes: { predator: true },
+    goal: { current: 'hunting' }
+  };
+
+  const earlyLoop = Object.create(GameLoop.prototype);
+  earlyLoop.world = { t: 4, creatures: [prey, predator] };
+  earlyLoop._threatCache = null;
+  assert.equal(
+    GameLoop.prototype._threatToSelected.call(earlyLoop, prey),
+    null,
+    'threat should not fire before the sim settles'
+  );
+
+  const settledLoop = Object.create(GameLoop.prototype);
+  settledLoop.world = { t: 12, creatures: [prey, predator] };
+  settledLoop._threatCache = null;
+  const threat = GameLoop.prototype._threatToSelected.call(settledLoop, prey);
+  assert.ok(threat, 'threat should fire once world.t has advanced');
+  assert.equal(threat.id, 2, 'threat should report the hunting predator');
+});
+
 test('ecosystem-ghosts: recordDeath classifies diploid predators and hue', () => {
   const ghosts = new GhostTrailSystem();
   ghosts.recordDeath(10, 20, {

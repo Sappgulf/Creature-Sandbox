@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-16 — save-load-integrity-sweep — Planned
+
+- **Date:** 2026-09-16
+- **Scope:** simulation | render | ui | docs
+- **Type:** Planned
+- **Issues:** A focused audit of the simulation/save surface found shipped behavior that was silently dead or destructive. Loading any save wiped every environmental decoration permanently (`world.reset()` clears `decorations` and nothing regenerated them, even though the worker comment claimed they were rebuilt). In the main-thread fallback, `applyLoadedState` always routed through `world.importState(loaded.saveWorld)`, overwriting the in-place-restored `World` with plain serialized creatures and resetting `world.t` to 0, and the browser-smoke `saveRoundTrip` hook forced the same `exportState()` path. The selected-creature threat indicator could never fire: `_threatToSelected` read `world.time ?? world.simTime`, neither of which exists (`World`/`SimulationProxy` expose `.t`), so the `worldTime >= 8` gate was permanently false. `_applySaveExtras` rebuilt its id-Map every snapshot because `updateSnapshot` replaced the `_saveExtras` object identity each tick. Food `r`/`color`/`size` were dropped by `serialize` and never restored, so loaded food rendered uniformly. `deserialize` iterated `data.creatures` without an array guard, so a truncated payload threw mid-restore.
+- **Root Causes:** Derived (non-serialized) data expected to survive a `reset()`; save-vs-snapshot format conflation in the load dispatcher; a renderer rename (`time` → `t`) never propagated to the threat scan; a "stable cache" keyed on an object that was recreated per tick; food visuals treated as transient render state rather than saved state; missing shape guards on the save boundary.
+- **Fixes:** Regenerate decorations in `deserialize` after the biome map is restored; gate the `saveWorld`/`importState` branch in `applyLoadedState` on `world.isWorker === true` so main-thread restores in place; hand the active world to `deserialize` from the smoke `saveRoundTrip` hook to match the real file/autosave paths; read the sim clock from `world.t` in `_threatToSelected`; mutate `_saveExtras.sandboxProps` in place to preserve cache identity; round-trip food `r`/`size`/`color`; guard `data.creatures` with an empty-population fallback.
+- **Verification:** Pending full release proof.
+
+### 2026-09-16 — save-load-integrity-sweep — Implemented
+
+- **Date:** 2026-09-16
+- **Scope:** simulation | render | ui | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npm run lint` clean; `npm test` green (core modules 194, reboot/presentation/scenario suites 75, E2E 1, save-migration). New regressions: `scripts/save-system.test.mjs` now asserts decorations are non-empty after load, food `r`/`size`/`color` round-trip, and a save missing `world.creatures` restores an empty population without throwing; `scripts/core-modules.test.mjs` asserts `_threatToSelected` stays null at `world.t = 4` and reports the hunter at `world.t = 12`. `npm run proof:release` passes end-to-end (tests, lint, build, bundle, worker + main browser lanes, scenario balance 2× stress_sanctuary/scavenger_bridge at 72.5 s runs, evidence board). `npm run build` + `npm run check:bundle` under budget (main app 404.82 kB / 118.27 kB gzip, worker 309.06 kB / 91.80 kB gzip). `npm run smoke:menus` 36/36 and `npm run format:check` clean. Main-thread fallback desktop pacing remains environment-sensitive as recorded in `docs/KNOWN_ISSUES.md` #2 (sampled avg 56.25 ms / p95 83.4 ms this run, gate held by the fallback-proof lane).
+
 ### 2026-09-12 — lush-field-visual-overhaul — Planned
 
 - **Date:** 2026-09-12

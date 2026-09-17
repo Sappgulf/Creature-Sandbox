@@ -598,7 +598,11 @@ export class SimulationProxy {
       // getter path) is the smallest change that keeps the renderer and
       // save-system.js reading live worker-side props.
       if (Array.isArray(sandboxProps)) {
-        this._saveExtras = { ...(this._saveExtras || {}), sandboxProps };
+        // Keep the extras object identity stable across ticks: replacing it
+        // here defeated `_applySaveExtras`'s id-map cache (which keys on the
+        // object reference), forcing a full Map rebuild every snapshot.
+        if (!this._saveExtras) this._saveExtras = {};
+        this._saveExtras.sandboxProps = sandboxProps;
       }
       if (Array.isArray(foodPatches) && this.worldSnapshot.ecosystem) {
         this.worldSnapshot.ecosystem.foodPatches = foodPatches;

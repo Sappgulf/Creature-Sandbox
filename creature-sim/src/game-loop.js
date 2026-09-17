@@ -1354,7 +1354,10 @@ export class GameLoop {
     const cached = this._threatCache;
     if (cached && now - cached.at < 500 && cached.id === focusCreature?.id) return cached.result;
     let result = null;
-    const worldTime = Number(this.world?.time ?? this.world?.simTime ?? 0);
+    // `world.t` is the simulation clock on both World and SimulationProxy;
+    // the old `world.time`/`world.simTime` never existed, so this gate was
+    // permanently 0 and threat detection could never fire.
+    const worldTime = Number(this.world?.t ?? this.world?.time ?? this.world?.simTime ?? 0);
     // Opener herds sit inside 230px of a predator on frame 0 — that is habitat
     // pressure, not a hunt. Wait for the sim to settle, then require a real
     // hunt goal or a locked prey id inside a tighter radius.
