@@ -122,15 +122,22 @@ export function drawParallaxBackground(renderer, ctx, world) {
   // Layer 3: Ambient drift particles (in world space, scroll with camera)
   const particleCount = isMobile ? PARTICLE_COUNT_MOBILE : PARTICLE_COUNT_DESKTOP;
   if (!renderer._ambientParticles || renderer._ambientParticles.length !== particleCount) {
-    renderer._ambientParticles = Array.from({ length: particleCount }, (_, i) => ({
-      x: seededRand(i + 2000) * (world.width || 5000) - 1000,
-      y: seededRand(i + 3000) * (world.height || 3500) - 1000,
-      vx: (seededRand(i + 4000) - 0.5) * 4,
-      vy: (seededRand(i + 5000) - 0.5) * 4,
-      r: 0.4 + seededRand(i + 6000) * 0.8,
-      alpha: 0.12 + seededRand(i + 7000) * 0.18,
-      hue: 160 + seededRand(i + 8000) * 60
-    }));
+    renderer._ambientParticles = Array.from({ length: particleCount }, (_, i) => {
+      const hue = 160 + seededRand(i + 8000) * 60;
+      const alpha = 0.12 + seededRand(i + 7000) * 0.18;
+      return {
+        x: seededRand(i + 2000) * (world.width || 5000) - 1000,
+        y: seededRand(i + 3000) * (world.height || 3500) - 1000,
+        vx: (seededRand(i + 4000) - 0.5) * 4,
+        vy: (seededRand(i + 5000) - 0.5) * 4,
+        r: 0.4 + seededRand(i + 6000) * 0.8,
+        alpha,
+        hue,
+        // Pre-formatted: hue/alpha never change, so don't rebuild this
+        // template string for every particle every frame.
+        style: `hsla(${hue}, 50%, 80%, ${alpha})`
+      };
+    });
   }
   const particles = renderer._ambientParticles;
   const bounds = renderer._viewBounds;
@@ -144,7 +151,7 @@ export function drawParallaxBackground(renderer, ctx, world) {
     if (p.x > bounds.x2 + 50) p.x = bounds.x1 - 50;
     if (p.y < bounds.y1 - 50) p.y = bounds.y2 + 50;
     if (p.y > bounds.y2 + 50) p.y = bounds.y1 - 50;
-    ctx.fillStyle = `hsla(${p.hue}, 50%, 80%, ${p.alpha})`;
+    ctx.fillStyle = p.style;
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
     ctx.fill();

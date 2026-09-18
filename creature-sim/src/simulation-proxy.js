@@ -877,7 +877,12 @@ export class SimulationProxy {
   // defaults matching what a fresh world would have).
   get childrenOf() {
     const entries = this._saveExtras?.childrenOf || [];
-    return new Map(entries.map(entry => [entry.parentId, new Set(entry.childIds)]));
+    // Memoize until WORLD_EXTRAS changes — the old code allocated a Map
+    // plus a Set per parent on every read (per tick via serialize paths).
+    if (this._childrenOfCache?.source === entries) return this._childrenOfCache.map;
+    const map = new Map(entries.map(entry => [entry.parentId, new Set(entry.childIds)]));
+    this._childrenOfCache = { source: entries, map };
+    return map;
   }
   get nests() {
     return this._saveExtras?.nests || [];

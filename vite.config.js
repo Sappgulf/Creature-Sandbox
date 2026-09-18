@@ -164,7 +164,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: '../dist',
     emptyOutDir: true,
-    chunkSizeWarningLimit: 700,
+    chunkSizeWarningLimit: 350,
     // No sourcemaps in dist: 'hidden' emitted ~2.5MB of .map files with no
     // consumer (no error-tracking upload, CSP connect-src 'self'), shipped
     // to Vercel as dead weight. `npm run analyze` does not need them.

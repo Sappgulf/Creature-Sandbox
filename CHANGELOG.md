@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-18 — audit-tranche-3-memo-chunks — Planned
+
+- **Date:** 2026-09-18
+- **Scope:** simulation | render | devops
+- **Type:** Planned
+- **Issues:** `SimulationProxy.childrenOf` rebuilt a Map plus a Set per parent on every read (per-tick serialize paths). Ambient parallax particles rebuilt an `hsla()` template string per particle per frame though hue/alpha never change. `chunkSizeWarningLimit` sat at 700 kB so Vite never warned before the 312 kB worker budget tripped. Deferred with reasons: per-frame metrics triple-scan needs a scan/overlay split across 3 consumers (risk outweighs ~1 saved scan while fidelity gates already stagger them); binary-layout diploid loss would grow the worker at ~1 kB headroom; a sim-shared vendor chunk for `?worker` graphs risks breaking worker loading pre-deploy.
+- **Root Causes:** Read-path allocation without memo keys; per-frame string templates for static values; warning limit raised past the budget it guards.
+- **Fixes:** Memoize `childrenOf` on extras identity; pre-format particle `style` at init; lower `chunkSizeWarningLimit` to 350.
+- **Verification:** Pending smoke gate.
+
+### 2026-09-18 — audit-tranche-3-memo-chunks — Implemented
+
+- **Date:** 2026-09-18
+- **Scope:** simulation | render | devops
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npm run lint` clean; `npm test` green; `npm run build` + `npm run check:bundle` pass (main 405.86 kB, worker 310.98 kB unchanged — tranche-3 edits were main-thread only). `npm run smoke:browser` pass (worker desktop/mobile-compact/mobile-large), `npm run smoke:main` pass (fallback-proof).
+
 ### 2026-09-18 — audit-tranche-2-god-render-save — Planned
 
 - **Date:** 2026-09-18
