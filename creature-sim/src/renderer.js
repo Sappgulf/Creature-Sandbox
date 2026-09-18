@@ -696,11 +696,21 @@ export class Renderer {
     if (calmZones.length === 0 && restZones.length === 0) return;
     const ctx = this.ctx;
     const t = Number(world.t || 0);
+    const bounds = this._viewBounds;
     ctx.save();
     for (const zone of calmZones) {
       if (!Number.isFinite(zone.x) || !Number.isFinite(zone.y)) continue;
+      const baseRadius = zone.radius || 80;
+      if (
+        bounds &&
+        (zone.x + baseRadius < bounds.x1 ||
+          zone.x - baseRadius > bounds.x2 ||
+          zone.y + baseRadius < bounds.y1 ||
+          zone.y - baseRadius > bounds.y2)
+      )
+        continue;
       const pulse = 0.85 + Math.sin(t * 2.2 + (zone.id || 0)) * 0.08;
-      const radius = (zone.radius || 80) * pulse;
+      const radius = baseRadius * pulse;
       const strength = Number(zone.strength ?? 0.6);
       // Subtle habitat cue, not a filled disc that reads as debug UI.
       ctx.fillStyle = `rgba(120, 220, 200, ${0.02 + strength * 0.03})`;
@@ -719,6 +729,15 @@ export class Renderer {
       ctx.setLineDash([12, 10]);
       for (const zone of restZones) {
         if (!Number.isFinite(zone.x) || !Number.isFinite(zone.y)) continue;
+        const restRadius = zone.radius || 120;
+        if (
+          bounds &&
+          (zone.x + restRadius < bounds.x1 ||
+            zone.x - restRadius > bounds.x2 ||
+            zone.y + restRadius < bounds.y1 ||
+            zone.y - restRadius > bounds.y2)
+        )
+          continue;
         const pulse = 0.92 + Math.sin(t * 0.9 + zone.x * 0.01) * 0.05;
         const radius = (zone.radius || 120) * pulse;
         ctx.fillStyle = 'rgba(140, 230, 180, 0.02)';
@@ -773,9 +792,19 @@ export class Renderer {
     if (!Array.isArray(regions) || regions.length === 0) return;
     const ctx = this.ctx;
     const t = Number(world.t || 0);
+    const bounds = this._viewBounds;
     ctx.save();
     for (const region of regions) {
       if (!Number.isFinite(region?.x) || !Number.isFinite(region?.y)) continue;
+      const regionRadius = region.size || 220;
+      if (
+        bounds &&
+        (region.x + regionRadius < bounds.x1 ||
+          region.x - regionRadius > bounds.x2 ||
+          region.y + regionRadius < bounds.y1 ||
+          region.y - regionRadius > bounds.y2)
+      )
+        continue;
       const pressure = clamp(Number(region.pressure ?? 0), 0, 1);
       const foodRatio = clamp(Number(region.foodRatio ?? 0.5), 0, 1);
       const stress = clamp(Number(region.stressAvg ?? 0) / 100, 0, 1);

@@ -1366,7 +1366,10 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   if (creature.personality?.isPackHunting && g.predator) {
     const zoom = opts.zoom ?? 1;
-    if (zoom > 0.5) {
+    // Perf: the pack query is O(n) per predator per frame. Only the
+    // inspected subject needs link lines; others keep the aura-free body.
+    const packDetail = !!(opts.forceDetail || isSelected || isPinned);
+    if (zoom > 0.6 && packDetail && allowRareFx) {
       ctx.save();
       const packPulse = (worldTime * 4) % TAU;
       const cosDir = Math.cos(-creature.dir);

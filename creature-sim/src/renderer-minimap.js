@@ -183,10 +183,13 @@ export function applyMinimapMethods(Renderer) {
 
     // Faction dots: predators red, herbivores green, omnivores amber. The
     // population heatmap shows density; these show where the actors are.
+    // Decimate when dense: past 150 dots on a 220px map they overdraw into
+    // a solid mass the heatmap already shows.
     ctx.save();
     const dotSize = Math.max(1.5, 1.7 * dpr);
     const creatures = Array.isArray(world.creatures) ? world.creatures : [];
-    for (let i = 0; i < creatures.length; i++) {
+    const dotStep = creatures.length > 150 ? 2 : 1;
+    for (let i = 0; i < creatures.length; i += dotStep) {
       const c = creatures[i];
       if (!c || c.alive === false || !Number.isFinite(c.x) || !Number.isFinite(c.y)) continue;
       const predator = Boolean(c.genes?.predator) || numericDiet(c.genes?.diet) > 0.7;

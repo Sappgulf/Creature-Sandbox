@@ -65,7 +65,10 @@ export function resolveDietRole(genes) {
     return genes?.predator || diet > 0.85 ? 'predator' : 'predator-lite';
   }
   if (diet >= 0.3) {
-    return Math.random() < 0.55 ? 'scavenger' : 'herbivore';
+    // Deterministic split (was Math.random()<0.55): diet 0.3–0.5 scavenges,
+    // 0.5–0.7 stays herbivore. Same ~50/50 balance, same save every time,
+    // no RNG draw so seeded runs don't diverge on first spawn.
+    return diet < 0.5 ? 'scavenger' : 'herbivore';
   }
   return 'herbivore';
 }

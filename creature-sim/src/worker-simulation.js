@@ -492,8 +492,10 @@ self.onmessage = function (e) {
                 memory: c.memory
                   ? {
                       capacity: c.memory.capacity ?? null,
+                      // Cap at 4 locs for saves (in-RAM keeps 8): bounds the
+                      // structuredClone on large populations.
                       locations: Array.isArray(c.memory.locations)
-                        ? c.memory.locations.slice(0, 8).map(mem => ({
+                        ? c.memory.locations.slice(0, 4).map(mem => ({
                             id: mem.id ?? null,
                             x: mem.x ?? null,
                             y: mem.y ?? null,

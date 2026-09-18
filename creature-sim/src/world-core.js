@@ -189,6 +189,8 @@ export class World {
     this.restZones = [];
     this.nests = [];
     this.decorations = []; // Environmental decorations (trees, rocks, flowers)
+    this.craters = []; // Meteor impact marks (rendered as scorch decals)
+    this.recentlyDead = []; // Ring buffer for resurrection god power (cap 20)
 
     // Spatial grids for performance
     this.foodGrid = new SpatialGrid(36);
@@ -397,6 +399,7 @@ export class World {
       if (!creature.alive) {
         if (!creature._deathEmitted) {
           creature._deathEmitted = true;
+          this._trackRecentDeath(creature);
           try {
             eventSystem.emit(GameEvents.CREATURE_DIED, {
               creature,
@@ -431,6 +434,7 @@ export class World {
         creature.deathTime = this.t;
         if (!creature._deathEmitted) {
           creature._deathEmitted = true;
+          this._trackRecentDeath(creature);
           try {
             eventSystem.emit(GameEvents.CREATURE_DIED, {
               creature,
@@ -450,6 +454,13 @@ export class World {
       this.creatureManager.gridDirty = true;
       this.creatureManager.ensureSpatial();
     }
+  }
+
+  _trackRecentDeath(creature) {
+    if (!creature) return;
+    if (!Array.isArray(this.recentlyDead)) this.recentlyDead = [];
+    if (!this.recentlyDead.includes(creature)) this.recentlyDead.push(creature);
+    if (this.recentlyDead.length > 20) this.recentlyDead.splice(0, this.recentlyDead.length - 20);
   }
 
   applyCreatureBumps() {
@@ -923,6 +934,8 @@ export class World {
     this.restZones = [];
     this.nests = [];
     this.decorations = [];
+    this.craters = [];
+    this.recentlyDead = [];
     this.t = 0;
     this._scalarFieldStepCounter = 0;
 

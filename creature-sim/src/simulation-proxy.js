@@ -1070,7 +1070,11 @@ export class SimulationProxy {
   }
 
   async prepareForSave() {
-    await this.requestSaveExtras();
+    const extras = await this.requestSaveExtras();
+    // Never silently persist stale data: if the worker didn't answer in
+    // time, abort the save so callers surface a retry instead of writing
+    // last-tick extras over a live world.
+    if (extras?.stale) throw new Error('Worker save extras stale — retry save');
   }
 
   // Search helper

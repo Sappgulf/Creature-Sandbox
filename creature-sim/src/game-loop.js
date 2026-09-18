@@ -245,11 +245,15 @@ export class GameLoop {
     // Connect event system to subsystems
     this.setupEventListeners();
 
-    // Warm up object pools
+    // Warm up object pools (all six — vectors/arrays/particles plus the
+    // status/memories/relationships pools that were left cold).
     poolManager.warm({
       vectors: 100,
       arrays: 50,
-      particles: 200
+      particles: 200,
+      statusEffects: 50,
+      memories: 50,
+      relationships: 50
     });
 
     console.debug('🔗 Enhanced systems integrated into game loop');

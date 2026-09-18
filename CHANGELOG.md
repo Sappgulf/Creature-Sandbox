@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-18 — audit-tranche-2-god-render-save — Planned
+
+- **Date:** 2026-09-18
+- **Scope:** render | simulation | ui | persistence
+- **Type:** Planned
+- **Issues:** Tranche-2 audit leftovers: pack-hunt link lines ran an O(n) spatial query per predator per frame at play zoom; calm/rest/region overlays drew with zero frustum culling; minimap drew every faction dot past 150 (solid overdraw the heatmap already shows). `GodPowersSystem` had 5 silent no-ops: meteor never left a crater (`world.craters` undefined), resurrection read a `recentlyDead` buffer nothing wrote, genesis used `world.makeGenes`/`world.Creature` (don't exist), teleport iterated an always-empty `selectedCreatures`, evolution flattened diploid genes and called `world.advancedGenetics` (doesn't exist on World); cooldown getters mixed `performance.now()` ms with `world.t` seconds. `resolveDietRole` flipped a `Math.random()` coin for every 0.3–0.7 diet, diverging seeded runs. Worker save could persist stale extras on timeout; save extras cloned 8 memory locs per creature; pools left status/memories/relationships cold. Objective rail announced every progress tick over 10 competing live regions.
+- **Root Causes:** Viz added without the `_viewBounds` contract other passes follow; god powers written against an aspirational World API; bridge-era RNG never migrated to seeded/deterministic paths; save path favored availability over freshness; live regions copied per-widget instead of routing via `sim-announcer`.
+- **Fixes:** Pack links now require selected/pinned detail + `allowRareFx` + zoom>0.6; calm/rest/region passes early-reject off-screen zones; minimap decimates past 150 dots. World owns `craters` + 20-entry `recentlyDead` buffer (wired in both death paths, reset on `reset()`); meteor/resurrection/genesis/teleport/evolution/ascension fixed (genesis via real spawn API, evolution/ascension diploid-safe via `AdvancedGenetics` + `geneValue`, teleport falls back to radius query, cooldowns unified on `world.t`). `resolveDietRole` deterministic (0.3–0.5 scavenger, else herbivore). Proxy `prepareForSave` throws on stale extras instead of writing; worker extras cap memory at 4 locs; all six pools warmed; objective rail `aria-live="off"`.
+- **Verification:** Pending full release proof.
+
+### 2026-09-18 — audit-tranche-2-god-render-save — Implemented
+
+- **Date:** 2026-09-18
+- **Scope:** render | simulation | ui | persistence
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npm run lint` clean; `npm test` green; `npm run build` + `npm run check:bundle` pass (main 405.74 kB, worker 310.98 kB / 92.37 kB gzip — 1 kB raw headroom, next perf pass must not grow the worker). `npm run smoke:browser` pass (worker desktop/mobile-compact/mobile-large), `npm run smoke:main` pass (fallback-proof). One lint fix during the tranche: duplicate `radius` const in `drawCalmZones` after adding the culling guard.
+
 ### 2026-09-18 — full-audit-polish-tranche — Planned
 
 - **Date:** 2026-09-18

@@ -2,6 +2,9 @@
  * God Powers System - Player interaction tools and powers
  */
 
+import { AdvancedGenetics } from './advanced-genetics.js';
+import { geneValue } from './creature-genetics-helpers.js';
+
 export class GodPowersSystem {
   constructor() {
     this.activePowers = new Map();
@@ -380,10 +383,11 @@ export class GodPowersSystem {
       }
     }
 
-    // Create crater
-    if (world.craters) {
-      world.craters.push({ x, y, radius, age: 0 });
-    }
+    // Create crater (init the array — World never defined one, so meteor
+    // damage landed but left no mark).
+    if (!Array.isArray(world.craters)) world.craters = [];
+    world.craters.push({ x, y, radius, age: 0 });
+    if (world.craters.length > 24) world.craters.splice(0, world.craters.length - 24);
   }
 
   /**
@@ -416,7 +420,7 @@ export class GodPowersSystem {
   }
 
   /**
-   * Evolution - beneficial mutations
+   * Evolution - beneficial mutations (diploid-safe: uses expressed values)
    */
   applyEvolution(x, y, world, radius) {
     const affected = this.getCreaturesInRadius(x, y, world, radius);
@@ -426,41 +430,62 @@ export class GodPowersSystem {
       const traits = ['speed', 'sense', 'size'];
       const trait = traits[Math.floor(Math.random() * traits.length)];
 
-      if (creature.genes[trait]) {
-        creature.genes[trait] *= 1.2;
+      if (creature.genes?.[trait] !== undefined) {
+        const current = geneValue(creature.genes, trait, 1);
+        const target = creature.genes[trait];
+        const boosted = current * 1.2;
+        if (target && typeof target === 'object' && 'expressed' in target) {
+          target.expressed = boosted;
+          if ('allele1' in target) target.allele1 = boosted;
+          if ('allele2' in target) target.allele2 = boosted;
+        } else {
+          creature.genes[trait] = boosted;
+        }
       }
 
       // Chance for rare mutation
-      if (Math.random() < 0.3 && world.advancedGenetics) {
-        const mutations = world.advancedGenetics.applyRareMutations(creature.genes, 5);
+      if (Math.random() < 0.3) {
+        const mutations = AdvancedGenetics.applyRareMutations(creature.genes, 5);
         creature.rareMutations = mutations;
       }
     }
   }
 
   /**
-   * Resurrection - revive dead
+   * Resurrection - revive dead (reads the world.recentlyDead ring buffer
+   * maintained by World.updateCreatures; previously nothing ever wrote it,
+   * so this always early-returned).
    */
   applyResurrection(x, y, world, radius) {
-    if (!world.recentlyDead) return;
+    if (!Array.isArray(world.recentlyDead) || world.recentlyDead.length === 0) return;
 
     for (const deadCreature of world.recentlyDead) {
+      if (deadCreature.alive) continue;
       const dist = Math.sqrt((deadCreature.x - x) ** 2 + (deadCreature.y - y) ** 2);
 
       if (dist < radius) {
         deadCreature.alive = true;
         deadCreature.health = deadCreature.maxHealth * 0.5;
         deadCreature.energy = 20;
+        deadCreature._deathEmitted = false;
+        deadCreature.deathTime = null;
         world.creatures.push(deadCreature);
       }
     }
+    // Consumed entries leave the buffer so a second cast can't duplicate.
+    world.recentlyDead = world.recentlyDead.filter(c => c.alive !== true || world.creatures.indexOf(c) === -1);
   }
 
   /**
-   * Teleport - move creatures
+   * Teleport - move creatures (falls back to radius query; selectedCreatures
+   * was never populated, so this previously moved nothing).
    */
   applyTeleport(x, y, world, radius) {
-    for (const creature of this.selectedCreatures) {
+    const targets =
+      this.selectedCreatures && this.selectedCreatures.size > 0
+        ? [...this.selectedCreatures].filter(c => c?.alive)
+        : this.getCreaturesInRadius(x, y, world, radius);
+    for (const creature of targets) {
       creature.x = x + (Math.random() - 0.5) * radius;
       creature.y = y + (Math.random() - 0.5) * radius;
     }
@@ -482,21 +507,33 @@ export class GodPowersSystem {
   }
 
   /**
-   * Genesis - create custom creature
+   * Genesis - create custom creature (via the real World spawn API;
+   * world.makeGenes/world.Creature never existed, so this always no-op'd).
    */
   applyGenesis(x, y, world) {
-    // Create a powerful custom creature
-    const genes = world.makeGenes ? world.makeGenes() : {};
-
-    // Boost all traits
-    genes.speed = 1.5;
-    genes.sense = 200;
-    genes.size = 10;
-    genes.metabolism = 0.8;
-
-    if (world.Creature) {
-      const creature = new world.Creature(x, y, genes);
-      world.addCreature(creature);
+    const spawn =
+      typeof world?.spawnCreatureType === 'function'
+        ? world.spawnCreatureType('herbivore', x, y)
+        : typeof world?.spawnManual === 'function'
+          ? world.spawnManual(x, y, false)
+          : null;
+    const creature = spawn || world?.creatures?.[world.creatures.length - 1];
+    if (!creature) return;
+    // Boost traits diploid-safe.
+    for (const [trait, value] of [
+      ['speed', 1.5],
+      ['sense', 200],
+      ['size', 10],
+      ['metabolism', 0.8]
+    ]) {
+      const target = creature.genes?.[trait];
+      if (target && typeof target === 'object' && 'expressed' in target) {
+        target.expressed = value;
+        if ('allele1' in target) target.allele1 = value;
+        if ('allele2' in target) target.allele2 = value;
+      } else if (creature.genes) {
+        creature.genes[trait] = value;
+      }
     }
   }
 
@@ -507,10 +544,22 @@ export class GodPowersSystem {
     const affected = this.getCreaturesInRadius(x, y, world, radius);
 
     for (const creature of affected) {
-      // Grant legendary status
+      // Grant legendary status (diploid-safe multiplies)
       creature.ascended = true;
-      creature.genes.speed *= 1.5;
-      creature.genes.sense *= 1.5;
+      for (const [trait, mult] of [
+        ['speed', 1.5],
+        ['sense', 1.5]
+      ]) {
+        const target = creature.genes?.[trait];
+        if (target && typeof target === 'object' && 'expressed' in target) {
+          const next = geneValue(creature.genes, trait, 1) * mult;
+          target.expressed = next;
+          if ('allele1' in target) target.allele1 = next;
+          if ('allele2' in target) target.allele2 = next;
+        } else if (creature.genes) {
+          creature.genes[trait] = geneValue(creature.genes, trait, 1) * mult;
+        }
+      }
       creature.size *= 1.3;
       creature.maxHealth *= 2;
       creature.health = creature.maxHealth;
@@ -556,30 +605,35 @@ export class GodPowersSystem {
   }
 
   /**
-   * Check if power is available
+   * Check if power is available (world.t clock; falls back to wall clock
+   * only when no world is given so main/worker agree).
    */
-  isPowerAvailable(powerName) {
+  isPowerAvailable(powerName, world = null) {
     const powers = this.getPowers();
     const power = powers[powerName];
 
     if (!power) return false;
     if (power.level > this.powerLevel) return false;
 
-    const lastUse = this.powerCooldowns.get(powerName) || 0;
-    return performance.now() - lastUse >= power.cooldown;
+    const now = Number.isFinite(world?.t) ? world.t : performance.now() / 1000;
+    const lastUse = this.powerCooldowns.get(powerName);
+    if (lastUse == null) return true;
+    return now - lastUse >= power.cooldown / 1000;
   }
 
   /**
-   * Get cooldown remaining
+   * Get cooldown remaining (seconds; world.t clock)
    */
-  getCooldownRemaining(powerName) {
+  getCooldownRemaining(powerName, world = null) {
     const powers = this.getPowers();
     const power = powers[powerName];
 
     if (!power) return 0;
 
-    const lastUse = this.powerCooldowns.get(powerName) || 0;
-    const remaining = power.cooldown - (performance.now() - lastUse);
+    const now = Number.isFinite(world?.t) ? world.t : performance.now() / 1000;
+    const lastUse = this.powerCooldowns.get(powerName);
+    if (lastUse == null) return 0;
+    const remaining = power.cooldown / 1000 - (now - lastUse);
 
     return Math.max(0, remaining);
   }
