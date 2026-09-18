@@ -139,6 +139,25 @@ function buildTerrainLayer(world, season, phase, key) {
   drawFlecks(midFlecks, 'rgba(70, 118, 72, 0.18)');
   drawFlecks(lightFlecks, 'rgba(150, 196, 120, 0.16)');
 
+  // 5. Feather the world edge: erase alpha over a border band so the baked
+  // rect melts into the flat ground tone instead of drawing a hard-edged box
+  // when zoomed out past the world. Bake-time only — zero per-frame cost.
+  const featherWorld = 150;
+  const feather = Math.max(8, Math.round(featherWorld * scale));
+  layerCtx.globalCompositeOperation = 'destination-out';
+  const fadeEdge = (x0, y0, x1, y1, fx, fy, fw, fh) => {
+    const g = layerCtx.createLinearGradient(x0, y0, x1, y1);
+    g.addColorStop(0, 'rgba(0, 0, 0, 1)');
+    g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    layerCtx.fillStyle = g;
+    layerCtx.fillRect(fx, fy, fw, fh);
+  };
+  fadeEdge(0, 0, feather, 0, 0, 0, feather, height); // left
+  fadeEdge(width, 0, width - feather, 0, width - feather, 0, feather, height); // right
+  fadeEdge(0, 0, 0, feather, 0, 0, width, feather); // top
+  fadeEdge(0, height, 0, height - feather, 0, height - feather, width, feather); // bottom
+  layerCtx.globalCompositeOperation = 'source-over';
+
   terrainLayerCache.key = key;
   terrainLayerCache.canvas = canvas;
   return canvas;

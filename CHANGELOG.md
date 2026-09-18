@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-18 — terrain-edge-feather — Planned
+
+- **Date:** 2026-09-18
+- **Scope:** render
+- **Type:** Planned
+- **Issues:** Follow-up to the endless-field backdrop: the flat outside tone met the detailed baked terrain at a still-visible hard rect edge, so zoomed-out views kept a faint "box" seam where decorations and speckle stop.
+- **Root Causes:** The baked terrain layer is opaque to its canvas edge; nothing softened the transition.
+- **Fixes:** Bake-time 150-world-unit edge feather (`destination-out` gradients on all four sides, zero per-frame cost) so the terrain melts into the outside ground tone.
+- **Verification:** Pending smoke gate.
+
+### 2026-09-18 — terrain-edge-feather — Implemented
+
+- **Date:** 2026-09-18
+- **Scope:** render
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npm run lint` clean; `npm test` green; `npm run build` + `npm run check:bundle` pass. `npm run smoke:browser` + `npm run smoke:main` pass. Local probe `output/manual-audit/zoomed-out-probe2.png` (zoom 0.24) shows the field fading softly past the world edge with no box seam and no minimap outline.
+
 ### 2026-09-18 — menu-world-presentation-fix — Planned
 
 - **Date:** 2026-09-18
