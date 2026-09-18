@@ -224,8 +224,10 @@ export class TutorialSystem {
       this.hideHighlight();
     }
 
-    // Auto-advance if configured
-    if (step.autoAdvance) {
+    // Auto-advance if configured. Steps with waitFor must actually wait for
+    // the player action — a timer fallback would mark them complete without
+    // doing anything (false onboarding). Only pure info steps auto-advance.
+    if (step.autoAdvance && !step.waitFor) {
       this._pendingAdvanceTimeout = window.setTimeout(() => {
         if (this.currentStep?.id === step.id) {
           this.nextStep();
@@ -245,7 +247,12 @@ export class TutorialSystem {
     if (overlay) {
       const chromeOpen = this._isChromeBlockingTutorial();
       overlay.style.display = chromeOpen ? 'none' : 'block';
-      if (chromeOpen) return;
+      if (chromeOpen) {
+        // Pause the auto-advance timer while a real surface covers the
+        // tutorial — otherwise spawn steps complete while the drawer is open.
+        this.clearPendingAdvance();
+        return;
+      }
     }
 
     // Reposition highlight each frame (elements might move)
@@ -265,7 +272,13 @@ export class TutorialSystem {
       '#gene-editor-panel:not(.hidden)',
       '#sound-panel:not(.hidden)',
       '#features-panel:not(.hidden)',
-      '#eco-health-panel:not(.hidden)'
+      '#eco-health-panel:not(.hidden)',
+      '#analytics-dashboard:not(.hidden)',
+      '#campaign-panel:not(.hidden)',
+      '#lineage-album-panel:not(.hidden)',
+      '#replay-panel:not(.hidden)',
+      '#moments-panel:not(.hidden)',
+      '#inspector:not(.hidden)'
     ];
     return blocking.some(sel => document.querySelector(sel));
   }

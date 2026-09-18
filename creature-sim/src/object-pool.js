@@ -102,12 +102,14 @@ export class ObjectPool {
     // Reset object state
     this.reset(obj);
 
-    // Add back to pool if not at capacity
+    // Add back to pool if not at capacity. Guard activeCount so capacity
+    // drops and double-releases can't drive accounting negative and hide
+    // real GC pressure in proof.
     if (this.maxSize === 0 || this.pool.length < this.maxSize) {
       this.pool.push(obj);
     }
 
-    this.activeCount--;
+    this.activeCount = Math.max(0, this.activeCount - 1);
   }
 
   /**

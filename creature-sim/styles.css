@@ -7398,10 +7398,17 @@ body {
 
   .control-strip-primary {
     gap: 1px;
+    flex-wrap: wrap;
+    row-gap: 6px;
   }
 
   .ctrl-divider {
     margin: 0 1px;
+  }
+  /* Wrap fallback: if wrapping still overflows, dividers go first (they
+     carry no action) so the 7 primary controls stay on-screen. */
+  .control-strip-primary .ctrl-divider {
+    display: none;
   }
 }
 
@@ -7436,9 +7443,19 @@ body {
      playfield footprint. */
   .god-mode-panel .ghost-btn.small,
   .god-mode-panel .primary-btn.small {
-    min-height: 24px;
+    min-height: 40px;
+    min-width: 40px;
     padding-top: 5px;
     padding-bottom: 5px;
+  }
+
+  /* Brush and god-history controls were below the 40px project minimum. */
+  .tool-adjust-btn,
+  .god-history-btn,
+  #tutorial-next,
+  #tutorial-skip {
+    min-width: 40px;
+    min-height: 40px;
   }
 }
 
@@ -7457,11 +7474,12 @@ body {
     display: block;
   }
   /* Keep the God Mode Done/Undo/Redo controls tappable on touch hardware
-     (they were 24px) without growing the panel past its compact budget: the
+     without growing the panel past its compact budget: the
      hint drops to a single line, which it was already clipping mid-sentence. */
   .god-mode-panel .ghost-btn.small,
   .god-mode-panel .primary-btn.small {
-    min-height: 36px;
+    min-height: 40px;
+    min-width: 40px;
     padding-top: 6px;
     padding-bottom: 6px;
   }
@@ -7470,8 +7488,27 @@ body {
   }
   /* Reclaim the header growth so the panel keeps its compact playfield budget. */
   .god-mode-panel {
-    gap: 6px;
-    padding-top: 6px;
-    padding-bottom: 6px;
+    gap: 4px;
+    padding-top: 4px;
+    padding-bottom: 4px;
   }
+  .god-mode-panel .god-mode-hint {
+    line-height: 1.2;
+  }
+  .god-mode-header {
+    max-height: 40px;
+  }
+}
+
+/* Desktop + all form factors get the same panel scrim (previously
+   mobile-only). setPanelVisibility now toggles body.panel-open everywhere. */
+.panel-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: var(--z-drawer-scrim);
+}
+body.panel-open .panel-overlay {
+  display: block;
 }

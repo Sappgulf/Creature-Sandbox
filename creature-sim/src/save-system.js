@@ -1098,11 +1098,14 @@ export class SaveSystem {
         if (this.compressionEnabled && COMPRESSION_SUPPORTED) {
           const compressed = await compressJson(json);
           localStorage.setItem(slotKey, compressed);
+          // Keep the legacy single autosave compressed too — writing it raw
+          // doubled quota pressure and defeated compression entirely.
+          localStorage.setItem('creature-sim-autosave', compressed);
         } else {
           localStorage.setItem(slotKey, json);
+          // Also keep the legacy single autosave for backwards compatibility
+          localStorage.setItem('creature-sim-autosave', json);
         }
-        // Also keep the legacy single autosave for backwards compatibility
-        localStorage.setItem('creature-sim-autosave', json);
         localStorage.setItem(
           'creature-sim-autosave-preview',
           JSON.stringify({
@@ -1288,7 +1291,14 @@ export class SaveSystem {
             continue;
           }
           if (json.startsWith(COMPRESSED_MARKER)) {
-            json = this._tryReadCompressedSync(json);
+            // Sync preview can't decompress — async load is truth. Don't
+            // report error for a valid compressed save with no preview.
+            try {
+              json = this._tryReadCompressedSync(json);
+            } catch {
+              slots.push({ slot: i, needsAsyncLoad: true });
+              continue;
+            }
           }
           const data = JSON.parse(json);
           slots.push({
@@ -1331,7 +1341,12 @@ export class SaveSystem {
         };
       }
       if (json.startsWith(COMPRESSED_MARKER)) {
-        json = this._tryReadCompressedSync(json);
+        try {
+          json = this._tryReadCompressedSync(json);
+        } catch {
+          // Valid compressed save without preview — async load is truth.
+          return { needsAsyncLoad: true };
+        }
       }
       const data = JSON.parse(json);
       return {
@@ -1497,11 +1512,17 @@ export class SaveSystem {
           if (!c.needs) c.needs = { ...CreatureAgentTuning.NEEDS.START };
           if (!c.goal) c.goal = { current: 'WANDER', lastChange: 0, cooldown: 0, mateCooldown: 0 };
           if (!c.temperament) {
+            // Deterministic fallback (hash of id) so the same save always
+            // migrates to the same temperament instead of Math.random().
+            const seedStr = String(c.id ?? `${c.x ?? 0},${c.y ?? 0}`);
+            let h = 0;
+            for (let i = 0; i < seedStr.length; i++) h = (h * 31 + seedStr.charCodeAt(i)) | 0;
+            const frac = n => (((Math.sin(h + n * 127.1) * 43758.5453) % 1) + 1) % 1;
             c.temperament = {
-              boldness: Math.random(),
-              sociability: Math.random(),
-              calmness: Math.random(),
-              curiosity: Math.random()
+              boldness: frac(1),
+              sociability: frac(2),
+              calmness: frac(3),
+              curiosity: frac(4)
             };
           }
           if (!Array.isArray(c.quirks)) {

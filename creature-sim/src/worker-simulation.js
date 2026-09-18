@@ -46,6 +46,11 @@ let _corpseSnapshotPool = [];
 const BRIDGE_EVENTS = [
   'creature:born',
   'creature:died',
+  'creature:spawn',
+  'creature:thrown',
+  'god:action',
+  'sandbox:prop_placed',
+  'sandbox:prop_triggered',
   'world:disaster_start',
   'ui:notification',
   'achievement:unlocked'
@@ -109,6 +114,7 @@ self.onmessage = function (e) {
       case 'SPAWN_MANUAL':
         if (world) {
           world.spawnManual(data.x, data.y, data.predator);
+          eventSystem.emit('creature:spawn', { x: data.x, y: data.y });
           sendSnapshot();
         }
         break;
@@ -116,6 +122,7 @@ self.onmessage = function (e) {
       case 'SPAWN_GENES':
         if (world) {
           world.spawnManualWithGenes(data.x, data.y, data.genes);
+          eventSystem.emit('creature:spawn', { x: data.x, y: data.y });
           sendSnapshot();
         }
         break;
@@ -127,6 +134,7 @@ self.onmessage = function (e) {
             break;
           }
           world.spawnCreatureType(typeof data.type === 'string' ? data.type : 'herbivore', data.x, data.y);
+          eventSystem.emit('creature:spawn', { type: data.type, x: data.x, y: data.y });
           sendSnapshot();
         }
         break;
@@ -262,6 +270,7 @@ self.onmessage = function (e) {
           }
           if (!world.godPowers) world.godPowers = godPowers;
           world.godPowers.usePower(tool, x, y, world);
+          eventSystem.emit('god:action', { action: tool, x, y });
           sendSnapshot();
         }
         break;
@@ -287,6 +296,7 @@ self.onmessage = function (e) {
             break;
           }
           world.sandbox.addProp(type, x, y, options || {});
+          eventSystem.emit('sandbox:prop_placed', { prop: { type, x, y, ...(options || {}) } });
           sendSnapshot();
         }
         break;
@@ -338,6 +348,7 @@ self.onmessage = function (e) {
           creature.isGrabbed = false;
           creature.grabTarget = { x: creature.x, y: creature.y };
           creature.applyImpulse?.(Number(data.vx) || 0, Number(data.vy) || 0, { decay: 5.4, cap: 320 });
+          eventSystem.emit('creature:thrown', { creatureId: data?.id ?? null });
           sendSnapshot();
         }
         break;

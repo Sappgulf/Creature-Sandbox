@@ -393,7 +393,7 @@ export function renderSelectedInfo(
   { world = null, lineageTracker = null, inspectorOpen = false, threat = null } = {}
 ) {
   if (!el) return;
-  const isMobile = typeof window !== 'undefined' && (window.matchMedia?.('(max-width: 768px)').matches ?? false);
+  const isMobile = isMobileDevice();
   const useInspectorChip = !isMobile && !!inspectorOpen;
   if (!creature) {
     el.classList.remove('selected-dossier');

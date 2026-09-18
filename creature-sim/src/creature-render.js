@@ -556,7 +556,7 @@ export function drawCreature(creature, ctx, opts = {}) {
     const joy = creature.emotions.joy ?? 0;
 
     // Stressed creatures have a subtle purple/red tinge
-    if (stress > 0.5 && isLowZoom && !isSelected && !isPinned) {
+    if (stress > 0.5 && isLowZoom && !isSelected && !isPinned && allowRareFx) {
       const stressGlow = ctx.createRadialGradient(0, 0, r, 0, 0, r * 2);
       stressGlow.addColorStop(0, `rgba(180, 80, 160, ${(stress - 0.5) * 0.12})`);
       stressGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
@@ -569,7 +569,7 @@ export function drawCreature(creature, ctx, opts = {}) {
     // Scared creatures tremble — applied at the body transform above.
 
     // Very scared creatures emit fear wave ripples (emotion contagion visualization)
-    if (fear > 0.7 && isLowZoom && !isSelected && !isPinned) {
+    if (fear > 0.7 && isLowZoom && !isSelected && !isPinned && allowRareFx) {
       const fearPhase = worldTime * 2.5;
       const contagionRadius = 80 + fear * 40;
       for (let i = 0; i < 3; i++) {
@@ -584,25 +584,12 @@ export function drawCreature(creature, ctx, opts = {}) {
         ctx.stroke();
       }
 
-      // Fear contagion: skip drawing on other creatures during individual render
-      // (moved to a separate post-pass in renderer-features-viz.js to avoid O(n²))
-      if (opts.world?.creatureManager && zoom > 0.4) {
-        const nearbyRadius = 60 + fear * 30;
-        const nearby = opts.world.creatureManager
-          .queryCreaturesFast(creature.x, creature.y, nearbyRadius, _fearQueryScratch)
-          .filter(c => c !== creature && c.alive && c.emotions);
-        for (const other of nearby) {
-          const dist = Math.sqrt((other.x - creature.x) ** 2 + (other.y - creature.y) ** 2);
-          const influence = (1 - dist / nearbyRadius) * (fear - 0.5) * 0.15;
-          if (influence > 0.01) {
-            other._fearTint = Math.max(other._fearTint || 0, influence);
-          }
-        }
-      }
+      // Note: fear contagion tinting lives in the throttled post-pass
+      // (renderer-features-viz.js) to avoid O(n²) queries inside draw.
     }
 
     // Happy creatures have a subtle warm glow
-    if (joy > 0.6 && isLowZoom && !isSelected && !isPinned) {
+    if (joy > 0.6 && isLowZoom && !isSelected && !isPinned && allowRareFx) {
       const joyGlow = ctx.createRadialGradient(0, 0, r, 0, 0, r * 1.8);
       joyGlow.addColorStop(0, `rgba(255, 220, 100, ${(joy - 0.6) * 0.1})`);
       joyGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
@@ -701,7 +688,7 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   // Chameleon camouflage shimmer effect
   const chameleonMut = mutationSet.has('Chameleon');
-  if (chameleonMut && creature.camouflageActive) {
+  if (chameleonMut && creature.camouflageActive && allowRareFx) {
     const shimmerPhase = worldTime * 8;
     const shimmerCount = 3;
     for (let i = 0; i < shimmerCount; i++) {
@@ -724,7 +711,7 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   // Regeneration healing particle effect
   const regenMut = mutationSet.has('Regeneration');
-  if (regenMut && creature.health < creature.maxHealth) {
+  if (regenMut && creature.health < creature.maxHealth && allowRareFx) {
     const healPhase = worldTime * 4;
     const particleCount = 3;
     for (let i = 0; i < particleCount; i++) {
@@ -750,7 +737,7 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   // Armored shell plates visual
   const armorMut = mutationSet.has('Armored Shell');
-  if (armorMut) {
+  if (armorMut && allowRareFx) {
     const armorStrength = g.armorStrength || 0.5;
     ctx.save();
     ctx.rotate(-creature.dir);
@@ -903,7 +890,7 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   // Telepathy brain wave rings
   const telepathyMut = mutationSet.has('Telepathy');
-  if (telepathyMut) {
+  if (telepathyMut && allowRareFx) {
     const telepathyPhase = worldTime * 3;
     for (let i = 0; i < 3; i++) {
       const waveProgress = (telepathyPhase + i * 0.33) % 1;
@@ -1159,7 +1146,7 @@ export function drawCreature(creature, ctx, opts = {}) {
 
   // Super Senses radar wave effect
   const superSensesMut = mutationSet.has('Super Senses');
-  if (superSensesMut) {
+  if (superSensesMut && allowRareFx) {
     const sensePhase = worldTime * 4;
     const senseRange = g.sense ? Math.min(3, g.sense / 100) : 1.8;
     // Radar sweep

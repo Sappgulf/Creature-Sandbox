@@ -206,7 +206,11 @@ export function drawCreatureSprite(ctx, creature = {}, opts = {}) {
     ctx.fill();
     ctx.restore();
   }
-  if (screenSize >= 12) {
+  // Perf: shadowBlur forces software rasterization per creature. Gate it like
+  // the food glow path (golden/zoomed only) — contact ellipse above already
+  // gives separation at play zoom.
+  const detailedSprite = !!(opts.forceDetail || opts.isSelected || opts.isPinned);
+  if (screenSize >= 24 || (detailedSprite && screenSize >= 12) || (spriteZoom >= 1.25 && screenSize >= 12)) {
     ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
     ctx.shadowBlur = Math.min(10, screenSize * 0.22);
   }

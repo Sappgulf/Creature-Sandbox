@@ -63,6 +63,7 @@ async function networkFirst(request) {
     if (networkResponse && networkResponse.status === 200) {
       const cache = await caches.open(CACHE_DYNAMIC);
       cache.put(request, networkResponse.clone());
+      trimDynamicCache(cache);
     }
     return networkResponse;
   } catch (err) {
@@ -80,6 +81,7 @@ async function cacheFirst(request) {
     if (networkResponse && networkResponse.status === 200) {
       const cache = await caches.open(CACHE_DYNAMIC);
       cache.put(request, networkResponse.clone());
+      trimDynamicCache(cache);
     }
     return networkResponse;
   } catch (err) {
@@ -88,5 +90,18 @@ async function cacheFirst(request) {
       return new Response('', { status: 204 });
     }
     throw err;
+  }
+}
+
+async function trimDynamicCache(cache, maxEntries = 80) {
+  try {
+    const keys = await cache.keys();
+    if (keys.length <= maxEntries) return;
+    // Delete oldest first (Cache keys are in insertion order).
+    for (let i = 0; i < keys.length - maxEntries; i++) {
+      await cache.delete(keys[i]);
+    }
+  } catch {
+    // Quota trimming is best-effort; never break fetches.
   }
 }

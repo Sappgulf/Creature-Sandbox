@@ -213,6 +213,13 @@ export class SimulationProxy {
 
     this.spawnManual = (x, y, predator) => {
       this._send('SPAWN_MANUAL', { x, y, predator });
+      // Mirror spawn like ADD_PROP: worker runs off-thread, so tutorial /
+      // session goals would otherwise miss manual spawns in worker mode.
+      try {
+        eventSystem.emit(GameEvents.CREATURE_SPAWN, { x, y });
+      } catch {
+        // Never break the proxy on listener errors.
+      }
     };
 
     this.pause = paused => {
@@ -225,11 +232,21 @@ export class SimulationProxy {
 
     this.spawnManualWithGenes = (x, y, genes) => {
       this._send('SPAWN_GENES', { x, y, genes });
+      try {
+        eventSystem.emit(GameEvents.CREATURE_SPAWN, { x, y });
+      } catch {
+        // Never break the proxy on listener errors.
+      }
       return null; // Async, cannot return object
     };
 
     this.spawnCreatureType = (type, x, y) => {
       this._send('SPAWN_TYPE', { type, x, y });
+      try {
+        eventSystem.emit(GameEvents.CREATURE_SPAWN, { type, x, y });
+      } catch {
+        // Never break the proxy on listener errors.
+      }
       return null;
     };
 
@@ -305,6 +322,14 @@ export class SimulationProxy {
     // fire-and-forget pattern above.
     this.applyGodPower = (tool, x, y) => {
       this._send('GOD_POWER', { tool, x, y });
+      // Mirror worker GOD_POWER like ADD_PROP above: the worker runs
+      // off-thread silently, so session goals / tutorial god steps would
+      // otherwise never count in worker mode (shipping default).
+      try {
+        eventSystem.emit(GameEvents.GOD_MODE_ACTION, { action: tool, x, y });
+      } catch {
+        // Listener errors are isolated by eventSystem; never break the proxy.
+      }
       return null;
     };
 
@@ -377,6 +402,13 @@ export class SimulationProxy {
         vx: Number.isFinite(vx) ? vx : 0,
         vy: Number.isFinite(vy) ? vy : 0
       });
+      // Mirror THROW like ADD_PROP/GOD_POWER: worker runs off-thread, so
+      // session goals / moments would otherwise miss throws in worker mode.
+      try {
+        eventSystem.emit(GameEvents.CREATURE_THROWN, { creatureId: id });
+      } catch {
+        // Never break the proxy on listener errors.
+      }
     };
 
     this.addRestZone = (x, y, radius) => {

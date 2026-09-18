@@ -504,12 +504,6 @@ export class Renderer {
     ctx.restore();
   }
 
-  _drawGodModeEffects() {
-    // Retired: it read a `window.godModeEffects` array that no subsystem ever
-    // wrote. God-tool feedback now lives in the particle system, notifications,
-    // and ToolController juice. Method kept as a no-op for embed compatibility.
-  }
-
   drawTravelIndicator(segment, { preview = false } = {}) {
     if (!segment?.from || !segment?.to) return;
     const ctx = this.ctx;

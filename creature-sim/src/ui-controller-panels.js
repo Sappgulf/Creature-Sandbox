@@ -3,24 +3,39 @@ import { domCache } from './dom-cache.js';
 import { loadEnhancedAnalyticsModule } from './enhanced-analytics-loader.js';
 import { touchOnboarding } from './touch-onboarding.js';
 import { eventSystem } from './event-system.js';
-import { isMobileDevice } from './device-profile.js';
 
 export function applyUiPanelMethods(UIController) {
+  UIController.prototype._ensurePanelEscapeHandler = function () {
+    if (this._panelEscapeBound || typeof document === 'undefined') return;
+    this._panelEscapeBound = true;
+    document.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') return;
+      const open = document.querySelector('.panel:not(.hidden)');
+      if (!open) return;
+      // Don't fight drawers/modals that already handle Escape.
+      if (event.defaultPrevented) return;
+      event.preventDefault();
+      this.setPanelVisibility(open, false);
+    });
+  };
+
   UIController.prototype.setPanelVisibility = function (panel, visible) {
     if (!panel) return false;
     const isVisible = !!visible;
     if (!isVisible) {
       this.blurFocusedDescendant(panel);
+    } else {
+      // Store return focus like the drawer pattern so Escape restores it.
+      const active = document.activeElement;
+      this._panelReturnTarget =
+        active && active !== panel && !panel.contains(active) && typeof active.focus === 'function' ? active : null;
     }
     panel.classList.toggle('hidden', !isVisible);
     panel.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
-    const isMobile = isMobileDevice();
-    if (isMobile) {
-      const anyPanelOpen = document.querySelector('.panel:not(.hidden)');
-      document.body.classList.toggle('panel-open', !!anyPanelOpen);
-    } else {
-      document.body.classList.remove('panel-open');
-    }
+    // Scrim for all form factors — desktop panels had no backdrop and could
+    // sit under other chrome with no defined stacking.
+    const anyPanelOpen = document.querySelector('.panel:not(.hidden)');
+    document.body.classList.toggle('panel-open', !!anyPanelOpen);
     if (isVisible) {
       requestAnimationFrame(() => {
         // Prefer the panel's first real control over its header close button;
@@ -40,6 +55,13 @@ export function applyUiPanelMethods(UIController) {
           panel.focus({ preventScroll: true });
         }
       });
+      this._ensurePanelEscapeHandler?.();
+    } else if (!document.querySelector('.panel:not(.hidden)')) {
+      const returnTarget = this._panelReturnTarget;
+      this._panelReturnTarget = null;
+      if (returnTarget && document.body.contains(returnTarget)) {
+        returnTarget.focus({ preventScroll: true });
+      }
     }
     return isVisible;
   };

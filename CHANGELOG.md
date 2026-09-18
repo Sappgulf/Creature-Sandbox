@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-18 — full-audit-polish-tranche — Planned
+
+- **Date:** 2026-09-18
+- **Scope:** render | simulation | ui | persistence | platform
+- **Type:** Planned
+- **Issues:** Parallel audit (render/sim/UI/perf subagents) found shipped dead-or-expensive behavior across all layers. Render: every creature paid `shadowBlur` at play zoom, 5 mutation FX bypassed the `allowRareFx` gate, emotion gradients allocated per frame, and `drawCreature` ran O(n) spatial queries with cross-creature writes. Sim: worker default dropped `creature:spawn/thrown`, `god:action`, `sandbox:prop_placed` so session goals/scenarios never counted in shipping runtime. UI: tutorial steps with `waitFor` also had `autoAdvance` timers (false completion), overlay timer kept firing behind drawers, blocklist missed 6 panels, `renderSelectedInfo` used width-only mobile check, touch onboarding Enter skipped the whole flow, panels had no Escape/return-focus and desktop had no scrim, 320px control strip overflowed, god/history touch targets were 24–36px. Persistence: autosave double-wrote uncompressed legacy (2x quota), sync previews reported `error` for valid compressed saves, migration used `Math.random()` temperaments. Platform: SW dynamic cache unbounded, pool `activeCount` could go negative, dead `_drawGodModeEffects` remained.
+- **Root Causes:** FX/readability fixes added without perf gates; bridge allowlist predated SessionGoals counters with only one-off `addProp` mirror; onboarding built with both wait + timer fallbacks; panel/drawer patterns diverged (drawers trap focus, panels didn't); mobile classification duplicated with width-only checks; save preview written for uncompressed path only; SW written without LRU cap.
+- **Fixes:** Gate creature `shadowBlur` like food glow (24px or detail/zoom≥1.25); gate chameleon/regen/armor/telepathy/superSenses + stress/joy/fear with `allowRareFx` and remove inline fear-query writes; extend worker `BRIDGE_EVENTS` + emit spawn/throw/god/prop in worker handlers and mirror spawn/god/throw in proxy; tutorial waitFor skips timer + clears timer behind chrome + extended blocklist; `isMobileDevice()` in dossier; Enter→next; panel Escape + return-focus + universal scrim; 360px strip wrap + divider hide; 40px touch minimums with reclaimed god-panel budget (gap/padding 4px); legacy autosave compressed; sync previews return `needsAsyncLoad`; deterministic temperament hash; SW 80-entry LRU trim; pool `max(0)` guard; delete dead god FX.
+- **Verification:** Pending full release proof.
+
+### 2026-09-18 — full-audit-polish-tranche — Implemented
+
+- **Date:** 2026-09-18
+- **Scope:** render | simulation | ui | persistence | platform
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npm run lint` clean; `npm test` green; `npm run build` + `npm run check:bundle` under budget (main 405.33 kB / 119.07 kB gzip, worker 309.49 kB / 91.94 kB gzip — 2.5 kB raw headroom). `npm run smoke:browser` pass (worker desktop/mobile-compact/mobile-large), `npm run smoke:worker` pass, `npm run smoke:main` pass after reclaiming god-panel compact budget (initial 40px raise pushed mobile-compact to 262.8px; gap/padding cut to 4px restored ≤260px), `npm run smoke:scenarios` pass (2× stress_sanctuary alive 74–77, scavenger_bridge 119–121). Frame pacing remains environment-sensitive per `docs/KNOWN_ISSUES.md` #2 (worker desktop avg 63–72ms / p95 82–84ms in CI container; mobile p95 34–50ms; main fallback mobile p95 17.6ms).
+
 ### 2026-09-16 — save-load-integrity-sweep — Planned
 
 - **Date:** 2026-09-16

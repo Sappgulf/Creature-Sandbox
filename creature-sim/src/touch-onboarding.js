@@ -232,7 +232,11 @@ class TouchOnboarding {
       } else if (event.key === 'ArrowLeft') {
         event.preventDefault();
         this._prev();
-      } else if (event.key === 'Escape' || event.key === 'Enter') {
+      } else if (event.key === 'Enter') {
+        // Enter advances; only Escape skips the whole flow.
+        event.preventDefault();
+        this._next();
+      } else if (event.key === 'Escape') {
         event.preventDefault();
         this._complete();
       }
