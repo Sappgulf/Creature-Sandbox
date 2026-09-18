@@ -234,10 +234,14 @@ export function getBiomeTint(biomeType) {
 export function drawBiomeBase(renderer, ctx, _world) {
   const bounds = renderer._viewBounds;
 
-  // Fill base background. Parallax layers are drawn on top of this fill (and
-  // below drawBiomeDetail) so the star/orb depth layers are actually visible
-  // instead of being painted over by the opaque base.
-  ctx.fillStyle = renderer.background;
+  // Opaque base fill for the whole view: the living ground tone (mid-tone of
+  // the baked terrain gradient) rather than the near-black canvas color, so
+  // zoomed-out views read as endless field instead of a lit box floating in
+  // a void. Parallax layers draw on top of this fill (and below
+  // drawBiomeDetail) so the depth layers stay visible instead of being
+  // painted over. The baked terrain, biome fields and atmosphere gradient
+  // layer on top within the world bounds.
+  ctx.fillStyle = '#132820';
   const visibleWidth = bounds.x2 - bounds.x1;
   const visibleHeight = bounds.y2 - bounds.y1;
   const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;

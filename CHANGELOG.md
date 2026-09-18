@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-18 — menu-world-presentation-fix — Planned
+
+- **Date:** 2026-09-18
+- **Scope:** render | ui | assets
+- **Type:** Planned
+- **Issues:** Production screenshots showed three presentation defects. The home feature cards were uneven: card 3 pulled sprite-strip frame 7 (brown `#372416` night scene) while cards 1–2 pulled green field frames, so the row clashed. Zoomed out past the world edge, the field rendered as a lit box floating in a near-black void (`drawBiomeBase` filled the whole view with `renderer.background` and the baked terrain only covers world bounds). The minimap camera viewport rect was drawn unclamped: at min zoom the viewport (viewport/zoom world units) is wider than the world itself, spraying a giant screen-space outline across the playfield around the minimap.
+- **Root Causes:** Card art mapped to first/second/last strip frames without checking the last frame's palette; base fill tuned for in-world views only; viewport indicator assumed viewport ≤ world.
+- **Fixes:** Recolored strip frame 7 in place to the field palette (backdrop `#372416`→`#103021`, glow/ground-ring `#fbbf24`→`#62e6a6`, sparkles/ring `#38bdf8`→`#d5ff7d`; yellow/pink subjects kept); base fill is now the terrain mid-tone `#132820` so outside-world reads as endless field under the shared atmosphere/vignette/day-night overlays; viewport rect clamped to the minimap panel; `.home-features` gets explicit `align-items: stretch`.
+- **Verification:** Pending smoke gate.
+
+### 2026-09-18 — menu-world-presentation-fix — Implemented
+
+- **Date:** 2026-09-18
+- **Scope:** render | ui | assets
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npm run lint` clean; `npm test` green; `npm run build` + `npm run check:bundle` pass. `npm run smoke:browser` + `npm run smoke:main` pass. Local Playwright probes at 1600×900: `output/manual-audit/home-probe.png` shows three even green cards; `output/manual-audit/zoomed-out-probe.png` (zoom 0.24) shows continuous field past the world edge with the minimap clamped to a clean compact panel and zero console errors.
+
 ### 2026-09-18 — audit-tranche-3-memo-chunks — Planned
 
 - **Date:** 2026-09-18

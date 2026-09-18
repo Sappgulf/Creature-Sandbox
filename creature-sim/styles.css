@@ -6753,6 +6753,9 @@ body {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   margin: 4px 0;
+  /* Explicit equal-height row: cards share the tallest height so art panels
+     and copy stay on one baseline instead of staggering. */
+  align-items: stretch;
 }
 
 .home-feature {

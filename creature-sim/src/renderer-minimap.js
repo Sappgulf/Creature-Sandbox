@@ -258,12 +258,20 @@ export function applyMinimapMethods(Renderer) {
 
     ctx.strokeStyle = 'rgba(198, 220, 255, 0.82)';
     ctx.lineWidth = 2;
-    ctx.strokeRect(
-      mapX + viewX * scaleX * dpr,
-      mapY + viewY * scaleY * dpr,
-      viewW * scaleX * dpr,
-      viewH * scaleY * dpr
-    );
+    // Clamp to the panel: zoomed out past the whole world, the viewport is
+    // wider than the map itself and the raw rect sprayed a giant outline
+    // across the playfield.
+    const vrx = mapX + viewX * scaleX * dpr;
+    const vry = mapY + viewY * scaleY * dpr;
+    const vrw = viewW * scaleX * dpr;
+    const vrh = viewH * scaleY * dpr;
+    const vcx = Math.max(vrx, mapX);
+    const vcy = Math.max(vry, mapY);
+    const vcw = Math.min(vrx + vrw, mapX + mapWCanvas) - vcx;
+    const vch = Math.min(vry + vrh, mapY + mapHCanvas) - vcy;
+    if (vcw > 0 && vch > 0) {
+      ctx.strokeRect(vcx, vcy, vcw, vch);
+    }
 
     const drawCreatureMarker = (id, fillStyle, strokeStyle, icon = null) => {
       if (!id) return;
