@@ -44,7 +44,7 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 - **Issues:** Same as planned.
 - **Root Causes:** Same as planned.
 - **Fixes:** Same as planned.
-- **Verification:** `npm run lint` clean; `npm test` green; `npm run build` + `npm run check:bundle` pass (main 405.86 kB, worker 310.98 kB unchanged — tranche-3 edits were main-thread only). `npm run smoke:browser` pass (worker desktop/mobile-compact/mobile-large), `npm run smoke:main` pass (fallback-proof).
+- **Verification:** `npm run lint` clean; `npm test` green; `npm run build` + `npm run check:bundle` pass (main 405.86 kB, worker 310.98 kB unchanged — tranche-3 edits were main-thread only). `npm run smoke:browser` pass (worker desktop/mobile-compact/mobile-large), `npm run smoke:main` pass (fallback-proof). Production: pushed `d9aef1a`; the Vercel alias serves `d9aef1a` (`npm run proof:vercel`); `npm run smoke:production` green (worker desktop/mobile-compact/mobile-large; mobile p95 33.4ms) and `npm run smoke:production:vitals` green with long tasks 0ms on both lanes (desktop FCP 248ms, LCP 248ms, CLS 0.0011, ready 533ms; mobile FCP 208ms, LCP 328ms, CLS 0, ready 462ms). Canonical `npm run proof:release` passes end-to-end (tests, lint, build, bundle, worker + main browser lanes, scenario balance 2× stress_sanctuary/scavenger_bridge, evidence board).
 
 ### 2026-09-18 — audit-tranche-2-god-render-save — Planned
 
