@@ -44,7 +44,7 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 - **Issues:** Same as planned.
 - **Root Causes:** Same as planned.
 - **Fixes:** Same as planned.
-- **Verification:** `npm run lint` clean; `npm test` green; `npm run build` + `npm run check:bundle` pass. `npm run smoke:browser` + `npm run smoke:main` pass. Local Playwright probes at 1600×900: `output/manual-audit/home-probe.png` shows three even green cards; `output/manual-audit/zoomed-out-probe.png` (zoom 0.24) shows continuous field past the world edge with the minimap clamped to a clean compact panel and zero console errors.
+- **Verification:** `npm run lint` clean; `npm test` green; `npm run build` + `npm run check:bundle` pass. `npm run smoke:browser` + `npm run smoke:main` pass. Local Playwright probes at 1600×900: `output/manual-audit/home-probe.png` shows three even green cards; `output/manual-audit/zoomed-out-probe.png` (zoom 0.24) shows continuous field past the world edge with the minimap clamped to a clean compact panel and zero console errors. Production: pushed `d475c9c`; the Vercel alias serves `d475c9c` (`npm run proof:vercel`); `npm run smoke:production` green and `npm run smoke:production:vitals` green (desktop FCP 244ms, LCP 360ms, long tasks 0ms; mobile FCP 316ms, LCP 384ms, long tasks 52ms).
 
 ### 2026-09-18 — audit-tranche-3-memo-chunks — Planned
 
