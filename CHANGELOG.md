@@ -44,7 +44,7 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 - **Issues:** Same as planned.
 - **Root Causes:** Same as planned.
 - **Fixes:** Same as planned.
-- **Verification:** `npm run lint` clean; `npm test` green; `npm run build` + `npm run check:bundle` pass. `npm run smoke:browser` + `npm run smoke:main` pass. Local probe `output/manual-audit/zoomed-out-probe2.png` (zoom 0.24) shows the field fading softly past the world edge with no box seam and no minimap outline.
+- **Verification:** `npm run lint` clean; `npm test` green; `npm run build` + `npm run check:bundle` pass. `npm run smoke:browser` + `npm run smoke:main` pass. Local probe `output/manual-audit/zoomed-out-probe2.png` (zoom 0.24) shows the field fading softly past the world edge with no box seam and no minimap outline. Production: pushed `dbf15bc`; the Vercel alias serves `dbf15bc` (`npm run proof:vercel`); `npm run smoke:production` green and `npm run smoke:production:vitals` green with long tasks 0ms on both lanes (desktop FCP 276ms, LCP 372ms; mobile FCP 252ms, LCP 360ms).
 
 ### 2026-09-18 — menu-world-presentation-fix — Planned
 
