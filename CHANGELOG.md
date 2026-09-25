@@ -26,6 +26,16 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — herd-drift-foraging-and-closable-menus — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** sim | balance | ui
+- **Type:** Implemented
+- **Issues:** Creatures all gathered in one spot and starved there (live: 54 alive, hunger 100, packed together while 1,846 food sat uneaten); about 70% of the opening population died near 80-100 s; the replayed tutorial card could not be closed (no close control, Escape and outside taps ignored); the Inspector needed 3-4 Escape presses.
+- **Root Causes:** (1) `chaos.gravity = (level - 0.5) * 18` applied a vertical impulse to every creature every frame; at the default non-0.5 chaos level all 77 creatures carried a stuck `(0, -59)` push, faster than walking, driving the whole population north into one clump away from food. (2) The food spatial grid was re-indexed without clearing (`SpatialGrid.remove` is a no-op), so eaten food stayed queryable forever and foragers walked to ghost food for 0 energy. (3) Home-region pull and seasonal migration kept overriding hungry foragers; with no food in sight, hungry creatures picked REST and waited; the herd converged on the same single-bite item. (4) Food energy (grass 4) could not sustain the opening population. (5) The tutorial had only a "Skip Tutorial" link and no Escape handling; Escape cleared hidden lineage/pin/selection state before closing the Inspector.
+- **Fixes:** Removed chaos gravity (top-down world); the food grid is rebuilt from `world.food` when dirty; hungry grazers smell the nearest unclaimed food within 700 units (claims last 4 s so the herd fans out), wander instead of resting when starving, and skip home pull / migration while starving; food energy raised (grass 4->8, berries 10->16, fruit 18->26); the tutorial card got a close button and Escape-to-dismiss; the first Escape closes a visible Inspector.
+- **Verification:** Browser main-thread 240 s sim sample: before, 69 -> 18 alive with food piling to 547; after, 69 -> 61 (79 s) -> 36 (236 s), food consumed 244 -> 163. Stuck impulse on 77/77 creatures -> removed. Menu sweep (every drawer entry, desktop + mobile): 0 unclosable, Escape closes the tutorial and the Inspector in one press. `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+
 ### 2026-09-25 — creatures-move-again — Implemented
 
 - **Date:** 2026-09-25

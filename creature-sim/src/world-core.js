@@ -544,6 +544,11 @@ export class World {
     }
 
     if (this.foodGridDirty && this.foodGrid?.buildIndex) {
+      // SpatialGrid.remove() is a no-op (the grid expects a full rebuild), so
+      // re-indexing without clearing kept every eaten item forever. Foragers
+      // then walked to and "ate" ghost food for 0 energy until they starved.
+      this.foodGrid.clear();
+      for (const f of this.food) this.foodGrid.add(f);
       this.foodGrid.buildIndex();
       this.foodGridDirty = false;
     }
@@ -1068,7 +1073,10 @@ export class World {
     const safeLevel = clamp(level, 0, 1);
     this.chaos.level = safeLevel;
     const offset = safeLevel - 0.5;
-    this.chaos.gravity = offset * 18;
+    // No vertical "gravity" in a top-down world. It used to push every
+    // creature toward the top edge each frame whenever chaos != 0.5, which
+    // overpowered walking and herded the whole population into one clump.
+    this.chaos.gravity = 0;
     this.chaos.bounceBoost = clamp(1 + offset * 0.6, 0.7, 1.35);
     this.chaos.wobbleBoost = clamp(1 + offset * 0.8, 0.6, 1.5);
     this.chaos.reactionBoost = clamp(1 + offset * 0.7, 0.65, 1.4);

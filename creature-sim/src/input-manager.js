@@ -537,16 +537,22 @@ export class InputManager {
       return;
     }
 
+    // A visible inspector is what the player is looking at, so Escape closes
+    // it first. It used to take three or four presses (lineage root, pin,
+    // selection) of invisible state-clearing before the panel went away.
+    if (gameState.inspectorVisible) {
+      gameState.setInspectorVisible(false);
+      gameState.setInspectorAutoOpen(false);
+      this.updateInspectorVisibility();
+      return;
+    }
+
     if (gameState.lineageRootId !== null) {
       gameState.lineageRootId = null;
     } else if (gameState.pinnedId !== null) {
       gameState.pinnedId = null;
     } else if (gameState.selectedId !== null) {
       gameState.selectedId = null;
-    } else if (gameState.inspectorVisible) {
-      gameState.setInspectorVisible(false);
-      gameState.setInspectorAutoOpen(false);
-      this.updateInspectorVisibility();
     }
   }
 

@@ -1,4 +1,9 @@
 import { clamp, rand, randn, dist2 } from './utils.js';
+
+// How far a hungry grazer can smell a stocked food patch (world units).
+const FORAGE_SCENT_RADIUS = 700;
+const FORAGE_SCENT_INTERVAL = 0.75;
+const FORAGE_CLAIM_SECONDS = 4;
 import { BehaviorConfig } from './behavior.js';
 import { getExpressedGenes, applyDisorderEffects } from './genetics.js';
 import { CreatureConfig } from './creature-config.js';
@@ -1039,8 +1044,12 @@ export class Creature {
     const goal = this.goal?.current ?? 'WANDER';
     this.target = null;
 
+    // A starving creature eats before it migrates: migration used to march
+    // hungry animals away from food until they dropped.
+    const starving = !this.genes.predator && (this.energy < 30 || (this.needs?.hunger ?? 0) >= 55);
+
     // Migration target takes priority during seasonal migration
-    if (this.migrationTarget) {
+    if (this.migrationTarget && !starving) {
       const distToTarget = Math.hypot(this.migrationTarget.x - this.x, this.migrationTarget.y - this.y);
       if (distToTarget < 30) {
         this.migrationTarget = null; // Reached waypoint
@@ -1160,6 +1169,41 @@ export class Creature {
       }
     }
 
+    // Foraging scent: with nothing edible in sight or memory, a hungry grazer
+    // heads for the nearest food it can smell. Without this, search was a
+    // slow random walk and most of the population starved at ~80s while
+    // regrown food sat untouched just out of sight. The query is cached for
+    // a short interval so a large radius stays cheap.
+    // Hunger lags energy, so also trigger on low energy: waiting for hunger 50
+    // left foragers ~5s of energy to cover 10-15s of walking to the next patch.
+    if (!this.target && !this.genes.predator && ((this.needs?.hunger ?? 0) >= 35 || this.energy < 30)) {
+      const now = world.t ?? 0;
+      let scent = this._scentTarget;
+      if (!scent || now >= scent.until || (scent.food && scent.food.bites <= 0)) {
+        let best = null;
+        let bestD2 = Infinity;
+        for (const f of world.nearbyFood(this.x, this.y, FORAGE_SCENT_RADIUS)) {
+          // Skip food another forager is already heading for. Otherwise the
+          // whole herd converged on the same single-bite item, one ate it and
+          // the rest arrived to nothing: one starving clump.
+          if (f._claimId != null && f._claimId !== this.id && f._claimUntil > now) continue;
+          const d2 = (f.x - this.x) ** 2 + (f.y - this.y) ** 2;
+          if (d2 < bestD2) {
+            bestD2 = d2;
+            best = f;
+          }
+        }
+        if (best) {
+          best._claimId = this.id;
+          best._claimUntil = now + FORAGE_CLAIM_SECONDS;
+        }
+        scent = this._scentTarget = best
+          ? { x: best.x, y: best.y, food: best, until: now + FORAGE_SCENT_INTERVAL }
+          : { x: 0, y: 0, food: null, until: now + FORAGE_SCENT_INTERVAL };
+      }
+      if (scent.food) this.target = { x: scent.x, y: scent.y, scent: true };
+    }
+
     if (this.genes.predator && this.personality.ambushTimer > 0) {
       this.personality.ambushTimer = Math.max(0, this.personality.ambushTimer - dt);
     }
@@ -1189,7 +1233,7 @@ export class Creature {
     const memoryAvoid =
       (this.needs?.stress ?? 0) >= CreatureConfig.MEMORY.STRESS_THRESHOLD ? this._getMemoryAvoidance?.('danger') : null;
     const homeBias = getHomeBias(this, world, goal);
-    const migrationBias = this.migration?.bias;
+    const migrationBias = starving ? null : this.migration?.bias;
     const avoidScale = CreatureConfig.MEMORY.AVOID_STRENGTH;
     const steeringX =
       Math.cos(desiredAngle) +
@@ -1331,10 +1375,6 @@ export class Creature {
     }
 
     const spd = this.calculateCurrentSpeed(dt, world);
-    const chaosGravity = world?.chaos?.gravity ?? 0;
-    if (Math.abs(chaosGravity) > 0.1) {
-      this.applyImpulse(0, chaosGravity * dt * 60, { decay: 10, cap: 200 });
-    }
     this.vx = Math.cos(this.dir) * spd;
     this.vy = Math.sin(this.dir) * spd;
     // MOVEMENT: position update is handled by behaviorSystem.applyMovement

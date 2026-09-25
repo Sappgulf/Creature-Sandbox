@@ -379,6 +379,12 @@ export class TutorialSystem {
     // Track keypresses
     window.addEventListener('keydown', e => {
       if (!this.active) return;
+      // Every other panel closes on Escape; the tutorial card had no way out
+      // but a small "Skip Tutorial" link.
+      if (e.key === 'Escape' && !this._isChromeBlockingTutorial()) {
+        this.skip();
+        return;
+      }
       if (this.currentStep?.waitFor?.type !== 'keypress') return;
 
       const key = e.code === 'Space' ? 'Space' : e.key.toLowerCase();
@@ -633,6 +639,7 @@ export class TutorialSystem {
     overlay.id = 'tutorial-overlay';
     overlay.innerHTML = `
       <div id="tutorial-content" role="dialog" aria-modal="true" aria-label="Tutorial">
+        <button id="tutorial-close" type="button" aria-label="Close tutorial" title="Close tutorial (Esc)">✕</button>
         <div id="tutorial-progress"></div>
         <div id="tutorial-title"></div>
         <div id="tutorial-text"></div>
@@ -692,6 +699,7 @@ export class TutorialSystem {
       line-height: 1.1;
       font-weight: 700;
       margin-bottom: 8px;
+      padding-right: 36px;
       letter-spacing: -0.02em;
     `;
 
@@ -759,6 +767,22 @@ export class TutorialSystem {
     overlay.setAttribute('aria-hidden', 'true');
     content.querySelector('#tutorial-next').addEventListener('click', () => this.nextStep());
     content.querySelector('#tutorial-skip').addEventListener('click', () => this.skip());
+    const closeBtn = content.querySelector('#tutorial-close');
+    closeBtn.style.cssText = `
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 32px;
+      height: 32px;
+      border: 0;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(248, 250, 252, 0.8);
+      font-size: 15px;
+      line-height: 1;
+      cursor: pointer;
+    `;
+    closeBtn.addEventListener('click', () => this.skip());
 
     document.body.appendChild(overlay);
     this._overlay = overlay;

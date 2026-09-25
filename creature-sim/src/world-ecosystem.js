@@ -15,7 +15,7 @@ export class WorldEcosystem {
     // Vegetation diversity system
     this.vegetationTypes = {
       grass: {
-        energy: 4, // Increased from 3
+        energy: 8, // Was 4: a grass bite bought ~4s of life, below the cost of walking to it
         color: '#7FDB6A',
         size: 2,
         growthRate: 1.2, // Increased from 1.0
@@ -23,7 +23,7 @@ export class WorldEcosystem {
         respawnTime: 4.5 // Reduced from 5 seconds
       },
       berries: {
-        energy: 10, // Increased from 8
+        energy: 16, // Was 10
         color: '#FF6B9D',
         size: 3,
         growthRate: 0.35, // Increased from 0.3
@@ -31,7 +31,7 @@ export class WorldEcosystem {
         respawnTime: 13 // Reduced from 15
       },
       fruit: {
-        energy: 18, // Increased from 15
+        energy: 26, // Was 18
         color: '#FFA500',
         size: 4,
         growthRate: 0.12, // Increased from 0.1

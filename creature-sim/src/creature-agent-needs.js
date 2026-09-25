@@ -324,6 +324,15 @@ export function selectGoal(creature, world) {
 
   let wanderScore = CreatureAgentTuning.GOALS.SCORE_BIAS.WANDER * wanderBias;
 
+  // Foraging search. With nothing edible sensed or remembered, EAT has no
+  // destination and a hungry, tired creature used to pick REST and sit still
+  // until it starved beside a field of food just out of sense range. Hunger
+  // now drives wandering (the search), and resting while starving is damped.
+  if (!senses.food && !memoryFood && (hungerScore > 0.35 || needs.energy < 30)) {
+    wanderScore += hungerScore * CreatureAgentTuning.GOALS.SCORE_BIAS.EAT * 0.8;
+    restScore *= 0.45;
+  }
+
   const temperament = creature.temperament;
   if (temperament) {
     eatScore *= 1 + (1 - (temperament.boldness ?? 0.5)) * 0.12;
@@ -732,6 +741,11 @@ export function getHomeBias(creature, world, goal) {
   const stressed = (creature.needs?.stress ?? 0) >= CreatureAgentTuning.MIGRATION.STRESS_TRIGGER;
   const goalAllows = goal === 'WANDER' || goal === 'REST' || goal === 'SEEK_MATE' || returning || stressed;
   if (!goalAllows) return null;
+  // A hungry creature's WANDER is a food search. Pulling it home tethered
+  // every forager to its (usually eaten-out) home region, and since the
+  // opening glade gives the whole population the same home, the entire field
+  // collapsed into one starving clump.
+  if ((creature.needs?.hunger ?? 0) >= 50 && !returning) return null;
 
   const homeRadius =
     (region.size ?? CreatureAgentTuning.TERRITORY.REGION_SIZE) * 0.5 * CreatureAgentTuning.TERRITORY.HOME_RADIUS_MULT;
