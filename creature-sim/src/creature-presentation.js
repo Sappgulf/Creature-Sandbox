@@ -199,10 +199,13 @@ export function drawCreatureSprite(ctx, creature = {}, opts = {}) {
   // without them a green herbivore disappears into green ground cover.
   if (screenSize >= 8) {
     ctx.save();
+    // Undo the heading rotation: the shadow belongs on the ground below the
+    // creature, not orbiting it as it turns.
+    ctx.rotate(-(Number(creature.dir) || 0));
     ctx.globalAlpha *= 0.3;
     ctx.fillStyle = '#000';
     ctx.beginPath();
-    ctx.ellipse(0, renderSize * 0.34, renderSize * 0.3, renderSize * 0.12, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, renderSize * 0.27, renderSize * 0.28, renderSize * 0.1, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }

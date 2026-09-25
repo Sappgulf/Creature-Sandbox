@@ -141,7 +141,6 @@ export function applyCreatureMethods(Renderer) {
       clusterMap = this._clusterCache.clusters;
     }
 
-    const showShadows = this.enableShadows !== false && zoom > 0.4;
     const showOutlines = zoom > 0.5;
     const showTrails = this.enableTrails && zoom > 0.6;
     const showNames = this.enableNameLabels && zoom > 0.5;
@@ -257,9 +256,8 @@ export function applyCreatureMethods(Renderer) {
         this._drawVectorCreatureLOD(ctx, c, { clusterHue, quality, zoom, worldTime });
       } else {
         // HIGH LOD: Full rendering
-        if (showShadows && (isSelected || isPinned || zoom > 0.6)) {
-          this._drawCreatureShadow(c);
-        }
+        // Contact shadows come from the sprite / detailed draw paths; a second
+        // dynamic ellipse here drew every creature with two shadows.
 
         // LOD: pass zoom to creature draw so it can skip fine details when far out
         if (c.draw) {
@@ -647,100 +645,6 @@ export function applyCreatureMethods(Renderer) {
     ctx.fillRect(x, y, barWidth, barHeight);
     ctx.fillStyle = creature.genes?.predator ? 'rgba(255,120,120,0.85)' : 'rgba(120,255,160,0.85)';
     ctx.fillRect(x, y, barWidth * ratio, barHeight);
-  };
-
-  Renderer.prototype._drawCreatureShadow = function (creature) {
-    // Enhanced dynamic shadow with biome/time-of-day awareness
-    const ctx = this.ctx;
-    const g = creature.genes;
-
-    ctx.save();
-
-    // Shadow opacity varies by time of day and creature
-    let shadowAlpha = 0.25;
-    let shadowColor = 'rgba(0, 0, 0';
-
-    // Adjust shadow based on creature hue (lighter creatures have lighter shadows)
-    if (g) {
-      const lightness = g.lightness || 50;
-      // Creatures with high lightness have softer shadows
-      if (lightness > 60) {
-        shadowAlpha = 0.15;
-        shadowColor = 'rgba(30, 30, 40';
-      } else if (lightness < 35) {
-        shadowAlpha = 0.35;
-        shadowColor = 'rgba(0, 0, 0';
-      }
-    }
-
-    // Elemental creatures have colored shadows
-    if (g?.elementalAffinity) {
-      switch (g.elementalAffinity) {
-        case 'fire':
-          shadowColor = 'rgba(80, 20, 0';
-          break;
-        case 'ice':
-          shadowColor = 'rgba(40, 80, 120';
-          break;
-        case 'electric':
-          shadowColor = 'rgba(100, 100, 0';
-          break;
-        case 'earth':
-          shadowColor = 'rgba(60, 40, 20';
-          break;
-      }
-    }
-
-    // Bioluminescent creatures have ethereal shadows
-    const rareMutations = creature.rareMutations || creature.mutations || [];
-    const hasBioGlow = rareMutations.some(m => m.name === 'Bioluminescence');
-    if (hasBioGlow) {
-      shadowAlpha = 0.12;
-      shadowColor = 'rgba(0, 80, 60';
-    }
-
-    // Dynamic shadow offset based on creature velocity (shadow stretches when moving)
-    const speed = Math.sqrt((creature.vx || 0) ** 2 + (creature.vy || 0) ** 2);
-    const stretchFactor = Math.min(speed / 100, 0.5);
-    const flying = Number(creature.flyingAffinity ?? creature.genes?.flying?.expressed ?? creature.genes?.flying) || 0;
-    const burrowing =
-      Number(creature.burrowingAffinity ?? creature.genes?.burrowing?.expressed ?? creature.genes?.burrowing) || 0;
-    const aquatic =
-      Number(creature.aquaticAffinity ?? creature.genes?.aquatic?.expressed ?? creature.genes?.aquatic) || 0;
-    let offsetX = 2 + stretchFactor * 2;
-    let offsetY = 3 + stretchFactor * 1;
-    if (flying > 0.55) {
-      offsetX += 3;
-      offsetY += 5;
-      shadowAlpha *= 0.72;
-    } else if (burrowing > 0.55) {
-      offsetX *= 0.6;
-      offsetY *= 0.55;
-      shadowAlpha *= 1.15;
-    } else if (aquatic > 0.55) {
-      shadowColor = 'rgba(20, 50, 80';
-      shadowAlpha *= 0.85;
-    }
-
-    ctx.globalAlpha = shadowAlpha;
-    ctx.fillStyle = `${shadowColor}, ${shadowAlpha})`;
-
-    // Shadow scale based on creature height (larger = more prominent shadow)
-    const heightFactor = creature.baseSize ? creature.baseSize / 10 : 1;
-    const spriteSize = getCreatureRenderSize(creature, { zoom: this.camera.zoom });
-
-    ctx.beginPath();
-    ctx.ellipse(
-      creature.x + offsetX,
-      creature.y + offsetY,
-      spriteSize * 0.34 * (1 + stretchFactor * 0.3),
-      spriteSize * 0.13 * (1 - stretchFactor * 0.15) * heightFactor,
-      0,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-    ctx.restore();
   };
 
   Renderer.prototype._drawCreatureOutline = function (creature, isSelected, selectionPulseUntil = null, nowMs = null) {

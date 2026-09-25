@@ -1,7 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="640" height="64" viewBox="0 0 640 64" fill="none"><defs><filter id="creature_omnivore-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -62,7 +61,6 @@
   </g><g transform="translate(64 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -123,7 +121,6 @@
   </g><g transform="translate(128 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -184,7 +181,6 @@
   </g><g transform="translate(192 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -245,7 +241,6 @@
   </g><g transform="translate(256 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -306,7 +301,6 @@
   </g><g transform="translate(320 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -367,7 +361,6 @@
   </g><g transform="translate(384 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -428,7 +421,6 @@
   </g><g transform="translate(448 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -489,7 +481,6 @@
   </g><g transform="translate(512 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="
@@ -550,7 +541,6 @@
   </g><g transform="translate(576 0)">
 
     <rect x="0" y="0" width="64" height="64" fill="none"/>
-    <ellipse cx="32" cy="48.64" rx="18" ry="4.1" fill="rgba(0,0,0,0.24)"/>
 
 
     <path d="

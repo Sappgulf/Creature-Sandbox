@@ -1294,10 +1294,13 @@ export function drawCreature(creature, ctx, opts = {}) {
     // shadow under the body reads at every zoom and against every biome, and
     // grounds the creature instead of leaving it floating.
     ctx.save();
+    // Drawn after ctx.rotate(creature.dir); undo it so the shadow stays on the
+    // ground below the creature instead of orbiting it as it turns.
+    ctx.rotate(-creature.dir);
     ctx.globalAlpha = 0.34;
     ctx.fillStyle = '#000';
     ctx.beginPath();
-    ctx.ellipse(0, renderSize * 0.34, renderSize * 0.3, renderSize * 0.12, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, renderSize * 0.27, renderSize * 0.28, renderSize * 0.1, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
     // A dark outer glow separates the silhouette from ground of a similar

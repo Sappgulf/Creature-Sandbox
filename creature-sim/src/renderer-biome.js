@@ -28,6 +28,53 @@ const LANDSCAPE_LANDMARKS = Object.freeze([
 
 const pendingDecorationRequests = new Set();
 
+// Ground mottling as a repeating world-space tile: one pattern fill per
+// frame, crisp at every zoom (world units map 1:1 to tile pixels).
+const GROUND_SPECKLE_TILE = 192;
+let groundSpeckleCanvas = null;
+let groundSpecklePattern = null;
+let groundSpeckleCtx = null;
+function getGroundSpecklePattern(ctx) {
+  if (typeof document === 'undefined') return null;
+  if (!groundSpeckleCanvas) {
+    const tile = document.createElement('canvas');
+    tile.width = GROUND_SPECKLE_TILE;
+    tile.height = GROUND_SPECKLE_TILE;
+    const tctx = tile.getContext('2d');
+    if (!tctx) return null;
+    let seed = 0x2f6b1d3;
+    const rand = () => {
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      return ((seed >>> 0) % 100000) / 100000;
+    };
+    const passes = [
+      ['rgba(12, 30, 18, 0.22)', 150],
+      ['rgba(70, 118, 72, 0.16)', 130],
+      ['rgba(160, 204, 128, 0.12)', 70]
+    ];
+    for (const [color, count] of passes) {
+      tctx.fillStyle = color;
+      tctx.beginPath();
+      for (let i = 0; i < count; i++) {
+        const x = rand() * GROUND_SPECKLE_TILE;
+        const y = rand() * GROUND_SPECKLE_TILE;
+        const r = 0.5 + rand() * 1.1;
+        tctx.moveTo(x + r, y);
+        tctx.arc(x, y, r, 0, Math.PI * 2);
+      }
+      tctx.fill();
+    }
+    groundSpeckleCanvas = tile;
+  }
+  if (!groundSpecklePattern || groundSpeckleCtx !== ctx) {
+    groundSpecklePattern = ctx.createPattern(groundSpeckleCanvas, 'repeat');
+    groundSpeckleCtx = ctx;
+  }
+  return groundSpecklePattern;
+}
+
 // Baked, world-space ground layer. The per-frame radial-gradient patch pass
 // was the most expensive thing on screen (tens of millions of software-
 // rasterized pixels per second); baking it once per season bucket and drawing
@@ -112,32 +159,9 @@ function buildTerrainLayer(world, season, phase, key) {
     layerCtx.fillRect(x - r, y - r, r * 2, r * 2);
   }
 
-  // 4. Ground-cover speckle carpet: baked mottling so the floor has texture
-  //    without per-frame draws. Batched into three rect passes — thousands of
-  //    arc() paths in one idle callback was itself a long task.
-  const coverCount = Math.round((width * height) / 260);
-  const lightFlecks = [];
-  const midFlecks = [];
-  const darkFlecks = [];
-  for (let i = 0; i < coverCount; i++) {
-    const fleck = [rand() * width, rand() * height, 0.8 + rand() * 1.8];
-    const roll = rand();
-    if (roll > 0.7) lightFlecks.push(fleck);
-    else if (roll > 0.35) midFlecks.push(fleck);
-    else darkFlecks.push(fleck);
-  }
-  const drawFlecks = (list, color) => {
-    if (!list.length) return;
-    layerCtx.beginPath();
-    for (const [x, y, r] of list) {
-      layerCtx.rect(x - r, y - r, r * 2, r * 2);
-    }
-    layerCtx.fillStyle = color;
-    layerCtx.fill();
-  };
-  drawFlecks(darkFlecks, 'rgba(24, 52, 34, 0.2)');
-  drawFlecks(midFlecks, 'rgba(70, 118, 72, 0.18)');
-  drawFlecks(lightFlecks, 'rgba(150, 196, 120, 0.16)');
+  // 4. Ground-cover speckle lives in a full-resolution world-space pattern
+  //    (see getGroundSpecklePattern). Baking it here at 0.2 scale turned each
+  //    2px fleck into a ~10 world-unit blurry square once the camera zoomed in.
 
   // 5. Feather the world edge: erase alpha over a border band so the baked
   // rect melts into the flat ground tone instead of drawing a hard-edged box
@@ -300,6 +324,17 @@ export function drawBiomeDetail(renderer, ctx, world) {
     const layer = getTerrainLayer(world, season, phase);
     if (layer) {
       ctx.drawImage(layer, 0, 0, world.width, world.height);
+    }
+    const speckle = getGroundSpecklePattern(ctx);
+    if (speckle && renderer.camera.zoom > 0.45) {
+      const x1 = Math.max(0, bounds.x1);
+      const y1 = Math.max(0, bounds.y1);
+      const x2 = Math.min(world.width, bounds.x2);
+      const y2 = Math.min(world.height, bounds.y2);
+      if (x2 > x1 && y2 > y1) {
+        ctx.fillStyle = speckle;
+        ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+      }
     }
   }
 

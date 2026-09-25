@@ -7856,3 +7856,11 @@ body.drawer-open #control-strip {
 #stats .stat-tool {
   white-space: nowrap;
 }
+
+/* Keyboard shortcut badges are noise on touch-only devices. */
+@media (hover: none) and (pointer: coarse) {
+  .menu-kbd,
+  .god-kbd {
+    display: none;
+  }
+}

@@ -26,6 +26,16 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — ground-and-shadow-fidelity — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** render | assets
+- **Type:** Implemented
+- **Issues:** At play zoom the ground showed soft light/dark square blotches, and creatures had shadows that swung around their sides as they turned (plus a second shadow below).
+- **Root Causes:** The ground speckle was baked into the 0.2-scale terrain layer, so each 1-2.6px fleck upscaled into a ~10 world-unit blurry square. Creature contact shadows were drawn after `ctx.rotate(creature.dir)` in both the sprite (`creature-presentation.js`) and detailed (`creature-render.js`) paths, every creature sprite sheet baked its own drop shadow into each rotating frame, and `renderer-creatures.js` drew a third unrotated ellipse at `y+3`.
+- **Fixes:** Speckle moved out of the bake into a full-resolution 192px world-space repeating pattern (one pattern fill per frame). Contact shadows are counter-rotated and sit at the body's ground line (0.27 x size); baked frame shadows removed from all nine creature sheets; the redundant renderer shadow pass removed; keyboard-shortcut badges hidden on touch-only devices. The service-worker cache is keyed by build SHA, so returning players pick up the new sprites.
+- **Verification:** Playtest screenshots reviewed at play zoom; `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+
 ### 2026-09-25 — food-sprite-tint-and-caps — Implemented
 
 - **Date:** 2026-09-25
@@ -65,6 +75,7 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 - **Root Causes:** Same as planned.
 - **Fixes:** Re-centered the launch composition for desktop and mobile; reduced the persistent selection/stats HUD; changed desktop drawers into compact right-side panels; reduced mobile drawer takeover from 74vh to 64vh while retaining scroll; replaced the tutorial blackout with a focused coachmark; and made Web Audio resume on the first trusted pointer/keyboard interaction, stop all music layers on mute, update live gains from sliders, and report ready/sleeping/muted state in the Sound panel.
 - **Verification:** `npm run smoke:menus` passed; `node scripts/playtest-upgrade.mjs` reported no findings, page errors, or console errors; `npm run lint` passed; `npm test` passed (191 core + 75 regression checks, E2E, presentation, scenario, and migration suites); `npm run build` and `npm run check:bundle` passed (main app 381.75 kB / 111.24 kB gzip, worker 305.00 kB); `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, and canonical `npm run proof:release` passed; release evidence was generated. Worker readiness remains `needs-more-proof` on the existing headless pacing threshold; fallback readiness is `fallback-proof`.
+
 ### 2026-09-18 — terrain-edge-feather — Planned
 
 - **Date:** 2026-09-18
