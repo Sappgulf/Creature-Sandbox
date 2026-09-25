@@ -207,6 +207,7 @@ export class TutorialSystem {
     if (overlay) {
       overlay.dataset.step = step.id || '';
       overlay.style.display = 'block';
+      overlay.setAttribute('aria-hidden', 'false');
     }
     if (title) title.textContent = step.title || 'Tutorial';
     if (text) text.textContent = step.text || '';
@@ -247,6 +248,7 @@ export class TutorialSystem {
     if (overlay) {
       const chromeOpen = this._isChromeBlockingTutorial();
       overlay.style.display = chromeOpen ? 'none' : 'block';
+      overlay.setAttribute('aria-hidden', chromeOpen ? 'true' : 'false');
       if (chromeOpen) {
         // Pause the auto-advance timer while a real surface covers the
         // tutorial — otherwise spawn steps complete while the drawer is open.
@@ -314,6 +316,7 @@ export class TutorialSystem {
     const overlay = this._overlay || document.getElementById('tutorial-overlay');
     if (overlay) {
       overlay.style.display = 'none';
+      overlay.setAttribute('aria-hidden', 'true');
     }
     this.hideHighlight();
   }
@@ -647,23 +650,25 @@ export class TutorialSystem {
       z-index: var(--z-tutorial, 5100);
       pointer-events: none;
       display: none;
+      visibility: visible;
     `;
 
     const content = overlay.querySelector('#tutorial-content');
     content.style.cssText = `
       position: absolute;
-      top: clamp(14px, 14vh, 160px);
-      left: 50%;
-      transform: translateX(-50%);
-      width: min(480px, calc(100vw - 24px));
-      max-width: 480px;
-      padding: 18px 20px 16px;
-      border-radius: 16px;
-      background: rgba(10, 14, 22, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      top: max(78px, env(safe-area-inset-top, 0px));
+      right: max(16px, env(safe-area-inset-right, 0px));
+      width: min(360px, calc(100vw - 32px));
+      max-width: 360px;
+      max-height: min(48vh, 340px);
+      overflow-y: auto;
+      padding: 14px 16px 13px;
+      border-radius: 14px;
+      background: rgba(9, 28, 21, 0.96);
+      border: 1px solid rgba(197, 242, 126, 0.24);
       color: #f8fafc;
       pointer-events: auto;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.32);
       backdrop-filter: blur(16px);
     `;
 
@@ -746,11 +751,12 @@ export class TutorialSystem {
       border: 2px solid rgba(74, 222, 128, 0.95);
       border-radius: 14px;
       pointer-events: none;
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.16), 0 0 28px rgba(74, 222, 128, 0.45);
+      box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.12), 0 0 22px rgba(74, 222, 128, 0.34);
       transition: opacity 0.25s ease, transform 0.25s ease;
       display: none;
     `;
 
+    overlay.setAttribute('aria-hidden', 'true');
     content.querySelector('#tutorial-next').addEventListener('click', () => this.nextStep());
     content.querySelector('#tutorial-skip').addEventListener('click', () => this.skip());
 

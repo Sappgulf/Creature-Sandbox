@@ -175,8 +175,9 @@ export function renderStats(el, world, fps, extra = {}) {
     `<span>${glyph('i-food')} <span class="sr-only">Food</span> <span class="value">${animFood}</span></span>`
   );
 
-  // Tool indicator
-  if (extra.tool) {
+  // Tool indicator. God Mode overrides the brush tool, so its own chip
+  // (below) replaces this one rather than showing two competing tools.
+  if (extra.tool && !(extra.godModeActive && !isMobile)) {
     const meta = toolMeta[extra.tool] || { icon: glyph('i-tool'), label: extra.tool };
     const brushSize = Number.isFinite(extra.brushSize) ? Math.round(extra.brushSize) : null;
     // World units mean nothing to a player; describe the brush instead of

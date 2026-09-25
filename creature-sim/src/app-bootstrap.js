@@ -729,6 +729,39 @@ export async function initializeApp() {
     null
   );
 
+  // Keep the sound panel honest about browser autoplay state. A checkbox can
+  // say "on" while an AudioContext is still suspended, which made the game
+  // look muted even though all of the sound generators were running.
+  const soundStatus = document.getElementById('sound-status');
+  let soundStatusContext = null;
+  const updateSoundStatus = () => {
+    if (!soundStatus) return;
+    if (!audio) {
+      soundStatus.textContent = 'Audio unavailable in this browser';
+      soundStatus.dataset.state = 'unavailable';
+      return;
+    }
+    if (!audio.soundsEnabled) {
+      soundStatus.textContent = 'Muted';
+      soundStatus.dataset.state = 'muted';
+      return;
+    }
+    if (audio.ctx?.state === 'running') {
+      soundStatus.textContent = 'Audio ready';
+      soundStatus.dataset.state = 'ready';
+      return;
+    }
+    soundStatus.textContent = 'Tap once to wake audio';
+    soundStatus.dataset.state = 'sleeping';
+  };
+  const watchAudioState = () => {
+    const context = audio?.ctx;
+    if (!context || context === soundStatusContext) return;
+    context.addEventListener?.('statechange', updateSoundStatus);
+    soundStatusContext = context;
+  };
+  updateSoundStatus();
+
   // Sound panel volume controls (must be after audio init)
   errorHandler.safeExecute(() => {
     if (!audio) return;
@@ -772,6 +805,7 @@ export async function initializeApp() {
       soundToggle.checked = audio.soundsEnabled;
       soundToggle.addEventListener('change', () => {
         audio.toggleSounds(soundToggle.checked);
+        updateSoundStatus();
       });
     }
     const musicToggle = document.getElementById('toggle-music-enabled');
@@ -779,8 +813,10 @@ export async function initializeApp() {
       musicToggle.checked = audio.musicEnabled;
       musicToggle.addEventListener('change', () => {
         audio.toggleMusic(musicToggle.checked);
+        updateSoundStatus();
       });
     }
+    updateSoundStatus();
   }, 'Sound panel controls');
 
   const gameplayModes = errorHandler.safeExecute(
@@ -1652,11 +1688,19 @@ export async function initializeApp() {
     // Initialize audio on first user interaction
     const initAudioOnInteraction = () => {
       errorHandler.safeExecute(() => {
-        if (audio && !audio.ctx) {
-          audio.init();
-        }
+        if (!audio) return;
+        audio.init();
+        audio.resume?.();
+        watchAudioState();
+        updateSoundStatus();
       }, 'Audio initialization');
     };
+
+    // Some browsers only unlock Web Audio from the earliest trusted gesture,
+    // which may be a canvas touch or keyboard shortcut rather than a home
+    // button. Cover both paths without keeping a permanent global listener.
+    window.addEventListener('pointerdown', initAudioOnInteraction, { capture: true, once: true });
+    window.addEventListener('keydown', initAudioOnInteraction, { capture: true, once: true });
 
     // Handle continue button
     errorHandler.safeExecute(() => {

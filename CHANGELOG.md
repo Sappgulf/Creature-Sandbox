@@ -26,6 +26,45 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — food-sprite-tint-and-caps — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** render | perf
+- **Type:** Implemented
+- **Issues:** Food still usually rendered as flat dots, and when the sprite path ran the food art rasterized black.
+- **Root Causes:** The food sprite path was capped at <=82 visible items (a normal field has 200-400); the tint-first (`currentColor`) food SVGs were requested untinted; each item paid its own contact-shadow `save/fill/restore`.
+- **Fixes:** Food sprites are requested with a per-type tint; contact shadows are drawn in one batched path; sprite caps raised to 180-520 desktop / 100-260 mobile by quality tier. Upstream sizing, bob, and zoom-gated glow are kept. FPS note: a CDP CPU profile shows the main thread ~70-93% idle; GPU-enabled Chromium holds 16.6 ms avg / ~17 ms p95 in worker and main-thread modes, including at DPR 2, so smoke-lane frame times reflect headless software rasterization.
+- **Verification:** Full local gate re-run after rebasing onto origin/main (see inspector-lane-hud).
+
+### 2026-09-25 — inspector-lane-hud — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** ui
+- **Type:** Implemented
+- **Issues:** Playtest screenshots showed the tutorial coachmark covering the open Inspector's stats, the objective rail's Goals chip clipped under the Inspector, the bottom stats rail hidden behind or squeezed against it, and God Mode showing both an "Inspect" and a "God Food" tool chip (wrapping to two lines).
+- **Root Causes:** Fixed HUD pieces were laid out against the full viewport with no knowledge of the 340px desktop Inspector lane; the stats rail always emitted the brush-tool chip even while God Mode overrides the brush tool.
+- **Fixes:** Desktop-only `body:has(#inspector:not(.hidden))` rules re-center the objective rail and move the coachmark and bottom HUD out of the Inspector lane (the stats rail hides below 1440px, where the Inspector already carries those readouts); stats chips no longer wrap; the brush-tool chip is omitted on desktop while God Mode is active.
+- **Verification:** `node scripts/playtest-upgrade.mjs` (no findings/page/console errors, screenshots reviewed), `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios` all passed.
+
+### 2026-09-10 — field-ui-audio-recovery — Planned
+
+- **Date:** 2026-09-10
+- **Scope:** ui | render | input | audio
+- **Type:** Planned
+- **Issues:** The start screen was visually off-center, the HUD carried too much persistent chrome, drawers obscured the playfield and camera-follow context, tutorial guidance used a full-screen visual treatment, and sound could remain silent behind an enabled toggle.
+- **Root Causes:** Late responsive rules re-aligned the home composition to the left; the empty selection dossier and stats rail expanded the bottom HUD; drawers used wall-like centered sheets and a heavy scrim; tutorial highlighting painted a giant blackout; AudioContext resume was not guaranteed after the first trusted gesture and dynamic music layers were not fully stopped or live-volume-synced.
+- **Fixes:** Re-center and rebalance the launch composition, compress the HUD into a slim information rail, turn desktop drawers into right-side instruments, cap mobile sheets to 64vh with internal scrolling, move tutorial guidance into a compact coachmark, and make audio resume/mute/live gain behavior explicit with a status indicator.
+- **Verification:** Pending full release proof.
+
+### 2026-09-10 — field-ui-audio-recovery — Implemented
+
+- **Date:** 2026-09-10
+- **Scope:** ui | render | input | audio
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Re-centered the launch composition for desktop and mobile; reduced the persistent selection/stats HUD; changed desktop drawers into compact right-side panels; reduced mobile drawer takeover from 74vh to 64vh while retaining scroll; replaced the tutorial blackout with a focused coachmark; and made Web Audio resume on the first trusted pointer/keyboard interaction, stop all music layers on mute, update live gains from sliders, and report ready/sleeping/muted state in the Sound panel.
+- **Verification:** `npm run smoke:menus` passed; `node scripts/playtest-upgrade.mjs` reported no findings, page errors, or console errors; `npm run lint` passed; `npm test` passed (191 core + 75 regression checks, E2E, presentation, scenario, and migration suites); `npm run build` and `npm run check:bundle` passed (main app 381.75 kB / 111.24 kB gzip, worker 305.00 kB); `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, and canonical `npm run proof:release` passed; release evidence was generated. Worker readiness remains `needs-more-proof` on the existing headless pacing threshold; fallback readiness is `fallback-proof`.
 ### 2026-09-18 — terrain-edge-feather — Planned
 
 - **Date:** 2026-09-18

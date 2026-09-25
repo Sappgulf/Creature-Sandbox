@@ -52,10 +52,18 @@ export class AudioSystem {
 
   // Initialize audio context (must be called after user interaction)
   init() {
-    if (this.ctx) return; // Already initialized
+    if (this.ctx) {
+      // Browsers create Web Audio contexts in a suspended state until a user
+      // gesture is observed. `init()` is called from that gesture, so resume
+      // an existing context as well as creating the first one.
+      this.resume();
+      return this.ctx;
+    }
 
     try {
-      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) throw new Error('Web Audio API unavailable');
+      this.ctx = new AudioContextClass();
       // Master effects chain: compressor -> destination
       this.masterCompressor = this.ctx.createDynamicsCompressor();
       this.masterCompressor.threshold.value = -24;
@@ -64,10 +72,61 @@ export class AudioSystem {
       this.masterCompressor.attack.value = 0.003;
       this.masterCompressor.release.value = 0.1;
       this.masterCompressor.connect(this.ctx.destination);
-      // Audio system initialized
+      // Do not await here: this method is intentionally safe to call from a
+      // synchronous click handler, and resume() handles browsers that resolve
+      // asynchronously.
+      this.resume();
     } catch (e) {
       console.warn('Audio not supported:', e);
       this.soundsEnabled = false;
+    }
+
+    return this.ctx;
+  }
+
+  /** Wake a context after browser autoplay policy has suspended it. */
+  resume() {
+    if (!this.ctx || typeof this.ctx.resume !== 'function') {
+      return Promise.resolve(false);
+    }
+    if (this.ctx.state === 'running') return Promise.resolve(true);
+
+    let resumeResult;
+    try {
+      resumeResult = this.ctx.resume();
+    } catch {
+      return Promise.resolve(false);
+    }
+
+    return Promise.resolve(resumeResult)
+      .then(() => this.ctx?.state === 'running' || this.ctx?.state == null)
+      .catch(() => false);
+  }
+
+  _setLiveGain(param, value) {
+    if (!param || !Number.isFinite(value)) return;
+    try {
+      const now = this.ctx?.currentTime || 0;
+      if (typeof param.setTargetAtTime === 'function') {
+        param.setTargetAtTime(Math.max(0, value), now, 0.04);
+      } else {
+        param.value = Math.max(0, value);
+      }
+    } catch {
+      // A node may have ended between a slider event and this update.
+    }
+  }
+
+  _syncLiveVolumes() {
+    if (!this.ctx) return;
+
+    const musicVolume = this.volumes.music * this.masterVolume;
+    this._setLiveGain(this.musicGain?.gain, musicVolume * 0.1);
+    this._setLiveGain(this.musicGain2?.gain, musicVolume * 0.06);
+    this._setLiveGain(this.musicGain3?.gain, musicVolume * 0.04);
+
+    for (const layer of Object.values(this.musicLayers)) {
+      this._setLiveGain(layer.gain?.gain, (layer.targetVol || 0) * musicVolume * 0.5);
     }
   }
 
@@ -447,7 +506,7 @@ export class AudioSystem {
 
   // Ambient biome sounds (subtle background)
   playBiomeAmbient(biomeType) {
-    if (!this.soundsEnabled || !this.ctx || !this.musicEnabled) return;
+    if (!this.soundsEnabled || !this.ctx) return;
 
     // Very subtle, occasional ambient sounds
     if (Math.random() > 0.95) {
@@ -468,7 +527,7 @@ export class AudioSystem {
 
   // Adaptive music (responds to population/tension)
   playAdaptiveMusic(world) {
-    if (!this.musicEnabled || !this.ctx) return;
+    if (!this.soundsEnabled || !this.musicEnabled || !this.ctx) return;
     if (!world || !world.creatures) return; // Safety check
 
     try {
@@ -495,7 +554,7 @@ export class AudioSystem {
   }
 
   startMusic(type) {
-    if (!this.musicEnabled || !this.ctx) return;
+    if (!this.soundsEnabled || !this.musicEnabled || !this.ctx) return;
 
     // Rich ambient drone with multiple oscillators
     const baseFreq =
@@ -561,6 +620,17 @@ export class AudioSystem {
     this.musicGain2 = null;
     this.musicOscillator3 = null;
     this.musicGain3 = null;
+
+    // Dynamic layers are real oscillators too. Leaving them alive meant a
+    // mute or a music-type change could leave a quiet drone playing forever.
+    for (const layer of Object.values(this.musicLayers)) {
+      stopOsc(layer.osc);
+      layer.osc = null;
+      layer.gain = null;
+      layer.active = false;
+      layer.targetVol = 0;
+    }
+    this.currentMusicType = null;
   }
 
   // Play weather sounds
@@ -625,12 +695,14 @@ export class AudioSystem {
   // Settings
   setMasterVolume(volume) {
     this.masterVolume = Math.max(0, Math.min(1, volume));
+    this._syncLiveVolumes();
     this.savePreferences();
   }
 
   setCategoryVolume(category, volume) {
     if (this.volumes[category] !== undefined) {
       this.volumes[category] = Math.max(0, Math.min(1, volume));
+      this._syncLiveVolumes();
       this.savePreferences();
     }
   }
@@ -642,6 +714,9 @@ export class AudioSystem {
     // work at all.
     if (!this.soundsEnabled) {
       this.stopMusic();
+    } else {
+      this.init();
+      this.resume();
     }
     this.savePreferences();
   }
@@ -650,6 +725,9 @@ export class AudioSystem {
     this.musicEnabled = !!enabled;
     if (!enabled) {
       this.stopMusic();
+    } else {
+      this.init();
+      this.resume();
     }
     this.savePreferences();
   }
@@ -838,7 +916,7 @@ export class AudioSystem {
 
   // Play ecosystem health-based ambient sounds
   playEcosystemAmbient(world) {
-    if (!this.soundsEnabled || !this.ctx || !this.musicEnabled) return;
+    if (!this.soundsEnabled || !this.ctx) return;
 
     const now = this.ctx.currentTime;
     if (now - this.lastAmbientTime < this.ambientInterval) return;
@@ -891,7 +969,7 @@ export class AudioSystem {
    * @param {object} camera - active camera
    */
   playSpatialAmbient(world, camera) {
-    if (!this.soundsEnabled || !this.ctx || !this.musicEnabled) return;
+    if (!this.soundsEnabled || !this.ctx) return;
 
     const now = this.ctx.currentTime;
     if (now - this.lastAmbientTime < this.ambientInterval) return;
@@ -1065,7 +1143,9 @@ export class AudioSystem {
   update(dt, world = null) {
     if (!this.ctx || !world) return;
 
-    if (this.musicEnabled) {
+    // Sound is the master gate. Previously adaptive music restarted after
+    // toggleSounds(false) because this branch ignored soundsEnabled.
+    if (this.soundsEnabled && this.musicEnabled) {
       this.playAdaptiveMusic(world);
     }
 
@@ -1092,7 +1172,7 @@ export class AudioSystem {
    * Crossfade music layers based on ecosystem tension (predator density, disasters, health)
    */
   _updateMusicLayers(world) {
-    if (!this.ctx || !this.musicEnabled) return;
+    if (!this.ctx || !this.soundsEnabled || !this.musicEnabled) return;
     const population = world?.creatures?.length || 0;
     if (population === 0) return;
 
@@ -1126,6 +1206,7 @@ export class AudioSystem {
     const now = this.ctx.currentTime;
     for (const [key, layer] of Object.entries(this.musicLayers)) {
       const target = targets[key] || 0;
+      layer.targetVol = target;
       // If target > 0 but layer not active, spawn oscillator
       if (target > 0.05 && !layer.osc) {
         try {
@@ -1161,6 +1242,7 @@ export class AudioSystem {
         layer.active = false;
       }
     }
+    this._syncLiveVolumes();
   }
 
   // Cleanup

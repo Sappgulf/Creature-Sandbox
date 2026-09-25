@@ -7515,3 +7515,344 @@ body {
 body.panel-open .panel-overlay {
   display: block;
 }
+
+/* ============================================================================
+   FIELD UI PASS — quieter HUD, centered home, non-blocking drawers
+   ============================================================================
+   Keep this as the final cascade layer. The app has accumulated several
+   responsive passes over time; one deliberate end-cap makes the intended
+   composition readable and prevents a late legacy rule from re-expanding it.
+   ============================================================================ */
+
+/* Start screen: center the composition, not just the outer flex box. */
+.home-page {
+  align-items: center;
+  justify-content: center;
+  padding: max(24px, env(safe-area-inset-top, 0px)) 24px
+    max(24px, env(safe-area-inset-bottom, 0px));
+}
+
+.home-content {
+  box-sizing: border-box;
+  width: min(920px, 100%);
+  max-width: 920px;
+  align-items: center;
+  gap: clamp(20px, 3.5vh, 32px);
+  padding: clamp(18px, 3vw, 32px);
+  margin: auto;
+}
+
+.home-hero {
+  align-items: center;
+  max-width: 760px;
+  text-align: center;
+}
+
+.home-title {
+  max-width: 100%;
+  font-size: clamp(44px, 6.5vw, 76px);
+  line-height: 0.95;
+  text-align: center;
+}
+
+.home-tagline {
+  max-width: 620px;
+  text-align: center;
+}
+
+.home-features {
+  max-width: 860px;
+  margin: 0;
+}
+
+.home-actions {
+  width: 100%;
+  justify-content: center;
+}
+
+.home-btn {
+  min-width: 204px;
+  justify-content: center;
+}
+
+.home-footer {
+  justify-content: center;
+  width: 100%;
+  text-align: center;
+}
+
+/* HUD: one slim information rail and a truly compact empty state. */
+#hud-bottom-left {
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  min-height: 0;
+  grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+  gap: 16px;
+}
+
+#hud-bottom-right {
+  gap: 6px;
+}
+
+#stats {
+  box-sizing: border-box;
+  width: min(360px, calc(100vw - 32px));
+  min-width: 0;
+  min-height: 34px;
+  padding: 7px 12px;
+  gap: 12px;
+  border-radius: 12px;
+  background: rgba(7, 22, 16, 0.88);
+}
+
+#selected-info.selected-empty {
+  width: auto;
+  max-width: 250px;
+  min-height: 0;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: rgba(7, 22, 16, 0.84);
+}
+
+#selected-info.selected-empty .empty-title {
+  margin: 0;
+  font-size: 12px;
+}
+
+#selected-info.selected-empty .muted,
+#selected-info.selected-empty .empty-list {
+  display: none;
+}
+
+.objective-rail {
+  width: min(640px, calc(100vw - 32px));
+  padding: 8px 12px;
+  border-radius: 13px;
+}
+
+/* When a drawer is open, the world and its follow/director continue running;
+   the old HUD simply fades behind the active surface so it does not compete
+   with the menu for attention. */
+body.drawer-open #hud-bottom-left,
+body.drawer-open #objective-rail,
+body.drawer-open #control-strip {
+  opacity: 0.28;
+}
+
+/* Drawers should read as a side instrument on desktop, not a centered wall. */
+.bottom-drawer .drawer-backdrop {
+  background: rgba(5, 8, 18, 0.28);
+}
+
+@keyframes drawerSlideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (min-width: 701px) {
+  .bottom-drawer {
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+  }
+
+  .bottom-drawer .drawer-content {
+    position: absolute;
+    top: max(72px, env(safe-area-inset-top, 0px));
+    right: 16px;
+    bottom: 16px;
+    width: min(380px, calc(100vw - 32px));
+    max-height: none;
+    border: 1px solid rgba(183, 226, 187, 0.24);
+    border-radius: 18px;
+    animation: drawerSlideInFromRight var(--transition-slow) ease-out;
+  }
+
+  #spawn-drawer .drawer-content {
+    top: auto;
+    max-height: min(70vh, 600px);
+  }
+
+  #overflow-drawer .drawer-content {
+    width: min(380px, calc(100vw - 32px));
+    max-height: calc(100vh - 88px);
+  }
+}
+
+@media (max-width: 700px) {
+  .home-page {
+    padding: max(16px, env(safe-area-inset-top, 0px)) 16px
+      max(16px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .home-content {
+    width: min(100%, 420px);
+    max-width: 420px;
+    align-items: center;
+    gap: 16px;
+    padding: 0;
+    margin: auto;
+  }
+
+  .home-hero {
+    width: 100%;
+    align-items: center;
+    text-align: center;
+  }
+
+  .home-title {
+    font-size: clamp(40px, 12vw, 52px);
+    line-height: 0.92;
+  }
+
+  .home-tagline {
+    max-width: 330px;
+  }
+
+  .home-features {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .home-actions {
+    width: min(100%, 360px);
+    margin-inline: auto;
+  }
+
+  .home-btn {
+    min-width: 0;
+    min-height: 64px;
+    justify-content: center;
+  }
+
+  .home-footer {
+    width: 100%;
+  }
+
+  #hud-bottom-left {
+    display: block;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    min-height: 0;
+  }
+
+  #hud-bottom-right {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+    align-items: stretch;
+    width: auto;
+    max-width: none;
+  }
+
+  #stats {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .objective-rail {
+    width: auto;
+    padding: 7px 9px;
+    border-radius: 13px;
+  }
+
+  .bottom-drawer .drawer-backdrop {
+    background: rgba(5, 8, 18, 0.36);
+  }
+
+  .bottom-drawer .drawer-content,
+  #overflow-drawer .drawer-content {
+    /* Keep a usable slice of the world visible while the long menu remains
+       fully reachable through its own scroll area. The previous 74vh sheet
+       turned a phone menu into a near full-screen takeover. */
+    max-height: min(64vh, 560px);
+  }
+}
+
+@media (max-height: 700px) and (min-width: 701px) {
+  .home-content {
+    gap: 16px;
+    padding-block: 12px;
+  }
+
+  .home-feature::before {
+    min-height: 92px;
+  }
+}
+
+/* Audio status is intentionally plain: it explains autoplay wake-up without
+   turning the sound panel into another dashboard. */
+.sound-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  padding: 8px 10px;
+  border: 1px solid rgba(183, 226, 187, 0.14);
+  border-radius: 9px;
+  background: rgba(128, 216, 196, 0.05);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.sound-status::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: var(--accent-warning);
+  box-shadow: 0 0 0 3px rgba(241, 200, 108, 0.1);
+}
+
+.sound-status[data-state='ready'] {
+  color: var(--accent-success);
+}
+
+.sound-status[data-state='ready']::before {
+  background: var(--accent-success);
+  box-shadow: 0 0 0 3px rgba(168, 223, 145, 0.1);
+}
+
+.sound-status[data-state='muted']::before,
+.sound-status[data-state='unavailable']::before {
+  background: var(--text-muted);
+  box-shadow: none;
+}
+
+/* Desktop inspector occupies a 340px right lane; keep HUD chrome clear of it. */
+@media (min-width: 769px) {
+  body:has(#inspector:not(.hidden)) .objective-rail {
+    left: calc((100vw - 340px) / 2);
+    width: min(680px, calc(100vw - 372px));
+  }
+  body:has(#inspector:not(.hidden)) #hud-bottom-left {
+    right: 356px;
+  }
+  body:has(#inspector:not(.hidden)) #stats > * {
+    white-space: nowrap;
+  }
+}
+/* Below ~1440px the dock and inspector leave no room for the stats rail, and
+   the inspector already carries the same readouts. */
+@media (min-width: 769px) and (max-width: 1439px) {
+  body:has(#inspector:not(.hidden)) #hud-bottom-right {
+    visibility: hidden;
+  }
+  body:has(#inspector:not(.hidden)) #tutorial-content {
+    right: 356px !important;
+  }
+}
+
+#stats > span,
+#stats .stat-tool {
+  white-space: nowrap;
+}
