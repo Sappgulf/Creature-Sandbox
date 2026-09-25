@@ -64,8 +64,10 @@ export function getRuntimeProfile() {
     lowMemory,
     // Zoom in far enough that creatures and ground cover fill the frame; the
     // old 0.9 desktop / 0.68 mobile opening looked like an empty field.
-    defaultZoom: mobileViewport ? 0.8 : 0.9,
-    openingZoom: mobileViewport ? (compactViewport ? 1.0 : 1.08) : 1.35,
+    // Phones need a closer frame than desktop: at ~1.0 a creature was ~20px
+    // on a 390px screen and its sprite art did not read.
+    defaultZoom: mobileViewport ? 1.0 : 0.9,
+    openingZoom: mobileViewport ? (compactViewport ? 1.3 : 1.35) : 1.35,
     startupSeed:
       compactViewport || lowMemory
         ? COMPACT_MOBILE_STARTUP_SEED

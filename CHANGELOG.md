@@ -26,6 +26,16 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — creature-art-and-mobile — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** assets | render | mobile | ui
+- **Type:** Implemented
+- **Issues:** Every creature type rendered as a near-identical round blob with one eye, so grazers, predators, fliers and swimmers were told apart only by colour. On phones creatures were about 20px at the opening zoom, a full-screen dimmed and blurred onboarding modal froze the world and swallowed first taps, and the home screen showed keyboard shortcuts.
+- **Root Causes:** The creature sheets were hand-maintained blob art with no generator; mobile `openingZoom` was 1.0/1.08; `.touch-onboarding` was an `inset: 0` dialog with a 65% black backdrop and `backdrop-filter: blur(6px)`; `.home-hint` had no touch rule.
+- **Fixes:** New `scripts/generate-creature-sprites.py` regenerates all nine sheets with distinct silhouettes (herbivore with tall ears and tuft tail; round-eared omnivore with snout; long striped predator with pointed ears, fangs and a long tail; big-headed baby; elder with white brows and whiskers; alpha with antlers and mane; fish; flapping bird; clawed mole), dark outlines, belly and sheen shading, glossy eyes, and a 4-leg walk cycle mapped to the existing idle/walk/run/eat clip ranges. Contact shadows moved to the new feet line (0.19 x size). Mobile opening zoom 1.3/1.35 (default 1.0); touch onboarding is now a compact non-modal coachmark above the dock (no dim or blur, field stays interactive, `aria-modal="false"`, card 420px -> 205px tall); home keyboard hints hidden on touch-only devices.
+- **Verification:** Sprite sheets previewed tinted and at 4x; in-game desktop and iPhone 13 emulation screenshots reviewed (camera zoom 1.3 on phone). `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+
 ### 2026-09-25 — field-art-disasters-minimap — Implemented
 
 - **Date:** 2026-09-25

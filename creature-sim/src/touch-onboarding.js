@@ -132,7 +132,7 @@ class TouchOnboarding {
     overlay.id = 'touch-onboarding';
     overlay.className = 'touch-onboarding hidden';
     overlay.setAttribute('role', 'dialog');
-    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-modal', 'false');
     overlay.setAttribute('aria-label', 'Mobile onboarding');
     overlay.setAttribute('aria-hidden', 'true');
     overlay.innerHTML = `

@@ -1300,7 +1300,7 @@ export function drawCreature(creature, ctx, opts = {}) {
     ctx.globalAlpha = 0.34;
     ctx.fillStyle = '#000';
     ctx.beginPath();
-    ctx.ellipse(0, renderSize * 0.27, renderSize * 0.28, renderSize * 0.1, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, renderSize * 0.19, renderSize * 0.28, renderSize * 0.09, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
     // A dark outer glow separates the silhouette from ground of a similar
