@@ -111,7 +111,10 @@ export function getCreatureAnimationDetails(creature = {}) {
 export function getCreatureRenderSize(creature = {}, { zoom = 1, isSelected = false, isPinned = false } = {}) {
   const energyRatio = clamp(numericGene(creature.energy, 40) / 40, 0.2, 1);
   const creatureSize = Math.max(1, numericGene(creature.size, 5));
-  const radius = energyRatio * (3 + creatureSize);
+  // Body size comes from genes and age. Energy used to scale the whole sprite
+  // 0.2-1x, so a hungry creature shrank to a third of a fed one and the herd
+  // looked randomly mismatched; now it is a subtle 85-100% cue.
+  const radius = (0.85 + 0.15 * energyRatio) * (3 + creatureSize);
   // One size formula for every render path. The LOD path used x5 with a 24px
   // floor while the detailed path used x14 with a 16px floor, so a creature
   // grew ~2.8x when hovered/selected or when the camera crossed the LOD zoom.

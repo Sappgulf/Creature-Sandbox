@@ -26,6 +26,16 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — size-consistency-and-audio-throttle — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** render | audio
+- **Type:** Implemented
+- **Issues:** Creatures of the same kind rendered at wildly different sizes (a few huge ones dominated the screen) and sizes pulsed as creatures ate and starved; with foraging fixed, eating produced a constant stream of beeps.
+- **Root Causes:** `getCreatureRenderSize` scaled the whole sprite by energy (0.2-1x), so render size ranged 24-77 while the size gene only varied 3.5-4.0. `playCreatureSound` had no rate limiting, and every bite called it.
+- **Fixes:** Energy now contributes a subtle 85-100% factor, and body size follows genes and age (render range 63-77 in the same sample). Creature sounds are rate-limited per event type (eat 350 ms, idle 500 ms, play 300 ms, default 150 ms) and to 6 creature voices per rolling second (births and deaths exempt from the voice cap).
+- **Verification:** Headless 60 s population sample of render sizes before and after; fake-clock check: 100 eat events in 1 s -> 3 tones. `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+
 ### 2026-09-25 — mobile-selection-card — Implemented
 
 - **Date:** 2026-09-25

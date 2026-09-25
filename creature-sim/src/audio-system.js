@@ -317,6 +317,19 @@ export class AudioSystem {
     if (!this.soundsEnabled || !this.ctx) return;
     if (!creature || !creature.genes) return; // Safety check
 
+    // Rate limit. Every bite used to play an "eat" tone, so a herd that was
+    // actually foraging produced a continuous stream of beeps. Cap each event
+    // type to one voice per window and all creature voices to a few a second.
+    const now = this.ctx.currentTime;
+    const windows = { eat: 0.35, idle: 0.5, play: 0.3, birth: 0.08, death: 0.08, attack: 0.1 };
+    const lastByEvent = this._lastCreatureSoundAt || (this._lastCreatureSoundAt = {});
+    if (now - (lastByEvent[event] ?? -Infinity) < (windows[event] ?? 0.15)) return;
+    const recent = (this._recentCreatureVoices || (this._recentCreatureVoices = [])).filter(t => now - t < 1);
+    this._recentCreatureVoices = recent;
+    if (recent.length >= 6 && event !== 'birth' && event !== 'death') return;
+    lastByEvent[event] = now;
+    recent.push(now);
+
     try {
       const genes = creature.genes;
       const size = creature.size || 4;
