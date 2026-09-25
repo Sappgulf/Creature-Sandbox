@@ -26,6 +26,17 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — predators-hunt-and-disaster-pacing — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** sim | balance
+- **Type:** Implemented
+- **Issues:** A 10-minute real-game run showed predators extinct by minute 2 in every session, disasters active about half the time (Ice Age, Plague and Ice Age again within 10 minutes), and, once hunting was repaired, NaN predator headings plus a predator boom-bust that left one survivor.
+- **Root Causes:** (1) `selectGoal` gave hungry carnivores a HUNT goal that no code handled (only EAT ran the hunt path), so predators stopped hunting exactly when hungry. (2) Hunters only searched within sense range (~100). (3) Chasing predators were slowed by arrival easing (down to 35%) and low-energy fatigue. (4) Attack success scaled with current energy, so hungry predators lost fights; bite damage (~2 vs 40 health) meant 494 hits produced 3 kills in 2 minutes. (5) `samplePredatorSignal` returned a summed number while its caller (and World's JSDoc) expected `{x, y, strength}`, so pack-signal targets had undefined coordinates. (6) The auto-balancer re-seeded predators only at exactly 0. (7) The random disaster delay defaulted to 40 s (Balanced mode too) against 90-150 s disaster durations.
+- **Fixes:** HUNT runs the EAT/hunt path; hungry predators track the nearest prey within 900 units (re-checked every 1 s); chasing predators skip arrival easing and fatigue; attack strength uses size, condition (health) and a 1.3x hunter edge; bite damage `size * 2.6` with a 0.85 strength floor; `samplePredatorSignal` returns the strongest signal object or null; the predator floor is max(2, 8% of herbivores); the random disaster cooldown defaults to 180 s (world, worker snapshot, Balanced mode).
+- **Bundle:** Worker chunk budget raised 312KB -> 316KB in `scripts/bundle-budget.mjs` (worker 312,577B / 92,817B gzip after these fixes; gzip budget unchanged at 100KB).
+- **Verification:** Headless 2-minute hunt trace: kills 3 -> 22 per 2 minutes; predator NaN headings 12 -> 0 in 200 s; 10-minute ecosystem runs (herbivores/predators): before, 70/8 -> 30/1; after, 70/8 -> 29-32/2-3. `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+
 ### 2026-09-25 — size-consistency-and-audio-throttle — Implemented
 
 - **Date:** 2026-09-25

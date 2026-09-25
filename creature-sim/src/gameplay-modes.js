@@ -34,7 +34,9 @@ export const GAMEPLAY_MODES = [
     apply(world) {
       if (!world) return;
       world.randomDisasters = true;
-      world.disasterCooldown = 40;
+      // 40s between random disasters (each lasting 90-150s) kept the world in
+      // a disaster about half the time; "measured" means a few per session.
+      world.disasterCooldown = 180;
       world.disasterIntensity = 1;
       world.autoBalanceSettings.enabled = true;
       world.autoBalanceSettings.minPopulation = 36;

@@ -185,9 +185,14 @@ export function calculateCurrentSpeed(creature, dt, world) {
   if (elderAid) speedBoost += (elderAid.intensity ?? 0) * 0.08;
   if (bleed) speedBoost -= Math.min(0.3, 0.08 * (bleed.stacks ?? 1));
 
+  // A predator closing on a live target is chasing, not arriving: easing in
+  // (down to 35%) and tiredness slowdown let fleeing prey escape exactly when
+  // a hungry hunter got close, so hunts almost never landed.
+  const chasing = Boolean(genes.predator && creature.target && creature.target.creatureId != null);
+
   // Arrive/Target factor
   let arriveFactor = 1;
-  if (creature.target) {
+  if (creature.target && !chasing) {
     const dist = Math.hypot(creature.target.x - creature.x, creature.target.y - creature.y);
     if (dist < CreatureAgentTuning.MOVEMENT.SLOW_RADIUS) {
       arriveFactor = clamp(
@@ -199,7 +204,8 @@ export function calculateCurrentSpeed(creature, dt, world) {
   }
 
   const goalSpeedFactor = goal === 'REST' ? 0.4 : goal === 'SEEK_MATE' ? 1.15 : 1;
-  let speedScalar = clamp(1 - restFactor * 0.6, 0.15, 1) * clamp(speedBoost, 0.6, 1.9) * arriveFactor * goalSpeedFactor;
+  const fatigue = chasing ? 1 : clamp(1 - restFactor * 0.6, 0.15, 1);
+  let speedScalar = fatigue * clamp(speedBoost, 0.6, 1.9) * arriveFactor * goalSpeedFactor;
 
   if (genes.predator) {
     if (creature.personality?.ambushTimer > 0 && creature.target && creature.target.creatureId != null) {

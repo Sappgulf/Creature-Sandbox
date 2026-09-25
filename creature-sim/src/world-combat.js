@@ -79,8 +79,16 @@ export class WorldCombat {
     if (!predator.alive || !prey.alive) return null;
 
     // Calculate attack success
-    const predatorStrength = (predator.size * predator.energy) / (predator.maxHealth || 1);
-    const preyStrength = (prey.size * prey.energy) / (prey.maxHealth || 1);
+    // Strength comes from body size and condition (health), plus a hunter's
+    // edge. It used to scale with current energy, so a hungry predator (the
+    // one that most needs to eat) lost almost every fight: a death spiral
+    // that drove predators extinct within a couple of minutes.
+    const condition = c => {
+      const maxHealth = Number(c.maxHealth) || 40;
+      return 0.5 + 0.5 * clamp((Number(c.health) || 0) / maxHealth, 0, 1);
+    };
+    const predatorStrength = (Number(predator.size) || 4) * condition(predator) * 1.3;
+    const preyStrength = (Number(prey.size) || 4) * condition(prey);
 
     // Nocturnal predator bonus at night
     const dayNight = this.world?.dayNightState;
@@ -129,8 +137,11 @@ export class WorldCombat {
 
   // Calculate damage for attack
   calculateDamage(attacker, defender) {
-    const baseDamage = attacker.size * 1.6;
-    const strengthBonus = clamp(attacker.energy / (attacker.maxEnergy || 100), 0.6, 1.35);
+    // At size*1.6 with a 0.6 floor for hungry attackers a bite did ~2 damage
+    // against 40 health: 494 landed hits produced 3 kills in a 2-minute run,
+    // so predators nibbled and starved. ~6-7 hits now finish a chase.
+    const baseDamage = attacker.size * 2.6;
+    const strengthBonus = clamp(attacker.energy / (attacker.maxEnergy || 100), 0.85, 1.35);
     const defensePenalty = clamp(defender.health / defender.maxHealth, 0.2, 1);
 
     return baseDamage * strengthBonus * (1 - defensePenalty * 0.45);
@@ -347,26 +358,30 @@ export class WorldCombat {
     });
   }
 
-  // Sample predator signals in area
+  // Sample the strongest nearby predator signal. Returns {x, y, strength} or
+  // null, as documented on World.samplePredatorSignal. It used to return a
+  // summed number, so the pack-hunt caller built a target with undefined x/y
+  // and the predator's heading went NaN.
   samplePredatorSignal(x, y, radius = 140, excludeSource = null) {
-    if (!this.world.predatorSignals) return 0;
+    if (!this.world.predatorSignals) return null;
 
-    let totalStrength = 0;
     const now = this.world.t;
 
     // Clean up expired signals
     this.world.predatorSignals = this.world.predatorSignals.filter(signal => now - signal.timestamp < signal.ttl);
 
+    let best = null;
     for (const signal of this.world.predatorSignals) {
       if (excludeSource && signal.sourceId === excludeSource) continue;
+      if (!Number.isFinite(signal.x) || !Number.isFinite(signal.y)) continue;
 
       const dist = dist2(x, y, signal.x, signal.y);
       if (dist <= radius * radius) {
-        const falloff = 1 - dist / (radius * radius);
-        totalStrength += signal.strength * falloff;
+        const strength = signal.strength * (1 - dist / (radius * radius));
+        if (!best || strength > best.strength) best = { x: signal.x, y: signal.y, strength };
       }
     }
 
-    return totalStrength;
+    return best;
   }
 }

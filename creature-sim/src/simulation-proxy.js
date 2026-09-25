@@ -101,7 +101,7 @@ export class SimulationProxy {
       restGridDirty: false,
       nestGridDirty: false,
       randomDisasters: true,
-      disasterCooldown: 40,
+      disasterCooldown: 180,
       disasterIntensity: 1.0,
       pendingDisasters: [],
       seasonSpeed: 0.015,

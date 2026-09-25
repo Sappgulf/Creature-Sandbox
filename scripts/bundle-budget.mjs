@@ -11,7 +11,10 @@ const assetsDir = path.join(repoRoot, 'dist', 'assets');
 // corpse/disaster-scheduler/season-command and prey-threat work, which added
 // ~2.3KB of real simulation code. Raised to keep a meaningful guard while
 // acknowledging the worker is the shipping runtime.
-const maxChunkBytes = Number(process.env.CREATURE_MAX_JS_CHUNK_BYTES || 312_000);
+// 2026-09-25: raised to 316KB for the foraging, hunting and combat fixes
+// (food scent/claims, prey tracking, HUNT goal) that ship in the worker; the
+// worker landed at ~312.6KB (92.8KB gzip).
+const maxChunkBytes = Number(process.env.CREATURE_MAX_JS_CHUNK_BYTES || 316_000);
 const maxChunkGzipBytes = Number(process.env.CREATURE_MAX_JS_CHUNK_GZIP_BYTES || 100_000);
 const maxMainChunkBytes = Number(process.env.CREATURE_MAX_MAIN_CHUNK_BYTES || 510_000);
 const maxMainChunkGzipBytes = Number(process.env.CREATURE_MAX_MAIN_CHUNK_GZIP_BYTES || 150_000);

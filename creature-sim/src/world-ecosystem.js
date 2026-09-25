@@ -548,7 +548,12 @@ export class WorldEcosystem {
     // Predator imbalance — only cull once BOTH the ratio and the absolute
     // ceiling are exceeded, so predator-focused modes/scenarios that raise
     // maxPredators (e.g. mayhem, Apex Balance) aren't fought by this system.
-    if (predators === 0 && total > 10) {
+    // Keep a small predator floor (~8% of herbivores, at least 2) rather than
+    // waiting for extinction: the opening seeds more predators than a settled
+    // field can feed, and after the crash a lone survivor used to be all that
+    // was left for the rest of the session.
+    const predatorFloor = Math.max(2, Math.round(herbivores * 0.08));
+    if (predators < predatorFloor && total > 10) {
       actions.push('add_predator');
     } else if (predators > herbivores * targetPredatorRatio && predators > maxPredators) {
       actions.push('reduce_predators');

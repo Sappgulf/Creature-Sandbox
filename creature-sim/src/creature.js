@@ -4,6 +4,8 @@ import { clamp, rand, randn, dist2 } from './utils.js';
 const FORAGE_SCENT_RADIUS = 700;
 const FORAGE_SCENT_INTERVAL = 0.75;
 const FORAGE_CLAIM_SECONDS = 4;
+// How far a hungry predator can track prey it cannot yet see (world units).
+const PREDATOR_TRACK_RADIUS = 900;
 import { BehaviorConfig } from './behavior.js';
 import { getExpressedGenes, applyDisorderEffects } from './genetics.js';
 import { CreatureConfig } from './creature-config.js';
@@ -1041,7 +1043,11 @@ export class Creature {
       wanderScale *= 0.8;
     }
 
-    const goal = this.goal?.current ?? 'WANDER';
+    // selectGoal gives hungry carnivores a HUNT goal, but only EAT had any
+    // behaviour: a predator that got hungry stopped hunting and starved, so
+    // predators went extinct within ~2 minutes. HUNT runs the EAT/hunt path.
+    const rawGoal = this.goal?.current ?? 'WANDER';
+    const goal = rawGoal === 'HUNT' ? 'EAT' : rawGoal;
     this.target = null;
 
     // A starving creature eats before it migrates: migration used to march
@@ -1101,6 +1107,23 @@ export class Creature {
           const corpse = this.senses?.corpse || world.findNearbyCorpse(this.x, this.y, this.genes.sense * 0.8);
           if (corpse) {
             this.target = { x: corpse.x, y: corpse.y, isCorpse: true, corpse };
+          }
+        }
+
+        // Prey tracking: hunt() only searches within sense range (~100), and
+        // with the herd spread out foraging, predators found almost nothing
+        // and starved. A hungry predator with no target tracks the nearest
+        // prey within PREDATOR_TRACK_RADIUS, re-checked once a second.
+        if (!this.target && ((this.needs?.hunger ?? 0) >= 35 || this.energy < 30)) {
+          const now = world.t ?? 0;
+          let track = this._preyTrack;
+          if (!track || now >= track.until) {
+            const prey = world.findPrey?.(this, PREDATOR_TRACK_RADIUS);
+            track = this._preyTrack = { id: prey?.id ?? null, until: now + 1 };
+          }
+          const prey = track.id != null ? world.getAnyCreatureById(track.id) : null;
+          if (prey?.alive) {
+            this.target = { x: prey.x, y: prey.y, creatureId: prey.id };
           }
         }
 

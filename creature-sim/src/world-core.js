@@ -274,7 +274,7 @@ export class World {
 
     // Disaster settings
     this.randomDisasters = true;
-    this.disasterCooldown = 40;
+    this.disasterCooldown = 180;
     this.disasterIntensity = 1.0;
 
     console.debug('🌍 World core initialized with subsystems');
