@@ -860,6 +860,66 @@ export class GameLoop {
   }
 
   /**
+   * Herd drift: creatures roam, and an untouched camera used to be left on an
+   * empty field while the herd walked out of frame. When the view has been
+   * nearly empty for a couple of seconds, ease toward the nearest group. Only
+   * runs while the player has not taken camera control (canAutoMove).
+   */
+  _updateHerdDrift() {
+    const now = performance.now();
+    const drift = this._herdDrift || (this._herdDrift = { emptySince: 0, nextCheck: 0, target: null });
+    if (now >= drift.nextCheck) {
+      drift.nextCheck = now + 500;
+      const creatures = this.world?.creatures;
+      if (!creatures?.length) return;
+      const cam = this.camera;
+      const halfW = (cam.viewportWidth || window.innerWidth) / (2 * cam.zoom);
+      const halfH = (cam.viewportHeight || window.innerHeight) / (2 * cam.zoom);
+      let visible = 0;
+      let nearest = null;
+      let nearestD2 = Infinity;
+      for (const c of creatures) {
+        if (!c || c.alive === false) continue;
+        const dx = c.x - cam.x;
+        const dy = c.y - cam.y;
+        if (Math.abs(dx) < halfW && Math.abs(dy) < halfH) visible++;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < nearestD2) {
+          nearestD2 = d2;
+          nearest = c;
+        }
+      }
+      if (visible >= 3 || !nearest) {
+        drift.emptySince = 0;
+        drift.target = null;
+      } else {
+        if (!drift.emptySince) drift.emptySince = now;
+        if (now - drift.emptySince > 2000) {
+          let sx = 0;
+          let sy = 0;
+          let n = 0;
+          for (const c of creatures) {
+            if (!c || c.alive === false) continue;
+            if ((c.x - nearest.x) ** 2 + (c.y - nearest.y) ** 2 > 260 * 260) continue;
+            sx += c.x;
+            sy += c.y;
+            n++;
+          }
+          drift.target = { x: sx / n, y: sy / n };
+        }
+      }
+    }
+    if (drift.target) {
+      this.camera.targetX += (drift.target.x - this.camera.targetX) * 0.04;
+      this.camera.targetY += (drift.target.y - this.camera.targetY) * 0.04;
+      if ((drift.target.x - this.camera.targetX) ** 2 + (drift.target.y - this.camera.targetY) ** 2 < 400) {
+        drift.target = null;
+        drift.emptySince = 0;
+      }
+    }
+  }
+
+  /**
    * Handle camera follow mode
    */
   updateCameraFollow() {
@@ -870,6 +930,11 @@ export class GameLoop {
 
     if (this.camera.followMode !== 'free' && !this.camera.followTarget && gameState.selectedId) {
       this.camera.followTarget = gameState.selectedId;
+    }
+
+    if (this.camera.followMode === 'free') {
+      this._updateHerdDrift();
+      return;
     }
 
     if (this.camera.followMode !== 'free' && this.camera.followTarget) {

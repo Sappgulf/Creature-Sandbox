@@ -754,7 +754,9 @@ export function getDecorationSpriteAsset(dec) {
     case 'flower':
       return 'env_flowers';
     case 'grass':
-      return 'env_flowers';
+      // Grass used to borrow the flower sheet, so the ground-cover layer was
+      // thousands of flowers. It has its own tuft sheet now.
+      return 'env_grass';
     default:
       return null;
   }

@@ -1,3 +1,20 @@
+// Map-style terrain colours for the minimap: distinct and readable at a
+// glance, unlike the low-alpha shading palette the main view uses.
+const MINIMAP_BIOME_COLORS = {
+  grassland: '#4f7a3f',
+  meadow: '#6a8f45',
+  forest: '#2f5f3c',
+  jungle: '#2a6a44',
+  savanna: '#9a8a4a',
+  desert: '#b99a5e',
+  tundra: '#8fa7b8',
+  mountain: '#7a716b',
+  swamp: '#3d6352',
+  wetland: '#4f8a78',
+  water: '#3f78a8',
+  ocean: '#2f6190'
+};
+
 export function applyMinimapMethods(Renderer) {
   const numericDiet = value => {
     if (value && typeof value === 'object') {
@@ -78,13 +95,6 @@ export function applyMinimapMethods(Renderer) {
 
     const activeDisaster =
       this.miniMapSettings.disaster && typeof world.getActiveDisaster === 'function' ? world.getActiveDisaster() : null;
-    if (activeDisaster) {
-      const tint = this._getDisasterTint(activeDisaster.type);
-      if (tint) {
-        ctx.fillStyle = tint;
-        ctx.fillRect(mapX, mapY, mapWCanvas, mapHCanvas);
-      }
-    }
 
     // Draw cached static biome layer. Biomes do not change during normal play,
     // so avoid resampling 1000+ cells every frame.
@@ -92,6 +102,14 @@ export function applyMinimapMethods(Renderer) {
     ctx.globalAlpha = 1;
     if (biomeLayer) {
       ctx.drawImage(biomeLayer, mapX, mapY, mapWCanvas, mapHCanvas);
+    }
+    // Disaster tint goes over the terrain (it used to sit underneath it).
+    if (activeDisaster) {
+      const tint = this._getDisasterTint(activeDisaster.type);
+      if (tint) {
+        ctx.fillStyle = tint;
+        ctx.fillRect(mapX, mapY, mapWCanvas, mapHCanvas);
+      }
     }
 
     // Region grid every 1000 world units for navigation reference.
@@ -186,7 +204,9 @@ export function applyMinimapMethods(Renderer) {
     // Decimate when dense: past 150 dots on a 220px map they overdraw into
     // a solid mass the heatmap already shows.
     ctx.save();
-    const dotSize = Math.max(1.5, 1.7 * dpr);
+    const dotSize = Math.max(2.5, 2.6 * dpr);
+    ctx.strokeStyle = 'rgba(5, 10, 8, 0.75)';
+    ctx.lineWidth = Math.max(1, 0.8 * dpr);
     const creatures = Array.isArray(world.creatures) ? world.creatures : [];
     const dotStep = creatures.length > 150 ? 2 : 1;
     for (let i = 0; i < creatures.length; i += dotStep) {
@@ -199,12 +219,10 @@ export function applyMinimapMethods(Renderer) {
         : omnivore
           ? 'rgba(250, 204, 90, 0.9)'
           : 'rgba(126, 231, 135, 0.9)';
-      ctx.fillRect(
-        mapX + c.x * scaleX * dpr - dotSize * 0.5,
-        mapY + c.y * scaleY * dpr - dotSize * 0.5,
-        dotSize,
-        dotSize
-      );
+      ctx.beginPath();
+      ctx.arc(mapX + c.x * scaleX * dpr, mapY + c.y * scaleY * dpr, dotSize * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
     }
     ctx.restore();
 
@@ -308,19 +326,22 @@ export function applyMinimapMethods(Renderer) {
       ctx.font = `bold ${10 * dpr}px sans-serif`;
       ctx.textBaseline = 'middle';
       const labelWidth = ctx.measureText(label).width + 12 * dpr;
-      ctx.fillStyle = 'rgba(20, 12, 12, 0.78)';
-      ctx.strokeStyle = 'rgba(248, 113, 113, 0.7)';
+      const iceAge = activeDisaster.type === 'iceAge';
+      ctx.fillStyle = iceAge ? 'rgba(12, 22, 36, 0.85)' : 'rgba(20, 12, 12, 0.78)';
+      ctx.strokeStyle = iceAge ? 'rgba(170, 215, 255, 0.85)' : 'rgba(248, 113, 113, 0.7)';
+      // Bottom-left, clear of the biome labels drawn along the top edge.
+      const badgeY = mapY + mapHCanvas - 24 * dpr;
       ctx.lineWidth = 1;
       ctx.beginPath();
       if (typeof ctx.roundRect === 'function') {
-        ctx.roundRect(mapX + 6 * dpr, mapY + 6 * dpr, labelWidth, 18 * dpr, 5 * dpr);
+        ctx.roundRect(mapX + 6 * dpr, badgeY, labelWidth, 18 * dpr, 5 * dpr);
       } else {
-        ctx.rect(mapX + 6 * dpr, mapY + 6 * dpr, labelWidth, 18 * dpr);
+        ctx.rect(mapX + 6 * dpr, badgeY, labelWidth, 18 * dpr);
       }
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = 'rgba(255, 226, 226, 0.95)';
-      ctx.fillText(label, mapX + 12 * dpr, mapY + 15 * dpr);
+      ctx.fillStyle = iceAge ? 'rgba(230, 244, 255, 0.95)' : 'rgba(255, 226, 226, 0.95)';
+      ctx.fillText(label, mapX + 12 * dpr, badgeY + 9 * dpr);
       ctx.restore();
     }
 
@@ -393,8 +414,10 @@ export function applyMinimapMethods(Renderer) {
     if (cache.key === key && cache.layout) return cache.layout;
 
     // FULLY FIXED: Show complete world with perfect aspect ratio
-    const maxMapWidth = 220; // Larger for better visibility
-    const maxMapHeight = 160;
+    // Narrow screens got the same 220px map, a quarter of a phone's field.
+    const narrow = cssWidth < 600;
+    const maxMapWidth = narrow ? 150 : 220;
+    const maxMapHeight = narrow ? 110 : 160;
     const aspectRatio = world.width / world.height; // 4000/2800 = 1.43
 
     // Calculate map size maintaining world aspect ratio
@@ -454,19 +477,23 @@ export function applyMinimapMethods(Renderer) {
       const layerCtx = layer.getContext('2d');
       if (!layerCtx) return;
       layerCtx.clearRect(0, 0, canvasWidth, canvasHeight);
-      layerCtx.globalAlpha = 0.2; // Very faint biome colors
+      // At 0.2 (and with the world's low-alpha tint palette) the map read as
+      // an empty navy box; paint readable map colours instead.
+      layerCtx.globalAlpha = 0.9;
       const scaleXPx = layout.scaleX * layout.dpr;
       const scaleYPx = layout.scaleY * layout.dpr;
       for (let y = 0; y < world.height; y += sampleSize) {
         for (let x = 0; x < world.width; x += sampleSize) {
           const biome = world.getBiomeAt(x, y);
           // STABILITY: Guard against undefined biome
-          layerCtx.fillStyle = this._getBiomeTint(biome?.type);
+          layerCtx.fillStyle = MINIMAP_BIOME_COLORS[biome?.type] || MINIMAP_BIOME_COLORS.grassland;
           layerCtx.fillRect(
             x * scaleXPx,
             y * scaleYPx,
-            Math.max(1, sampleSize * scaleXPx),
-            Math.max(1, sampleSize * scaleYPx)
+            // +1px overlap: fractional cell sizes left hairline seams that
+            // read as a grid over the terrain.
+            Math.ceil(sampleSize * scaleXPx) + 1,
+            Math.ceil(sampleSize * scaleYPx) + 1
           );
         }
       }
@@ -531,7 +558,7 @@ export function applyMinimapMethods(Renderer) {
       case 'meteorStorm':
         return 'rgba(248, 113, 113, 0.18)';
       case 'iceAge':
-        return 'rgba(96, 165, 250, 0.18)';
+        return 'rgba(214, 234, 255, 0.34)';
       case 'plague':
         return 'rgba(192, 132, 252, 0.18)';
       case 'drought':

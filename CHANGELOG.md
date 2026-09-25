@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — field-art-disasters-minimap — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** render | assets | ui
+- **Type:** Implemented
+- **Issues:** The meadow read as flat and cluttered: lollipop trees, green rocks, a "grass" layer that was really flowers, giant pale stroke glyphs standing in the field, and hard or orange rings (calm/rest zones, food-patch stress, region hunger) scattered over play. An Ice Age (and every disaster) changed nothing in the main view, only a faint minimap tint. The minimap was a near-empty navy box with hairline seams; the disaster badge overlapped the biome label, and on phones the map took a quarter of the screen.
+- **Root Causes:** `getDecorationSpriteAsset` mapped `grass` to `env_flowers`; rocks carried no fixed palette so the hue tint turned them green; the tree sheet was single-blob art. `drawLandscapeLandmarks` drew map-legend glyphs at landmark scale on the playfield; calm/rest zones were stroked circles; `drawFoodPatches` (ambient) and `drawRegionPressure` drew management readouts outside God Mode. Disasters had no main-view renderer (`particleEffect` unused). Minimap biome cells were painted at 0.2 alpha with the low-alpha world shading palette and fractional sizes; the disaster tint was drawn under the biome layer.
+- **Fixes:** New generated sheets (`scripts/generate-env-sprites.py`): 8 shaded tree species (oak, pine, maple, berry bush, snowy pine, blossom, deadwood, willow), faceted grey boulders with moss, and a tintable `env_grass` tuft sheet (manifest entry added; grass decorations use it). Landmark glyphs and the unused `drawSymbol`/`BIOME_INK` removed (wash kept); calm/rest zones are soft radial glows; food-patch and region-pressure rings only in God Mode. New `drawDisasterOverlay`: Ice Age frost wash + snowfall + frost vignette, Drought warm haze + shimmer, Plague violet haze + motes, Meteor Storm red sky + streaks, all eased over 4 s at start/end (motion layers respect reduced motion). Minimap: map palette at 0.9 alpha with seam-free cells, disaster tint over terrain, badge bottom-left (icy for Ice Age), outlined round creature dots, 150px on narrow screens.
+- **Verification:** Screenshots reviewed of the 90 s field, the minimap, and triggered Ice Age / Drought / Meteor Storm. One `smoke:worker` run timed out waiting for page boot and passed on re-run. `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+
+### 2026-09-25 — camera-herd-drift — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** render | camera
+- **Type:** Implemented
+- **Issues:** Once creatures foraged properly, the untouched opening camera was left on empty field within about 60 s while the herd walked out of frame.
+- **Root Causes:** In free camera mode nothing followed the population; only an explicit follow target moved the camera.
+- **Fixes:** `GameLoop._updateHerdDrift` (free mode only, gated by `camera.canAutoMove()` so any player pan or zoom still takes precedence): when fewer than 3 creatures have been in view for 2 s, ease toward the centroid of the nearest group (260-unit radius), checked every 500 ms.
+- **Verification:** Local build, no input for 120 s: visible-creature dips (2 at 80 s and 104 s) recover to 5 within about 3 s; before, visible count reached 0 by 59 s on the live site. `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+
 ### 2026-09-25 — herd-drift-foraging-and-closable-menus — Implemented
 
 - **Date:** 2026-09-25

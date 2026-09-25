@@ -218,3 +218,116 @@ export function drawHeatShimmer(renderer, ctx, _world) {
   }
   ctx.restore();
 }
+
+// Disasters used to change only the minimap tint: an Ice Age ran for two
+// minutes over a green spring meadow. This gives each one a main-view look,
+// eased in and out over a few seconds of its timer.
+const DISASTER_FADE_SECONDS = 4;
+let _frostVignette = null;
+
+function disasterStrength(disaster) {
+  const duration = Number(disaster.duration) || 0;
+  const remaining = Number(disaster.timeRemaining);
+  if (!Number.isFinite(remaining) || remaining <= 0) return 0;
+  const elapsed = Math.max(0, duration - remaining);
+  return clamp(Math.min(elapsed, remaining) / DISASTER_FADE_SECONDS, 0, 1);
+}
+
+function washView(renderer, ctx, color) {
+  const b = renderer._viewBounds;
+  const pad = Math.max(b.x2 - b.x1, b.y2 - b.y1);
+  ctx.fillStyle = color;
+  ctx.fillRect(b.x1 - pad, b.y1 - pad, b.x2 - b.x1 + pad * 2, b.y2 - b.y1 + pad * 2);
+}
+
+function drawFrostVignette(ctx, strength) {
+  const w = ctx.canvas.width;
+  const h = ctx.canvas.height;
+  if (!_frostVignette || _frostVignette.w !== w || _frostVignette.h !== h) {
+    const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.32, w / 2, h / 2, Math.max(w, h) * 0.72);
+    g.addColorStop(0, 'rgba(225, 240, 255, 0)');
+    g.addColorStop(0.7, 'rgba(225, 240, 255, 0.28)');
+    g.addColorStop(1, 'rgba(245, 250, 255, 0.62)');
+    _frostVignette = { w, h, g };
+  }
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = strength;
+  ctx.fillStyle = _frostVignette.g;
+  ctx.fillRect(0, 0, w, h);
+  ctx.restore();
+}
+
+function drawMeteors(renderer, ctx, strength) {
+  const b = renderer._viewBounds;
+  const w = b.x2 - b.x1;
+  const h = b.y2 - b.y1;
+  const time = performance.now() * 0.001;
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 7; i++) {
+    const seed = i * 57.1;
+    const cycle = (time * 0.35 + seed) % 1;
+    const x = b.x1 + ((seed * 13.7) % 1) * w + cycle * w * 0.25;
+    const y = b.y1 + cycle * h;
+    const len = 60 + ((seed * 7) % 1) * 50;
+    const grad = ctx.createLinearGradient(x - len * 0.45, y - len, x, y);
+    grad.addColorStop(0, 'rgba(255, 170, 90, 0)');
+    grad.addColorStop(1, `rgba(255, 220, 160, ${0.85 * strength})`);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x - len * 0.45, y - len);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawMotes(renderer, ctx, strength, color) {
+  const b = renderer._viewBounds;
+  const w = b.x2 - b.x1;
+  const h = b.y2 - b.y1;
+  const time = performance.now() * 0.001;
+  ctx.save();
+  ctx.fillStyle = color;
+  for (let i = 0; i < 40; i++) {
+    const seed = i * 33.7;
+    const x = b.x1 + ((seed * 19.3) % 1) * w + Math.sin(time * 0.5 + seed) * 20;
+    const y = b.y1 + ((seed * 29.1 + time * 0.03) % 1) * h;
+    ctx.globalAlpha = strength * (0.35 + 0.3 * Math.sin(time * 1.7 + seed));
+    ctx.beginPath();
+    ctx.arc(x, y, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+export function drawDisasterOverlay(renderer, ctx, world) {
+  const disaster = typeof world?.getActiveDisaster === 'function' ? world.getActiveDisaster() : null;
+  if (!disaster?.type) return;
+  const strength = disasterStrength(disaster);
+  if (strength <= 0) return;
+  const motion = !renderer._reducedMotion;
+  switch (disaster.type) {
+    case 'iceAge':
+      washView(renderer, ctx, `rgba(206, 226, 250, ${0.3 * strength})`);
+      if (motion) drawSnow(renderer, ctx, world, 0.6 + 0.4 * strength);
+      drawFrostVignette(ctx, strength);
+      break;
+    case 'drought':
+      washView(renderer, ctx, `rgba(214, 168, 86, ${0.2 * strength})`);
+      if (motion) drawHeatShimmer(renderer, ctx, world);
+      break;
+    case 'plague':
+      washView(renderer, ctx, `rgba(120, 80, 160, ${0.16 * strength})`);
+      if (motion) drawMotes(renderer, ctx, strength, 'rgb(190, 150, 230)');
+      break;
+    case 'meteorStorm':
+      washView(renderer, ctx, `rgba(90, 24, 16, ${0.24 * strength})`);
+      if (motion) drawMeteors(renderer, ctx, strength);
+      break;
+    default:
+      break;
+  }
+}

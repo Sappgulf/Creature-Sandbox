@@ -23,7 +23,7 @@ import {
   drawDecoration,
   getBiomeTint
 } from './renderer-biome.js';
-import { drawWeatherEffects } from './renderer-weather.js';
+import { drawDisasterOverlay, drawWeatherEffects } from './renderer-weather.js';
 import {
   drawParallaxBackground,
   drawVignette,
@@ -269,7 +269,9 @@ export class Renderer {
     // fill and the biome detail layers, so it is no longer painted over.
     // Draw biomes
     this.drawBiomes(world);
-    this.drawRegionPressure(world);
+    // Hunger/crowding rings are a management readout; outside God Mode they
+    // read as unexplained orange circles on the meadow.
+    if (opts.godModeActive) this.drawRegionPressure(world);
 
     // Sandbox props
     this.drawSandboxProps(world);
@@ -673,6 +675,9 @@ export class Renderer {
       drawWeatherEffects(this, ctx, world);
     }
 
+    this._reducedMotion = isReducedMotion();
+    drawDisasterOverlay(this, ctx, world);
+
     // Ambient spore particles floating through the scene (motion-only layer).
     if (!isReducedMotion()) {
       drawAmbientSpores(this, ctx);
@@ -712,21 +717,20 @@ export class Renderer {
       const pulse = 0.85 + Math.sin(t * 2.2 + (zone.id || 0)) * 0.08;
       const radius = baseRadius * pulse;
       const strength = Number(zone.strength ?? 0.6);
-      // Subtle habitat cue, not a filled disc that reads as debug UI.
-      ctx.fillStyle = `rgba(120, 220, 200, ${0.02 + strength * 0.03})`;
-      ctx.strokeStyle = `rgba(160, 240, 220, ${0.14 + strength * 0.1})`;
-      ctx.lineWidth = 1.4;
+      // A soft glow that fades out rather than an outlined circle: the hard
+      // ring read as a UI overlay sitting on the meadow.
+      const glow = ctx.createRadialGradient(zone.x, zone.y, radius * 0.15, zone.x, zone.y, radius);
+      glow.addColorStop(0, `rgba(150, 235, 210, ${0.05 + strength * 0.06})`);
+      glow.addColorStop(1, 'rgba(150, 235, 210, 0)');
+      ctx.fillStyle = glow;
       ctx.beginPath();
       ctx.arc(zone.x, zone.y, radius, 0, Math.PI * 2);
       ctx.fill();
-      ctx.stroke();
     }
 
     // Rest/safe zones: slower breathing pulse and a dashed ring so they read
     // as calm habitat rather than an active god-power.
     if (restZones.length) {
-      ctx.lineWidth = 1.6;
-      ctx.setLineDash([12, 10]);
       for (const zone of restZones) {
         if (!Number.isFinite(zone.x) || !Number.isFinite(zone.y)) continue;
         const restRadius = zone.radius || 120;
@@ -740,12 +744,13 @@ export class Renderer {
           continue;
         const pulse = 0.92 + Math.sin(t * 0.9 + zone.x * 0.01) * 0.05;
         const radius = (zone.radius || 120) * pulse;
-        ctx.fillStyle = 'rgba(140, 230, 180, 0.02)';
-        ctx.strokeStyle = 'rgba(170, 245, 200, 0.12)';
+        const glow = ctx.createRadialGradient(zone.x, zone.y, radius * 0.2, zone.x, zone.y, radius);
+        glow.addColorStop(0, 'rgba(170, 240, 190, 0.06)');
+        glow.addColorStop(1, 'rgba(170, 240, 190, 0)');
+        ctx.fillStyle = glow;
         ctx.beginPath();
         ctx.arc(zone.x, zone.y, radius, 0, Math.PI * 2);
         ctx.fill();
-        ctx.stroke();
       }
       ctx.setLineDash([]);
     }
@@ -753,6 +758,10 @@ export class Renderer {
   }
 
   drawFoodPatches(world, { ambient = false } = {}) {
+    // Patch stock/pressure rings are a management readout. In normal play
+    // they showed up as orange warning circles scattered over the field, so
+    // they now appear only while God Mode (the tool that acts on them) is on.
+    if (ambient) return;
     const patches = world.ecosystem?.foodPatches;
     if (!patches || patches.length === 0) return;
     const ctx = this.ctx;
