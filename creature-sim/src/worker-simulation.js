@@ -46,6 +46,9 @@ let _corpseSnapshotPool = [];
 const BRIDGE_EVENTS = [
   'creature:born',
   'creature:died',
+  // Kills were not bridged, so in the default worker runtime a successful
+  // hunt produced no hit flash, particles or sound on the main thread.
+  'creature:killed',
   'creature:spawn',
   'creature:thrown',
   'god:action',
@@ -61,7 +64,15 @@ function sanitizeBridgePayload(payload) {
   const output = Array.isArray(payload) ? [] : {};
   for (const [key, value] of Object.entries(payload)) {
     if (typeof value === 'function') continue;
-    if (key === 'creature' || key === 'parent' || key === 'child' || key === 'attacker' || key === 'target') {
+    if (
+      key === 'creature' ||
+      key === 'parent' ||
+      key === 'child' ||
+      key === 'attacker' ||
+      key === 'target' ||
+      key === 'prey' ||
+      key === 'victim'
+    ) {
       output[key] = compactCreature(value);
       continue;
     }

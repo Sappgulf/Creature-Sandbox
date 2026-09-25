@@ -26,6 +26,16 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — worker-kill-effects-and-population-study — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** worker | render | audio | sim-study
+- **Type:** Implemented
+- **Issues:** In the default worker runtime, successful hunts were invisible and silent on the page (no hit flash, particles or attack sound; kill achievements could not fire). Separately, the long-term herbivore population settled around 30.
+- **Root Causes:** `creature:killed` was missing from the worker's `BRIDGE_EVENTS`, and its `prey` payload key was not in the sanitizer's compact-creature list (it would have been deep-cloned). For the population: a 10-minute study showed births were constant (105-108) whatever food regrowth (x2), scent range (1200) or mating cooldown (20 s) was set to; natural births were only ~54-60 per 10 minutes (the rest were auto-balance top-ups); gate tracing showed partners were found (98% of seek frames) and reached range (47%), but courtship readiness was the bottleneck (courter ready 45%, partner 19%, mostly social drive below 65).
+- **Fixes:** Bridge `creature:killed` and compact `prey`/`victim` payloads, so the existing main-thread kill effects and sounds run in worker mode. Population experiments (mating call toward partners within 900 units; social threshold 45 or 35) moved the equilibrium only from ~30 to ~33, so they were reverted rather than shipped.
+- **Verification:** Headless 10-minute ecosystem and birth-source runs for each experiment (numbers above). `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+
 ### 2026-09-25 — opening-herd-balance — Implemented
 
 - **Date:** 2026-09-25
