@@ -26,6 +26,16 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — player-driven-goals — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** gameplay | ui
+- **Type:** Implemented
+- **Issues:** With no input at all, the "Make one nudge" objective rail showed goals the herd completes by itself ("Consume 117 meals" finished at 61 s), and session goals such as "Keep 9 babies alive" fired "Goal complete" toasts for things the player never did.
+- **Root Causes:** `SessionGoals.generateGoals` drew 3 goals uniformly at random from a pool where most types are passive (population, meals, births, survival, babies, aquatic), so a set could be entirely passive; `buildObjectiveRail` showed the first incomplete goal in list order.
+- **Fixes:** Goals are split into player-action types (hand spawns, launches, prop triggers, prop placement, god powers) and passive types; each generated set contains at least 2 action goals and at most 1 passive goal. The objective rail prefers an incomplete action goal.
+- **Verification:** 200 generated sets (starter and regular): minimum 2 action goals each. 90 s in-browser run with no input: the rail held "Spawn 3 creatures by hand" throughout and nothing auto-completed (before: "Consume 117 meals" auto-completed at 61 s). `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+
 ### 2026-09-25 — viewport-fit-and-minimap-overlap — Implemented
 
 - **Date:** 2026-09-25

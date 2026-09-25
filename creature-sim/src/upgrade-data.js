@@ -230,7 +230,15 @@ export function buildObjectiveRail(playableSnapshot = null, goals = []) {
     };
   }
 
-  const activeGoal = goals.find(goal => !goal.completed) || goals[0] || null;
+  // Lead with something the player can do: passive goals (population, meals,
+  // births) are met by the herd itself and made the "Make one nudge" rail
+  // describe things that happen without any input.
+  const actionTypes = new Set(['manual_spawns', 'creature_throws', 'prop_triggers', 'prop_places', 'god_actions']);
+  const activeGoal =
+    goals.find(goal => !goal.completed && actionTypes.has(goal.type)) ||
+    goals.find(goal => !goal.completed) ||
+    goals[0] ||
+    null;
   if (activeGoal) {
     const actionHints = {
       population: 'Feed clusters and protect new births.',

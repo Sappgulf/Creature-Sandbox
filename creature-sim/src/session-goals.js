@@ -108,6 +108,13 @@ const GOAL_POOL = [
   }
 ];
 
+// Goals the player has to act for. The others (population, meals, births,
+// survival, babies...) are met by the herd on its own, and a set drawn purely
+// at random was often all passive: goals completed in the first minute with
+// no input and "Goal complete" toasts celebrated nothing the player did.
+const ACTION_GOAL_TYPES = new Set(['manual_spawns', 'creature_throws', 'prop_triggers', 'prop_places', 'god_actions']);
+const MIN_ACTION_GOALS = 2;
+
 const STARTER_GOAL_TYPES = new Set([
   'population',
   'food_collected',
@@ -172,8 +179,15 @@ export class SessionGoals {
     this._announcedGoalKeys = new Set();
     this._liveGoalsReady = false;
     const pool = starter ? GOAL_POOL.filter(goal => STARTER_GOAL_TYPES.has(goal.type)) : GOAL_POOL;
-    const shuffled = [...pool].sort(() => Math.random() - 0.5);
-    this.goals = shuffled.slice(0, count).map(def => {
+    const shuffle = list => [...list].sort(() => Math.random() - 0.5);
+    const actions = shuffle(pool.filter(goal => ACTION_GOAL_TYPES.has(goal.type)));
+    const passive = shuffle(pool.filter(goal => !ACTION_GOAL_TYPES.has(goal.type)));
+    const picked = actions.slice(0, Math.min(MIN_ACTION_GOALS, count));
+    for (const def of [...passive, ...actions.slice(picked.length)]) {
+      if (picked.length >= count) break;
+      picked.push(def);
+    }
+    this.goals = shuffle(picked).map(def => {
       const target = def.makeTarget();
       return {
         id: def.id,
