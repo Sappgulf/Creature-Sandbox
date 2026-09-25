@@ -1100,7 +1100,19 @@ export class GameLoop {
       gameState.hudBottomHeight = 0;
     }
     if (hudBottomEl && (now - gameState.hudBottomMeasuredAt > 200 || gameState.hudBottomHeight <= 0)) {
-      const measuredHeight = hudBottomEl.getBoundingClientRect().height;
+      // Reserve everything from the highest bottom-docked element down. On
+      // mobile the stats pill and control strip are positioned independently
+      // of #hud-bottom-left, so its height alone let the minimap overlap them.
+      const viewportH = window.innerHeight || 0;
+      let measuredHeight = hudBottomEl.getBoundingClientRect().height;
+      for (const id of ['stats', 'control-strip']) {
+        const el = document.getElementById(id);
+        if (!el || el.offsetParent === null) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.height > 0 && rect.top > viewportH * 0.5) {
+          measuredHeight = Math.max(measuredHeight, viewportH - rect.top);
+        }
+      }
       gameState.hudBottomHeight = Number.isFinite(measuredHeight) ? measuredHeight : 0;
       gameState.hudBottomMeasuredAt = now;
     }

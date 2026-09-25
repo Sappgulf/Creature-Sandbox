@@ -26,6 +26,16 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — creatures-move-again — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** sim | render | ui
+- **Type:** Implemented
+- **Issues:** In the live build creatures did not move (in the browser pane, positions were identical across seconds while energy drained); side-view creature sprites lay on their backs or stood on their tails; on narrow screens the World Map covered the stats pill.
+- **Root Causes:** (1) The `Creature` constructor read `genes.herdInstinct`, `genes.sense`, `genes.fov`, and `genes.metabolism` from the raw diploid gene objects instead of `this.genes`, so `territoryAffinity`, FOV, memory slots, curiosity, intelligence, and mate choosiness were `NaN`. `getHomeBias` let `NaN` affinity past its `<= 0.05` guard, the steering sum became `NaN`, and `applyMovement` returned early on a non-finite `dir` forever: 23/32 creatures were frozen within 2 s of a headless `World.step` run. (2) `openingHold` froze the sim clock for up to 12 s after New Sandbox to preserve the staged tableau. (3) Sprites were rotated a full `creature.dir`. (4) The minimap reserved only `#hud-bottom-left`'s height, not the independently positioned stats pill / control strip.
+- **Fixes:** Constructor trait reads use expressed genes; `getHomeBias` rejects non-finite affinity; `applyMovement` repairs a non-finite heading instead of skipping movement; the opening hold cap is 1.2 s; new `applySpriteFacing` mirrors left-heading creatures and applies a +/-0.3 rad tilt in both sprite and detailed paths; the minimap reserves space up to the highest bottom-docked element.
+- **Verification:** Headless `World.step` NaN-heading count 23/32 -> 0/32; browser pixel diff over 3 s after New Sandbox 41 px -> ~8000 px; main-thread position samples advance ~60 world units per 2 s; screenshots reviewed on 505x814 and 1280x800. Full local gate: `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+
 ### 2026-09-25 — ground-and-shadow-fidelity — Implemented
 
 - **Date:** 2026-09-25

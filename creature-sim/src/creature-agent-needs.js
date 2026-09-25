@@ -715,7 +715,9 @@ export function applyHungerRelief(creature, energyGain) {
 export function getHomeBias(creature, world, goal) {
   if (!world?.getRegionById || !creature.homeRegionId) return null;
   const affinity = creature.territoryAffinity ?? 0;
-  if (affinity <= 0.05) return null;
+  // NaN slips past `<= 0.05` and would poison the steering sum (and with it
+  // creature.dir), freezing the creature in place.
+  if (!Number.isFinite(affinity) || affinity <= 0.05) return null;
 
   const region = world.getRegionById(creature.homeRegionId);
   if (!region) return null;

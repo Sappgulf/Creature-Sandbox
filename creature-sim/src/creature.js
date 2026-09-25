@@ -495,11 +495,11 @@ export class Creature {
     // Cache expensive calculations
     this._cachedBaseBurn = null;
     this._senseRadius2Cache = null;
-    this._halfFovRad = (genes.fov * 0.5 * Math.PI) / 180; // Cache FOV in radians
+    this._halfFovRad = (this.genes.fov * 0.5 * Math.PI) / 180; // Cache FOV in radians
 
     // FEATURE 2: Learning & Memory
     const memoryCapacity = clamp(
-      CreatureConfig.MEMORY.SLOTS_MIN + Math.floor(genes.sense / CreatureConfig.MEMORY.SLOTS_SENSE_RATIO),
+      CreatureConfig.MEMORY.SLOTS_MIN + Math.floor(this.genes.sense / CreatureConfig.MEMORY.SLOTS_SENSE_RATIO),
       CreatureConfig.MEMORY.SLOTS_MIN,
       CreatureConfig.MEMORY.SLOTS_MAX
     );
@@ -527,7 +527,7 @@ export class Creature {
     // FEATURE 9: Migration
     /** @type {{instinct: number, targetRegionId: ?number, target: ?any, lastMigration: number, settled: boolean, active: boolean, cooldownUntil: number, recentUntil: number, settleTimer: number, nextCheckAt: number, bias?: {x: number, y: number}}} */
     this.migration = {
-      instinct: clamp(genes.herdInstinct ?? 0.5, 0, 1), // how likely to migrate
+      instinct: clamp(this.genes.herdInstinct ?? 0.5, 0, 1), // how likely to migrate
       targetRegionId: null,
       target: null,
       lastMigration: -Infinity,
@@ -543,7 +543,7 @@ export class Creature {
     /** @type {?number} */
     this.homeRegionId = null;
     /** @type {number} 0.1..0.95 */
-    this.territoryAffinity = clamp(0.25 + (genes.herdInstinct ?? 0.5) * 0.6, 0.1, 0.95);
+    this.territoryAffinity = clamp(0.25 + (this.genes.herdInstinct ?? 0.5) * 0.6, 0.1, 0.95);
     this._restNestTimer = 0;
     this._returnHomeUntil = -Infinity;
 
@@ -553,7 +553,7 @@ export class Creature {
       fear: 0, // 0-1, increases when attacked/near predators
       hunger: 0, // 0-1, increases when low energy
       confidence: CreatureConfig.EMOTIONS.DEFAULT_CONFIDENCE,
-      curiosity: clamp(genes.sense / 150, 0, 1), // exploration drive
+      curiosity: clamp(this.genes.sense / 150, 0, 1), // exploration drive
       stress: 0, // 0-1, accumulates from negative events
       contentment: CreatureConfig.EMOTIONS.DEFAULT_CONTENTMENT
     };
@@ -599,7 +599,7 @@ export class Creature {
     this.ecosystem = createEcosystemState({
       stress: 16,
       energy: clamp(68 + rand(-6, 8), 40, 90),
-      curiosity: clamp(45 + genes.sense / 2, 30, 90),
+      curiosity: clamp(45 + this.genes.sense / 2, 30, 90),
       stability: clamp(70 + rand(-8, 8), 45, 90)
     });
 
@@ -611,8 +611,8 @@ export class Creature {
     /** @type {{level: number, patterns: any[], experiencePoints: number, learningRate: number}} */
     this.intelligence = {
       level: clamp(
-        (genes.sense / CreatureConfig.INTELLIGENCE.LEVEL_SENSE_RATIO) *
-          (genes.metabolism ?? CreatureConfig.INTELLIGENCE.LEVEL_METABOLISM_MULTIPLIER),
+        (this.genes.sense / CreatureConfig.INTELLIGENCE.LEVEL_SENSE_RATIO) *
+          (this.genes.metabolism ?? CreatureConfig.INTELLIGENCE.LEVEL_METABOLISM_MULTIPLIER),
         0,
         CreatureConfig.INTELLIGENCE.LEVEL_MAX
       ),
@@ -626,7 +626,7 @@ export class Creature {
     this.sexuality = {
       attractiveness: calculateAttractiveness(genes),
       lastMated: -Infinity,
-      choosiness: clamp(genes.sense / 120, 0.3, 1), // how picky
+      choosiness: clamp(this.genes.sense / 120, 0.3, 1), // how picky
       courtshipStyle: Math.random(), // display type
       desiredTraits: pickDesiredTraits(genes)
     };

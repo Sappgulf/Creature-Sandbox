@@ -766,7 +766,10 @@ export class CreatureBehaviorSystem {
   applyMovement(dt) {
     // UNIFIED: Use the definitive speed calculation from the creature instance
     const spd = this.creature.calculateCurrentSpeed(dt, this.creature._lastWorld);
-    if (!Number.isFinite(spd) || !Number.isFinite(dt) || !Number.isFinite(this.creature.dir)) return;
+    // A non-finite heading used to make this return forever, leaving the
+    // creature frozen while it starved. Repair it instead of skipping.
+    if (!Number.isFinite(this.creature.dir)) this.creature.dir = rand() * Math.PI * 2;
+    if (!Number.isFinite(spd) || !Number.isFinite(dt)) return;
     const { cos: dirCos, sin: dirSin } = this.getCachedTrig(this.creature.dir);
 
     this.creature.x += dirCos * spd * dt;

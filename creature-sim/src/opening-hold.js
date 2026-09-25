@@ -24,7 +24,10 @@
  */
 
 const RELEASE_EVENTS = ['pointerdown', 'keydown', 'wheel', 'touchstart'];
-const DEFAULT_MAX_MS = 12000;
+// A long hold read as a frozen game ("the creatures don't move"), so the cap
+// is a brief beat: long enough for the first frame to land composed, short
+// enough that the world is visibly alive before anyone wonders.
+const DEFAULT_MAX_MS = 1200;
 
 // The hold begins inside startNewGame(), which is itself running from a click
 // on "New Sandbox". That click keeps propagating, reaches the capture-phase

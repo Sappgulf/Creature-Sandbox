@@ -170,6 +170,18 @@ export function getCreatureSpriteFrame(
   };
 }
 
+/**
+ * Orient a right-facing side-view sprite toward `dir`. Rotating the art the
+ * full 360 degrees laid creatures on their backs or stood them on their tails
+ * whenever they headed left or up; instead mirror left/right and keep only a
+ * gentle nose-up/nose-down tilt. Call with the origin at the creature.
+ */
+export function applySpriteFacing(ctx, dir) {
+  const heading = Number.isFinite(dir) ? dir : 0;
+  if (Math.cos(heading) < 0) ctx.scale(-1, 1);
+  ctx.rotate(Math.sin(heading) * 0.3);
+}
+
 export function drawCreatureSprite(ctx, creature = {}, opts = {}) {
   const renderSize =
     opts.renderSize ??
@@ -192,16 +204,12 @@ export function drawCreatureSprite(ctx, creature = {}, opts = {}) {
   const screenSize = renderSize * spriteZoom;
   ctx.save();
   ctx.translate(Number(creature.x) || 0, Number(creature.y) || 0);
-  ctx.rotate(Number(creature.dir) || 0);
 
   // Contact shadow and dark separation glow. The detailed draw path carries
   // these, but most creatures at play zoom render through this sprite path, so
   // without them a green herbivore disappears into green ground cover.
   if (screenSize >= 8) {
     ctx.save();
-    // Undo the heading rotation: the shadow belongs on the ground below the
-    // creature, not orbiting it as it turns.
-    ctx.rotate(-(Number(creature.dir) || 0));
     ctx.globalAlpha *= 0.3;
     ctx.fillStyle = '#000';
     ctx.beginPath();
@@ -218,6 +226,7 @@ export function drawCreatureSprite(ctx, creature = {}, opts = {}) {
     ctx.shadowBlur = Math.min(10, screenSize * 0.22);
   }
 
+  applySpriteFacing(ctx, Number(creature.dir));
   ctx.drawImage(sprite.frame, -renderSize * anchorX, -renderSize * anchorY, renderSize, renderSize);
   ctx.restore();
   return true;

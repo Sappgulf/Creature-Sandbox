@@ -49,7 +49,7 @@ import { assetLoader } from './asset-loader.js';
 import { getDebugFlags } from './debug-flags.js';
 import { renderResolution } from './render-resolution.js';
 import { colorCache } from './color-cache.js';
-import { getCreatureAssetKey, getCreatureRenderSize } from './creature-presentation.js';
+import { applySpriteFacing, getCreatureAssetKey, getCreatureRenderSize } from './creature-presentation.js';
 import { MUTATION_BITS, STATUS_BITS } from './simulation-state.js';
 
 import { getAgeStageIcon, getElderFadeAlpha } from './creature-age.js';
@@ -1312,7 +1312,12 @@ export function drawCreature(creature, ctx, opts = {}) {
       ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
       ctx.shadowBlur = Math.min(10, renderSize * zoom * 0.22);
     }
+    // Side-view art: swap the full heading rotation for a mirror + tilt.
+    ctx.save();
+    ctx.rotate(-creature.dir);
+    applySpriteFacing(ctx, creature.dir);
     ctx.drawImage(spriteFrame, -renderSize / 2, -renderSize / 2, renderSize, renderSize);
+    ctx.restore();
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
   } else if (creature._cachedCanvas) {
