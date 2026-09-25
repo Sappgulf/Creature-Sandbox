@@ -224,11 +224,12 @@ SPECS = {
     'creature_alpha': dict(body=(16, 11), head=(15, -6, 9), ears='pointed', tail='long', snout=3.6, antlers=True, mane=True, leg=10),
 }
 
-os.makedirs(OUT, exist_ok=True)
-for key, spec in SPECS.items():
-    frames = [quadruped(i, 10, spec) for i in range(10)]
-    open(os.path.join(OUT, f'{key}.svg'), 'w').write(sheet(frames))
-open(os.path.join(OUT, 'creature_aquatic.svg'), 'w').write(sheet([fish(i, 10) for i in range(10)]))
-open(os.path.join(OUT, 'creature_flying.svg'), 'w').write(sheet([bird(i, 16) for i in range(16)]))
-open(os.path.join(OUT, 'creature_burrowing.svg'), 'w').write(sheet([mole(i, 16) for i in range(16)]))
-print('wrote creature sheets to', OUT)
+if __name__ == '__main__':
+    os.makedirs(OUT, exist_ok=True)
+    for key, spec in SPECS.items():
+        frames = [quadruped(i, 10, spec) for i in range(10)]
+        open(os.path.join(OUT, f'{key}.svg'), 'w').write(sheet(frames))
+    open(os.path.join(OUT, 'creature_aquatic.svg'), 'w').write(sheet([fish(i, 10) for i in range(10)]))
+    open(os.path.join(OUT, 'creature_flying.svg'), 'w').write(sheet([bird(i, 16) for i in range(16)]))
+    open(os.path.join(OUT, 'creature_burrowing.svg'), 'w').write(sheet([mole(i, 16) for i in range(16)]))
+    print('wrote creature sheets to', OUT)

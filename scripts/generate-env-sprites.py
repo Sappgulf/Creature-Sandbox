@@ -8,7 +8,7 @@ import math
 import random
 import sys
 
-OUT = sys.argv[1]
+OUT = sys.argv[1] if len(sys.argv) > 1 else 'creature-sim/assets/sprites/environment'
 
 
 def sheet(frames, size):
@@ -183,7 +183,8 @@ def grass(seed):
 
 grasses = [grass(i) for i in range(8)]
 
-open(f'{OUT}/env_trees.svg', 'w').write(sheet(trees, 96))
-open(f'{OUT}/env_rocks.svg', 'w').write(sheet(rocks, 96))
-open(f'{OUT}/env_grass.svg', 'w').write(sheet(grasses, 96))
-print('ok')
+if __name__ == '__main__':
+    open(f'{OUT}/env_trees.svg', 'w').write(sheet(trees, 96))
+    open(f'{OUT}/env_rocks.svg', 'w').write(sheet(rocks, 96))
+    open(f'{OUT}/env_grass.svg', 'w').write(sheet(grasses, 96))
+    print('ok')

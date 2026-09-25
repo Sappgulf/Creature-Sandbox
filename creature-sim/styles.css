@@ -8032,3 +8032,59 @@ body .touch-onboarding .touch-onboarding-progress {
     display: none;
   }
 }
+
+/* Start menu art (scripts/generate-home-art.py). Each card has its own
+   illustration built from the in-game sprites, replacing slices of the old
+   7-frame scenario sheet; the hero banner replaces the emoji logo. */
+.home-hero-banner {
+  display: block;
+  width: min(560px, 100%);
+  height: auto;
+  aspect-ratio: 4 / 1;
+  margin: 8px auto 4px;
+  border-radius: 16px;
+  border: 1px solid rgba(183, 226, 187, 0.22);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  object-fit: cover;
+}
+.home-feature::before {
+  background-size: cover;
+  background-position: center;
+  border-color: rgba(183, 226, 187, 0.22);
+}
+.home-feature-creatures::before {
+  background-image: url('./assets/sprites/ui/home_card_traits.svg');
+  background-position: center;
+}
+.home-feature-ecosystem::before {
+  background-image: url('./assets/sprites/ui/home_card_habitat.svg');
+  background-position: center;
+}
+.home-feature-goals::before {
+  background-image: url('./assets/sprites/ui/home_card_story.svg');
+  background-position: center;
+}
+@media (max-width: 700px) {
+  .home-hero-banner {
+    width: 100%;
+    border-radius: 12px;
+  }
+}
+.home-hero-banner {
+  margin-bottom: 14px;
+}
+@media (min-width: 769px) {
+  /* The primary calls to action were ~150px pills on a 1440px screen. */
+  .home-actions {
+    gap: 14px;
+  }
+  .home-actions .home-btn {
+    min-width: 250px;
+    min-height: 58px;
+    padding: 14px 28px;
+    font-size: 17px;
+    border-radius: 16px;
+  }
+}

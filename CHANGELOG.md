@@ -26,6 +26,17 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — start-menu-art — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** ui | assets
+- **Type:** Implemented
+- **Issues:** The start menu led with a 🧬 emoji logo and three cards cropped from an older generic scenario sprite sheet, so the first screen did not show the game's actual creatures or world; on desktop the primary Guided Run / New Sandbox buttons were ~150px pills.
+- **Root Causes:** Home art predated the new creature and environment sprites; `.home-feature::before` mapped slices of `ui_scenario_cards.svg` at `background-size: 700%`.
+- **Fixes:** New `scripts/generate-home-art.py` builds a 720x180 hero banner (the cast walking through the meadow) and three 320x180 card illustrations (a creature under a lens with a gene readout; a meadow with trees, pond, food and a God Mode brush ring; a family-tree journal page) by importing the creature and environment sprite generators, so menu art stays in sync with in-game art. The creature and environment generators now guard their file writes behind `__main__` (output verified byte-identical). Desktop primary buttons are 250x58px.
+- **Verification:** Desktop 1440x900 and iPhone 13 home screenshots reviewed; no failed asset requests. `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+- **Open:** With no input, "Make one nudge" objectives such as "Consume N meals" and session goals such as "Keep 9 babies alive" complete by themselves within about a minute; the goal director needs player-driven targets.
+
 ### 2026-09-25 — ui-panels-audit — Implemented
 
 - **Date:** 2026-09-25
