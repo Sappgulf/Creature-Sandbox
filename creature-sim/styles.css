@@ -7928,3 +7928,107 @@ body .touch-onboarding .touch-onboarding-progress {
     gap: 6px;
   }
 }
+
+/* ==========================================================================
+   Unified panel theme (2026-09-25). Panels had drifted into two palettes:
+   the menu/God Mode/campaign in forest green, and Gene Editor, Scenario Lab,
+   Features, Sound, Replay, Insights and the Upgrade Hub in navy. Everything
+   now uses the field-journal green of the menu drawer.
+   ========================================================================== */
+:root {
+  --glass-bg: rgba(9, 24, 18, 0.9);
+  --glass-bg-light: rgba(16, 36, 27, 0.8);
+  --glass-bg-hero: rgba(10, 28, 20, 0.95);
+  --glass-bg-panel: rgba(9, 24, 18, 0.9);
+  --glass-bg-chip: rgba(18, 40, 30, 0.7);
+  --glass-border: rgba(183, 226, 187, 0.18);
+  --glass-border-hover: rgba(197, 242, 126, 0.32);
+}
+.panel,
+#upgrade-panel,
+#inspector,
+.floating-panel {
+  background: linear-gradient(180deg, rgba(13, 38, 28, 0.97), rgba(7, 22, 16, 0.97));
+  border-color: rgba(183, 226, 187, 0.22);
+}
+/* Programmatic focus on a panel's first control drew a loud lime ring the
+   moment the panel opened. Keep a clear but calmer keyboard indicator. */
+.panel :focus-visible,
+#inspector :focus-visible,
+#upgrade-panel :focus-visible {
+  outline: 2px solid rgba(197, 242, 126, 0.55);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* Lineage Album: the grid lived in a height-limited flex column, so its auto
+   rows shrank below their content and every card clipped its family name in
+   half. Rows now size to content and the grid scrolls instead. */
+.lineage-album-grid {
+  grid-auto-rows: max-content;
+  align-content: start;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.lineage-album-card {
+  min-height: max-content;
+}
+
+/* Campaign: the lock was a 32px emoji centred over the card text. */
+.campaign-level-card.locked {
+  opacity: 0.62;
+}
+.campaign-level-card.locked::after {
+  top: 10px;
+  right: 10px;
+  left: auto;
+  transform: none;
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+/* Inspector family rows: label the numbers and keep them on one line. */
+#inspector .family .metrics {
+  display: flex;
+  gap: 8px;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+/* Phones: the Game Mode / Scenario stack was a 240px card squeezed into the
+   top-right corner with its content clipped. */
+@media (max-width: 768px) {
+  /* Full width so it is readable, but anchored under the objective rail and
+     capped at 30vh: it can stay open during play, and a bottom sheet over
+     mid-screen swallowed taps meant for the world. */
+  #session-meta {
+    top: calc(env(safe-area-inset-top, 0px) + 84px);
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: 30vh;
+  }
+  /* The "Drag to move · tap to inspect" hint sat on top of the selection
+     card the moment a creature was tapped. */
+  body:has(#selected-info:not(.hidden)) #interaction-hint {
+    display: none;
+  }
+}
+#moments-panel :focus-visible,
+#session-meta :focus-visible,
+.lineage-album-modal :focus-visible {
+  outline: 2px solid rgba(197, 242, 126, 0.55);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+.meta-card {
+  background: linear-gradient(180deg, rgba(13, 38, 28, 0.97), rgba(7, 22, 16, 0.97));
+  border-color: rgba(183, 226, 187, 0.22);
+}
+@media (max-width: 768px) {
+  /* Coach hints floated over whichever sheet was open. */
+  body.panel-open #interaction-hint,
+  body:has(#session-meta .meta-card:not(.hidden)) #interaction-hint {
+    display: none;
+  }
+}

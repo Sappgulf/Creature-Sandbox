@@ -1355,7 +1355,9 @@ export class GameLoop {
     if (this.ecoHealth) {
       this.lastEcoHealthUpdate += dt;
       if (this.lastEcoHealthUpdate >= 0.5) {
-        this.ecoHealth.update(this.world);
+        // Pass the real elapsed time: without it update() assumed 0.016s per
+        // call, so the panel sat at "0 · Good · Analyzing…" for ~30 seconds.
+        this.ecoHealth.update(this.world, this.lastEcoHealthUpdate);
         this.lastEcoHealthUpdate = 0;
       }
     }

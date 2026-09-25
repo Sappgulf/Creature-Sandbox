@@ -1136,8 +1136,8 @@ export function renderInspector(model = {}, handlers = {}) {
         lineageTopEl.innerHTML = leaders
           .map(entry => {
             const trendClass = entry.delta > 0 ? 'up' : entry.delta < 0 ? 'down' : 'flat';
-            const trendVal = entry.delta > 0 ? `+${entry.delta}` : entry.delta < 0 ? `${entry.delta}` : '0';
-            return `<div class="family"><button class="family-root" data-root="${escapeHtml(entry.rootId)}">${escapeHtml(entry.name)}</button><div class="metrics"><span>${entry.alive}</span><span class="direction ${trendClass}">${trendVal}</span><span class="muted">pk ${entry.peak}</span></div></div>`;
+            const trendVal = entry.delta > 0 ? `+${entry.delta}` : entry.delta < 0 ? `${entry.delta}` : '±0';
+            return `<div class="family"><button class="family-root" data-root="${escapeHtml(entry.rootId)}">${escapeHtml(entry.name)}</button><div class="metrics"><span>${entry.alive} alive</span><span class="direction ${trendClass}">${trendVal}</span><span class="muted">peak ${entry.peak}</span></div></div>`;
           })
           .join('');
         lineageTopEl.querySelectorAll('.family-root').forEach(btn => {

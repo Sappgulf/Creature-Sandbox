@@ -26,6 +26,16 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — ui-panels-audit — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** ui | mobile
+- **Type:** Implemented
+- **Issues:** A screenshot audit of every HUD element, menu, panel and popup (desktop 1440x900 and iPhone 13 emulation) found: two clashing palettes (Gene Editor, Scenario Lab, Features, Sound, Replay, Insights, Upgrade Hub and Game Mode cards in navy; menu, God Mode, Campaign in green); Lineage Album cards clipping every family name in half; Eco Health reading "0 · Good · Analyzing…" for ~30 s; Campaign lock emoji covering card text; Inspector family rows reading "1 0 pk 1"; loud lime focus rings on panel open; on phones the Game Mode stack squeezed into a clipped 240px corner card and hint bubbles covering the selection card and open sheets.
+- **Root Causes:** Navy `--glass-*` tokens and a navy `.panel` gradient, with green applied per-component. Lineage grid auto rows shrank inside a height-limited flex column under `overflow: hidden` cards. `GameLoop` called `ecoHealth.update(world)` every 0.5 s without dt, so the 1 s interval used a 0.016 default (~63 calls to the first sample). Centred 32px `::after` lock. Unlabelled metric template. `:focus-visible` default ring on programmatic focus. `#session-meta` phone rule kept the desktop corner-card geometry.
+- **Fixes:** Green glass tokens and a shared green panel gradient/border for `.panel`, `#upgrade-panel`, `#inspector`, `.floating-panel` and `.meta-card`; calmer focus ring (still 2px and visible) in panels, Moments, Game Mode and the Lineage Album. Lineage grid `grid-auto-rows: max-content`. Eco Health updates with real elapsed time. Campaign lock is a 14px corner badge. Family rows read "N alive · ±0 · peak N". Phones: Game Mode/Scenario stack is full width under the objective rail and capped at 30vh (a first attempt as a mid-screen bottom sheet swallowed world taps and failed `smoke:main`, so it was moved back to the top); interaction hints hide while the selection card or a panel is open.
+- **Verification:** Re-captured every panel on desktop and phone after the fixes and reviewed the screenshots. `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+
 ### 2026-09-25 — worker-kill-effects-and-population-study — Implemented
 
 - **Date:** 2026-09-25
