@@ -454,7 +454,7 @@ export class Renderer {
     }
 
     // Draw mini-map overlay (bottom-right corner)
-    if (this.enableMiniMap) {
+    if (this.enableMiniMap && !this._miniMapCoveredByPanel()) {
       this.drawMiniMap(world, opts);
     } else {
       this.lastMiniMap = null;
@@ -1393,6 +1393,37 @@ export class Renderer {
     }
 
     ctx.restore();
+  }
+
+  /**
+   * The world map is painted on the canvas in the bottom-right corner, so
+   * right-hand panels (Sound, Features, Achievements, Eco Health, Moments...)
+   * used to sit on top of it with the map bleeding through underneath. Skip
+   * it while an open panel overlaps its rectangle; re-checked a few times a
+   * second rather than every frame.
+   */
+  _miniMapCoveredByPanel() {
+    if (typeof document === 'undefined') return false;
+    const now = performance.now();
+    if (this._miniMapCoverCheckAt && now - this._miniMapCoverCheckAt < 250) return this._miniMapCovered;
+    this._miniMapCoverCheckAt = now;
+    const map = this.lastMiniMap;
+    let covered = false;
+    if (map) {
+      const panels = document.querySelectorAll(
+        '.panel:not(.hidden), #upgrade-panel:not(.hidden), #god-mode-panel:not(.hidden), #moments-panel:not(.hidden), #inspector:not(.hidden)'
+      );
+      for (const el of panels) {
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) continue;
+        if (r.left < map.x + map.width && r.right > map.x && r.top < map.y + map.height && r.bottom > map.y) {
+          covered = true;
+          break;
+        }
+      }
+    }
+    this._miniMapCovered = covered;
+    return covered;
   }
 
   drawFood(world) {

@@ -26,6 +26,16 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — viewport-fit-and-minimap-overlap — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** ui | mobile | render
+- **Type:** Implemented
+- **Issues:** Checking viewports not covered before (1280x720 laptop, iPad Mini, iPhone 13 landscape): the start menu's Guided Run button fell below the fold on the laptop, and on a landscape phone the hero banner pushed both start buttons off-screen. On desktop the canvas-drawn world map still showed through right-hand panels (Sound, Features, Achievements, Eco Health). Opening Sound drew a thick glowing box around the master volume slider.
+- **Root Causes:** The short-height home rules (max-height 720px / 560px) only shrank `.home-logo`, which the hero banner replaced. The minimap is painted on the canvas, so DOM panels cannot cover it by stacking order. `input[type=range]:focus-visible` added a 4px glow on programmatic focus.
+- **Fixes:** Below 820px tall the banner is capped at 400px and the title clamps to 6.2vh; below 560px the banner is hidden. The renderer skips the world map while an open panel overlaps its rectangle (checked every 250 ms). Slider focus is a 2px outline without the glow.
+- **Verification:** Home, in-game and Sound-panel screenshots at 1280x720, iPad Mini and iPhone 13 landscape before and after. `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+
 ### 2026-09-25 — start-menu-art — Implemented
 
 - **Date:** 2026-09-25

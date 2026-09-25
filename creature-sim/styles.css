@@ -8088,3 +8088,26 @@ body .touch-onboarding .touch-onboarding-progress {
     border-radius: 16px;
   }
 }
+
+/* Short screens: the hero banner replaced .home-logo, but the height rules
+   still only shrank the old logo, so on a 1280x720 laptop Guided Run fell
+   below the fold and on a landscape phone the start buttons were off-screen. */
+@media (max-height: 820px) {
+  .home-hero-banner {
+    width: min(400px, 100%);
+    margin: 4px auto 8px;
+  }
+  .home-title {
+    font-size: clamp(30px, 6.2vh, 56px);
+  }
+}
+@media (max-height: 560px) {
+  .home-hero-banner {
+    display: none;
+  }
+}
+input[type='range']:focus-visible {
+  outline: 2px solid rgba(197, 242, 126, 0.55);
+  outline-offset: 2px;
+  box-shadow: none;
+}
