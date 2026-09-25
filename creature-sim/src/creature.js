@@ -6,6 +6,8 @@ const FORAGE_SCENT_INTERVAL = 0.75;
 const FORAGE_CLAIM_SECONDS = 4;
 // How far a hungry predator can track prey it cannot yet see (world units).
 const PREDATOR_TRACK_RADIUS = 900;
+// Energy and hunger relief from a completed kill.
+const KILL_MEAL_ENERGY = 30;
 import { BehaviorConfig } from './behavior.js';
 import { getExpressedGenes, applyDisorderEffects } from './genetics.js';
 import { CreatureConfig } from './creature-config.js';
@@ -1531,8 +1533,11 @@ export class Creature {
         const attackResult = this.personality.attackCooldown <= 0 ? world.tryPredation(this) : null;
         if (attackResult?.victim) {
           if (attackResult.killed) {
-            this.energy += 14; // BALANCED: Less OP, need more strategic hunting
-            applyHungerRelief(this, 14);
+            // A kill is a full meal. At +14 a predator needed another kill every
+            // few seconds, and predation became the leading cause of death
+            // (79 of 154 in a 10-minute run) while herbivore food piled up.
+            this.energy += KILL_MEAL_ENERGY;
+            applyHungerRelief(this, KILL_MEAL_ENERGY);
             // Kill bookkeeping (stats.kills, CREATURE_KILLED) happens in
             // WorldCombat.applyDamage; do not double-count it here.
             this.logEvent(

@@ -3,11 +3,14 @@
  */
 import { getDebugFlags } from './debug-flags.js';
 
-const DESKTOP_STARTUP_SEED = { herbivores: 64, predators: 8, food: 280 };
-const MOBILE_STARTUP_SEED = { herbivores: 54, predators: 7, food: 230 };
-const COMPACT_MOBILE_STARTUP_SEED = { herbivores: 44, predators: 5, food: 190 };
-const MAIN_THREAD_DESKTOP_STARTUP_SEED = { herbivores: 54, predators: 7, food: 240 };
-const MAIN_THREAD_MOBILE_STARTUP_SEED = { herbivores: 44, predators: 5, food: 190 };
+// Opening seeds. With working hunts, the old 7-8 predators ate the opening
+// herd down in ~3 minutes; fewer predators and ~30% more food let the herd
+// hold through the first minutes before settling toward carrying capacity.
+const DESKTOP_STARTUP_SEED = { herbivores: 64, predators: 5, food: 360 };
+const MOBILE_STARTUP_SEED = { herbivores: 54, predators: 4, food: 300 };
+const COMPACT_MOBILE_STARTUP_SEED = { herbivores: 44, predators: 3, food: 250 };
+const MAIN_THREAD_DESKTOP_STARTUP_SEED = { herbivores: 54, predators: 4, food: 310 };
+const MAIN_THREAD_MOBILE_STARTUP_SEED = { herbivores: 44, predators: 3, food: 250 };
 
 export function getDevToolsConfig() {
   if (typeof window === 'undefined') return { enabled: false, timingLogs: false, fpsOverlay: false };

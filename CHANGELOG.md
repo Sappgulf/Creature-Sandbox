@@ -26,6 +26,16 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — opening-herd-balance — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** sim | balance
+- **Type:** Implemented
+- **Issues:** With hunting repaired, the opening herd fell by more than half within about 3 minutes (70 -> 30 herbivores by minute 2).
+- **Root Causes:** Death-cause tracing over 10 minutes showed food was not the limit (world food rose 250 -> 488; settled herbivores averaged 35-45 energy). Predation was the leading cause of death (79 of 154) because the startup seeds placed 7-8 predators and a kill was worth only +14 energy, so each predator needed a kill every few seconds; the remaining losses were a first-minute starvation crunch around the starting food.
+- **Fixes:** A completed kill is a full meal (`KILL_MEAL_ENERGY` 30 energy and hunger relief, was 14). Startup seeds rebalanced: predators desktop 8->5, mobile 7->4, compact 5->3, main-thread 7->4 / 5->3; starting food raised by about 30% (280->360, 230->300, 190->250, 240->310, 190->250).
+- **Verification:** 10-minute headless runs at the desktop seed: herbivores at minute 2 went from 30 to 54; predation deaths 79 -> 42; the herd still settles toward ~30 with 2-3 predators. `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+
 ### 2026-09-25 — predators-hunt-and-disaster-pacing — Implemented
 
 - **Date:** 2026-09-25
