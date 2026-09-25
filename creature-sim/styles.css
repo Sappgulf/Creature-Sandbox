@@ -7911,3 +7911,20 @@ body .touch-onboarding .touch-onboarding-text {
 body .touch-onboarding .touch-onboarding-progress {
   margin: 4px 0 8px;
 }
+
+/* Phones: the selection card grew into a ~400px dossier that sat on top of
+   the creature you had just tapped. Keep the glanceable part (name, status,
+   state tags); the full detail lives behind the Inspect button. */
+@media (max-width: 768px) {
+  #selected-info .metrics,
+  #selected-info .memory-trail,
+  #selected-info .hint,
+  #selected-info .subline.compact-meta,
+  #selected-info .subline.quirks {
+    display: none;
+  }
+  #selected-info {
+    padding: 10px 14px;
+    gap: 6px;
+  }
+}

@@ -26,6 +26,16 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — mobile-selection-card — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** mobile | ui
+- **Type:** Implemented
+- **Issues:** On phones, tapping a creature selected it and centred the camera on it, then the selection card grew to about 400px over the middle of the screen and hid the creature just tapped; it also showed desktop-only text ("pinned on Shift-click").
+- **Root Causes:** `#selected-info` rendered the full desktop dossier (metrics grid, "Why it moved" memory box, hints) at every width.
+- **Fixes:** At max-width 768px the card keeps only the headline, type/age line and state tags; metrics, memory trail, hints and compact meta are hidden (the Inspect button still opens full detail). Also confirmed that on touch devices only the 3-step touch onboarding runs; the 8-step tutorial does not stack on top of it.
+- **Verification:** iPhone 13 emulation: tap selects the creature and it stays visible above the card. `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+
 ### 2026-09-25 — creature-art-and-mobile — Implemented
 
 - **Date:** 2026-09-25
