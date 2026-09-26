@@ -209,7 +209,10 @@ export const PLAYABLE_SCENARIOS = [
     minFood: 90,
     maxStress: 58,
     setup: { herbivore: 34, omnivore: 6, predator: 4, food: 115, props: ['calm', 'fan'] },
-    tuning: { mode: 'balanced', foodRate: 0.55, disasters: true, season: 'summer' },
+    // Auto-balance topped food back up and cancelled the drought, so the run
+    // completed with no input. Off: idle now fails; placing food near the
+    // herd completed it at 214s with 64 alive.
+    tuning: { mode: 'balanced', foodRate: 0.55, disasters: true, season: 'summer', autoBalance: false },
     steps: ['Paint small food trails', 'Calm crowded pockets', 'Keep predators away from starving groups']
   },
   {

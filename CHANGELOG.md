@@ -26,6 +26,16 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — bug-hunt-scenarios-feed-card — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** qa | gameplay | ui
+- **Type:** Implemented
+- **Issues:** Bug hunt. (1) An interaction sweep in worker and main-thread modes on desktop, and worker on iPhone 13 (keyboard shortcuts, speed, pause, all six spawn types, all ten God Mode tools, undo/redo, select and throw, every menu panel) produced 0 console errors and 0 page errors, and the sim kept advancing. (2) An idle run of all 18 scenarios: 11 completed with no input, including Drought Rescue, whose premise is scarcity. (3) The "Feed Cluster" action card ("Top up the busiest herd") only selected the food brush and placed no food. (4) On a scenario result the Upgrade Hub and the Game Mode / Scenario Director stack were open side by side.
+- **Root Causes:** (2) Balanced mode's auto-balancer refills food to its floor, cancelling scenario scarcity. (3) `runQuickAction('paint_food')` only set the tool. (4) `setPanelVisible` closed "major panels", which did not include `#session-meta`.
+- **Fixes:** Drought Rescue runs with auto-balance off. The Feed Cluster card scatters 14 food around the creature with the most neighbours within 120 units (works through the worker proxy's `addFood`), then selects the brush. Opening the Upgrade Hub also hides the session-meta stack. Winter Survival was tried with auto-balance off but became unwinnable even with generous scripted feeding (the founding herd ages out below 32 before 4 minutes), so it was reverted and remains an idle win (known issue). Scenarios designed to be validated without input by the balance smoke (Stress Sanctuary, Scavenger Bridge) were left as they are.
+- **Verification:** Drought Rescue: idle failed at 169 s; feeding completed at 214 s with 64 alive. Feed card: +14 food in both worker and main-thread modes. `node scripts/scenario-contract.test.mjs` passed. `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+
 ### 2026-09-25 — herd-rescue-needs-a-rescue — Implemented
 
 - **Date:** 2026-09-25

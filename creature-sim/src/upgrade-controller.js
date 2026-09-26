@@ -293,11 +293,42 @@ export class UpgradeController {
     if (announce) this.notifications?.show?.(`View mode: ${mode.label}`, 'info', 1600);
   }
 
+  /** Scatter food around the creature with the most neighbours. */
+  feedBusiestHerd(count = 14) {
+    const world = this.world;
+    const creatures = (world?.creatures || []).filter(c => c && c.alive !== false && !c.genes?.predator);
+    if (!creatures.length || typeof world.addFood !== 'function') return false;
+    const sample =
+      creatures.length > 60 ? creatures.filter((_, i) => i % Math.ceil(creatures.length / 60) === 0) : creatures;
+    let best = sample[0];
+    let bestCount = -1;
+    for (const c of sample) {
+      let n = 0;
+      for (const o of creatures) {
+        if ((o.x - c.x) ** 2 + (o.y - c.y) ** 2 < 120 * 120) n++;
+      }
+      if (n > bestCount) {
+        bestCount = n;
+        best = c;
+      }
+    }
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 20 + Math.random() * 70;
+      world.addFood(best.x + Math.cos(angle) * dist, best.y + Math.sin(angle) * dist);
+    }
+    return true;
+  }
+
   runQuickAction(actionId) {
     if (actionId === 'paint_food') {
+      // The card reads "Feed Cluster · Top up the busiest herd", but it only
+      // selected the brush and fed nobody. Drop a batch on the densest herd,
+      // then leave the brush selected so the player can keep painting.
+      const fed = this.feedBusiestHerd();
       this.tools?.setMode?.('food');
       this.uiController?.updateToolIndicator?.('food');
-      this.notifications?.show?.('Food brush ready', 'info', 1200);
+      this.notifications?.show?.(fed ? 'Fed the busiest herd · brush ready' : 'Food brush ready', 'info', 1400);
       return true;
     }
 
@@ -725,6 +756,12 @@ export class UpgradeController {
     if (!this.panel) return;
     if (visible) {
       this.uiController?.closeMajorPanels?.('upgrade-panel');
+      // The Game Mode / Scenario Director stack is not a "major panel", so on
+      // a scenario result both columns stayed open and competed for the eye.
+      if (gameState.sessionMetaVisible) {
+        this.uiController?.setSessionMetaVisible?.(false);
+        gameState.sessionMetaVisible = false;
+      }
       if (gameState.godModeActive) {
         this.uiController?.setGodModeActive?.(false, { source: 'upgrade-panel' });
       }
