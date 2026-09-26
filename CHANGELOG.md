@@ -26,6 +26,16 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — herd-rescue-needs-a-rescue — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** gameplay | scenarios
+- **Type:** Implemented
+- **Issues:** The flagship Guided Run ("Herd Rescue", the home screen's primary button) awarded a Gold medal with no player input: the herd grew from 30 to 40+ and the scenario completed at 2 minutes on its own.
+- **Root Causes:** After this session's foraging and ecosystem fixes the herd thrives on the scenario's 180 starting food at 1.15x regrowth, and Balanced mode's auto-balancer tops food back up to 180 regardless of scenario scarcity. (A first test "feeder" using `runUpgradeAction('paint_food')` placed no food, because that action only selects the brush; it was replaced with food placed near the herd.)
+- **Fixes:** Herd Rescue opens in a food shortage: 90 starting food, 0.5x regrowth, auto-balance off for the run.
+- **Verification:** 2-minute runs per setting, comparing an idle player with one placing 12 food near the herd every 10 s. Before: both completed. 40 food / 0.35x: both failed. 90 / 0.5x (shipped): idle failed with 16 alive; feeding completed with 37 alive. `node scripts/scenario-contract.test.mjs` passed. `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+
 ### 2026-09-25 — card-close-spawn-portraits-speciation — Implemented
 
 - **Date:** 2026-09-25

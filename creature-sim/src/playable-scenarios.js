@@ -27,8 +27,14 @@ export const PLAYABLE_SCENARIOS = [
     targetSeconds: 120,
     minAlive: 25,
     maxStress: 60,
-    setup: { herbivore: 24, omnivore: 4, predator: 2, food: 180, props: ['spring'] },
-    tuning: { mode: 'balanced', foodRate: 1.15, disasters: false },
+    // A rescue has to need rescuing. With the ecosystem fixes the herd
+    // thrived on 180 food at 1.15x regrowth and the run won Gold with no
+    // input at all. It now opens in a shortage with auto-balance off, so the
+    // player's feeding decides it: measured over 2 minutes, an idle run
+    // failed (16 alive) and one painting food near the herd every 10s
+    // completed with 37 alive.
+    setup: { herbivore: 24, omnivore: 4, predator: 2, food: 90, props: ['spring'] },
+    tuning: { mode: 'balanced', foodRate: 0.5, disasters: false, autoBalance: false },
     guidedLoop: true,
     steps: [
       'Observe · Inspect the herd before acting',
