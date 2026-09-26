@@ -8111,3 +8111,72 @@ input[type='range']:focus-visible {
   outline-offset: 2px;
   box-shadow: none;
 }
+
+/* Close control on the creature card. The card itself is click-through
+   (pointer-events: none) so it never blocks the field; the button opts in. */
+#selected-info .selected-close {
+  pointer-events: auto;
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(183, 226, 187, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+#selected-info .selected-close:hover {
+  background: rgba(197, 242, 126, 0.14);
+  color: var(--text-primary);
+}
+@media (pointer: coarse) {
+  #selected-info .selected-close {
+    width: 36px;
+    height: 36px;
+  }
+}
+#selected-info .headline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Spawn menu portraits (scripts/generate-home-art.py): the cards drew each
+   creature from CSS gradients in the old blob style, which no longer matched
+   the in-game sprites. */
+.spawn-card-preview::before,
+.spawn-card-preview::after {
+  display: none;
+}
+.spawn-card-herbivore,
+.spawn-card-omnivore,
+.spawn-card-predator,
+.spawn-card-aquatic,
+.spawn-card-flying,
+.spawn-card-burrowing {
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+.spawn-card-herbivore {
+  background-image: url('./assets/sprites/ui/spawn_herbivore.svg');
+}
+.spawn-card-omnivore {
+  background-image: url('./assets/sprites/ui/spawn_omnivore.svg');
+}
+.spawn-card-predator {
+  background-image: url('./assets/sprites/ui/spawn_predator.svg');
+}
+.spawn-card-aquatic {
+  background-image: url('./assets/sprites/ui/spawn_aquatic.svg');
+}
+.spawn-card-flying {
+  background-image: url('./assets/sprites/ui/spawn_flying.svg');
+}
+.spawn-card-burrowing {
+  background-image: url('./assets/sprites/ui/spawn_burrowing.svg');
+}

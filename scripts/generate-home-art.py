@@ -178,9 +178,28 @@ def hero_banner():
     return svg(w, h, body + vignette, defs)
 
 
+SPAWN_PORTRAITS = {
+    'herbivore': ('herbivore', '#6fd0a8', 1.0),
+    'omnivore': ('omnivore', '#e88ab8', 1.0),
+    'predator': ('predator', '#9aa7b8', 0.95),
+    'aquatic': ('fish', '#5fb4e6', 1.1),
+    'flying': ('bird', '#f0d060', 1.05),
+    'burrowing': ('mole', '#c79a6b', 1.05),
+}
+
+
+def spawn_portrait(kind, color, scale):
+    """96x96 transparent portrait of one creature type for the Spawn menu."""
+    body = shadow(48, 74, 22 * scale)
+    body += place(creature(kind, 1), 48, 70, 1.35 * scale, color)
+    return svg(96, 96, body)
+
+
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
     for name, fn in [('home_card_traits', card_traits), ('home_card_habitat', card_habitat),
                      ('home_card_story', card_story), ('home_hero', hero_banner)]:
         open(os.path.join(OUT, f'{name}.svg'), 'w').write(fn())
+    for key, (kind, color, scale) in SPAWN_PORTRAITS.items():
+        open(os.path.join(OUT, f'spawn_{key}.svg'), 'w').write(spawn_portrait(kind, color, scale))
     print('wrote home art to', OUT)

@@ -1,6 +1,9 @@
 // Centralized achievement definitions.
 // This file is intended to be mostly data so achievements can be tuned/extended easily.
 
+// Species-group count at the start of the current session (see 'speciation').
+const speciationBaseline = { count: null, t: 0 };
+
 export const ACHIEVEMENTS_DATA_VERSION = 1;
 
 export const ACHIEVEMENTS_DATA = [
@@ -30,7 +33,22 @@ export const ACHIEVEMENTS_DATA = [
     type: 'discovery',
     check: (world, tracker, ctx) => {
       const groups = ctx?.analytics?.speciesGroups;
-      return Array.isArray(groups) && groups.length >= 2;
+      if (!Array.isArray(groups)) return false;
+      // The opening seed already holds several distinct groups, so ">= 2"
+      // unlocked this in the first seconds of every game. Reward evolution
+      // instead: more groups than when the session started. World time going
+      // backwards means a new game began, so re-baseline.
+      // Clustering needs a few seconds to settle after a new game, so take
+      // the baseline once 20 s of sim time have passed.
+      const t = Number(world?.t) || 0;
+      if (t < speciationBaseline.t) speciationBaseline.count = null;
+      speciationBaseline.t = t;
+      if (t < 20) return false;
+      if (speciationBaseline.count == null) {
+        speciationBaseline.count = groups.length;
+        return false;
+      }
+      return groups.length > speciationBaseline.count;
     }
   },
 

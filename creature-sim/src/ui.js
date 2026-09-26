@@ -388,12 +388,28 @@ function markInspected() {
   }
 }
 
+// The selection card had no way to close it except Escape or tapping empty
+// ground, which players did not discover.
+const SELECTED_CLOSE_BUTTON =
+  '<button type="button" class="selected-close" data-action="deselect" aria-label="Close creature card" title="Close">✕</button>';
+
+function ensureSelectedCloseHandler(el) {
+  if (el.dataset.closeBound === 'true') return;
+  el.dataset.closeBound = 'true';
+  el.addEventListener('click', event => {
+    if (!event.target.closest?.('[data-action="deselect"]')) return;
+    event.stopPropagation();
+    gameState.clearSelection();
+  });
+}
+
 export function renderSelectedInfo(
   el,
   creature,
   { world = null, lineageTracker = null, inspectorOpen = false, threat = null } = {}
 ) {
   if (!el) return;
+  ensureSelectedCloseHandler(el);
   const isMobile = isMobileDevice();
   const useInspectorChip = !isMobile && !!inspectorOpen;
   if (!creature) {
@@ -637,7 +653,7 @@ export function renderSelectedInfo(
       `
       <div class="headline">
         <span>${headline}</span>
-        <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>${threatBadge}
+        <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>${threatBadge}${SELECTED_CLOSE_BUTTON}
       </div>
       <div class="subline">${lifeStage.icon} ${lifeStage.label} · ${emotion.icon} ${emotion.label} · ${readableState}</div>
       <div class="state-tags">
@@ -657,7 +673,7 @@ export function renderSelectedInfo(
       `
       <div class="headline">
         <span>${headline}</span>
-        <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>${threatBadge}
+        <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>${threatBadge}${SELECTED_CLOSE_BUTTON}
       </div>
       <div class="subline">${sublineParts.join(' · ')}</div>
       ${nameSuggestion ? `<div class="muted tiny">${nameSuggestion}</div>` : ''}
@@ -685,7 +701,7 @@ export function renderSelectedInfo(
     `
     <div class="headline">
       <span>${headline}</span>
-      <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>${threatBadge}
+      <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>${threatBadge}${SELECTED_CLOSE_BUTTON}
     </div>
     <div class="subline">${sublineParts.join(' · ')}</div>
     ${nameSuggestion ? `<div class="muted tiny">${nameSuggestion}</div>` : ''}

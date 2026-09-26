@@ -26,6 +26,16 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-09-25 — card-close-spawn-portraits-speciation — Implemented
+
+- **Date:** 2026-09-25
+- **Scope:** ui | assets | gameplay
+- **Type:** Implemented
+- **Issues:** Tapping or clicking a creature opened a card with no visible way to close it; the Spawn menu showed CSS-drawn blob creatures that no longer matched the in-game sprites; a "New Species" achievement toast fired within seconds of every new game.
+- **Root Causes:** `renderSelectedInfo` rendered no close control, and the card is `pointer-events: none`. `.spawn-card-preview` built each creature from gradients and pseudo-elements. The `speciation` check was `groups.length >= 2`, which the opening seed's distinct creature types already satisfy at t=0; a first fix that baselined on the first check still fired, because species clustering has not run yet at that point (checks run in the worker).
+- **Fixes:** A close button (28px, 36px on touch; `pointer-events: auto`) in all three card layouts, with one delegated handler calling `gameState.clearSelection()`. Six Spawn portraits generated from the creature sprite code (`generate-home-art.py`, `spawn_*.svg`) replace the CSS blobs. Speciation now unlocks only when species groups exceed a baseline taken after 20 s of sim time, re-baselined when world time resets.
+- **Verification:** Desktop click and iPhone 13 tap on the close button: selection cleared and card hidden. Spawn drawer screenshots on both. Screenshots 4 s and 10 s into a new game show no toast (before: "New Species" at 4 s). `npm run lint`, `npm test`, `npm run build`, `npm run check:bundle`, `npm run smoke:browser`, `npm run smoke:main`, `npm run smoke:worker`, `npm run smoke:scenarios`, `npm run proof:release` passed.
+
 ### 2026-09-25 — player-driven-goals — Implemented
 
 - **Date:** 2026-09-25
