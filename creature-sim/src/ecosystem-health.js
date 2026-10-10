@@ -184,24 +184,26 @@ export class EcosystemHealth {
 
   getHealthStatus() {
     const score = this.metrics.overall;
-    if (score >= 80) return { label: 'Excellent', color: '#4ade80', emoji: '🌟' };
-    if (score >= 60) return { label: 'Good', color: '#7bb7ff', emoji: '✨' };
-    if (score >= 40) return { label: 'Fair', color: '#ffc800', emoji: '⚠️' };
-    if (score >= 20) return { label: 'Poor', color: '#ff8800', emoji: '🔥' };
-    return { label: 'Critical', color: '#ff0000', emoji: '💀' };
+    // Field-journal instrument colors + in-app icon-sprite glyph ids instead of
+    // emoji, so the status reads the same on every platform.
+    if (score >= 80) return { label: 'Excellent', color: '#a8df91', symbol: 'i-discoveries' };
+    if (score >= 60) return { label: 'Good', color: '#80d8c4', symbol: 'i-health' };
+    if (score >= 40) return { label: 'Fair', color: '#f1c86c', symbol: 'i-insights' };
+    if (score >= 20) return { label: 'Poor', color: '#ef917b', symbol: 'i-threat' };
+    return { label: 'Critical', color: '#ef917b', symbol: 'i-help' };
   }
 
   getRecommendations(world) {
     const recommendations = [];
 
     if (this.metrics.biodiversity < 30) {
-      recommendations.push('🧬 Low genetic diversity - introduce new creatures with different traits');
+      recommendations.push('Low genetic diversity — introduce new creatures with different traits');
     }
 
     if (this.metrics.stability < 40) {
       const foodPerCreature = world.creatures.length > 0 ? world.food.length / world.creatures.length : 0;
       if (foodPerCreature < 2) {
-        recommendations.push('🌿 Food scarcity - add more food sources');
+        recommendations.push('Food scarcity — paint more food near the largest cluster');
       }
 
       let predators = 0;
@@ -210,25 +212,24 @@ export class EcosystemHealth {
       }
       const predatorRatio = world.creatures.length > 0 ? predators / world.creatures.length : 0;
       if (predatorRatio > 0.3) {
-        recommendations.push('🦁 Too many predators - ecosystem imbalance');
+        recommendations.push('Too many predators — the herd is under pressure');
       } else if (predatorRatio < 0.05 && world.creatures.length > 20) {
-        recommendations.push('🦌 Need predators to control herbivore population');
+        recommendations.push('No predators — grazers have nothing to outrun');
       }
     }
 
     if (this.metrics.sustainability < 40) {
-      recommendations.push('⚡ Low sustainability - creatures struggling to survive');
-      recommendations.push('💚 Consider boosting creature health or reducing challenges');
+      recommendations.push('Low sustainability — creatures are burning energy faster than the field supplies it');
     }
 
     if (world.creatures.length < 10) {
-      recommendations.push('👥 Low population - spawn more creatures');
+      recommendations.push('Sparse population — spawn a few more creatures');
     } else if (world.creatures.length > 300) {
-      recommendations.push('🏙️ Overpopulation - may cause performance issues');
+      recommendations.push('Overpopulation — may cause performance issues');
     }
 
     if (recommendations.length === 0) {
-      recommendations.push('✅ Ecosystem is healthy - keep up the good work!');
+      recommendations.push('The field is healthy — keep observing');
     }
 
     return recommendations;

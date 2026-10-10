@@ -80,7 +80,7 @@ export class MomentsSystem {
     this.render();
     requestAnimationFrame(() => {
       this.panel
-        ?.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+        ?.querySelector('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
         ?.focus?.({ preventScroll: true });
     });
   }

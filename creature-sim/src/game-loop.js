@@ -1325,6 +1325,13 @@ export class GameLoop {
       }
     }
 
+    // Sample the mini-graph overlay (it self-throttles to 1Hz). Without this
+    // the panels drew empty: population/traits/diversity never got a second
+    // data point and the energy histogram stayed all-zero.
+    if (this.miniGraphs && (this._fidelityDue(fidelity, frame, 2) || coarseStep)) {
+      this.miniGraphs.update(this.world, dt);
+    }
+
     // Update session goals tracking
     if (this.sessionGoals && (this._fidelityDue(fidelity, frame, 2) || coarseStep)) {
       this.sessionGoals.update(this.world, dt);
@@ -1899,10 +1906,11 @@ export class GameLoop {
     );
     if (overallScore) overallScore.textContent = Math.round(metrics.overall);
 
-    const statusEmoji = this.getCachedElement('health-status-emoji', () =>
-      document.getElementById('health-status-emoji')
-    );
-    if (statusEmoji) statusEmoji.textContent = status.emoji;
+    const statusIcon = this.getCachedElement('health-status-icon', () => document.getElementById('health-status-icon'));
+    if (statusIcon) {
+      statusIcon.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#${status.symbol}"/></svg>`;
+      statusIcon.style.color = status.color;
+    }
 
     const statusLabel = this.getCachedElement('health-status-label', () =>
       document.getElementById('health-status-label')

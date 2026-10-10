@@ -1223,19 +1223,19 @@ test('menu rows put their icon in a fixed slot', () => {
   const css = fs.readFileSync(new URL('../creature-sim/styles.css', import.meta.url), 'utf8');
   const strip = fs.readFileSync(new URL('../creature-sim/src/control-strip.js', import.meta.url), 'utf8');
 
-  // Emoji sat inline in the label text, so each row's label started wherever
-  // that particular glyph happened to end.
+  // Rows now carry the shared monoline symbol set; each row must keep a glyph
+  // slot so labels align regardless of the drawing's natural width.
   const items = [...html.matchAll(/<button class="menu-item"[^>]*>([\s\S]*?)<\/button>/g)];
   assert.ok(items.length > 10, 'expected the full menu');
   for (const [, body] of items) {
-    assert.match(body, /class="menu-item-icon"/, 'every menu row needs its icon slot');
+    assert.match(body, /class="menu-item-glyph"/, 'every menu row needs its graphic slot');
     assert.match(body, /class="menu-item-label"/, 'every menu row needs its label span');
   }
-  assert.match(css, /\.menu-item-icon\s*\{[^}]*flex:\s*0 0 22px/s, 'the icon slot must be a fixed width');
+  assert.match(css, /\.menu-item-glyph\s*\{[^}]*flex:\s*0 0 22px/s, 'the glyph slot must be a fixed width');
 
   // The three toggles rewrite themselves as state changes; textContent would
   // collapse the row back into one text node and undo the alignment.
-  assert.match(strip, /setMenuItemLabel\(/, 'toggle labels must preserve the icon/label structure');
+  assert.match(strip, /setMenuItemLabel\(/, 'toggle labels must preserve the glyph/label structure');
 });
 
 test('audio settings persist and muting actually silences everything', async () => {

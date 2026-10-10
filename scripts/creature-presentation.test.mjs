@@ -25,6 +25,8 @@ assert.ok(running.speedScale > idle.speedScale);
 
 const ordinarySize = getCreatureRenderSize({ energy: 20, size: 2 }, { zoom: 1 });
 const focusedSize = getCreatureRenderSize({ energy: 20, size: 2 }, { zoom: 1, isSelected: true });
+// 2026-09 contract: energy is a subtle 85-100% cue, one shared formula (x11
+// with the 2x sprite sheets) and fixed focus floors.
 assert.ok(ordinarySize >= 28);
 assert.ok(focusedSize >= 32);
 

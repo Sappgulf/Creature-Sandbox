@@ -34,7 +34,7 @@ export class NotificationSystem {
       if (pop >= milestone && !this.triggeredMilestones.has(`pop_${milestone}`)) {
         this.addNotification({
           type: 'milestone',
-          title: '🎉 Population Milestone!',
+          title: 'Population Milestone',
           message: `${pop} creatures alive!`,
           duration: 4000
         });
@@ -46,7 +46,7 @@ export class NotificationSystem {
     if (pop <= this.milestones.extinctionWarning && pop > 0 && !this.triggeredMilestones.has('extinction_warning')) {
       this.addNotification({
         type: 'warning',
-        title: '⚠️ Extinction Warning!',
+        title: 'Extinction Warning',
         message: `Only ${pop} creatures remaining!`,
         duration: 6000
       });
@@ -483,7 +483,7 @@ export class NotificationSystem {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    ctx.fillText(layout.text, x, y);
+    ctx.fillText(layout.text, x, y + 1);
 
     ctx.restore();
   }

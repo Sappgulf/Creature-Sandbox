@@ -140,9 +140,10 @@ const SNAPSHOT_GOAL_METRIC = {
 const LIVE_SNAPSHOT_GOAL_TYPES = new Set([...Object.keys(SNAPSHOT_GOAL_METRIC), 'stress_cap']);
 
 export class SessionGoals {
-  constructor({ notifications = null, audio = null } = {}) {
+  constructor({ notifications = null, audio = null, world = null } = {}) {
     this.notifications = notifications;
     this.audio = audio;
+    this.world = world;
     this.goals = [];
     this._lastUpdate = 0;
     this.manualSpawns = 0;
@@ -225,7 +226,7 @@ export class SessionGoals {
     }));
     eventSystem.emit(GameEvents.SESSION_GOAL_UPDATED, this.getGoals());
     if (announce && this.notifications?.show) {
-      this.notifications.show('🎯 Scenario goals loaded', 'info', 1800);
+      this.notifications.show('Scenario goals loaded', 'info', 1800);
     }
   }
 
@@ -240,6 +241,30 @@ export class SessionGoals {
         godActions: this.godActions
       }
     };
+  }
+
+  /**
+   * Drop goals that are already satisfied but were never painted completed —
+   * snapshot goals whose metric is past the target, or cumulative goals whose
+   * session counter already covers it entirely. Prevents a restore or refresh
+   * from fronting the rail an already-won challenge.
+   */
+  pruneSatisfiedGoals(notifyReset = false) {
+    const metrics = this._collectMetrics(this.world);
+    const before = this.goals.length;
+    this.goals = this.goals.filter(goal => {
+      if (goal.completed) return true;
+      const progress = clamp(this._calculateProgress(goal, metrics), 0, 1);
+      return progress < 0.95;
+    });
+    const pruned = before - this.goals.length;
+    if (pruned <= 0) return 0;
+    this._lastUpdate = 0;
+    eventSystem.emit(GameEvents.SESSION_GOAL_UPDATED, this.getGoals());
+    if (notifyReset && this.notifications?.show) {
+      this.notifications.show('New session goals ready', 'info', 2200);
+    }
+    return pruned;
   }
 
   resetForNewSession({ refreshGoals = true } = {}) {
@@ -263,6 +288,10 @@ export class SessionGoals {
 
     if (Array.isArray(data.goals)) {
       this.setGoals(data.goals, { announce });
+      // A restored save can carry goals whose metrics already cleared the
+      // target (snapshots taken at a population peak, for example). Park the
+      // tail of already-won challenges instead of stalling the rail.
+      this.pruneSatisfiedGoals(false);
     }
 
     const counters = data.counters || {};
@@ -278,8 +307,9 @@ export class SessionGoals {
 
   refresh() {
     this.generateGoals();
+    this.pruneSatisfiedGoals(false);
     if (this.notifications?.show) {
-      this.notifications.show('🎯 New session goals ready', 'info', 2200);
+      this.notifications.show('New session goals ready', 'info', 2200);
     }
     if (this.audio?.playUISound) {
       this.audio.playUISound('toggle');
@@ -342,7 +372,7 @@ export class SessionGoals {
   _announceCompletion(goal) {
     eventSystem.emit(GameEvents.SESSION_GOAL_COMPLETED, goal);
     if (this.notifications?.show) {
-      this.notifications.show(`${goal.icon} Goal complete: ${goal.description}`, 'achievement', 3200);
+      this.notifications.show(`Goal complete: ${goal.description}`, 'achievement', 3200);
     }
     if (this.audio?.playUISound) {
       this.audio.playUISound('success');

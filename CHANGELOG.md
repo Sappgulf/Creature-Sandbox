@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-10-10 — field-journal-glyph-upgrade — Planned
+
+- **Date:** 2026-10-10
+- **Scope:** ui | render
+- **Type:** Planned
+- **Issues:** Gameplay/menus presentation sweep, driven by fresh Playwright probes of the live field and menus. (1) The drawer menu, home action buttons, health/insights/sound panel titles, and the stats rail tail (season %, day/night, speed, paused) still used emoji while the control strip had already moved to the monoline field-journal glyph set — one toolbar rendered as a different product per platform. (2) The MiniGraphs overlay drew as black monospace debug boxes, and the ENERGY panel rendered as an empty black rectangle because `MiniGraphs.update()` was never called by the game loop (only `draw()`), so population/traits/diversity never reached 2 data points and the histogram stayed all-zero. (3) The `L` hotkey toggled nothing: it resolves the instance through `world.miniGraphs`, which was never assigned (same shape as the known `world.ecoHealth` gap). (4) Session-goal rail could front already-satisfied challenges after a restore or refresh, and goal-complete/system toasts led with emoji.
+- **Root Causes:** The glyph migration stopped at the control strip; the mini-graph module was wired into the loop's draw path but not its update path; focusable-element selectors (`[href]`) also matched the new inline `<use href>` glyphs, and a single rAF-deferred panel focus raced the sim's render rAF under load.
+- **Fixes:** Add 30 new monoline symbols (`i-step`, `i-godmode`, `i-journal`, `i-expedition`, `i-medal`, `i-discoveries`, `i-genes`, `i-lab`, `i-editor`, `i-palette`, `i-sound`, `i-health`, `i-search`, `i-chart`, `i-replay`, `i-clapper`, `i-insights`, `i-album`, `i-save`, `i-load`, `i-seed`, `i-profile`, `i-fullscreen`, `i-battery`, `i-haptics`, `i-tutorial`, `i-help`, `i-modes`, `i-refresh`, `i-sun`/`i-moon`/`i-bolt`/`i-paused`) and convert drawer menu rows, home action buttons, panel titles, gene-editor buttons, and the stats rail to glyphs. Restyle MiniGraphs to translucent deep-green instrument panels with field-journal palette, titles, and numeric legend; wire `MiniGraphs.update()` into the loop's fidelity cadence; assign `world.miniGraphs` for the `L` hotkey. Readability pass on the health panel ("Field notes", non-emoji status icon keyed off `getHealthStatus()` symbols), goal-complete/system toasts, and the world-rhythm chip (drops the season emoji the CSS could not reliably color on mobile). Session goals: `pruneSatisfiedGoals()` drops already-satisfied goals on restore/refresh so the rail never fronts a won challenge. Panel focus: `_focusPanelContent` + bounded rAF retry so the first Tab lands inside the panel deterministically under load; focusable selectors switched from `[href]` to `a[href]` everywhere so inline glyph `<use>` elements can no longer capture "first focusable".
+- **Verification:** Pending smoke gate.
+
+### 2026-10-10 — field-journal-glyph-upgrade — Implemented
+
+- **Date:** 2026-10-10
+- **Scope:** ui | render
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npm run lint` clean; `npm test` green (194 + 75 regression checks, reboot-experience, presentation, scenario-contract, E2E, and save-migration suites all pass; the presentation test keeps the 2026-09 x11/32-38 floor contract after rebasing onto the 2x sprite-sheet sessions); `npm run build` + `npm run check:bundle` pass (index 405.9 kB pre-gzip, worker 311 kB — within recorded headroom). `npm run smoke:browser` (worker default), `npm run smoke:main` (fallback), and `npm run smoke:menus` 36/36 pass — including the campaign-panel focus assertion that previously failed (focusable selector matched glyph `<use href>`; fixed) and its downstream achievements cascade. `npm run smoke:scenarios` green (2× stress_sanctuary + scavenger_bridge). Post-change probes: glyph menu, four populated mini-graph panels, glyph health status + Field notes, glyph home actions, clean world-rhythm chips; zero console/page errors in all lanes.
+
 ### 2026-09-25 — bug-hunt-scenarios-feed-card — Implemented
 
 - **Date:** 2026-09-25

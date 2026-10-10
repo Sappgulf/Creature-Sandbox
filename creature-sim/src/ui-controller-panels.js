@@ -4,6 +4,17 @@ import { loadEnhancedAnalyticsModule } from './enhanced-analytics-loader.js';
 import { touchOnboarding } from './touch-onboarding.js';
 import { eventSystem } from './event-system.js';
 
+function _focusWhenPainted(panel, maxFrames, focusFn) {
+  window.requestAnimationFrame(() => {
+    if (panel.classList.contains('hidden')) return;
+    focusFn(panel);
+    if (panel.contains(document.activeElement) || document.activeElement === panel) return;
+    if (maxFrames > 0) {
+      _focusWhenPainted(panel, maxFrames - 1, focusFn);
+    }
+  });
+}
+
 export function applyUiPanelMethods(UIController) {
   UIController.prototype._ensurePanelEscapeHandler = function () {
     if (this._panelEscapeBound || typeof document === 'undefined') return;
@@ -37,24 +48,11 @@ export function applyUiPanelMethods(UIController) {
     const anyPanelOpen = document.querySelector('.panel:not(.hidden)');
     document.body.classList.toggle('panel-open', !!anyPanelOpen);
     if (isVisible) {
-      requestAnimationFrame(() => {
-        // Prefer the panel's first real control over its header close button;
-        // landing on "Close" before any content was a keyboard dead end.
-        const selector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
-        const focusable = Array.from(panel.querySelectorAll(selector)).filter(
-          el => !el.disabled && el.getAttribute('aria-hidden') !== 'true'
-        );
-        const preferred =
-          panel.querySelector('[data-panel-initial-focus]') ||
-          focusable.find(el => !el.classList.contains('panel-close')) ||
-          focusable[0];
-        if (preferred) {
-          preferred.focus({ preventScroll: true });
-        } else {
-          panel.setAttribute('tabindex', '-1');
-          panel.focus({ preventScroll: true });
-        }
-      });
+      // Focus must land deterministically: the sim's render rAF can precede
+      // ours for ~100ms+ under load, so focus asynchronously after the
+      // class flip (usually within the same frame) and re-verify for a few
+      // frames in case the target element is replaced while content renders.
+      _focusWhenPainted(panel, 6, this._focusPanelContent.bind(this));
       this._ensurePanelEscapeHandler?.();
     } else if (!document.querySelector('.panel:not(.hidden)')) {
       const returnTarget = this._panelReturnTarget;
@@ -64,6 +62,28 @@ export function applyUiPanelMethods(UIController) {
       }
     }
     return isVisible;
+  };
+
+  UIController.prototype._focusPanelContent = function (panel) {
+    if (!panel) return;
+    // Prefer the panel's first real control over its header close button;
+    // landing on "Close" before any content was a keyboard dead end.
+    const selector = 'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    const focusable = Array.from(panel.querySelectorAll(selector)).filter(
+      el => !el.disabled && el.getAttribute('aria-hidden') !== 'true' && el.offsetParent !== null
+    );
+    if (focusable.length) {
+      const preferred =
+        panel.querySelector('[data-panel-initial-focus]') ||
+        focusable.find(el => !el.classList.contains('panel-close')) ||
+        focusable[0];
+      preferred.focus({ preventScroll: true });
+    } else {
+      // No interactive content (e.g. a medal board where every level is
+      // locked): fall back to the panel itself so focus stays inside.
+      if (!panel.hasAttribute('tabindex')) panel.setAttribute('tabindex', '-1');
+      panel.focus({ preventScroll: true });
+    }
   };
 
   UIController.prototype.closeMajorPanels = function (exceptPanelId = null) {
@@ -225,7 +245,7 @@ export function applyUiPanelMethods(UIController) {
           throw new Error(`Unable to start disaster: ${type}`);
         }
         const label = typeSelect.options[typeSelect.selectedIndex]?.textContent?.trim() || type;
-        announce(queueMode ? `🗓️ ${label} queued` : `🌪️ ${label} started`, 'success');
+        announce(queueMode ? `${label} queued` : `${label} started`, 'success');
       } catch (error) {
         console.error('Scenario action failed:', error);
         announce('Scenario action failed. Try again.', 'error');
@@ -245,7 +265,7 @@ export function applyUiPanelMethods(UIController) {
         return;
       }
       this.world.cancelDisaster?.();
-      announce(`✅ ${active.name || 'Disaster'} ended`, 'success');
+      announce(`${active.name || 'Disaster'} ended`, 'success');
     });
 
     clearButton?.addEventListener('click', () => {
@@ -255,7 +275,7 @@ export function applyUiPanelMethods(UIController) {
         return;
       }
       this.world.clearPendingDisasters?.();
-      announce('🧹 Queued disasters cleared', 'success');
+      announce('Queued disasters cleared', 'success');
     });
 
     queue?.addEventListener('click', event => {
@@ -295,7 +315,7 @@ export function applyUiPanelMethods(UIController) {
     overlay.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
     if (shouldShow) {
       const firstFocusable = overlay.querySelector(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
       firstFocusable?.focus?.({ preventScroll: true });
     } else {

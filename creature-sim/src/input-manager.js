@@ -450,7 +450,7 @@ export class InputManager {
     overlay.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
     if (shouldShow) {
       const firstFocusable = overlay.querySelector(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
       firstFocusable?.focus?.({ preventScroll: true });
     } else {

@@ -637,7 +637,7 @@ export class UIController {
     if (visible) {
       const sessionMeta = domCache.get('sessionMeta');
       const firstFocusable = sessionMeta?.querySelector(
-        'button, select, input, [href], [tabindex]:not([tabindex="-1"])'
+        'button, select, input, a[href], [tabindex]:not([tabindex="-1"])'
       );
       firstFocusable?.focus?.({ preventScroll: true });
     }

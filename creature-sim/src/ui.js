@@ -198,10 +198,12 @@ export function renderStats(el, world, fps, extra = {}) {
 
   if (isMobile) {
     if (extra.fastForward && extra.fastForward !== 1) {
-      statParts.push(`<span>⚡<span class="value">×${extra.fastForward}</span></span>`);
+      statParts.push(`<span>${glyph('i-bolt')}<span class="value">×${extra.fastForward}</span></span>`);
     }
     if (extra.paused) {
-      statParts.push('<span style="color: var(--accent-danger);">⏸</span>');
+      statParts.push(
+        `<span style="color: var(--accent-danger);">${glyph('i-paused')}<span class="sr-only">Paused</span></span>`
+      );
     }
     if (fps < 40) {
       statParts.push(`<span style="color: var(--accent-warning);">${fps.toFixed(0)} FPS</span>`);
@@ -222,9 +224,11 @@ export function renderStats(el, world, fps, extra = {}) {
   // Season info - compact
   if (world.getSeasonInfo) {
     const seasonInfo = world.getSeasonInfo();
-    if (seasonInfo?.current) {
+    if (seasonInfo?.name) {
       const progressPct = Math.round((seasonInfo.progress ?? 0) * 100);
-      statParts.push(`<span>${seasonInfo.icon || '🌱'} <span class="value">${progressPct}%</span></span>`);
+      statParts.push(
+        `<span>${glyph('i-expedition')} <span class="sr-only">${seasonInfo.name}</span> <span class="value">${progressPct}%</span></span>`
+      );
     }
   }
 
@@ -232,7 +236,9 @@ export function renderStats(el, world, fps, extra = {}) {
   if (extra.timeOfDay !== undefined) {
     const hour = Math.floor(extra.timeOfDay);
     const isDaytime = hour >= 6 && hour < 20;
-    statParts.push(`<span>${isDaytime ? '☀️' : '🌙'}</span>`);
+    statParts.push(
+      `<span>${glyph(isDaytime ? 'i-sun' : 'i-moon')} <span class="sr-only">${isDaytime ? 'Day' : 'Night'}</span></span>`
+    );
   }
 
   // FPS - only if performance mode or low
@@ -242,12 +248,14 @@ export function renderStats(el, world, fps, extra = {}) {
 
   // Speed indicator
   if (extra.fastForward && extra.fastForward !== 1) {
-    statParts.push(`<span>⚡<span class="value">×${extra.fastForward}</span></span>`);
+    statParts.push(`<span>${glyph('i-bolt')}<span class="value">×${extra.fastForward}</span></span>`);
   }
 
   // Paused state
   if (extra.paused) {
-    statParts.push('<span style="color: var(--accent-danger);">⏸</span>');
+    statParts.push(
+      `<span style="color: var(--accent-danger);">${glyph('i-paused')}<span class="sr-only">Paused</span></span>`
+    );
   }
 
   // Active events - very compact

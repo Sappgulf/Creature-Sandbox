@@ -260,8 +260,8 @@ export class UpgradeController {
     const foodRate = environment?.getSeasonModifier?.('food');
     const foodLabel = Number.isFinite(foodRate) ? ` · Food ${Math.round(foodRate * 100)}%` : '';
     return {
-      label: `${season.icon || '🌍'} ${season.label || season.name || 'Season'} · ${timeLabel}${foodLabel}`,
-      shortLabel: `${season.icon || '🌍'} ${timeLabel}`
+      label: `${season.label || season.name || 'Season'} · ${timeLabel}${foodLabel}`,
+      shortLabel: `${season.name || season.label || 'Season'} · ${timeLabel}`
     };
   }
 
@@ -744,7 +744,7 @@ export class UpgradeController {
     if (!sessionMeta) return;
     sessionMeta.classList.remove('hidden');
     sessionMeta.setAttribute('aria-hidden', 'false');
-    const firstFocusable = sessionMeta.querySelector('button, select, input, [href], [tabindex]:not([tabindex="-1"])');
+    const firstFocusable = sessionMeta.querySelector('button, select, input, a[href], [tabindex]:not([tabindex="-1"])');
     firstFocusable?.focus?.({ preventScroll: true });
   }
 

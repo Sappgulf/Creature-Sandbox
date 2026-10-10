@@ -573,6 +573,9 @@ export async function initializeApp() {
     'Mini-graphs initialization',
     null
   );
+  // The `L` shortcut resolves the instance through the world; without this
+  // reference the hotkey silently toggled nothing (same shape as ecoHealth).
+  if (miniGraphs && world) world.miniGraphs = miniGraphs;
 
   // Mini-graphs toggle (the L shortcut already existed; the checkbox did not)
   errorHandler.safeExecute(() => {
@@ -829,7 +832,7 @@ export async function initializeApp() {
 
   const sessionGoals = errorHandler.safeExecute(
     () => {
-      return new SessionGoals({ notifications, audio });
+      return new SessionGoals({ notifications, audio, world });
     },
     'Session goals initialization',
     null

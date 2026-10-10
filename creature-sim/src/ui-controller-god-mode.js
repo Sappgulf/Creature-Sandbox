@@ -75,7 +75,7 @@ export function applyUiGodModeMethods(UIController) {
       }
       this.updateGodModeUI();
       if (this.hasNotifications() && source !== 'gesture') {
-        this.notifications.show('✨ God mode on', 'info', 1400);
+        this.notifications.show('God mode on', 'info', 1400);
       }
     } else if (this.hasNotifications() && source !== 'gesture') {
       this.notifications.show('God mode off', 'info', 1200);
@@ -96,7 +96,7 @@ export function applyUiGodModeMethods(UIController) {
     // the previous inline map; unknown ids still fall back to the raw id.
     const labels = Object.fromEntries(GOD_TOOL_REGISTRY.map(entry => [entry.id, entry.label]));
     const via = source === 'hotkey' ? ' (hotkey)' : '';
-    this.notifications.show(`✨ ${labels[tool] || tool}${via}`, 'info', changed ? 900 : 700);
+    this.notifications.show(`${labels[tool] || tool}${via}`, 'info', changed ? 900 : 700);
   };
 
   UIController.prototype.updateGodModeUI = function () {

@@ -124,7 +124,7 @@ export class ToolController {
     drawer.classList.remove('hidden');
     drawer.setAttribute('aria-hidden', 'false');
     // Move focus into the modal so keyboard users are not left behind it.
-    const firstFocusable = drawer.querySelector('button, [href], input, select, [tabindex]:not([tabindex="-1"])');
+    const firstFocusable = drawer.querySelector('button, a[href], input, select, [tabindex]:not([tabindex="-1"])');
     firstFocusable?.focus?.({ preventScroll: true });
     return drawer;
   }
@@ -248,7 +248,7 @@ export class ToolController {
         // Trap Tab inside the aria-modal drawer.
         if (event.key === 'Tab') {
           const focusables = this._propPickerEl.querySelectorAll(
-            'button, [href], input, select, [tabindex]:not([tabindex="-1"])'
+            'button, a[href], input, select, [tabindex]:not([tabindex="-1"])'
           );
           if (!focusables.length) return;
           const first = focusables[0];

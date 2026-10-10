@@ -1,5 +1,10 @@
-// Mini-graph overlay system for real-time visualization
-// Sparklines and compact charts on HUD
+/**
+ * Mini-graph overlay system for real-time visualization
+ * Sparklines and compact charts on HUD, drawn in the field-journal instrument
+ * vocabulary (deep-green translucent panels, lime/aqua/sun accents) instead of
+ * the old black monospace debug boxes.
+ */
+const GRAPH_PANEL_FONT = "'Avenir Next', 'Inter', system-ui, -apple-system, sans-serif";
 
 export class MiniGraphs {
   constructor() {
@@ -12,24 +17,24 @@ export class MiniGraphs {
         enabled: true,
         data: [],
         maxPoints: 300,
-        colors: { herb: '#4ade80', pred: '#ef4444', omni: '#fb923c' }
+        colors: { herb: '#a8df91', pred: '#ef917b', omni: '#f1c86c' }
       },
       traits: {
         enabled: true,
         data: [], // {time, avgSpeed, avgMetabolism}
         maxPoints: 300,
-        colors: { speed: '#60a5fa', metabolism: '#a78bfa' }
+        colors: { speed: '#80d8c4', metabolism: '#c5f27e' }
       },
       energy: {
         enabled: true,
         histogram: new Array(10).fill(0), // 10 buckets
-        colors: { low: '#ef4444', mid: '#fbbf24', high: '#4ade80' }
+        colors: { low: '#ef917b', mid: '#f1c86c', high: '#a8df91' }
       },
       diversity: {
         enabled: true,
         data: [], // {time, speciesCount}
         maxPoints: 300,
-        color: '#ec4899'
+        color: '#c5f27e'
       }
     };
 
@@ -56,8 +61,12 @@ export class MiniGraphs {
       else if (diet < 0.7) omniCount++;
       else predCount++;
 
-      totalSpeed += c.genes.speed;
-      totalMetab += c.genes.metabolism;
+      // Gene values may be numbers or expressed-object wrappers; feed the
+      // numeric reading or the sparklines legend reads NaN.
+      const speedGene = c.genes.speed;
+      const metabGene = c.genes.metabolism;
+      totalSpeed += typeof speedGene === 'number' ? speedGene : Number(speedGene?.expressed ?? 0);
+      totalMetab += typeof metabGene === 'number' ? metabGene : Number(metabGene?.expressed ?? 0);
 
       // Energy histogram (0-50 energy range)
       const bucket = Math.min(9, Math.floor(c.energy / 5));
@@ -162,23 +171,34 @@ export class MiniGraphs {
     ctx.restore();
   }
 
+  /**
+   * Shared panel chrome: translucent deep-green instrument card with a soft
+   * border and a small-caps field label. Kept allocation-free — the label and
+   * palette are static per graph.
+   */
+  _drawPanel(ctx, x, y, w, h, label) {
+    ctx.beginPath();
+    ctx.fillStyle = 'rgba(9, 28, 21, 0.86)';
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(x, y, w, h, 12);
+    } else {
+      ctx.rect(x, y, w, h);
+    }
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(183, 226, 187, 0.24)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(239, 247, 233, 0.85)';
+    ctx.font = `600 10px ${GRAPH_PANEL_FONT}`;
+    ctx.fillText(label.toUpperCase(), x + 11, y + 16);
+  }
+
   _drawPopulationGraph(ctx, x, y, w, h) {
     const graph = this.graphs.population;
     if (graph.data.length < 2) return;
 
-    // Background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(x, y, w, h);
-
-    // Border
-    ctx.strokeStyle = 'rgba(100, 100, 120, 0.5)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, w, h);
-
-    // Title
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.font = 'bold 10px monospace';
-    ctx.fillText('POPULATION', x + 5, y + 12);
+    this._drawPanel(ctx, x, y, w, h, 'Population');
 
     // Find max for scaling
     let maxPop = 1;
@@ -199,7 +219,7 @@ export class MiniGraphs {
 
     // Legend
     const latest = graph.data[graph.data.length - 1];
-    ctx.font = '9px monospace';
+    ctx.font = `9px ${GRAPH_PANEL_FONT}`;
     ctx.fillStyle = graph.colors.herb;
     ctx.fillText(`H:${latest.herb}`, x + 5, y + h - 5);
     ctx.fillStyle = graph.colors.pred;
@@ -211,17 +231,7 @@ export class MiniGraphs {
   _drawTraitsGraph(ctx, x, y, w, h) {
     const graph = this.graphs.traits;
 
-    // Background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(x, y, w, h);
-    ctx.strokeStyle = 'rgba(100, 100, 120, 0.5)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, w, h);
-
-    // Title
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.font = 'bold 10px monospace';
-    ctx.fillText('AVG TRAITS', x + 5, y + 12);
+    this._drawPanel(ctx, x, y, w, h, 'Avg traits');
 
     // Find max for scaling
     let maxSpeed = 0.1;
@@ -264,7 +274,7 @@ export class MiniGraphs {
 
     // Legend
     const latest = graph.data[graph.data.length - 1];
-    ctx.font = '9px monospace';
+    ctx.font = `9px ${GRAPH_PANEL_FONT}`;
     ctx.fillStyle = graph.colors.speed;
     ctx.fillText(`Spd:${latest.avgSpeed.toFixed(2)}`, x + 5, y + h - 5);
     ctx.fillStyle = graph.colors.metabolism;
@@ -274,17 +284,7 @@ export class MiniGraphs {
   _drawEnergyHistogram(ctx, x, y, w, h) {
     const graph = this.graphs.energy;
 
-    // Background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(x, y, w, h);
-    ctx.strokeStyle = 'rgba(100, 100, 120, 0.5)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, w, h);
-
-    // Title
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.font = 'bold 10px monospace';
-    ctx.fillText('ENERGY', x + 5, y + 12);
+    this._drawPanel(ctx, x, y, w, h, 'Energy');
 
     const maxCount = Math.max(...graph.histogram, 1);
     const barWidth = (w - 20) / 10;
@@ -307,8 +307,8 @@ export class MiniGraphs {
     }
 
     // Axis labels
-    ctx.font = '8px monospace';
-    ctx.fillStyle = 'rgba(200, 200, 200, 0.7)';
+    ctx.font = `8px ${GRAPH_PANEL_FONT}`;
+    ctx.fillStyle = 'rgba(167, 192, 172, 0.8)';
     ctx.fillText('0', x + 10, y + h - 3);
     ctx.fillText('50', x + w - 20, y + h - 3);
   }
@@ -316,17 +316,7 @@ export class MiniGraphs {
   _drawDiversityGraph(ctx, x, y, w, h) {
     const graph = this.graphs.diversity;
 
-    // Background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(x, y, w, h);
-    ctx.strokeStyle = 'rgba(100, 100, 120, 0.5)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, w, h);
-
-    // Title
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.font = 'bold 10px monospace';
-    ctx.fillText('DIVERSITY', x + 5, y + 12);
+    this._drawPanel(ctx, x, y, w, h, 'Diversity');
 
     const maxCount = Math.max(...graph.data.map(d => d.count), 1);
     const chartX = x + 5;
@@ -338,7 +328,7 @@ export class MiniGraphs {
 
     // Current value
     const latest = graph.data[graph.data.length - 1];
-    ctx.font = '9px monospace';
+    ctx.font = `9px ${GRAPH_PANEL_FONT}`;
     ctx.fillStyle = graph.color;
     ctx.fillText(`Species: ${latest.count}`, x + 5, y + h - 5);
   }

@@ -51,6 +51,6 @@ export function applyUiExportMethods(UIController) {
       new Blob([analytics.exportGeneHistoryCSV()], { type: 'text/csv' }),
       `creature-sim-genes-${Date.now()}.csv`
     );
-    this.notifications?.show?.('🧬 Gene history CSV exported', 'success', 2000);
+    this.notifications?.show?.('Gene history CSV exported', 'success', 2000);
   };
 }
