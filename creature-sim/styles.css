@@ -8348,3 +8348,41 @@ input[type='range']:focus-visible {
 .objective-rail[data-level='strained'] .objective-bar-fill {
   background: var(--accent-warning);
 }
+
+/* Touch onboarding glyphs — same monoline vocabulary as the rest of the HUD,
+   tinted by the step's accent ring. */
+.touch-onboarding-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.onboarding-glyph {
+  width: 38px;
+  height: 38px;
+  color: var(--accent-primary);
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
+}
+.touch-onboarding-card.accent-border-cyan .onboarding-glyph {
+  color: #39d5ff;
+}
+.touch-onboarding-card.accent-border-purple .onboarding-glyph {
+  color: #b56cff;
+}
+.touch-onboarding-card.accent-border-amber .onboarding-glyph {
+  color: #fbbf24;
+}
+@media (max-width: 768px) {
+  .onboarding-glyph {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* Help overlay title glyph */
+.shortcuts-glyph {
+  width: 18px;
+  height: 18px;
+  vertical-align: -3px;
+  margin-right: 6px;
+  color: var(--accent-primary);
+}

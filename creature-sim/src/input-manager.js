@@ -227,11 +227,11 @@ export class InputManager {
       const slot = parseInt(digit[0], 10);
       if (e.shiftKey) {
         this.cameraBookmarks.save(slot);
-        eventSystem.emit('ui:toast', { message: `📍 Bookmark ${slot} saved`, duration: 1200 });
+        eventSystem.emit('ui:toast', { message: `Bookmark ${slot} saved`, duration: 1200 });
       } else {
         const loaded = this.cameraBookmarks.load(slot);
         if (loaded) {
-          eventSystem.emit('ui:toast', { message: `📍 Bookmark ${slot}`, duration: 1200 });
+          eventSystem.emit('ui:toast', { message: `Bookmark ${slot}`, duration: 1200 });
         }
       }
       e.preventDefault();
@@ -257,6 +257,42 @@ export class InputManager {
         gameState.toggleInspector();
         gameState.setInspectorAutoOpen(gameState.inspectorVisible);
         this.updateInspectorVisibility();
+        break;
+
+      case 'arrowup':
+      case 'arrowdown':
+      case 'arrowleft':
+      case 'arrowright':
+        // Keyboard panning: a viewport-fraction step per keypress (OS
+        // auto-repeat makes holding the key glide). Never fires while a form
+        // control owns focus.
+        if (e.target?.closest?.('input, textarea, select, [contenteditable="true"]')) break;
+        if (!this.camera) break;
+        e.preventDefault();
+        this.noteCameraOverride();
+        {
+          const viewportStep = Math.round(
+            Math.min(this.camera.viewportWidth || 1, this.camera.viewportHeight || 1) * 0.08
+          );
+          const dx =
+            e.key.toLowerCase() === 'arrowright'
+              ? viewportStep
+              : e.key.toLowerCase() === 'arrowleft'
+                ? -viewportStep
+                : 0;
+          const dy =
+            e.key.toLowerCase() === 'arrowdown' ? viewportStep : e.key.toLowerCase() === 'arrowup' ? -viewportStep : 0;
+          this.camera.pan(dx, dy);
+        }
+        break;
+
+      case 'r':
+        // Re-center the camera over the world at the current zoom.
+        if (e.ctrlKey || e.metaKey || e.altKey) break;
+        if (!this.world || !this.camera) break;
+        e.preventDefault();
+        this.noteCameraOverride();
+        this.camera.focusOn(this.world.width / 2, this.world.height / 2);
         break;
 
       case 'f':

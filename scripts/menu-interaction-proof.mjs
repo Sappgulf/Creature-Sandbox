@@ -288,7 +288,61 @@ try {
       true,
       'keyboard shortcuts should move focus into the dialog'
     );
+    const helpRows = await page.evaluate(() => document.querySelectorAll('#shortcuts-overlay .shortcut-row').length);
+    assert.ok(helpRows >= 24, `help overlay should document the full control set, got ${helpRows} rows`);
     await page.keyboard.press('Escape');
+  });
+
+  await step('arrow keys pan the camera and R re-centers', async () => {
+    const readCam = () =>
+      page.evaluate(() => {
+        const t = JSON.parse(window.render_game_to_text());
+        return { x: t.camera.x, y: t.camera.y, zoom: t.camera.zoom };
+      });
+    const before = await readCam();
+    await page.keyboard.press('ArrowLeft');
+    await page.waitForTimeout(500);
+    const afterLeft = await readCam();
+    assert.ok(
+      Math.abs(afterLeft.x - before.x) > 1,
+      `ArrowLeft should pan the camera (x ${before.x} -> ${afterLeft.x})`
+    );
+    await page.keyboard.press('r');
+    // The camera eases to its target; give it time to settle.
+    await page.waitForTimeout(1100);
+    const recentered = await readCam();
+    assert.ok(
+      Math.abs(recentered.x - 2000) < 8 && Math.abs(recentered.y - 1400) < 8,
+      `R should re-center the camera over the 4000x2800 world (${recentered.x}, ${recentered.y})`
+    );
+  });
+
+  await step('vertical wheel zooms and sideways scroll pans', async () => {
+    const readCam = () =>
+      page.evaluate(() => {
+        const t = JSON.parse(window.render_game_to_text());
+        return { x: t.camera.x, y: t.camera.y, zoom: t.camera.zoom };
+      });
+    const box = await page.locator('#view').boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    const beforeZoom = await readCam();
+    await page.mouse.wheel(0, 240);
+    // Let the eased zoom settle so the pan assertion measures pan alone.
+    await page.waitForTimeout(1100);
+    const afterZoom = await readCam();
+    assert.ok(
+      Math.abs(afterZoom.zoom - beforeZoom.zoom) > 0.01,
+      `vertical wheel should zoom (${beforeZoom.zoom} -> ${afterZoom.zoom})`
+    );
+    const beforePan = await readCam();
+    await page.mouse.wheel(160, 0);
+    await page.waitForTimeout(600);
+    const afterPan = await readCam();
+    assert.ok(
+      Math.abs(afterPan.x - beforePan.x) > 1 && Math.abs(afterPan.zoom - beforePan.zoom) < 0.01,
+      `sideways scroll should pan without zooming (x ${beforePan.x} -> ${afterPan.x}, zoom ${beforePan.zoom} -> ${afterPan.zoom})`
+    );
+    await page.keyboard.press('r');
   });
 
   await step('no page errors during interaction proof', async () => {

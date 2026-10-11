@@ -12,26 +12,28 @@
  *   - `touchOnboarding.reset()` - clear the flag (used by Replay Tutorial)
  */
 
+import { renderIcon } from './icon-glyphs.js';
+
 const STORAGE_KEY = 'creature-touch-onboarding-done';
 
 const STEPS = [
   {
-    icon: '👆',
+    icon: 'i-recenter',
     accent: 'cyan',
     title: 'Pan & Zoom',
     text: 'Drag to pan. Pinch to zoom.'
   },
   {
-    icon: '🔍',
+    icon: 'i-search',
     accent: 'purple',
     title: 'Inspect & Move',
     text: 'Tap a creature to see its genes. Press and drag to carry it, then flick to launch.'
   },
   {
-    icon: '✨',
+    icon: 'i-godmode',
     accent: 'amber',
     title: 'Spawn & Tools',
-    text: 'Tap the 🦌 button to spawn. Long-press the world to enter God Mode.'
+    text: 'Tap the Spawn button to add creatures. Long-press the world to enter God Mode.'
   }
 ];
 
@@ -250,7 +252,7 @@ class TouchOnboarding {
 
     if (this.titleEl) this.titleEl.textContent = step.title;
     if (this.textEl) this.textEl.textContent = step.text;
-    if (this.iconEl) this.iconEl.textContent = step.icon;
+    if (this.iconEl) this.iconEl.innerHTML = renderIcon(step.icon, { className: 'onboarding-glyph' });
     if (this.stepEl) {
       this.stepEl.textContent = `Step ${this.currentStep + 1} of ${STEPS.length}`;
     }

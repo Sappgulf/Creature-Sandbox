@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-10-10 — web-mobile-input-round — Planned
+
+- **Date:** 2026-10-10
+- **Scope:** input | ui | docs
+- **Type:** Planned
+- **Issues:** Web-and-mobile input round. (1) Keyboard players could zoom (wheel) and drag-pan but had no keys to pan the camera; the help overlay documented neither the camera controls nor the shortcuts accurately, and still led with a ⌨️ emoji title. (2) Trackpads scrolling sideways did nothing — only vertical scroll mapped to zoom-at-cursor. (3) The mobile touch onboarding still used emoji icons (👆/🔍/✨) and referenced the 🦌 button in its copy while the rest of the UI moved to the monoline glyph set. (4) Bookmark toasts led with 📍.
+- **Root Causes:** `handleRegularKey` had no arrow handling; `onWheel` ignored `deltaX`; the onboarding steps carried emoji icons rendered with `textContent`; the help overlay predates the camera verbs.
+- **Fixes:** Arrow keys pan the camera (8% viewport step, OS auto-repeat glides, form-focus safe, auto-director override respected); `R` re-centers over the world at the current zoom. Sideways-dominant wheel deltas (trackpad two-finger horizontal) pan instead of zooming, vertical scroll keeps zoom-at-cursor. Help overlay gains a Camera section (wheel zoom, sideways-scroll pan, arrows, R, drag/middle-drag/pinch) and a glyph title. Touch onboarding converts to `i-recenter`/`i-search`/`i-godmode` glyphs via the shared renderer with accent-tinted color; copy drops the 🦌 reference. Bookmark toasts de-emoji'd.
+- **Verification:** Pending smoke gate.
+
+### 2026-10-10 — web-mobile-input-round — Implemented
+
+- **Date:** 2026-10-10
+- **Scope:** input | ui | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npm run lint` clean; `npm test` green; `npm run build` + `npm run check:bundle` pass. `npm run smoke:browser` (worker default) and `npm run smoke:main` (fallback) green; `npm run smoke:menus` 38/38 including two new permanent steps: "arrow keys pan the camera and R re-centers" (ArrowLeft moves x, R returns to 2000±8, 1400±8) and "vertical wheel zooms and sideways scroll pans" (wheel zooms ≥0.01, sideways pan moves x >1 with zoom drift <0.01), plus a help-overlay row-count check (≥24). `npm run smoke:scenarios` green. Mobile probe (390×844, iPhone UA, fresh context): touch onboarding shows Step 1/3 with an `.onboarding-glyph` SVG, help overlay renders 38 rows fully inside the viewport, zero page/console errors. `node scripts/playtest-upgrade.mjs`: no findings, no page errors, no console errors on desktop and mobile.
+
 ### 2026-10-10 — glyph-sweep-rail-goaltypes — Planned
 
 - **Date:** 2026-10-10

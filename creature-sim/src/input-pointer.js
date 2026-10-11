@@ -288,6 +288,14 @@ export function applyInputPointerMethods(InputManager) {
     const rect = this.canvas.getBoundingClientRect();
     const sx = e.clientX - rect.left - rect.width / 2;
     const sy = e.clientY - rect.top - rect.height / 2;
+
+    // Two-finger horizontal swipes (and trackpads scrolling sideways) pan
+    // instead of zooming — vertical scroll remains zoom-at-cursor.
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 4) {
+      this.camera.pan(e.deltaX, e.deltaY);
+      return;
+    }
+
     const normalizedDelta = clamp(e.deltaY, -120, 120) * 0.0012;
     if (typeof this.camera.zoomByAt === 'function') {
       this.camera.zoomByAt(normalizedDelta, sx, sy);
