@@ -105,6 +105,27 @@ const GOAL_POOL = [
     icon: '🐠',
     makeTarget: () => 6 + Math.floor(Math.random() * 6),
     getDescription: target => `Keep ${target} aquatic creatures alive at once`
+  },
+  {
+    id: 'flying_flock',
+    type: 'flying_alive',
+    icon: 'i-flying',
+    makeTarget: () => 4 + Math.floor(Math.random() * 6),
+    getDescription: target => `Keep ${target} flying creatures aloft at once`
+  },
+  {
+    id: 'burrow_brigade',
+    type: 'burrowing_alive',
+    icon: 'i-burrowing',
+    makeTarget: () => 4 + Math.floor(Math.random() * 5),
+    getDescription: target => `Keep ${target} burrowing creatures dug in at once`
+  },
+  {
+    id: 'sanctuary_keeper',
+    type: 'rest_zones',
+    icon: 'i-calm',
+    makeTarget: () => 2 + Math.floor(Math.random() * 3),
+    getDescription: target => `Maintain ${target} calm zones at once`
   }
 ];
 
@@ -128,6 +149,9 @@ const STARTER_GOAL_TYPES = new Set([
 const SNAPSHOT_GOAL_METRIC = {
   population: 'population',
   aquatic_alive: 'aquaticAlive',
+  flying_alive: 'flyingAlive',
+  burrowing_alive: 'burrowingAlive',
+  rest_zones: 'restZones',
   predator_count: 'predators',
   food_available: 'foodAvailable',
   variant_alive: 'variantsAlive',

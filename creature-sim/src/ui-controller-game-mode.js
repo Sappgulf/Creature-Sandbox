@@ -1,5 +1,6 @@
 import { domCache } from './dom-cache.js';
 import { escapeHtml } from './safe-html.js';
+import { renderIcon } from './icon-glyphs.js';
 
 export function applyUiGameModeMethods(UIController) {
   UIController.prototype.bindGameplayModeControls = function () {
@@ -97,7 +98,7 @@ export function applyUiGameModeMethods(UIController) {
         return `
         <div class="goal-row ${complete ? 'complete' : ''}">
           <div class="goal-row-header">
-            <span class="goal-icon">${escapeHtml(goal.icon || '🎯')}</span>
+            <span class="goal-icon">${renderIcon(goal.icon)}</span>
             <div class="goal-text">
               <div class="goal-desc">${escapeHtml(goal.description)}</div>
               <div class="goal-meta">${complete ? 'Complete' : `${percent}%`}</div>
@@ -161,7 +162,7 @@ export function applyUiGameModeMethods(UIController) {
                aria-label="${escapeHtml(label)}"
                data-level-id="${escapeHtml(level.id)}">
             <div class="campaign-level-header">
-              <span class="campaign-level-icon">${escapeHtml(level.icon)}</span>
+              <span class="campaign-level-icon">${renderIcon(level.icon)}</span>
               <div class="campaign-level-title">
                 <h3 class="campaign-level-name">${escapeHtml(level.name)}</h3>
                 <p class="campaign-level-subtitle">${escapeHtml(level.subtitle)}</p>
@@ -171,7 +172,12 @@ export function applyUiGameModeMethods(UIController) {
             <div class="campaign-level-footer">
               <span class="campaign-difficulty ${level.difficulty}">${level.difficulty}</span>
               <span class="campaign-stars">
-                ${[1, 2, 3].map(i => `<span class="${i <= stars ? 'earned' : ''}">⭐</span>`).join('')}
+                ${[1, 2, 3]
+                  .map(
+                    i =>
+                      `<svg class="campaign-star ${i <= stars ? 'earned' : ''}" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-star"/></svg>`
+                  )
+                  .join('')}
               </span>
             </div>
           </${tagName}>
@@ -214,7 +220,7 @@ export function applyUiGameModeMethods(UIController) {
       const progress = document.getElementById('campaign-progress');
       progress?.classList.remove('hidden');
       progress?.setAttribute('aria-hidden', 'false');
-      this.notifications?.show?.(`${level.icon || '🏆'} ${level.name} started`, 'success', 2200);
+      this.notifications?.show?.(`${level.name} started`, 'success', 2200);
     } catch (error) {
       console.error('Campaign level failed to start:', error);
       this.notifications?.show?.('Campaign level failed to start', 'error', 2600);

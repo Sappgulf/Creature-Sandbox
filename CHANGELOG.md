@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-10-10 — glyph-sweep-rail-goaltypes — Planned
+
+- **Date:** 2026-10-10
+- **Scope:** ui | gameplay
+- **Type:** Planned
+- **Issues:** Second presentation sweep after fresh probes. (1) The god-mode panel's ten tool buttons, the god-mode indicator, the features-panel labels, the battery indicator, campaign level cards (level emoji + ⭐ stars), the achievements list, session-goal cards, moments rows, the Scenario Director card, the objective-rail icon/mode chip, and the Field Journal's recipe/follow/discovery/history icons still carried platform-dependent emoji. (2) The objective rail showed progress as a bare "%" pill with no at-a-glance fill. (3) The session-goal pool lacked the other two movement variants (flying, burrowing) and had no calm-zone goal even though restZones is already measured.
+- **Root Causes:** Emoji were stored in data (`icon:` fields) and copied straight into DOM slots; the rail had no progress-bar node; the goal pool predates the flying/burrowing metrics.
+- **Fixes:** New shared `icon-glyphs.js` (`renderIcon`/`resolveSymbol`, emoji→symbol map + direct `i-*` ids) plus 12 new monoline symbols (`i-timer`, `i-egg`, `i-star`, `i-crown`, `i-snow`, `i-calm`, `i-chaos`, `i-bless`, `i-curse`, `i-attract`, `i-repel`, `i-fossil`); all the listed slots resolve through it, so saves restored from older builds keep rendering. God-mode indicator restyled to the field-journal glass chip. Objective rail gets an absolutely-positioned 2px progress fill (zero added height — respects the 58px desktop / 76px mobile compactness gate) tinted by story level. Three new goal types — `flying_flock` (flying_alive), `burrow_brigade` (burrowing_alive), `sanctuary_keeper` (rest_zones) — with objective-progress cases, snapshot-raise wiring, and action hints.
+- **Verification:** Pending smoke gate.
+
+### 2026-10-10 — glyph-sweep-rail-goaltypes — Implemented
+
+- **Date:** 2026-10-10
+- **Scope:** ui | gameplay
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npm run lint` clean; `npm test` green (194 + 75 regression checks, reboot-experience, presentation, scenario-contract, E2E, save-migration). `npm run build` + `npm run check:bundle` pass. `npm run smoke:browser` (worker default) and `npm run smoke:main` (fallback) green — including the objective-rail compactness assertion (51px desktop measured with the new fill). `npm run smoke:menus` 36/36. `npm run smoke:scenarios` green (2× stress_sanctuary + scavenger_bridge). Play probes: god panel 10/10 glyphs and no emoji left in panel text; campaign panel 7 level glyphs + 21 drawn stars; achievements 13 glyph icons; session goals 3 glyph icons; objective rail shows live 4% fill during Herd Rescue; zero page/console errors. Pool check: 200 fresh rolls surface all three new goal types; `getObjectiveProgress` returns 0.5/0.4/0.67 for 3/6 flying, 2/5 burrowing, 2/3 rest zones with legacy aquatic unaffected.
+
 ### 2026-10-10 — field-journal-glyph-upgrade — Planned
 
 - **Date:** 2026-10-10

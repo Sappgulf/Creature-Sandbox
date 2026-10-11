@@ -1,5 +1,6 @@
 import { gameState } from './game-state.js';
 import { isReducedMotion } from './accessibility-prefs.js';
+import { renderIcon } from './icon-glyphs.js';
 import {
   DISCOVERY_MILESTONES,
   FOLLOW_TARGET_MODES,
@@ -601,7 +602,7 @@ export class UpgradeController {
       .map(
         card => `
       <button class="upgrade-card action-card" data-upgrade-action="quick-action" data-value="${escapeHtml(card.id)}">
-        <span>${escapeHtml(card.icon)}</span><strong>${escapeHtml(card.label)}</strong><em>${escapeHtml(card.detail)}</em>
+        <span class="upgrade-card-icon">${renderIcon(card.icon)}</span><strong>${escapeHtml(card.label)}</strong><em>${escapeHtml(card.detail)}</em>
       </button>
     `
       )
@@ -681,6 +682,7 @@ export class UpgradeController {
           <span class="objective-phase"></span>
           <strong></strong>
           <em></em>
+          <span class="objective-bar" aria-hidden="true"><span class="objective-bar-fill"></span></span>
         </span>
         <span class="objective-status">
           <span class="objective-mode" hidden></span>
@@ -704,17 +706,19 @@ export class UpgradeController {
     const phaseEl = rail.querySelector('.objective-phase');
     const titleEl = rail.querySelector('.objective-copy strong');
     const actionEl = rail.querySelector('.objective-copy em');
+    const barFillEl = rail.querySelector('.objective-bar-fill');
     const modeEl = rail.querySelector('.objective-mode');
     const progressEl = rail.querySelector('.objective-progress');
     const worldEl = rail.querySelector('.objective-world');
 
-    if (iconEl) iconEl.textContent = objective.icon || '🎯';
+    if (iconEl) iconEl.innerHTML = renderIcon(objective.icon, { className: 'objective-glyph' });
     if (phaseEl) phaseEl.textContent = `${phaseKicker} · ${phaseLabel}`;
     if (titleEl) titleEl.textContent = objective.title || 'Watch the ecosystem';
     if (actionEl) actionEl.textContent = objective.action || 'Take the next visible action.';
+    if (barFillEl) barFillEl.style.width = `${Math.round(objective.progress || 0)}%`;
     if (modeEl) {
       modeEl.hidden = !modeChip;
-      modeEl.textContent = modeChip ? `${modeChip.icon} ${modeChip.label}` : '';
+      modeEl.innerHTML = modeChip ? `${renderIcon(modeChip.icon)} ${escapeHtml(modeChip.label)}` : '';
     }
     if (progressEl) progressEl.textContent = `${Math.round(objective.progress)}%`;
     if (worldEl) {
@@ -803,14 +807,14 @@ export class UpgradeController {
     const recipeMarkup = SANDBOX_RECIPES.map(
       recipe => `
       <button class="upgrade-card" data-upgrade-action="recipe" data-value="${escapeHtml(recipe.id)}">
-        <span>${escapeHtml(recipe.icon)}</span><strong>${escapeHtml(recipe.label)}</strong><em>${escapeHtml(recipe.description)}</em>
+        <span class="upgrade-card-icon">${renderIcon(recipe.icon)}</span><strong>${escapeHtml(recipe.label)}</strong><em>${escapeHtml(recipe.description)}</em>
         <small>${Number(recipe.setup?.herbivore || 0) + Number(recipe.setup?.omnivore || 0) + Number(recipe.setup?.predator || 0) + Number(recipe.setup?.aquatic || 0) + Number(recipe.setup?.flying || 0) + Number(recipe.setup?.burrowing || 0)} creatures · ${Number(recipe.setup?.food || 0)} food</small>
       </button>
     `
     ).join('');
     const followMarkup = FOLLOW_TARGET_MODES.map(
       mode => `
-      <button class="chip" data-upgrade-action="follow" data-value="${escapeHtml(mode.id)}">${escapeHtml(mode.icon)} ${escapeHtml(mode.label)}</button>
+      <button class="chip" data-upgrade-action="follow" data-value="${escapeHtml(mode.id)}">${renderIcon(mode.icon)} ${escapeHtml(mode.label)}</button>
     `
     ).join('');
     const modeMarkup = READABILITY_MODES.map(
@@ -823,7 +827,7 @@ export class UpgradeController {
           .slice(0, 6)
           .map(
             item =>
-              `<li>${escapeHtml(item.icon)} <strong>${escapeHtml(item.label)}</strong><span>${Math.round(item.worldTime || 0)}s</span></li>`
+              `<li>${renderIcon(item.icon)} <strong>${escapeHtml(item.label)}</strong><span>${Math.round(item.worldTime || 0)}s</span></li>`
           )
           .join('')
       : '<li class="muted">Discoveries will appear as the ecosystem develops.</li>';
@@ -843,7 +847,7 @@ export class UpgradeController {
             item => `
         <li class="scenario-history-item">
           <span class="scenario-history-main">
-            <strong>${escapeHtml(item.icon || '🎯')} ${escapeHtml(item.scenarioName || 'Scenario')}</strong>
+            <strong>${renderIcon(item.icon, { className: 'scenario-history-glyph' })} ${escapeHtml(item.scenarioName || 'Scenario')}</strong>
             <em>${escapeHtml(item.medal || 'Run')} · ${Number(item.score || 0)} · ${Math.round(Number(item.seconds || 0) / 60)}m</em>
           </span>
           <span class="scenario-history-meta">

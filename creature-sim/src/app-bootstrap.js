@@ -7,6 +7,7 @@ import { Renderer, ParticleSystem, HeatmapSystem, MiniGraphs } from './render/in
 import { SimulationProxy } from './simulation-proxy.js';
 import SimulationWorker from './worker-simulation.js?worker';
 import './creature-features.js'; // Load feature extensions
+import { renderIcon } from './icon-glyphs.js';
 import { Camera } from './camera.js';
 import { AnalyticsTracker } from './analytics.js';
 import { LineageTracker } from './lineage-tracker.js';
@@ -1414,7 +1415,7 @@ export async function initializeApp() {
                aria-label="${label.replace(/"/g, '&quot;')}"
                data-level-id="${level.id}">
             <div class="campaign-level-header">
-              <span class="campaign-level-icon">${level.icon}</span>
+              <span class="campaign-level-icon">${renderIcon(level.icon)}</span>
               <div class="campaign-level-title">
                 <h3 class="campaign-level-name">${level.name}</h3>
                 <p class="campaign-level-subtitle">${level.subtitle}</p>
@@ -1424,7 +1425,12 @@ export async function initializeApp() {
             <div class="campaign-level-footer">
               <span class="campaign-difficulty ${level.difficulty}">${level.difficulty}</span>
               <span class="campaign-stars">
-                ${[1, 2, 3].map(i => `<span class="${i <= stars ? 'earned' : ''}">⭐</span>`).join('')}
+                ${[1, 2, 3]
+                  .map(
+                    i =>
+                      `<svg class="campaign-star ${i <= stars ? 'earned' : ''}" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-star"/></svg>`
+                  )
+                  .join('')}
               </span>
             </div>
           </div>
@@ -1500,7 +1506,7 @@ export async function initializeApp() {
       const objective = document.getElementById('campaign-objective');
       const progressFill = document.getElementById('campaign-progress-fill');
 
-      if (levelName) levelName.textContent = `${status.level.icon} ${status.level.name}`;
+      if (levelName) levelName.textContent = `${status.level.name}`;
 
       // Update timer
       if (timer) {

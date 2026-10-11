@@ -920,9 +920,9 @@ input[type='range']:focus-visible {
   right: var(--space-lg);
   padding: 6px 12px;
   border-radius: var(--radius-pill);
-  background: rgba(20, 20, 36, 0.75);
-  border: 1px solid rgba(168, 85, 247, 0.35);
-  color: #f8fafc;
+  background: var(--glass-bg-chip);
+  border: 1px solid var(--glass-border-hover);
+  color: var(--text-primary);
   font-size: 12px;
   letter-spacing: 0.3px;
   z-index: var(--z-sheet-raised);
@@ -1012,6 +1012,30 @@ body.god-mode #moments-panel {
     border-color var(--transition-fast),
     box-shadow var(--transition-fast),
     transform var(--transition-fast);
+}
+.god-tool-glyph {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  color: var(--accent-secondary);
+}
+.god-indicator-glyph {
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+  margin-right: 4px;
+}
+.feature-glyph {
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+  margin-right: 5px;
+  color: var(--accent-primary);
+}
+.battery-icon svg {
+  width: 14px;
+  height: 14px;
+  color: var(--accent-primary);
 }
 .god-kbd {
   position: absolute;
@@ -8213,4 +8237,114 @@ input[type='range']:focus-visible {
 }
 .spawn-card-burrowing {
   background-image: url('./assets/sprites/ui/spawn_burrowing.svg');
+}
+
+/* ============================================================================
+   Runtime icon slots — the emoji these slots used to carry render differently
+   per platform; every runtime-rendered icon now resolves to the shared
+   monoline symbol sprite via icon-glyphs.js. Sizing lives here per slot so
+   the glyph keeps the box the emoji had.
+   ============================================================================ */
+.ui-glyph {
+  width: 16px;
+  height: 16px;
+  color: var(--accent-primary);
+}
+.objective-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.objective-glyph {
+  width: 16px;
+  height: 16px;
+  color: var(--accent-primary);
+}
+.goal-icon svg {
+  width: 18px;
+  height: 18px;
+  color: var(--accent-primary);
+}
+.achievement-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.achievement-glyph {
+  width: 20px;
+  height: 20px;
+  color: var(--accent-secondary);
+}
+.campaign-level-icon svg {
+  width: 26px;
+  height: 26px;
+  color: var(--accent-primary);
+}
+.campaign-star {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+}
+.campaign-star.earned {
+  color: var(--accent-gold);
+}
+.moment-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.moment-glyph {
+  width: 16px;
+  height: 16px;
+  color: var(--accent-secondary);
+}
+.objective-mark svg {
+  width: 14px;
+  height: 14px;
+  color: var(--accent-primary);
+}
+.director-state-glyph {
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+  color: var(--accent-primary);
+}
+.scenario-history-glyph {
+  width: 13px;
+  height: 13px;
+  vertical-align: -2px;
+  color: var(--accent-primary);
+}
+.upgrade-card-icon svg {
+  width: 16px;
+  height: 16px;
+  color: var(--accent-primary);
+}
+
+/* Objective rail progress bar: a thin instrument line inside the rail's
+   existing bottom padding. Absolutely positioned so it adds zero layout
+   height — the rail sits against a 58px desktop / 76px mobile compactness
+   budget in the browser smoke. */
+.objective-bar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 3px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.objective-bar-fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  transition: width var(--transition-normal);
+}
+.objective-rail[data-level='critical'] .objective-bar-fill {
+  background: var(--accent-danger);
+}
+.objective-rail[data-level='strained'] .objective-bar-fill {
+  background: var(--accent-warning);
 }

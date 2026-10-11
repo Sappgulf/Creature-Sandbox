@@ -1,5 +1,6 @@
 import { domCache } from './dom-cache.js';
 import { escapeHtml } from './safe-html.js';
+import { renderIcon } from './icon-glyphs.js';
 
 export function applyUiAchievementsMethods(UIController) {
   UIController.prototype.onAchievementsToggle = function () {
@@ -103,7 +104,7 @@ export function applyUiAchievementsMethods(UIController) {
         const isSecretLocked = item.secret && !item.unlocked;
         const name = isSecretLocked ? '???' : item.name;
         const desc = isSecretLocked ? 'Hidden achievement' : item.description || '';
-        const icon = isSecretLocked ? '❓' : item.icon || '🏅';
+        const icon = renderIcon(isSecretLocked ? '❓' : item.icon || '🏅', { className: 'achievement-glyph' });
         const goal = item.progress.goal;
         const current = item.progress.current;
         const percent = item.progress.percent || 0;

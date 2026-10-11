@@ -1,6 +1,7 @@
 import { domCache } from './dom-cache.js';
 import { gameState } from './game-state.js';
 import { eventSystem, GameEvents } from './event-system.js';
+import { renderIcon } from './icon-glyphs.js';
 
 function formatTime(seconds = 0) {
   const safe = Math.max(0, Math.floor(seconds));
@@ -72,7 +73,7 @@ export function applyUiPlayableMethods(UIController) {
         const suffix = progress.completions
           ? ` (${progress.completions} clear${progress.completions === 1 ? '' : 's'})`
           : '';
-        return `<option value="${scenario.id}">${scenario.icon} ${escapeHtml(scenario.name)}${suffix}</option>`;
+        return `<option value="${scenario.id}">${escapeHtml(scenario.name)}${suffix}</option>`;
       })
       .join('');
     if (current) select.value = current;
@@ -122,7 +123,7 @@ export function applyUiPlayableMethods(UIController) {
     }
 
     const stateLabel = data.active
-      ? `${scenario.icon || '🎯'} ${escapeHtml(scenario.name)} · ${formatTime(data.elapsed)} / ${formatTime(data.targetSeconds)}`
+      ? `${renderIcon(scenario.icon, { className: 'director-state-glyph' })} ${escapeHtml(scenario.name)} · ${formatTime(data.elapsed)} / ${formatTime(data.targetSeconds)}`
       : 'Pick a scenario to start a real run';
 
     const steps =
@@ -155,7 +156,7 @@ export function applyUiPlayableMethods(UIController) {
             .map(
               card => `
             <div class="director-objective-card ${escapeHtml(card.level || 'active')}">
-              <span class="objective-mark">${escapeHtml(card.icon || '🎯')}</span>
+              <span class="objective-mark">${renderIcon(card.icon)}</span>
               <span class="objective-text">
                 <strong>${escapeHtml(card.description || card.label)}</strong>
                 <em>${escapeHtml(card.value || `${Math.round((card.progress || 0) * 100)}%`)}</em>

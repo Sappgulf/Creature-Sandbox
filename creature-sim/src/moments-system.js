@@ -3,6 +3,7 @@ import { gameState } from './game-state.js';
 import { clamp } from './utils.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
 import { escapeHtml } from './safe-html.js';
+import { renderIcon } from './icon-glyphs.js';
 
 export class MomentsSystem {
   constructor({ world, camera, notifications } = {}) {
@@ -139,7 +140,7 @@ export class MomentsSystem {
       .map(
         moment => `
       <button class="moment-row" data-moment-id="${escapeHtml(moment.id)}" type="button" aria-label="${escapeHtml(moment.text)}">
-        <span class="moment-icon">${escapeHtml(moment.icon || '✨')}</span>
+        <span class="moment-icon">${renderIcon(moment.icon, { className: 'moment-glyph' })}</span>
         <span class="moment-text">${escapeHtml(moment.text)}</span>
         <span class="moment-time">${this._formatTime(moment.worldTime)}</span>
       </button>

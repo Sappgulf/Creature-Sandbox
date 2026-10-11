@@ -161,6 +161,12 @@ export function getObjectiveProgress(type, target, metrics = {}) {
     case 'aquatic_alive':
     case 'aquatic_creatures':
       return metrics.aquaticAlive / safeTarget;
+    case 'flying_alive':
+      return metrics.flyingAlive / safeTarget;
+    case 'burrowing_alive':
+      return metrics.burrowingAlive / safeTarget;
+    case 'rest_zones':
+      return metrics.restZones / safeTarget;
     case 'food_available':
       return metrics.foodAvailable / safeTarget;
     case 'variant_alive':
