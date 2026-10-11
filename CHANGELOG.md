@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-10-10 — prop-tool-indicator-sweep — Planned
+
+- **Date:** 2026-10-10
+- **Scope:** ui | assets
+- **Type:** Planned
+- **Issues:** Fourth presentation round. (1) The sandbox-prop picker's eleven cards carried emoji icons (🟣🟢🌀🪜➡️⛰️🪭🫧🕳️🔘🚀) and a raw machine id as its description line. (2) The tool-indicator chip (bottom-center) and the god-tool registry still rendered emoji icons; gene-editor preset options led with 🦌/🐘/🐺/🐆/🦡/🦇. (3) Achievement toasts led with 🏆 and the insights feed with ✨/📉/📈 emoji.
+- **Root Causes:** Prop types stored emoji `icon:` values and no human hint; the tool indicator copied `meta.icon` straight into `textContent`; a few toast strings predate the de-emoji policy.
+- **Fixes:** Five new monoline symbols (`i-bounce`, `i-spring`, `i-seesaw`, `i-slope`, `i-sticky`) plus registry reuse (`spinner→i-chaos`, `conveyor→i-step`, `fan→i-repel`, `gravity→i-attract`, `button→i-food`, `launch→i-bolt`). `SANDBOX_PROP_TYPES` icons become symbol ids and each prop gains a one-line `hint` shown on its picker card. `GOD_TOOL_REGISTRY` icons become symbol ids; the tool indicator renders through `renderIcon`. Gene presets, achievement toasts, and insight-feed icons de-emoji'd (📉/📈 map to `i-chart`).
+- **Verification:** Pending smoke gate.
+
+### 2026-10-10 — prop-tool-indicator-sweep — Implemented
+
+- **Date:** 2026-10-10
+- **Scope:** ui | assets
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned.
+- **Verification:** `npm run lint` clean; `npm test` green; `npm run build` + `npm run check:bundle` pass; `npm run format:check` clean. `npm run smoke:browser` (worker default) and `npm run smoke:main` (fallback) green; `npm run smoke:menus` 38/38 (prop-picker card count contract intact); `npm run smoke:scenarios` green. Play probe: prop picker shows 11 glyph cards with hint copy ("Launches creatures skyward", …) and zero emoji; god panel 10/10 glyphs; food tool indicator renders a glyph chip; zero page/console errors. Insights feed mapping verified through the shared renderer (no items were present in a fresh probe window — insights accrue over 30 s).
+
 ### 2026-10-10 — web-mobile-input-round — Planned
 
 - **Date:** 2026-10-10

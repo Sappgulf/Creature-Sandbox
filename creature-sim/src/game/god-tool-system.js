@@ -8,7 +8,7 @@ import { gameState } from '../game-state.js';
 export const GOD_TOOL_REGISTRY = Object.freeze([
   {
     id: 'food',
-    icon: '🍃',
+    icon: 'i-food',
     label: 'Food',
     hint: '1 Food: green brush preview. Tap for a patch, drag for scattered bites.',
     tooltip: 'Place food sources',
@@ -21,7 +21,7 @@ export const GOD_TOOL_REGISTRY = Object.freeze([
   },
   {
     id: 'calm',
-    icon: '🌊',
+    icon: 'i-calm',
     label: 'Calm',
     hint: '2 Calm: blue radius preview. Paint rest zones around stressed groups.',
     tooltip: 'Create calm zones',
@@ -34,7 +34,7 @@ export const GOD_TOOL_REGISTRY = Object.freeze([
   },
   {
     id: 'chaos',
-    icon: '⚡',
+    icon: 'i-chaos',
     label: 'Chaos',
     hint: '3 Chaos: purple pulse preview. Tap once, then watch recovery.',
     tooltip: 'Add chaos events',
@@ -47,7 +47,7 @@ export const GOD_TOOL_REGISTRY = Object.freeze([
   },
   {
     id: 'spawn',
-    icon: '🧬',
+    icon: 'i-herbivore',
     label: 'Spawn',
     hint: '4 Spawn: small placement preview. Places the selected creature type.',
     tooltip: 'Spawn creatures',
@@ -60,7 +60,7 @@ export const GOD_TOOL_REGISTRY = Object.freeze([
   },
   {
     id: 'prop',
-    icon: '🧱',
+    icon: 'i-prop',
     label: 'Prop',
     hint: '5 Prop: violet placement preview. Uses the selected sandbox prop.',
     tooltip: 'Place sandbox props',
@@ -73,7 +73,7 @@ export const GOD_TOOL_REGISTRY = Object.freeze([
   },
   {
     id: 'remove',
-    icon: '🧹',
+    icon: 'i-erase',
     label: 'Remove',
     hint: '6 Remove: red eraser preview. Removes the nearest creature or prop.',
     tooltip: 'Remove creatures',
@@ -87,7 +87,7 @@ export const GOD_TOOL_REGISTRY = Object.freeze([
   },
   {
     id: 'bless',
-    icon: '✨',
+    icon: 'i-bless',
     label: 'Bless',
     hint: '7 Bless: heals and energizes creatures near the tap.',
     tooltip: 'Heal and energize creatures',
@@ -100,7 +100,7 @@ export const GOD_TOOL_REGISTRY = Object.freeze([
   },
   {
     id: 'curse',
-    icon: '💀',
+    icon: 'i-curse',
     label: 'Curse',
     hint: '8 Curse: weakens and drains energy from creatures near the tap.',
     tooltip: 'Weaken and drain creatures',
@@ -113,7 +113,7 @@ export const GOD_TOOL_REGISTRY = Object.freeze([
   },
   {
     id: 'attract',
-    icon: '🧲',
+    icon: 'i-attract',
     label: 'Attract',
     hint: '9 Attract: pulls nearby creatures toward the tap.',
     tooltip: 'Pull creatures toward a point',
@@ -126,7 +126,7 @@ export const GOD_TOOL_REGISTRY = Object.freeze([
   },
   {
     id: 'repel',
-    icon: '💨',
+    icon: 'i-repel',
     label: 'Repel',
     hint: '0 Repel: pushes nearby creatures away from the tap.',
     tooltip: 'Push creatures away from a point',
@@ -145,7 +145,7 @@ export const GOD_TOOL_REGISTRY = Object.freeze([
 // as the normalize/setTool exit path and unknown-id fallback.
 const INSPECT_TOOL = Object.freeze({
   id: 'inspect',
-  icon: '🔎',
+  icon: 'i-search',
   label: 'Inspect',
   mode: 'inspect',
   undoable: false,

@@ -10,6 +10,7 @@ import { SANDBOX_PROP_TYPES } from './sandbox-props.js';
 import { clamp } from './utils.js';
 import { BehaviorConfig, setBehaviorWeights } from './behavior.js';
 import { togglePerformanceMonitor } from './performance-profiler.js';
+import { renderIcon } from './icon-glyphs.js';
 
 import { applyUiExportMethods } from './ui-controller-exports.js';
 import { applyUiGameModeMethods } from './ui-controller-game-mode.js';
@@ -142,7 +143,7 @@ export class UIController {
     eventSystem.on(GameEvents.ACHIEVEMENT_UNLOCKED, data => {
       const notificationsEnabled = this.achievements?.notificationsEnabled !== false;
       if (this.hasNotifications() && notificationsEnabled) {
-        this.notifications.show(`🏆 ${data.name}`, 'achievement', 3000);
+        this.notifications.show(`${data.name}`, 'achievement', 3000);
       }
       if (this.audio) {
         this.audio.playSound('achievement');
@@ -747,11 +748,11 @@ export class UIController {
       ])
     );
     const toolMeta = {
-      inspect: { icon: '🔍', label: 'Observe', hint: '' },
-      food: fromRegistry.food || { icon: '🌿', label: 'Nudge food', hint: '[/] brush' },
-      spawn: fromRegistry.spawn || { icon: '🧬', label: 'Spawn', hint: '' },
-      erase: fromRegistry.erase || { icon: '🧹', label: 'Erase', hint: '[/] brush' },
-      prop: fromRegistry.prop || { icon: '🧱', label: 'Props', hint: '' }
+      inspect: { icon: 'i-search', label: 'Observe', hint: '' },
+      food: fromRegistry.food || { icon: 'i-food', label: 'Nudge food', hint: '[/] brush' },
+      spawn: fromRegistry.spawn || { icon: 'i-herbivore', label: 'Spawn', hint: '' },
+      erase: fromRegistry.erase || { icon: 'i-erase', label: 'Erase', hint: '[/] brush' },
+      prop: fromRegistry.prop || { icon: 'i-prop', label: 'Props', hint: '' }
     };
 
     // Update quick action button active states
@@ -788,7 +789,7 @@ export class UIController {
     const brushDecrease = indicator.querySelector('#tool-brush-decrease');
     const brushIncrease = indicator.querySelector('#tool-brush-increase');
 
-    if (iconEl) iconEl.textContent = meta.icon;
+    if (iconEl) iconEl.innerHTML = renderIcon(meta.icon, { className: 'tool-indicator-glyph' });
     if (nameEl) nameEl.textContent = meta.label;
 
     // Live brush size in hint for relevant tools

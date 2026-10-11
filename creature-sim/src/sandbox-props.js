@@ -5,7 +5,8 @@ export const SANDBOX_PROP_TYPES = {
   bounce: {
     id: 'bounce',
     label: 'Bounce Pad',
-    icon: '🟣',
+    icon: 'i-bounce',
+    hint: 'Launches creatures skyward',
     radius: 52,
     strength: 280,
     cooldown: 0.35,
@@ -14,7 +15,8 @@ export const SANDBOX_PROP_TYPES = {
   spring: {
     id: 'spring',
     label: 'Spring Pad',
-    icon: '🟢',
+    icon: 'i-spring',
+    hint: 'Strong vertical boost',
     radius: 58,
     strength: 360,
     cooldown: 0.4,
@@ -23,7 +25,8 @@ export const SANDBOX_PROP_TYPES = {
   spinner: {
     id: 'spinner',
     label: 'Spinner',
-    icon: '🌀',
+    icon: 'i-chaos',
+    hint: 'Flings creatures in a spiral',
     radius: 64,
     strength: 190,
     cooldown: 0.25,
@@ -32,7 +35,8 @@ export const SANDBOX_PROP_TYPES = {
   seesaw: {
     id: 'seesaw',
     label: 'See-Saw',
-    icon: '🪜',
+    icon: 'i-seesaw',
+    hint: 'Tips creatures off the ends',
     radius: 56,
     strength: 200,
     cooldown: 0.35,
@@ -41,7 +45,8 @@ export const SANDBOX_PROP_TYPES = {
   conveyor: {
     id: 'conveyor',
     label: 'Conveyor Belt',
-    icon: '➡️',
+    icon: 'i-step',
+    hint: 'Rides creatures along the belt',
     radius: 66,
     strength: 110,
     cooldown: 0,
@@ -51,7 +56,8 @@ export const SANDBOX_PROP_TYPES = {
   slope: {
     id: 'slope',
     label: 'Speed Slope',
-    icon: '⛰️',
+    icon: 'i-slope',
+    hint: 'Slides creatures downhill',
     radius: 60,
     strength: 150,
     cooldown: 0.2,
@@ -61,7 +67,8 @@ export const SANDBOX_PROP_TYPES = {
   fan: {
     id: 'fan',
     label: 'Wind Fan',
-    icon: '🪭',
+    icon: 'i-repel',
+    hint: 'Blows creatures away',
     radius: 90,
     strength: 120,
     cooldown: 0,
@@ -71,7 +78,8 @@ export const SANDBOX_PROP_TYPES = {
   sticky: {
     id: 'sticky',
     label: 'Sticky Zone',
-    icon: '🫧',
+    icon: 'i-sticky',
+    hint: 'Slows creatures down',
     radius: 70,
     strength: 0.18,
     cooldown: 0,
@@ -80,7 +88,8 @@ export const SANDBOX_PROP_TYPES = {
   gravity: {
     id: 'gravity',
     label: 'Gravity Well',
-    icon: '🕳️',
+    icon: 'i-attract',
+    hint: 'Pulls creatures inward',
     radius: 140,
     strength: 70,
     cooldown: 0,
@@ -89,7 +98,8 @@ export const SANDBOX_PROP_TYPES = {
   button: {
     id: 'button',
     label: 'Food Button',
-    icon: '🔘',
+    icon: 'i-food',
+    hint: 'Drops a meal when pressed',
     radius: 34,
     strength: 1,
     cooldown: 1.4,
@@ -98,7 +108,8 @@ export const SANDBOX_PROP_TYPES = {
   launch: {
     id: 'launch',
     label: 'Launch Button',
-    icon: '🚀',
+    icon: 'i-bolt',
+    hint: 'Catapults creatures far',
     radius: 36,
     strength: 360,
     cooldown: 0.8,

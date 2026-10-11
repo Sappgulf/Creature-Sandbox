@@ -4,6 +4,7 @@
  */
 
 import { escapeHtml } from './safe-html.js';
+import { renderIcon } from './icon-glyphs.js';
 
 const PANEL_ID = 'insights-panel';
 
@@ -71,7 +72,7 @@ export class InsightsPanelController {
       .map(
         item => `
         <div class="insight-item ${escapeHtml(item.type || '')}">
-          <span class="insight-icon" aria-hidden="true">${escapeHtml(item.icon || '✨')}</span>
+          <span class="insight-icon" aria-hidden="true">${renderIcon(item.icon, { className: 'insight-glyph' })}</span>
           <span class="insight-text">${escapeHtml(item.text || '')}</span>
           <span class="insight-time">${formatTime(item.worldTime)}</span>
         </div>`

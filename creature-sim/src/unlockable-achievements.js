@@ -301,7 +301,7 @@ export class UnlockableAchievements {
     // Trigger achievement notification
     if (world?.notificationSystem) {
       world.notificationSystem.show(
-        `🏆 ${achievement.name}`,
+        `${achievement.name}`,
         `${achievement.description}\n+${achievement.points} pts`,
         3000,
         'achievement'

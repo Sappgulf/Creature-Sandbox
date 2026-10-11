@@ -2,6 +2,7 @@ import { isPredatorFromGenes } from './creature-genetics-helpers.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { gameState } from './game-state.js';
 import { SANDBOX_PROP_TYPES } from './sandbox-props.js';
+import { renderIcon } from './icon-glyphs.js';
 import { CreatureAgentTuning } from './creature-agent-constants.js';
 
 export const ToolModes = Object.freeze({
@@ -195,7 +196,7 @@ export class ToolController {
       const icon = document.createElement('span');
       icon.className = 'spawn-card-icon';
       icon.setAttribute('aria-hidden', 'true');
-      icon.textContent = meta.icon;
+      icon.innerHTML = renderIcon(meta.icon, { className: 'prop-card-glyph' });
       const info = document.createElement('span');
       info.className = 'spawn-card-info';
       const name = document.createElement('span');
@@ -203,7 +204,7 @@ export class ToolController {
       name.textContent = meta.label;
       const desc = document.createElement('span');
       desc.className = 'spawn-card-desc';
-      desc.textContent = meta.id;
+      desc.textContent = meta.hint || meta.id;
       info.appendChild(name);
       info.appendChild(desc);
       const check = document.createElement('span');

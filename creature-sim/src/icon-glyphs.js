@@ -55,7 +55,9 @@ const EMOJI_TO_SYMBOL = {
   '🧲': 'i-attract',
   '💨': 'i-repel',
   '✨': 'i-godmode',
-  '❓': 'i-help'
+  '❓': 'i-help',
+  '📉': 'i-chart',
+  '📈': 'i-chart'
 };
 
 export function resolveSymbol(icon, fallback = 'i-discoveries') {

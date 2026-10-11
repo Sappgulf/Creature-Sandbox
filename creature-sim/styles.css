@@ -8386,3 +8386,24 @@ input[type='range']:focus-visible {
   margin-right: 6px;
   color: var(--accent-primary);
 }
+
+/* Tool indicator + prop picker + insight glyphs */
+.tool-indicator-glyph {
+  width: 15px;
+  height: 15px;
+  vertical-align: -2px;
+  color: var(--accent-primary);
+}
+.prop-card-glyph {
+  width: 18px;
+  height: 18px;
+  color: var(--accent-primary);
+}
+.spawn-card-icon .prop-card-glyph {
+  display: block;
+}
+.insight-glyph {
+  width: 16px;
+  height: 16px;
+  color: var(--accent-secondary);
+}
