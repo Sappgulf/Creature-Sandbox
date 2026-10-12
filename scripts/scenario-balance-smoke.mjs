@@ -416,7 +416,7 @@ await fs.mkdir(outDir, { recursive: true });
 const server = await startServerIfNeeded();
 let browser;
 try {
-  browser = await chromium.launch({ headless: true });
+  browser = await chromium.launch({ channel: 'chromium', headless: true });
   const results = [];
   for (let run = 1; run <= runCount; run++) {
     for (const scenario of scenarios) {

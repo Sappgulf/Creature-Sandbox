@@ -1,3 +1,4 @@
+import { installDrawImageProbe, summarizeFrameCpu } from './frame-profile.js';
 /**
  * Main Entry Point - Simplified initialization using modular architecture
  * This replaces the massive 2000+ line main.js with clean, focused modules
@@ -2509,57 +2510,6 @@ export async function initializeApp() {
 
   let frameSampleState = null;
 
-  const installDrawImageProbe = () => {
-    const proto = window.CanvasRenderingContext2D?.prototype;
-    if (!proto || typeof proto.drawImage !== 'function') return null;
-
-    const original = proto.drawImage;
-    const probe = {
-      count: 0,
-      timeMs: 0,
-      maxMs: 0,
-      byCanvas: {}
-    };
-
-    const getCanvasKey = context => {
-      const source = context?.canvas;
-      if (!source) return 'unknown';
-      if (source.id) return source.id;
-      if (source.className) return String(source.className);
-      return `${Number(source.width) || 0}x${Number(source.height) || 0}`;
-    };
-
-    const patchedDrawImage = function patchedDrawImage(...args) {
-      const started = performance.now();
-      try {
-        return original.apply(this, args);
-      } finally {
-        const elapsed = performance.now() - started;
-        const key = getCanvasKey(this);
-        const bucket = probe.byCanvas[key] || {
-          count: 0,
-          timeMs: 0,
-          maxMs: 0
-        };
-        probe.count += 1;
-        probe.timeMs += elapsed;
-        probe.maxMs = Math.max(probe.maxMs, elapsed);
-        bucket.count += 1;
-        bucket.timeMs += elapsed;
-        bucket.maxMs = Math.max(bucket.maxMs, elapsed);
-        probe.byCanvas[key] = bucket;
-      }
-    };
-
-    proto.drawImage = patchedDrawImage;
-    return {
-      probe,
-      restore: () => {
-        if (proto.drawImage === patchedDrawImage) proto.drawImage = original;
-      }
-    };
-  };
-
   const summarizeDrawImageProbe = (probe, frames) => {
     if (!probe) return null;
     const safeFrames = Math.max(1, Number(frames) || 0);
@@ -2578,6 +2528,7 @@ export async function initializeApp() {
       count: probe.count,
       perFrame: Number((probe.count / safeFrames).toFixed(2)),
       timeMs: Number(probe.timeMs.toFixed(3)),
+      rootTimeMs: Number(probe.rootTimeMs.toFixed(3)),
       avgMs: Number((probe.timeMs / Math.max(1, probe.count)).toFixed(4)),
       maxMs: Number(probe.maxMs.toFixed(3)),
       byCanvas
@@ -2627,19 +2578,11 @@ export async function initializeApp() {
   const summarizeMainThreadProfile = (sample, intervals, drawImageSummary, durationMs) => {
     const scopeRows = readProfilerScopeRows();
     const rootScope = scopeRows.find(row => row.name === 'game-loop') || null;
-    const profiledTotalMs = rootScope?.totalMs || 0;
-    const drawImageMs = Number(drawImageSummary?.timeMs || 0);
-    const frames = Math.max(1, intervals.length);
     const topScopes = scopeRows.filter(row => row.name !== 'game-loop').slice(0, 8);
-
     return {
       sampleMs: durationMs,
-      frames: intervals.length,
+      ...summarizeFrameCpu(rootScope, drawImageSummary, intervals.length),
       profilerWasEnabled: !!sample.previousProfilerEnabled,
-      rootScopeMs: Number(profiledTotalMs.toFixed(3)),
-      drawImageMs: Number(drawImageMs.toFixed(3)),
-      profiledNonDrawImageMs: Number(Math.max(0, profiledTotalMs - drawImageMs).toFixed(3)),
-      profiledNonDrawImagePerFrameMs: Number((Math.max(0, profiledTotalMs - drawImageMs) / frames).toFixed(4)),
       topScopes: topScopes.length > 0 ? topScopes : scopeRows.slice(0, 8)
     };
   };
@@ -2694,7 +2637,10 @@ export async function initializeApp() {
           drawImageProbe: null,
           unsubscribe: null
         };
-        frameSampleState.drawImageProbe = installDrawImageProbe();
+        frameSampleState.drawImageProbe = installDrawImageProbe({
+          prototype: window.CanvasRenderingContext2D?.prototype,
+          inGameLoop: () => performanceProfiler?.scopeStack?.[0]?.name === 'game-loop'
+        });
         try {
           if (typeof PerformanceObserver === 'function') {
             frameSampleState.longTaskObserver = new PerformanceObserver(list => {

@@ -26,6 +26,46 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-10-12 — local-performance-proof — Planned
+
+- **Date:** 2026-10-12
+- **Scope:** render | input | devops
+- **Type:** Planned
+- **Issues:** Required worker readiness missed frame/CPU limits while the smoke command still exited successfully; visibility cancellation could throw before drag cleanup.
+- **Root Causes:** Default Playwright headless-shell used software Canvas/compositing on this Mac; real scenery rendering repeated hundreds of static draws; the runner reported readiness without enforcing it; cancellation released inactive pointer ids.
+- **Fixes:** Use full Chromium's normal rendering path for performance lanes, enforce unchanged readiness limits with regression coverage, reuse stationary scenery/ground surfaces and per-frame sprite variants, preserve pointer-cancel cleanup, and retain the approved docs in a separate commit.
+- **Verification:** Paired empty/app browser probes and A/B/A draw tests distinguish software rasterization, host contention and actual render work. Run the full local gate on frozen final source; publication requires clean local worker readiness.
+
+### 2026-10-12 — local-performance-proof — Implemented
+
+- **Date:** 2026-10-12
+- **Scope:** render | input | devops
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned. Eight Swift compiler processes were briefly busy, but empty Canvas still held 16.7 ms while the app's software renderer missed budgets. Full Chromium reported Apple Metal acceleration; remaining CPU work was concentrated in the background/scenery passes.
+- **Fixes:** Performance lanes use `channel: chromium`; the browser target records version/mode. Worker readiness now fails the smoke command, including missing measurements, with existing thresholds unchanged. Two viewport-sized cached layers preserve static ground and decoration order; creatures, food, weather, lighting and controls stay live. Camera movement, zoom, viewport, source, palette and asset changes invalidate caches; a two-pixel border follows subpixel easing by the exact translation without rebuilding; surfaces above 4 megapixels use direct rendering. Decorative fades use 512 palette steps (phase error at most 1/1024); two surfaces add at most 32 MiB of pixel storage. Ground cache checks preserve the original twenty seasonal buckets and async terrain updates even on viewport-cache hits, independently of decorative fades. Visible-decoration buckets are queried only when repainting or using direct fallback. Static parallax stars/orbs are culled against the actual inverse Canvas viewport transform, including shake and DPR; animated particles still update. Invalid transforms or filter/shadow effects conservatively draw the full layer. Sprite variants resolve once per render frame and decoration transforms are combined. CPU profiling subtracts only native image work inside game-loop scopes, uses profiled-frame counts rather than interval counts, and rejects truncated/missing scope windows. Draw probes resolve each context reporting bucket once rather than reading DOM labels on every image call; regression coverage still verifies all calls, errors and scoped times. Pointer cancellation releases only a live capture, so visibility cleanup completes. The documentation overview/reference remain in the earlier docs commit.
+- **Verification:** Pre-correction v5 Node 22.23.3 `npm run proof:release` exited 1 after 141.08 s. Git whitespace checks, all required syntax checks, lint, all tests (including 15 new focused cases and 80 regression checks), build and bundle checks passed. Default-worker smoke passed: desktop 22.22 ms average / 33.4 ms p95 / 1.2675 ms non-draw CPU; mobile p95 16.7 ms in both contexts. Main fallback passed. Forced worker missed the unchanged 1.5 ms CPU limit at 1.54 ms; desktop average/p95 were 20.45/33.4 ms, and both mobile contexts passed. The preceding source-identical app run passed forced worker at 1.3081 ms CPU but failed default desktop p95 at 50 ms; performance is therefore still variable and the local gate remains held. Both scenario fixtures passed twice on the same final app source. The evidence command succeeded and recorded the held worker lane plus missing optional production proof. Before scenery caching, actual default desktop samples measured 28.33/50 ms average/p95 and 2.12 ms non-draw CPU; these are observed samples, not a controlled deterministic benchmark. Final native pixel checks compared cached versus direct layers on dark/light backgrounds: stationary maximum channel differences 2/255 for decorations and 3/255 for ground; subpixel reprojection resamples edges (maximum 118/255, whole-frame mean below 0.5/255), with exact geometric pan offsets covered by tests. The failed v5 runs/report are preserved. Follow-up review found redundant culling on cache hits, an incorrect four-bucket terrain assumption, and invisible parallax work. Red/green regressions cover lazy culling and terrain scheduling across twenty-bucket boundaries. Native original/optimized parallax fixtures have zero changed pixels; the measured desktop removes 60 star paths and 35 orb draws. Final corrected v6 `npm run proof:release` passed all mandatory local steps (exit 0, 177.65 s, Node 22.23.3 / Chromium 156.0.8078.4). Default desktop measured 25.24 ms average / 33.4 ms p95 / 1.4167 ms non-draw CPU; forced worker measured 22.65/33.4 ms and 1.28 ms CPU. Worker mobile p95 stayed at 16.7–16.8 ms. Main fallback passed, and both scenario fixtures passed twice. All 18 focused tests and 82 regression checks passed. Existing thresholds, sample duration and workloads are unchanged; no estimated instrumentation cost was subtracted. Evidence generation passed; overall production/release posture still lacks optional production browser/vitals proof. Publication is a draft PR only, with documentation and performance changes kept in separate commits.
+
+### 2026-10-12 — portfolio-documentation — Planned
+
+- **Date:** 2026-10-12
+- **Scope:** docs
+- **Type:** Planned
+- **Issues:** The project overview is difficult to scan, and the local quick-start URL disagrees with the Vite configuration.
+- **Root Causes:** Mechanics, release history, implementation notes, and introductory content accumulated in one README; the quick-start example retained the default Vite port.
+- **Fixes:** Prepare a concise README with a prominent hosted-app link, correct the local port to 8000, and preserve detailed controls, mechanics, and customization in PROJECT_GUIDE.md.
+- **Verification:** Review source configuration and resolve documentation links against the target tree. The repository's local pre-push gate remains required.
+
+### 2026-10-12 — portfolio-documentation — Implemented
+
+- **Date:** 2026-10-12
+- **Scope:** docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Prepared the README overview and linked PROJECT_GUIDE.md; removed undated performance guarantees from the overview. Preserved current arrow-key/recenter/trackpad controls and current menu labels in the guide. No runtime or simulation changes.
+- **Verification:** Reconciled with main `34d5ddc`; verified the hosted app returns HTTP 200, the Vite port is 8000, documented npm scripts exist, and relative Markdown links resolve. On Node 25.6.1 / npm 11.9.0 (package requires Node >=20; `.nvmrc` recommends 22), `git diff --check`, all five required `node --check` commands, lint, tests, build, and bundle budgets passed. Default, main-fallback, forced-worker, and scenario smoke commands each exited 0; both balance scenarios passed both runs. Main readiness is `fallback-proof`. Worker readiness is `needs-more-proof`: the release runner's default desktop average/p95 were 60/83.3 ms against 26/40 ms limits; the completed forced-worker run measured 63.09/83.4 ms. `proof:release` was started and its redundant repeat was interrupted with SIGTERM after the baseline readiness blocker was confirmed, per the session instruction; it did not complete. `evidence:release` exited 0 but reports `readyForPush: false`. Optional production smokes were not run. Application source and gate scripts are unchanged; the cause of the existing runtime/environment performance result was not established. Documentation publication is held; no branch push or PR was created. Generated evidence remains local and excluded from the documentation commit.
+
 ### 2026-10-10 — prop-tool-indicator-sweep — Planned
 
 - **Date:** 2026-10-10

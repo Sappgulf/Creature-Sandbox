@@ -1,5 +1,6 @@
 import { clamp } from './utils.js';
 import { assetLoader } from './asset-loader.js';
+import { DecorationLayerCache, getTerrainLayerKey } from './decoration-layer-cache.js';
 
 const biomeColors = {
   forest: [36, 68, 58],
@@ -27,6 +28,7 @@ const LANDSCAPE_LANDMARKS = Object.freeze([
 ]);
 
 const pendingDecorationRequests = new Set();
+let decorationAssetRevision = 0;
 
 // Ground mottling as a repeating world-space tile: one pattern fill per
 // frame, crisp at every zoom (world units map 1:1 to tile pixels).
@@ -188,10 +190,7 @@ function buildTerrainLayer(world, season, phase, key) {
 }
 
 function getTerrainLayer(world, season, phase) {
-  const seed = world.worldSeed ?? world.biomeGenerator?.seed ?? world._saveExtras?.biomeSeed ?? '';
-  const key = [Math.round(world.width), Math.round(world.height), season, Math.round((phase || 0) * 20), seed].join(
-    '|'
-  );
+  const key = getTerrainLayerKey(world, season, phase);
   if (terrainLayerCache.key === key && terrainLayerCache.canvas) {
     return terrainLayerCache.canvas;
   }
@@ -826,6 +825,99 @@ export function getSeasonalDecorationModifier(dec, world) {
   return modifier;
 }
 
+// Scenery is static between camera/palette changes. Cache only this layer;
+// creatures, food, weather and controls retain their normal per-frame draws.
+function drawSceneryLayer(
+  renderer,
+  ctx,
+  world,
+  cacheProperty,
+  paint,
+  { phase = Number(world.seasonPhase || 0), revision = `${decorationAssetRevision}|${terrainLayerCache.key}` } = {}
+) {
+  if (
+    typeof document === 'undefined' ||
+    !ctx.canvas ||
+    !ctx.getTransform ||
+    renderer.camera.isMoving ||
+    ctx.globalCompositeOperation !== 'source-over' ||
+    (ctx.filter && ctx.filter !== 'none') ||
+    ctx.shadowBlur > 0
+  )
+    return false;
+  const transform = ctx.getTransform();
+  const matrix = [transform.a, transform.b, transform.c, transform.d, transform.e, transform.f];
+  // Existing culling already includes 100 world pixels beyond the viewport.
+  // Two backing pixels cover the tail of camera easing without rounding pan.
+  const panMargin = 2;
+  const width = ctx.canvas.width;
+  const height = ctx.canvas.height;
+  renderer[cacheProperty] ||= new DecorationLayerCache();
+  const layer = renderer[cacheProperty].getOrBuild(
+    {
+      source: world.decorations,
+      revision,
+      season: world.currentSeason || 'spring',
+      phase,
+      width,
+      height,
+      matrix,
+      panMargin,
+      smoothing: ctx.imageSmoothingEnabled,
+      quality: ctx.imageSmoothingQuality
+    },
+    (prior, palette) => {
+      const surface = prior || document.createElement('canvas');
+      if (surface.width !== width + panMargin * 2) surface.width = width + panMargin * 2;
+      if (surface.height !== height + panMargin * 2) surface.height = height + panMargin * 2;
+      const layerCtx = surface.getContext('2d');
+      if (!layerCtx) return null;
+      layerCtx.setTransform(1, 0, 0, 1, 0, 0);
+      layerCtx.clearRect(0, 0, surface.width, surface.height);
+      layerCtx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4] + panMargin, matrix[5] + panMargin);
+      layerCtx.imageSmoothingEnabled = ctx.imageSmoothingEnabled;
+      layerCtx.imageSmoothingQuality = ctx.imageSmoothingQuality;
+      paint(layerCtx, palette);
+      return surface;
+    }
+  );
+  if (!layer) return false;
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1;
+  const { x, y } = renderer[cacheProperty].offset;
+  ctx.drawImage(layer, x, y);
+  ctx.restore();
+  return true;
+}
+
+export function drawCachedBiomeDetail(renderer, ctx, world) {
+  // Check the actual terrain bucket even on viewport-cache hits. The previous
+  // layer remains visible while the existing async terrain bake completes.
+  if (world.getBiomeAt && renderer.camera.zoom > 0.18) {
+    getTerrainLayer(world, world.currentSeason || 'spring', world.seasonPhase || 0);
+  }
+  return drawSceneryLayer(
+    renderer,
+    ctx,
+    world,
+    '_biomeDetailLayerCache',
+    layerCtx => {
+      drawBiomeDetail(renderer, layerCtx, world);
+    },
+    { phase: 0, revision: terrainLayerCache.key }
+  );
+}
+
+export function drawDecorationLayer(renderer, ctx, world, visible, skipFactor) {
+  return drawSceneryLayer(renderer, ctx, world, '_decorationLayerCache', (layerCtx, palette) => {
+    const items = typeof visible === 'function' ? visible() : visible;
+    for (let i = 0; i < items.length; i += skipFactor) {
+      drawDecoration(renderer, layerCtx, items[i], palette);
+    }
+  });
+}
+
 export function drawDecoration(renderer, ctx, dec, world) {
   const assetKey = getDecorationSpriteAsset(dec);
 
@@ -847,14 +939,22 @@ export function drawDecorationFromSprite(renderer, ctx, dec, spriteInfo, assetKe
   const mod = getSeasonalDecorationModifier(dec, world);
 
   ctx.save();
-  ctx.translate(dec.x, dec.y);
 
   const scale = (dec.size || 40) / frameHeight;
   // Mirror and rotate individual instances so a stand of the same sprite does
   // not read as a stamped tile.
-  if (dec.flipX) ctx.scale(-scale, scale);
-  else ctx.scale(scale, scale);
-  if (dec.rotation) ctx.rotate(dec.rotation);
+  const rotation = Number(dec.rotation || 0);
+  if (Number.isFinite(scale) && Number.isFinite(rotation)) {
+    const sx = dec.flipX ? -scale : scale;
+    const cos = rotation ? Math.cos(rotation) : 1;
+    const sin = rotation ? Math.sin(rotation) : 0;
+    ctx.transform(sx * cos, scale * sin, -sx * sin, scale * cos, dec.x, dec.y);
+  } else {
+    // Keep Canvas' existing handling of malformed saved decoration values.
+    ctx.translate(dec.x, dec.y);
+    ctx.scale(dec.flipX ? -scale : scale, scale);
+    if (dec.rotation) ctx.rotate(dec.rotation);
+  }
 
   // Ground cover is scenery, not subject. At a flat 0.85 the grass and flowers
   // carried more visual weight than the creatures standing on them, so a
@@ -876,7 +976,13 @@ export function drawDecorationFromSprite(renderer, ctx, dec, spriteInfo, assetKe
   const tintLightness = dec.type === 'rock' ? 44 : 58;
   const tintColor = `hsl(${tintHue}, 52%, ${tintLightness}%)`;
 
-  const frame = assetLoader.getSpriteFrameSync(assetKey, spriteIndex, frameWidth, tintColor);
+  const frameKey = `${assetKey}|${spriteIndex}|${frameWidth}|${tintColor}`;
+  const frameCache = renderer._decorationFrameCache;
+  let frame = frameCache?.get(frameKey);
+  if (frame === undefined) {
+    frame = assetLoader.getSpriteFrameSync(assetKey, spriteIndex, frameWidth, tintColor);
+    frameCache?.set(frameKey, frame);
+  }
   if (frame) {
     const anchor = spriteInfo.anchor || { x: 0.5, y: 1 };
     const anchorX = Number.isFinite(Number(anchor.x)) ? Number(anchor.x) : 0.5;
@@ -903,7 +1009,10 @@ export function drawDecorationFromSprite(renderer, ctx, dec, spriteInfo, assetKe
           color: tintColor
         })
         .catch(error => console.debug(`[Renderer] decoration sprite load failed: ${assetKey}`, error))
-        .finally(() => pendingDecorationRequests.delete(requestKey));
+        .finally(() => {
+          pendingDecorationRequests.delete(requestKey);
+          decorationAssetRevision++;
+        });
     }
     ctx.restore();
     drawDecorationFallback(renderer, ctx, dec, world);

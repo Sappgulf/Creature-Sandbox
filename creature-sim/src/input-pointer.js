@@ -243,7 +243,12 @@ export function applyInputPointerMethods(InputManager) {
    */
   InputManager.prototype.onPointerCancel = function (e) {
     this.clearGodHold();
-    this.canvas.releasePointerCapture?.(e?.pointerId);
+    // Visibility changes can cancel after the browser already released the
+    // pointer. Releasing an inactive/null id throws before drag cleanup runs.
+    const pointerId = e?.pointerId;
+    if (pointerId != null && this.canvas.hasPointerCapture?.(pointerId)) {
+      this.canvas.releasePointerCapture?.(pointerId);
+    }
     if (this._activePointerId === e?.pointerId) this._activePointerId = null;
     this._minimapPointerId = null;
 

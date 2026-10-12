@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node scripts/save-system.test.mjs && node scripts/core-modules.test.mjs && node scripts/regression-fixes.test.mjs && node scripts/reboot-experience.test.mjs && node scripts/creature-presentation.test.mjs && node scripts/scenario-contract.test.mjs && node scripts/e2e-journey.test.mjs && node scripts/save-migration.test.mjs",
+    "test": "node --test scripts/runtime-readiness.test.mjs scripts/decoration-layer-cache.test.mjs scripts/frame-profile.test.mjs scripts/parallax-culling.test.mjs && node scripts/save-system.test.mjs && node scripts/core-modules.test.mjs && node scripts/regression-fixes.test.mjs && node scripts/reboot-experience.test.mjs && node scripts/creature-presentation.test.mjs && node scripts/scenario-contract.test.mjs && node scripts/e2e-journey.test.mjs && node scripts/save-migration.test.mjs",
     "smoke:browser": "node scripts/browser-smoke.mjs",
     "smoke:browser:headed": "node scripts/browser-smoke.mjs --headed",
     "smoke:main": "node scripts/browser-smoke.mjs --main",

@@ -59,6 +59,47 @@ function getOrbSprites() {
   return _orbSprites;
 }
 
+// Invert the actual backing transform, including screen shake and DPR.
+// An AABB of the four inverse corners is conservative even under rotation.
+export function getCanvasWorldBounds(ctx) {
+  if (
+    !ctx.getTransform ||
+    !ctx.canvas ||
+    ctx.shadowBlur > 0 ||
+    ctx.shadowOffsetX ||
+    ctx.shadowOffsetY ||
+    (ctx.filter && ctx.filter !== 'none')
+  )
+    return null;
+  const { width, height } = ctx.canvas;
+  const { a, b, c, d, e, f } = ctx.getTransform();
+  const det = a * d - b * c;
+  if (![width, height, a, b, c, d, e, f, det].every(Number.isFinite) || width <= 0 || height <= 0 || det === 0)
+    return null;
+  let x1 = Infinity,
+    y1 = Infinity,
+    x2 = -Infinity,
+    y2 = -Infinity;
+  for (const [sx, sy] of [
+    [0, 0],
+    [width, 0],
+    [0, height],
+    [width, height]
+  ]) {
+    const x = (d * (sx - e) - c * (sy - f)) / det,
+      y = (-b * (sx - e) + a * (sy - f)) / det;
+    x1 = Math.min(x1, x);
+    x2 = Math.max(x2, x);
+    y1 = Math.min(y1, y);
+    y2 = Math.max(y2, y);
+  }
+  return [x1, x2, y1, y2].every(Number.isFinite) ? { x1, x2, y1, y2 } : null;
+}
+
+function circleVisible(x, y, r, bounds) {
+  return !bounds || !(x + r < bounds.x1 || x - r > bounds.x2 || y + r < bounds.y1 || y - r > bounds.y2);
+}
+
 /**
  * Draw the parallax background layers.
  * Call BEFORE biome ground so layers are behind everything.
@@ -67,6 +108,7 @@ export function drawParallaxBackground(renderer, ctx, world) {
   const camera = renderer.camera;
   const isMobile = renderer.isMobile;
   const time = performance.now() * 0.001;
+  const visibleBounds = getCanvasWorldBounds(ctx);
 
   // Layer 1: Far stars (scrolls at 0.1x camera speed)
   ctx.save();
@@ -76,6 +118,15 @@ export function drawParallaxBackground(renderer, ctx, world) {
   ctx.translate(farOffsetX, farOffsetY);
   ctx.scale(farZoom, farZoom);
   for (const star of starLayer) {
+    if (
+      !circleVisible(
+        star.x * farZoom + farOffsetX,
+        star.y * farZoom + farOffsetY,
+        star.r * Math.abs(farZoom),
+        visibleBounds
+      )
+    )
+      continue;
     const twinkle = 0.6 + 0.4 * Math.sin(time * star.twinkleSpeed + star.twinkleOffset);
     ctx.fillStyle = `rgba(200, 220, 255, ${star.alpha * twinkle})`;
     ctx.beginPath();
@@ -97,6 +148,16 @@ export function drawParallaxBackground(renderer, ctx, world) {
     // Slow drift
     const driftX = Math.sin(time * orb.drift + orb.x * 0.001) * 20;
     const driftY = Math.cos(time * orb.drift * 0.7 + orb.y * 0.001) * 15;
+    const radius = (orbSprites?.[i]?.half ?? orb.r * 2.5) * Math.abs(midZoom);
+    if (
+      !circleVisible(
+        (orb.x + driftX) * midZoom + midOffsetX,
+        (orb.y + driftY) * midZoom + midOffsetY,
+        radius,
+        visibleBounds
+      )
+    )
+      continue;
     if (orbSprites) {
       const sprite = orbSprites[i];
       ctx.drawImage(sprite.canvas, orb.x + driftX - sprite.half, orb.y + driftY - sprite.half);
