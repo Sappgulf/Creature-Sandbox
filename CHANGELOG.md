@@ -26,6 +26,26 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-10-12 — portfolio-documentation — Planned
+
+- **Date:** 2026-10-12
+- **Scope:** docs
+- **Type:** Planned
+- **Issues:** The project overview is difficult to scan, and the local quick-start URL disagrees with the Vite configuration.
+- **Root Causes:** Mechanics, release history, implementation notes, and introductory content accumulated in one README; the quick-start example retained the default Vite port.
+- **Fixes:** Prepare a concise README with a prominent hosted-app link, correct the local port to 8000, and preserve detailed controls, mechanics, and customization in PROJECT_GUIDE.md.
+- **Verification:** Review source configuration and resolve documentation links against the target tree. The repository's local pre-push gate remains required.
+
+### 2026-10-12 — portfolio-documentation — Implemented
+
+- **Date:** 2026-10-12
+- **Scope:** docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Prepared the README overview and linked PROJECT_GUIDE.md; removed undated performance guarantees from the overview. Preserved current arrow-key/recenter/trackpad controls and current menu labels in the guide. No runtime or simulation changes.
+- **Verification:** Reconciled with main `34d5ddc`; verified the hosted app returns HTTP 200, the Vite port is 8000, documented npm scripts exist, and relative Markdown links resolve. On Node 25.6.1 / npm 11.9.0 (package requires Node >=20; `.nvmrc` recommends 22), `git diff --check`, all five required `node --check` commands, lint, tests, build, and bundle budgets passed. Default, main-fallback, forced-worker, and scenario smoke commands each exited 0; both balance scenarios passed both runs. Main readiness is `fallback-proof`. Worker readiness is `needs-more-proof`: the release runner's default desktop average/p95 were 60/83.3 ms against 26/40 ms limits; the completed forced-worker run measured 63.09/83.4 ms. `proof:release` was started and its redundant repeat was interrupted with SIGTERM after the baseline readiness blocker was confirmed, per the session instruction; it did not complete. `evidence:release` exited 0 but reports `readyForPush: false`. Optional production smokes were not run. Application source and gate scripts are unchanged; the cause of the existing runtime/environment performance result was not established. Documentation publication is held; no branch push or PR was created. Generated evidence remains local and excluded from the documentation commit.
+
 ### 2026-10-10 — prop-tool-indicator-sweep — Planned
 
 - **Date:** 2026-10-10
