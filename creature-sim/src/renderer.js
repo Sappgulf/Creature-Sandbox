@@ -14,6 +14,7 @@ import { applyCreatureMethods } from './renderer-creatures.js';
 import {
   drawBiomeBase,
   drawBiomeDetail,
+  drawCachedBiomeDetail,
   drawWaterBiomes,
   drawCreatureTerritoryZones,
   drawDayNightOverlay,
@@ -21,6 +22,7 @@ import {
   drawMoodOverlay,
   drawWindStreaks,
   drawDecoration,
+  drawDecorationLayer,
   getBiomeTint
 } from './renderer-biome.js';
 import { drawDisasterOverlay, drawWeatherEffects } from './renderer-weather.js';
@@ -608,13 +610,17 @@ export class Renderer {
     // REDESIGNED: Subtle atmospheric biome rendering (player-focused!)
     const ctx = this.ctx;
     const bounds = this._viewBounds;
+    // Hundreds of decorations share a small set of tinted sprite variants.
+    // Resolve each variant once per frame; clearing also picks up async loads.
+    this._decorationFrameCache ||= new Map();
+    this._decorationFrameCache.clear();
 
     // Opaque base first, then the parallax depth layers, then biome detail.
     drawBiomeBase(this, ctx, world);
     if (!isReducedMotion()) {
       drawParallaxBackground(this, ctx, world);
     }
-    drawBiomeDetail(this, ctx, world);
+    if (!drawCachedBiomeDetail(this, ctx, world)) drawBiomeDetail(this, ctx, world);
 
     // A low-zoom habitat layer gives the generated world a readable shape
     // before individual decorations become visible.
@@ -630,9 +636,11 @@ export class Renderer {
       // Iterate only the buckets the view touches. Scanning all ~3,400
       // decorations every frame to reject 85% of them was pure overhead once
       // the layer was actually being drawn.
-      const visible = this._decorationsInView(world, bounds);
-      for (let i = 0; i < visible.length; i += skipFactor) {
-        drawDecoration(this, ctx, visible[i], world);
+      if (!drawDecorationLayer(this, ctx, world, () => this._decorationsInView(world, bounds), skipFactor)) {
+        const visible = this._decorationsInView(world, bounds);
+        for (let i = 0; i < visible.length; i += skipFactor) {
+          drawDecoration(this, ctx, visible[i], world);
+        }
       }
     }
 

@@ -7,6 +7,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { summarizeRuntimeReadiness, assertRuntimeReadiness } from './runtime-readiness.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
@@ -736,129 +737,6 @@ function assertFrameProfile(framePacing, label) {
     Array.isArray(framePacing.mainThread.topScopes),
     `${label}: main-thread profile should include top scope breakdown`
   );
-}
-
-function summarizeRuntimeReadiness(results) {
-  const scenarioRows = results.map(result => {
-    const framePacing = result.framePacing || {};
-    const runtime = result.perf?.runtime || {};
-    const workerDiagnostics = runtime.workerDiagnostics || {};
-    const scenarioResult = result.scenarioResult || {};
-    const layoutGuard = result.layoutGuard || {};
-    return {
-      scenario: result.scenario,
-      mode: runtime.workerMode ? 'worker' : 'main',
-      runtimeModeSource: runtime.runtimeModeSource || null,
-      storedPreference: runtime.runtimeModeStored || null,
-      workerReady: workerDiagnostics.ready ?? runtime.workerReady ?? null,
-      workerPendingMessages: workerDiagnostics.queuedCommands ?? runtime.workerPendingMessages ?? null,
-      workerErrorCount: workerDiagnostics.errorCount ?? null,
-      workerSnapshotCount: workerDiagnostics.snapshotCount ?? null,
-      workerSnapshotAgeMs: workerDiagnostics.lastSnapshotAgeMs ?? null,
-      creatures: result.creatures,
-      food: result.food,
-      avgFrameMs: framePacing.avgFrameMs ?? null,
-      p95FrameMs: framePacing.p95FrameMs ?? null,
-      framesOver50ms: framePacing.framesOver50ms ?? null,
-      profiledNonDrawImagePerFrameMs: framePacing.mainThread?.profiledNonDrawImagePerFrameMs ?? null,
-      topScope: framePacing.mainThread?.topScopes?.[0]?.name || null,
-      scenarioResultComplete: scenarioResult.complete === true,
-      scenarioResultAnchored: scenarioResult.anchored === true,
-      scenarioResultInViewport: scenarioResult.inViewport === true,
-      scenarioHistoryCount: Number(scenarioResult.historyCount || 0),
-      layoutGuardPassed: layoutGuard.passed === true,
-      cumulativeLayoutShift:
-        layoutGuard.metrics?.startupCumulativeLayoutShift ?? layoutGuard.metrics?.cumulativeLayoutShift ?? null,
-      minTouchTarget: layoutGuard.metrics?.minTouchTarget ?? null
-    };
-  });
-
-  const desktop = scenarioRows.find(row => row.scenario === 'desktop') || null;
-  const mobileRows = scenarioRows.filter(row => row.scenario.startsWith('mobile-'));
-  const runtimeStatusesOk = scenarioRows.every(
-    row => row.mode === 'main' || (row.workerReady === true && row.workerPendingMessages === 0)
-  );
-  const completedScenarioResultsOk = scenarioRows.every(
-    row =>
-      row.scenarioResultComplete &&
-      row.scenarioResultAnchored &&
-      row.scenarioResultInViewport &&
-      row.scenarioHistoryCount >= 1
-  );
-  const layoutGuardsOk = scenarioRows.every(row => row.layoutGuardPassed === true);
-  const mobileP95Max = Math.max(0, ...mobileRows.map(row => Number(row.p95FrameMs) || 0));
-  const desktopAvg = Number(desktop?.avgFrameMs) || 0;
-  const desktopP95 = Number(desktop?.p95FrameMs) || 0;
-  const desktopProfiledNonDraw = Number(desktop?.profiledNonDrawImagePerFrameMs);
-  const workerCandidate =
-    workerMode &&
-    runtimeStatusesOk &&
-    completedScenarioResultsOk &&
-    layoutGuardsOk &&
-    desktopAvg > 0 &&
-    desktopAvg <= 26 &&
-    desktopP95 <= 40 &&
-    Number.isFinite(desktopProfiledNonDraw) &&
-    desktopProfiledNonDraw <= 1.5 &&
-    mobileP95Max <= 20;
-  const defaultRun = forcedRuntimeMode === null;
-  const safeToDefaultWorker = workerMode && workerCandidate;
-  const status = workerMode
-    ? workerCandidate
-      ? defaultRun
-        ? 'shipping-default'
-        : 'candidate-opt-in'
-      : 'needs-more-proof'
-    : defaultRun
-      ? 'shipping-default'
-      : 'fallback-proof';
-
-  return {
-    generatedAt: new Date().toISOString(),
-    mode: workerMode ? 'worker' : 'main',
-    shippingDefault: shippingDefaultRuntime,
-    defaultChanged: shippingDefaultRuntime === 'worker',
-    status,
-    workerCandidate,
-    defaultReadiness: {
-      safeToDefaultWorker,
-      reason: workerMode
-        ? workerCandidate
-          ? defaultRun
-            ? 'Worker is the shipping default and this run meets frame, runtime, and completed-scenario result gates.'
-            : 'Forced worker smoke meets the candidate frame, runtime, and completed-scenario result gates.'
-          : defaultRun
-            ? 'Worker is configured as the shipping default but missed one or more gates; treat this as a release blocker and use explicit main fallback only until fixed.'
-            : 'Forced worker smoke missed one or more readiness gates in this run; keep forced worker promotion held until frame thresholds, runtime status, and completed-scenario result proof all pass.'
-        : 'Main-thread mode remains available as an explicit fallback path.'
-    },
-    completedScenarioResultFlow: {
-      required: true,
-      passed: completedScenarioResultsOk && layoutGuardsOk,
-      scenarios: scenarioRows.map(row => ({
-        scenario: row.scenario,
-        complete: row.scenarioResultComplete,
-        anchored: row.scenarioResultAnchored,
-        inViewport: row.scenarioResultInViewport,
-        historyCount: row.scenarioHistoryCount,
-        layoutGuardPassed: row.layoutGuardPassed,
-        cumulativeLayoutShift: row.cumulativeLayoutShift,
-        minTouchTarget: row.minTouchTarget
-      }))
-    },
-    thresholds: {
-      workerDesktopAvgFrameMsMax: 26,
-      workerDesktopP95FrameMsMax: 40,
-      workerDesktopProfiledNonDrawImagePerFrameMsMax: 1.5,
-      workerMobileP95FrameMsMax: 20,
-      workerPendingMessagesMax: 0,
-      completedScenarioResultsRequired: true,
-      layoutGuardRequired: true,
-      cumulativeLayoutShiftMax: workerMode ? 0.1 : 0.15,
-      mobileTouchTargetMinPx: 40
-    },
-    scenarios: scenarioRows
-  };
 }
 
 async function runScenario(browser, scenario) {
@@ -1880,18 +1758,21 @@ let browser;
 try {
   const targetInfo = await resolveTargetInfo();
   await fs.writeFile(path.join(outDir, 'target.json'), JSON.stringify(targetInfo, null, 2));
-  browser = await chromium.launch({ headless: !headed });
+  browser = await chromium.launch({ channel: 'chromium', headless: !headed });
+  targetInfo.browser = { channel: 'chromium', version: browser.version(), headless: !headed };
+  await fs.writeFile(path.join(outDir, 'target.json'), JSON.stringify(targetInfo, null, 2));
   await captureHomeSnapshot(browser);
   const results = [];
   for (const scenario of scenarios) {
     results.push(await runScenario(browser, scenario));
   }
   await fs.writeFile(path.join(outDir, 'summary.json'), JSON.stringify(results, null, 2));
-  const runtimeReadiness = summarizeRuntimeReadiness(results);
+  const runtimeReadiness = summarizeRuntimeReadiness(results, { shippingDefaultRuntime, forcedRuntimeMode });
   await fs.writeFile(path.join(outDir, 'runtime-readiness.json'), JSON.stringify(runtimeReadiness, null, 2));
   console.log(
     `Runtime readiness (${runtimeReadiness.mode}): ${runtimeReadiness.status}; shipping default=${runtimeReadiness.shippingDefault}; worker gate=${runtimeReadiness.defaultReadiness.safeToDefaultWorker ? 'ready' : 'held'}`
   );
+  assertRuntimeReadiness(runtimeReadiness);
   console.log(
     `Browser smoke passed${workerMode ? ' (worker)' : ''}: ${results.map(result => result.scenario).join(', ')}`
   );

@@ -248,6 +248,7 @@ Creatures earn badges for achievements:
 
 ### Performance Features
 
+- **Static render layers**: Stationary ground and scenery reuse viewport-sized surfaces; camera, palette, viewport, asset, and world changes refresh them. Decorative seasonal fades use 512 palette steps; a two-pixel border permits exact subpixel pan offsets without rebuilding. Ground keeps the original twenty seasonal terrain buckets and asynchronous bakes. Offscreen parallax stars/orbs are culled using the actual Canvas transform; animated particles continue updating.
 - **Spatial Grid**: O(1) average-case proximity queries
 - **Double Buffering**: Scalar field updates without allocation
 - **BFS Optimization**: Index-based queues (no array.shift)

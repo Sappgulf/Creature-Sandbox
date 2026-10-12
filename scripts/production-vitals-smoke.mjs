@@ -313,7 +313,7 @@ const target = {
 
 let browser;
 try {
-  browser = await chromium.launch({ headless: true });
+  browser = await chromium.launch({ channel: 'chromium', headless: true });
   const results = [];
   for (const contextConfig of contexts) {
     results.push(await runContext(browser, target, contextConfig));

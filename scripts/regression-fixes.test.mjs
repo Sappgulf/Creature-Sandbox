@@ -28,7 +28,14 @@ import { TutorialSystem } from '../creature-sim/src/tutorial-system.js';
 import { packCreature, unpackCreature, createCreatureBuffer } from '../creature-sim/src/simulation-state.js';
 import { collectGameplayMetrics } from '../creature-sim/src/gameplay-objectives.js';
 import { ControlStripController } from '../creature-sim/src/control-strip.js';
-import { SPEED_OPTIONS, SPEED_LABELS } from '../creature-sim/src/game-state.js';
+import { gameState, SPEED_OPTIONS, SPEED_LABELS } from '../creature-sim/src/game-state.js';
+import { applyInputPointerMethods } from '../creature-sim/src/input-pointer.js';
+import {
+  drawDecorationFromSprite,
+  drawDecorationLayer,
+  drawCachedBiomeDetail
+} from '../creature-sim/src/renderer-biome.js';
+import { assetLoader } from '../creature-sim/src/asset-loader.js';
 import { CreatureAgentTuning } from '../creature-sim/src/creature-agent-constants.js';
 import { resolveDietRole } from '../creature-sim/src/creature-genetics-helpers.js';
 import { angleDelta } from '../creature-sim/src/utils.js';
@@ -1683,6 +1690,262 @@ test('courtship: babies are never locked or bred', () => {
     assert.ok(adult.goal.bondingWith !== baby.id, 'adult must not lock onto a baby');
     assert.equal(baby.goal.bondingWith, null, 'baby must not hold a courtship lock');
   });
+});
+
+test('visibility cancellation without an active pointer still clears drag state', () => {
+  class PointerFixture {}
+  applyInputPointerMethods(PointerFixture);
+  const creature = { id: 'grabbed', x: 4, y: 8, isGrabbed: true };
+  let released = 0;
+  let dropped = 0;
+  const manager = Object.assign(new PointerFixture(), {
+    canvas: {
+      hasPointerCapture: () => false,
+      releasePointerCapture: () => {
+        throw new Error('NotFoundError: inactive pointer');
+      },
+      style: { cursor: 'grabbing' }
+    },
+    clearGodHold: () => {
+      released++;
+    },
+    world: {
+      throwCreature: (id, vx, vy) => {
+        assert.equal(id, creature.id);
+        assert.equal(vx, 0);
+        assert.equal(vy, 0);
+        dropped++;
+      }
+    },
+    dragState: { active: true, pending: false, creature, pointerId: 4 },
+    _activePointerId: null
+  });
+  gameState.painting = true;
+  gameState.panning = true;
+  gameState.creatureDragActive = true;
+  manager.onPointerCancel({ pointerId: null });
+  assert.equal(released, 1);
+  assert.equal(dropped, 1);
+  assert.equal(creature.isGrabbed, false);
+  assert.equal(manager.dragState.active, false);
+  assert.equal(gameState.painting, false);
+  assert.equal(gameState.panning, false);
+  assert.equal(gameState.creatureDragActive, false);
+});
+
+test('pointer cancellation releases a live capture exactly once', () => {
+  class PointerFixture {}
+  applyInputPointerMethods(PointerFixture);
+  let captured = true;
+  let releases = 0;
+  const manager = Object.assign(new PointerFixture(), {
+    canvas: {
+      hasPointerCapture: id => id === 4 && captured,
+      releasePointerCapture: id => {
+        assert.equal(id, 4);
+        captured = false;
+        releases++;
+      },
+      style: {}
+    },
+    clearGodHold() {},
+    dragState: { active: false, pending: false },
+    _activePointerId: 4
+  });
+  manager.onPointerCancel({ pointerId: 4 });
+  manager.onPointerCancel({ pointerId: 4 });
+  assert.equal(releases, 1);
+  assert.equal(manager._activePointerId, null);
+});
+
+function withDecorationFixture(run) {
+  const prior = assetLoader.getSpriteFrameSync;
+  const draws = [];
+  const transforms = [];
+  const lookups = [];
+  let frame = { id: 'first' };
+  assetLoader.getSpriteFrameSync = (...args) => {
+    lookups.push(args);
+    return frame;
+  };
+  const alphaStack = [];
+  const ctx = {
+    save() {
+      alphaStack.push(this.globalAlpha);
+    },
+    restore() {
+      this.globalAlpha = alphaStack.pop();
+    },
+    translate() {},
+    scale() {},
+    rotate() {},
+    transform: (...args) => transforms.push(args),
+    drawImage: (...args) => draws.push({ args, alpha: ctx.globalAlpha }),
+    beginPath() {},
+    ellipse() {},
+    fill() {},
+    globalAlpha: 1
+  };
+  const renderer = { _decorationFrameCache: new Map() };
+  const sprite = { frameWidth: 24, frameHeight: 24, anchor: { x: 0.5, y: 1 } };
+  const dec = { type: 'flower', hue: 120, size: 36, x: 10, y: 20, sprite: 0, rotation: 0 };
+  try {
+    run({
+      ctx,
+      renderer,
+      sprite,
+      dec,
+      draws,
+      transforms,
+      lookups,
+      replaceFrame: value => {
+        frame = value;
+      }
+    });
+  } finally {
+    assetLoader.getSpriteFrameSync = prior;
+  }
+}
+
+test('decoration drawing reuses a variant within a frame while retaining seasonal opacity', () => {
+  withDecorationFixture(({ ctx, renderer, sprite, dec, draws, lookups }) => {
+    drawDecorationFromSprite(renderer, ctx, dec, sprite, 'flowers', { currentSeason: 'spring', seasonPhase: 0 });
+    drawDecorationFromSprite(renderer, ctx, dec, sprite, 'flowers', { currentSeason: 'spring', seasonPhase: 0.5 });
+    assert.equal(draws.length, 2, 'both decoration instances must be drawn');
+    assert.equal(lookups.length, 1, 'the identical tint/frame must resolve only once this frame');
+    assert.equal(draws[0].alpha, 0.72 * 0.4);
+    assert.equal(draws[1].alpha, 0.72 * 0.7);
+    assert.deepEqual(draws[0].args.slice(1), [-12, -24]);
+  });
+});
+
+test('decoration variant cache refreshes after tint changes and a new render frame', () => {
+  withDecorationFixture(({ ctx, renderer, sprite, dec, draws, lookups, replaceFrame }) => {
+    drawDecorationFromSprite(renderer, ctx, dec, sprite, 'flowers', { currentSeason: 'autumn', seasonPhase: 0 });
+    drawDecorationFromSprite(renderer, ctx, dec, sprite, 'flowers', { currentSeason: 'autumn', seasonPhase: 1 });
+    assert.equal(lookups.length, 2, 'a different hue bucket needs a fresh variant');
+    renderer._decorationFrameCache.clear();
+    replaceFrame({ id: 'updated' });
+    drawDecorationFromSprite(renderer, ctx, dec, sprite, 'flowers', { currentSeason: 'autumn', seasonPhase: 1 });
+    assert.equal(lookups.length, 3);
+    assert.equal(draws.at(-1).args[0].id, 'updated', 'cache reuse cannot freeze an updated asset');
+  });
+});
+
+test('combined decoration transform preserves mirrored and rotated world placement', () => {
+  withDecorationFixture(({ ctx, renderer, sprite, dec, transforms }) => {
+    dec.flipX = true;
+    dec.rotation = Math.PI / 3;
+    drawDecorationFromSprite(renderer, ctx, dec, sprite, 'flowers', { currentSeason: 'spring', seasonPhase: 0 });
+    const scale = dec.size / sprite.frameHeight;
+    const expected = [
+      -scale * Math.cos(dec.rotation),
+      scale * Math.sin(dec.rotation),
+      scale * Math.sin(dec.rotation),
+      scale * Math.cos(dec.rotation),
+      dec.x,
+      dec.y
+    ];
+    assert.equal(transforms.length, 1, 'translate/scale/rotation should use one native transform');
+    transforms[0].forEach((value, i) => assert.ok(Math.abs(value - expected[i]) < 1e-12));
+  });
+});
+
+test('cached decoration frames do not query visible buckets until a repaint', () => {
+  const priorDocument = globalThis.document;
+  const matrix = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
+  const layerCtx = { setTransform() {}, clearRect() {} };
+  const ctx = {
+    canvas: { width: 100, height: 100 },
+    getTransform: () => matrix,
+    globalCompositeOperation: 'source-over',
+    filter: 'none',
+    shadowBlur: 0,
+    imageSmoothingEnabled: true,
+    imageSmoothingQuality: 'high',
+    save() {},
+    restore() {},
+    setTransform() {},
+    drawImage() {}
+  };
+  globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => layerCtx }) };
+  try {
+    const renderer = { camera: { isMoving: false } },
+      world = { decorations: [], currentSeason: 'spring', seasonPhase: 0 };
+    let queries = 0;
+    const query = () => {
+      queries++;
+      return [];
+    };
+    assert.equal(drawDecorationLayer(renderer, ctx, world, query, 1), true);
+    assert.equal(drawDecorationLayer(renderer, ctx, world, query, 1), true);
+    assert.equal(queries, 1);
+    world.seasonPhase = 0.01;
+    assert.equal(drawDecorationLayer(renderer, ctx, world, query, 1), true);
+    assert.equal(queries, 2);
+    renderer.camera.isMoving = true;
+    assert.equal(drawDecorationLayer(renderer, ctx, world, query, 1), false);
+    assert.equal(queries, 2, 'direct fallback owns the query when cache is bypassed');
+  } finally {
+    globalThis.document = priorDocument;
+  }
+});
+
+test('terrain seasonal rebuilds are checked even when the viewport cache hits', () => {
+  const priorDocument = globalThis.document,
+    priorTimeout = globalThis.setTimeout;
+  const scheduled = [];
+  const ctx = {
+    canvas: { width: 100, height: 100 },
+    getTransform: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
+    globalCompositeOperation: 'source-over',
+    filter: 'none',
+    shadowBlur: 0,
+    imageSmoothingEnabled: true,
+    imageSmoothingQuality: 'high',
+    save() {},
+    restore() {},
+    setTransform() {},
+    drawImage() {}
+  };
+  const renderer = {
+    camera: { isMoving: false, zoom: 1 },
+    _biomeDetailLayerCache: {
+      offset: { x: -2, y: -2 },
+      getOrBuild() {
+        return {};
+      }
+    }
+  };
+  const world = {
+    width: 100,
+    height: 100,
+    worldSeed: 'terrain-regression',
+    decorations: [],
+    currentSeason: 'spring',
+    seasonPhase: 0.024,
+    getBiomeAt() {
+      return { type: 'grassland' };
+    }
+  };
+  globalThis.document = {};
+  globalThis.setTimeout = fn => {
+    scheduled.push(fn);
+    return scheduled.length;
+  };
+  try {
+    assert.equal(drawCachedBiomeDetail(renderer, ctx, world), true);
+    assert.equal(scheduled.length, 1);
+    world.seasonPhase = 0.026;
+    assert.equal(drawCachedBiomeDetail(renderer, ctx, world), true);
+    assert.equal(scheduled.length, 2);
+    world.seasonPhase = 0.027;
+    drawCachedBiomeDetail(renderer, ctx, world);
+    assert.equal(scheduled.length, 2);
+  } finally {
+    globalThis.document = priorDocument;
+    globalThis.setTimeout = priorTimeout;
+  }
 });
 
 console.log('\n=== SUMMARY ===');

@@ -293,7 +293,7 @@ await fs.mkdir(outDir, { recursive: true });
 const server = await startServerIfNeeded();
 let browser;
 try {
-  browser = await chromium.launch({ headless: !headed });
+  browser = await chromium.launch({ channel: 'chromium', headless: !headed });
   const context = await browser.newContext({
     viewport: { width: 1280, height: 800 },
     deviceScaleFactor: 1,
