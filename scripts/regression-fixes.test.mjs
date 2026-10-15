@@ -401,6 +401,27 @@ test('playable-scenarios: leaving a scenario returns the sandbox to its mode foo
 });
 
 // ----------------------------------------------------------------------------
+// playable-scenarios.js: worker-mode spawns land asynchronously, so an empty
+// world mirror right after startScenario() must not fail the run as a collapse.
+// ----------------------------------------------------------------------------
+test('playable-scenarios: an empty world mirror is not a collapse during the start grace', () => {
+  const world = new World(400, 400);
+  // Worker runtime: spawn commands are queued for the worker, so the mirror
+  // stays empty until the worker's first snapshot lands.
+  world.spawnCreatureType = () => null;
+  const scenarios = new PlayableScenarios({ world });
+  scenarios.startScenario('apex_balance', { announce: false });
+  assert.equal(world.creatures.length, 0, 'the mirror is empty while spawns are still in flight');
+
+  scenarios.update(0.35);
+  assert.equal(scenarios.activeRun?.state, 'running', 'an early empty reading must not fail a fresh run');
+
+  world.t += 2;
+  scenarios.update(0.35);
+  assert.equal(scenarios.activeRun, null, 'a world that stays empty past the grace still collapses');
+});
+
+// ----------------------------------------------------------------------------
 // notification-system.js: the priority-preemption path pushed onto the
 // deferred queue with no cap, unlike the sibling enqueue path.
 // ----------------------------------------------------------------------------

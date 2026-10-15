@@ -341,6 +341,10 @@ export const PLAYABLE_SCENARIOS = [
 ];
 
 const PLAYABLE_VARIANT_ROLE_COUNT = 3;
+// Worker-mode runs queue their setup spawns and read them back from the world
+// mirror a few frames later. Until this much run time has passed, an empty
+// mirror says nothing about the ecosystem, so it cannot fail the run.
+const RUN_START_GRACE_SECONDS = 1.5;
 
 export function validatePlayableScenarioDefinitions(scenarios = PLAYABLE_SCENARIOS) {
   return scenarios.flatMap(scenario => {
@@ -796,7 +800,7 @@ export class PlayableScenarios {
     this.activeRun.progress = progress;
 
     if (
-      metrics.alive <= 0 ||
+      (metrics.alive <= 0 && elapsed >= RUN_START_GRACE_SECONDS) ||
       (elapsed > 20 && metrics.alive < Math.max(6, Math.floor((scenario.minAlive || 20) * 0.35)))
     ) {
       this._failRun('The ecosystem collapsed.');

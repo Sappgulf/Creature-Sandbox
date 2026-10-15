@@ -26,6 +26,32 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-10-15 — scenario-start-grace — Planned
+
+- **Date:** 2026-10-15
+- **Scope:** simulation | docs
+- **Type:** Planned
+- **Issues:** (1) The worker smoke's scenario check failed once under heavy machine load during `proof:release`. After `startScenario('apex_balance')` and 1.2 s of advancing, the playable state had no scenario (`worker text state should preserve started scenario`, actual undefined). (2) The same race can fail a fresh player run as "The ecosystem collapsed." on a slow device. Not forced on this machine; see Verification.
+- **Root Causes:** In worker mode, spawns are queued for the worker and `reset()` does not clear the main-thread world mirror. `_evaluateRun` runs every 0.35 s of run time and fails the run on any `alive <= 0` reading. An evaluation that reads the mirror before the worker's first post-reset snapshot therefore ends a fresh run. Probe trace: right after start the mirror reads 0 creatures, then refills to 64 and 67 within about 0.2 s of real time.
+- **Fixes (planned):** Ignore an empty population reading until the run has 1.5 s of world time (`RUN_START_GRACE_SECONDS` in `playable-scenarios.js`). A world that stays empty past the grace still collapses. The smoke check is left unchanged: it asserts the correct behaviour, and the cause is in the product.
+- **Verification (planned):** A regression test that fails on the current code and passes after the change. Repro probes under CPU load. An error sweep across worker and main modes, desktop and phone, plus production. `npm run proof:release`.
+
+### 2026-10-15 — scenario-start-grace — Implemented
+
+- **Date:** 2026-10-15
+- **Scope:** simulation | docs
+- **Type:** Implemented
+- **Issues:** Same as planned. Items (1) and (2) are the same race.
+- **Root Causes:** Same as planned.
+- **Fixes:** `creature-sim/src/playable-scenarios.js`: `RUN_START_GRACE_SECONDS = 1.5`. The collapse rule is now `(metrics.alive <= 0 && elapsed >= RUN_START_GRACE_SECONDS) || (elapsed > 20 && alive below the floor)`. The second clause is unchanged. `scripts/regression-fixes.test.mjs`: new test "playable-scenarios: an empty world mirror is not a collapse during the start grace". No change to `scripts/browser-smoke.mjs`.
+- **Verification:**
+  - _Regression test:_ "playable-scenarios: an empty world mirror is not a collapse during the start grace" fails on the pre-change code (`an early empty reading must not fail a fresh run`) and passes after it. `node scripts/regression-fixes.test.mjs`: 79 passed, 0 failed.
+  - _Probe, worker mode, before the change:_ right after `startScenario`, the world mirror read 0 creatures in the first 120 ms advance step, then 64 and 67 in the next two. Ten runs under 16 busy-loop processes (a real-time start, and `advanceTime` in 120 ms steps like the smoke, each with an empty sandbox first) did not drop the scenario. The false collapse was **not** forced on this machine, so the fix rests on the regression test and the code path, not on a reproduced flake.
+  - _Error sweep:_ two scenarios started and played about 12 s per session, across worker and main modes, desktop and phone. Before the change this also covered production (`323b64b`): no page errors, console errors, failed requests, or visible `undefined` / `NaN` text. After the change the four local sessions are clean.
+  - _Data:_ all 18 authored scenarios start with at least one creature, so the grace changes no authored start in main mode.
+  - _Gates:_ `npm run proof:release` exit 0 (`Release proof passed.`): git diff check, node checks, lint, `npm test` (194, 79, E2E 1/1, save migration), build, bundle budget, `smoke:browser`, `smoke:main`, `smoke:worker` (desktop, mobile-compact, mobile-large), `smoke:scenarios`, and `evidence:release`.
+  - _Not changed:_ `scripts/browser-smoke.mjs`, so the check still asserts the correct behaviour. The mirror is still not cleared on `RESET`, so the staleness itself remains; the grace bounds its effect.
+
 ### 2026-10-15 — food-props-animation-pass — Planned
 
 - **Date:** 2026-10-15
