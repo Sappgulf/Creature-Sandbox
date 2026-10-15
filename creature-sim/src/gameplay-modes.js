@@ -1,9 +1,11 @@
-import { clamp } from './utils.js';
 import { eventSystem, GameEvents } from './event-system.js';
 
 export const GAMEPLAY_MODES = [
   {
     id: 'chill',
+    // Absolute food knob (environment.foodRateMultiplier). Mode food was multiplicative
+    // in place, so repeated applies compounded and balanced never reset it.
+    foodRate: 1.25,
     name: 'Chill Sandbox',
     icon: '🧘',
     description:
@@ -20,13 +22,13 @@ export const GAMEPLAY_MODES = [
       world.autoBalanceSettings.maxPredators = 10;
       world.autoBalanceSettings.targetFoodFraction = 0.65;
       world.autoBalanceSettings.minFoodAbsolute = 220;
-      world.environment.foodRateMultiplier = clamp(world.environment.foodRateMultiplier * 1.25, 0.8, 2.5);
       world.seasonSpeed = 0.012;
       world.dayLength = 140;
     }
   },
   {
     id: 'balanced',
+    foodRate: 1,
     name: 'Balanced Evolution',
     icon: '⚖️',
     description: 'Default tuning with seasonal swings, measured disasters, and steady evolution pressure.',
@@ -44,13 +46,15 @@ export const GAMEPLAY_MODES = [
       world.autoBalanceSettings.maxPredators = 16;
       world.autoBalanceSettings.targetFoodFraction = 0.5;
       world.autoBalanceSettings.minFoodAbsolute = 180;
-      world.environment.foodRateMultiplier = clamp(world.environment.foodRateMultiplier, 0.6, 2);
       world.seasonSpeed = 0.015;
       world.dayLength = 120;
     }
   },
   {
     id: 'frontier',
+    // Base food: frontier's population comes from its minPopulation floor. A 1.05
+    // food knob measured no change in population or starvation, so it was not kept.
+    foodRate: 1,
     name: 'Frontier Rush',
     icon: '🧭',
     description:
@@ -67,13 +71,13 @@ export const GAMEPLAY_MODES = [
       world.autoBalanceSettings.targetPredatorRatio = 0.27;
       world.autoBalanceSettings.targetFoodFraction = 0.44;
       world.autoBalanceSettings.minFoodAbsolute = 220;
-      world.environment.foodRateMultiplier = clamp(world.environment.foodRateMultiplier * 1.05, 0.5, 2.2);
       world.seasonSpeed = 0.02;
       world.dayLength = 100;
     }
   },
   {
     id: 'mayhem',
+    foodRate: 0.8,
     name: 'Cataclysm',
     icon: '🔥',
     description: 'Crank up predator aggression, disasters, and weather for a desperate fight for survival.',
@@ -85,7 +89,6 @@ export const GAMEPLAY_MODES = [
       world.disasterIntensity = 1.35;
       world.autoBalanceSettings.enabled = false;
       world.autoBalanceSettings.maxPredators = 28;
-      world.environment.foodRateMultiplier = clamp(world.environment.foodRateMultiplier * 0.8, 0.35, 1.4);
       world.seasonSpeed = 0.022;
       world.dayLength = 90;
     }
@@ -116,6 +119,7 @@ export class GameplayModes {
     if (typeof next.apply === 'function') {
       next.apply(this.world);
     }
+    this.syncFoodRate(next);
 
     eventSystem.emit(GameEvents.GAME_MODE_CHANGED, {
       id: next.id,
@@ -130,6 +134,18 @@ export class GameplayModes {
     }
     if (announce && this.audio?.playUISound) {
       this.audio.playUISound('toggle');
+    }
+  }
+
+  /**
+   * Write the mode's food rate into the world. A world reset rebuilds the
+   * environment (back to 1), and a scenario writes its own foodRate, so the
+   * sandbox calls this after a reseed and when a scenario run is left.
+   */
+  syncFoodRate(mode = this.activeMode) {
+    const environment = this.world?.environment;
+    if (environment && Number.isFinite(mode?.foodRate)) {
+      environment.foodRateMultiplier = mode.foodRate;
     }
   }
 

@@ -39,6 +39,9 @@ export class WorldEnvironment {
     this.seasonIndex = 0;
     this.seasonPhase = 0;
     this.seasonSpeed = 0.015;
+    // Food knob read by WorldEcosystem.foodGrowthRate(). Modes and scenarios write it;
+    // a world reset puts it back to the base rate.
+    this.foodRateMultiplier = 1;
 
     this.seasonConfigs = {
       spring: {

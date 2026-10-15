@@ -1,21 +1,6 @@
 import { clamp } from './utils.js';
 import { assetLoader } from './asset-loader.js';
 
-const biomeColors = {
-  forest: [36, 68, 58],
-  desert: [98, 76, 46],
-  tundra: [70, 86, 108],
-  swamp: [34, 72, 66],
-  ocean: [28, 62, 104],
-  mountain: [74, 66, 62],
-  jungle: [34, 78, 66],
-  savanna: [96, 86, 48],
-  meadow: [72, 94, 60],
-  grassland: [62, 82, 52],
-  water: [34, 74, 116],
-  wetland: [42, 82, 74]
-};
-
 const LANDSCAPE_LANDMARKS = Object.freeze([
   { u: 0.39, v: 0.39, radius: 170, fallbackFrame: 4 },
   { u: 0.5, v: 0.26, radius: 180, fallbackFrame: 1 },
@@ -28,60 +13,21 @@ const LANDSCAPE_LANDMARKS = Object.freeze([
 
 const pendingDecorationRequests = new Set();
 
+// Black world: the ground and its atmosphere are off, so creatures, food,
+// props, water and meadows carry the colour. Seasonal tints are scaled back so
+// they do not grey the black.
+const WORLD_BLACK = '#020304';
+const SEASON_TINT_SCALE = 0.25;
+
 // Ground mottling as a repeating world-space tile: one pattern fill per
 // frame, crisp at every zoom (world units map 1:1 to tile pixels).
-const GROUND_SPECKLE_TILE = 192;
-let groundSpeckleCanvas = null;
-let groundSpecklePattern = null;
-let groundSpeckleCtx = null;
-function getGroundSpecklePattern(ctx) {
-  if (typeof document === 'undefined') return null;
-  if (!groundSpeckleCanvas) {
-    const tile = document.createElement('canvas');
-    tile.width = GROUND_SPECKLE_TILE;
-    tile.height = GROUND_SPECKLE_TILE;
-    const tctx = tile.getContext('2d');
-    if (!tctx) return null;
-    let seed = 0x2f6b1d3;
-    const rand = () => {
-      seed ^= seed << 13;
-      seed ^= seed >>> 17;
-      seed ^= seed << 5;
-      return ((seed >>> 0) % 100000) / 100000;
-    };
-    const passes = [
-      ['rgba(12, 30, 18, 0.22)', 150],
-      ['rgba(70, 118, 72, 0.16)', 130],
-      ['rgba(160, 204, 128, 0.12)', 70]
-    ];
-    for (const [color, count] of passes) {
-      tctx.fillStyle = color;
-      tctx.beginPath();
-      for (let i = 0; i < count; i++) {
-        const x = rand() * GROUND_SPECKLE_TILE;
-        const y = rand() * GROUND_SPECKLE_TILE;
-        const r = 0.5 + rand() * 1.1;
-        tctx.moveTo(x + r, y);
-        tctx.arc(x, y, r, 0, Math.PI * 2);
-      }
-      tctx.fill();
-    }
-    groundSpeckleCanvas = tile;
-  }
-  if (!groundSpecklePattern || groundSpeckleCtx !== ctx) {
-    groundSpecklePattern = ctx.createPattern(groundSpeckleCanvas, 'repeat');
-    groundSpeckleCtx = ctx;
-  }
-  return groundSpecklePattern;
-}
-
 // Baked, world-space ground layer. The per-frame radial-gradient patch pass
 // was the most expensive thing on screen (tens of millions of software-
 // rasterized pixels per second); baking it once per season bucket and drawing
 // it as a single scaled image keeps the look and removes the frame cost.
 const terrainLayerCache = { key: '', canvas: null, pendingKey: '' };
 
-function buildTerrainLayer(world, season, phase, key) {
+function buildTerrainLayer(world, key) {
   const scale = 0.2;
   const width = Math.max(1, Math.round(world.width * scale));
   const height = Math.max(1, Math.round(world.height * scale));
@@ -91,107 +37,38 @@ function buildTerrainLayer(world, season, phase, key) {
   const layerCtx = canvas.getContext('2d');
   if (!layerCtx) return null;
 
-  // Deterministic RNG so the same world/season rebuilds an identical layer.
-  let seed = 0x9e3779b9;
-  for (let i = 0; i < key.length; i++) seed = Math.imul(seed ^ key.charCodeAt(i), 0x85ebca6b);
-  const rand = () => {
-    seed ^= seed << 13;
-    seed ^= seed >>> 17;
-    seed ^= seed << 5;
-    return ((seed >>> 0) % 100000) / 100000;
-  };
-
-  // 1. Base ground: a living green instead of the near-black canvas showing
-  //    through, with a gentle vertical variation for depth.
-  const base = layerCtx.createLinearGradient(0, 0, 0, height);
-  base.addColorStop(0, 'rgba(24, 48, 34, 0.9)');
-  base.addColorStop(0.55, 'rgba(18, 40, 28, 0.92)');
-  base.addColorStop(1, 'rgba(13, 32, 23, 0.94)');
-  layerCtx.fillStyle = base;
-  layerCtx.fillRect(0, 0, width, height);
-
-  // 2. Biome color fields.
-  const seasonGroundTint = getSeasonalGroundTint(season, phase);
-  const sampleSpacing = Math.max(200, 360) * scale;
-  const influenceRadius = sampleSpacing * 0.95;
-  const overlayAlpha = 0.46;
-  for (let gy = 0; gy < height + sampleSpacing; gy += sampleSpacing) {
-    for (let gx = 0; gx < width + sampleSpacing; gx += sampleSpacing) {
-      const jitterX = Math.sin(gx * 0.013 + gy * 0.021) * sampleSpacing * 0.18;
-      const jitterY = Math.cos(gx * 0.017 - gy * 0.011) * sampleSpacing * 0.16;
-      const cx = gx + sampleSpacing * 0.5 + jitterX;
-      const cy = gy + sampleSpacing * 0.5 + jitterY;
-      const biome = world.getBiomeAt(cx / scale, cy / scale);
-      const biomeColor = biome?.type ? biomeColors[biome.type] : null;
-      if (!biomeColor) continue;
-      const gradient = layerCtx.createRadialGradient(cx, cy, influenceRadius * 0.08, cx, cy, influenceRadius);
-      const tintedColor = [
-        clamp(biomeColor[0] + seasonGroundTint.r * 100, 0, 255),
-        clamp(biomeColor[1] + seasonGroundTint.g * 100, 0, 255),
-        clamp(biomeColor[2] + seasonGroundTint.b * 100, 0, 255)
-      ];
-      gradient.addColorStop(0, `rgba(${tintedColor.join(',')}, ${overlayAlpha})`);
-      gradient.addColorStop(0.45, `rgba(${tintedColor.join(',')}, ${overlayAlpha * 0.62})`);
-      gradient.addColorStop(0.75, `rgba(${tintedColor.join(',')}, ${overlayAlpha * 0.24})`);
-      gradient.addColorStop(1, `rgba(${tintedColor.join(',')}, 0)`);
-      layerCtx.fillStyle = gradient;
-      layerCtx.fillRect(cx - influenceRadius, cy - influenceRadius, influenceRadius * 2, influenceRadius * 2);
-    }
-  }
-
-  // 3. Dappled sunlight: broad warm and cool patches break the flat wash.
-  //    Kept to 20 moderate patches: large gradient fills are the expensive
-  //    part of the bake, and this still reads as light through a canopy.
-  for (let i = 0; i < 20; i++) {
-    const x = rand() * width;
-    const y = rand() * height;
-    const r = 70 + rand() * 130;
-    const warm = rand() > 0.42;
-    const g = layerCtx.createRadialGradient(x, y, r * 0.1, x, y, r);
-    if (warm) {
-      g.addColorStop(0, 'rgba(236, 246, 190, 0.1)');
-      g.addColorStop(1, 'rgba(236, 246, 190, 0)');
-    } else {
-      g.addColorStop(0, 'rgba(6, 16, 12, 0.16)');
-      g.addColorStop(1, 'rgba(6, 16, 12, 0)');
-    }
+  // Food meadows are the only baked ground detail. On the black field they
+  // read as lime-teal clearings, which shows where the herd can graze.
+  const meadows = world.ecosystem?.foodPatches || [];
+  for (const patch of meadows) {
+    if (!Number.isFinite(patch.x) || !Number.isFinite(patch.y)) continue;
+    const fertility = clamp(Number(patch.fertility ?? 1), 0.5, 1.4);
+    const mx = patch.x * scale;
+    const my = patch.y * scale;
+    const mr = (patch.radius || 90) * 1.25 * scale;
+    const g = layerCtx.createRadialGradient(mx, my, mr * 0.05, mx, my, mr);
+    g.addColorStop(0, `rgba(150, 255, 170, ${(0.34 * fertility).toFixed(3)})`);
+    g.addColorStop(0.45, `rgba(64, 214, 150, ${(0.2 * fertility).toFixed(3)})`);
+    g.addColorStop(0.8, `rgba(40, 160, 120, ${(0.06 * fertility).toFixed(3)})`);
+    g.addColorStop(1, 'rgba(40, 160, 120, 0)');
     layerCtx.fillStyle = g;
-    layerCtx.fillRect(x - r, y - r, r * 2, r * 2);
+    layerCtx.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
   }
-
-  // 4. Ground-cover speckle lives in a full-resolution world-space pattern
-  //    (see getGroundSpecklePattern). Baking it here at 0.2 scale turned each
-  //    2px fleck into a ~10 world-unit blurry square once the camera zoomed in.
-
-  // 5. Feather the world edge: erase alpha over a border band so the baked
-  // rect melts into the flat ground tone instead of drawing a hard-edged box
-  // when zoomed out past the world. Bake-time only — zero per-frame cost.
-  const featherWorld = 150;
-  const feather = Math.max(8, Math.round(featherWorld * scale));
-  layerCtx.globalCompositeOperation = 'destination-out';
-  const fadeEdge = (x0, y0, x1, y1, fx, fy, fw, fh) => {
-    const g = layerCtx.createLinearGradient(x0, y0, x1, y1);
-    g.addColorStop(0, 'rgba(0, 0, 0, 1)');
-    g.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    layerCtx.fillStyle = g;
-    layerCtx.fillRect(fx, fy, fw, fh);
-  };
-  fadeEdge(0, 0, feather, 0, 0, 0, feather, height); // left
-  fadeEdge(width, 0, width - feather, 0, width - feather, 0, feather, height); // right
-  fadeEdge(0, 0, 0, feather, 0, 0, width, feather); // top
-  fadeEdge(0, height, 0, height - feather, 0, height - feather, width, feather); // bottom
-  layerCtx.globalCompositeOperation = 'source-over';
 
   terrainLayerCache.key = key;
   terrainLayerCache.canvas = canvas;
   return canvas;
 }
 
-function getTerrainLayer(world, season, phase) {
-  const seed = world.worldSeed ?? world.biomeGenerator?.seed ?? world._saveExtras?.biomeSeed ?? '';
-  const key = [Math.round(world.width), Math.round(world.height), season, Math.round((phase || 0) * 20), seed].join(
-    '|'
-  );
+function getTerrainLayer(world) {
+  // Meadow layout is part of the key: the snapshot carries it a tick after the
+  // world is built, and a new sandbox must not keep the previous one's meadows.
+  const meadows = world.ecosystem?.foodPatches || [];
+  const firstMeadow = meadows[0];
+  const meadowLayout = firstMeadow
+    ? `${meadows.length}:${Math.round(firstMeadow.x)},${Math.round(firstMeadow.y)}`
+    : '0';
+  const key = [Math.round(world.width), Math.round(world.height), meadowLayout].join('|');
   if (terrainLayerCache.key === key && terrainLayerCache.canvas) {
     return terrainLayerCache.canvas;
   }
@@ -200,10 +77,10 @@ function getTerrainLayer(world, season, phase) {
     const build = () => {
       terrainLayerCache.pendingKey = '';
       if (terrainLayerCache.key === key) return;
-      buildTerrainLayer(world, season, phase, key);
+      buildTerrainLayer(world, key);
     };
-    // Delay the bake past first paint / world-ready so the (necessarily
-    // heavier) terrain build never lands inside the startup long-task window.
+    // Delay the bake past first paint / world-ready so it never lands inside
+    // the startup long-task window.
     const schedule = () => {
       if (typeof requestIdleCallback === 'function') {
         requestIdleCallback(build, { timeout: 1500 });
@@ -213,7 +90,7 @@ function getTerrainLayer(world, season, phase) {
     };
     setTimeout(schedule, 700);
   }
-  // Draw the previous season's layer until the new one is ready.
+  // Draw the previous layer until the new one is ready.
   return terrainLayerCache.canvas;
 }
 
@@ -282,9 +159,8 @@ export function drawBiomeBase(renderer, ctx, _world) {
   // zoomed-out views read as endless field instead of a lit box floating in
   // a void. Parallax layers draw on top of this fill (and below
   // drawBiomeDetail) so the depth layers stay visible instead of being
-  // painted over. The baked terrain, biome fields and atmosphere gradient
-  // layer on top within the world bounds.
-  ctx.fillStyle = '#132820';
+  // painted over. The baked meadow layer sits on top within the world bounds.
+  ctx.fillStyle = WORLD_BLACK;
   const visibleWidth = bounds.x2 - bounds.x1;
   const visibleHeight = bounds.y2 - bounds.y1;
   const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
@@ -297,82 +173,13 @@ export function drawBiomeBase(renderer, ctx, _world) {
 }
 
 export function drawBiomeDetail(renderer, ctx, world) {
-  const bounds = renderer._viewBounds;
-  const season = world.currentSeason || 'spring';
-  const phase = world.seasonPhase || 0;
-
-  const visibleWidth = bounds.x2 - bounds.x1;
-  const visibleHeight = bounds.y2 - bounds.y1;
-  const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
-
-  const atmosphereGradient = ctx.createLinearGradient(bounds.x1, bounds.y1, bounds.x2, bounds.y2);
-  atmosphereGradient.addColorStop(0, 'rgba(64, 96, 74, 0.1)');
-  atmosphereGradient.addColorStop(0.48, 'rgba(8, 22, 16, 0.02)');
-  atmosphereGradient.addColorStop(1, 'rgba(0, 0, 0, 0.12)');
-  ctx.fillStyle = atmosphereGradient;
-  ctx.fillRect(
-    bounds.x1 - extendAmount,
-    bounds.y1 - extendAmount,
-    visibleWidth + extendAmount * 2,
-    visibleHeight + extendAmount * 2
-  );
-
-  // Baked biome-colored ground. The layer covers the whole world at quarter
-  // resolution and is drawn as one image (the browser clips to the viewport),
-  // replacing a per-frame grid of radial-gradient fills.
-  if (world.getBiomeAt && renderer.camera.zoom > 0.18) {
-    const layer = getTerrainLayer(world, season, phase);
+  // Black world: the baked meadow layer is the only ground detail. It is drawn
+  // as one image, and the browser clips it to the viewport.
+  if (renderer.camera.zoom > 0.18) {
+    const layer = getTerrainLayer(world);
     if (layer) {
       ctx.drawImage(layer, 0, 0, world.width, world.height);
     }
-    const speckle = getGroundSpecklePattern(ctx);
-    if (speckle && renderer.camera.zoom > 0.45) {
-      const x1 = Math.max(0, bounds.x1);
-      const y1 = Math.max(0, bounds.y1);
-      const x2 = Math.min(world.width, bounds.x2);
-      const y2 = Math.min(world.height, bounds.y2);
-      if (x2 > x1 && y2 > y1) {
-        ctx.fillStyle = speckle;
-        ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
-      }
-    }
-  }
-
-  if (renderer.camera.zoom > 0.3) {
-    const textureSpacing = Math.max(64, 118 / renderer.camera.zoom);
-    const dotRadius = clamp(0.9 / renderer.camera.zoom, 0.65, 1.8);
-    const startX = Math.floor(bounds.x1 / textureSpacing) * textureSpacing;
-    const startY = Math.floor(bounds.y1 / textureSpacing) * textureSpacing;
-    ctx.save();
-    for (let gx = startX; gx < bounds.x2 + textureSpacing; gx += textureSpacing) {
-      for (let gy = startY; gy < bounds.y2 + textureSpacing; gy += textureSpacing) {
-        const jitterX = Math.sin(gx * 0.031 + gy * 0.017) * textureSpacing * 0.42;
-        const jitterY = Math.cos(gx * 0.021 - gy * 0.029) * textureSpacing * 0.38;
-        const x = gx + textureSpacing * 0.5 + jitterX;
-        const y = gy + textureSpacing * 0.5 + jitterY;
-        const biome = world.getBiomeAt?.(x, y);
-        const tint =
-          biome?.type === 'water'
-            ? 'rgba(120, 190, 230, 0.26)'
-            : biome?.type === 'desert'
-              ? 'rgba(244, 190, 120, 0.22)'
-              : 'rgba(170, 210, 170, 0.2)';
-        const radiusVariation = 0.7 + Math.abs(Math.sin(gx * 0.07 + gy * 0.053)) * 0.7;
-        ctx.fillStyle = tint;
-        ctx.beginPath();
-        ctx.arc(x, y, dotRadius * radiusVariation, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Tiny companion fleck gives the floor a mottled, hand-painted feel.
-        const fleckX = x + Math.cos(gx * 0.043 + gy * 0.06) * textureSpacing * 0.24;
-        const fleckY = y + Math.sin(gx * 0.05 - gy * 0.037) * textureSpacing * 0.22;
-        ctx.fillStyle = biome?.type === 'water' ? 'rgba(180, 225, 255, 0.16)' : 'rgba(120, 160, 120, 0.13)';
-        ctx.beginPath();
-        ctx.arc(fleckX, fleckY, dotRadius * 0.62, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    ctx.restore();
   }
 }
 
@@ -671,7 +478,7 @@ export function drawSeasonOverlay(renderer, ctx, world) {
   const extendAmount = Math.max(visibleWidth, visibleHeight) * 2;
 
   // Primary season color overlay
-  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha * SEASON_TINT_SCALE})`;
   ctx.fillRect(
     bounds.x1 - extendAmount,
     bounds.y1 - extendAmount,
@@ -864,7 +671,7 @@ export function drawDecorationFromSprite(renderer, ctx, dec, spriteInfo, assetKe
   // Ground cover was faded to 0.46, which made a field of flowers read as a
   // faint smudge. Keep it a touch under full so life stays the subject, but
   // let the layer actually show.
-  ctx.globalAlpha = (isGroundCover ? 0.72 : 0.88) * mod.alphaMult;
+  ctx.globalAlpha = (isGroundCover ? 0.9 : 0.95) * mod.alphaMult;
 
   // NOTE: this used to set ctx.filter (saturate/brightness/hue-rotate) before
   // every filtered sprite draw. In software rendering Chromium flushes that
@@ -873,7 +680,7 @@ export function drawDecorationFromSprite(renderer, ctx, dec, spriteInfo, assetKe
   // per hue, so the tint cache does not churn); saturation/brightness ride on
   // globalAlpha and the season overlays. Rocks keep a darker stone value.
   const tintHue = Math.round(((Number(dec.hue) || 0) + (mod.hueShift || 0)) / 8) * 8;
-  const tintLightness = dec.type === 'rock' ? 44 : 58;
+  const tintLightness = dec.type === 'rock' ? 60 : 66;
   const tintColor = `hsl(${tintHue}, 52%, ${tintLightness}%)`;
 
   const frame = assetLoader.getSpriteFrameSync(assetKey, spriteIndex, frameWidth, tintColor);
@@ -925,7 +732,8 @@ export function drawDecorationFallback(renderer, ctx, dec, world) {
   const applyHsl = (hue, saturation, lightness) => {
     const h = (hue + mod.hueShift + 360) % 360;
     const s = clamp(saturation * mod.saturationMult, 0, 100);
-    const l = clamp(lightness * mod.lightnessMult, 0, 100);
+    // Black world: fallback shapes are lifted so they read on the black field.
+    const l = clamp(lightness * mod.lightnessMult * 1.35, 0, 100);
     return `hsl(${h}, ${s}%, ${l}%)`;
   };
 

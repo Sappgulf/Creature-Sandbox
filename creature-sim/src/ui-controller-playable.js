@@ -88,6 +88,10 @@ export function applyUiPlayableMethods(UIController) {
 
   UIController.prototype.onPlayableScenarioStart = function () {
     if (!this.playableScenarios) return;
+    // Guard the reset itself, not only the disabled button: a running scenario
+    // is discarded by startScenario, so it must be left explicitly first.
+    const current = this.playableScenarios.getSnapshot?.();
+    if (current?.active && current?.state === 'running') return;
     const select = domCache.get('playableScenarioSelect');
     const id = select?.value || this.playableScenarios.getScenarios()[0]?.id;
     const snapshot = this.gameDirector?.startScenario?.(id) || this.playableScenarios.startScenario(id);
@@ -117,6 +121,15 @@ export function applyUiPlayableMethods(UIController) {
       leaveBtn.classList.toggle('hidden', !data.active);
       leaveBtn.setAttribute('aria-hidden', data.active ? 'false' : 'true');
     }
+    // Start rebuilds the world from the scenario's setup, so pressing it during
+    // a live run silently discarded that run. A finished run is already saved,
+    // so only a running one blocks Start: leave it first, then start again.
+    const startBtn = domCache.get('playableScenarioStart');
+    const liveRun = !!data.active && data.state === 'running';
+    if (startBtn) {
+      startBtn.disabled = liveRun;
+      startBtn.title = liveRun ? 'Leave the active run before starting another' : 'Start selected scenario';
+    }
 
     if (select && scenario?.id) {
       select.value = scenario.id;
@@ -126,15 +139,44 @@ export function applyUiPlayableMethods(UIController) {
       ? `${renderIcon(scenario.icon, { className: 'director-state-glyph' })} ${escapeHtml(scenario.name)} · ${formatTime(data.elapsed)} / ${formatTime(data.targetSeconds)}`
       : 'Pick a scenario to start a real run';
 
+    const guidedStates = this._getGuidedLoopStates(data);
+    const guidedDoneCount = guidedStates ? guidedStates.filter(Boolean).length : 0;
+    const guided = !!(scenario?.guidedLoop && scenario?.steps?.length);
+    // One primary objective is visible at a time: the first unfinished card.
+    // The rest, the full expedition checklist and the other steps sit behind
+    // the Details disclosure, so the director fits the right column.
+    const objectiveList = objectiveCards.slice(0, 4);
+    const primaryIndex = Math.max(
+      0,
+      objectiveList.findIndex(card => card.level !== 'complete')
+    );
+    const otherCards = objectiveList.filter((_, index) => index !== primaryIndex);
+    const renderObjectiveCard = card => `
+            <div class="director-objective-card ${escapeHtml(card.level || 'active')}">
+              <span class="objective-mark">${renderIcon(card.icon)}</span>
+              <span class="objective-text">
+                <strong>${escapeHtml(card.description || card.label)}</strong>
+                <em>${escapeHtml(card.value || `${Math.round((card.progress || 0) * 100)}%`)}</em>
+              </span>
+              <span class="objective-ring" style="--objective-progress:${Math.round((card.progress || 0) * 100)}%"></span>
+            </div>`;
+    const primaryObjective = objectiveList[primaryIndex]
+      ? `<div class="director-objectives" aria-label="Primary objective">${renderObjectiveCard(objectiveList[primaryIndex])}</div>`
+      : '';
+    const otherObjectives = otherCards.length
+      ? `<div class="director-objectives" aria-label="Other objectives">${otherCards.map(renderObjectiveCard).join('')}</div>`
+      : '';
+    const nextStepIndex = guided && guidedStates ? scenario.steps.findIndex((_, index) => !guidedStates[index]) : -1;
+    const nextStep =
+      nextStepIndex >= 0
+        ? `<div class="director-next-step"><span class="guided-loop-index">${nextStepIndex + 1}</span><span><b>Next</b>${escapeHtml(scenario.steps[nextStepIndex])}</span></div>`
+        : '';
     const steps =
       scenario?.steps?.length && !scenario?.guidedLoop
         ? `<div class="director-steps">${scenario.steps.map(step => `<span>${escapeHtml(step)}</span>`).join('')}</div>`
         : '';
-    const guidedStates = this._getGuidedLoopStates(data);
-    const guidedDoneCount = guidedStates ? guidedStates.filter(Boolean).length : 0;
-    const guidedLoop =
-      scenario?.guidedLoop && scenario?.steps?.length
-        ? `<section class="director-guided-loop" aria-label="Guided expedition loop">
+    const guidedLoop = guided
+      ? `<section class="director-guided-loop" aria-label="Guided expedition loop">
           <div class="guided-loop-heading"><span>First expedition</span><em>${guidedDoneCount}/${scenario.steps.length} done</em></div>
           <ol>
             ${scenario.steps
@@ -148,33 +190,41 @@ export function applyUiPlayableMethods(UIController) {
               .join('')}
           </ol>
         </section>`
-        : '';
-    const objectives = objectiveCards.length
-      ? `<div class="director-objectives" aria-label="Current objectives">
-          ${objectiveCards
-            .slice(0, 4)
-            .map(
-              card => `
-            <div class="director-objective-card ${escapeHtml(card.level || 'active')}">
-              <span class="objective-mark">${renderIcon(card.icon)}</span>
-              <span class="objective-text">
-                <strong>${escapeHtml(card.description || card.label)}</strong>
-                <em>${escapeHtml(card.value || `${Math.round((card.progress || 0) * 100)}%`)}</em>
-              </span>
-              <span class="objective-ring" style="--objective-progress:${Math.round((card.progress || 0) * 100)}%"></span>
-            </div>
-          `
-            )
-            .join('')}
-        </div>`
       : '';
+    const why = director.why ? `<p class="director-copy">${escapeHtml(director.why)}</p>` : '';
+    const detailsBody = `${why}${otherObjectives}${guidedLoop}${steps}`;
+    const detailsSummary =
+      [
+        otherCards.length ? `${otherCards.length} more objective${otherCards.length === 1 ? '' : 's'}` : '',
+        guided ? `${guidedDoneCount}/${scenario.steps.length} steps` : ''
+      ]
+        .filter(Boolean)
+        .join(' · ') || 'Details';
+    const details = detailsBody.trim()
+      ? `<details class="director-details"${this._directorDetailsOpen ? ' open' : ''}>
+          <summary>${escapeHtml(detailsSummary)}</summary>
+          ${detailsBody}
+        </details>`
+      : '';
+    if (!root.dataset.detailsBound) {
+      root.dataset.detailsBound = 'true';
+      // toggle does not bubble, so the panel root listens in the capture phase
+      // and remembers the disclosure state across the re-renders.
+      root.addEventListener(
+        'toggle',
+        event => {
+          if (event.target?.classList?.contains('director-details')) this._directorDetailsOpen = event.target.open;
+        },
+        true
+      );
+    }
 
     root.innerHTML = `
       <div class="director-art" style="--scenario-frame:${artFrame}" aria-hidden="true"></div>
+      ${primaryObjective}
       <div class="director-status ${escapeHtml(director.level || 'stable')}">
         <div class="director-state">${stateLabel}</div>
         <div class="director-headline">${escapeHtml(director.headline || 'Choose a scenario')}</div>
-        <div class="director-copy">${escapeHtml(director.why || '')}</div>
         <div class="director-action">${escapeHtml(director.nextAction || '')}</div>
       </div>
       <div class="director-progress" aria-label="Scenario progress">
@@ -182,13 +232,12 @@ export function applyUiPlayableMethods(UIController) {
       </div>
       <div class="director-metrics">
         <span><b>${metrics.alive ?? 0}</b> alive</span>
-        <span><b>${metrics.predators ?? 0}</b> predators</span>
+        <span title="predators"><b>${metrics.predators ?? 0}</b> pred</span>
         <span><b>${metrics.food ?? 0}</b> food</span>
         <span><b>${Math.round(metrics.averageStress ?? 0)}</b> stress</span>
       </div>
-      ${objectives}
-      ${guidedLoop}
-      ${steps}
+      ${nextStep}
+      ${details}
     `;
 
     // Keep the scenario picker's clear counts fresh after a finished run.

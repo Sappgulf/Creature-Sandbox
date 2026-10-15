@@ -1784,6 +1784,9 @@ export async function initializeApp() {
             setElementHidden(homePage, true);
             setHomePageActive(false);
             startNewGame();
+            // The expedition's own four-step loop is the onboarding here, so the
+            // generic tutorial card must not stack on top of it.
+            tutorial?.suspend?.();
 
             // startScenario reseeds the world from the scenario's own setup,
             // so it has to run after the new game exists.
@@ -2133,6 +2136,8 @@ export async function initializeApp() {
       if (world && world.seed) {
         world.seed(nextSeed.herbivores, nextSeed.predators, nextSeed.food);
       }
+      // The reseed rebuilt the environment; put the active mode's food rate back.
+      gameplayModes?.syncFoodRate?.();
 
       // Share seed in URL for easy linking
       setSeedInUrl(encodeSeed(nextSeed));

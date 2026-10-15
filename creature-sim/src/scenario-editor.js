@@ -187,10 +187,12 @@ export class ScenarioEditor {
     this.panel.id = 'scenario-editor';
     this.panel.style.cssText = `
       position: fixed;
-      top: 60px;
-      left: 20px;
-      width: 900px;
-      height: 700px;
+      top: 64px;
+      left: 12px;
+      /* Sized to the viewport, so the header and its close button stay on phones. */
+      width: min(900px, calc(100vw - 24px));
+      height: min(700px, calc(100vh - 88px));
+      max-width: calc(100vw - 24px);
       background: rgba(15, 15, 15, 0.95);
       border: 2px solid #00ff00;
       border-radius: 8px;
@@ -205,7 +207,7 @@ export class ScenarioEditor {
     this.panel.innerHTML = `
       <div style="padding: 15px; height: 100%; display: flex; flex-direction: column;">
         <!-- Header -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; margin-bottom: 15px;">
           <h2 style="margin: 0; color: #00ff00;">Scenario Editor</h2>
           <div>
             <button id="scenario-save" style="background: #333; border: 1px solid #00ff00; color: #00ff00; cursor: pointer; padding: 4px 12px; margin-right: 8px;">Save</button>
@@ -216,7 +218,7 @@ export class ScenarioEditor {
         </div>
 
         <!-- Tabs -->
-        <div id="scenario-tabs" style="display: flex; margin-bottom: 15px; border-bottom: 1px solid #444;">
+        <div id="scenario-tabs" style="display: flex; overflow-x: auto; white-space: nowrap; margin-bottom: 15px; border-bottom: 1px solid #444;">
           <button class="tab-button active" data-tab="basic">Basic</button>
           <button class="tab-button" data-tab="creatures">Creatures</button>
           <button class="tab-button" data-tab="environment">Environment</button>
@@ -631,11 +633,13 @@ export class ScenarioEditor {
     // Slider value updates
     this.setupSliderListeners();
 
-    // Keyboard shortcut (Ctrl+Shift+S)
+    // Keyboard shortcut (Ctrl+Shift+S), and Escape closes the editor when it is open.
     document.addEventListener('keydown', e => {
       if (e.ctrlKey && e.shiftKey && e.key === 'S') {
         e.preventDefault();
         this.toggle();
+      } else if (e.key === 'Escape' && this.isVisible) {
+        this.hide();
       }
     });
 

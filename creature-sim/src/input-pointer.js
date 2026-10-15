@@ -243,7 +243,16 @@ export function applyInputPointerMethods(InputManager) {
    */
   InputManager.prototype.onPointerCancel = function (e) {
     this.clearGodHold();
-    this.canvas.releasePointerCapture?.(e?.pointerId);
+    // Visibility changes cancel with no pointer id, and releasePointerCapture
+    // throws NotFoundError when nothing is captured. Only release a real pointer,
+    // and treat "not captured" as the outcome we wanted anyway.
+    if (e?.pointerId != null) {
+      try {
+        this.canvas.releasePointerCapture?.(e.pointerId);
+      } catch {
+        // Capture already ended, so there is nothing to release.
+      }
+    }
     if (this._activePointerId === e?.pointerId) this._activePointerId = null;
     this._minimapPointerId = null;
 

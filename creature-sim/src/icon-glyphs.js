@@ -8,7 +8,16 @@
  *
  * Unknown icons fall back to a target glyph, so a save restored from an older
  * build can never break the layout.
+ *
+ * Icon values come from save files and imported data, so they are untrusted:
+ * only well-formed symbol ids pass through, and everything interpolated into
+ * markup is escaped.
  */
+import { escapeHtml } from './safe-html.js';
+
+// Symbol ids in the index.html sprite: lowercase words and hyphens only.
+const SYMBOL_ID = /^i-[a-z0-9-]+$/;
+
 const EMOJI_TO_SYMBOL = {
   '🌱': 'i-food',
   '🌿': 'i-food',
@@ -63,11 +72,12 @@ const EMOJI_TO_SYMBOL = {
 export function resolveSymbol(icon, fallback = 'i-discoveries') {
   if (icon == null || icon === '') return fallback;
   const value = String(icon);
-  if (value.startsWith('i-')) return value;
-  return EMOJI_TO_SYMBOL[value] || fallback;
+  if (value.startsWith('i-')) return SYMBOL_ID.test(value) ? value : fallback;
+  // Own properties only: 'constructor' or '__proto__' must not resolve to prototype members.
+  return Object.prototype.hasOwnProperty.call(EMOJI_TO_SYMBOL, value) ? EMOJI_TO_SYMBOL[value] : fallback;
 }
 
 export function renderIcon(icon, { fallback = 'i-discoveries', className = 'ui-glyph' } = {}) {
   const id = resolveSymbol(icon, fallback);
-  return `<svg class="${className}" viewBox="0 0 24 24" aria-hidden="true"><use href="#${id}"/></svg>`;
+  return `<svg class="${escapeHtml(className)}" viewBox="0 0 24 24" aria-hidden="true"><use href="#${escapeHtml(id)}"/></svg>`;
 }

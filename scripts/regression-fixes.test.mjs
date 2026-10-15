@@ -19,6 +19,7 @@ import { calculateCurrentSpeed } from '../creature-sim/src/creature-combat.js';
 import { SessionGoals } from '../creature-sim/src/session-goals.js';
 import { CampaignSystem } from '../creature-sim/src/campaign-system.js';
 import { GameplayModes } from '../creature-sim/src/gameplay-modes.js';
+import { PLAYABLE_SCENARIOS, PlayableScenarios } from '../creature-sim/src/playable-scenarios.js';
 import { NotificationSystem } from '../creature-sim/src/notification-system.js';
 import { fillSnapshotPool } from '../creature-sim/src/snapshot-pool.js';
 import { SimulationProxy } from '../creature-sim/src/simulation-proxy.js';
@@ -28,6 +29,7 @@ import { TutorialSystem } from '../creature-sim/src/tutorial-system.js';
 import { packCreature, unpackCreature, createCreatureBuffer } from '../creature-sim/src/simulation-state.js';
 import { collectGameplayMetrics } from '../creature-sim/src/gameplay-objectives.js';
 import { ControlStripController } from '../creature-sim/src/control-strip.js';
+import { renderIcon, resolveSymbol } from '../creature-sim/src/icon-glyphs.js';
 import { SPEED_OPTIONS, SPEED_LABELS } from '../creature-sim/src/game-state.js';
 import { CreatureAgentTuning } from '../creature-sim/src/creature-agent-constants.js';
 import { resolveDietRole } from '../creature-sim/src/creature-genetics-helpers.js';
@@ -342,6 +344,59 @@ test('gameplay-modes: disasterIntensity resets when switching away from frontier
     world.disasterIntensity,
     1,
     `balanced mode should reset disaster intensity, got ${world.disasterIntensity}`
+  );
+});
+
+// ----------------------------------------------------------------------------
+// gameplay-modes.js: the food knob (environment.foodRateMultiplier) started
+// undefined, so every mode's compounding multiplier stayed NaN and food growth
+// ignored it. It is now an absolute per-mode value, starts at 1, is re-applied
+// after a world reset, and is restored when a scenario run is left.
+// ----------------------------------------------------------------------------
+test('gameplay-modes: food knob is absolute, starts at base, and survives resets', () => {
+  const world = new World(400, 400);
+  assert.equal(world.environment.foodRateMultiplier, 1, 'world environment starts at the base food rate');
+
+  const modes = new GameplayModes(world);
+  const growthFor = id => {
+    modes.applyMode(id);
+    return world.ecosystem.foodGrowthRate();
+  };
+  const balanced = growthFor('balanced');
+
+  assert.ok(Math.abs(growthFor('chill') / balanced - 1.25) < 1e-9, 'chill scales food growth by 1.25');
+  assert.equal(growthFor('chill'), growthFor('chill'), 're-applying chill must not compound its food knob');
+  assert.ok(Math.abs(growthFor('mayhem') / balanced - 0.8) < 1e-9, 'mayhem scales food growth by 0.8');
+  assert.equal(growthFor('balanced'), balanced, 'balanced returns food growth to the base rate');
+
+  modes.applyMode('chill');
+  world.environment.foodRateMultiplier = 0.22;
+  modes.syncFoodRate();
+  assert.equal(world.environment.foodRateMultiplier, 1.25, 'syncFoodRate restores the active mode food rate');
+
+  world.reset();
+  assert.equal(world.environment.foodRateMultiplier, 1, 'a world reset returns the food knob to base');
+  modes.syncFoodRate();
+  assert.equal(
+    world.environment.foodRateMultiplier,
+    1.25,
+    'the active mode food rate is back after a reset once re-synced'
+  );
+});
+
+test('playable-scenarios: leaving a scenario returns the sandbox to its mode food rate', () => {
+  const world = new World(400, 400);
+  const modes = new GameplayModes(world);
+  const scenarios = new PlayableScenarios({ world, gameplayModes: modes });
+  const drought = PLAYABLE_SCENARIOS.find(item => item.id === 'drought_rescue');
+  scenarios.startScenario('drought_rescue', { announce: false });
+  assert.equal(world.environment.foodRateMultiplier, drought.tuning.foodRate, 'the scenario sets its own food rate');
+
+  assert.equal(scenarios.leaveRun({ silent: true }), true, 'leaveRun reports that a run was active');
+  assert.equal(
+    world.environment.foodRateMultiplier,
+    modes.getActiveMode().foodRate,
+    'leaving a scenario restores the active mode food rate'
   );
 });
 
@@ -1683,6 +1738,24 @@ test('courtship: babies are never locked or bred', () => {
     assert.ok(adult.goal.bondingWith !== baby.id, 'adult must not lock onto a baby');
     assert.equal(baby.goal.bondingWith, null, 'baby must not hold a courtship lock');
   });
+});
+
+test('icon-glyphs: a symbol id cannot break out of the href attribute', () => {
+  // Icon values come from save files and imported data. An `i-` value used to be
+  // interpolated into markup as-is, so a quote could add attributes to the svg.
+  const hostile = 'i-x" onload="alert(1)';
+  assert.equal(resolveSymbol(hostile), 'i-discoveries', 'malformed symbol ids must fall back');
+  assert.ok(!renderIcon(hostile).includes('onload'), 'injected attribute must not reach the markup');
+  assert.equal(
+    renderIcon('i-food', { className: 'x"y' }).includes('class="x&quot;y"'),
+    true,
+    'class names are escaped'
+  );
+  assert.equal(resolveSymbol('i-food'), 'i-food', 'well-formed symbol ids pass through unchanged');
+  assert.equal(resolveSymbol('🌱'), 'i-food', 'legacy emoji still map to their glyph');
+  assert.equal(resolveSymbol('constructor'), 'i-discoveries', 'prototype keys are not icons');
+  assert.equal(resolveSymbol('__proto__'), 'i-discoveries', 'prototype keys are not icons');
+  assert.match(renderIcon('i-food'), /<use href="#i-food"\/>/);
 });
 
 console.log('\n=== SUMMARY ===');

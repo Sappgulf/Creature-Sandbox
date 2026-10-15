@@ -143,9 +143,17 @@ assert.equal(CURRENT, '3.0', 'CURRENT_SAVE_VERSION should be 3.0');
     assert.equal(proxy.queue.length, 1, 'coalescible STEP_AND_SYNC should compact to one entry');
     assert.equal(proxy.queue[0].data.dt, 0.033, 'compacted STEP_AND_SYNC should keep the latest dt');
     assert.equal(proxy.diagnostics.queueCoalesced, 1, 'compaction should be counted');
-    for (let i = 0; i < 70; i++) proxy._send('ADD_FOOD', { x: i, y: i });
-    assert.equal(proxy.queue.length, 60, 'pre-READY queue should be capped');
-    assert.equal(proxy.diagnostics.queueDropped, 11, 'queue overflow drops should be counted');
+    // A scenario start posts ~150 one-shot commands before READY. None may be
+    // dropped, or the expedition begins with no creatures (the old cap of 60
+    // did exactly that to the spawns).
+    const burst = makeProxy();
+    for (let i = 0; i < 150; i++) burst._send('ADD_FOOD', { x: i, y: i });
+    assert.equal(burst.queue.length, 150, 'a scenario-sized burst should queue in full');
+    assert.equal(burst.diagnostics.queueDropped, 0, 'a scenario-sized burst should drop nothing');
+    // A runaway producer is still bounded, and its overflow is counted.
+    for (let i = 0; i < 2000; i++) burst._send('ADD_FOOD', { x: i, y: i });
+    assert.ok(burst.queue.length <= 1024, 'pre-READY queue should stay bounded');
+    assert.ok(burst.diagnostics.queueDropped > 0, 'queue overflow drops should be counted');
   }
 
   // Malformed STATE_UPDATE must not throw or clobber the last good snapshot.

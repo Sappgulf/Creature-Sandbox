@@ -15,13 +15,15 @@ const DEFAULT_STEPS = [
     autoAdvanceDelay: 1800
   },
   {
+    // Every new field starts with a herd, so this is an information step. It
+    // used to wait for a manual spawn, which the opening never asked for, and
+    // the card sat on "Step 2 of 8" for the whole first minute.
     id: 'spawn',
-    title: 'Spawn Your First Creature',
-    text: 'Use Spawn or press S to add creatures to the world.',
+    title: 'Your Herd Is Already Here',
+    text: 'Creatures start the field. Use Spawn or press S whenever you want more.',
     highlight: ['#ctrl-spawn'],
-    waitFor: { type: 'spawn', count: 1 },
     autoAdvance: true,
-    autoAdvanceDelay: 9000
+    autoAdvanceDelay: 7000
   },
   {
     id: 'feed',
@@ -111,6 +113,7 @@ export class TutorialSystem {
 
     this.stepIndex = 0;
     this.active = false;
+    this.suspended = false;
     this.skipRequested = false;
     this._listenersBound = false;
     this._pendingAdvanceTimeout = null;
@@ -138,9 +141,9 @@ export class TutorialSystem {
   start() {
     this.loadProgress();
     this.loadTooltipDismissals();
-    if (this.completed.has('all') || this.active) {
+    if (this.completed.has('all') || this.active || this.suspended) {
       this.initTooltips();
-      return; // Already completed
+      return; // Already completed, running, or suspended for a guided run
     }
 
     this.active = true;
@@ -169,12 +172,27 @@ export class TutorialSystem {
   }
 
   /**
+   * Hide the step card without marking onboarding finished. A guided scenario
+   * brings its own four-step loop, so two cards must not stack on one screen.
+   * Progress is kept, and start() will not reopen the card until restart().
+   */
+  suspend() {
+    this.suspended = true;
+    if (!this.active) return;
+    this.clearPendingAdvance();
+    this.hideCurrentStep();
+    this.active = false;
+    this.saveProgress();
+  }
+
+  /**
    * Clear saved progress and run the tutorial again from the first step.
    * start() resumes at the first step not in `completed`, and every step is
    * marked complete as it is passed — including by auto-advance — so a replay
    * has to clear that set or it resumes at the end and immediately completes.
    */
   restart() {
+    this.suspended = false;
     this.clearPendingAdvance();
     this.hideCurrentStep();
     this.completed.clear();

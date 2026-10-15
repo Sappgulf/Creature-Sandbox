@@ -26,6 +26,211 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-10-15 — food-props-animation-pass — Planned
+
+- **Date:** 2026-10-15
+- **Scope:** render | assets | docs
+- **Type:** Planned
+- **Issues:** (1) Food read as dots. The runtime drew every item at 12 world units or less, the sprites showed no depletion (frames were picked by remaining stock, but drawn at fixed animation phases), and grass, berries and fruit were tiny on black. (2) Several prop loops were hard to read on black. Gravity's dark core vanished, the spring read as a "7", the seesaw was a thin line, and the button and launch pads were small. (3) Food and props had a dark contact shadow that is invisible on black, and food used a per-item blur above zoom 1.25.
+- **Root Causes:** The food generator drew animation phases where the runtime expected depletion stages. The renderer's food size floor was 12 units. Props were drawn with dark cores and drop shadows.
+- **Fixes (planned):** (a) Food frames redrawn as depletion stages for grass, berries and fruit, with a looping golden fruit. Each frame carries a soft glow in the item's tint. (b) Food drawn at 18+ units with a gentle pulse. (c) Prop loops redrawn with glows, floor rings, a real coil spring, a bolder seesaw, and clearer gravity and launch pads. (d) Only the affected sheets are regenerated, through a `SPRITE_ONLY` filter, so unrelated sheets are untouched.
+- **Verification (planned):** Stage sheets and in-game showcases before and after. Interleaved frame-time pairs against the pre-food build. `npm test`, lint, formatting, `npm run proof:release` and `npm run smoke:menus`.
+
+### 2026-10-15 — food-props-animation-pass — Implemented
+
+- **Date:** 2026-10-15
+- **Scope:** render | assets | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** (1) `creature-sim/scripts/generate-sprite-sheets.mjs`: `foodFrame` draws grass, berries and fruit as eight depletion stages (frame 0 full, frame 7 nearly eaten) with a baked glow, and golden fruit as an eight-frame idle loop. `propFrame` is redrawn for all eleven props with glows, floor rings, a zigzag coil for the spring, a bolder seesaw, a conveyor with moving chevrons, a bright gravity ring with an orbiting dot, and a launch pad with a flame. `renderSheet` passes `key` and `frameCount` to each frame, so gradients get unique ids. `SPRITE_ONLY=key1,key2` regenerates only the named sheets and merges their manifest entries. (2) `creature-sim/src/renderer.js`: food is drawn at `max(18, r × 10)` world units, up from 12, with a pulse of up to 3.5% and the existing bob. The batched contact shadow is removed, since it is invisible on black, and the per-item blur now applies only to golden fruit. (3) Regenerated sheets: `food_grass`, `food_berries`, `food_fruit`, `food_golden_fruit` and the eleven `prop_*` sheets. Keys, frame counts, frame sizes, anchors and fps are unchanged, so the runtime contract holds. No new binary assets were added. The asset policy asks for an approved seed frame before new art. This pass is the redo the user asked for, and the stage sheets and prop grid are the seed frames for review.
+- **Verification:**
+  - _Stage sheets (inline SVG at 3×, tinted per type):_ grass, berries and fruit shrink from full to a remnant across the eight frames, and golden fruit loops its ring, star and sparks. All read on black.
+  - _In-game showcase (live renderer, main-thread build, zoom 2.0 and 0.95):_ food types read as distinct objects with glows, and the grass tufts are distinct from environment grass. Props read as their functions, and their glows and floor rings separate them from the field.
+  - _Frame time (desktop, worker mode, 150 frames after New Sandbox, three interleaved pairs against a copy built from the pre-food renderer and committed food and prop art):_ median of per-run means 51.3ms before and 45.3ms after; p50 50.0ms in both; p95 66.8ms before and 50.1ms after. The after run was lower in all three pairs.
+  - _Tests:_ `npm test` passes (194 and 78 unit tests, E2E, creature presentation, scenario contract, save migration). ESLint is clean across `creature-sim/src` and the generator, and Prettier is clean on both files.
+  - _Gates (final code):_ `npm run proof:release` passed (`Release proof passed.`, all browser-smoke profiles included). `npm run smoke:menus` 38/38.
+  - _Not changed:_ creature sprites and the environment trees and rocks. Creature sheets come from `generate-creature-sprites.py`, which is not in the repo, so they cannot be regenerated here (KNOWN_ISSUES 11).
+
+### 2026-10-15 — black-world-controls-pass — Planned
+
+- **Date:** 2026-10-15
+- **Scope:** render | ui | docs
+- **Type:** Planned
+- **Issues:** (1) The playfield was green. The base fill, atmosphere wash, texture dots, speckle and ground-cover passes, soil, and biome washes competed with creatures, food and the UI. The request is a black world with everything else coloured and readable. (2) The Scenario Editor is a fixed 900×700 inline-styled panel. On a 390px phone its header and close button ran off screen, and Escape did not close it, so a phone player could get stuck. (3) There is no keyboard zoom; only the wheel and pinch zoom, and the Help overlay lists none. (4) No controls audit existed for web or phone, so controls were unverified.
+- **Root Causes:** Legacy ground layers were painted every frame or baked per season. The editor is sized in pixels with no viewport rule and no Escape binding. The keyboard map used Shift+arrows only for panning.
+- **Fixes (planned):** (a) Black playfield: `#020304` base, meadows as lime-teal glows, decorations lifted for contrast, season tint scaled down. (b) Remove the biome wash layer. (c) Scenario Editor sized with `min()`, header wraps, tabs scroll, Escape closes. (d) Shift+↑/↓ keyboard zoom, with a Help row. (e) Scripted web and phone controls audits, plus a drawer audit that opens and closes every overflow item.
+- **Verification (planned):** Controls and drawer audits on both viewports, screenshots, interleaved frame-time pairs against the previous build, lint, formatting, unit tests, `npm run proof:release`, and `npm run smoke:menus`.
+
+### 2026-10-15 — black-world-controls-pass — Implemented
+
+- **Date:** 2026-10-15
+- **Scope:** render | ui | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** (1) `renderer-biome.js`: the base fill is `WORLD_BLACK` (`#020304`). The atmosphere wash, texture dots, speckle and ground-cover pattern, soil, dappled light, and biome colour fields are removed, along with their helpers. The terrain layer bakes food meadows only, as lime-teal glows, and is keyed on world size and meadow layout, so it no longer rebuilds every few seconds with the season phase. Decoration sprites keep their colour with higher alpha, and fallback shapes are lifted by 1.35×. Season tints are scaled by `SEASON_TINT_SCALE` (0.25), so seasons read through particles, not by greying the black. (2) `renderer.js`: the biome-wash call and lazy loader are removed, and `renderer-landmarks.js` is deleted, since nothing else loads it. (3) `scenario-editor.js`: the panel is sized with `min(900px, 100vw − 24px)` and `min(700px, 100vh − 88px)`, the header wraps, the tab strip scrolls horizontally, and Escape closes the editor when it is open. (4) `input-manager.js`: Shift+↑ and Shift+↓ zoom in and out in steps of 12%. Plain arrows still pan. (5) `index.html`: the Help overlay gains a `Shift + ↑ ↓ Zoom in / out` row. (6) `scripts/controls-audit.mjs` and `menu-audit.mjs` were used as scratch checks and are not committed.
+- **Verification:**
+  - _Controls audit (scripted, main-thread build, `?devtools=1&worker=0`):_ desktop 23 of 23 passed, phone 15 of 15 passed, with no page errors. Before the fixes desktop had 20 of 23, with Shift-arrow zoom missing. The checks cover the strip buttons (pause, speed, nudge, spawn, observe, watch and its exit, more), `Space`, `i`, arrows, `r`, `+`/`-` speed, Shift-arrow zoom, wheel zoom, drag pan, creature tap or click selection, and on the phone pinch zoom and one-finger pan through CDP touch events. Strip buttons measure 56×52 px on desktop and 47×44 px on the phone.
+  - _Drawer audit (all 30 overflow items, open then close):_ before the fix, the Scenario Editor stayed open and blocked the strip after 11 items on desktop, and the phone's inspector scrim blocked the rest after 15 items. After the fix, 30 of 30 open and close on both viewports with no page errors.
+  - _Scenario Editor:_ at 390×844 the panel was 900px wide with the close button off screen. It is now 366×700 with its header and × in view, and Escape closes it. On desktop it is 900×700 at (12, 64).
+  - _Frame time (desktop, worker mode, 150 frames after New Sandbox, three interleaved pairs, shared machine):_ the green build's median of per-run means was 76.5ms (p50 66.7, p95 116.7). The black build's was 52.5ms (p50 50.0, p95 66.7). The spread is wide because other applications were running, but the direction held in every pair.
+  - _Visuals:_ screenshots are in `output/black-world-2026-10-15/` (sandbox desktop and phone, selected creature, phone spawn sheet, far zoom, scenario editor on both viewports).
+  - _Gates (final code):_ `npm run proof:release` passed (release summary in `output/release-summary.md`; all four browser-smoke profiles passed). `npm run smoke:menus` 38/38.
+  - _Not changed:_ the Scenario Editor keeps its developer styling (see KNOWN_ISSUES 10). On a phone, the inspector's scrim still covers the control strip while the sheet is open. Tapping the scrim closes it, as designed.
+
+### 2026-10-14 — guided-run-hud-terrain-pass — Planned
+
+- **Date:** 2026-10-14
+- **Scope:** ui | render | docs
+- **Type:** Planned
+- **Issues:** In a Guided Run at 1280×800 the Scenario Director card measured 805px tall (y 291–1096) with its panel at 683px, so its objectives, steps and metrics ran below the fold. Session Goals sat entirely off-screen at y 1104, and the stack covered the bottom-right stats. At 390×844 the director (932px) covered the control strip. The terrain read as a flat green wash with dots.
+- **Root Causes:** The director rendered every objective card, the full expedition checklist and the status copy at once. The Game Mode and Session Goals cards had no collapse. The ground detail per frame was an arc per grid cell only.
+- **Fixes (planned):** (a) One primary objective shows at a time, with the next expedition step and a Details disclosure for the rest. (b) Game Mode and Session Goals fold to their headers, using the panel collapse icon. (c) Phones drop the duplicate state line, progress bar and metric chips, which the rail and stats bar already show. (d) Ground cover (grass tufts, pebbles, leaf flecks) joins the existing speckle tile, and soil patches bake into the cached terrain layer. No new binary assets, per the asset policy in `docs/REBOOT_BLUEPRINT.md`.
+- **Verification (planned):** Before and after screenshots at 1280×800 and 390×844 with bounding boxes. Interaction checks for the folds and the disclosure. Opening-view decoration count and interleaved desktop rAF pairs against the pre-change build. `npm run proof:release` and `npm run smoke:menus`.
+
+### 2026-10-14 — guided-run-hud-terrain-pass — Implemented
+
+- **Date:** 2026-10-14
+- **Scope:** ui | render | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** (1) `index.html`: Game Mode and Session Goals gain a `.meta-collapse` toggle (`aria-expanded`, `data-label`) and start collapsed; the Session Goals subtitle hides while folded. (2) `ui-controller-panels.js`: `bindMetaCardCollapse()` toggles `collapsed` on the card and keeps the label in step. (3) `ui-controller-playable.js`: the primary objective (first unfinished card) sits above the status box; the other objectives, the full expedition checklist, the non-guided steps and the "why" line sit in a `<details class="director-details">` whose open state survives the 0.35s re-renders; a "Next" line shows the next expedition step. (4) `styles.css`: the director art becomes a centred 60% thumbnail; metrics go to one row, with "pred" for predators; at ≤768px the state line, progress bar and metrics hide, since the rail and stats bar show them; at ≤480px the art hides. (5) `renderer-biome.js`: the speckle tile renders tufts, pebbles and leaf flecks at 1× (same single pattern fill per frame), and 12 soil patches bake into the cached terrain layer. A separate full-viewport cover fill was tried first and dropped: it adds a fill per frame.
+- **Verification:**
+  - _Layout (worker mode, bounding boxes from `getBoundingClientRect`, before = pre-change build served by Vite):_ at 1280×800 the Game Mode card went from 227px to 79px, the Scenario Director from 805px (y 291–1096) to 486px (y 143–629), and Session Goals from off-screen (y 1104) to 49px (y 637–686). The stack now ends at y 686, clear of the stats rail at y 707. At 390×844 the director went from 932px (y 258–1190, over the control strip at y 780) to 349px (y 154–503). Session Goals is at y 511–560, the strip at y 780–834 is clear, and the primary objective (y 247–294) and headline sit inside the 30vh stack cap.
+  - _Interaction (Playwright):_ both cards start collapsed; the toggles flip `collapsed`, `aria-expanded` and the label; the Details disclosure stays open across re-renders and closes on a second click; no page errors.
+  - _Terrain (close-ups compared, 320×200 crops at 2×):_ grass tufts, pebbles and leaf flecks now read across the field, with soil variation; the decoration layer is unchanged.
+  - _Decorations (main thread, five fresh sandboxes at the 1280×800 start camera, zoom 1.35):_ total 2,800 in both builds; opening-view counts averaged 165.8 before and 164.4 after (HEAD reference 168.8). Spread across fresh worlds is wider than the difference.
+  - _Desktop rAF (worker mode, 150 frames after New Sandbox, six interleaved before/after pairs):_ median of the per-run means 53.0ms before and 52.7ms after; p50 50.0ms in both; p95 66.7ms in both. The machine was shared with other applications during the runs, so the spread is wide, but the medians are equal.
+  - _Smoke scripts:_ `scripts/browser-smoke.mjs` now opens the director's Details disclosure before it checks the expedition checklist, and it checks the art thumbnail for visibility only above 480px (it must still render on phones, where it is hidden). Both checks encode the new layout; neither was weakened.
+  - _Gates (final code):_ `npm run proof:release` exit 0 (lint, 194 and 78 unit tests, E2E, save migration, build and bundle budget with the existing non-failing CSS advisory, `smoke:browser` for desktop, mobile-compact and mobile-large, `smoke:main`, `smoke:worker`, `smoke:scenarios`, evidence board). `npm run smoke:menus` 38/38.
+
+### 2026-10-14 — population-plateau-investigation — Planned
+
+- **Date:** 2026-10-14
+- **Scope:** simulation | docs
+- **Type:** Planned
+- **Issues:** A New Sandbox settles at about 33 creatures after ten minutes (KNOWN_ISSUES 5). The target was a stable 45–60 by changing the mating and courtship gates in `CreatureAgentTuning.MATING`, with starvation near 30 per run and predators surviving.
+- **Root Causes:** Not yet known.
+- **Fixes (planned):** Measure the plateau with births, refills and mates per minute. Test single gate changes, three runs each, keeping each change behind a named constant with its measured effect. Adopt the smallest change that reaches the target within the constraints.
+- **Verification (planned):** Three 600s runs per candidate. Births and deaths over time. Mean step time before and after. `npm run proof:release` if a change is adopted.
+
+### 2026-10-14 — population-plateau-investigation — Implemented
+
+- **Date:** 2026-10-14
+- **Scope:** simulation | docs
+- **Type:** Implemented
+- **Issues:** Same as planned. No constant was changed; see Fixes.
+- **Root Causes:** (1) The plateau is the auto-balance population floor. `world-ecosystem.js` refills `minPopulation` (36 by default and in balanced) every 20s, one spawn per check at 33 creatures, and refills supply about 40% of additions over ten minutes. (2) Births alone cannot hold a herd. With auto-balance disabled, three runs fell to 8, 2 and 3 creatures by 600s, with about 25–31 births against about 94–101 deaths. (3) The starter cohort ages out by about 300s (`LIFE_STAGE.ELDER_FADE_END`), so deaths dominate the first ten minutes. (4) Only 2–10 adults hold a mate sense at a time, and only about 1–2 courtship locks form, so births run at about 5 per minute.
+- **Fixes:** None adopted. The probe gained births, refills, adults, mates and mean step time (`scripts/ecosystem-balance-probe.mjs`). Results (three 600s runs each, main-thread probe, alive at 600s):
+  - Baseline: 30, 34, 32.
+  - `SENSES.MATE_RADIUS_MULT` 1.1 → 1.3: 32, 34, 34 (births unchanged).
+  - `MATING.SOCIAL_THRESHOLD` 65 → 55: 34, 30, 34 (births +20%, plateau unchanged).
+  - `GOALS.SCORE_BIAS.SEEK_MATE` 0.8 → 1.2: 32, 31, 34 (births unchanged, starvation 37–39).
+  - `MATING.COOLDOWN` 36 → 12: 32, 32, 32 (births +12%).
+  - `MATING.BOND_TIME` 1.15 → 0.5: 33, 32, 34 (births unchanged).
+  - `MATING.ENERGY_COST_FLAT` 30 → 10: 29, 35, 33 (births unchanged).
+  - All of SOCIAL 55, COOLDOWN 12 and BOND 0.5 together: 36, 34, 32 (births +34%, starvation 32–41, over the budget).
+  - `LIFE_STAGE.ELDER_FADE_END` 300 → 540 (lifespan lever, outside the mating gates): 36, 34, 34 (births fall to about 30).
+  - Auto-balance disabled: 8, 2, 3 (the herd dies out).
+  - `minPopulation` 48: 41, 42, 44 (starvation 26–39, predators 2–5, step time about 0.9ms).
+  - `minPopulation` 54: 48, 50, 51 (starvation 37–42, step time about 1.0ms).
+- **Verification:** The baseline reproduces the plateau (30–34 alive). The mating constants are back at their original values, so the code and performance match HEAD for the sandbox. The population target and the starvation limit cannot both be met with the mating gates or with the floor alone. The floor needs a design decision (see KNOWN_ISSUES 5).
+
+### 2026-10-14 — scenario-food-calibration — Planned
+
+- **Date:** 2026-10-14
+- **Scope:** simulation | docs
+- **Type:** Planned
+- **Issues:** (1) The 17 playable scenarios other than Herd Rescue had `foodRate` rescaled by 18/45 after the meadow change but were never played, so their difficulty is unverified (KNOWN_ISSUES 6). (2) The game-mode food knobs do nothing: `environment.foodRateMultiplier` starts undefined, so each mode's multiplier evaluates to NaN and food growth ignores it (KNOWN_ISSUES 9). Once initialized, the mode code still multiplies in place, so repeated applies compound and `balanced` never resets. A world reset (New Sandbox) and leaving a scenario run would also leave a stale value in place.
+- **Root Causes:** (1) The 18/45 rescale was arithmetic only; no idle or assisted outcome had been measured. (2) `WorldEnvironment.initialize()` never sets `foodRateMultiplier`. `gameplay-modes.js` writes `clamp(value * k)`, which compounds and never resets. `WorldEcosystem.foodGrowthRate()` maps non-finite values to 1. `world.reset()` reruns `environment.initialize()`. Scenario `_applyTuning` writes its own `foodRate`, and nothing restores the mode's value when the run ends.
+- **Fixes (planned):** (a) Measure every scenario idle and assisted, three runs each, with `scripts/ecosystem-balance-probe.mjs`, before changing any value. (b) Change `tuning.foodRate` only where a measured idle run clearly passes or an assisted run clearly fails, and only in the direction the scenario's intent calls for. Keep Herd Rescue at 0.15 (idle 20–24 alive, assisted 25–30). (c) Initialize `foodRateMultiplier = 1` in `WorldEnvironment.initialize()`. Make each mode's food knob an absolute value (chill 1.25, balanced 1.0, frontier 1.05, mayhem 0.8), and keep a value only where its measured effect matches the mode's description. Re-sync the active mode's value after a world reset and when a scenario run is left. (d) Regression tests for the absolute knob, the reset path and scenario exit.
+- **Verification (planned):** Before and after tables for every scenario (idle and assisted, three runs each) and for each mode (300 s sandbox, three runs each, plus the knob readout). `npm run proof:release` and `npm run smoke:menus` on the final code.
+
+### 2026-10-14 — scenario-food-calibration — Implemented
+
+- **Date:** 2026-10-14
+- **Scope:** simulation | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** (1) Mode food knob: `world-environment.js` initializes `foodRateMultiplier` to 1. `gameplay-modes.js` gives each mode an absolute `foodRate` (chill 1.25, balanced 1, frontier 1, mayhem 0.8) that `syncFoodRate()` writes, so re-applying never compounds and balanced returns to base. Frontier's 1.05 measured no population or starvation change and was set to base; its population comes from the `minPopulation` floor. The unused `clamp` import is gone. (2) `playable-scenarios.js`: leaving a scenario run and a failed run both re-sync the mode food rate. `app-bootstrap.js` re-syncs after the New Sandbox reseed. (3) Scenario `tuning.foodRate`: no value changed in the end. Ten trial changes were measured and reverted (see Verification). (4) `scripts/regression-fixes.test.mjs`: the absolute knob, no compounding, reset and sync are covered, and the scenario-exit test reads drought's rate from its definition. (5) `scripts/ecosystem-balance-probe.mjs` reports births, refills, adults, mates and mean step time, and `--report=knob` reads the mode knob.
+- **Verification:**
+  - _Before batch (pre-change, 121 runs: 18 scenarios × idle and assist × 3, four modes × 3 at 300s, knob readout):_ Herd Rescue idle 1/3 complete (24 alive at two minutes), assisted 3/3 (27 alive). Idle clears with margin in predator_pressure, tiny_island, season_cycle, apex_balance, storm_chasers, stress_sanctuary and mutation_showcase (3/3 each). Failures are population or births: drought_rescue assisted 0/3 at target (25 alive against 30), lineage_guardian and nursery_watch 0/3 on generation and babies. prop_playground and tool_mastery fail on props, which the probe does not place.
+  - _Trial batch (ten changed scenarios, idle and assist, three runs each; before → trial, complete per 3):_
+    - predator_pressure 0.40 → 0.30: idle 3 → 3 (46.3 → 46.0 alive); assist 3 → 3.
+    - tiny_island 0.36 → 0.27: idle 3 → 3 (31.0 → 29.7); assist 3 → 3.
+    - season_cycle 0.38 → 0.29: idle 3 → 3; assist 3 → 2 (one missed; 57.3 → 36.7 alive).
+    - apex_balance 0.41 → 0.31: idle 3 → 3; assist 3 → 3.
+    - storm_chasers 0.38 → 0.29: idle 3 → 3 (46.7 → 40.3); assist 3 → 3 (50.7 → 41.3).
+    - stress_sanctuary 0.58 → 0.44: idle 3 → 3; assist 3 → 3 (food 371 → 335).
+    - mutation_showcase 0.52 → 0.39: idle 3 → 3; assist 3 → 3.
+    - drought_rescue 0.22 → 0.28: idle 0 → 0 (21.7 → 21.5 alive); assist 1 → 1 (25 → 24 alive).
+    - lineage_guardian 0.48 → 0.60: idle 0 → 0; assist 0 → 0 (generation 0/3 throughout).
+    - nursery_watch 0.51 → 0.64: idle 1 → 0; assist 0 → 0 (babies 0/3 throughout).
+      No change improved an outcome in the intended direction, so all ten were reverted, and the `foodRate` values match the before batch exactly.
+  - _Modes (three 300s sandbox runs each, full tables; before = pre-change build with inert knobs, after = final build; mean across runs):_ balanced alive 29.7 → 31.3, food 717 → 636, starvation 18 → 21 (base rate; no change). Chill alive 36.3 → 32.3, food 663 → 743 (after runs 714–792, before runs 639–686, no overlap), starvation 21 → 18. Frontier alive 47.7 → 46.3, food 537 → 627 (ranges overlap), starvation 19 → 18; set to base. Mayhem alive 8.0 → 14.3 (runs 4–13 before, 13–17 after; noisy), food 731 → 677, starvation 15 → 20, in the intended direction, kept as weak evidence.
+  - _Knob readout (`--report=knob`, after):_ chill 1.25 with foodGrowthRate 1.6109 (repeat applies unchanged), balanced 1 (1.2887), frontier 1 (1.2887), mayhem 0.8 (1.031). Before: NaN and 1.2788 for every mode.
+  - _Tests and lint:_ `scripts/regression-fixes.test.mjs` 78/78 passed. ESLint is clean on the changed files, and Prettier is clean on every changed file.
+  - _Gates (final code, run after the trial batch was reverted):_ `npm run proof:release` exit 0, `npm run smoke:menus` 38/38. The release gate's browser smoke needed the Details and art checks updated for the new layout (see the guided-run-hud-terrain-pass entry). Evidence composites are in `output/guided-run-hud-terrain-2026-10-14/`.
+  - _Follow-up:_ `docs/KNOWN_ISSUES.md` items 6 and 9 record the outcome. Item 9 is resolved. Item 6 stays open because `foodRate` does not move the failing scenarios.
+
+### 2026-10-14 — field-balance-onboarding-pass — Planned
+
+- **Date:** 2026-10-14
+- **Scope:** simulation | ui | render | docs
+- **Type:** Planned
+- **Issues:** Playtest pass across play, sense, correctness and look. (1) New Sandbox's ~70-creature starter herd fell to ~33 by about four minutes, with a cliff near t≈300 where predators died together. (2) Herd Rescue, the guided first run, went extinct if left alone (30 → 0 in one 10-minute trace), while its card still read "Ecosystem is on track". (3) Tutorial step 2, "Spawn Your First Creature", waited for a manual spawn in a field that already had a herd, so the card sat on "Step 2 of 8"; a Guided Run also stacked the 8-step tutorial on top of the expedition's own steps. (4) A Guided Run started before the worker reported READY could begin with zero creatures (reproduced with the READY signal held back: 0 creatures, 104 dropped commands). (5) Start in the Scenario Director rebuilt the world during a live run with no guard. (6) The bottom control strip was icon-only, and the bottom-right stats overlapped it below ~1220px. (7) Hiding the page raised an unhandled `releasePointerCapture` NotFoundError.
+- **Root Causes:** (1) Food patches were fixed at 18 random sites, so the median starter creature was 420 units from its nearest meadow, and regrowth (~2 food/s, ~24 energy/s at 12 energy per item) covered the burn of ~27 creatures. (2) Every starter creature spawned at age 0 and `ELDER_FADE_END` is 300s, so the cohort aged out together. (3) Uneaten food never decays and the only cap was `maxFood` (~62,000). (4) Tutorial auto-advance skipped `waitFor` steps; the spawn step waited for an action the opening never asks for; Guided Run never suspended the tutorial. (5) `startScenario` always resets the world and the button was never disabled. (6) The director's food check used global food per creature, which stays high while a far meadow exists. (7) The strip had no labels, and the centred strip and the bottom-right stats collide under ~1216px. (8) `onPointerCancel` called `releasePointerCapture` with no captured pointer on visibility change. (9) `SimulationProxy` capped its pre-READY queue at 60 and dropped the oldest commands, while a scenario start posts ~150.
+- **Fixes:** (a) Meadows scale with map area (`FOOD_PATCHES.AREA_PER_PATCH` 250,000; 45 on the default world). Starter herds cluster on meadows. Starter ages spread across the adult range. Each meadow pauses seeding at 10 uneaten items (`STANDING_CROP_PER_PATCH`). (b) Herd Rescue `foodRate` 0.5 → 0.15; the other 17 scenario `foodRate` values × 0.4 (18/45) to keep their absolute food supply. (c) Tutorial `spawn` becomes an information step ("Your Herd Is Already Here"); `TutorialSystem.suspend()` hides the card during a Guided Run without marking onboarding complete. (d) Start is disabled while a run is live, and `onPlayableScenarioStart` refuses to reset it. (e) Director food pressure also fires when `hungryShare` (creatures at hunger ≥ 55) exceeds 40%. (f) Control strip labels (Pause, Speed, Nudge, Spawn, Observe, Watch, Journal) stack under the glyphs; labels hide at ≤640px; below 1220px the stats rail lifts above the strip. (g) Meadows bake into the terrain layer, decorations cluster on meadows, and the worker sends up to 96 patches (was 24). (h) Pointer release is guarded to real pointers. (i) The pre-READY queue cap is 1024 and any overflow drop logs a warning. (j) New `scripts/ecosystem-balance-probe.mjs` reruns the population, starvation and scenario probes from a dev server.
+- **Verification:** Pending gate run; see Implemented entry.
+
+### 2026-10-14 — field-balance-onboarding-pass — Implemented
+
+- **Date:** 2026-10-14
+- **Scope:** simulation | ui | render | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned, plus: (1) `scripts/save-migration.test.mjs` updated: its pre-READY queue assertions pinned the old cap of 60 and 11 drops. They now assert that a 150-command scenario burst drops nothing and that runaway overflow stays bounded and counted. (2) Start blocks only while a run is `running`: a finished run is already saved, so Start re-enables after completion (first draft blocked on `active`, which stays true until Leave). (3) Labelled control buttons keep the phone padding (6px at ≤480px) that the old rule set. (4) Decoration density trimmed from 0.0003 to 0.00025 per pixel (3,359 → 2,800 decorations) because meadow-anchored clusters put ~23% more decorations in the opening view; see the performance numbers below. (5) New `scripts/ecosystem-balance-probe.mjs`.
+- **Verification:**
+  - _Ecosystem, New Sandbox (10 sim-minutes, main-thread deterministic stepping, three runs before and after; reproducible with `node scripts/ecosystem-balance-probe.mjs`, added with this entry):_ population at 600s was 34/32/32 before and 32/32/33 after. Starvation deaths fell from 65/58/52 to 26/28/30. Old-age deaths moved from 23/26/28 to 62/65/51, now spread across the run instead of one cliff. The predator cliff at ~300s is gone. Standing food held near ~700 instead of climbing to ~2,600 uncapped. The starter herd's median distance to its nearest meadow fell from 420 to ~110–130 units. Measured by `gameLoop.step` probes outside the repo; not committed.
+  - _Herd Rescue (two minutes, three runs each, `foodRate` 0.15):_ idle 20/23/24 alive (objective: 25). Assisted by a 12-food paint click every 10s at the herd centroid: 25/30/26 alive, average stress 0–27 (objective: under 60). Before the change (`foodRate` 0.5), one idle run had 15 alive at two minutes and went extinct by ~420s in a 10-minute trace.
+  - _Tutorial and onboarding (live probes):_ step 2 reads "Your Herd Is Already Here" and advances to "Feed the Herd" on its timer. A Guided Run shows no tutorial card.
+  - _Director:_ the hungry-share rule was checked with synthetic herds (a starving herd reads "Food pressure is rising"; a fed one reads "Ecosystem is on track"). A live fed run stayed "on track" at 87s with 38 creatures, which is correct.
+  - _Scenario Start guard (live probe):_ Start is disabled during a run; a click on it leaves world time advancing (0.68 → 1.83s); Leave re-enables it.
+  - _Pre-READY regression (READY held back 2.5s):_ cap 60 gave 0 creatures and 104 dropped commands; cap 1024 gave 30 creatures and 0 drops. The same probe on the fixed build passed twice.
+  - _Pointer:_ a forced hidden → visible `visibilitychange` raises no page errors.
+  - _Layout (measured bounding boxes):_ strip and stats do not overlap at 1024, 1100, 1280 or 1440px; the stats rail sits above the strip at 760–1100px. Mobile 390px: labels hidden, seven buttons fit.
+  - _Visuals:_ meadows and decoration clustering confirmed in screenshots. The lift is modest. A stronger art pass is not part of this entry.
+  - _Performance (measured before and after; probes are scratch scripts, not committed):_ (a) Opening-view decorations, five fresh New Sandbox worlds at the 1280×800 start camera (zoom 1.35): HEAD mean 168.8 (115–245); current before the density trim 207.2 (189–221); current after the trim 169.0 (142–193). (b) Desktop requestAnimationFrame interval, 150 frames after New Sandbox, worker mode, three interleaved HEAD/current pairs: current 67.7 / 69.2 / 68.9 ms (mean 68.6), HEAD 63.6 / 72.3 / 61.5 ms (mean 65.8); p50 66.7 ms on both, p95 83.3–83.4 ms on both in five of six runs. Before the trim, three runs each gave current 73.4 ms against HEAD 64.6 ms; the trim closed that gap to within noise. Residual ~3 ms (≈4%) remains between the means and is not separable from run-to-run spread here. (c) Phone 390×844 requestAnimationFrame, three runs each: HEAD 18.98 ms, current 17.90 ms (p50 16.7 ms both). Headless Chromium is CPU-bound on the canvas, so these numbers are environment-specific; the smoke harness's own pacing lines are too short (10–14 frames) to resolve differences and were noisy under load from another process.
+  - _Phone layout:_ at 390px the strip is 366px wide with seven 47px buttons; at 320px it is 296px wide with seven 40px buttons; labels hidden at both.
+  - _Start guard (live probe):_ a running Herd Rescue disables Start; a click on the disabled button leaves the world running; after the completion hook the run is not running and Start is enabled again.
+  - _Final release proof (`npm run proof:release`, exit 0, on the final code):_ lint clean; unit suites 194 and 75 passed; E2E passed; save migration passed; build and bundle budget passed (index CSS advisory ~160 kB, non-failing); `smoke:browser` passed for worker desktop, mobile-compact and mobile-large, with readiness unchanged (worker `needs-more-proof`, main `fallback-proof`); `smoke:main` passed; `smoke:worker` passed; `smoke:scenarios` passed (stress_sanctuary and scavenger_bridge); evidence board written. The harness pacing lines in these runs were noisy (10–14 desktop frames under shared load), so performance claims rest on the probes above, not on them.
+  - _Menu proof (`npm run smoke:menus`):_ the arrow-key and R re-centre step failed intermittently (two of three full runs on the pre-fix test; HEAD passed twice). The traces show the camera easing from ~140 units off-centre left by earlier steps, reaching the ±8 tolerance only just inside a fixed 1.1 s wait, and not from any change to the camera. The step now polls for settling for up to 8 s with the same tolerance. Two full runs on the final code after that change: 38/38 each (`smoke:menus` exit 0 both times).
+  - _Known gaps:_ the sandbox plateau is ~33 creatures (KNOWN_ISSUES #5). The other 17 scenarios were rescaled but not measured (KNOWN_ISSUES #6). _Found, not fixed:_ game-mode food multipliers are inert because `environment.foodRateMultiplier` starts undefined (KNOWN_ISSUES #9); the fix changes every mode's food supply, so it needs its own measurements.
+
+### 2026-10-14 — icon-id-hardening — Planned
+
+- **Date:** 2026-10-14
+- **Scope:** ui
+- **Type:** Planned
+- **Issues:** An automated security review flagged `creature-sim/src/icon-glyphs.js` as an XSS risk. `resolveSymbol` returned any string starting with `i-` unchanged, and `renderIcon` interpolated it, unescaped, into an SVG `<use href>` inside markup that is written with innerHTML. Icon values come from save files and imported data (legacy moments, goals, campaign levels, scenario history), so a crafted value could add attributes to the svg. The class-name argument was also interpolated unescaped. The code is from commit 34d5ddc, not this session's edits.
+- **Root Causes:** Symbol ids were trusted on the `i-` branch. The emoji lookup used a plain object, so keys such as `constructor` resolved to prototype members instead of falling back.
+- **Fixes:** Only well-formed symbol ids pass (`/^i-[a-z0-9-]+$/`); anything else falls back to the default glyph. The emoji lookup reads own properties only. `renderIcon` escapes both the class name and the symbol id. Output for valid ids and legacy emoji is unchanged.
+- **Verification:** Pending; see the Implemented entry.
+
+### 2026-10-14 — icon-id-hardening — Implemented
+
+- **Date:** 2026-10-14
+- **Scope:** ui
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** Same as planned. Regression test `icon-glyphs: a symbol id cannot break out of the href attribute` added to `scripts/regression-fixes.test.mjs`.
+- **Verification:** `scripts/regression-fixes.test.mjs` passed 76 of 76, including the new test; the new test fails on the pre-fix `resolveSymbol`, which returned the hostile value unchanged. `npx eslint creature-sim/src/icon-glyphs.js` is clean, and Prettier is clean on both changed files. On the live build (guided run and new sandbox), 98 icon references across 52 distinct symbols all resolve to sprite symbols, with no injected handlers and no page errors. Not re-run: `npm run proof:release` after this edit. The full proof was run on the code before it, so re-run it before any commit.
+
 ### 2026-10-10 — prop-tool-indicator-sweep — Planned
 
 - **Date:** 2026-10-10

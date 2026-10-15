@@ -270,6 +270,11 @@ export class InputManager {
         if (!this.camera) break;
         e.preventDefault();
         this.noteCameraOverride();
+        // Shift + up/down zooms: the keyboard had no zoom before, only the wheel and pinch.
+        if (e.shiftKey && (e.key.toLowerCase() === 'arrowup' || e.key.toLowerCase() === 'arrowdown')) {
+          this.camera.zoomBy(e.key.toLowerCase() === 'arrowup' ? -0.12 : 0.12);
+          break;
+        }
         {
           const viewportStep = Math.round(
             Math.min(this.camera.viewportWidth || 1, this.camera.viewportHeight || 1) * 0.08

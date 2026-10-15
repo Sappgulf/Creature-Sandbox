@@ -16,6 +16,10 @@ function foodPerCreature(metrics) {
   return metrics.alive > 0 ? metrics.food / metrics.alive : 0;
 }
 
+// tuning.foodRate multiplies meadow regrowth. Meadows now scale with map area
+// (FOOD_PATCHES.AREA_PER_PATCH: 18 → 45 on the default world), so every value
+// below was scaled by 18/45 (0.4) to keep each scenario's absolute food supply.
+// Meadow placement also brings food closer to the herd, which helps every run.
 export const PLAYABLE_SCENARIOS = [
   {
     id: 'first_ecosystem',
@@ -27,14 +31,15 @@ export const PLAYABLE_SCENARIOS = [
     targetSeconds: 120,
     minAlive: 25,
     maxStress: 60,
-    // A rescue has to need rescuing. With the ecosystem fixes the herd
-    // thrived on 180 food at 1.15x regrowth and the run won Gold with no
-    // input at all. It now opens in a shortage with auto-balance off, so the
-    // player's feeding decides it: measured over 2 minutes, an idle run
-    // failed (16 alive) and one painting food near the herd every 10s
-    // completed with 37 alive.
+    // A rescue has to need rescuing: it opens in a shortage with auto-balance
+    // off, so the player's feeding decides it. foodRate is 0.15 because meadows
+    // now scale with the map (FOOD_PATCHES.AREA_PER_PATCH); the 0.5 it used to
+    // carry on 18 meadows supplied ~2.5x too much. Measured at 2 minutes, three
+    // runs each (main-thread headless, one 12-food paint click per 10s near the
+    // herd for the assisted runs): idle 20–24 alive (objective 25), assisted
+    // 25–30 alive with average stress 0–27 (objective: stress under 60).
     setup: { herbivore: 24, omnivore: 4, predator: 2, food: 90, props: ['spring'] },
-    tuning: { mode: 'balanced', foodRate: 0.5, disasters: false, autoBalance: false },
+    tuning: { mode: 'balanced', foodRate: 0.15, disasters: false, autoBalance: false },
     guidedLoop: true,
     steps: [
       'Observe · Inspect the herd before acting',
@@ -54,7 +59,7 @@ export const PLAYABLE_SCENARIOS = [
     minAlive: 45,
     minFood: 140,
     setup: { herbivore: 36, omnivore: 8, predator: 3, aquatic: 4, food: 260, props: ['bounce', 'calm'] },
-    tuning: { mode: 'chill', foodRate: 1.35, disasters: false },
+    tuning: { mode: 'chill', foodRate: 0.54, disasters: false },
     steps: ['Paint food into empty pockets', 'Keep predators below pressure level', 'Let babies reach adulthood']
   },
   {
@@ -68,7 +73,7 @@ export const PLAYABLE_SCENARIOS = [
     minAlive: 30,
     minPredators: 5,
     setup: { herbivore: 42, omnivore: 6, predator: 7, food: 220, props: ['fan'] },
-    tuning: { mode: 'frontier', foodRate: 1.0, disasters: true },
+    tuning: { mode: 'frontier', foodRate: 0.4, disasters: true },
     steps: ['Feed prey clusters', 'Calm panicked areas', 'Remove predators only if the herd collapses']
   },
   {
@@ -81,7 +86,7 @@ export const PLAYABLE_SCENARIOS = [
     targetSeconds: 240,
     minAlive: 32,
     setup: { herbivore: 38, omnivore: 6, predator: 4, food: 130, props: ['calm'] },
-    tuning: { mode: 'balanced', foodRate: 0.62, disasters: false, season: 'winter' },
+    tuning: { mode: 'balanced', foodRate: 0.25, disasters: false, season: 'winter' },
     steps: [
       'Paint food sparingly near hungry groups',
       'Use calm zones to save energy',
@@ -99,7 +104,7 @@ export const PLAYABLE_SCENARIOS = [
     minAlive: 20,
     maxStress: 55,
     setup: { herbivore: 22, omnivore: 4, predator: 3, food: 115, props: ['conveyor', 'spring'], radius: 280 },
-    tuning: { mode: 'balanced', foodRate: 0.9, disasters: false },
+    tuning: { mode: 'balanced', foodRate: 0.36, disasters: false },
     steps: ['Use calm zones when crowded', 'Open space with food trails', 'Keep predator pressure modest']
   },
   {
@@ -113,7 +118,7 @@ export const PLAYABLE_SCENARIOS = [
     minAlive: 24,
     minVariants: 3,
     setup: { herbivore: 18, omnivore: 4, predator: 3, aquatic: 5, flying: 4, burrowing: 4, food: 210 },
-    tuning: { mode: 'chill', foodRate: 1.2, disasters: false },
+    tuning: { mode: 'chill', foodRate: 0.48, disasters: false },
     steps: ['Select variants to read their needs', 'Feed across biomes', 'Avoid crowding one region']
   },
   {
@@ -133,7 +138,7 @@ export const PLAYABLE_SCENARIOS = [
       food: 240,
       props: ['bounce', 'spring', 'fan', 'conveyor', 'launch']
     },
-    tuning: { mode: 'chill', foodRate: 1.3, disasters: false },
+    tuning: { mode: 'chill', foodRate: 0.52, disasters: false },
     steps: ['Place props at the edge of herds', 'Use gentle throws', 'Calm stressed creatures after chaos']
   },
   {
@@ -147,7 +152,7 @@ export const PLAYABLE_SCENARIOS = [
     minAlive: 26,
     minGeneration: 5,
     setup: { herbivore: 30, omnivore: 8, predator: 3, food: 250, props: ['calm', 'spring'] },
-    tuning: { mode: 'balanced', foodRate: 1.2, disasters: false },
+    tuning: { mode: 'balanced', foodRate: 0.48, disasters: false },
     steps: ['Pin a founder', 'Feed their descendants', 'Avoid predator pressure near nests']
   },
   {
@@ -162,7 +167,7 @@ export const PLAYABLE_SCENARIOS = [
     minFood: 120,
     maxStress: 60,
     setup: { herbivore: 40, omnivore: 6, predator: 4, food: 210, props: ['calm'] },
-    tuning: { mode: 'balanced', foodRate: 0.95, disasters: true },
+    tuning: { mode: 'balanced', foodRate: 0.38, disasters: true },
     steps: ['Build food buffer in spring', 'Calm crowded summer clusters', 'Protect elders in winter']
   },
   {
@@ -176,7 +181,7 @@ export const PLAYABLE_SCENARIOS = [
     minAlive: 25,
     minProps: 5,
     setup: { herbivore: 28, omnivore: 5, predator: 2, food: 210, props: ['bounce', 'fan', 'gravity', 'spring'] },
-    tuning: { mode: 'chill', foodRate: 1.25, disasters: false },
+    tuning: { mode: 'chill', foodRate: 0.5, disasters: false },
     steps: ['Place a bounce pad', 'Place a fan', 'Drop a calm zone near stress']
   },
   {
@@ -190,7 +195,7 @@ export const PLAYABLE_SCENARIOS = [
     minAlive: 24,
     minVariants: 3,
     setup: { herbivore: 14, omnivore: 4, predator: 2, aquatic: 6, flying: 6, burrowing: 6, food: 240, props: ['calm'] },
-    tuning: { mode: 'chill', foodRate: 1.3, disasters: false },
+    tuning: { mode: 'chill', foodRate: 0.52, disasters: false },
     steps: [
       'Follow each variant type',
       'Use the inspector to compare traits',
@@ -212,7 +217,7 @@ export const PLAYABLE_SCENARIOS = [
     // Auto-balance topped food back up and cancelled the drought, so the run
     // completed with no input. Off: idle now fails; placing food near the
     // herd completed it at 214s with 64 alive.
-    tuning: { mode: 'balanced', foodRate: 0.55, disasters: true, season: 'summer', autoBalance: false },
+    tuning: { mode: 'balanced', foodRate: 0.22, disasters: true, season: 'summer', autoBalance: false },
     steps: ['Paint small food trails', 'Calm crowded pockets', 'Keep predators away from starving groups']
   },
   {
@@ -227,7 +232,7 @@ export const PLAYABLE_SCENARIOS = [
     minPredators: 8,
     minFood: 110,
     setup: { herbivore: 50, omnivore: 8, predator: 9, food: 230, props: ['conveyor', 'calm'] },
-    tuning: { mode: 'frontier', foodRate: 1.02, disasters: true },
+    tuning: { mode: 'frontier', foodRate: 0.41, disasters: true },
     steps: ['Feed prey clusters first', 'Follow hunters on the edge', 'Remove pressure only if births stop']
   },
   {
@@ -251,7 +256,7 @@ export const PLAYABLE_SCENARIOS = [
       food: 245,
       props: ['slope', 'fan', 'spring', 'calm']
     },
-    tuning: { mode: 'chill', foodRate: 1.18, disasters: false },
+    tuning: { mode: 'chill', foodRate: 0.47, disasters: false },
     steps: ['Follow one of each variant', 'Open food corridors', 'Calm the crossing before stress spikes']
   },
   {
@@ -273,7 +278,7 @@ export const PLAYABLE_SCENARIOS = [
       props: ['calm', 'spring', 'fan', 'calm'],
       radius: 780
     },
-    tuning: { mode: 'chill', foodRate: 1.44, disasters: false, autoBalance: false, season: 'spring' },
+    tuning: { mode: 'chill', foodRate: 0.58, disasters: false, autoBalance: false, season: 'spring' },
     steps: [
       'Calm the densest herd first',
       'Paint food outside crowded pockets',
@@ -299,7 +304,7 @@ export const PLAYABLE_SCENARIOS = [
       props: ['conveyor', 'calm', 'bounce', 'calm'],
       radius: 820
     },
-    tuning: { mode: 'frontier', foodRate: 1.42, disasters: false, autoBalance: false, season: 'autumn' },
+    tuning: { mode: 'frontier', foodRate: 0.57, disasters: false, autoBalance: false, season: 'autumn' },
     steps: ['Feed the bridge exits', 'Follow scavengers after hunts', 'Use calm zones if the corridor panics']
   },
   {
@@ -314,7 +319,7 @@ export const PLAYABLE_SCENARIOS = [
     minBabies: 8,
     minGeneration: 2,
     setup: { herbivore: 32, omnivore: 6, predator: 3, food: 265, props: ['calm', 'spring'] },
-    tuning: { mode: 'balanced', foodRate: 1.28, disasters: false, season: 'spring' },
+    tuning: { mode: 'balanced', foodRate: 0.51, disasters: false, season: 'spring' },
     steps: ['Feed the nursery cluster', 'Keep breeding pairs calm', 'Leave hunters room at the edge']
   },
   {
@@ -330,7 +335,7 @@ export const PLAYABLE_SCENARIOS = [
     minFood: 110,
     maxStress: 66,
     setup: { herbivore: 48, omnivore: 8, predator: 7, food: 265, props: ['calm', 'fan', 'conveyor'] },
-    tuning: { mode: 'frontier', foodRate: 0.95, disasters: true, season: 'autumn' },
+    tuning: { mode: 'frontier', foodRate: 0.38, disasters: true, season: 'autumn' },
     steps: ['Stock food between storms', 'Calm panicked herds', 'Follow the healthiest group']
   }
 ];
@@ -853,7 +858,9 @@ export class PlayableScenarios {
         nextAction: 'Start a new scenario.'
       };
     }
-    if (metrics.foodPerCreature < 2.2 || metrics.averageHunger > 68) {
+    // Food per creature is global: a meadow across the map keeps it high while
+    // the herd starves. A large starving share is the honest signal here.
+    if (metrics.foodPerCreature < 2.2 || metrics.averageHunger > 68 || metrics.hungryShare > 0.4) {
       return {
         level: 'high',
         headline: 'Food pressure is rising',
@@ -978,6 +985,7 @@ export class PlayableScenarios {
     // back on open-ended starter goals. Previously the failed scenario stayed
     // "active" with a frozen progress bar until another scenario was started.
     this.activeRun = null;
+    this.gameplayModes?.syncFoodRate?.();
     gameState.autoDirectorEnabled = false;
     if (this.autoDirector) this.autoDirector.storyMode = false;
     this.sessionGoals?.resetForNewSession?.({ refreshGoals: true });
@@ -994,6 +1002,7 @@ export class PlayableScenarios {
     const scenario = this.activeRun.scenario;
     this.activeRun.state = 'abandoned';
     this.activeRun = null;
+    this.gameplayModes?.syncFoodRate?.();
     gameState.autoDirectorEnabled = false;
     if (this.autoDirector) this.autoDirector.storyMode = false;
     this.sessionGoals?.resetForNewSession?.({ refreshGoals: true });

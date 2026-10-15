@@ -644,9 +644,18 @@ export class World {
 
     // Spawn pure herbivores in clusters (natural herding)
     const herbivoreClusterCount = Math.max(3, Math.floor(nPureHerbivoresFinal / 12));
+    // Herds start on a meadow so the opening is fed. A random spot left the
+    // typical creature ~420 units from any food patch at t=0, and the herd
+    // spent its first minutes starving before it found grazing.
+    const meadows = this.ecosystem?.foodPatches || [];
     for (let cluster = 0; cluster < herbivoreClusterCount; cluster++) {
-      const clusterX = Math.random() * this.width;
-      const clusterY = Math.random() * this.height;
+      const meadow = meadows.length ? meadows[Math.floor(Math.random() * meadows.length)] : null;
+      const clusterX = meadow
+        ? clamp(meadow.x + (Math.random() - 0.5) * meadow.radius, 50, this.width - 50)
+        : Math.random() * this.width;
+      const clusterY = meadow
+        ? clamp(meadow.y + (Math.random() - 0.5) * meadow.radius, 50, this.height - 50)
+        : Math.random() * this.height;
       const clusterSize = Math.floor(nPureHerbivoresFinal / herbivoreClusterCount);
 
       for (let i = 0; i < clusterSize; i++) {
@@ -713,6 +722,16 @@ export class World {
       }
     }
 
+    // Starter creatures used to share age 0, so the whole opening cohort hit
+    // the ELDER_FADE_END cutoff within seconds of each other near t=300 and the
+    // field fell off a cliff (measured: 31 → 16 creatures between t=270 and
+    // t=300, with the predators gone). Spread the ages across the adult range
+    // so old-age deaths arrive gradually.
+    const starterMaxAge = CreatureAgentTuning.LIFE_STAGE.ADULT_END;
+    for (const creature of this.creatures) {
+      creature.age = rand(0, starterMaxAge);
+    }
+
     console.debug(
       `🌱 Seeded diverse world: ${nPureHerbivoresFinal} herbivores, ${nOmnivoresFinal} omnivores, ${initialAquatic} aquatic, ${initialFlying} flying, ${initialBurrowing} burrowing, ${initialPredators} predators, ${initialFood} food`
     );
@@ -727,7 +746,11 @@ export class World {
   // Generate environmental decorations based on biomes
   generateDecorations() {
     this.decorations = [];
-    const decorDensity = 0.0003; // decorations per pixel
+    // Decorations per pixel. Clusters now sit on the meadows, which put ~23%
+    // more decorations in the opening view (169 → 207 mean over five fresh
+    // worlds, measured). Density is trimmed by the same ratio so the opening
+    // draw budget stays where it was; see the 2026-10-14 CHANGELOG entry.
+    const decorDensity = 0.00025;
     const decorCount = Math.floor(this.width * this.height * decorDensity);
 
     const decorTypes = {
@@ -802,12 +825,18 @@ export class World {
     // no clearings, nowhere for the eye to rest. Draw most of it around a set
     // of drift centres with falloff and leave the rest scattered, so the field
     // grows dense stands and open ground the player can actually navigate by.
+    // The drift centres sit on the food meadows when they exist, so grass,
+    // flowers and food share the same clearings and the field reads as habitat.
+    // Seeding runs after the ecosystem has laid out its meadows; without them
+    // the centres fall back to random points.
+    const meadows = this.ecosystem?.foodPatches || [];
     const patchCount = Math.max(6, Math.round((this.width * this.height) / 260000));
     const patches = [];
     for (let i = 0; i < patchCount; i++) {
+      const meadow = meadows.length ? meadows[i % meadows.length] : null;
       patches.push({
-        x: Math.random() * this.width,
-        y: Math.random() * this.height,
+        x: meadow ? meadow.x : Math.random() * this.width,
+        y: meadow ? meadow.y : Math.random() * this.height,
         radius: 260 + Math.random() * 420
       });
     }

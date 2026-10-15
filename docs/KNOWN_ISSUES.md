@@ -21,3 +21,38 @@ List issues that could not be fixed quickly, with severity and reproduction step
    - **Severity:** Low
    - **Description:** Skip-link uses `--transition-fast`. Ripple keyframes remain 0.4s to match `--transition-slow`. Isolated raw durations may still exist on older one-off widgets.
    - **Impact:** Barely perceptible.
+
+5. **New Sandbox settles at a ~33-creature plateau held by the auto-balance population floor, not by births**
+   - **Severity:** Medium
+   - **Description:** The ~70-creature starter herd falls to about 33 by four minutes and holds there for a 10-minute run (baseline, three runs: 30, 34, 32 alive). The hold comes from auto-balance: `world-ecosystem.js` spawns herbivores whenever the herd is below `minPopulation` (36 by default and in balanced), and refills supply about 40% of additions. Births alone cannot sustain the herd. With auto-balance off, three runs fell to 2–8 creatures by 600 s. Breeding gates did not move the plateau: `SOCIAL_THRESHOLD` 55, `COOLDOWN` 12, `BOND_TIME` 0.5, `ENERGY_COST_FLAT` 10, `SEEK_MATE` 1.2, `MATE_RADIUS_MULT` 1.3 and an elder fade end of 540 each left 29–36 alive. All of SOCIAL 55, COOLDOWN 12 and BOND 0.5 together raised births 34% and pushed starvation to 32–41.
+   - **Impact:** Stable and watchable, but sparse on the 4000×2800 map. Lifting the plateau is a population-floor decision: `minPopulation` 48 gave 41–44 alive with starvation 26–39, and 54 gave 48–51 alive with starvation 37–42. In these runs no floor met both the 45–60 target and starvation near 30. Decision needed. Reproduce with `node scripts/ecosystem-balance-probe.mjs --seconds=600 --chunk=60` against `npm run dev`; the probe reports births, refills, mates and step time.
+
+6. **Scenario difficulty is measured, but `foodRate` does not move it; the open cases need a population or births decision**
+   - **Severity:** Medium
+   - **Description:** All 18 playable scenarios were played idle and assisted, three runs each, after the 2026-10-14 rescale (before-batch, 121 runs with the probe). Herd Rescue holds: idle 1/3 complete with 24 alive at two minutes, assisted 3/3. A ±25% change to `tuning.foodRate` moved no pass/fail outcome in a useful direction, so the ten trial changes were reverted. Seven scenarios clear idle with margin (predator_pressure, tiny_island, season_cycle, apex_balance, storm_chasers, stress_sanctuary, mutation_showcase). Food at the target time stays well above the `minFood` objectives, so regrowth changes move it only a little. The failing cases fail on population or births, not food: drought_rescue assisted reaches 24–25 alive against 30 at 210 s (auto-balance is off, so nothing refills), lineage_guardian does not reach generation 5 in 300 s, and nursery_watch does not reach 8 babies. prop_playground and tool_mastery need prop placements the probe does not make.
+   - **Impact:** The sustain scenarios are not tuned to need the player, and the rescue and births scenarios wait on the population decision in item 5. Reproduce with `node scripts/ecosystem-balance-probe.mjs --scenario=ID [--assist]`.
+
+7. **`creature-sim/index.html` has an unbalanced closing `</div>` near line 463**
+   - **Severity:** Low
+   - **Description:** The legacy `#hud-action-bank` block closes one `div` too many. Browsers recover, and the file already fails Prettier at HEAD, so the markup is not checked by any gate.
+   - **Impact:** None seen in play. Fix when the legacy HUD block is removed.
+
+8. **Index CSS sits above its advisory budget**
+   - **Severity:** Low
+   - **Description:** `check:bundle` reports the index stylesheet at ~160 kB against a 150 kB advisory. The check does not fail on it.
+   - **Impact:** Advisory only. Trim or split `styles.css` when the next stylesheet pass lands.
+
+9. **Resolved 2026-10-14: game-mode food multipliers were inert and compounding**
+   - **Status:** Fixed. `WorldEnvironment` initializes `foodRateMultiplier` to 1, and each mode now sets an absolute food rate through `GameplayModes.syncFoodRate()`. Before, `clamp(undefined * k)` gave NaN, which `WorldEcosystem.foodGrowthRate()` ignored, and the in-place multipliers compounded on repeated applies. A New Sandbox reseed and leaving a scenario run both re-sync the active mode.
+   - **Measured:** The knob readout now gives chill 1.25 (growth ×1.25), balanced 1.0, frontier 1.0 and mayhem 0.8. Three 300s sandbox runs per mode (before against after): chill food 663 → 743 with the after runs entirely above the before runs, starvation 21 → 18. Mayhem food 731 → 677 and starvation 15 → 20, in the intended direction, but its population runs overlap (before 4–13, after 13–17), so that evidence is weak. Frontier's 1.05 measured no population or starvation change, so it was set back to base: its population comes from its `minPopulation` floor. Balanced is the base rate, so nothing changed.
+10. **The Scenario Editor keeps a developer style and a phone inspector scrim covers the strip**
+
+- **Severity:** Low
+- **Description:** The Scenario Editor (menu → Scenario Editor) is an inline-styled, green monospace panel. It now fits phones and closes on Escape, but it does not match the rest of the UI. While the inspector sheet is open on a phone, its scrim covers the control strip, so the first tap closes the sheet rather than acting on the strip.
+- **Impact:** Works, but it looks unfinished next to the rest of the UI. Restyle the editor with the shared glass tokens and decide whether a strip tap should close the sheet and act.
+
+11. **Creature sprite sheets cannot be regenerated from the repo**
+
+- **Severity:** Medium
+- **Description:** `creature-sim/assets/sprites/sprite-manifest.json` says the creature sheets are "Generated by scripts/generate-creature-sprites.py", and that script is not in the repo. The committed `scripts/generate-sprite-sheets.mjs` does not reproduce the creature sheets, and regenerating every sheet rewrites them (and the environment rock, tree and scenario-card sheets). Food, props and particles do reproduce. The food and prop redo therefore used `SPRITE_ONLY=` to regenerate only those sheets.
+- **Impact:** Creature art and its animation loops cannot be redrawn in this pipeline without recovering the missing generator or approving a new seed frame. Run `SPRITE_ONLY=` with the affected keys when changing a family, and never run the generator unfiltered without checking the diff.

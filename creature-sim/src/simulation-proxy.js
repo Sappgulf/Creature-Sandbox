@@ -4,10 +4,13 @@ import { BiomeGenerator } from './perlin-noise.js';
 import { getCurrentSaveVersion } from './save-migration.js';
 import { getDebugFlags } from './debug-flags.js';
 
-// Upper bound for commands queued before the worker signals READY. The
-// pre-READY window is short (INIT -> READY), so anything beyond this is a
-// runaway producer (e.g. per-frame STEP_AND_SYNC while the worker stalls).
-const MAX_PRE_READY_QUEUE = 60;
+// Upper bound for commands queued before the worker signals READY. Per-tick
+// STEP_AND_SYNC is coalesced separately, so this only bounds a runaway
+// producer. It must cover a one-shot scenario start: Herd Rescue posts ~150
+// spawn, food and prop commands at once. At the old cap of 60, starting a run
+// before READY silently dropped the oldest commands, which were the creature
+// spawns, and the expedition began with an empty herd.
+const MAX_PRE_READY_QUEUE = 1024;
 
 // Merge on-demand EXTRAS entries into snapshot items by static position.
 // Food pellets and corpses never move, so coordinate matching stays correct
@@ -718,8 +721,9 @@ export class SimulationProxy {
         }
       }
       if (this.queue.length >= MAX_PRE_READY_QUEUE) {
-        this.queue.shift();
+        const dropped = this.queue.shift();
         this.diagnostics.queueDropped = (this.diagnostics.queueDropped || 0) + 1;
+        console.warn(`SimProxy: pre-READY queue full, dropped oldest command ${dropped?.type}`);
       }
       this.queue.push({ type, data });
     }

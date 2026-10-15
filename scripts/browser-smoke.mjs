@@ -1400,6 +1400,13 @@ async function runScenario(browser, scenario) {
     (director?.objectives?.cards?.length || 0) >= 2,
     `${scenario.name}: director should expose objective cards`
   );
+  // The expedition checklist sits behind the director's Details disclosure, so
+  // open it first. The disclosure keeps its state across the director re-renders.
+  const details = page.locator('.director-details');
+  await details.waitFor({ state: 'attached', timeout: 5000 });
+  if (!(await details.evaluate(el => el.open))) {
+    await page.locator('.director-details > summary').click();
+  }
   await page.locator('.director-guided-loop').waitFor({ state: 'visible', timeout: 5000 });
   const guidedLoopText = await page.locator('.director-guided-loop').innerText();
   assert.match(
@@ -1416,7 +1423,12 @@ async function runScenario(browser, scenario) {
   );
   assert.ok(state.playable.director?.nextAction, `${scenario.name}: director should provide a next action`);
   assert.ok(state.playable.metrics.alive >= 25, `${scenario.name}: scenario should seed a viable population`);
-  await page.locator('.director-art').waitFor({ state: 'visible', timeout: 5000 });
+  // The art thumbnail hides at <=480px so the phone stack clears the control
+  // strip. It must still render there; it only has to be visible on wider screens.
+  const wideScreen = await page.evaluate(() => window.innerWidth > 480);
+  if (wideScreen) {
+    await page.locator('.director-art').waitFor({ state: 'visible', timeout: 5000 });
+  }
   assert.equal(await page.locator('.director-art').count(), 1, `${scenario.name}: scenario art node should render`);
 
   console.log(`  ${scenario.name}: select creature`);

@@ -308,9 +308,16 @@ try {
       `ArrowLeft should pan the camera (x ${before.x} -> ${afterLeft.x})`
     );
     await page.keyboard.press('r');
-    // The camera eases to its target; give it time to settle.
-    await page.waitForTimeout(1100);
-    const recentered = await readCam();
+    // The camera eases toward its target by a fraction of the remaining gap each
+    // frame, so settling time depends on the frame rate and on how far earlier
+    // steps left the view (traces: ~140 units out took ~1.2 s to get within 8).
+    // Poll until it settles, with a cap, instead of a fixed wait.
+    let recentered = await readCam();
+    const settleDeadline = Date.now() + 8000;
+    while (!(Math.abs(recentered.x - 2000) < 8 && Math.abs(recentered.y - 1400) < 8) && Date.now() < settleDeadline) {
+      await page.waitForTimeout(100);
+      recentered = await readCam();
+    }
     assert.ok(
       Math.abs(recentered.x - 2000) < 8 && Math.abs(recentered.y - 1400) < 8,
       `R should re-center the camera over the 4000x2800 world (${recentered.x}, ${recentered.y})`

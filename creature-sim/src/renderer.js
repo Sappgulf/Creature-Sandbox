@@ -34,12 +34,6 @@ import {
 import { ghostTrails } from './ecosystem-ghosts.js';
 
 // SPLIT: biome and weather rendering extracted to renderer-biome.js / renderer-weather.js
-let drawLandscapeLandmarks = null;
-import('./renderer-landmarks.js')
-  .then(module => {
-    drawLandscapeLandmarks = module.drawLandscapeLandmarks;
-  })
-  .catch(error => console.debug('[Renderer] optional landmark layer unavailable:', error));
 
 export class Renderer {
   constructor(ctx, camera) {
@@ -616,9 +610,8 @@ export class Renderer {
     }
     drawBiomeDetail(this, ctx, world);
 
-    // A low-zoom habitat layer gives the generated world a readable shape
-    // before individual decorations become visible.
-    drawLandscapeLandmarks?.(this, ctx, world);
+    // The low-zoom biome washes were removed (renderer-landmarks.js): their tints
+    // would colour the black world.
 
     // Draw decorations with better visibility (less dense)
     // The old skip factor was `floor(5 / zoom)`, which is 5 at every zoom the
@@ -950,7 +943,8 @@ export class Renderer {
     // Food was drawn at `r * 3` (a ~6px dot at default zoom), which read as
     // confetti rather than forage. Scale to the sprite art so it reads as an
     // object on the ground.
-    const foodSpriteSize = f => Math.max(12, (f.r || 2) * 6);
+    // Food sits at 18 world units or more: the old 12 px minimum shrank the art to a dot.
+    const foodSpriteSize = f => Math.max(18, (f.r || 2) * 10);
     let needGrass = false;
     let needBerries = false;
     let needFruit = false;
@@ -1009,20 +1003,8 @@ export class Renderer {
       golden_fruit: 0.7
     };
 
-    // One batched contact shadow grounds every item. This replaces the old
-    // per-item shadowBlur glow, which cost a save/restore and a blur pass per
-    // food and forced the sprite path off for any realistically sized field.
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.26)';
-    ctx.beginPath();
-    for (let i = 0; i < visibleFood.length; i++) {
-      const f = visibleFood[i];
-      const size = foodSpriteSize(f);
-      const rx = size * 0.28;
-      const cy = f.y + size * 0.3;
-      ctx.moveTo(f.x + rx, cy);
-      ctx.ellipse(f.x, cy, rx, size * 0.11, 0, 0, Math.PI * 2);
-    }
-    ctx.fill();
+    // Black world: the baked food sprites carry their own glow, so no contact
+    // shadow is drawn here (a black shadow on a black field is invisible work).
 
     for (let i = 0; i < visibleFood.length; i++) {
       const f = visibleFood[i];
@@ -1045,14 +1027,14 @@ export class Renderer {
       const frameIndex =
         type === 'golden_fruit' ? assetLoader.getAnimationFrameIndex(sprite, 'idle', time, speedScale) : stockFrame;
       const frame = sprite.frames[frameIndex] || sprite.frames[0];
-      const drawSize = foodSpriteSize(f);
       const pulse = Math.sin(time * pulseSpeeds[type] + i * 0.1) * 0.5 + 0.5;
+      const drawSize = foodSpriteSize(f) * (1 + pulse * 0.035);
       const bob = Math.sin(time * 1.6 + i * 0.7) * drawSize * 0.05;
 
       // Per-item shadowBlur is a software-rasterizer killer at play zoom (the
       // sprite already bakes a soft shadow), so only the rare golden fruit gets
       // an extra bloom.
-      const useGlow = type === 'golden_fruit' || this.camera.zoom >= 1.25;
+      const useGlow = type === 'golden_fruit';
       if (useGlow) ctx.save();
       if (useGlow) {
         ctx.shadowBlur = 6 + pulse * 4;

@@ -302,31 +302,31 @@
     <!-- Primary Controls (Always Visible) -->
     <div class="control-strip-primary">
       <button id="ctrl-pause" class="ctrl-btn" title="Pause/Resume (Space)" aria-label="Pause or resume">
-        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-pause"/></svg></span>
+        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-pause"/></svg></span><span class="ctrl-label">Pause</span>
       </button>
       <button id="ctrl-speed" class="ctrl-btn" title="Simulation speed" aria-label="Change speed">
-        <span class="ctrl-icon">1×</span>
+        <span class="ctrl-icon">1×</span><span class="ctrl-label">Speed</span>
       </button>
       <div class="ctrl-divider"></div>
       <button id="ctrl-food" class="ctrl-btn" title="Nudge · Paint food" aria-label="Nudge: paint food">
-        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-food"/></svg></span>
+        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-food"/></svg></span><span class="ctrl-label">Nudge</span>
       </button>
       <button id="ctrl-spawn" class="ctrl-btn ctrl-spawn-btn" title="Spawn Creature" aria-label="Spawn creature"
         aria-haspopup="dialog" aria-controls="spawn-drawer" aria-expanded="false">
-        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-herbivore"/></svg></span>
+        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-herbivore"/></svg></span><span class="ctrl-label">Spawn</span>
         <span class="ctrl-caret">▾</span>
       </button>
       <div class="ctrl-divider"></div>
       <button id="ctrl-inspect" class="ctrl-btn active" title="Observe · Inspect creature" aria-label="Observe: inspect creature"
         aria-pressed="true">
-        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-inspect"/></svg></span>
+        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-inspect"/></svg></span><span class="ctrl-label">Observe</span>
       </button>
       <button id="ctrl-watch" class="ctrl-btn" title="Watch Mode" aria-label="Toggle watch mode">
-        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-watch"/></svg></span>
+        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-watch"/></svg></span><span class="ctrl-label">Watch</span>
       </button>
       <button id="ctrl-more" class="ctrl-btn" title="Remember · Field Journal and more" aria-label="Remember: open Field Journal and more" aria-haspopup="dialog"
         aria-controls="overflow-drawer" aria-expanded="false">
-        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-more"/></svg></span>
+        <span class="ctrl-icon"><svg class="ctrl-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-more"/></svg></span><span class="ctrl-label">Journal</span>
       </button>
     </div>
   </div>
@@ -567,7 +567,7 @@
 
   <!-- Meta overlays: game mode + goals -->
   <div id="session-meta">
-    <div id="mode-card" class="meta-card">
+    <div id="mode-card" class="meta-card collapsed">
       <div class="meta-card-header">
         <div>
           <div class="meta-label">Game Mode</div>
@@ -576,14 +576,19 @@
         <div class="meta-actions">
           <button id="mode-cycle" class="ghost-btn" title="Cycle modes" aria-label="Cycle game modes">⟳</button>
           <button id="mode-apply" class="primary-btn small" title="Apply selected mode">Apply</button>
+          <button type="button" class="meta-collapse" aria-expanded="false" aria-controls="mode-card-body"
+            data-label="game mode details" title="Show game mode details" aria-label="Show game mode details"><span
+              class="panel-collapse-icon" aria-hidden="true">▼</span></button>
         </div>
       </div>
-      <p id="mode-description" class="meta-description">Tune the world to fit your playstyle.</p>
-      <div id="mode-tags" class="meta-tags"></div>
-      <div class="meta-row">
-        <select id="mode-select" class="meta-select" aria-label="Gameplay mode">
-          <option>Loading modes...</option>
-        </select>
+      <div id="mode-card-body" class="meta-card-body">
+        <p id="mode-description" class="meta-description">Tune the world to fit your playstyle.</p>
+        <div id="mode-tags" class="meta-tags"></div>
+        <div class="meta-row">
+          <select id="mode-select" class="meta-select" aria-label="Gameplay mode">
+            <option>Loading modes...</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -610,19 +615,24 @@
       </div>
     </div>
 
-    <div id="session-goals-card" class="meta-card">
+    <div id="session-goals-card" class="meta-card collapsed">
       <div class="meta-card-header">
         <div>
           <div class="meta-label">Session Goals</div>
-          <div class="meta-title">Chase micro-challenges</div>
+          <div class="meta-title meta-subtitle">Chase micro-challenges</div>
         </div>
         <div class="meta-actions">
           <button id="refresh-goals" class="ghost-btn" title="Refresh goals"
             aria-label="Refresh session goals">↻</button>
+          <button type="button" class="meta-collapse" aria-expanded="false" aria-controls="session-goals-body"
+            data-label="session goals" title="Show session goals" aria-label="Show session goals"><span
+              class="panel-collapse-icon" aria-hidden="true">▼</span></button>
         </div>
       </div>
-      <div id="session-goal-list" class="goal-list muted tiny">
-        Progress updates as creatures evolve...
+      <div id="session-goals-body" class="meta-card-body">
+        <div id="session-goal-list" class="goal-list muted tiny">
+          Progress updates as creatures evolve...
+        </div>
       </div>
     </div>
   </div>
@@ -1513,6 +1523,7 @@
           <div class="shortcut-row"><kbd>Wheel</kbd><span>Zoom at cursor</span></div>
           <div class="shortcut-row"><kbd>Sideways scroll</kbd><span>Pan with trackpad</span></div>
           <div class="shortcut-row"><kbd>← ↑ ↓ →</kbd><span>Pan the camera</span></div>
+          <div class="shortcut-row"><kbd>Shift</kbd>+<kbd>↑</kbd> <kbd>↓</kbd><span>Zoom in / out</span></div>
           <div class="shortcut-row"><kbd>R</kbd><span>Re-center the world</span></div>
           <div class="shortcut-row"><kbd>Drag</kbd> / <kbd>Middle-drag</kbd><span>Pan</span></div>
         </div>

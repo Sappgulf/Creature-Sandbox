@@ -4427,6 +4427,54 @@ body.home-active #btn-show-inspector {
   font-size: 17px;
   line-height: 1;
 }
+/* Visible verbs under the field-journal glyphs. Icon-only strips made players
+   guess what the seedling and magnifier did; the tooltips already used these
+   words (Observe / Nudge / Journal), so the labels just say them out loud.
+   Labels stack under the glyph so the strip keeps its width: a side-by-side
+   label row (~670px) collided with the bottom-right stats at every desktop
+   width below ~1380px. */
+.ctrl-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  line-height: 1;
+}
+.ctrl-btn:has(.ctrl-label) {
+  flex-direction: column;
+  gap: 3px;
+  min-height: 52px;
+  padding: 5px 10px 4px;
+}
+.ctrl-spawn-btn {
+  position: relative;
+}
+.ctrl-spawn-btn .ctrl-caret {
+  position: absolute;
+  top: 6px;
+  right: 3px;
+}
+@media (max-width: 640px) {
+  .ctrl-label {
+    display: none;
+  }
+  .ctrl-btn:has(.ctrl-label) {
+    flex-direction: row;
+    gap: 4px;
+    min-height: 44px;
+    padding: 0 10px;
+  }
+  .ctrl-spawn-btn .ctrl-caret {
+    position: static;
+  }
+}
+/* Keep the phone strip as tight as it was before labels: the 480px rule
+   below tightens padding, and labelled buttons must not undo that. */
+@media (max-width: 480px) {
+  .ctrl-btn:has(.ctrl-label) {
+    padding: 0 6px;
+  }
+}
 .ctrl-caret {
   font-size: 10px;
   color: var(--text-muted);
@@ -7909,6 +7957,13 @@ body.drawer-open #control-strip {
     right: 356px !important;
   }
 }
+/* The control strip is centred, so below ~1220px its right edge runs into the
+   stats rail in the bottom-right corner. Lift the rail onto a row above it. */
+@media (min-width: 701px) and (max-width: 1219px) {
+  #hud-bottom-right {
+    margin-bottom: 72px;
+  }
+}
 
 #stats > span,
 #stats .stat-tool {
@@ -8082,6 +8137,116 @@ body .touch-onboarding .touch-onboarding-progress {
 .meta-card {
   background: linear-gradient(180deg, rgba(13, 38, 28, 0.97), rgba(7, 22, 16, 0.97));
   border-color: rgba(183, 226, 187, 0.22);
+}
+/* Meta cards fold to their header row. The toggle reuses the panel collapse icon. */
+.meta-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.meta-card.collapsed .meta-card-body {
+  display: none;
+}
+.meta-collapse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.meta-collapse:hover {
+  color: #e5ecf4;
+}
+.meta-collapse:focus-visible {
+  outline: 2px solid rgba(197, 242, 126, 0.55);
+  outline-offset: 2px;
+}
+.meta-card.collapsed .meta-collapse .panel-collapse-icon {
+  transform: rotate(-90deg);
+}
+/* Director: one primary objective, the next expedition step, and a Details disclosure. */
+.director-panel .director-art {
+  /* A centred thumbnail keeps the director inside the column above the stats rail. */
+  width: 60%;
+  margin: 0 auto;
+}
+.director-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.meta-card.collapsed .meta-subtitle {
+  display: none;
+}
+.director-metrics span {
+  padding: 6px 4px;
+  font-size: 10.5px;
+  text-align: center;
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  /* The phone stack has to clear the control strip, so the art thumbnail goes. */
+  .director-panel .director-art {
+    display: none;
+  }
+}
+@media (max-width: 768px) {
+  /* The objective rail names the run and its percent, and the bottom stats
+     show the alive, predator and food counts. The phone director drops those
+     duplicates so the primary objective and headline fit the 30vh stack cap. */
+  .director-state,
+  .director-progress,
+  .director-metrics {
+    display: none;
+  }
+}
+.director-next-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #d7e0ea;
+}
+.director-next-step b {
+  color: #c5f27e;
+  font-weight: 600;
+  margin-right: 6px;
+}
+.director-details {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 6px;
+}
+.director-details > summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+.director-details > summary::-webkit-details-marker {
+  display: none;
+}
+.director-details > summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 6px;
+  transition: transform 0.15s;
+}
+.director-details[open] > summary::before {
+  transform: rotate(90deg);
+}
+.director-details[open] > summary {
+  color: #e5ecf4;
+}
+.director-details > * + * {
+  margin-top: 8px;
 }
 @media (max-width: 768px) {
   /* Coach hints floated over whichever sheet was open. */

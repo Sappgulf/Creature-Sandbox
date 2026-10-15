@@ -124,6 +124,7 @@ export function applyUiPanelMethods(UIController) {
 
   UIController.prototype.bindPanelControls = function () {
     this.bindPanelCollapse();
+    this.bindMetaCardCollapse();
 
     const featuresCloseBtn = domCache.get('featuresCloseBtn') || document.getElementById('btn-features-close');
     const soundCloseBtn = document.getElementById('btn-sound-close');
@@ -163,6 +164,25 @@ export function applyUiPanelMethods(UIController) {
         if (!panel) return;
         const collapsed = panel.classList.toggle('collapsed');
         panel.setAttribute('data-collapsed', collapsed ? 'true' : 'false');
+      });
+    }
+  };
+
+  // Meta cards (Game Mode, Session Goals) fold to their header row. The toggle
+  // uses the panel collapse icon and keeps aria-expanded in step with the card.
+  UIController.prototype.bindMetaCardCollapse = function () {
+    if (this._metaCollapseBound || typeof document === 'undefined') return;
+    this._metaCollapseBound = true;
+    for (const toggle of document.querySelectorAll('.meta-collapse[aria-controls]')) {
+      toggle.addEventListener('click', () => {
+        const card = toggle.closest('.meta-card');
+        if (!card) return;
+        const collapsed = card.classList.toggle('collapsed');
+        const label = toggle.dataset.label || 'details';
+        const verb = collapsed ? 'Show' : 'Hide';
+        toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        toggle.setAttribute('aria-label', `${verb} ${label}`);
+        toggle.title = `${verb} ${label}`;
       });
     }
   };

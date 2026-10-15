@@ -237,11 +237,19 @@ export class WorldEcosystem {
     return null;
   }
 
+  // Meadow count scales with map area so food density stays constant as the
+  // world grows or shrinks. COUNT is the floor for small campaign levels.
+  foodPatchTarget() {
+    const { COUNT, AREA_PER_PATCH } = CreatureAgentTuning.FOOD_PATCHES;
+    const area = this.world.width * this.world.height;
+    return Math.max(COUNT, Math.round(area / AREA_PER_PATCH));
+  }
+
   seedFoodPatches() {
     this.foodPatches = [];
     this.foodPatchIndex = new Map();
     this.foodPatchId = 1;
-    const count = CreatureAgentTuning.FOOD_PATCHES.COUNT;
+    const count = this.foodPatchTarget();
     for (let i = 0; i < count; i++) {
       const radius = rand(CreatureAgentTuning.FOOD_PATCHES.RADIUS_MIN, CreatureAgentTuning.FOOD_PATCHES.RADIUS_MAX);
       const fertility = rand(
@@ -292,10 +300,27 @@ export class WorldEcosystem {
     return patch;
   }
 
+  // Counts each meadow's uneaten food. Runs on a timer, not every frame, and
+  // is the only thing that sets patch.standing.
+  recountStandingFood() {
+    for (const patch of this.foodPatches) patch.standing = 0;
+    for (const food of this.world.food) {
+      if (food.sourceId == null) continue;
+      const patch = this.foodPatchIndex.get(food.sourceId);
+      if (patch) patch.standing++;
+    }
+  }
+
   updateFoodPatches(dt) {
     if (!this.foodPatches.length) return;
     const growthRate = this.foodGrowthRate();
     const maxFood = this.maxFood;
+    const standingCap = CreatureAgentTuning.FOOD_PATCHES.STANDING_CROP_PER_PATCH;
+    this._standingRecountTimer = (this._standingRecountTimer ?? 0) - dt;
+    if (this._standingRecountTimer <= 0) {
+      this._standingRecountTimer = CreatureAgentTuning.FOOD_PATCHES.STANDING_RECOUNT_INTERVAL;
+      this.recountStandingFood();
+    }
     for (const patch of this.foodPatches) {
       patch.pressure = Math.max(0, patch.pressure - CreatureAgentTuning.FOOD_PATCHES.PRESSURE_DECAY * dt);
       if (patch.depletedTimer > 0) {
@@ -314,8 +339,14 @@ export class WorldEcosystem {
       patch.stock = clamp(patch.stock + growth, 0, patch.maxStock);
 
       patch.spawnCooldown -= dt;
-      if (patch.spawnCooldown <= 0 && patch.stock >= 1 && this.world.food.length < maxFood) {
+      if (
+        patch.spawnCooldown <= 0 &&
+        patch.stock >= 1 &&
+        (patch.standing ?? 0) < standingCap &&
+        this.world.food.length < maxFood
+      ) {
         this.spawnFoodFromPatch(patch);
+        patch.standing = (patch.standing ?? 0) + 1;
         patch.stock -= 1;
         patch.spawnCooldown = rand(
           CreatureAgentTuning.FOOD_PATCHES.SPAWN_COOLDOWN_MIN,

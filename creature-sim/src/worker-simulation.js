@@ -650,7 +650,9 @@ function compactFoodPatches(world) {
   const patches = world?.ecosystem?.foodPatches;
   if (!Array.isArray(patches) || !patches.length) return [];
   const out = [];
-  const max = Math.min(patches.length, 24);
+  // Meadows now scale with the map (45 on the default world), so the cap must
+  // cover every patch or the main thread paints only the first 24 meadows.
+  const max = Math.min(patches.length, 96);
   for (let i = 0; i < max; i++) {
     const p = patches[i];
     if (!p) continue;
@@ -658,6 +660,7 @@ function compactFoodPatches(world) {
       x: p.x,
       y: p.y,
       radius: p.radius,
+      fertility: p.fertility,
       stock: p.stock,
       maxStock: p.maxStock,
       pressure: p.pressure

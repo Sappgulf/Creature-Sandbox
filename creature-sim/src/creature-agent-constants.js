@@ -137,7 +137,22 @@ export const CreatureAgentTuning = {
     CONSUME_RANGE: 28
   },
   FOOD_PATCHES: {
+    // COUNT is the floor for small levels. Meadows scale with the map: one per
+    // AREA_PER_PATCH world units² (4000×2800 → 45). With 18, the median creature
+    // at t=0 was 420 units from its nearest meadow (outside every food sense
+    // radius, 60–220), and regrowth of ~2 food/s (~24 energy/s at 12 energy per
+    // item) covered the energy burn of only ~27 creatures against a 70 start.
     COUNT: 18,
+    AREA_PER_PATCH: 250000,
+    // Uneaten food never decays, so an uncapped meadow network piled up ~2,600
+    // items by 600s on the default map. Each meadow now pauses seeding while it
+    // still holds this many uneaten items; its stock keeps regrowing behind the
+    // cap. Trade-off, over three 10-minute runs each: uncapped gave 13–26
+    // starvation deaths, this cap 26–30, with the same ~33-creature plateau and
+    // ~700 food instead of ~2,600. A single global cap over the same runs gave
+    // 38–55 (cause not isolated), which is why the cap is per meadow.
+    STANDING_CROP_PER_PATCH: 10,
+    STANDING_RECOUNT_INTERVAL: 1.5,
     RADIUS_MIN: 70,
     RADIUS_MAX: 150,
     MAX_STOCK: 9,

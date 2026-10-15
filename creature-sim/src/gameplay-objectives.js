@@ -3,6 +3,10 @@ import { geneValue, isPredatorFromGenes } from './creature-genetics-helpers.js';
 
 export { geneValue };
 
+// Same cutoff creature.js uses for "starving" (a starving creature eats before
+// it migrates), so the director's hungry share counts what the sim counts.
+const HUNGRY_SHARE_THRESHOLD = 55;
+
 export function isPredatorCreature(creature) {
   if (!creature?.genes) return false;
   return isPredatorFromGenes(creature.genes);
@@ -32,6 +36,11 @@ export function collectGameplayMetrics(world, counters = {}) {
     averageStress: 0,
     averageHunger: 0,
     averageEnergy: 0,
+    // Share of living creatures at or past the starving threshold. The global
+    // food-per-creature ratio stays high while meadows sit far from the herd,
+    // so this is the number that says a herd is actually going hungry.
+    hungryAlive: 0,
+    hungryShare: 0,
     stress: 0,
     hunger: 0,
     energy: 0,
@@ -111,7 +120,9 @@ export function collectGameplayMetrics(world, counters = {}) {
     }
 
     stressTotal += Number(creature.needs?.stress ?? creature.ecosystem?.stress ?? 0);
-    hungerTotal += Number(creature.needs?.hunger ?? 0);
+    const hunger = Number(creature.needs?.hunger ?? 0);
+    if (hunger >= HUNGRY_SHARE_THRESHOLD) metrics.hungryAlive += 1;
+    hungerTotal += hunger;
     energyTotal += Number(creature.energy ?? creature.needs?.energy ?? 0);
   }
 
@@ -122,6 +133,7 @@ export function collectGameplayMetrics(world, counters = {}) {
   metrics.variantsAlive = metrics.variants;
   metrics.averageStress = metrics.alive ? stressTotal / metrics.alive : 0;
   metrics.averageHunger = metrics.alive ? hungerTotal / metrics.alive : 0;
+  metrics.hungryShare = metrics.alive ? metrics.hungryAlive / metrics.alive : 0;
   metrics.averageEnergy = metrics.alive ? energyTotal / metrics.alive : 0;
   metrics.stress = metrics.averageStress;
   metrics.hunger = metrics.averageHunger;
