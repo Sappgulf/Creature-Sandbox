@@ -26,6 +26,30 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-10-15 — open-items-close-out — Planned
+
+- **Date:** 2026-10-15
+- **Scope:** simulation | render | docs
+- **Type:** Planned
+- **Issues:** (1) KNOWN_ISSUES 5, the New Sandbox population plateau, was open as "Decision needed". (2) KNOWN_ISSUES 11 said creature sheets cannot be regenerated because the generator is missing. Git tracks `scripts/generate-creature-sprites.py`.
+- **Root Causes:** (1) The floor was never decided against the per-mode densities that `gameplay-modes.js` already sets. (2) The note was written without checking that the generator is tracked.
+- **Fixes (planned):** Record the floor decision in KNOWN_ISSUES 5 from three-run comparisons at floors 36, 48 and 54. Correct and close KNOWN_ISSUES 11 with the byte-identical regeneration check. Fix the stale dependency in KNOWN_ISSUES 6. No gameplay constants change.
+- **Verification (planned):** Regenerate the creature sheets into a scratch directory and diff them against the committed sheets. Check the mode floors and how scenarios read them. Run `npm run proof:release` and `npm run evidence:release` before the push.
+
+### 2026-10-15 — open-items-close-out — Implemented
+
+- **Date:** 2026-10-15
+- **Scope:** simulation | render | docs
+- **Type:** Implemented
+- **Issues:** Same as planned.
+- **Root Causes:** Same as planned.
+- **Fixes:** `docs/KNOWN_ISSUES.md`: item 5 is a recorded decision. The balanced floor stays at 36, and density stays a per-mode setting. Item 11 is resolved: the generator is in the repo and reproduces the creature sheets. Item 6 names the real blockers for its three failing scenarios. No code, balance constants or assets changed. This also corrects the 2026-10-15 food-props-animation-pass entry, which said the creature generator is not in the repo.
+- **Verification:**
+  - _Creature sheets:_ `python3 scripts/generate-creature-sprites.py <scratch>` writes nine files, and `diff -rq` against `creature-sim/assets/sprites/creatures` reports them identical.
+  - _Floor runs (10-minute sandbox, three runs per floor; probe logs kept in the session scratch directory, not committed):_ floor 36 held 30, 34 and 32 alive with 28, 18 and 31 starvation deaths. Floor 48 held 41, 42 and 44 alive with 28, 26 and 39. Floor 54 held 48, 50 and 51 alive with 40, 42 and 37.
+  - _Source:_ `gameplay-modes.js` sets Chill 40, Balanced 36 (the default, `GAMEPLAY_MODES[1]`) and Frontier 54. `playable-scenarios.js` sets no floor; it only toggles auto-balance.
+  - _Gates:_ `npm run proof:release` exit 0 (`Release proof passed.`). Every lane ran: git diff check, node checks, lint, `npm test` (194, 79, E2E 1/1, save migration), build, bundle budget, `smoke:browser`, `smoke:main`, `smoke:worker`, `smoke:scenarios` and `evidence:release`. The change is documentation only, on top of `c609a06`.
+
 ### 2026-10-15 — scenario-start-grace — Planned
 
 - **Date:** 2026-10-15
