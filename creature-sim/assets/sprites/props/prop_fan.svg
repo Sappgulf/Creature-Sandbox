@@ -1,169 +1,157 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1152" height="96" viewBox="0 0 1152 96" fill="none"><defs><filter id="prop_fan-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.2"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1152" height="96" viewBox="0 0 1152 96" fill="none"><defs><filter id="prop_fan-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_fan-glow-0" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_fan-glow-0)"/><ellipse cx="48" cy="73" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.22"/>
       <g transform="translate(48 48) rotate(0)">
         <path d="M 0 -4 C 9 -20 21 -23 24 -20 C 17 -8 8 -2 0 0 Z" fill="currentColor"/>
-        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.9"/>
-        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.86"/>
-        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.94"/>
+        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.92"/>
+        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.96"/>
       </g>
-      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.8)"/>
-    </g><g transform="translate(96 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.2"/>
+      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.9)"/></g><g transform="translate(96 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_fan-glow-1" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_fan-glow-1)"/><ellipse cx="48" cy="73" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.22"/>
       <g transform="translate(48 48) rotate(45)">
         <path d="M 0 -4 C 9 -20 21 -23 24 -20 C 17 -8 8 -2 0 0 Z" fill="currentColor"/>
-        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.9"/>
-        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.86"/>
-        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.94"/>
+        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.92"/>
+        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.96"/>
       </g>
-      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.8)"/>
-    </g><g transform="translate(192 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.2"/>
+      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.9)"/></g><g transform="translate(192 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_fan-glow-2" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_fan-glow-2)"/><ellipse cx="48" cy="73" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.22"/>
       <g transform="translate(48 48) rotate(90)">
         <path d="M 0 -4 C 9 -20 21 -23 24 -20 C 17 -8 8 -2 0 0 Z" fill="currentColor"/>
-        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.9"/>
-        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.86"/>
-        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.94"/>
+        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.92"/>
+        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.96"/>
       </g>
-      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.8)"/>
-    </g><g transform="translate(288 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.2"/>
+      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.9)"/></g><g transform="translate(288 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_fan-glow-3" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_fan-glow-3)"/><ellipse cx="48" cy="73" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.22"/>
       <g transform="translate(48 48) rotate(135)">
         <path d="M 0 -4 C 9 -20 21 -23 24 -20 C 17 -8 8 -2 0 0 Z" fill="currentColor"/>
-        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.9"/>
-        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.86"/>
-        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.94"/>
+        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.92"/>
+        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.96"/>
       </g>
-      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.8)"/>
-    </g><g transform="translate(384 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.2"/>
+      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.9)"/></g><g transform="translate(384 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_fan-glow-4" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_fan-glow-4)"/><ellipse cx="48" cy="73" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.22"/>
       <g transform="translate(48 48) rotate(180)">
         <path d="M 0 -4 C 9 -20 21 -23 24 -20 C 17 -8 8 -2 0 0 Z" fill="currentColor"/>
-        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.9"/>
-        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.86"/>
-        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.94"/>
+        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.92"/>
+        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.96"/>
       </g>
-      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.8)"/>
-    </g><g transform="translate(480 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.2"/>
+      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.9)"/></g><g transform="translate(480 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_fan-glow-5" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_fan-glow-5)"/><ellipse cx="48" cy="73" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.22"/>
       <g transform="translate(48 48) rotate(225)">
         <path d="M 0 -4 C 9 -20 21 -23 24 -20 C 17 -8 8 -2 0 0 Z" fill="currentColor"/>
-        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.9"/>
-        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.86"/>
-        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.94"/>
+        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.92"/>
+        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.96"/>
       </g>
-      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.8)"/>
-    </g><g transform="translate(576 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.2"/>
+      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.9)"/></g><g transform="translate(576 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_fan-glow-6" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_fan-glow-6)"/><ellipse cx="48" cy="73" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.22"/>
       <g transform="translate(48 48) rotate(270)">
         <path d="M 0 -4 C 9 -20 21 -23 24 -20 C 17 -8 8 -2 0 0 Z" fill="currentColor"/>
-        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.9"/>
-        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.86"/>
-        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.94"/>
+        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.92"/>
+        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.96"/>
       </g>
-      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.8)"/>
-    </g><g transform="translate(672 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.2"/>
+      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.9)"/></g><g transform="translate(672 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_fan-glow-7" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_fan-glow-7)"/><ellipse cx="48" cy="73" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.22"/>
       <g transform="translate(48 48) rotate(315)">
         <path d="M 0 -4 C 9 -20 21 -23 24 -20 C 17 -8 8 -2 0 0 Z" fill="currentColor"/>
-        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.9"/>
-        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.86"/>
-        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.94"/>
+        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.92"/>
+        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.96"/>
       </g>
-      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.8)"/>
-    </g><g transform="translate(768 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.2"/>
+      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.9)"/></g><g transform="translate(768 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_fan-glow-8" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_fan-glow-8)"/><ellipse cx="48" cy="73" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.22"/>
       <g transform="translate(48 48) rotate(360)">
         <path d="M 0 -4 C 9 -20 21 -23 24 -20 C 17 -8 8 -2 0 0 Z" fill="currentColor"/>
-        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.9"/>
-        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.86"/>
-        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.94"/>
+        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.92"/>
+        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.96"/>
       </g>
-      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.8)"/>
-    </g><g transform="translate(864 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.2"/>
+      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.9)"/></g><g transform="translate(864 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_fan-glow-9" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_fan-glow-9)"/><ellipse cx="48" cy="73" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.22"/>
       <g transform="translate(48 48) rotate(405)">
         <path d="M 0 -4 C 9 -20 21 -23 24 -20 C 17 -8 8 -2 0 0 Z" fill="currentColor"/>
-        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.9"/>
-        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.86"/>
-        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.94"/>
+        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.92"/>
+        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.96"/>
       </g>
-      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.8)"/>
-    </g><g transform="translate(960 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.2"/>
+      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.9)"/></g><g transform="translate(960 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_fan-glow-10" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_fan-glow-10)"/><ellipse cx="48" cy="73" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.22"/>
       <g transform="translate(48 48) rotate(450)">
         <path d="M 0 -4 C 9 -20 21 -23 24 -20 C 17 -8 8 -2 0 0 Z" fill="currentColor"/>
-        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.9"/>
-        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.86"/>
-        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.94"/>
+        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.92"/>
+        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.96"/>
       </g>
-      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.8)"/>
-    </g><g transform="translate(1056 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.2"/>
+      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.9)"/></g><g transform="translate(1056 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_fan-glow-11" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_fan-glow-11)"/><ellipse cx="48" cy="73" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="23" fill="currentColor" opacity="0.22"/>
       <g transform="translate(48 48) rotate(495)">
         <path d="M 0 -4 C 9 -20 21 -23 24 -20 C 17 -8 8 -2 0 0 Z" fill="currentColor"/>
-        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.9"/>
-        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.86"/>
-        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.94"/>
+        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.92"/>
+        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.96"/>
       </g>
-      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.8)"/>
-    </g></svg>
+      <circle cx="48" cy="48" r="5.5" fill="rgba(255,255,255,0.9)"/></g></svg>

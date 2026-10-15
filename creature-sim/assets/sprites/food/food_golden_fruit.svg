@@ -1,97 +1,105 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="384" height="48" viewBox="0 0 384 48" fill="none"><defs><filter id="food_golden_fruit-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
-    <rect x="0" y="0" width="48" height="48" fill="none"/>
-    <ellipse cx="24" cy="38.92" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
-    <path d="M 24 10.92 L 24 18.92"
-          stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
-    <circle cx="24" cy="26.42" r="9.2" fill="currentColor"/>
-    <circle cx="24" cy="26.42" r="11.4" fill="none" stroke="rgba(255,233,122,0.65)" stroke-width="1.2"/>
-    <g transform="translate(24.1 25.42) rotate(0)">
-      <path d="M 0 -5.8 L 1.7 -1.4 L 6 -0.8 L 2.8 1.7 L 3.8 6 L 0 3.6 L -3.8 6 L -2.8 1.7 L -6 -0.8 L -1.7 -1.4 Z"
-            fill="rgba(255,255,255,0.85)" opacity="0.92"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="48" viewBox="0 0 384 48" fill="none"><defs><filter id="food_golden_fruit-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)"><rect x="0" y="0" width="48" height="48" fill="none"/>
+
+    <radialGradient id="food_golden_fruit-glow-0" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="24" cy="26.88" r="20" fill="url(#food_golden_fruit-glow-0)"/>
+    <circle cx="24" cy="26.88" r="10.4" fill="currentColor"/>
+    <circle cx="21" cy="23.68" r="3" fill="white" opacity="0.45"/>
+    <circle cx="24" cy="26.88" r="12.6" fill="none" stroke="rgba(255,233,122,0.7)" stroke-width="1.2"/>
+    <g transform="translate(24 26.88) rotate(0)">
+      <path d="M 0 -5.6 L 1.7 -1.4 L 5.8 -0.8 L 2.7 1.7 L 3.7 5.8 L 0 3.5 L -3.7 5.8 L -2.7 1.7 L -5.8 -0.8 L -1.7 -1.4 Z" fill="rgba(255,255,255,0.9)"/>
     </g>
-    <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
-  </g><g transform="translate(48 0)">
-    <rect x="0" y="0" width="48" height="48" fill="none"/>
-    <ellipse cx="24" cy="38.92" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
-    <path d="M 24 10.92 L 24 18.92"
-          stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
-    <circle cx="24" cy="26.42" r="9.42" fill="currentColor"/>
-    <circle cx="24" cy="26.42" r="11.69" fill="none" stroke="rgba(255,233,122,0.65)" stroke-width="1.2"/>
-    <g transform="translate(24.1 25.42) rotate(45)">
-      <path d="M 0 -5.8 L 1.7 -1.4 L 6 -0.8 L 2.8 1.7 L 3.8 6 L 0 3.6 L -3.8 6 L -2.8 1.7 L -6 -0.8 L -1.7 -1.4 Z"
-            fill="rgba(255,255,255,0.85)" opacity="0.92"/>
+    <circle cx="39" cy="26.88" r="1.1" fill="#fff6c2" opacity="0.6"/><circle cx="24" cy="35.38" r="1.44" fill="#fff6c2" opacity="0.89"/><circle cx="9" cy="26.88" r="1.46" fill="#fff6c2" opacity="0.92"/><circle cx="24" cy="18.38" r="1.16" fill="#fff6c2" opacity="0.65"/></g><g transform="translate(48 0)"><rect x="0" y="0" width="48" height="48" fill="none"/>
+
+    <radialGradient id="food_golden_fruit-glow-1" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="24" cy="26.88" r="20" fill="url(#food_golden_fruit-glow-1)"/>
+    <circle cx="24" cy="26.88" r="10.58" fill="currentColor"/>
+    <circle cx="21" cy="23.68" r="3" fill="white" opacity="0.45"/>
+    <circle cx="24" cy="26.88" r="12.89" fill="none" stroke="rgba(255,233,122,0.7)" stroke-width="1.2"/>
+    <g transform="translate(24 26.88) rotate(45)">
+      <path d="M 0 -5.6 L 1.7 -1.4 L 5.8 -0.8 L 2.7 1.7 L 3.7 5.8 L 0 3.5 L -3.7 5.8 L -2.7 1.7 L -5.8 -0.8 L -1.7 -1.4 Z" fill="rgba(255,255,255,0.9)"/>
     </g>
-    <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
-  </g><g transform="translate(96 0)">
-    <rect x="0" y="0" width="48" height="48" fill="none"/>
-    <ellipse cx="24" cy="38.92" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
-    <path d="M 24 10.92 L 24 18.92"
-          stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
-    <circle cx="24" cy="26.42" r="8.87" fill="currentColor"/>
-    <circle cx="24" cy="26.42" r="10.96" fill="none" stroke="rgba(255,233,122,0.65)" stroke-width="1.2"/>
-    <g transform="translate(24.1 25.42) rotate(90)">
-      <path d="M 0 -5.8 L 1.7 -1.4 L 6 -0.8 L 2.8 1.7 L 3.8 6 L 0 3.6 L -3.8 6 L -2.8 1.7 L -6 -0.8 L -1.7 -1.4 Z"
-            fill="rgba(255,255,255,0.85)" opacity="0.92"/>
+    <circle cx="34.61" cy="32.89" r="1.38" fill="#fff6c2" opacity="0.85"/><circle cx="13.39" cy="32.89" r="1.01" fill="#fff6c2" opacity="0.53"/><circle cx="13.39" cy="20.87" r="0.73" fill="#fff6c2" opacity="0.27"/><circle cx="34.61" cy="20.87" r="0.78" fill="#fff6c2" opacity="0.32"/></g><g transform="translate(96 0)"><rect x="0" y="0" width="48" height="48" fill="none"/>
+
+    <radialGradient id="food_golden_fruit-glow-2" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="24" cy="26.88" r="20" fill="url(#food_golden_fruit-glow-2)"/>
+    <circle cx="24" cy="26.88" r="10.12" fill="currentColor"/>
+    <circle cx="21" cy="23.68" r="3" fill="white" opacity="0.45"/>
+    <circle cx="24" cy="26.88" r="12.16" fill="none" stroke="rgba(255,233,122,0.7)" stroke-width="1.2"/>
+    <g transform="translate(24 26.88) rotate(90)">
+      <path d="M 0 -5.6 L 1.7 -1.4 L 5.8 -0.8 L 2.7 1.7 L 3.7 5.8 L 0 3.5 L -3.7 5.8 L -2.7 1.7 L -5.8 -0.8 L -1.7 -1.4 Z" fill="rgba(255,255,255,0.9)"/>
     </g>
-    <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
-  </g><g transform="translate(144 0)">
-    <rect x="0" y="0" width="48" height="48" fill="none"/>
-    <ellipse cx="24" cy="38.92" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
-    <path d="M 24 10.92 L 24 18.92"
-          stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
-    <circle cx="24" cy="26.42" r="9.48" fill="currentColor"/>
-    <circle cx="24" cy="26.42" r="11.78" fill="none" stroke="rgba(255,233,122,0.65)" stroke-width="1.2"/>
-    <g transform="translate(24.1 25.42) rotate(135)">
-      <path d="M 0 -5.8 L 1.7 -1.4 L 6 -0.8 L 2.8 1.7 L 3.8 6 L 0 3.6 L -3.8 6 L -2.8 1.7 L -6 -0.8 L -1.7 -1.4 Z"
-            fill="rgba(255,255,255,0.85)" opacity="0.92"/>
+    <circle cx="24" cy="35.38" r="0.7" fill="#fff6c2" opacity="0.25"/><circle cx="9" cy="26.88" r="0.88" fill="#fff6c2" opacity="0.41"/><circle cx="24" cy="18.38" r="1.27" fill="#fff6c2" opacity="0.75"/><circle cx="39" cy="26.88" r="1.5" fill="#fff6c2" opacity="0.95"/></g><g transform="translate(144 0)"><rect x="0" y="0" width="48" height="48" fill="none"/>
+
+    <radialGradient id="food_golden_fruit-glow-3" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="24" cy="26.88" r="20" fill="url(#food_golden_fruit-glow-3)"/>
+    <circle cx="24" cy="26.88" r="10.64" fill="currentColor"/>
+    <circle cx="21" cy="23.68" r="3" fill="white" opacity="0.45"/>
+    <circle cx="24" cy="26.88" r="12.98" fill="none" stroke="rgba(255,233,122,0.7)" stroke-width="1.2"/>
+    <g transform="translate(24 26.88) rotate(135)">
+      <path d="M 0 -5.6 L 1.7 -1.4 L 5.8 -0.8 L 2.7 1.7 L 3.7 5.8 L 0 3.5 L -3.7 5.8 L -2.7 1.7 L -5.8 -0.8 L -1.7 -1.4 Z" fill="rgba(255,255,255,0.9)"/>
     </g>
-    <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
-  </g><g transform="translate(192 0)">
-    <rect x="0" y="0" width="48" height="48" fill="none"/>
-    <ellipse cx="24" cy="38.92" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
-    <path d="M 24 10.92 L 24 18.92"
-          stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
-    <circle cx="24" cy="26.42" r="9.1" fill="currentColor"/>
-    <circle cx="24" cy="26.42" r="11.26" fill="none" stroke="rgba(255,233,122,0.65)" stroke-width="1.2"/>
-    <g transform="translate(24.1 25.42) rotate(180)">
-      <path d="M 0 -5.8 L 1.7 -1.4 L 6 -0.8 L 2.8 1.7 L 3.8 6 L 0 3.6 L -3.8 6 L -2.8 1.7 L -6 -0.8 L -1.7 -1.4 Z"
-            fill="rgba(255,255,255,0.85)" opacity="0.92"/>
+    <circle cx="13.39" cy="32.89" r="1.38" fill="#fff6c2" opacity="0.85"/><circle cx="13.39" cy="20.87" r="1.49" fill="#fff6c2" opacity="0.94"/><circle cx="34.61" cy="20.87" r="1.24" fill="#fff6c2" opacity="0.72"/><circle cx="34.61" cy="32.89" r="0.86" fill="#fff6c2" opacity="0.39"/></g><g transform="translate(192 0)"><rect x="0" y="0" width="48" height="48" fill="none"/>
+
+    <radialGradient id="food_golden_fruit-glow-4" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="24" cy="26.88" r="20" fill="url(#food_golden_fruit-glow-4)"/>
+    <circle cx="24" cy="26.88" r="10.31" fill="currentColor"/>
+    <circle cx="21" cy="23.68" r="3" fill="white" opacity="0.45"/>
+    <circle cx="24" cy="26.88" r="12.46" fill="none" stroke="rgba(255,233,122,0.7)" stroke-width="1.2"/>
+    <g transform="translate(24 26.88) rotate(180)">
+      <path d="M 0 -5.6 L 1.7 -1.4 L 5.8 -0.8 L 2.7 1.7 L 3.7 5.8 L 0 3.5 L -3.7 5.8 L -2.7 1.7 L -5.8 -0.8 L -1.7 -1.4 Z" fill="rgba(255,255,255,0.9)"/>
     </g>
-    <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
-  </g><g transform="translate(240 0)">
-    <rect x="0" y="0" width="48" height="48" fill="none"/>
-    <ellipse cx="24" cy="38.92" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
-    <path d="M 24 10.92 L 24 18.92"
-          stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
-    <circle cx="24" cy="26.42" r="9.07" fill="currentColor"/>
-    <circle cx="24" cy="26.42" r="11.23" fill="none" stroke="rgba(255,233,122,0.65)" stroke-width="1.2"/>
-    <g transform="translate(24.1 25.42) rotate(225)">
-      <path d="M 0 -5.8 L 1.7 -1.4 L 6 -0.8 L 2.8 1.7 L 3.8 6 L 0 3.6 L -3.8 6 L -2.8 1.7 L -6 -0.8 L -1.7 -1.4 Z"
-            fill="rgba(255,255,255,0.85)" opacity="0.92"/>
+    <circle cx="9" cy="26.88" r="1.1" fill="#fff6c2" opacity="0.6"/><circle cx="24" cy="18.38" r="0.76" fill="#fff6c2" opacity="0.31"/><circle cx="39" cy="26.88" r="0.74" fill="#fff6c2" opacity="0.28"/><circle cx="24" cy="35.38" r="1.04" fill="#fff6c2" opacity="0.55"/></g><g transform="translate(240 0)"><rect x="0" y="0" width="48" height="48" fill="none"/>
+
+    <radialGradient id="food_golden_fruit-glow-5" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="24" cy="26.88" r="20" fill="url(#food_golden_fruit-glow-5)"/>
+    <circle cx="24" cy="26.88" r="10.29" fill="currentColor"/>
+    <circle cx="21" cy="23.68" r="3" fill="white" opacity="0.45"/>
+    <circle cx="24" cy="26.88" r="12.43" fill="none" stroke="rgba(255,233,122,0.7)" stroke-width="1.2"/>
+    <g transform="translate(24 26.88) rotate(225)">
+      <path d="M 0 -5.6 L 1.7 -1.4 L 5.8 -0.8 L 2.7 1.7 L 3.7 5.8 L 0 3.5 L -3.7 5.8 L -2.7 1.7 L -5.8 -0.8 L -1.7 -1.4 Z" fill="rgba(255,255,255,0.9)"/>
     </g>
-    <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
-  </g><g transform="translate(288 0)">
-    <rect x="0" y="0" width="48" height="48" fill="none"/>
-    <ellipse cx="24" cy="38.92" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
-    <path d="M 24 10.92 L 24 18.92"
-          stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
-    <circle cx="24" cy="26.42" r="9.5" fill="currentColor"/>
-    <circle cx="24" cy="26.42" r="11.8" fill="none" stroke="rgba(255,233,122,0.65)" stroke-width="1.2"/>
-    <g transform="translate(24.1 25.42) rotate(270)">
-      <path d="M 0 -5.8 L 1.7 -1.4 L 6 -0.8 L 2.8 1.7 L 3.8 6 L 0 3.6 L -3.8 6 L -2.8 1.7 L -6 -0.8 L -1.7 -1.4 Z"
-            fill="rgba(255,255,255,0.85)" opacity="0.92"/>
+    <circle cx="13.39" cy="20.87" r="0.82" fill="#fff6c2" opacity="0.35"/><circle cx="34.61" cy="20.87" r="1.19" fill="#fff6c2" opacity="0.67"/><circle cx="34.61" cy="32.89" r="1.47" fill="#fff6c2" opacity="0.93"/><circle cx="13.39" cy="32.89" r="1.42" fill="#fff6c2" opacity="0.88"/></g><g transform="translate(288 0)"><rect x="0" y="0" width="48" height="48" fill="none"/>
+
+    <radialGradient id="food_golden_fruit-glow-6" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="24" cy="26.88" r="20" fill="url(#food_golden_fruit-glow-6)"/>
+    <circle cx="24" cy="26.88" r="10.65" fill="currentColor"/>
+    <circle cx="21" cy="23.68" r="3" fill="white" opacity="0.45"/>
+    <circle cx="24" cy="26.88" r="13" fill="none" stroke="rgba(255,233,122,0.7)" stroke-width="1.2"/>
+    <g transform="translate(24 26.88) rotate(270)">
+      <path d="M 0 -5.6 L 1.7 -1.4 L 5.8 -0.8 L 2.7 1.7 L 3.7 5.8 L 0 3.5 L -3.7 5.8 L -2.7 1.7 L -5.8 -0.8 L -1.7 -1.4 Z" fill="rgba(255,255,255,0.9)"/>
     </g>
-    <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
-  </g><g transform="translate(336 0)">
-    <rect x="0" y="0" width="48" height="48" fill="none"/>
-    <ellipse cx="24" cy="38.92" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
-    <path d="M 24 10.92 L 24 18.92"
-          stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
-    <circle cx="24" cy="26.42" r="8.88" fill="currentColor"/>
-    <circle cx="24" cy="26.42" r="10.96" fill="none" stroke="rgba(255,233,122,0.65)" stroke-width="1.2"/>
-    <g transform="translate(24.1 25.42) rotate(315)">
-      <path d="M 0 -5.8 L 1.7 -1.4 L 6 -0.8 L 2.8 1.7 L 3.8 6 L 0 3.6 L -3.8 6 L -2.8 1.7 L -6 -0.8 L -1.7 -1.4 Z"
-            fill="rgba(255,255,255,0.85)" opacity="0.92"/>
+    <circle cx="24" cy="18.38" r="1.5" fill="#fff6c2" opacity="0.95"/><circle cx="39" cy="26.88" r="1.32" fill="#fff6c2" opacity="0.79"/><circle cx="24" cy="35.38" r="0.93" fill="#fff6c2" opacity="0.45"/><circle cx="9" cy="26.88" r="0.7" fill="#fff6c2" opacity="0.25"/></g><g transform="translate(336 0)"><rect x="0" y="0" width="48" height="48" fill="none"/>
+
+    <radialGradient id="food_golden_fruit-glow-7" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="24" cy="26.88" r="20" fill="url(#food_golden_fruit-glow-7)"/>
+    <circle cx="24" cy="26.88" r="10.13" fill="currentColor"/>
+    <circle cx="21" cy="23.68" r="3" fill="white" opacity="0.45"/>
+    <circle cx="24" cy="26.88" r="12.16" fill="none" stroke="rgba(255,233,122,0.7)" stroke-width="1.2"/>
+    <g transform="translate(24 26.88) rotate(315)">
+      <path d="M 0 -5.6 L 1.7 -1.4 L 5.8 -0.8 L 2.7 1.7 L 3.7 5.8 L 0 3.5 L -3.7 5.8 L -2.7 1.7 L -5.8 -0.8 L -1.7 -1.4 Z" fill="rgba(255,255,255,0.9)"/>
     </g>
-    <circle cx="21.6" cy="22.72" r="1.2" fill="white" opacity="0.9"/>
-  </g></svg>
+    <circle cx="34.61" cy="20.87" r="0.82" fill="#fff6c2" opacity="0.35"/><circle cx="34.61" cy="32.89" r="0.71" fill="#fff6c2" opacity="0.26"/><circle cx="13.39" cy="32.89" r="0.96" fill="#fff6c2" opacity="0.48"/><circle cx="13.39" cy="20.87" r="1.34" fill="#fff6c2" opacity="0.81"/></g></svg>

@@ -10,6 +10,18 @@ const spritesRoot = path.join(repoRoot, 'creature-sim', 'assets', 'sprites');
 
 const TAU = Math.PI * 2;
 
+// SPRITE_ONLY=food_grass,food_berries regenerates only the named sheets and
+// merges their manifest entries. Without it the script rewrites every sheet,
+// which also reflows sheets owned by other generators (creatures, rocks, trees,
+// scenario cards), so use the filter when only one family changes.
+const onlyKeys = process.env.SPRITE_ONLY
+  ? new Set(
+      process.env.SPRITE_ONLY.split(',')
+        .map(value => value.trim())
+        .filter(Boolean)
+    )
+  : null;
+
 const toFixed2 = value => Number(value.toFixed(2));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -42,7 +54,9 @@ function renderSheet({
       t,
       phase,
       frameWidth,
-      frameHeight
+      frameHeight,
+      key,
+      frameCount
     });
     frames += `<g transform="translate(${i * frameWidth} 0)">${body}</g>`;
   }
@@ -73,7 +87,9 @@ function renderSheet({
   const fileStem = outputName || key;
   const relativePath = path.join('assets', 'sprites', category, `${fileStem}.svg`);
   const outPath = path.join(spritesRoot, category, `${fileStem}.svg`);
-  fs.writeFileSync(outPath, `${svg}\n`, 'utf8');
+  if (!onlyKeys || onlyKeys.has(key)) {
+    fs.writeFileSync(outPath, `${svg}\n`, 'utf8');
+  }
 
   return {
     key,
@@ -293,274 +309,262 @@ function creatureFrame(profile, ctx) {
   `;
 }
 
+// Food frames. Grass, berries and fruit are depletion stages: frame 0 is a full
+// item and frame 7 is nearly eaten, because the renderer picks the frame from
+// the item's remaining stock. Golden fruit is the exception and loops as an idle
+// animation. currentColor carries the ecosystem tint; leaves, stems and
+// highlights keep fixed colours so each type still reads on black.
 function foodFrame(type, ctx) {
-  const { phase, frameWidth: w, frameHeight: h } = ctx;
+  const { phase, frameWidth: w, frameHeight: h, i = 0, key = 'food' } = ctx;
+  const left = 1 - clamp(i, 0, 7) / 7;
   const cx = w * 0.5;
-  const cy = h * 0.54;
-  const sway = Math.sin(phase * 1.8);
-  const pulse = 1 + Math.sin(phase * 2.2) * 0.08;
+  const glowId = `${key}-glow-${i}`;
+  const glow = (gx, gy, r, alpha) => `
+    <radialGradient id="${glowId}" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="${toFixed2(clamp(alpha, 0, 1))}"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="${toFixed2(gx)}" cy="${toFixed2(gy)}" r="${toFixed2(r)}" fill="url(#${glowId})"/>`;
+  const frameRect = `<rect x="0" y="0" width="${w}" height="${h}" fill="none"/>`;
 
   if (type === 'grass') {
-    return `
-      <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-      <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 12)}" rx="15" ry="4.4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M ${toFixed2(cx - 7)} ${toFixed2(cy + 9)}
-               Q ${toFixed2(cx - 9 + sway * 1.1)} ${toFixed2(cy + 1)}
-                 ${toFixed2(cx - 5)} ${toFixed2(cy - 7)}
-               Q ${toFixed2(cx - 2 + sway * 0.5)} ${toFixed2(cy + 2)}
-                 ${toFixed2(cx - 1.2)} ${toFixed2(cy + 9)} Z"
-            fill="currentColor" opacity="0.92"/>
-      <path d="M ${toFixed2(cx - 0.6)} ${toFixed2(cy + 10)}
-               Q ${toFixed2(cx - 2.8 + sway * 0.75)} ${toFixed2(cy + 2)}
-                 ${toFixed2(cx + 0.6)} ${toFixed2(cy - 11)}
-               Q ${toFixed2(cx + 3.5 + sway * 0.35)} ${toFixed2(cy + 2)}
-                 ${toFixed2(cx + 3.2)} ${toFixed2(cy + 10)} Z"
-            fill="currentColor"/>
-      <path d="M ${toFixed2(cx + 4)} ${toFixed2(cy + 9)}
-               Q ${toFixed2(cx + 3 + sway * 0.9)} ${toFixed2(cy + 0.8)}
-                 ${toFixed2(cx + 8.8)} ${toFixed2(cy - 8)}
-               Q ${toFixed2(cx + 10.3 + sway * 0.4)} ${toFixed2(cy + 1.6)}
-                 ${toFixed2(cx + 9)} ${toFixed2(cy + 9)} Z"
-            fill="currentColor" opacity="0.84"/>
-      <path d="M ${toFixed2(cx - 8)} ${toFixed2(cy + 5)}
-               Q ${toFixed2(cx - 1)} ${toFixed2(cy + 1 + sway * 0.35)}
-                 ${toFixed2(cx + 8)} ${toFixed2(cy + 4)}"
-            stroke="rgba(255,255,255,0.24)" stroke-width="1" fill="none"/>
-    `;
+    const s = 0.22 + 0.78 * left;
+    const baseY = h * 0.8;
+    const sway = Math.sin(phase * 1.6) * 1.3;
+    const blade = (dx, height, lean) => {
+      const x0 = cx + dx * s;
+      const top = baseY - height * s;
+      const mid = (baseY + top) / 2;
+      return `<path d="M ${toFixed2(x0 - 2.4 * s)} ${toFixed2(baseY)}
+               Q ${toFixed2(x0 + lean * s + sway)} ${toFixed2(mid)} ${toFixed2(x0 + lean * s * 1.5 + sway * 1.2)} ${toFixed2(top)}
+               Q ${toFixed2(x0 + lean * s + sway * 0.4 + 1.6 * s)} ${toFixed2(mid)} ${toFixed2(x0 + 2.4 * s)} ${toFixed2(baseY)} Z"
+            fill="currentColor"/>`;
+    };
+    return `${frameRect}
+      ${glow(cx, baseY - 9 * s, 17, 0.4 * left + 0.1)}
+      ${blade(-5, 20, -3)}
+      ${blade(0, 27, 1.2)}
+      ${blade(5, 22, 3.8)}
+      <path d="M ${toFixed2(cx + 0.6 * s + sway)} ${toFixed2(baseY - 25 * s)} L ${toFixed2(cx + 1.8)} ${toFixed2(baseY - 6)}"
+            stroke="rgba(255,255,255,0.42)" stroke-width="1" stroke-linecap="round" fill="none"/>`;
   }
 
   if (type === 'berries') {
-    const offset = Math.sin(phase * 2) * 0.9;
-    return `
-      <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-      <ellipse cx="${toFixed2(cx + 1)}" cy="${toFixed2(cy + 11)}" rx="15" ry="4.2" fill="rgba(0,0,0,0.2)"/>
-      <path d="M ${toFixed2(cx)} ${toFixed2(cy - 16)} Q ${toFixed2(cx - 5 + sway)} ${toFixed2(cy - 10)} ${toFixed2(cx - 8)} ${toFixed2(cy - 3)}"
-            stroke="currentColor" stroke-width="2" fill="none" opacity="0.55"/>
-      <ellipse cx="${toFixed2(cx + 4)}" cy="${toFixed2(cy - 13 + sway * 0.7)}" rx="4.4" ry="2.8" fill="currentColor" opacity="0.78"/>
-      <circle cx="${toFixed2(cx - 5.6)}" cy="${toFixed2(cy + offset)}" r="${toFixed2(4.2 * pulse)}" fill="currentColor" />
-      <circle cx="${toFixed2(cx + 1.5)}" cy="${toFixed2(cy + 3.4 - offset * 0.35)}" r="${toFixed2(4.6 * (1 + Math.sin(phase * 2.4 + 0.6) * 0.05))}" fill="currentColor" opacity="0.95"/>
-      <circle cx="${toFixed2(cx + 8.6)}" cy="${toFixed2(cy + 0.2 + offset * 0.55)}" r="${toFixed2(3.9 * (1 + Math.cos(phase * 2 + 0.5) * 0.04))}" fill="currentColor" opacity="0.88"/>
-      <circle cx="${toFixed2(cx - 4.8)}" cy="${toFixed2(cy - 0.8)}" r="1.05" fill="white" opacity="0.85"/>
-      <circle cx="${toFixed2(cx + 2.2)}" cy="${toFixed2(cy + 2.5)}" r="1.1" fill="white" opacity="0.9"/>
-    `;
+    const s = 0.4 + 0.6 * left;
+    const cy = h * 0.56;
+    const sway = Math.sin(phase * 2) * 0.5;
+    const spots = [
+      [-8, -4],
+      [0, -9],
+      [8, -4],
+      [-4, 4],
+      [4, 4],
+      [0, -1]
+    ];
+    const count = Math.max(1, Math.round(6 * left));
+    let berries = '';
+    for (let n = 0; n < count; n++) {
+      const [dx, dy] = spots[n];
+      const bx = cx + dx * s + (n % 2 ? sway : -sway);
+      const by = cy + dy * s;
+      const r = 4.2 * s + 0.8;
+      berries += `<circle cx="${toFixed2(bx)}" cy="${toFixed2(by)}" r="${toFixed2(r)}" fill="currentColor"/>
+        <circle cx="${toFixed2(bx - r * 0.35)}" cy="${toFixed2(by - r * 0.35)}" r="${toFixed2(r * 0.24)}" fill="white" opacity="0.85"/>`;
+    }
+    return `${frameRect}
+      ${glow(cx, cy, 19, 0.36 * left + 0.1)}
+      <path d="M ${toFixed2(cx - 13 * s)} ${toFixed2(cy + 11 * s)} Q ${toFixed2(cx - 6 * s)} ${toFixed2(cy - 3 * s)} ${toFixed2(cx + 1)} ${toFixed2(cy + 11 * s)} Z" fill="#2f9e58"/>
+      <path d="M ${toFixed2(cx + 13 * s)} ${toFixed2(cy + 11 * s)} Q ${toFixed2(cx + 6 * s)} ${toFixed2(cy - 3 * s)} ${toFixed2(cx - 1)} ${toFixed2(cy + 11 * s)} Z" fill="#46c477"/>
+      ${berries}`;
   }
 
   if (type === 'fruit') {
-    const leafSwing = Math.sin(phase * 1.7) * 2.6;
-    return `
-      <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-      <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 12)}" rx="14" ry="4.4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M ${toFixed2(cx)} ${toFixed2(cy - 15)} L ${toFixed2(cx)} ${toFixed2(cy - 7)}"
-            stroke="#7a4e27" stroke-width="2.1" stroke-linecap="round"/>
-      <path d="M ${toFixed2(cx)} ${toFixed2(cy - 13)}
-               Q ${toFixed2(cx + 5 + leafSwing)} ${toFixed2(cy - 19)}
-                 ${toFixed2(cx + 10)} ${toFixed2(cy - 12)}
-               Q ${toFixed2(cx + 4)} ${toFixed2(cy - 10)}
-                 ${toFixed2(cx)} ${toFixed2(cy - 13)} Z"
-            fill="currentColor" opacity="0.86"/>
-      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy + 0.2)}" r="${toFixed2(8.5 * pulse)}" fill="currentColor"/>
-      <path d="M ${toFixed2(cx - 4.5)} ${toFixed2(cy - 3.5)}
-               Q ${toFixed2(cx - 0.5)} ${toFixed2(cy - 6)}
-                 ${toFixed2(cx + 4)} ${toFixed2(cy - 4.2)}"
-            stroke="rgba(255,255,255,0.28)" stroke-width="1.1" fill="none"/>
-      <circle cx="${toFixed2(cx - 2.2)}" cy="${toFixed2(cy - 2.8)}" r="1.2" fill="white" opacity="0.85"/>
-    `;
+    const s = 0.35 + 0.65 * left;
+    const cy = h * 0.6;
+    const sway = Math.sin(phase * 1.7) * 1.1;
+    const body = 9.6 * s;
+    return `${frameRect}
+      ${glow(cx, cy, 18, 0.34 * left + 0.1)}
+      <path d="M ${toFixed2(cx)} ${toFixed2(cy - 8 * s)} L ${toFixed2(cx + sway * 0.3)} ${toFixed2(cy - 16 * s)}"
+            stroke="#7a4e27" stroke-width="${toFixed2(1.6 * s + 0.6)}" stroke-linecap="round" fill="none"/>
+      <path d="M ${toFixed2(cx + 1)} ${toFixed2(cy - 13 * s)} Q ${toFixed2(cx + 6 * s + sway)} ${toFixed2(cy - 21 * s)} ${toFixed2(cx + 12 * s)} ${toFixed2(cy - 13 * s)} Q ${toFixed2(cx + 5 * s)} ${toFixed2(cy - 9 * s)} ${toFixed2(cx + 1)} ${toFixed2(cy - 13 * s)} Z" fill="#46c477"/>
+      <circle cx="${toFixed2(cx - 2 * s)}" cy="${toFixed2(cy + 1 * s)}" r="${toFixed2(body)}" fill="currentColor"/>
+      <circle cx="${toFixed2(cx + 3 * s)}" cy="${toFixed2(cy + 0.5 * s)}" r="${toFixed2(body * 0.86)}" fill="currentColor"/>
+      <ellipse cx="${toFixed2(cx - 4.4 * s)}" cy="${toFixed2(cy - 2.6 * s)}" rx="${toFixed2(2.4 * s + 0.4)}" ry="${toFixed2(3.4 * s + 0.4)}" fill="white" opacity="0.62"/>`;
   }
 
+  // golden_fruit: an idle loop. Each frame is one step of the orbit and shimmer.
   const shimmer = Math.sin(phase * 3.1) * 0.45;
-  const starTilt = phase * 57.2958;
-  return `
-    <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-    <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 13)}" rx="16" ry="4.8" fill="rgba(0,0,0,0.22)"/>
-    <path d="M ${toFixed2(cx)} ${toFixed2(cy - 15)} L ${toFixed2(cx)} ${toFixed2(cy - 7)}"
-          stroke="#8a6b1f" stroke-width="2.1" stroke-linecap="round"/>
-    <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy + 0.5)}" r="${toFixed2(9.2 * (1 + shimmer * 0.08))}" fill="currentColor"/>
-    <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy + 0.5)}" r="${toFixed2(11.4 + shimmer)}" fill="none" stroke="rgba(255,233,122,0.65)" stroke-width="1.2"/>
-    <g transform="translate(${toFixed2(cx + 0.1)} ${toFixed2(cy - 0.5)}) rotate(${toFixed2(starTilt)})">
-      <path d="M 0 -5.8 L 1.7 -1.4 L 6 -0.8 L 2.8 1.7 L 3.8 6 L 0 3.6 L -3.8 6 L -2.8 1.7 L -6 -0.8 L -1.7 -1.4 Z"
-            fill="rgba(255,255,255,0.85)" opacity="0.92"/>
+  const spin = phase * 57.2958;
+  const cy = h * 0.56;
+  let sparks = '';
+  for (let n = 0; n < 4; n++) {
+    const a = phase + (n * Math.PI) / 2;
+    const sx = cx + Math.cos(a) * 15;
+    const sy = cy + Math.sin(a) * 8.5;
+    sparks += `<circle cx="${toFixed2(sx)}" cy="${toFixed2(sy)}" r="${toFixed2(1.1 + 0.4 * Math.sin(phase * 3 + n))}" fill="#fff6c2" opacity="${toFixed2(0.6 + 0.35 * Math.sin(phase * 3 + n))}"/>`;
+  }
+  return `${frameRect}
+    ${glow(cx, cy, 20, 0.55)}
+    <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="${toFixed2(10.4 * (1 + shimmer * 0.06))}" fill="currentColor"/>
+    <circle cx="${toFixed2(cx - 3)}" cy="${toFixed2(cy - 3.2)}" r="3" fill="white" opacity="0.45"/>
+    <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="${toFixed2(12.6 + shimmer)}" fill="none" stroke="rgba(255,233,122,0.7)" stroke-width="1.2"/>
+    <g transform="translate(${toFixed2(cx)} ${toFixed2(cy)}) rotate(${toFixed2(spin)})">
+      <path d="M 0 -5.6 L 1.7 -1.4 L 5.8 -0.8 L 2.7 1.7 L 3.7 5.8 L 0 3.5 L -3.7 5.8 L -2.7 1.7 L -5.8 -0.8 L -1.7 -1.4 Z" fill="rgba(255,255,255,0.9)"/>
     </g>
-    <circle cx="${toFixed2(cx - 2.4)}" cy="${toFixed2(cy - 3.2)}" r="1.2" fill="white" opacity="0.9"/>
-  `;
+    ${sparks}`;
 }
 
+// Prop loops. Every prop carries a soft glow and a floor ring, because on the
+// black field a dark core or drop shadow disappears. currentColor is the prop
+// colour, which the runtime tints per prop type; highlights stay white.
 function propFrame(type, ctx) {
-  const { phase, frameWidth: w, frameHeight: h } = ctx;
+  const { phase, frameWidth: w, frameHeight: h, i = 0, key = 'prop' } = ctx;
   const cx = w * 0.5;
   const cy = h * 0.5;
-  const propBase = `
-    <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 31)}" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 26)}" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-  `;
+  const glowId = `${key}-glow-${i}`;
+  const frameRect = `<rect x="0" y="0" width="${w}" height="${h}" fill="none"/>`;
+  const glow = (r, alpha) => `
+    <radialGradient id="${glowId}" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="${toFixed2(alpha)}"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="${toFixed2(r)}" fill="url(#${glowId})"/>`;
+  const floor = (rx, ry, y) =>
+    `<ellipse cx="${toFixed2(cx)}" cy="${toFixed2(y)}" rx="${toFixed2(rx)}" ry="${toFixed2(ry)}" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>`;
 
   if (type === 'bounce') {
-    const squash = 1 - Math.max(0, Math.sin(phase * 2.2)) * 0.14;
-    const padRy = 11 * squash;
-    return `
-      <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-      ${propBase}
-      <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 22)}" rx="23" ry="5.8" fill="rgba(0,0,0,0.16)"/>
-      <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 8)}" rx="28" ry="${toFixed2(padRy)}" fill="currentColor"/>
-      <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 6.5)}" rx="22.5" ry="${toFixed2(padRy * 0.55)}" fill="rgba(255,255,255,0.26)"/>
-      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy + 8)}" r="6.8" fill="rgba(255,255,255,0.82)" opacity="0.88"/>
-    `;
+    const squash = 1 - Math.max(0, Math.sin(phase * 2.2)) * 0.16;
+    const padRy = 10 * squash;
+    return `${frameRect}${glow(42, 0.34)}${floor(31, 6.5, cy + 17)}
+      <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 9)}" rx="30" ry="${toFixed2(padRy)}" fill="currentColor"/>
+      <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 7)}" rx="24" ry="${toFixed2(padRy * 0.5)}" fill="rgba(255,255,255,0.32)"/>
+      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy + 8)}" r="6.5" fill="rgba(255,255,255,0.9)"/>`;
   }
 
   if (type === 'spring') {
-    const bounce = Math.sin(phase * 2.1) * 4.5;
-    return `
-      <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-      ${propBase}
-      <rect x="${toFixed2(cx - 23)}" y="${toFixed2(cy + 21)}" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M ${toFixed2(cx - 14)} ${toFixed2(cy + 20)}
-               Q ${toFixed2(cx - 6)} ${toFixed2(cy + 15 + bounce * 0.18)} ${toFixed2(cx - 1)} ${toFixed2(cy + 9)}
-               Q ${toFixed2(cx + 4)} ${toFixed2(cy + 2 - bounce * 0.25)} ${toFixed2(cx + 10)} ${toFixed2(cy - 5)}
-               Q ${toFixed2(cx + 15)} ${toFixed2(cy - 11 - bounce * 0.18)} ${toFixed2(cx + 20)} ${toFixed2(cy - 18)}
-               "
-            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
-      <rect x="${toFixed2(cx - 18)}" y="${toFixed2(cy - 23 + bounce)}" width="36" height="8.5" rx="4.25" fill="currentColor"/>
-      <rect x="${toFixed2(cx - 14)}" y="${toFixed2(cy - 21 + bounce)}" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
-    `;
+    // A real coil: the zigzag compresses and stretches with the bounce.
+    const squeeze = 1 + Math.sin(phase * 2.1) * 0.12;
+    const top = cy - 15;
+    const bottom = cy + 17;
+    const span = (bottom - top) / squeeze;
+    const segments = 6;
+    let coil = `M ${toFixed2(cx)} ${toFixed2(bottom)}`;
+    for (let n = 1; n <= segments; n++) {
+      const y = bottom - (span * n) / segments;
+      const x = cx + (n % 2 ? 12 : -12);
+      coil += ` L ${toFixed2(x)} ${toFixed2(y)}`;
+    }
+    const topY = bottom - span;
+    return `${frameRect}${glow(42, 0.3)}${floor(24, 5, bottom + 4)}
+      <path d="${coil}" stroke="currentColor" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+      <rect x="${toFixed2(cx - 19)}" y="${toFixed2(topY - 6)}" width="38" height="7" rx="3.5" fill="currentColor"/>
+      <rect x="${toFixed2(cx - 16)}" y="${toFixed2(topY - 5)}" width="32" height="2.4" rx="1.2" fill="rgba(255,255,255,0.45)"/>
+      <rect x="${toFixed2(cx - 21)}" y="${toFixed2(bottom)}" width="42" height="7" rx="3.5" fill="currentColor" opacity="0.85"/>`;
   }
 
   if (type === 'spinner') {
     const angle = toFixed2((phase / TAU) * 360);
-    return `
-      <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-      ${propBase}
-      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="6.5" fill="currentColor"/>
+    return `${frameRect}${glow(42, 0.3)}${floor(28, 6, cy + 27)}
       <g transform="translate(${toFixed2(cx)} ${toFixed2(cy)}) rotate(${angle})">
-        <path d="M 0 -27 L 7 -9 L -7 -9 Z" fill="currentColor"/>
-        <path d="M 27 0 L 9 7 L 9 -7 Z" fill="currentColor" opacity="0.9"/>
-        <path d="M 0 27 L -7 9 L 7 9 Z" fill="currentColor" opacity="0.86"/>
-        <path d="M -27 0 L -9 -7 L -9 7 Z" fill="currentColor" opacity="0.92"/>
+        <path d="M 0 -27 L 8 -9 L -8 -9 Z" fill="currentColor"/>
+        <path d="M 27 0 L 9 8 L 9 -8 Z" fill="currentColor" opacity="0.92"/>
+        <path d="M 0 27 L -8 9 L 8 9 Z" fill="currentColor" opacity="0.88"/>
+        <path d="M -27 0 L -9 -8 L -9 8 Z" fill="currentColor" opacity="0.94"/>
       </g>
-      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="14.5" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="1.4"/>
-    `;
+      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="7" fill="currentColor"/>
+      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="3" fill="rgba(255,255,255,0.85)"/>`;
   }
 
   if (type === 'seesaw') {
     const tilt = Math.sin(phase * 1.4) * 14;
-    return `
-      <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-      ${propBase}
-      <path d="M ${toFixed2(cx)} ${toFixed2(cy + 15)} L ${toFixed2(cx - 8)} ${toFixed2(cy + 30)} L ${toFixed2(cx + 8)} ${toFixed2(cy + 30)} Z"
-            fill="rgba(0,0,0,0.24)"/>
-      <g transform="translate(${toFixed2(cx)} ${toFixed2(cy + 14)}) rotate(${toFixed2(tilt)})">
-        <rect x="-30" y="-4" width="60" height="8" rx="4" fill="currentColor"/>
-        <circle cx="-24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
-        <circle cx="24" cy="-6.8" r="4.2" fill="rgba(255,255,255,0.3)"/>
-      </g>
-    `;
+    return `${frameRect}${glow(42, 0.3)}${floor(32, 6, cy + 28)}
+      <path d="M ${toFixed2(cx - 10)} ${toFixed2(cy + 27)} L ${toFixed2(cx)} ${toFixed2(cy + 4)} L ${toFixed2(cx + 10)} ${toFixed2(cy + 27)} Z" fill="currentColor" opacity="0.8"/>
+      <g transform="translate(${toFixed2(cx)} ${toFixed2(cy + 4)}) rotate(${toFixed2(tilt)})">
+        <rect x="-35" y="-6" width="70" height="12" rx="6" fill="currentColor"/>
+        <rect x="-31" y="-4.5" width="62" height="3" rx="1.5" fill="rgba(255,255,255,0.45)"/>
+        <circle cx="-29" cy="0" r="5.5" fill="rgba(255,255,255,0.5)"/>
+        <circle cx="29" cy="0" r="5.5" fill="rgba(255,255,255,0.5)"/>
+      </g>`;
   }
 
   if (type === 'conveyor') {
-    const flow = (phase / TAU) * 20;
-    return `
-      <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-      ${propBase}
-      <rect x="${toFixed2(cx - 30)}" y="${toFixed2(cy - 12)}" width="60" height="24" rx="7" fill="currentColor"/>
-      <rect x="${toFixed2(cx - 26)}" y="${toFixed2(cy - 8)}" width="52" height="16" rx="5" fill="rgba(255,255,255,0.16)"/>
-      <g fill="rgba(255,255,255,0.82)">
-        <path d="M ${toFixed2(cx - 18 + flow)} ${toFixed2(cy)} l 7 -4 v 8 z"/>
-        <path d="M ${toFixed2(cx - 1 + flow)} ${toFixed2(cy)} l 7 -4 v 8 z"/>
-        <path d="M ${toFixed2(cx + 16 + flow)} ${toFixed2(cy)} l 7 -4 v 8 z"/>
-      </g>
-    `;
+    const flow = (phase / TAU) * 14;
+    let chevrons = '';
+    for (let n = 0; n < 5; n++) {
+      const x = cx - 26 + ((n * 14 + flow) % 60);
+      chevrons += `<path d="M ${toFixed2(x - 4)} ${toFixed2(cy - 4)} L ${toFixed2(x + 3)} ${toFixed2(cy)} L ${toFixed2(x - 4)} ${toFixed2(cy + 4)}" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+    }
+    return `${frameRect}${glow(42, 0.28)}
+      <rect x="${toFixed2(cx - 34)}" y="${toFixed2(cy - 12)}" width="68" height="24" rx="12" fill="currentColor"/>
+      <rect x="${toFixed2(cx - 30)}" y="${toFixed2(cy - 9)}" width="60" height="4" rx="2" fill="rgba(255,255,255,0.3)"/>
+      <circle cx="${toFixed2(cx - 30)}" cy="${toFixed2(cy)}" r="8" fill="rgba(0,0,0,0.35)" stroke="currentColor" stroke-width="2"/>
+      <circle cx="${toFixed2(cx + 30)}" cy="${toFixed2(cy)}" r="8" fill="rgba(0,0,0,0.35)" stroke="currentColor" stroke-width="2"/>
+      ${chevrons}`;
   }
 
   if (type === 'slope') {
     const glide = Math.sin(phase * 1.5) * 1.6;
-    return `
-      <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-      ${propBase}
-      <path d="M ${toFixed2(cx - 30)} ${toFixed2(cy + 18)} L ${toFixed2(cx + 28)} ${toFixed2(cy - 12)} L ${toFixed2(cx + 28)} ${toFixed2(cy + 18)} Z"
-            fill="currentColor"/>
-      <path d="M ${toFixed2(cx - 21)} ${toFixed2(cy + 10 - glide)} L ${toFixed2(cx - 4)} ${toFixed2(cy + 1 - glide)} L ${toFixed2(cx - 4)} ${toFixed2(cy + 8 - glide)} Z"
-            fill="rgba(255,255,255,0.78)"/>
-      <path d="M ${toFixed2(cx - 3)} ${toFixed2(cy + 1 + glide)} L ${toFixed2(cx + 14)} ${toFixed2(cy - 8 + glide)} L ${toFixed2(cx + 14)} ${toFixed2(cy - 1 + glide)} Z"
-            fill="rgba(255,255,255,0.78)"/>
-    `;
+    return `${frameRect}${glow(42, 0.28)}${floor(32, 6, cy + 20)}
+      <path d="M ${toFixed2(cx - 32)} ${toFixed2(cy + 20)} L ${toFixed2(cx + 30)} ${toFixed2(cy - 14)} L ${toFixed2(cx + 30)} ${toFixed2(cy + 20)} Z" fill="currentColor"/>
+      <path d="M ${toFixed2(cx - 22)} ${toFixed2(cy + 11 - glide)} L ${toFixed2(cx - 4)} ${toFixed2(cy + 2 - glide)} L ${toFixed2(cx - 4)} ${toFixed2(cy + 9 - glide)} Z" fill="rgba(255,255,255,0.82)"/>
+      <path d="M ${toFixed2(cx - 2)} ${toFixed2(cy + 2 + glide)} L ${toFixed2(cx + 15)} ${toFixed2(cy - 8 + glide)} L ${toFixed2(cx + 15)} ${toFixed2(cy - 1 + glide)} Z" fill="rgba(255,255,255,0.82)"/>`;
   }
 
   if (type === 'fan') {
     const angle = toFixed2((phase / TAU) * 540);
-    return `
-      <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-      ${propBase}
-      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="23" fill="currentColor" opacity="0.2"/>
+    return `${frameRect}${glow(42, 0.3)}${floor(26, 6, cy + 25)}
+      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="23" fill="currentColor" opacity="0.22"/>
       <g transform="translate(${toFixed2(cx)} ${toFixed2(cy)}) rotate(${angle})">
         <path d="M 0 -4 C 9 -20 21 -23 24 -20 C 17 -8 8 -2 0 0 Z" fill="currentColor"/>
-        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.9"/>
-        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.86"/>
-        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.94"/>
+        <path d="M 4 0 C 20 9 23 21 20 24 C 8 17 2 8 0 0 Z" fill="currentColor" opacity="0.92"/>
+        <path d="M 0 4 C -9 20 -21 23 -24 20 C -17 8 -8 2 0 0 Z" fill="currentColor" opacity="0.9"/>
+        <path d="M -4 0 C -20 -9 -23 -21 -20 -24 C -8 -17 -2 -8 0 0 Z" fill="currentColor" opacity="0.96"/>
       </g>
-      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="5.5" fill="rgba(255,255,255,0.8)"/>
-    `;
+      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="5.5" fill="rgba(255,255,255,0.9)"/>`;
   }
 
   if (type === 'sticky') {
     const wobble = Math.sin(phase * 2.2) * 3.2;
-    return `
-      <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-      ${propBase}
+    return `${frameRect}${glow(42, 0.3)}${floor(28, 6, cy + 22)}
       <path d="M ${toFixed2(cx - 25)} ${toFixed2(cy + 12)}
                Q ${toFixed2(cx - 28)} ${toFixed2(cy - 12 + wobble)} ${toFixed2(cx - 7)} ${toFixed2(cy - 18)}
                Q ${toFixed2(cx + 16)} ${toFixed2(cy - 24 - wobble)} ${toFixed2(cx + 25)} ${toFixed2(cy - 4)}
                Q ${toFixed2(cx + 28)} ${toFixed2(cy + 16)} ${toFixed2(cx + 9)} ${toFixed2(cy + 20)}
                Q ${toFixed2(cx - 12)} ${toFixed2(cy + 24)} ${toFixed2(cx - 25)} ${toFixed2(cy + 12)} Z"
-            fill="currentColor" opacity="0.72"/>
-      <circle cx="${toFixed2(cx - 8)}" cy="${toFixed2(cy - 2)}" r="5.5" fill="rgba(255,255,255,0.35)"/>
-      <circle cx="${toFixed2(cx + 10)}" cy="${toFixed2(cy + 6)}" r="3.4" fill="rgba(255,255,255,0.28)"/>
-    `;
+            fill="currentColor" opacity="0.9"/>
+      <circle cx="${toFixed2(cx - 8)}" cy="${toFixed2(cy - 2)}" r="5.5" fill="rgba(255,255,255,0.42)"/>
+      <circle cx="${toFixed2(cx + 10)}" cy="${toFixed2(cy + 6)}" r="3.4" fill="rgba(255,255,255,0.34)"/>`;
   }
 
   if (type === 'gravity') {
-    const swirl = (phase / TAU) * 360;
-    return `
-      <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-      ${propBase}
-      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="24" fill="currentColor" opacity="0.2"/>
-      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="11" fill="rgba(0,0,0,0.45)"/>
-      <g transform="translate(${toFixed2(cx)} ${toFixed2(cy)}) rotate(${toFixed2(swirl)})">
-        <path d="M 0 -24 Q 6 -17 5 -11 Q 4 -5 -1 -2" stroke="currentColor" stroke-width="3.2" fill="none" stroke-linecap="round"/>
-        <path d="M 0 24 Q -6 17 -5 11 Q -4 5 1 2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.9"/>
+    const spin = (phase / TAU) * 360;
+    return `${frameRect}${glow(44, 0.4)}${floor(26, 6, cy + 24)}
+      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="20" fill="none" stroke="currentColor" stroke-width="4" opacity="0.95"/>
+      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="11" fill="rgba(255,255,255,0.2)"/>
+      <g transform="translate(${toFixed2(cx)} ${toFixed2(cy)}) rotate(${toFixed2(spin)})">
+        <circle cx="0" cy="-27" r="3.4" fill="currentColor"/>
+        <circle cx="0" cy="27" r="2.5" fill="currentColor" opacity="0.7"/>
       </g>
-      <circle cx="${toFixed2(cx + 5)}" cy="${toFixed2(cy - 4)}" r="2.2" fill="rgba(255,255,255,0.85)"/>
-    `;
+      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy)}" r="4" fill="rgba(255,255,255,0.92)"/>`;
   }
 
   if (type === 'button') {
     const press = Math.max(0, Math.sin(phase * 2.1));
-    return `
-      <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-      ${propBase}
-      <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 20)}" rx="22" ry="5" fill="rgba(0,0,0,0.18)"/>
-      <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 12 + press * 1.8)}" rx="19" ry="7" fill="currentColor" opacity="0.62"/>
-      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy + 2 + press * 5)}" r="13" fill="currentColor"/>
-      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy + 0.2 + press * 4.6)}" r="8.4" fill="rgba(255,255,255,0.34)"/>
-    `;
+    return `${frameRect}${glow(42, 0.36)}${floor(26, 6, cy + 20)}
+      <ellipse cx="${toFixed2(cx)}" cy="${toFixed2(cy + 15)}" rx="25" ry="7.5" fill="currentColor" opacity="0.6"/>
+      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy + 2 + press * 5)}" r="18" fill="currentColor"/>
+      <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy + 0.2 + press * 4.6)}" r="11" fill="rgba(255,255,255,0.42)"/>`;
   }
 
+  // launch: a pad with an up arrow, and a flame when it fires.
   const blast = Math.max(0, Math.sin(phase * 2.4)) * 1.25;
-  return `
-    <rect x="0" y="0" width="${w}" height="${h}" fill="none"/>
-    ${propBase}
-    <path d="M ${toFixed2(cx - 10)} ${toFixed2(cy + 15)} L ${toFixed2(cx + 10)} ${toFixed2(cy + 15)} L ${toFixed2(cx + 8)} ${toFixed2(cy + 25)} L ${toFixed2(cx - 8)} ${toFixed2(cy + 25)} Z"
-          fill="rgba(0,0,0,0.24)"/>
-    <path d="M ${toFixed2(cx)} ${toFixed2(cy - 22)}
-             L ${toFixed2(cx + 10)} ${toFixed2(cy - 5)}
-             L ${toFixed2(cx + 6)} ${toFixed2(cy + 14)}
-             L ${toFixed2(cx - 6)} ${toFixed2(cy + 14)}
-             L ${toFixed2(cx - 10)} ${toFixed2(cy - 5)} Z"
-          fill="currentColor"/>
-    <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy - 5)}" r="4.2" fill="rgba(255,255,255,0.78)"/>
-    <path d="M ${toFixed2(cx)} ${toFixed2(cy + 16)}
-             L ${toFixed2(cx + 5 + blast * 2)} ${toFixed2(cy + 25 + blast * 3)}
-             L ${toFixed2(cx)} ${toFixed2(cy + 22 + blast * 5)}
-             L ${toFixed2(cx - 5 - blast * 2)} ${toFixed2(cy + 25 + blast * 3)} Z"
-          fill="rgba(255,191,73,0.9)"/>
-  `;
+  return `${frameRect}${glow(42, 0.36)}${floor(26, 6, cy + 22)}
+    <rect x="${toFixed2(cx - 22)}" y="${toFixed2(cy + 12)}" width="44" height="9" rx="4.5" fill="currentColor" opacity="0.7"/>
+    <path d="M ${toFixed2(cx - 6)} ${toFixed2(cy + 14)} L ${toFixed2(cx)} ${toFixed2(cy + 22 + blast * 4)} L ${toFixed2(cx + 6)} ${toFixed2(cy + 14)} Z" fill="rgba(255,191,73,0.95)"/>
+    <path d="M ${toFixed2(cx)} ${toFixed2(cy - 22)} L ${toFixed2(cx + 14)} ${toFixed2(cy + 2)} L ${toFixed2(cx - 14)} ${toFixed2(cy + 2)} Z" fill="currentColor"/>
+    <rect x="${toFixed2(cx - 5)}" y="${toFixed2(cy + 1)}" width="10" height="12" rx="2" fill="currentColor"/>
+    <circle cx="${toFixed2(cx)}" cy="${toFixed2(cy - 8)}" r="3.6" fill="rgba(255,255,255,0.85)"/>`;
 }
 
 function flyingFrame(ctx) {
@@ -1483,9 +1487,19 @@ function generate() {
   };
 
   const manifestPath = path.join(spritesRoot, 'sprite-manifest.json');
-  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+  let manifestOut = manifest;
+  if (onlyKeys) {
+    const existing = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    const fresh = new Map(manifestEntries.filter(entry => onlyKeys.has(entry.key)).map(entry => [entry.key, entry]));
+    const merged = existing.sprites.map(entry => (fresh.has(entry.key) ? fresh.get(entry.key) : entry));
+    for (const [key, entry] of fresh) {
+      if (!existing.sprites.some(item => item.key === key)) merged.push(entry);
+    }
+    manifestOut = { ...existing, sprites: merged };
+  }
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifestOut, null, 2)}\n`, 'utf8');
 
-  console.log(`Generated ${manifestEntries.length} sprite sheets`);
+  console.log(`Generated ${onlyKeys ? [...onlyKeys].join(', ') : `${manifestEntries.length} sprite sheets`}`);
   console.log(`Manifest: ${path.relative(repoRoot, manifestPath)}`);
 }
 

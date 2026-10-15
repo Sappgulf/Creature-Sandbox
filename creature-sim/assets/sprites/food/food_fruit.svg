@@ -1,137 +1,97 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="384" height="48" viewBox="0 0 384 48" fill="none"><defs><filter id="food_fruit-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
-      <rect x="0" y="0" width="48" height="48" fill="none"/>
-      <ellipse cx="24" cy="37.92" rx="14" ry="4.4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 24 10.92 L 24 18.92"
-            stroke="#7a4e27" stroke-width="2.1" stroke-linecap="round"/>
-      <path d="M 24 12.92
-               Q 29 6.92
-                 34 13.92
-               Q 28 15.92
-                 24 12.92 Z"
-            fill="currentColor" opacity="0.86"/>
-      <circle cx="24" cy="26.12" r="8.5" fill="currentColor"/>
-      <path d="M 19.5 22.42
-               Q 23.5 19.92
-                 28 21.72"
-            stroke="rgba(255,255,255,0.28)" stroke-width="1.1" fill="none"/>
-      <circle cx="21.8" cy="23.12" r="1.2" fill="white" opacity="0.85"/>
-    </g><g transform="translate(48 0)">
-      <rect x="0" y="0" width="48" height="48" fill="none"/>
-      <ellipse cx="24" cy="37.92" rx="14" ry="4.4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 24 10.92 L 24 18.92"
-            stroke="#7a4e27" stroke-width="2.1" stroke-linecap="round"/>
-      <path d="M 24 12.92
-               Q 31.53 6.92
-                 34 13.92
-               Q 28 15.92
-                 24 12.92 Z"
-            fill="currentColor" opacity="0.86"/>
-      <circle cx="24" cy="26.12" r="9.17" fill="currentColor"/>
-      <path d="M 19.5 22.42
-               Q 23.5 19.92
-                 28 21.72"
-            stroke="rgba(255,255,255,0.28)" stroke-width="1.1" fill="none"/>
-      <circle cx="21.8" cy="23.12" r="1.2" fill="white" opacity="0.85"/>
-    </g><g transform="translate(96 0)">
-      <rect x="0" y="0" width="48" height="48" fill="none"/>
-      <ellipse cx="24" cy="37.92" rx="14" ry="4.4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 24 10.92 L 24 18.92"
-            stroke="#7a4e27" stroke-width="2.1" stroke-linecap="round"/>
-      <path d="M 24 12.92
-               Q 30.18 6.92
-                 34 13.92
-               Q 28 15.92
-                 24 12.92 Z"
-            fill="currentColor" opacity="0.86"/>
-      <circle cx="24" cy="26.12" r="8.29" fill="currentColor"/>
-      <path d="M 19.5 22.42
-               Q 23.5 19.92
-                 28 21.72"
-            stroke="rgba(255,255,255,0.28)" stroke-width="1.1" fill="none"/>
-      <circle cx="21.8" cy="23.12" r="1.2" fill="white" opacity="0.85"/>
-    </g><g transform="translate(144 0)">
-      <rect x="0" y="0" width="48" height="48" fill="none"/>
-      <ellipse cx="24" cy="37.92" rx="14" ry="4.4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 24 10.92 L 24 18.92"
-            stroke="#7a4e27" stroke-width="2.1" stroke-linecap="round"/>
-      <path d="M 24 12.92
-               Q 27.02 6.92
-                 34 13.92
-               Q 28 15.92
-                 24 12.92 Z"
-            fill="currentColor" opacity="0.86"/>
-      <circle cx="24" cy="26.12" r="7.89" fill="currentColor"/>
-      <path d="M 19.5 22.42
-               Q 23.5 19.92
-                 28 21.72"
-            stroke="rgba(255,255,255,0.28)" stroke-width="1.1" fill="none"/>
-      <circle cx="21.8" cy="23.12" r="1.2" fill="white" opacity="0.85"/>
-    </g><g transform="translate(192 0)">
-      <rect x="0" y="0" width="48" height="48" fill="none"/>
-      <ellipse cx="24" cy="37.92" rx="14" ry="4.4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 24 10.92 L 24 18.92"
-            stroke="#7a4e27" stroke-width="2.1" stroke-linecap="round"/>
-      <path d="M 24 12.92
-               Q 26.9 6.92
-                 34 13.92
-               Q 28 15.92
-                 24 12.92 Z"
-            fill="currentColor" opacity="0.86"/>
-      <circle cx="24" cy="26.12" r="8.9" fill="currentColor"/>
-      <path d="M 19.5 22.42
-               Q 23.5 19.92
-                 28 21.72"
-            stroke="rgba(255,255,255,0.28)" stroke-width="1.1" fill="none"/>
-      <circle cx="21.8" cy="23.12" r="1.2" fill="white" opacity="0.85"/>
-    </g><g transform="translate(240 0)">
-      <rect x="0" y="0" width="48" height="48" fill="none"/>
-      <ellipse cx="24" cy="37.92" rx="14" ry="4.4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 24 10.92 L 24 18.92"
-            stroke="#7a4e27" stroke-width="2.1" stroke-linecap="round"/>
-      <path d="M 24 12.92
-               Q 29.99 6.92
-                 34 13.92
-               Q 28 15.92
-                 24 12.92 Z"
-            fill="currentColor" opacity="0.86"/>
-      <circle cx="24" cy="26.12" r="8.98" fill="currentColor"/>
-      <path d="M 19.5 22.42
-               Q 23.5 19.92
-                 28 21.72"
-            stroke="rgba(255,255,255,0.28)" stroke-width="1.1" fill="none"/>
-      <circle cx="21.8" cy="23.12" r="1.2" fill="white" opacity="0.85"/>
-    </g><g transform="translate(288 0)">
-      <rect x="0" y="0" width="48" height="48" fill="none"/>
-      <ellipse cx="24" cy="37.92" rx="14" ry="4.4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 24 10.92 L 24 18.92"
-            stroke="#7a4e27" stroke-width="2.1" stroke-linecap="round"/>
-      <path d="M 24 12.92
-               Q 31.57 6.92
-                 34 13.92
-               Q 28 15.92
-                 24 12.92 Z"
-            fill="currentColor" opacity="0.86"/>
-      <circle cx="24" cy="26.12" r="7.95" fill="currentColor"/>
-      <path d="M 19.5 22.42
-               Q 23.5 19.92
-                 28 21.72"
-            stroke="rgba(255,255,255,0.28)" stroke-width="1.1" fill="none"/>
-      <circle cx="21.8" cy="23.12" r="1.2" fill="white" opacity="0.85"/>
-    </g><g transform="translate(336 0)">
-      <rect x="0" y="0" width="48" height="48" fill="none"/>
-      <ellipse cx="24" cy="37.92" rx="14" ry="4.4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 24 10.92 L 24 18.92"
-            stroke="#7a4e27" stroke-width="2.1" stroke-linecap="round"/>
-      <path d="M 24 12.92
-               Q 29.2 6.92
-                 34 13.92
-               Q 28 15.92
-                 24 12.92 Z"
-            fill="currentColor" opacity="0.86"/>
-      <circle cx="24" cy="26.12" r="8.19" fill="currentColor"/>
-      <path d="M 19.5 22.42
-               Q 23.5 19.92
-                 28 21.72"
-            stroke="rgba(255,255,255,0.28)" stroke-width="1.1" fill="none"/>
-      <circle cx="21.8" cy="23.12" r="1.2" fill="white" opacity="0.85"/>
-    </g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="48" viewBox="0 0 384 48" fill="none"><defs><filter id="food_fruit-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)"><rect x="0" y="0" width="48" height="48" fill="none"/>
+
+    <radialGradient id="food_fruit-glow-0" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.44"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="24" cy="28.8" r="18" fill="url(#food_fruit-glow-0)"/>
+      <path d="M 24 20.8 L 24 12.8"
+            stroke="#7a4e27" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+      <path d="M 25 15.8 Q 30 7.8 36 15.8 Q 29 19.8 25 15.8 Z" fill="#46c477"/>
+      <circle cx="22" cy="29.8" r="9.6" fill="currentColor"/>
+      <circle cx="27" cy="29.3" r="8.26" fill="currentColor"/>
+      <ellipse cx="19.6" cy="26.2" rx="2.8" ry="3.8" fill="white" opacity="0.62"/></g><g transform="translate(48 0)"><rect x="0" y="0" width="48" height="48" fill="none"/>
+
+    <radialGradient id="food_fruit-glow-1" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.39"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="24" cy="28.8" r="18" fill="url(#food_fruit-glow-1)"/>
+      <path d="M 24 21.54 L 24.32 14.29"
+            stroke="#7a4e27" stroke-width="2.05" stroke-linecap="round" fill="none"/>
+      <path d="M 25 17.01 Q 30.51 9.75 34.89 17.01 Q 28.54 20.64 25 17.01 Z" fill="#46c477"/>
+      <circle cx="22.19" cy="29.71" r="8.71" fill="currentColor"/>
+      <circle cx="26.72" cy="29.25" r="7.49" fill="currentColor"/>
+      <ellipse cx="20.01" cy="26.44" rx="2.58" ry="3.48" fill="white" opacity="0.62"/></g><g transform="translate(96 0)"><rect x="0" y="0" width="48" height="48" fill="none"/>
+
+    <radialGradient id="food_fruit-glow-2" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="24" cy="28.8" r="18" fill="url(#food_fruit-glow-2)"/>
+      <path d="M 24 22.29 L 24.15 15.77"
+            stroke="#7a4e27" stroke-width="1.9" stroke-linecap="round" fill="none"/>
+      <path d="M 25 18.21 Q 29.39 11.7 33.77 18.21 Q 28.07 21.47 25 18.21 Z" fill="#46c477"/>
+      <circle cx="22.37" cy="29.61" r="7.82" fill="currentColor"/>
+      <circle cx="26.44" cy="29.21" r="6.72" fill="currentColor"/>
+      <ellipse cx="20.42" cy="26.68" rx="2.35" ry="3.17" fill="white" opacity="0.62"/></g><g transform="translate(144 0)"><rect x="0" y="0" width="48" height="48" fill="none"/>
+
+    <radialGradient id="food_fruit-glow-3" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.29"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="24" cy="28.8" r="18" fill="url(#food_fruit-glow-3)"/>
+      <path d="M 24 23.03 L 23.75 17.26"
+            stroke="#7a4e27" stroke-width="1.75" stroke-linecap="round" fill="none"/>
+      <path d="M 25 19.42 Q 27.49 13.65 32.66 19.42 Q 27.61 22.31 25 19.42 Z" fill="#46c477"/>
+      <circle cx="22.56" cy="29.52" r="6.93" fill="currentColor"/>
+      <circle cx="26.16" cy="29.16" r="5.96" fill="currentColor"/>
+      <ellipse cx="20.83" cy="26.92" rx="2.13" ry="2.85" fill="white" opacity="0.62"/></g><g transform="translate(192 0)"><rect x="0" y="0" width="48" height="48" fill="none"/>
+
+    <radialGradient id="food_fruit-glow-4" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="24" cy="28.8" r="18" fill="url(#food_fruit-glow-4)"/>
+      <path d="M 24 23.77 L 23.73 18.74"
+            stroke="#7a4e27" stroke-width="1.61" stroke-linecap="round" fill="none"/>
+      <path d="M 25 20.63 Q 26.88 15.6 31.54 20.63 Q 27.14 23.14 25 20.63 Z" fill="#46c477"/>
+      <circle cx="22.74" cy="29.43" r="6.03" fill="currentColor"/>
+      <circle cx="25.89" cy="29.11" r="5.19" fill="currentColor"/>
+      <ellipse cx="21.23" cy="27.17" rx="1.91" ry="2.54" fill="white" opacity="0.62"/></g><g transform="translate(240 0)"><rect x="0" y="0" width="48" height="48" fill="none"/>
+
+    <radialGradient id="food_fruit-glow-5" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="24" cy="28.8" r="18" fill="url(#food_fruit-glow-5)"/>
+      <path d="M 24 24.51 L 24.13 20.23"
+            stroke="#7a4e27" stroke-width="1.46" stroke-linecap="round" fill="none"/>
+      <path d="M 25 21.84 Q 27.64 17.55 30.43 21.84 Q 26.68 23.98 25 21.84 Z" fill="#46c477"/>
+      <circle cx="22.93" cy="29.34" r="5.14" fill="currentColor"/>
+      <circle cx="25.61" cy="29.07" r="4.42" fill="currentColor"/>
+      <ellipse cx="21.64" cy="27.41" rx="1.69" ry="2.22" fill="white" opacity="0.62"/></g><g transform="translate(288 0)"><rect x="0" y="0" width="48" height="48" fill="none"/>
+
+    <radialGradient id="food_fruit-glow-6" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.15"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="24" cy="28.8" r="18" fill="url(#food_fruit-glow-6)"/>
+      <path d="M 24 25.26 L 24.33 21.71"
+            stroke="#7a4e27" stroke-width="1.31" stroke-linecap="round" fill="none"/>
+      <path d="M 25 23.04 Q 27.74 19.5 29.31 23.04 Q 26.21 24.81 25 23.04 Z" fill="#46c477"/>
+      <circle cx="23.11" cy="29.24" r="4.25" fill="currentColor"/>
+      <circle cx="25.33" cy="29.02" r="3.66" fill="currentColor"/>
+      <ellipse cx="22.05" cy="27.65" rx="1.46" ry="1.91" fill="white" opacity="0.62"/></g><g transform="translate(336 0)"><rect x="0" y="0" width="48" height="48" fill="none"/>
+
+    <radialGradient id="food_fruit-glow-7" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="24" cy="28.8" r="18" fill="url(#food_fruit-glow-7)"/>
+      <path d="M 24 26 L 24.03 23.2"
+            stroke="#7a4e27" stroke-width="1.16" stroke-linecap="round" fill="none"/>
+      <path d="M 25 24.25 Q 26.19 21.45 28.2 24.25 Q 25.75 25.65 25 24.25 Z" fill="#46c477"/>
+      <circle cx="23.3" cy="29.15" r="3.36" fill="currentColor"/>
+      <circle cx="25.05" cy="28.97" r="2.89" fill="currentColor"/>
+      <ellipse cx="22.46" cy="27.89" rx="1.24" ry="1.59" fill="white" opacity="0.62"/></g></svg>

@@ -1,181 +1,109 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1152" height="96" viewBox="0 0 1152 96" fill="none"><defs><filter id="prop_spring-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 34 68
-               Q 42 63 47 57
-               Q 52 50 58 43
-               Q 63 37 68 30
-               "
-            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
-      <rect x="30" y="25" width="36" height="8.5" rx="4.25" fill="currentColor"/>
-      <rect x="34" y="27" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
-    </g><g transform="translate(96 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 34 68
-               Q 42 63.72 47 57
-               Q 52 49 58 43
-               Q 63 36.28 68 30
-               "
-            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
-      <rect x="30" y="29.01" width="36" height="8.5" rx="4.25" fill="currentColor"/>
-      <rect x="34" y="31.01" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
-    </g><g transform="translate(192 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 34 68
-               Q 42 63.66 47 57
-               Q 52 49.09 58 43
-               Q 63 36.34 68 30
-               "
-            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
-      <rect x="30" y="28.64" width="36" height="8.5" rx="4.25" fill="currentColor"/>
-      <rect x="34" y="30.64" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
-    </g><g transform="translate(288 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 34 68
-               Q 42 62.87 47 57
-               Q 52 50.18 58 43
-               Q 63 37.13 68 30
-               "
-            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
-      <rect x="30" y="24.3" width="36" height="8.5" rx="4.25" fill="currentColor"/>
-      <rect x="34" y="26.3" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
-    </g><g transform="translate(384 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 34 68
-               Q 42 62.23 47 57
-               Q 52 51.07 58 43
-               Q 63 37.77 68 30
-               "
-            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
-      <rect x="30" y="20.72" width="36" height="8.5" rx="4.25" fill="currentColor"/>
-      <rect x="34" y="22.72" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
-    </g><g transform="translate(480 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 34 68
-               Q 42 62.43 47 57
-               Q 52 50.8 58 43
-               Q 63 37.57 68 30
-               "
-            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
-      <rect x="30" y="21.82" width="36" height="8.5" rx="4.25" fill="currentColor"/>
-      <rect x="34" y="23.82" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
-    </g><g transform="translate(576 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 34 68
-               Q 42 63.25 47 57
-               Q 52 49.65 58 43
-               Q 63 36.75 68 30
-               "
-            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
-      <rect x="30" y="26.39" width="36" height="8.5" rx="4.25" fill="currentColor"/>
-      <rect x="34" y="28.39" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
-    </g><g transform="translate(672 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 34 68
-               Q 42 63.8 47 57
-               Q 52 48.89 58 43
-               Q 63 36.2 68 30
-               "
-            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
-      <rect x="30" y="29.44" width="36" height="8.5" rx="4.25" fill="currentColor"/>
-      <rect x="34" y="31.44" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
-    </g><g transform="translate(768 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 34 68
-               Q 42 63.48 47 57
-               Q 52 49.34 58 43
-               Q 63 36.52 68 30
-               "
-            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
-      <rect x="30" y="27.65" width="36" height="8.5" rx="4.25" fill="currentColor"/>
-      <rect x="34" y="29.65" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
-    </g><g transform="translate(864 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 34 68
-               Q 42 62.63 47 57
-               Q 52 50.51 58 43
-               Q 63 37.37 68 30
-               "
-            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
-      <rect x="30" y="22.96" width="36" height="8.5" rx="4.25" fill="currentColor"/>
-      <rect x="34" y="24.96" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
-    </g><g transform="translate(960 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 34 68
-               Q 42 62.19 47 57
-               Q 52 51.13 58 43
-               Q 63 37.81 68 30
-               "
-            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
-      <rect x="30" y="20.5" width="36" height="8.5" rx="4.25" fill="currentColor"/>
-      <rect x="34" y="22.5" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
-    </g><g transform="translate(1056 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <rect x="25" y="69" width="46" height="8" rx="4" fill="rgba(0,0,0,0.2)"/>
-      <path d="M 34 68
-               Q 42 62.63 47 57
-               Q 52 50.51 58 43
-               Q 63 37.37 68 30
-               "
-            stroke="currentColor" stroke-width="5.8" stroke-linecap="round" fill="none"/>
-      <rect x="30" y="22.96" width="36" height="8.5" rx="4.25" fill="currentColor"/>
-      <rect x="34" y="24.96" width="28" height="4" rx="2" fill="rgba(255,255,255,0.24)"/>
-    </g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1152" height="96" viewBox="0 0 1152 96" fill="none"><defs><filter id="prop_spring-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_spring-glow-0" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_spring-glow-0)"/><ellipse cx="48" cy="69" rx="24" ry="5" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <path d="M 48 65 L 60 59.67 L 36 54.33 L 60 49 L 36 43.67 L 60 38.33 L 36 33" stroke="currentColor" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+      <rect x="29" y="27" width="38" height="7" rx="3.5" fill="currentColor"/>
+      <rect x="32" y="28" width="32" height="2.4" rx="1.2" fill="rgba(255,255,255,0.45)"/>
+      <rect x="27" y="65" width="42" height="7" rx="3.5" fill="currentColor" opacity="0.85"/></g><g transform="translate(96 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_spring-glow-1" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_spring-glow-1)"/><ellipse cx="48" cy="69" rx="24" ry="5" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <path d="M 48 65 L 60 60.18 L 36 55.36 L 60 50.55 L 36 45.73 L 60 40.91 L 36 36.09" stroke="currentColor" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+      <rect x="29" y="30.09" width="38" height="7" rx="3.5" fill="currentColor"/>
+      <rect x="32" y="31.09" width="32" height="2.4" rx="1.2" fill="rgba(255,255,255,0.45)"/>
+      <rect x="27" y="65" width="42" height="7" rx="3.5" fill="currentColor" opacity="0.85"/></g><g transform="translate(192 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_spring-glow-2" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_spring-glow-2)"/><ellipse cx="48" cy="69" rx="24" ry="5" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <path d="M 48 65 L 60 60.14 L 36 55.28 L 60 50.42 L 36 45.55 L 60 40.69 L 36 35.83" stroke="currentColor" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+      <rect x="29" y="29.83" width="38" height="7" rx="3.5" fill="currentColor"/>
+      <rect x="32" y="30.83" width="32" height="2.4" rx="1.2" fill="rgba(255,255,255,0.45)"/>
+      <rect x="27" y="65" width="42" height="7" rx="3.5" fill="currentColor" opacity="0.85"/></g><g transform="translate(288 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_spring-glow-3" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_spring-glow-3)"/><ellipse cx="48" cy="69" rx="24" ry="5" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <path d="M 48 65 L 60 59.56 L 36 54.13 L 60 48.69 L 36 43.26 L 60 37.82 L 36 32.39" stroke="currentColor" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+      <rect x="29" y="26.39" width="38" height="7" rx="3.5" fill="currentColor"/>
+      <rect x="32" y="27.39" width="32" height="2.4" rx="1.2" fill="rgba(255,255,255,0.45)"/>
+      <rect x="27" y="65" width="42" height="7" rx="3.5" fill="currentColor" opacity="0.85"/></g><g transform="translate(384 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_spring-glow-4" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_spring-glow-4)"/><ellipse cx="48" cy="69" rx="24" ry="5" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <path d="M 48 65 L 60 58.98 L 36 52.96 L 60 46.94 L 36 40.92 L 60 34.9 L 36 28.88" stroke="currentColor" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+      <rect x="29" y="22.88" width="38" height="7" rx="3.5" fill="currentColor"/>
+      <rect x="32" y="23.88" width="32" height="2.4" rx="1.2" fill="rgba(255,255,255,0.45)"/>
+      <rect x="27" y="65" width="42" height="7" rx="3.5" fill="currentColor" opacity="0.85"/></g><g transform="translate(480 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_spring-glow-5" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_spring-glow-5)"/><ellipse cx="48" cy="69" rx="24" ry="5" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <path d="M 48 65 L 60 59.17 L 36 53.34 L 60 47.52 L 36 41.69 L 60 35.86 L 36 30.03" stroke="currentColor" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+      <rect x="29" y="24.03" width="38" height="7" rx="3.5" fill="currentColor"/>
+      <rect x="32" y="25.03" width="32" height="2.4" rx="1.2" fill="rgba(255,255,255,0.45)"/>
+      <rect x="27" y="65" width="42" height="7" rx="3.5" fill="currentColor" opacity="0.85"/></g><g transform="translate(576 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_spring-glow-6" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_spring-glow-6)"/><ellipse cx="48" cy="69" rx="24" ry="5" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <path d="M 48 65 L 60 59.86 L 36 54.71 L 60 49.57 L 36 44.43 L 60 39.29 L 36 34.14" stroke="currentColor" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+      <rect x="29" y="28.14" width="38" height="7" rx="3.5" fill="currentColor"/>
+      <rect x="32" y="29.14" width="32" height="2.4" rx="1.2" fill="rgba(255,255,255,0.45)"/>
+      <rect x="27" y="65" width="42" height="7" rx="3.5" fill="currentColor" opacity="0.85"/></g><g transform="translate(672 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_spring-glow-7" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_spring-glow-7)"/><ellipse cx="48" cy="69" rx="24" ry="5" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <path d="M 48 65 L 60 60.23 L 36 55.46 L 60 50.7 L 36 45.93 L 60 41.16 L 36 36.39" stroke="currentColor" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+      <rect x="29" y="30.39" width="38" height="7" rx="3.5" fill="currentColor"/>
+      <rect x="32" y="31.39" width="32" height="2.4" rx="1.2" fill="rgba(255,255,255,0.45)"/>
+      <rect x="27" y="65" width="42" height="7" rx="3.5" fill="currentColor" opacity="0.85"/></g><g transform="translate(768 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_spring-glow-8" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_spring-glow-8)"/><ellipse cx="48" cy="69" rx="24" ry="5" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <path d="M 48 65 L 60 60.02 L 36 55.04 L 60 50.05 L 36 45.07 L 60 40.09 L 36 35.11" stroke="currentColor" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+      <rect x="29" y="29.11" width="38" height="7" rx="3.5" fill="currentColor"/>
+      <rect x="32" y="30.11" width="32" height="2.4" rx="1.2" fill="rgba(255,255,255,0.45)"/>
+      <rect x="27" y="65" width="42" height="7" rx="3.5" fill="currentColor" opacity="0.85"/></g><g transform="translate(864 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_spring-glow-9" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_spring-glow-9)"/><ellipse cx="48" cy="69" rx="24" ry="5" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <path d="M 48 65 L 60 59.36 L 36 53.72 L 60 48.08 L 36 42.44 L 60 36.8 L 36 31.16" stroke="currentColor" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+      <rect x="29" y="25.16" width="38" height="7" rx="3.5" fill="currentColor"/>
+      <rect x="32" y="26.16" width="32" height="2.4" rx="1.2" fill="rgba(255,255,255,0.45)"/>
+      <rect x="27" y="65" width="42" height="7" rx="3.5" fill="currentColor" opacity="0.85"/></g><g transform="translate(960 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_spring-glow-10" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_spring-glow-10)"/><ellipse cx="48" cy="69" rx="24" ry="5" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <path d="M 48 65 L 60 58.94 L 36 52.88 L 60 46.82 L 36 40.76 L 60 34.7 L 36 28.64" stroke="currentColor" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+      <rect x="29" y="22.64" width="38" height="7" rx="3.5" fill="currentColor"/>
+      <rect x="32" y="23.64" width="32" height="2.4" rx="1.2" fill="rgba(255,255,255,0.45)"/>
+      <rect x="27" y="65" width="42" height="7" rx="3.5" fill="currentColor" opacity="0.85"/></g><g transform="translate(1056 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_spring-glow-11" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="42" fill="url(#prop_spring-glow-11)"/><ellipse cx="48" cy="69" rx="24" ry="5" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <path d="M 48 65 L 60 59.36 L 36 53.72 L 60 48.08 L 36 42.44 L 60 36.8 L 36 31.16" stroke="currentColor" stroke-width="4.6" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+      <rect x="29" y="25.16" width="38" height="7" rx="3.5" fill="currentColor"/>
+      <rect x="32" y="26.16" width="32" height="2.4" rx="1.2" fill="rgba(255,255,255,0.45)"/>
+      <rect x="27" y="65" width="42" height="7" rx="3.5" fill="currentColor" opacity="0.85"/></g></svg>

@@ -1,157 +1,145 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1152" height="96" viewBox="0 0 1152 96" fill="none"><defs><filter id="prop_gravity-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="24" fill="currentColor" opacity="0.2"/>
-      <circle cx="48" cy="48" r="11" fill="rgba(0,0,0,0.45)"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1152" height="96" viewBox="0 0 1152 96" fill="none"><defs><filter id="prop_gravity-soft-shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" /><feOffset dx="0.5" dy="1" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.26" /></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><g transform="translate(0 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_gravity-glow-0" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="44" fill="url(#prop_gravity-glow-0)"/><ellipse cx="48" cy="72" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="20" fill="none" stroke="currentColor" stroke-width="4" opacity="0.95"/>
+      <circle cx="48" cy="48" r="11" fill="rgba(255,255,255,0.2)"/>
       <g transform="translate(48 48) rotate(0)">
-        <path d="M 0 -24 Q 6 -17 5 -11 Q 4 -5 -1 -2" stroke="currentColor" stroke-width="3.2" fill="none" stroke-linecap="round"/>
-        <path d="M 0 24 Q -6 17 -5 11 Q -4 5 1 2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="0" cy="-27" r="3.4" fill="currentColor"/>
+        <circle cx="0" cy="27" r="2.5" fill="currentColor" opacity="0.7"/>
       </g>
-      <circle cx="53" cy="44" r="2.2" fill="rgba(255,255,255,0.85)"/>
-    </g><g transform="translate(96 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="24" fill="currentColor" opacity="0.2"/>
-      <circle cx="48" cy="48" r="11" fill="rgba(0,0,0,0.45)"/>
+      <circle cx="48" cy="48" r="4" fill="rgba(255,255,255,0.92)"/></g><g transform="translate(96 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_gravity-glow-1" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="44" fill="url(#prop_gravity-glow-1)"/><ellipse cx="48" cy="72" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="20" fill="none" stroke="currentColor" stroke-width="4" opacity="0.95"/>
+      <circle cx="48" cy="48" r="11" fill="rgba(255,255,255,0.2)"/>
       <g transform="translate(48 48) rotate(30)">
-        <path d="M 0 -24 Q 6 -17 5 -11 Q 4 -5 -1 -2" stroke="currentColor" stroke-width="3.2" fill="none" stroke-linecap="round"/>
-        <path d="M 0 24 Q -6 17 -5 11 Q -4 5 1 2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="0" cy="-27" r="3.4" fill="currentColor"/>
+        <circle cx="0" cy="27" r="2.5" fill="currentColor" opacity="0.7"/>
       </g>
-      <circle cx="53" cy="44" r="2.2" fill="rgba(255,255,255,0.85)"/>
-    </g><g transform="translate(192 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="24" fill="currentColor" opacity="0.2"/>
-      <circle cx="48" cy="48" r="11" fill="rgba(0,0,0,0.45)"/>
+      <circle cx="48" cy="48" r="4" fill="rgba(255,255,255,0.92)"/></g><g transform="translate(192 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_gravity-glow-2" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="44" fill="url(#prop_gravity-glow-2)"/><ellipse cx="48" cy="72" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="20" fill="none" stroke="currentColor" stroke-width="4" opacity="0.95"/>
+      <circle cx="48" cy="48" r="11" fill="rgba(255,255,255,0.2)"/>
       <g transform="translate(48 48) rotate(60)">
-        <path d="M 0 -24 Q 6 -17 5 -11 Q 4 -5 -1 -2" stroke="currentColor" stroke-width="3.2" fill="none" stroke-linecap="round"/>
-        <path d="M 0 24 Q -6 17 -5 11 Q -4 5 1 2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="0" cy="-27" r="3.4" fill="currentColor"/>
+        <circle cx="0" cy="27" r="2.5" fill="currentColor" opacity="0.7"/>
       </g>
-      <circle cx="53" cy="44" r="2.2" fill="rgba(255,255,255,0.85)"/>
-    </g><g transform="translate(288 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="24" fill="currentColor" opacity="0.2"/>
-      <circle cx="48" cy="48" r="11" fill="rgba(0,0,0,0.45)"/>
+      <circle cx="48" cy="48" r="4" fill="rgba(255,255,255,0.92)"/></g><g transform="translate(288 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_gravity-glow-3" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="44" fill="url(#prop_gravity-glow-3)"/><ellipse cx="48" cy="72" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="20" fill="none" stroke="currentColor" stroke-width="4" opacity="0.95"/>
+      <circle cx="48" cy="48" r="11" fill="rgba(255,255,255,0.2)"/>
       <g transform="translate(48 48) rotate(90)">
-        <path d="M 0 -24 Q 6 -17 5 -11 Q 4 -5 -1 -2" stroke="currentColor" stroke-width="3.2" fill="none" stroke-linecap="round"/>
-        <path d="M 0 24 Q -6 17 -5 11 Q -4 5 1 2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="0" cy="-27" r="3.4" fill="currentColor"/>
+        <circle cx="0" cy="27" r="2.5" fill="currentColor" opacity="0.7"/>
       </g>
-      <circle cx="53" cy="44" r="2.2" fill="rgba(255,255,255,0.85)"/>
-    </g><g transform="translate(384 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="24" fill="currentColor" opacity="0.2"/>
-      <circle cx="48" cy="48" r="11" fill="rgba(0,0,0,0.45)"/>
+      <circle cx="48" cy="48" r="4" fill="rgba(255,255,255,0.92)"/></g><g transform="translate(384 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_gravity-glow-4" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="44" fill="url(#prop_gravity-glow-4)"/><ellipse cx="48" cy="72" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="20" fill="none" stroke="currentColor" stroke-width="4" opacity="0.95"/>
+      <circle cx="48" cy="48" r="11" fill="rgba(255,255,255,0.2)"/>
       <g transform="translate(48 48) rotate(120)">
-        <path d="M 0 -24 Q 6 -17 5 -11 Q 4 -5 -1 -2" stroke="currentColor" stroke-width="3.2" fill="none" stroke-linecap="round"/>
-        <path d="M 0 24 Q -6 17 -5 11 Q -4 5 1 2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="0" cy="-27" r="3.4" fill="currentColor"/>
+        <circle cx="0" cy="27" r="2.5" fill="currentColor" opacity="0.7"/>
       </g>
-      <circle cx="53" cy="44" r="2.2" fill="rgba(255,255,255,0.85)"/>
-    </g><g transform="translate(480 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="24" fill="currentColor" opacity="0.2"/>
-      <circle cx="48" cy="48" r="11" fill="rgba(0,0,0,0.45)"/>
+      <circle cx="48" cy="48" r="4" fill="rgba(255,255,255,0.92)"/></g><g transform="translate(480 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_gravity-glow-5" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="44" fill="url(#prop_gravity-glow-5)"/><ellipse cx="48" cy="72" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="20" fill="none" stroke="currentColor" stroke-width="4" opacity="0.95"/>
+      <circle cx="48" cy="48" r="11" fill="rgba(255,255,255,0.2)"/>
       <g transform="translate(48 48) rotate(150)">
-        <path d="M 0 -24 Q 6 -17 5 -11 Q 4 -5 -1 -2" stroke="currentColor" stroke-width="3.2" fill="none" stroke-linecap="round"/>
-        <path d="M 0 24 Q -6 17 -5 11 Q -4 5 1 2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="0" cy="-27" r="3.4" fill="currentColor"/>
+        <circle cx="0" cy="27" r="2.5" fill="currentColor" opacity="0.7"/>
       </g>
-      <circle cx="53" cy="44" r="2.2" fill="rgba(255,255,255,0.85)"/>
-    </g><g transform="translate(576 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="24" fill="currentColor" opacity="0.2"/>
-      <circle cx="48" cy="48" r="11" fill="rgba(0,0,0,0.45)"/>
+      <circle cx="48" cy="48" r="4" fill="rgba(255,255,255,0.92)"/></g><g transform="translate(576 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_gravity-glow-6" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="44" fill="url(#prop_gravity-glow-6)"/><ellipse cx="48" cy="72" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="20" fill="none" stroke="currentColor" stroke-width="4" opacity="0.95"/>
+      <circle cx="48" cy="48" r="11" fill="rgba(255,255,255,0.2)"/>
       <g transform="translate(48 48) rotate(180)">
-        <path d="M 0 -24 Q 6 -17 5 -11 Q 4 -5 -1 -2" stroke="currentColor" stroke-width="3.2" fill="none" stroke-linecap="round"/>
-        <path d="M 0 24 Q -6 17 -5 11 Q -4 5 1 2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="0" cy="-27" r="3.4" fill="currentColor"/>
+        <circle cx="0" cy="27" r="2.5" fill="currentColor" opacity="0.7"/>
       </g>
-      <circle cx="53" cy="44" r="2.2" fill="rgba(255,255,255,0.85)"/>
-    </g><g transform="translate(672 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="24" fill="currentColor" opacity="0.2"/>
-      <circle cx="48" cy="48" r="11" fill="rgba(0,0,0,0.45)"/>
+      <circle cx="48" cy="48" r="4" fill="rgba(255,255,255,0.92)"/></g><g transform="translate(672 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_gravity-glow-7" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="44" fill="url(#prop_gravity-glow-7)"/><ellipse cx="48" cy="72" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="20" fill="none" stroke="currentColor" stroke-width="4" opacity="0.95"/>
+      <circle cx="48" cy="48" r="11" fill="rgba(255,255,255,0.2)"/>
       <g transform="translate(48 48) rotate(210)">
-        <path d="M 0 -24 Q 6 -17 5 -11 Q 4 -5 -1 -2" stroke="currentColor" stroke-width="3.2" fill="none" stroke-linecap="round"/>
-        <path d="M 0 24 Q -6 17 -5 11 Q -4 5 1 2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="0" cy="-27" r="3.4" fill="currentColor"/>
+        <circle cx="0" cy="27" r="2.5" fill="currentColor" opacity="0.7"/>
       </g>
-      <circle cx="53" cy="44" r="2.2" fill="rgba(255,255,255,0.85)"/>
-    </g><g transform="translate(768 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="24" fill="currentColor" opacity="0.2"/>
-      <circle cx="48" cy="48" r="11" fill="rgba(0,0,0,0.45)"/>
+      <circle cx="48" cy="48" r="4" fill="rgba(255,255,255,0.92)"/></g><g transform="translate(768 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_gravity-glow-8" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="44" fill="url(#prop_gravity-glow-8)"/><ellipse cx="48" cy="72" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="20" fill="none" stroke="currentColor" stroke-width="4" opacity="0.95"/>
+      <circle cx="48" cy="48" r="11" fill="rgba(255,255,255,0.2)"/>
       <g transform="translate(48 48) rotate(240)">
-        <path d="M 0 -24 Q 6 -17 5 -11 Q 4 -5 -1 -2" stroke="currentColor" stroke-width="3.2" fill="none" stroke-linecap="round"/>
-        <path d="M 0 24 Q -6 17 -5 11 Q -4 5 1 2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="0" cy="-27" r="3.4" fill="currentColor"/>
+        <circle cx="0" cy="27" r="2.5" fill="currentColor" opacity="0.7"/>
       </g>
-      <circle cx="53" cy="44" r="2.2" fill="rgba(255,255,255,0.85)"/>
-    </g><g transform="translate(864 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="24" fill="currentColor" opacity="0.2"/>
-      <circle cx="48" cy="48" r="11" fill="rgba(0,0,0,0.45)"/>
+      <circle cx="48" cy="48" r="4" fill="rgba(255,255,255,0.92)"/></g><g transform="translate(864 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_gravity-glow-9" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="44" fill="url(#prop_gravity-glow-9)"/><ellipse cx="48" cy="72" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="20" fill="none" stroke="currentColor" stroke-width="4" opacity="0.95"/>
+      <circle cx="48" cy="48" r="11" fill="rgba(255,255,255,0.2)"/>
       <g transform="translate(48 48) rotate(270)">
-        <path d="M 0 -24 Q 6 -17 5 -11 Q 4 -5 -1 -2" stroke="currentColor" stroke-width="3.2" fill="none" stroke-linecap="round"/>
-        <path d="M 0 24 Q -6 17 -5 11 Q -4 5 1 2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="0" cy="-27" r="3.4" fill="currentColor"/>
+        <circle cx="0" cy="27" r="2.5" fill="currentColor" opacity="0.7"/>
       </g>
-      <circle cx="53" cy="44" r="2.2" fill="rgba(255,255,255,0.85)"/>
-    </g><g transform="translate(960 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="24" fill="currentColor" opacity="0.2"/>
-      <circle cx="48" cy="48" r="11" fill="rgba(0,0,0,0.45)"/>
+      <circle cx="48" cy="48" r="4" fill="rgba(255,255,255,0.92)"/></g><g transform="translate(960 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_gravity-glow-10" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="44" fill="url(#prop_gravity-glow-10)"/><ellipse cx="48" cy="72" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="20" fill="none" stroke="currentColor" stroke-width="4" opacity="0.95"/>
+      <circle cx="48" cy="48" r="11" fill="rgba(255,255,255,0.2)"/>
       <g transform="translate(48 48) rotate(300)">
-        <path d="M 0 -24 Q 6 -17 5 -11 Q 4 -5 -1 -2" stroke="currentColor" stroke-width="3.2" fill="none" stroke-linecap="round"/>
-        <path d="M 0 24 Q -6 17 -5 11 Q -4 5 1 2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="0" cy="-27" r="3.4" fill="currentColor"/>
+        <circle cx="0" cy="27" r="2.5" fill="currentColor" opacity="0.7"/>
       </g>
-      <circle cx="53" cy="44" r="2.2" fill="rgba(255,255,255,0.85)"/>
-    </g><g transform="translate(1056 0)">
-      <rect x="0" y="0" width="96" height="96" fill="none"/>
-
-    <ellipse cx="48" cy="79" rx="32" ry="7" fill="rgba(0,0,0,0.18)"/>
-    <ellipse cx="48" cy="74" rx="27" ry="8" fill="rgba(15,23,42,0.34)"/>
-
-      <circle cx="48" cy="48" r="24" fill="currentColor" opacity="0.2"/>
-      <circle cx="48" cy="48" r="11" fill="rgba(0,0,0,0.45)"/>
+      <circle cx="48" cy="48" r="4" fill="rgba(255,255,255,0.92)"/></g><g transform="translate(1056 0)"><rect x="0" y="0" width="96" height="96" fill="none"/>
+    <radialGradient id="prop_gravity-glow-11" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <circle cx="48" cy="48" r="44" fill="url(#prop_gravity-glow-11)"/><ellipse cx="48" cy="72" rx="26" ry="6" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.45"/>
+      <circle cx="48" cy="48" r="20" fill="none" stroke="currentColor" stroke-width="4" opacity="0.95"/>
+      <circle cx="48" cy="48" r="11" fill="rgba(255,255,255,0.2)"/>
       <g transform="translate(48 48) rotate(330)">
-        <path d="M 0 -24 Q 6 -17 5 -11 Q 4 -5 -1 -2" stroke="currentColor" stroke-width="3.2" fill="none" stroke-linecap="round"/>
-        <path d="M 0 24 Q -6 17 -5 11 Q -4 5 1 2" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="0" cy="-27" r="3.4" fill="currentColor"/>
+        <circle cx="0" cy="27" r="2.5" fill="currentColor" opacity="0.7"/>
       </g>
-      <circle cx="53" cy="44" r="2.2" fill="rgba(255,255,255,0.85)"/>
-    </g></svg>
+      <circle cx="48" cy="48" r="4" fill="rgba(255,255,255,0.92)"/></g></svg>
