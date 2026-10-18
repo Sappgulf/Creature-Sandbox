@@ -26,6 +26,43 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-10-18 — scenario-tuning-open-cases — Planned
+
+- **Date:** 2026-10-18
+- **Scope:** simulation | docs
+- **Type:** Planned
+- **Issues:** KNOWN_ISSUES 6. Three playable scenarios failed the balance probe at HEAD, both idle and assisted. Drought Rescue completed 1 of 3 assisted and 0 of 3 idle. Lineage Guardian completed 0 of 6: its 300 s clock asked for generation 5. Nursery Watch completed 0 of 6: its 180 s clock asked for eight babies and generation 2 together.
+- **Root Causes:** (1) Drought: combat killed 24–44 creatures per assisted run, and predators rose from 4 to 6–7. (2) Lineage: each generation waits for a maturity cycle (120 s to adulthood) before it can breed, so generation 5 arrived at 700–1175 s and generation 4 at 420–885 s. (3) Nursery: babies are a live count of creatures under 30 s old, so eight at once was rare, and generation 2 arrives near 300 s.
+- **Fixes (planned):** Keep each objective's intent. Drought: fewer starting predators (4 → 2). Lineage: generation 4 on a 600 s clock. Nursery: six babies on a 300 s clock. Sync the objective and fantasy text, the contract test, and KNOWN_ISSUES 6. Change no mode, food, or breeding constant.
+- **Verification (planned):** Probe each scenario idle and assisted at HEAD and after, three runs each, plus long-grace runs to measure when each goal arrives. Then `npm test`, lint, and `npm run proof:release`.
+
+### 2026-10-18 — scenario-tuning-open-cases — Implemented
+
+- **Date:** 2026-10-18
+- **Scope:** simulation | docs
+- **Type:** Implemented
+- **Issues:** Same as planned. Lineage keeps a long clock: its completions run 420–885 s, and the game has no timeout, so a run finishes when its goal is met.
+- **Root Causes:** Same as planned.
+- **Fixes:**
+  - `creature-sim/src/playable-scenarios.js`: `drought_rescue` setup predator 4 → 2. `lineage_guardian`: fantasy and objective read "fourth generation", `minGeneration` 5 → 4, `targetSeconds` 300 → 600. `nursery_watch`: objective reads "6+ babies", `minBabies` 8 → 6, `targetSeconds` 180 → 300. Comments record the probe numbers.
+  - `scripts/scenario-contract.test.mjs`: the nursery assertions move from 8 to 6.
+  - `docs/KNOWN_ISSUES.md`: item 6 resolved with the numbers below, and the remaining lineage clock noted.
+- **Verification:**
+  - _Probe (`scripts/ecosystem-balance-probe.mjs`, main thread, three runs each, default 60 s grace; the lineage row uses its own 600 s clock):_
+
+    | Scenario                                          | Idle at HEAD                  | Assisted at HEAD          | Idle after | Assisted after                |
+    | ------------------------------------------------- | ----------------------------- | ------------------------- | ---------- | ----------------------------- |
+    | drought_rescue (210 s, 30 alive, food 90+)        | 0 of 3 (alive 14–20 at 210 s) | 1 of 3 (alive 14, 40, 20) | 1 of 3     | 3 of 3 (alive 35–40 at 210 s) |
+    | lineage_guardian (300 s, gen 5 → 600 s, gen 4)    | 0 of 3 (gen 1–2 at 300 s)     | 0 of 3 (gen 1–2 at 360 s) | 2 of 3     | 2 of 3                        |
+    | nursery_watch (180 s, 8 babies → 300 s, 6 babies) | 0 of 3                        | 0 of 3                    | 3 of 3     | 2 of 3                        |
+
+  - _Lineage clock:_ generation 4 with a 300 s clock and 600 s grace (six runs, three idle and three assisted) completed at 422, 496, 502, 602, 722 and 885 s. The 600 s clock finished 4 of 6 within 660 s.
+  - _Nursery probe:_ eight babies on a 360 s clock (six runs) completed 2 of 6, so eight was not kept.
+  - _Batches:_ the six-baby nursery passed 6 of 6 in a candidate batch and 5 of 6 in the final batch (11 of 12). The third failure in the final batch was generation 1 at 360 s. The two-predator drought candidate gave 0 of 3 idle and 3 of 3 assisted, so drought idle is still weak: 1 of 6 idle across both two-predator batches.
+  - _Baseline replicate:_ HEAD's nursery config (eight babies, 180 s) with a longer probe window completed 3 of 4 valid runs at 341–407 s. Two runs aborted when the probe's browser closed and are not counted. Within the default window HEAD completed 0 of 6, so the change moves a late completion inside the window.
+  - _Tests:_ `node scripts/scenario-contract.test.mjs` passes. `node scripts/regression-fixes.test.mjs` passes 82 of 82.
+  - _Gates:_ `npm run proof:release` exit 0 (`Release proof passed.`) on the tuning tree: git diff check, node checks, lint, `npm test` (core 194, regression 82, E2E 1, and the other suites), build, bundle budget, `smoke:browser` (desktop, mobile-compact, mobile-large), `smoke:main`, `smoke:worker`, `smoke:scenarios` (stress_sanctuary and scavenger_bridge only), and `evidence:release`. Worker readiness stays `needs-more-proof` on the headless frame-pacing gate, the same status as before this change. The three tuned scenarios are not in the gate's balance smoke, so their numbers are the probe results above.
+
 ### 2026-10-18 — hud-glyph-readability-pass — Planned
 
 - **Date:** 2026-10-18

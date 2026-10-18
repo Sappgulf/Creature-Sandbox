@@ -146,11 +146,13 @@ export const PLAYABLE_SCENARIOS = [
     artFrame: 0,
     icon: '🧬',
     name: 'Lineage Guardian',
-    fantasy: 'Protect one family line long enough for a fifth generation to emerge.',
-    objective: 'Reach generation 5 while keeping 26+ creatures alive.',
-    targetSeconds: 300,
+    fantasy: 'Protect one family line long enough for a fourth generation to emerge.',
+    objective: 'Reach generation 4 while keeping 26+ creatures alive.',
+    // Generation 4 arrived at 420-885 s in probes (6 runs, idle and assisted); 600 s
+    // finished 4 of 6 within the probe's 60 s grace.
+    targetSeconds: 600,
     minAlive: 26,
-    minGeneration: 5,
+    minGeneration: 4,
     setup: { herbivore: 30, omnivore: 8, predator: 3, food: 250, props: ['calm', 'spring'] },
     tuning: { mode: 'balanced', foodRate: 0.48, disasters: false },
     steps: ['Pin a founder', 'Feed their descendants', 'Avoid predator pressure near nests']
@@ -213,7 +215,9 @@ export const PLAYABLE_SCENARIOS = [
     minAlive: 30,
     minFood: 90,
     maxStress: 58,
-    setup: { herbivore: 34, omnivore: 6, predator: 4, food: 115, props: ['calm', 'fan'] },
+    // Predators 4 -> 2 (2026-10-18): the baseline lost 24-44 creatures to combat per run
+    // while predators rose to 6-7. Now assisted runs pass 3 of 3 (was 1 of 3) and idle 1 of 3 (was 0 of 3).
+    setup: { herbivore: 34, omnivore: 6, predator: 2, food: 115, props: ['calm', 'fan'] },
     // Auto-balance topped food back up and cancelled the drought, so the run
     // completed with no input. Off: idle now fails; placing food near the
     // herd completed it at 214s with 64 alive.
@@ -313,10 +317,12 @@ export const PLAYABLE_SCENARIOS = [
     icon: '🍼',
     name: 'Nursery Watch',
     fantasy: 'A baby boom is fragile: keep the youngest alive while hunters circle.',
-    objective: 'Keep 26 creatures alive with 8+ babies through 2 generations.',
-    targetSeconds: 180,
+    objective: 'Keep 26 creatures alive with 6+ babies through 2 generations.',
+    // Babies are a live count of creatures under 30 s old, so eight at once was rare: the
+    // baseline (8 at 180 s) passed 0 of 6 probe runs. Six at 300 s passed 11 of 12 across two batches.
+    targetSeconds: 300,
     minAlive: 26,
-    minBabies: 8,
+    minBabies: 6,
     minGeneration: 2,
     setup: { herbivore: 32, omnivore: 6, predator: 3, food: 265, props: ['calm', 'spring'] },
     tuning: { mode: 'balanced', foodRate: 0.51, disasters: false, season: 'spring' },

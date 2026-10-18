@@ -10,10 +10,10 @@ assert.deepEqual(validatePlayableScenarioDefinitions(), []);
 
 const nurseryWatch = PLAYABLE_SCENARIOS.find(scenario => scenario.id === 'nursery_watch');
 assert.ok(nurseryWatch, 'nursery_watch scenario should exist');
-assert.equal(nurseryWatch?.minBabies, 8);
+assert.equal(nurseryWatch?.minBabies, 6);
 assert.equal(nurseryWatch?.minGeneration, 2);
 const nurseryGoals = buildScenarioObjectives(nurseryWatch);
-assert.equal(nurseryGoals.find(goal => goal.type === 'baby_count')?.target, 8);
+assert.equal(nurseryGoals.find(goal => goal.type === 'baby_count')?.target, 6);
 assert.equal(getObjectiveProgress('baby_count', 8, { babies: 4 }), 0.5);
 assert.equal(getObjectiveProgress('baby_count', 8, { babies: 12 }), 1.5);
 
