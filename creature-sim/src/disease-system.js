@@ -196,7 +196,7 @@ export class DiseaseSystem {
         });
 
         eventSystem?.emit(GameEvents.NOTIFICATION, {
-          message: `${DISEASE_TYPES[diseaseId]?.icon || '🦠'} ${DISEASE_TYPES[diseaseId]?.name || 'Disease'} outbreak detected!`,
+          message: `${DISEASE_TYPES[diseaseId]?.name || 'Disease'} outbreak detected!`,
           type: 'warning'
         });
       } else {
@@ -217,7 +217,7 @@ export class DiseaseSystem {
         this.activeOutbreaks.delete(diseaseId);
 
         eventSystem?.emit(GameEvents.NOTIFICATION, {
-          message: `${DISEASE_TYPES[diseaseId]?.icon || '✅'} ${DISEASE_TYPES[diseaseId]?.name || 'Disease'} outbreak has ended`,
+          message: `${DISEASE_TYPES[diseaseId]?.name || 'Disease'} outbreak has ended`,
           type: 'success'
         });
       }

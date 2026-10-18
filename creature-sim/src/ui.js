@@ -1,6 +1,7 @@
 import { gameState } from './game-state.js';
 import { buildBondsSummary, getCreatureEmotion, getLifeStageDisplay } from './upgrade-data.js';
 import { escapeHtml } from './safe-html.js';
+import { renderIcon } from './icon-glyphs.js';
 import { GOD_TOOL_REGISTRY } from './game/god-tool-system.js';
 import { geneValue } from './creature-genetics-helpers.js';
 import { getBadges } from './creature-render.js';
@@ -507,7 +508,11 @@ export function renderSelectedInfo(
   const lifeStage = getLifeStageDisplay(creature);
   const emotion = getCreatureEmotion(creature);
   const bonds = buildBondsSummary(creature, world);
-  const sublineParts = [dietLabel, `${lifeStage.icon} ${lifeStage.label}`, formatCreatureAge(creature.age)];
+  const sublineParts = [
+    dietLabel,
+    `${renderIcon(lifeStage.glyph, { className: 'inline-glyph' })} ${lifeStage.label}`,
+    formatCreatureAge(creature.age)
+  ];
   if (creature.parentId) {
     sublineParts.push(`Parent #${creature.parentId}`);
   }
@@ -574,7 +579,7 @@ export function renderSelectedInfo(
     .filter(badge => /Glow|Albino|Dark|Sick|Poisoned|Venom|Giant|Tiny|Armor|Mind|Heal|Hidden|Lucky/.test(badge))
     .slice(0, isMobile ? 2 : 4);
   const stateTags = [
-    `${emotion.icon} ${emotion.label}`,
+    `${renderIcon(emotion.glyph, { className: 'inline-glyph' })} ${emotion.label}`,
     readableState,
     `Hunger ${Math.round(hunger)}`,
     `Stress ${Math.round(stress)}`,
@@ -663,7 +668,7 @@ export function renderSelectedInfo(
         <span>${headline}</span>
         <span class="status ${statusClass}">${creature.alive ? 'Alive' : 'Dead'}</span>${threatBadge}${SELECTED_CLOSE_BUTTON}
       </div>
-      <div class="subline">${lifeStage.icon} ${lifeStage.label} · ${emotion.icon} ${emotion.label} · ${readableState}</div>
+      <div class="subline">${renderIcon(lifeStage.glyph, { className: 'inline-glyph' })} ${lifeStage.label} · ${renderIcon(emotion.glyph, { className: 'inline-glyph' })} ${emotion.label} · ${readableState}</div>
       <div class="state-tags">
         <span>Energy ${energy}</span>
         <span>Hunger ${Math.round(hunger)}</span>

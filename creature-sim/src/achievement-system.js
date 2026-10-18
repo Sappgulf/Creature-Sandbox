@@ -1,5 +1,6 @@
 // Achievement System - Goals, progression, XP, and challenges
 
+import { renderIcon } from './icon-glyphs.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
 import { ACHIEVEMENTS_DATA, ACHIEVEMENTS_DATA_VERSION } from './achievements-data.js';
@@ -587,14 +588,14 @@ export class AchievementSystem {
     notification.className = 'achievement-notification';
     notification.innerHTML = compactToast
       ? `
-        <div class="achievement-icon">${achievement.icon}</div>
+        <div class="achievement-icon">${renderIcon(achievement.icon, { className: 'achievement-glyph' })}</div>
         <div class="achievement-content">
           <div class="achievement-name">${achievement.name}</div>
           <div class="achievement-xp">Achievement · +${achievement.xp} XP</div>
         </div>
       `
       : `
-        <div class="achievement-icon">${achievement.icon}</div>
+        <div class="achievement-icon">${renderIcon(achievement.icon, { className: 'achievement-glyph' })}</div>
         <div class="achievement-content">
           <div class="achievement-title">Achievement Unlocked!</div>
           <div class="achievement-name">${achievement.name}</div>

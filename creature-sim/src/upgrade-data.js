@@ -94,18 +94,20 @@ export const DISCOVERY_MILESTONES = [
   { id: 'first_scenario_complete', label: 'Scenario Complete', icon: '🏆' }
 ];
 
+// `icon` is the text mark the canvas label draws; `glyph` is the field-guide
+// symbol id the HUD and panels draw (renderIcon), so the DOM never shows emoji.
 const STAGE_LABELS = {
-  baby: { label: 'Baby', icon: '🍼' },
-  juvenile: { label: 'Juvenile', icon: '🌱' },
-  adult: { label: 'Adult', icon: '•' },
-  elder: { label: 'Elder', icon: '⭐' }
+  baby: { label: 'Baby', icon: '🍼', glyph: 'i-egg' },
+  juvenile: { label: 'Juvenile', icon: '🌱', glyph: 'i-food' },
+  adult: { label: 'Adult', icon: '•', glyph: 'i-herbivore' },
+  elder: { label: 'Elder', icon: '⭐', glyph: 'i-crown' }
 };
 
 export function getLifeStageDisplay(creature = {}) {
   const stage = creature.ageStage || creature.lifeStage || 'adult';
   return {
     id: stage,
-    ...(STAGE_LABELS[stage] || { label: String(stage).replaceAll('_', ' '), icon: '•' })
+    ...(STAGE_LABELS[stage] || { label: String(stage).replaceAll('_', ' '), icon: '•', glyph: 'i-herbivore' })
   };
 }
 
@@ -116,14 +118,16 @@ export function getCreatureEmotion(creature = {}) {
   const energy = Number(creature.energy ?? creature.needs?.energy ?? 0);
   const goal = creature.goal?.current || creature.currentGoal || creature.state || '';
 
-  if (creature.alive === false) return { id: 'gone', label: 'Gone', icon: '·', tone: 'muted' };
-  if (stress >= 68) return { id: 'scared', label: 'Scared', icon: '!', tone: 'danger' };
-  if (hunger >= 72 || energy < 14) return { id: 'hungry', label: 'Hungry', icon: '+', tone: 'warning' };
-  if (goal === 'rest' || energy < 28) return { id: 'tired', label: 'Tired', icon: 'z', tone: 'muted' };
-  if (social >= 65 || goal === 'mate') return { id: 'bonded', label: 'Bonded', icon: '♥', tone: 'warm' };
+  if (creature.alive === false) return { id: 'gone', label: 'Gone', icon: '·', glyph: 'i-curse', tone: 'muted' };
+  if (stress >= 68) return { id: 'scared', label: 'Scared', icon: '!', glyph: 'i-bolt', tone: 'danger' };
+  if (hunger >= 72 || energy < 14)
+    return { id: 'hungry', label: 'Hungry', icon: '+', glyph: 'i-food', tone: 'warning' };
+  if (goal === 'rest' || energy < 28) return { id: 'tired', label: 'Tired', icon: 'z', glyph: 'i-moon', tone: 'muted' };
+  if (social >= 65 || goal === 'mate')
+    return { id: 'bonded', label: 'Bonded', icon: '♥', glyph: 'i-population', tone: 'warm' };
   if (goal === 'wander' || Number(creature.needs?.curiosity ?? 0) > 60)
-    return { id: 'curious', label: 'Curious', icon: '?', tone: 'accent' };
-  return { id: 'steady', label: 'Steady', icon: '•', tone: 'calm' };
+    return { id: 'curious', label: 'Curious', icon: '?', glyph: 'i-inspect', tone: 'accent' };
+  return { id: 'steady', label: 'Steady', icon: '•', glyph: 'i-calm', tone: 'calm' };
 }
 
 export function buildBondsSummary(creature = {}, world = null) {

@@ -33,10 +33,9 @@ List issues that could not be fixed quickly, with severity and reproduction step
    - **Description:** All 18 playable scenarios were played idle and assisted, three runs each, after the 2026-10-14 rescale (before-batch, 121 runs with the probe). Herd Rescue holds: idle 1/3 complete with 24 alive at two minutes, assisted 3/3. A ±25% change to `tuning.foodRate` moved no pass/fail outcome in a useful direction, so the ten trial changes were reverted. Seven scenarios clear idle with margin (predator_pressure, tiny_island, season_cycle, apex_balance, storm_chasers, stress_sanctuary, mutation_showcase). Food at the target time stays well above the `minFood` objectives, so regrowth changes move it only a little. The failing cases fail on population or births, not food: drought_rescue assisted reaches 24–25 alive against 30 at 210 s (auto-balance is off, so nothing refills), lineage_guardian does not reach generation 5 in 300 s, and nursery_watch does not reach 8 babies. prop_playground and tool_mastery need prop placements the probe does not make.
    - **Impact:** The sustain scenarios are not tuned to need the player. Item 5 kept the balanced floor, so the three failing cases stay open: drought_rescue runs with auto-balance off, so the floor cannot help it, and lineage_guardian and nursery_watch need more births. Reproduce with `node scripts/ecosystem-balance-probe.mjs --scenario=ID [--assist]`.
 
-7. **`creature-sim/index.html` has an unbalanced closing `</div>` near line 463**
-   - **Severity:** Low
-   - **Description:** The legacy `#hud-action-bank` block closes one `div` too many. Browsers recover, and the file already fails Prettier at HEAD, so the markup is not checked by any gate.
-   - **Impact:** None seen in play. Fix when the legacy HUD block is removed.
+7. **Resolved 2026-10-18: index.html had one stray `</div>`**
+   - **Status:** Fixed. The stray close was in the overflow menu footnote, not in `#hud-action-bank` as this entry first said. Element counts now balance (322 open, 322 close), so the parser no longer closes an ancestor early.
+   - **Guard:** Re-run the div count after markup edits. No gate checks it yet.
 
 8. **Index CSS sits above its advisory budget**
    - **Severity:** Low
@@ -46,14 +45,19 @@ List issues that could not be fixed quickly, with severity and reproduction step
 9. **Resolved 2026-10-14: game-mode food multipliers were inert and compounding**
    - **Status:** Fixed. `WorldEnvironment` initializes `foodRateMultiplier` to 1, and each mode now sets an absolute food rate through `GameplayModes.syncFoodRate()`. Before, `clamp(undefined * k)` gave NaN, which `WorldEcosystem.foodGrowthRate()` ignored, and the in-place multipliers compounded on repeated applies. A New Sandbox reseed and leaving a scenario run both re-sync the active mode.
    - **Measured:** The knob readout now gives chill 1.25 (growth ×1.25), balanced 1.0, frontier 1.0 and mayhem 0.8. Three 300s sandbox runs per mode (before against after): chill food 663 → 743 with the after runs entirely above the before runs, starvation 21 → 18. Mayhem food 731 → 677 and starvation 15 → 20, in the intended direction, but its population runs overlap (before 4–13, after 13–17), so that evidence is weak. Frontier's 1.05 measured no population or starvation change, so it was set back to base: its population comes from its `minPopulation` floor. Balanced is the base rate, so nothing changed.
-10. **The Scenario Editor keeps a developer style and a phone inspector scrim covers the strip**
+10. **Resolved 2026-10-18: the Scenario Editor and the phone inspector sheet**
 
-- **Severity:** Low
-- **Description:** The Scenario Editor (menu → Scenario Editor) is an inline-styled, green monospace panel. It now fits phones and closes on Escape, but it does not match the rest of the UI. While the inspector sheet is open on a phone, its scrim covers the control strip, so the first tap closes the sheet rather than acting on the strip.
-- **Impact:** Works, but it looks unfinished next to the rest of the UI. Restyle the editor with the shared glass tokens and decide whether a strip tap should close the sheet and act.
+- **Status:** Fixed. The Scenario Editor and the Analytics Dashboard use the shared glass tokens (`.scenario-editor-panel`, `.analytics-dashboard`, and the form rules in `styles.css`). Their inline styles and injected stylesheet are gone. On a phone, the control strip and the stats chip stay above an open inspector sheet (`body.inspector-sheet-open`), so one tap acts on the strip instead of closing the sheet.
+- **Still as designed:** A tap on the world with the sheet open still closes it.
 
 11. **Resolved 2026-10-15: creature sprite sheets regenerate from the repo**
 
 - **Severity:** Low
 - **Description:** `creature-sim/assets/sprites/sprite-manifest.json` credits the creature sheets to `scripts/generate-creature-sprites.py`. That script is tracked in git and needs only the Python standard library. Regenerating into a scratch directory reproduces the nine committed creature sheets byte-for-byte. The earlier note that the script was missing was wrong.
 - **Impact:** Creature art and animation loops can be redrawn by editing that script and running `python3 scripts/generate-creature-sprites.py`, which writes only creature sheets. Do not use `scripts/generate-sprite-sheets.mjs` for creatures: it does not produce them, and unfiltered runs rewrite the rock, tree and scenario-card sheets. Use `SPRITE_ONLY=` there for food and props.
+
+12. **Eco Health reads about 0.00 in normal play (analytics scale, not a crash)**
+
+- **Severity:** Low (the readout misleads; no gameplay effect)
+- **Description:** `AdvancedStatsCalculator.calculateEcosystemStats` sets `foodAvailability = food / (width × height / 180)`. On the 4000×2800 world that capacity is about 62,000, while the sandbox holds 300–700 food, so the term is roughly 0.005 and the health score prints as 0.00 in both worker and main-thread modes. The 2026-10-18 fix removed the worker-mode NaN (the mirror has no `maxFood`). It did not change this scale.
+- **Impact:** The Analytics Dashboard shows `Eco Health: 0.00`, and its insight line calls health "steady (0.00)". Decide the intended scale first, for example a food target near the baseline of about 720 items, or a different definition. Then change the formula and check it with the balance probe.

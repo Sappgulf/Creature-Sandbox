@@ -300,11 +300,12 @@ export class UnlockableAchievements {
 
     // Trigger achievement notification
     if (world?.notificationSystem) {
+      // NotificationSystem.show(message, type, duration): the old call passed the
+      // description as the type and dropped the points, so the toast fell back to info styling.
       world.notificationSystem.show(
-        `${achievement.name}`,
-        `${achievement.description}\n+${achievement.points} pts`,
-        3000,
-        'achievement'
+        `Achievement unlocked · ${achievement.name} · +${achievement.points} pts`,
+        'achievement',
+        3000
       );
     }
   }

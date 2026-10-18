@@ -30,6 +30,7 @@ import { packCreature, unpackCreature, createCreatureBuffer } from '../creature-
 import { collectGameplayMetrics } from '../creature-sim/src/gameplay-objectives.js';
 import { ControlStripController } from '../creature-sim/src/control-strip.js';
 import { renderIcon, resolveSymbol } from '../creature-sim/src/icon-glyphs.js';
+import { getCreatureEmotion, getLifeStageDisplay } from '../creature-sim/src/upgrade-data.js';
 import { SPEED_OPTIONS, SPEED_LABELS } from '../creature-sim/src/game-state.js';
 import { CreatureAgentTuning } from '../creature-sim/src/creature-agent-constants.js';
 import { resolveDietRole } from '../creature-sim/src/creature-genetics-helpers.js';
@@ -1777,6 +1778,93 @@ test('icon-glyphs: a symbol id cannot break out of the href attribute', () => {
   assert.equal(resolveSymbol('constructor'), 'i-discoveries', 'prototype keys are not icons');
   assert.equal(resolveSymbol('__proto__'), 'i-discoveries', 'prototype keys are not icons');
   assert.match(renderIcon('i-food'), /<use href="#i-food"\/>/);
+});
+
+// ----------------------------------------------------------------------------
+// enhanced-analytics.js: the worker-side world mirror has no maxFood (it exposes
+// width, height and the food list only), so the food term was
+// food / Math.max(undefined, 1) = NaN and the Eco Health readout showed NaN.
+// ----------------------------------------------------------------------------
+const priorDocument = globalThis.document;
+if (priorDocument === undefined) {
+  // The module creates its singletons against `document` on load. The stats
+  // calculator never touches the DOM, so a stub is enough here.
+  globalThis.document = {
+    getElementById: () => null,
+    createElement: () => ({ style: {}, classList: { add() {}, remove() {} }, appendChild() {} }),
+    body: { appendChild() {} },
+    head: { appendChild() {} }
+  };
+}
+const { AdvancedStatsCalculator } = await import('../creature-sim/src/enhanced-analytics.js');
+if (priorDocument === undefined) delete globalThis.document;
+
+test('enhanced-analytics: a worker-mirror world without maxFood keeps ecosystem health finite', () => {
+  const calc = new AdvancedStatsCalculator();
+  const food = Array.from({ length: 720 }, (_, i) => ({ x: i, y: i }));
+  const workerMirror = { width: 4000, height: 2800, creatures: [], food: [] };
+  calc.calculateEcosystemStats([{ speed: 1 }], food, workerMirror);
+  const { foodAvailability, health } = calc.stats.ecosystem;
+  assert.ok(Number.isFinite(foodAvailability), `foodAvailability must be finite (got ${foodAvailability})`);
+  assert.ok(Number.isFinite(health), `ecosystem health must be finite (got ${health})`);
+  // Same capacity the main-thread world uses: width * height / 180.
+  assert.ok(Math.abs(foodAvailability - 720 / Math.floor((4000 * 2800) / 180)) < 1e-9);
+});
+
+// ----------------------------------------------------------------------------
+// icon-glyphs: an icon with no mapping fell back to i-discoveries, so moments,
+// scenario cards and event chips shared one identical glyph. Every pictographic
+// icon the game ships must now resolve to a symbol that exists in the sprite.
+// ----------------------------------------------------------------------------
+test('icon-glyphs: every pictographic icon in src resolves to a dedicated sprite symbol', () => {
+  const sprite = fs.readFileSync(new URL('../creature-sim/index.html', import.meta.url), 'utf8');
+  const symbols = new Set([...sprite.matchAll(/<symbol id="(i-[a-z0-9-]+)"/g)].map(match => match[1]));
+  const srcFiles = [];
+  const walk = dir => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const entryPath = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) walk(entryPath);
+      else if (entryPath.endsWith('.js')) srcFiles.push(entryPath);
+    }
+  };
+  walk(new URL('../creature-sim/src', import.meta.url).pathname);
+  const pictographic = /[\p{Extended_Pictographic}★]/u;
+  // Canvas label marks drawn with fillText (creature emotion and stage). The
+  // DOM uses the separate `glyph` symbol id for the same state.
+  const CANVAS_TEXT_MARKS = new Set(['•', '·', '!', '+', 'z', '♥', '?']);
+  const misses = [];
+  for (const file of srcFiles) {
+    for (const match of fs.readFileSync(file, 'utf8').matchAll(/\bicon\s*:\s*'([^']+)'/g)) {
+      const value = match[1];
+      if (CANVAS_TEXT_MARKS.has(value) || !pictographic.test(value)) continue;
+      const id = resolveSymbol(value, 'i-unmapped');
+      if (!symbols.has(id)) misses.push(`${value} -> ${id} (${file.split('/src/')[1]})`);
+    }
+  }
+  assert.deepEqual(misses, [], 'pictographic icon values without a dedicated sprite symbol');
+});
+
+test('upgrade-data: life-stage and emotion HUD glyphs are sprite symbols', () => {
+  const sprite = fs.readFileSync(new URL('../creature-sim/index.html', import.meta.url), 'utf8');
+  const symbols = new Set([...sprite.matchAll(/<symbol id="(i-[a-z0-9-]+)"/g)].map(match => match[1]));
+  const stages = ['baby', 'juvenile', 'adult', 'elder', 'unknown-stage'];
+  for (const ageStage of stages) {
+    const { glyph } = getLifeStageDisplay({ ageStage });
+    assert.ok(symbols.has(glyph), `life stage ${ageStage} glyph ${glyph} must exist in the sprite`);
+  }
+  const emotions = [
+    { alive: false },
+    { needs: { stress: 80 } },
+    { needs: { hunger: 80 } },
+    { energy: 10 },
+    { needs: { social: 70 } },
+    { needs: { curiosity: 70 } },
+    { needs: {} }
+  ];
+  for (const creature of emotions) {
+    const { id, glyph } = getCreatureEmotion(creature);
+    assert.ok(symbols.has(glyph), `emotion ${id} glyph ${glyph} must exist in the sprite`);
+  }
 });
 
 console.log('\n=== SUMMARY ===');

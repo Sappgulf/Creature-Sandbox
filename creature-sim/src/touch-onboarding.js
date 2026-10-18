@@ -86,6 +86,13 @@ class TouchOnboarding {
   show({ force = false } = {}) {
     if (this.shown) return;
     if (!force && !this.shouldShow()) return;
+    // A menu, drawer or panel is already covering the playfield: the card would
+    // sit on top of it and hide its buttons. Wait until the player closes it.
+    if (!force && this._overlayOpen()) {
+      clearTimeout(this._deferTimer);
+      this._deferTimer = setTimeout(() => this.show(), 500);
+      return;
+    }
     this.shown = true;
     this.currentStep = 0;
     // Remember who opened the tutorial so focus can return there on close.
@@ -293,6 +300,26 @@ class TouchOnboarding {
     if (this.currentStep === 0) return;
     this.currentStep -= 1;
     this._renderStep();
+  }
+
+  /** True while a menu, drawer or panel is open over the playfield. */
+  _overlayOpen() {
+    if (typeof document === 'undefined') return false;
+    if (document.body?.classList.contains('panel-open')) return true;
+    // Legacy overlays that are not .panel elements (analytics, scenario editor)
+    // are shown by an inline display, so check that as well as the hidden class.
+    return [
+      'overflow-drawer',
+      'spawn-drawer',
+      'inspector',
+      'analytics-dashboard',
+      'scenario-editor',
+      'replay-panel',
+      'lineage-album-panel'
+    ].some(id => {
+      const el = document.getElementById(id);
+      return !!el && !el.classList.contains('hidden') && el.style.display !== 'none';
+    });
   }
 
   _complete() {

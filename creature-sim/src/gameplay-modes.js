@@ -130,7 +130,7 @@ export class GameplayModes {
     });
 
     if (announce && this.notifications?.show) {
-      this.notifications.show(`${next.icon} ${next.name}`, 'info', 2400);
+      this.notifications.show(`Mode: ${next.name}`, 'info', 2400);
     }
     if (announce && this.audio?.playUISound) {
       this.audio.playUISound('toggle');

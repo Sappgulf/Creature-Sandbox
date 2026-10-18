@@ -372,11 +372,7 @@ export class UpgradeController {
       this.camera.targetY = target.y;
     }
     const mode = FOLLOW_TARGET_MODES.find(item => item.id === modeId);
-    this.notifications?.show?.(
-      `${mode?.icon || '👁️'} Following ${mode?.label || 'creature'} #${target.id}`,
-      'info',
-      1900
-    );
+    this.notifications?.show?.(`Following ${mode?.label || 'creature'} #${target.id}`, 'info', 1900);
     return target;
   }
 
@@ -467,7 +463,7 @@ export class UpgradeController {
       this.camera.targetZoom = this.camera.zoom;
     }
 
-    this.notifications?.show?.(`${recipe.icon} Loaded ${recipe.label}`, 'success', 2400);
+    this.notifications?.show?.(`Loaded ${recipe.label}`, 'success', 2400);
     this.audio?.playUISound?.('success');
     this.lastPostcard = null;
     this.saveSeedEntry(recipe.label);
@@ -929,7 +925,7 @@ export class UpgradeController {
           selected
             ? `
           <div class="upgrade-selected">
-            <strong>#${selected.id} · ${escapeHtml(selectedPresentation.lifeStage.icon)} ${escapeHtml(selectedPresentation.lifeStage.label)} · ${escapeHtml(selectedPresentation.emotion.icon)} ${escapeHtml(selectedPresentation.emotion.label)}</strong>
+            <strong>#${selected.id} · ${renderIcon(selectedPresentation.lifeStage.glyph, { className: 'inline-glyph' })} ${escapeHtml(selectedPresentation.lifeStage.label)} · ${renderIcon(selectedPresentation.emotion.glyph, { className: 'inline-glyph' })} ${escapeHtml(selectedPresentation.emotion.label)}</strong>
             <span>${escapeHtml(selectedPresentation.bonds.label)}</span>
           </div>
           <div class="upgrade-nickname">

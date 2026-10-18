@@ -185,6 +185,8 @@ export class ScenarioEditor {
   createUI() {
     this.panel = document.createElement('div');
     this.panel.id = 'scenario-editor';
+    this.panel.className = 'scenario-editor-panel';
+    // Geometry and visibility stay inline (show/hide write display); the look lives in styles.css.
     this.panel.style.cssText = `
       position: fixed;
       top: 64px;
@@ -193,32 +195,26 @@ export class ScenarioEditor {
       width: min(900px, calc(100vw - 24px));
       height: min(700px, calc(100vh - 88px));
       max-width: calc(100vw - 24px);
-      background: rgba(15, 15, 15, 0.95);
-      border: 2px solid #00ff00;
-      border-radius: 8px;
       display: none;
       z-index: var(--z-tutorial);
-      font-family: monospace;
-      color: #00ff00;
-      backdrop-filter: blur(15px);
-      overflow: hidden;
+      box-sizing: border-box;
     `;
 
     this.panel.innerHTML = `
-      <div style="padding: 15px; height: 100%; display: flex; flex-direction: column;">
+      <div class="se-shell">
         <!-- Header -->
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-          <h2 style="margin: 0; color: #00ff00;">Scenario Editor</h2>
+        <div class="se-header">
+          <h2 class="se-title">Scenario Editor</h2>
           <div>
-            <button id="scenario-save" style="background: #333; border: 1px solid #00ff00; color: #00ff00; cursor: pointer; padding: 4px 12px; margin-right: 8px;">Save</button>
-            <button id="scenario-load" style="background: #333; border: 1px solid #00ff00; color: #00ff00; cursor: pointer; padding: 4px 12px; margin-right: 8px;">Load</button>
-            <button id="scenario-test" style="background: #2a5; border: 1px solid #0f0; color: #0f0; cursor: pointer; padding: 4px 12px; margin-right: 8px;">Test</button>
-            <button id="scenario-close" style="background: #333; border: 1px solid #00ff00; color: #00ff00; cursor: pointer; padding: 4px 12px;">×</button>
+            <button id="scenario-save" class="se-btn se-mr">Save</button>
+            <button id="scenario-load" class="se-btn se-mr">Load</button>
+            <button id="scenario-test" class="se-btn se-btn-primary se-mr">Test</button>
+            <button id="scenario-close" class="se-btn">×</button>
           </div>
         </div>
 
         <!-- Tabs -->
-        <div id="scenario-tabs" style="display: flex; overflow-x: auto; white-space: nowrap; margin-bottom: 15px; border-bottom: 1px solid #444;">
+        <div id="scenario-tabs" class="se-tabs">
           <button class="tab-button active" data-tab="basic">Basic</button>
           <button class="tab-button" data-tab="creatures">Creatures</button>
           <button class="tab-button" data-tab="environment">Environment</button>
@@ -228,7 +224,7 @@ export class ScenarioEditor {
         </div>
 
         <!-- Content Area -->
-        <div id="scenario-content" style="flex: 1; overflow-y: auto; padding-right: 10px;">
+        <div id="scenario-content" class="se-body">
           ${this.createBasicTab()}
           ${this.createCreaturesTab()}
           ${this.createEnvironmentTab()}
@@ -238,125 +234,16 @@ export class ScenarioEditor {
         </div>
 
         <!-- Status Bar -->
-        <div id="scenario-editor-status" style="margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; font-size: 12px;">
+        <div id="scenario-editor-status" class="se-status">
           <span id="status-text">Ready</span>
-          <span style="float: right;">
-            <span id="validation-status" style="color: #ffa500;">○ Not validated</span>
+          <span class="se-right">
+            <span id="validation-status" class="se-chip se-warn">○ Not validated</span>
           </span>
         </div>
       </div>
     `;
 
     document.body.appendChild(this.panel);
-
-    // Add tab styles
-    const style = document.createElement('style');
-    style.textContent = `
-      .tab-button {
-        background: #222;
-        border: 1px solid #444;
-        color: #888;
-        cursor: pointer;
-        padding: 8px 16px;
-        margin-right: 2px;
-        border-bottom: none;
-        border-radius: 4px 4px 0 0;
-      }
-      .tab-button.active {
-        background: #333;
-        color: #00ff00;
-        border-color: #00ff00;
-      }
-      .tab-button:hover {
-        background: #444;
-        color: #fff;
-      }
-      .tab-content {
-        display: none;
-      }
-      .tab-content.active {
-        display: block;
-      }
-      .form-group {
-        margin-bottom: 15px;
-      }
-      .form-group label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: bold;
-        color: #00ff00;
-      }
-      .form-group input, .form-group select, .form-group textarea {
-        width: 100%;
-        padding: 6px;
-        background: #222;
-        border: 1px solid #555;
-        color: #fff;
-        font-family: monospace;
-        border-radius: 3px;
-      }
-      .form-group textarea {
-        resize: vertical;
-        min-height: 60px;
-      }
-      .form-row {
-        display: flex;
-        gap: 10px;
-        align-items: end;
-      }
-      .form-row > * {
-        flex: 1;
-      }
-      .array-editor {
-        border: 1px solid #555;
-        border-radius: 4px;
-        padding: 10px;
-        margin-top: 5px;
-        background: rgba(30, 30, 30, 0.5);
-      }
-      .array-item {
-        display: flex;
-        align-items: center;
-        margin-bottom: 8px;
-        padding: 8px;
-        background: rgba(40, 40, 40, 0.8);
-        border-radius: 3px;
-      }
-      .array-item:last-child {
-        margin-bottom: 0;
-      }
-      .remove-item {
-        background: #a00;
-        border: none;
-        color: white;
-        cursor: pointer;
-        padding: 2px 8px;
-        margin-left: 8px;
-        border-radius: 2px;
-      }
-      .add-item {
-        background: #0a0;
-        border: 1px solid #0f0;
-        color: #0f0;
-        cursor: pointer;
-        padding: 4px 12px;
-        margin-top: 8px;
-        border-radius: 3px;
-      }
-      .slider-container {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .slider-container input[type="range"] {
-        flex: 1;
-      }
-      .slider-value {
-        min-width: 40px;
-        text-align: center;
-      }
-    `;
-    document.head.appendChild(style);
   }
 
   createBasicTab() {
@@ -396,8 +283,8 @@ export class ScenarioEditor {
 
         <div class="form-group">
           <label>Tutorial Mode</label>
-          <label style="display: inline-flex; align-items: center; margin-right: 20px;">
-            <input type="checkbox" id="scenario-tutorial" style="margin-right: 8px;">
+          <label class="se-inline se-inline-gap">
+            <input type="checkbox" id="scenario-tutorial" class="se-mr">
             Enable tutorial hints
           </label>
         </div>
@@ -443,8 +330,8 @@ export class ScenarioEditor {
 
         <div class="form-group">
           <label>Temperature System</label>
-          <label style="display: inline-flex; align-items: center; margin-right: 20px;">
-            <input type="checkbox" id="temp-enabled" checked style="margin-right: 8px;">
+          <label class="se-inline se-inline-gap">
+            <input type="checkbox" id="temp-enabled" checked class="se-mr">
             Enable temperature effects
           </label>
         </div>
@@ -545,16 +432,16 @@ export class ScenarioEditor {
         <div class="form-group">
           <label>Environmental Events</label>
           <div class="form-row">
-            <label style="display: inline-flex; align-items: center; margin-right: 20px;">
-              <input type="checkbox" id="enable-disasters" style="margin-right: 8px;">
+            <label class="se-inline se-inline-gap">
+              <input type="checkbox" id="enable-disasters" class="se-mr">
               Random disasters
             </label>
-            <label style="display: inline-flex; align-items: center; margin-right: 20px;">
-              <input type="checkbox" id="enable-weather" style="margin-right: 8px;">
+            <label class="se-inline se-inline-gap">
+              <input type="checkbox" id="enable-weather" class="se-mr">
               Dynamic weather
             </label>
-            <label style="display: inline-flex; align-items: center;">
-              <input type="checkbox" id="enable-migration" style="margin-right: 8px;">
+            <label class="se-inline">
+              <input type="checkbox" id="enable-migration" class="se-mr">
               Creature migration
             </label>
           </div>
@@ -577,12 +464,12 @@ export class ScenarioEditor {
         <div class="form-group">
           <label>Genetic Features</label>
           <div class="form-row">
-            <label style="display: inline-flex; align-items: center; margin-right: 20px;">
-              <input type="checkbox" id="sexual-selection" checked style="margin-right: 8px;">
+            <label class="se-inline se-inline-gap">
+              <input type="checkbox" id="sexual-selection" checked class="se-mr">
               Sexual selection
             </label>
-            <label style="display: inline-flex; align-items: center; margin-right: 20px;">
-              <input type="checkbox" id="genetic-disorders" checked style="margin-right: 8px;">
+            <label class="se-inline se-inline-gap">
+              <input type="checkbox" id="genetic-disorders" checked class="se-mr">
               Genetic disorders
             </label>
           </div>
@@ -805,11 +692,11 @@ export class ScenarioEditor {
 
     if (validation.valid) {
       statusElement.textContent = '✓ Valid';
-      statusElement.style.color = '#0f0';
+      statusElement.className = 'se-chip is-valid';
       statusText.textContent = 'Ready to save';
     } else {
       statusElement.textContent = '✗ Invalid';
-      statusElement.style.color = '#f00';
+      statusElement.className = 'se-chip is-invalid';
       statusText.textContent = `Errors: ${validation.errors.join(', ')}`;
     }
   }

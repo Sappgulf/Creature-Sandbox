@@ -26,6 +26,57 @@ Entries before March 2026 use older `### Notes` / `### Added` / `### Changed` he
 
 ## [UNRELEASED]
 
+### 2026-10-18 — hud-glyph-readability-pass — Planned
+
+- **Date:** 2026-10-18
+- **Scope:** ui | render | simulation | docs
+- **Type:** Planned
+- **Issues:** A scripted player audit at 390×844 (phone) and 1280×800 (desktop) ran home → New Sandbox → every Journal item → inspector → spawn, and recorded layout collisions, text under 11 px, contrast, emoji in visible text, sub-40 px targets, leaked `NaN`/`undefined`, and console errors. It found: (1) Eco Health printed `NaN` in the Analytics Dashboard in worker mode. (2) The coach card could sit over an open menu. (3) On a phone, the inspector sheet covered the control strip (KNOWN_ISSUES 10). (4) 42 distinct icon values fell back to one generic glyph, so moments, scenario cards and event chips looked identical. (5) Emoji still appeared in Features, Sound, Inspector, Lineage and toast text. (6) The unlockable-achievement toast showed only the name, in info styling. (7) The Analytics Dashboard and Scenario Editor used a green monospace dev style layered at `--z-toast`. (8) Legibility: the objective phase label was 8–9 px, campaign difficulty chips were 10 px at 3.2–3.9:1, and muted text was `#7d859c`. Feature and replay controls were under 40 px on touch. (9) A stray `</div>` (KNOWN_ISSUES 7).
+- **Root Causes:** (1) The worker-side world mirror (`simulation-proxy.js`) exposes `width`, `height` and the food list, not `maxFood`. `enhanced-analytics.js` divided by `Math.max(world.maxFood, 1)`, so the food term and the health score became NaN. Reproduced on the committed code in Node: health NaN, food NaN. (2) `TouchOnboarding.show()` checked for open overlays only once, when it started, and its layer (`--z-tutorial`) sat above the drawers. (3) On phones, the inspector sheet (`--z-drawer`, bottom 0, 40vh) sits above the strip (`--z-panel`). (4) `renderIcon` falls back to `i-discoveries` for any value without a mapping, and the emoji map was incomplete. (5) Labels and toasts hard-coded emoji. (6) `UnlockableAchievements` called `NotificationSystem.show(message, type, duration)` as `show(title, description, duration, type)`. (7) Both panels used inline styles and an injected `<style>`, outside the shared glass tokens. (8) Token and size choices. (9) A closing `</div>` after the overflow drawer footnote.
+- **Fixes (planned):** (a) Derive the food capacity from `width × height / 180` when `maxFood` is missing, and print `--` for any non-finite readout. (b) Move the Analytics Dashboard and Scenario Editor onto the glass tokens, keep geometry inline, and layer them at `--z-panel-raised`. (c) Map every in-use icon to a sprite symbol. Add 11 monoline glyphs. Give life stage and emotion a DOM `glyph`, and keep the text marks for canvas labels. (d) Replace emoji labels with glyphs, remove emoji from toasts, and word the achievement toast "Achievement unlocked · Name". (e) Defer the coach card while a menu is open, and lower its layer under drawers and panels. (f) Keep the strip and stats chip above an open inspector sheet on phones. (g) Raise muted text, the phase label and the campaign chips, and set 40 px floors for coarse pointers. (h) Remove the stray `</div>`. (i) Add regression tests for the NaN and for icon coverage.
+- **Verification (planned):** The same audit before and after on phone and desktop, with screenshots. `npm test`, lint, `npm run proof:release` and `npm run evidence:release`. After deploy, the production smoke and vitals lanes.
+
+### 2026-10-18 — hud-glyph-readability-pass — Implemented
+
+- **Date:** 2026-10-18
+- **Scope:** ui | render | simulation | docs
+- **Type:** Implemented
+- **Issues:** Same as planned. Not changed: the three failing sustain scenarios in KNOWN_ISSUES 6 (balance is a separate decision), and the Eco Health scale, which is now recorded as KNOWN_ISSUES 12. The desktop dev FPS pill appears only with `?devtools=1` and was not changed.
+- **Root Causes:** Same as planned.
+- **Fixes:**
+  - `creature-sim/src/enhanced-analytics.js`: food capacity falls back to `width × height / 180`. Eco Health and FPS print `--` when non-finite. The panel is class-based (`.analytics-dashboard`), with geometry and visibility inline, at `--z-panel-raised`. Chart colours and fonts use the field-guide palette.
+  - `creature-sim/src/scenario-editor.js`: all 26 inline styles and the injected `<style>` moved to `.scenario-editor-panel` and the `.se-*` and form rules. Validation colour uses state classes.
+  - `creature-sim/styles.css`: analytics and editor surfaces; `--text-muted` `#7d859c` → `#8f98ae`; objective phase 9 → 10 px (phone 8 → 9 px); campaign subtitle 12 px; difficulty chips 11 px with lighter tints; `.inline-glyph`, `.feature-toggle-glyph`, `.species-glyph`; coarse-pointer 40 px floors for feature toggles, replay controls, analytics and editor controls; `body.inspector-sheet-open` keeps the strip and stats above the phone sheet; `.touch-onboarding` layer lowered to `--z-hud-priority`.
+  - `creature-sim/src/icon-glyphs.js`: 35 more emoji→symbol mappings for every in-use icon value.
+  - `creature-sim/index.html`: 11 new sprite symbols (`i-rain`, `i-storm`, `i-rainbow`, `i-tree`, `i-flame`, `i-rescue`, `i-bridge`, `i-paw`, `i-nest`, `i-home`, `i-globe`). Seven Features labels and 23 static emoji labels (Sound, Heatmaps, Export, Lineage, Campaign) now use glyphs. `❌ Off` is `Off`. The stray `</div>` is removed (div count 322 = 322).
+  - `creature-sim/src/upgrade-data.js`: life stage and emotion carry a `glyph` sprite id. `icon` stays the text mark for canvas labels.
+  - `creature-sim/src/ui.js`, `upgrade-controller.js`, `game-loop.js`, `achievement-system.js`: DOM sites render `glyph` or the mapped icon with `renderIcon`.
+  - Toasts without emoji: `gameplay-modes.js` (`Mode: …`), `upgrade-controller.js`, `disease-system.js`, `campaign-system.js`, `ui-controller.js` (achievement → `Achievement unlocked · Name`, performance alert without the ⚠️ prefix).
+  - `creature-sim/src/unlockable-achievements.js`: `show(message, 'achievement', 3000)` with the name, `+N pts`.
+  - `creature-sim/src/touch-onboarding.js`: the card waits while a drawer, panel, inspector, analytics, editor, replay or lineage overlay is open.
+  - `creature-sim/src/ui-controller.js`: `body.inspector-sheet-open` on phones while the sheet is visible.
+  - `scripts/regression-fixes.test.mjs`: three tests. Worker-mirror NaN, every pictographic icon resolves to a sprite symbol, and life-stage and emotion glyphs exist in the sprite.
+  - `docs/KNOWN_ISSUES.md`: 7 and 10 resolved; 12 added.
+  - `scripts/save-system.test.mjs`: the large-autosave assertion waits for the stored write with a 5 s deadline instead of a fixed 50 ms sleep. Untouched HEAD failed 3 of 4 runs at machine load ~22 (the same 50 ms race). The test still fails if the write never arrives.
+- **Verification:**
+  - _Root cause, NaN:_ the committed `enhanced-analytics.js` in Node with a worker-style world (no `maxFood`) returns health `NaN` and food `NaN`. The fixed code returns finite values (food `720 / 62222 = 0.01157`).
+  - _Unit:_ `node scripts/regression-fixes.test.mjs` 82 passed, 0 failed (79 before). `npm test` passes every suite. `npm run lint` is clean. Prettier is clean on the changed JS.
+  - _Icons:_ before, 42 distinct pictographic and symbol icon values resolved to `i-discoveries`. After, the coverage script reports 0 unmapped pictographic values. The new glyphs were reviewed on a 900 px sheet (`scratchpad/glyphs.png`).
+  - _Live check, worker mode (`?devtools` off):_ Eco Health was `NaN` on phone before the fix. Now it reads `0.00` on phone and desktop, and no `NaN`, `undefined` or `Infinity` text appears in the audited states (`leaks=0`). Screenshots: `scratchpad/check/`.
+  - _Inspector:_ with the phone sheet open, `elementFromPoint` at the Pause button returns the button (before: the sheet's `section-title`). Desktop is unchanged.
+  - _Audit (phone 390×844 and desktop 1280×800, same script before and after):_
+    Measure, 22 states per viewport (phone before → after; desktop before → after):
+    - Layout collisions between HUD layers: 34 → 8; 40 → 28.
+    - Emoji in visible text: 32 → 4; 33 → 4.
+    - Targets under 40 px: 99 → 48; 187 → 158 (the feature checkboxes are still under 40 px; their labels are 40 px).
+    - Low-contrast text (approximate; composites ancestor backgrounds over black): 36 → 27; 38 → 32.
+    - Text under 11 px: 155 → 176; 174 → 172. The phone count rose because the inspector state is now reachable (the before run had a menu open, so its inspector result was invalid).
+    - Clipped text: 32 → 54; 2 → 18. These are objective-rail titles and hints that ellipsize by design. The audited runs reached different objectives, so the count is not a like-for-like layout change.
+    - Leaked NaN, undefined or Infinity text: 0 → 0 on both. Unnamed controls: 0 → 0. Horizontal overflow: 0 on both. Page errors: 0 on both.
+    - Control-strip hit test with the inspector open (phone): 0 of 9 buttons reachable before (a menu item sat on top) → 9 of 9 after. Desktop: 9 of 9 both.
+  - _Gates:_ `npm run proof:release` exit 0 ("Release proof passed."): git diff check, node checks, lint, `npm test` (regression 82/82, plus the other suites), build, bundle budget, `smoke:browser`, `smoke:main`, `smoke:worker` (desktop, mobile-compact, mobile-large), `smoke:scenarios` and `evidence:release`. The release summary still lists local, worker and production browser proof as `needs-more-proof`. Desktop frame averages (45–49 ms) sit above the 26 ms gate while the machine runs at load 20–50 (two Xcode swift-frontend builds at about 100% CPU). An interleaved A/B of `smoke:worker` against HEAD (worktree, same load) gave desktop avg 49.07 → 47.22 ms and mobile-compact avg 20.54 → 16.66 ms (run 1). Desktop p95 went 50.1 → 66.7 ms in that run. A second interleaved pair then matched HEAD: desktop avg 42.07 (HEAD) vs 42.06 ms and p95 50.1 ms on both, mobile-compact avg 16.66 vs 16.67 ms. Run 1 mobile-compact was 20.54 ms on HEAD and 16.66 ms here. No pacing regression is measured; the 26 ms desktop gate is missed on both trees under this load. No gameplay constant or balance value changed.
+  - _Production:_ Deploy and production checks come after the push, from this commit. Their result is recorded in a follow-up docs note.
+
 ### 2026-10-15 — open-items-close-out — Planned
 
 - **Date:** 2026-10-15

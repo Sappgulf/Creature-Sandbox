@@ -414,7 +414,7 @@ export class CampaignSystem {
 
     // Emit event
     eventSystem?.emit(GameEvents.NOTIFICATION, {
-      message: `${level.icon} Campaign: ${level.name}`,
+      message: `Campaign: ${level.name}`,
       type: 'info',
       duration: 5000
     });

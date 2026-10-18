@@ -11,6 +11,7 @@ import { performanceProfiler, updatePerformanceMonitor, profile } from './perfor
 import { renderResolution } from './render-resolution.js';
 import { openingHold } from './opening-hold.js';
 import { escapeHtml } from './safe-html.js';
+import { renderIcon } from './icon-glyphs.js';
 import { eventSystem, GameEvents } from './event-system.js';
 import { configManager } from './config-manager.js';
 import { poolManager } from './object-pool.js';
@@ -1876,7 +1877,7 @@ export class GameLoop {
           const diet = geneValue(group.avgGenes, 'diet', 0);
           const icon = diet > 0.7 ? '🦁' : diet > 0.3 ? '🦡' : '🦌';
           html += `<div class="species-item">
-            <span class="species-icon">${icon}</span>
+            <span class="species-icon">${renderIcon(icon, { className: 'species-glyph' })}</span>
             <span class="species-size">${group.members} individuals</span>
           </div>`;
         }

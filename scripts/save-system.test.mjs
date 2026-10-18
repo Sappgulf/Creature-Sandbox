@@ -226,7 +226,12 @@ try {
   autoSaveSystem.setMetadataProvider(() => ({ largePayload }));
   autoSaveSystem.autoSaveInterval = 0;
   await autoSaveSystem.autoSave(multiWorld, camera, null, null, 1);
-  await new Promise(resolve => setTimeout(resolve, 50));
+  // Wait for the write itself, with a deadline. A fixed 50 ms sleep failed under
+  // heavy machine load even on untouched HEAD; a real missing write still fails here.
+  const autosaveDeadline = Date.now() + 5000;
+  while (!storage.get('creature-sim-autosave-1')?.startsWith('C2:') && Date.now() < autosaveDeadline) {
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
   assert.ok(
     storage.get('creature-sim-autosave-1')?.startsWith('C2:'),
     'large autosaves should use the same safe chunked compression path'

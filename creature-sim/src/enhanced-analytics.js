@@ -15,11 +15,12 @@ class InteractiveChart {
     this.options = {
       width: canvas.width || 400,
       height: canvas.height || 200,
-      backgroundColor: '#1a1a1a',
-      gridColor: '#333',
-      textColor: '#fff',
-      lineColors: ['#00ff00', '#0088ff', '#ff8800', '#ff0088', '#8800ff'],
-      font: '12px monospace',
+      backgroundColor: '#070b14',
+      gridColor: '#1c2a3c',
+      textColor: '#e8eaed',
+      // Field-guide palette: cyan, lime, amber, rose, violet (readable on the glass panel).
+      lineColors: ['#39d5ff', '#c5f27e', '#ffb86b', '#ff7aa2', '#a78bfa'],
+      font: '11px ui-monospace, SFMono-Regular, Menlo, monospace',
       showGrid: true,
       showLegend: true,
       interactive: true,
@@ -218,17 +219,17 @@ class InteractiveChart {
     const tooltipHeight = data.length * lineHeight + padding * 2;
 
     // Tooltip background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.fillStyle = 'rgba(5, 9, 16, 0.92)';
     ctx.fillRect(x, y, tooltipWidth, tooltipHeight);
 
     // Tooltip border
-    ctx.strokeStyle = '#555';
+    ctx.strokeStyle = '#2c3d52';
     ctx.lineWidth = 1;
     ctx.strokeRect(x, y, tooltipWidth, tooltipHeight);
 
     // Tooltip content
-    ctx.fillStyle = '#fff';
-    ctx.font = '11px monospace';
+    ctx.fillStyle = '#e8eaed';
+    ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, monospace';
     ctx.textAlign = 'left';
 
     data.forEach((item, index) => {
@@ -239,7 +240,7 @@ class InteractiveChart {
       ctx.fillRect(x + padding, textY - 8, 8, 8);
 
       // Text
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = '#e8eaed';
       ctx.fillText(`${item.label}: ${item.value.toFixed(2)}`, x + padding + 12, textY);
     });
   }
@@ -267,6 +268,9 @@ export class AnalyticsDashboard {
   createUI() {
     this.panel = document.createElement('div');
     this.panel.id = 'analytics-dashboard';
+    this.panel.className = 'analytics-dashboard';
+    // Geometry and visibility stay inline (minimize() and show/hide write them);
+    // the look lives in the .analytics-dashboard rules in styles.css.
     this.panel.style.cssText = `
       position: fixed;
       top: 50px;
@@ -275,98 +279,68 @@ export class AnalyticsDashboard {
       height: min(82vh, 640px);
       max-width: calc(100vw - 20px);
       max-height: calc(100vh - 70px);
-      background: rgba(20, 20, 20, 0.95);
-      border: 2px solid #00ff00;
-      border-radius: 8px;
       display: none;
-      z-index: var(--z-toast);
-      font-family: monospace;
-      color: #00ff00;
-      backdrop-filter: blur(10px);
-      overflow: hidden;
+      z-index: var(--z-panel-raised);
       box-sizing: border-box;
     `;
 
     this.panel.innerHTML = `
-      <div style="padding: 10px; height: 100%; display: flex; flex-direction: column;">
+      <div class="analytics-shell">
         <!-- Header -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <h2 style="margin: 0; color: #00ff00;">Analytics Dashboard</h2>
-          <div>
-            <button id="analytics-minimize" style="background: #333; border: 1px solid #00ff00; color: #00ff00; cursor: pointer; padding: 2px 8px; margin-right: 5px;">−</button>
-            <button id="analytics-close" style="background: #333; border: 1px solid #00ff00; color: #00ff00; cursor: pointer; padding: 2px 8px;">×</button>
+        <div class="analytics-header">
+          <h2 class="analytics-title">Analytics Dashboard</h2>
+          <div class="analytics-window-actions">
+            <button id="analytics-minimize" class="analytics-btn analytics-icon-btn" type="button" aria-label="Minimize analytics">−</button>
+            <button id="analytics-close" class="analytics-btn analytics-icon-btn" type="button" aria-label="Close analytics">×</button>
           </div>
         </div>
 
         <!-- Controls -->
-        <div id="analytics-controls" style="margin-bottom: 10px;">
-          <select id="analytics-time-range" style="background: #222; color: #00ff00; border: 1px solid #555; padding: 2px;">
+        <div id="analytics-controls" class="analytics-controls">
+          <select id="analytics-time-range" class="analytics-select" aria-label="Time range">
             <option value="60">Last Minute</option>
             <option value="300">Last 5 Minutes</option>
             <option value="600" selected>Last 10 Minutes</option>
             <option value="3600">Last Hour</option>
           </select>
-          <button id="analytics-export" style="background: #333; border: 1px solid #00ff00; color: #00ff00; cursor: pointer; padding: 2px 8px; margin-left: 10px;">Export</button>
-          <button id="analytics-clear" style="background: #333; border: 1px solid #00ff00; color: #00ff00; cursor: pointer; padding: 2px 8px; margin-left: 5px;">Clear</button>
+          <button id="analytics-export" class="analytics-btn" type="button">Export</button>
+          <button id="analytics-clear" class="analytics-btn" type="button">Clear</button>
         </div>
 
         <!-- Charts Grid -->
-        <div id="analytics-charts" style="flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; overflow: hidden; min-height: 0;">
+        <div id="analytics-charts" class="analytics-charts">
           <div class="chart-container">
-            <h3 style="margin: 0 0 5px 0; font-size: 14px;">Population Dynamics</h3>
+            <h3 class="chart-title">Population Dynamics</h3>
             <canvas id="population-chart" width="380" height="180"></canvas>
           </div>
           <div class="chart-container">
-            <h3 style="margin: 0 0 5px 0; font-size: 14px;">Gene Frequencies</h3>
+            <h3 class="chart-title">Gene Frequencies</h3>
             <canvas id="genes-chart" width="380" height="180"></canvas>
           </div>
           <div class="chart-container">
-            <h3 style="margin: 0 0 5px 0; font-size: 14px;">Ecosystem Health</h3>
+            <h3 class="chart-title">Ecosystem Health</h3>
             <canvas id="ecosystem-chart" width="380" height="180"></canvas>
           </div>
           <div class="chart-container">
-            <h3 style="margin: 0 0 5px 0; font-size: 14px;">Performance Metrics</h3>
+            <h3 class="chart-title">Performance Metrics</h3>
             <canvas id="performance-chart" width="380" height="180"></canvas>
           </div>
         </div>
 
         <!-- Stats Summary -->
-        <div id="analytics-summary" style="margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; font-size: 12px;">
-          <div style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+        <div id="analytics-summary" class="analytics-summary">
+          <div class="analytics-stat-row">
             <span>Total Creatures: <span id="stat-creatures">0</span></span>
             <span>Generations: <span id="stat-generations">0</span></span>
             <span>Eco Health: <span id="stat-ecosystem">--</span></span>
             <span>FPS: <span id="stat-fps">--</span></span>
           </div>
-          <div id="analytics-insights" aria-live="polite" style="margin-top: 8px; color: #bbf7d0; line-height: 1.45; min-height: 2.2em;"></div>
+          <div id="analytics-insights" class="analytics-insights" aria-live="polite"></div>
         </div>
       </div>
     `;
 
     document.body.appendChild(this.panel);
-
-    // Style chart containers
-    const style = document.createElement('style');
-    style.textContent = `
-      .chart-container {
-        background: rgba(30, 30, 30, 0.8);
-        border: 1px solid #444;
-        border-radius: 4px;
-        padding: 8px;
-        display: flex;
-        flex-direction: column;
-        min-height: 0;
-      }
-      .chart-container canvas {
-        border: 1px solid #555;
-        border-radius: 2px;
-        display: block;
-        width: 100%;
-        height: 100%;
-        flex: 1;
-      }
-    `;
-    document.head.appendChild(style);
 
     this.defaultHeight = this.panel.style.height;
   }
@@ -610,9 +584,11 @@ export class AnalyticsDashboard {
 
     creaturesElement.textContent = analyticsData.population?.total || 0;
     generationsElement.textContent = analyticsData.generation || 0;
-    ecosystemElement.textContent =
-      analyticsData.ecosystem?.health != null ? analyticsData.ecosystem.health.toFixed(2) : '--';
-    fpsElement.textContent = performanceStats?.current?.fps != null ? performanceStats.current.fps.toFixed(1) : '--';
+    // Never print NaN/Infinity: an unready or non-finite reading shows the placeholder.
+    const health = analyticsData.ecosystem?.health;
+    ecosystemElement.textContent = health != null && Number.isFinite(health) ? health.toFixed(2) : '--';
+    const fps = performanceStats?.current?.fps;
+    fpsElement.textContent = fps != null && Number.isFinite(fps) ? fps.toFixed(1) : '--';
     this.updateInsightNarrative(analyticsData, world, performanceStats);
   }
 
@@ -828,8 +804,14 @@ export class AdvancedStatsCalculator {
       ecosystem.diversity = (speedVariance + senseVariance) / 2;
     }
 
-    // Food availability
-    ecosystem.foodAvailability = food.length / Math.max(world.maxFood, 1);
+    // Food availability. The worker-side world mirror carries no maxFood (only
+    // width, height and the food list), so derive the same capacity the world
+    // uses (world-core.js: width * height / 180). Without this, Math.max(undefined, 1)
+    // is NaN and the whole ecosystem health score turned NaN in worker mode.
+    const foodCapacity = Number.isFinite(world.maxFood)
+      ? world.maxFood
+      : Math.floor(((Number(world.width) || 0) * (Number(world.height) || 0)) / 180);
+    ecosystem.foodAvailability = food.length / Math.max(foodCapacity, 1);
 
     // Stability based on population consistency
     if (this.history.length > 20) {

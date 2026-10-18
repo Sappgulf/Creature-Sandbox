@@ -110,7 +110,7 @@ export class UIController {
     eventSystem.on('performance:alert', alert => {
       // Only show if notifications are configured to show performance alerts
       if (this.hasNotifications() && this.notifications.showPerformanceAlerts) {
-        this.notifications.show(`⚠️ ${alert.message}`, 'performance', 3000);
+        this.notifications.show(alert.message, 'performance', 3000);
       }
     });
 
@@ -143,7 +143,7 @@ export class UIController {
     eventSystem.on(GameEvents.ACHIEVEMENT_UNLOCKED, data => {
       const notificationsEnabled = this.achievements?.notificationsEnabled !== false;
       if (this.hasNotifications() && notificationsEnabled) {
-        this.notifications.show(`${data.name}`, 'achievement', 3000);
+        this.notifications.show(`Achievement unlocked · ${data.name}`, 'achievement', 3000);
       }
       if (this.audio) {
         this.audio.playSound('achievement');
@@ -575,8 +575,10 @@ export class UIController {
     if (isMobile) {
       const anyPanelOrInspectorOpen = document.querySelector('.panel:not(.hidden), #inspector:not(.hidden)');
       document.body.classList.toggle('panel-open', !!anyPanelOrInspectorOpen);
+      document.body.classList.toggle('inspector-sheet-open', !!document.querySelector('#inspector:not(.hidden)'));
     } else {
       document.body.classList.remove('panel-open');
+      document.body.classList.remove('inspector-sheet-open');
     }
   }
 

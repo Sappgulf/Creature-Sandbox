@@ -46,7 +46,7 @@
   --text-primary: #e8eaed;
   --text-secondary: #9aa3b8;
   --text-tertiary: #7a8299;
-  --text-muted: #7d859c;
+  --text-muted: #8f98ae;
   --text-inverse: #0c0f18;
   /* Effects */
   --glow-primary: 0 0 20px rgba(var(--accent-primary-rgb), 0.25);
@@ -2457,8 +2457,8 @@ select:focus-visible,
   margin: 0;
 }
 .campaign-level-subtitle {
-  font-size: 11px;
-  color: var(--text-muted);
+  font-size: 12px;
+  color: var(--text-secondary);
   margin: 0;
 }
 .campaign-level-desc {
@@ -2473,7 +2473,7 @@ select:focus-visible,
   align-items: center;
 }
 .campaign-difficulty {
-  font-size: 10px;
+  font-size: 11px;
   padding: 3px 8px;
   border-radius: var(--radius-sm);
   text-transform: uppercase;
@@ -2482,7 +2482,7 @@ select:focus-visible,
 }
 .campaign-difficulty.easy {
   background: rgba(34, 197, 94, 0.15);
-  color: var(--accent-success);
+  color: #86efac;
 }
 .campaign-difficulty.normal {
   background: rgba(var(--accent-primary-rgb), 0.15);
@@ -2490,11 +2490,11 @@ select:focus-visible,
 }
 .campaign-difficulty.hard {
   background: rgba(245, 158, 11, 0.15);
-  color: var(--accent-warning);
+  color: #fbbf24;
 }
 .campaign-difficulty.expert {
   background: rgba(239, 68, 68, 0.15);
-  color: var(--accent-danger);
+  color: #fca5a5;
 }
 .campaign-stars {
   font-size: 14px;
@@ -2893,6 +2893,16 @@ select:focus-visible,
      still below the .panel layer at --z-sheet. */
   #inspector {
     z-index: var(--z-drawer);
+  }
+  /* With the inspector sheet open, the control strip and the stats chip stay
+     above it, so their buttons remain tappable (KNOWN_ISSUES 10). The sheet
+     keeps its last rows clear of them. */
+  body.inspector-sheet-open #control-strip,
+  body.inspector-sheet-open #hud-bottom-right {
+    z-index: var(--z-sheet);
+  }
+  #inspector:not(.minimized) {
+    padding-bottom: calc(var(--mobile-action-bar-height) + 12px);
   }
   .campaign-levels-grid {
     grid-template-columns: 1fr;
@@ -6440,7 +6450,9 @@ body[data-readability-mode='minimal'] #view {
 .touch-onboarding {
   position: fixed;
   inset: 0;
-  z-index: var(--z-tutorial);
+  /* Coach card: above the playfield and the HUD rail, but under the control strip,
+     open panels and drawers, so it never sits on top of a menu (KNOWN_ISSUES 10). */
+  z-index: var(--z-hud-priority);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -7120,7 +7132,7 @@ body {
   grid-area: phase;
   overflow: hidden;
   color: var(--accent-primary);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 760;
   letter-spacing: 0.13em;
   line-height: 1.1;
@@ -7343,7 +7355,7 @@ body {
   }
 
   .objective-phase {
-    font-size: 8px;
+    font-size: 9px;
   }
 
   .objective-copy strong {
@@ -8571,4 +8583,436 @@ input[type='range']:focus-visible {
   width: 16px;
   height: 16px;
   color: var(--accent-secondary);
+}
+
+/* Touch hardware: feature toggles and replay transport meet the 40px target floor. */
+@media (pointer: coarse) {
+  .feature-toggle {
+    min-height: 40px;
+  }
+  .replay-panel button,
+  .replay-panel select {
+    min-height: 40px;
+    min-width: 40px;
+  }
+}
+
+/* Inline field-guide glyphs in HUD text: life stage, emotion, feature labels.
+   They take the surrounding text colour and sit on the text baseline. */
+.inline-glyph {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.14em;
+  color: currentColor;
+  fill: none;
+}
+.species-glyph {
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.25em;
+  color: var(--accent-primary);
+  fill: none;
+}
+.feature-toggle .inline-glyph {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  vertical-align: -3px;
+  color: var(--accent-primary);
+}
+.feature-toggle-glyph {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  vertical-align: -3px;
+  color: var(--accent-primary);
+  fill: none;
+  flex-shrink: 0;
+}
+
+/* ============================================================================
+   SCENARIO EDITOR - glass surface (was a green monospace dev panel).
+   Position, size and visibility stay inline in scenario-editor.js; the look
+   and the form controls live here.
+   ============================================================================ */
+.scenario-editor-panel {
+  background: var(--glass-bg-panel);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow: hidden;
+}
+.se-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--space-md);
+  box-sizing: border-box;
+}
+.se-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+.se-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+.se-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+.se-btn {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg-chip);
+  color: var(--text-primary);
+  font: 600 12px var(--font-sans);
+  cursor: pointer;
+}
+.se-btn-primary {
+  background: rgba(57, 213, 255, 0.16);
+  border-color: rgba(57, 213, 255, 0.5);
+  color: var(--accent-primary);
+}
+.se-btn:hover {
+  border-color: rgba(57, 213, 255, 0.45);
+}
+.se-btn:focus-visible,
+.se-btn-primary:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+.se-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  white-space: nowrap;
+  margin-bottom: var(--space-md);
+  border-bottom: 1px solid var(--glass-border);
+}
+.se-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: var(--space-sm);
+}
+.se-status {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm);
+  background: rgba(8, 13, 22, 0.7);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.se-right {
+  float: right;
+}
+.se-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.se-inline-gap {
+  margin-right: 20px;
+}
+.se-mr {
+  margin-right: 8px;
+}
+.se-warn {
+  color: #ffb86b;
+}
+.se-chip.is-valid {
+  color: var(--accent-success);
+}
+.se-chip.is-invalid {
+  color: var(--accent-danger);
+}
+
+/* Scenario form controls (these were injected as a <style> block from JS). */
+.tab-button {
+  background: var(--bg-elevated);
+  border: 1px solid var(--glass-border);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px 14px;
+  font: 600 12px var(--font-sans);
+}
+.tab-button.active {
+  background: var(--glass-bg-chip);
+  border-color: rgba(57, 213, 255, 0.5);
+  color: var(--accent-primary);
+}
+.tab-button:hover {
+  color: var(--text-primary);
+}
+.tab-content {
+  display: none;
+}
+.tab-content.active {
+  display: block;
+}
+.form-group {
+  margin-bottom: 15px;
+}
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.form-group input:not([type='checkbox']):not([type='radio']),
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 8px 10px;
+  background: #0b121d;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  box-sizing: border-box;
+}
+.form-group input[type='checkbox'],
+.form-group input[type='radio'] {
+  width: auto;
+  margin: 0 8px 0 0;
+  accent-color: var(--accent-primary);
+}
+.form-group textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+.form-row {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+}
+.form-row > * {
+  flex: 1;
+}
+.array-editor {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  margin-top: 5px;
+  background: rgba(8, 13, 22, 0.5);
+}
+.array-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 8px;
+  background: rgba(18, 25, 37, 0.8);
+  border-radius: var(--radius-sm);
+}
+.array-item:last-child {
+  margin-bottom: 0;
+}
+.remove-item {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  border-radius: var(--radius-sm);
+  color: #fecaca;
+  cursor: pointer;
+  padding: 2px 10px;
+  margin-left: 8px;
+}
+.add-item {
+  background: rgba(197, 242, 126, 0.14);
+  border: 1px solid rgba(197, 242, 126, 0.5);
+  border-radius: var(--radius-sm);
+  color: #c5f27e;
+  cursor: pointer;
+  padding: 4px 12px;
+  margin-top: 8px;
+}
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.slider-container input[type='range'] {
+  flex: 1;
+}
+.slider-value {
+  min-width: 40px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-primary);
+}
+/* Touch hardware: editor buttons and inputs meet the 40px target floor. */
+@media (pointer: coarse) {
+  .se-btn,
+  .add-item,
+  .remove-item {
+    min-height: 40px;
+  }
+  .form-group input:not([type='checkbox']):not([type='radio']),
+  .form-group select {
+    min-height: 40px;
+  }
+}
+
+/* ============================================================================
+   ANALYTICS DASHBOARD - glass surface (was a green monospace dev panel).
+   Position, size and visibility stay inline in enhanced-analytics.js because
+   minimize() and show/hide write them; these rules only style the surface.
+   ============================================================================ */
+.analytics-dashboard {
+  background: var(--glass-bg-panel);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow: hidden;
+}
+.analytics-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  height: 100%;
+  min-height: 0;
+  padding: var(--space-md);
+  box-sizing: border-box;
+}
+.analytics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+.analytics-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+.analytics-window-actions,
+.analytics-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+.analytics-btn,
+.analytics-select {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg-chip);
+  color: var(--text-primary);
+  font: 600 12px var(--font-sans);
+  cursor: pointer;
+}
+.analytics-select {
+  padding: 0 8px;
+  background: var(--bg-elevated);
+  font-weight: 500;
+}
+.analytics-btn:hover {
+  border-color: rgba(57, 213, 255, 0.45);
+}
+.analytics-btn:focus-visible,
+.analytics-select:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+.analytics-icon-btn {
+  min-width: 32px;
+  padding: 0 8px;
+  font-size: 16px;
+  line-height: 1;
+}
+.analytics-charts {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: var(--space-sm);
+  min-height: 0;
+  overflow: hidden;
+}
+.chart-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--space-sm);
+  background: rgba(8, 13, 22, 0.7);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+}
+.chart-title {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 620;
+  color: var(--text-secondary);
+}
+.chart-container canvas {
+  display: block;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid rgba(151, 183, 212, 0.1);
+  border-radius: var(--radius-sm);
+}
+.analytics-summary {
+  padding: var(--space-sm);
+  background: rgba(8, 13, 22, 0.7);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.analytics-stat-row {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+}
+.analytics-stat-row span span {
+  color: var(--text-primary);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.analytics-insights {
+  margin-top: var(--space-sm);
+  min-height: 2.2em;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+/* Touch hardware: the window controls and filters meet the 40px target floor. */
+@media (pointer: coarse) {
+  .analytics-btn,
+  .analytics-select {
+    min-height: 40px;
+  }
+  .analytics-icon-btn {
+    min-width: 40px;
+  }
 }
